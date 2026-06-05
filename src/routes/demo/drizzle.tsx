@@ -88,7 +88,7 @@ function DemoDrizzle() {
 				<h2 className="text-2xl font-bold mb-4 text-indigo-200">Todos</h2>
 
 				<ul className="space-y-3 mb-6">
-					{todos.map((todo) => (
+					{todos.map((todo: any) => (
 						<li
 							key={todo.id}
 							className="rounded-lg p-4 shadow-md border transition-all hover:scale-[1.02] cursor-pointer group"
@@ -122,7 +122,6 @@ function DemoDrizzle() {
 						style={{
 							background: "rgba(93, 103, 227, 0.1)",
 							borderColor: "rgba(93, 103, 227, 0.3)",
-							focusRing: "rgba(93, 103, 227, 0.5)",
 						}}
 					/>
 					<button

@@ -2,20 +2,125 @@
 
 ## 项目概况
 
+基于 TanStack Start 构建的全栈内容管理系统（CMS），支持管理端（/admin）和客户端前台（/）。
+涵盖新闻管理、用户认证（双用户表 + RBAC）、字典管理、系统配置、文件管理、日志查询等模块。
+
 ## 工程结构
+
+```
+env/                          # 环境变量配置（.env、.env.local、.env.example）
+src/
+├── components/
+│   ├── admin/                # 管理端专用组件（Shell、NewsEditor）
+│   └── *.tsx                 # 公共组件（Header、Footer、ThemeToggle）
+├── db/
+│   ├── index.ts              # Drizzle 客户端实例化
+│   ├── schema/               # 数据库表定义（按模块拆分，9 张表）
+│   └── seed.ts               # 种子数据脚本
+├── lib/                      # 基础库（无业务逻辑）
+│   ├── env.ts                # 环境变量统一管理（zod 校验 + getEnv()）
+│   ├── logger.ts             # pino + pino-roll 日志
+│   ├── cache.ts              # 内存缓存（字典、系统配置）
+│   ├── storage.ts            # 文件存储抽象层（本地实现）
+│   ├── jwt.ts                # JWT 签发与校验（jose）
+│   ├── mail.ts               # 邮件发送（nodemailer）
+│   ├── permissions.ts        # 权限码常量
+│   ├── scheduler.ts          # 定时任务调度（node-cron）
+│   └── log-reader.ts         # 管理端日志文件查询
+├── middleware/
+│   └── auth.ts               # 鉴权中间件
+├── server/                   # 服务端业务逻辑
+│   ├── auth/                 # 认证模块（admin、client、common）
+│   ├── captcha.ts            # 验证码
+│   ├── dict.ts               # 字典管理 + 缓存
+│   ├── config.ts             # 系统配置 + 缓存
+│   ├── file.ts               # 文件上传/秒传/清理
+│   ├── news.ts               # 新闻 CRUD
+│   ├── tasks.ts              # 定时任务注册
+│   └── init.ts               # 服务端初始化
+├── routes/
+│   ├── __root.tsx            # 根布局（HTML shell）
+│   ├── index.tsx             # 前台首页（新闻列表 SSR）
+│   ├── news/$slug.tsx        # 新闻详情（SSR）
+│   └── admin/                # 管理端页面
+├── router.tsx                # TanStack Router 实例
+└── styles.css                # 全局样式 + Tailwind
+```
 
 ## 技术栈
 
+| 分类 | 技术 | 版本 |
+|------|------|------|
+| 框架 | TanStack Start (SSR) + React | 19 |
+| 路由 | TanStack Router（文件路由） | - |
+| 构建 | Vite | 8 |
+| 语言 | TypeScript（strict） | 6 |
+| 样式 | Tailwind CSS + shadcn/ui (new-york) | 4 |
+| 数据库 | PostgreSQL + Drizzle ORM | - |
+| 校验 | Zod | - |
+| Lint/Format | Biome | 2.4 |
+| 测试 | Vitest | 4 |
+| 包管理 | pnpm | - |
+| 日志 | pino + pino-roll（按天切割） | - |
+| 认证 | JWT（jose）+ bcryptjs | - |
+| 编辑器 | TipTap（富文本） | 3.24 |
+| 定时任务 | node-cron | - |
+| 邮件 | nodemailer | - |
+
 ## 接口约定
+
+### Server Function
+
+- 所有 Server Function 的 inputValidator **必须**使用 zod schema，禁止裸函数校验
+- 格式：`createServerFn({ method: "GET" | "POST" }).inputValidator(schema).handler(async ({ data }) => { ... })`
+- 调用方通过 `{ data: ... }` 传参
+
+### 环境变量
+
+- 环境变量文件统一放在 `env/` 目录（`.env`、`.env.local`）
+- 应用代码通过 `getEnv()` 获取环境变量，禁止直接读取 `process.env`
+- zod schema 定义所有环境变量及默认值，启动时校验
+
+### 路由
+
+- 页面路由使用 `createFileRoute`，位于 `src/routes/`
+- 管理端路由 `/admin/*`，前台路由 `/*`
+- 根布局 `__root.tsx` 根据 pathname 前缀隐藏 Header/Footer
+
+### 数据库
+
+- 所有表使用 `uuid` 主键（`defaultRandom()`）
+- 支持删除的表统一使用 `deleted_at` 软删除
+- 表名使用单数（如 `admin_user`、`file`）
+- Schema 文件按模块拆分在 `src/db/schema/`，通过 `index.ts` 统一导出
 
 ## 日志约定
 
+- 使用 pino + pino-roll，日志文件存储在 `{STORAGE_DIR}/logs/` 下
+- 文件名格式：`YYYY-MM-DD.log`，自动按天切割
+- 管理端可在 `/admin/logs` 页面按关键词、级别、日期范围查询日志文件
+- 日志模块不导入 `getEnv()`，直接读取 `process.env`（避让 pino transport worker 上下文冲突）
+
 ## 命令
+
+| 命令 | 说明 |
+|------|------|
+| `pnpm dev` | 启动开发服务器（端口 3000） |
+| `pnpm build` | 生产构建 |
+| `pnpm preview` | 预览生产构建 |
+| `pnpm check` | TypeScript 类型检查 + Biome 代码规范检查 |
+| `pnpm format` | Biome 代码格式化 |
+| `pnpm lint` | Biome 代码检查并自动修复 |
+| `pnpm test` | 运行 Vitest 测试 |
+| `pnpm db:push` | 推送 Schema 到数据库 |
+| `pnpm db:seed` | 创建种子数据（初始账号、预置字典、示例新闻） |
+| `pnpm db:studio` | 启动 Drizzle Studio |
 
 ## 开发边界
 
-- 修改时以现有代码为准
-- 涉及项目流程状态时，同步更新 `CHANGELOG.md`
+ - 修改时以现有代码为准
+- 任务完成后必须执行 `pnpm check`，确保 TypeScript 类型检查与 Biome 规范检查通过
+ - 涉及项目流程状态时，同步更新 `CHANGELOG.md`
 - 不提交临时文件、测试产物、密钥、`.env`
 - 临时文件统一放入仓库根目录 `.tmp/`，不要散落在其他目录
 
