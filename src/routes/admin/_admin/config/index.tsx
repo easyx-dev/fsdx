@@ -11,6 +11,8 @@ import { z } from "zod";
 import { AdminShell } from "#/components/admin/AdminShell";
 import { db } from "#/db/index";
 import { systemConfig } from "#/db/schema";
+import { PERMISSIONS } from "#/lib/permissions";
+import { permGuard } from "#/middleware/server-fn-auth";
 import { loadConfigCache } from "#/server/config";
 
 const createConfigSchema = z.object({
@@ -25,15 +27,18 @@ const updateConfigSchema = z.object({
 });
 const deleteConfigSchema = z.object({ id: z.string().min(1) });
 
-const getConfigList = createServerFn({ method: "GET" }).handler(async () => {
-	return db
-		.select()
-		.from(systemConfig)
-		.where(isNull(systemConfig.deletedAt))
-		.orderBy(asc(systemConfig.key));
-});
+const getConfigList = createServerFn({ method: "GET" })
+	.middleware([permGuard(PERMISSIONS.CONFIG_VIEW)])
+	.handler(async () => {
+		return db
+			.select()
+			.from(systemConfig)
+			.where(isNull(systemConfig.deletedAt))
+			.orderBy(asc(systemConfig.key));
+	});
 
 const createConfigFn = createServerFn({ method: "POST" })
+	.middleware([permGuard(PERMISSIONS.CONFIG_CREATE)])
 	.inputValidator(createConfigSchema)
 	.handler(async ({ data }) => {
 		await db.insert(systemConfig).values(data);
@@ -42,6 +47,7 @@ const createConfigFn = createServerFn({ method: "POST" })
 	});
 
 const updateConfigFn = createServerFn({ method: "POST" })
+	.middleware([permGuard(PERMISSIONS.CONFIG_EDIT)])
 	.inputValidator(updateConfigSchema)
 	.handler(async ({ data }) => {
 		const { id, ...rest } = data;
@@ -54,6 +60,7 @@ const updateConfigFn = createServerFn({ method: "POST" })
 	});
 
 const deleteConfigFn = createServerFn({ method: "POST" })
+	.middleware([permGuard(PERMISSIONS.CONFIG_DELETE)])
 	.inputValidator(deleteConfigSchema)
 	.handler(async ({ data }) => {
 		await db

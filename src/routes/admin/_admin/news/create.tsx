@@ -11,6 +11,8 @@ import { AdminShell } from "#/components/admin/AdminShell";
 import { NewsEditor } from "#/components/admin/NewsEditor";
 import { db } from "#/db/index";
 import { news } from "#/db/schema";
+import { PERMISSIONS } from "#/lib/permissions";
+import { permGuard } from "#/middleware/server-fn-auth";
 
 const createSchema = z.object({
 	title: z.string().min(1, "标题不能为空").max(500),
@@ -22,6 +24,7 @@ const createSchema = z.object({
 });
 
 const createNewsFn = createServerFn({ method: "POST" })
+	.middleware([permGuard(PERMISSIONS.NEWS_CREATE)])
 	.inputValidator(createSchema)
 	.handler(async ({ data }) => {
 		const generateSlug = (t: string) => {

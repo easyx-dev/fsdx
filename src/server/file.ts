@@ -7,7 +7,9 @@ import { and, eq, isNull, lt } from "drizzle-orm";
 import { db } from "#/db/index";
 import { file } from "#/db/schema";
 import { logger } from "#/lib/logger";
+import { PERMISSIONS } from "#/lib/permissions";
 import { storage } from "#/lib/storage";
+import { permGuard } from "#/middleware/server-fn-auth";
 
 export type FileRecord = typeof file.$inferSelect;
 
@@ -19,6 +21,7 @@ function sha256(buf: Buffer): string {
 
 /** 上传文件（支持 SHA256 秒传） */
 export const uploadFile = createServerFn({ method: "POST" })
+	.middleware([permGuard(PERMISSIONS.FILE_UPLOAD)])
 	.inputValidator((data: unknown) => {
 		if (!(data instanceof FormData)) throw new Error("Expected FormData");
 		const f = data.get("file");

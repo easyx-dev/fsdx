@@ -12,6 +12,8 @@ import { z } from "zod";
 import { AdminShell } from "#/components/admin/AdminShell";
 import { db } from "#/db/index";
 import { dict, dictItem } from "#/db/schema";
+import { PERMISSIONS } from "#/lib/permissions";
+import { permGuard } from "#/middleware/server-fn-auth";
 import { loadDictCache } from "#/server/dict";
 
 const dictIdSchema = z.object({ dictId: z.string().min(1) });
@@ -40,15 +42,18 @@ const updateItemSchema = z.object({
 	status: z.string().optional(),
 });
 
-const getDictList = createServerFn({ method: "GET" }).handler(async () =>
-	db
-		.select()
-		.from(dict)
-		.where(isNull(dict.deletedAt))
-		.orderBy(asc(dict.createdAt)),
-);
+const getDictList = createServerFn({ method: "GET" })
+	.middleware([permGuard(PERMISSIONS.DICT_VIEW)])
+	.handler(async () =>
+		db
+			.select()
+			.from(dict)
+			.where(isNull(dict.deletedAt))
+			.orderBy(asc(dict.createdAt)),
+	);
 
 const getDictItems = createServerFn({ method: "GET" })
+	.middleware([permGuard(PERMISSIONS.DICT_VIEW)])
 	.inputValidator(dictIdSchema)
 	.handler(async ({ data: { dictId } }) =>
 		db
@@ -59,6 +64,7 @@ const getDictItems = createServerFn({ method: "GET" })
 	);
 
 const createDictFn = createServerFn({ method: "POST" })
+	.middleware([permGuard(PERMISSIONS.DICT_CREATE)])
 	.inputValidator(createDictSchema)
 	.handler(async ({ data }) => {
 		await db.insert(dict).values(data);
@@ -67,6 +73,7 @@ const createDictFn = createServerFn({ method: "POST" })
 	});
 
 const updateDictFn = createServerFn({ method: "POST" })
+	.middleware([permGuard(PERMISSIONS.DICT_EDIT)])
 	.inputValidator(updateDictSchema)
 	.handler(async ({ data }) => {
 		const { id, ...rest } = data;
@@ -78,6 +85,7 @@ const updateDictFn = createServerFn({ method: "POST" })
 	});
 
 const deleteDictFn = createServerFn({ method: "POST" })
+	.middleware([permGuard(PERMISSIONS.DICT_DELETE)])
 	.inputValidator(idSchema)
 	.handler(async ({ data: { id } }) => {
 		const now = new Date();
@@ -93,6 +101,7 @@ const deleteDictFn = createServerFn({ method: "POST" })
 	});
 
 const createDictItemFn = createServerFn({ method: "POST" })
+	.middleware([permGuard(PERMISSIONS.DICT_CREATE_ITEM)])
 	.inputValidator(createItemSchema)
 	.handler(async ({ data }) => {
 		await db.insert(dictItem).values(data);
@@ -101,6 +110,7 @@ const createDictItemFn = createServerFn({ method: "POST" })
 	});
 
 const updateDictItemFn = createServerFn({ method: "POST" })
+	.middleware([permGuard(PERMISSIONS.DICT_EDIT_ITEM)])
 	.inputValidator(updateItemSchema)
 	.handler(async ({ data }) => {
 		const { id, ...rest } = data;
@@ -113,6 +123,7 @@ const updateDictItemFn = createServerFn({ method: "POST" })
 	});
 
 const deleteDictItemFn = createServerFn({ method: "POST" })
+	.middleware([permGuard(PERMISSIONS.DICT_DELETE_ITEM)])
 	.inputValidator(idSchema)
 	.handler(async ({ data: { id } }) => {
 		await db

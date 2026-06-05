@@ -11,6 +11,8 @@ import { z } from "zod";
 import { AdminShell } from "#/components/admin/AdminShell";
 import { db } from "#/db/index";
 import { news } from "#/db/schema";
+import { PERMISSIONS } from "#/lib/permissions";
+import { permGuard } from "#/middleware/server-fn-auth";
 
 const listSchema = z.object({
 	status: z.string().optional(),
@@ -23,6 +25,7 @@ const statusSchema = z.object({
 });
 
 const getNewsListFn = createServerFn({ method: "GET" })
+	.middleware([permGuard(PERMISSIONS.NEWS_VIEW)])
 	.inputValidator(listSchema)
 	.handler(async ({ data: { status, page = 1 } }) => {
 		const pageSize = 20;
@@ -43,6 +46,7 @@ const getNewsListFn = createServerFn({ method: "GET" })
 	});
 
 const deleteNewsFn = createServerFn({ method: "POST" })
+	.middleware([permGuard(PERMISSIONS.NEWS_DELETE)])
 	.inputValidator(idSchema)
 	.handler(async ({ data: { id } }) => {
 		await db.update(news).set({ deletedAt: new Date() }).where(eq(news.id, id));
@@ -50,6 +54,7 @@ const deleteNewsFn = createServerFn({ method: "POST" })
 	});
 
 const changeStatusFn = createServerFn({ method: "POST" })
+	.middleware([permGuard(PERMISSIONS.NEWS_PUBLISH)])
 	.inputValidator(statusSchema)
 	.handler(async ({ data: { id, status } }) => {
 		const updateData: Record<string, unknown> = {

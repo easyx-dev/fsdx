@@ -12,6 +12,8 @@ import { AdminShell } from "#/components/admin/AdminShell";
 import { NewsEditor } from "#/components/admin/NewsEditor";
 import { db } from "#/db/index";
 import { news } from "#/db/schema";
+import { PERMISSIONS } from "#/lib/permissions";
+import { permGuard } from "#/middleware/server-fn-auth";
 
 const getSchema = z.object({ id: z.string().min(1) });
 const updateSchema = z.object({
@@ -25,6 +27,7 @@ const updateSchema = z.object({
 });
 
 const getNewsFn = createServerFn({ method: "GET" })
+	.middleware([permGuard(PERMISSIONS.NEWS_VIEW)])
 	.inputValidator(getSchema)
 	.handler(async ({ data: { id } }) => {
 		return db.query.news.findFirst({
@@ -33,6 +36,7 @@ const getNewsFn = createServerFn({ method: "GET" })
 	});
 
 const updateNewsFn = createServerFn({ method: "POST" })
+	.middleware([permGuard(PERMISSIONS.NEWS_EDIT)])
 	.inputValidator(updateSchema)
 	.handler(async ({ data }) => {
 		const updateData: Record<string, unknown> = {

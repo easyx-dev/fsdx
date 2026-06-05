@@ -11,12 +11,15 @@ import { z } from "zod";
 import { AdminShell } from "#/components/admin/AdminShell";
 import { db } from "#/db/index";
 import { file } from "#/db/schema";
+import { PERMISSIONS } from "#/lib/permissions";
+import { permGuard } from "#/middleware/server-fn-auth";
 import { uploadFile } from "#/server/file";
 
 const fileListSchema = z.object({ status: z.string().optional() });
 const idSchema = z.object({ id: z.string().min(1) });
 
 const getFileList = createServerFn({ method: "GET" })
+	.middleware([permGuard(PERMISSIONS.FILE_VIEW)])
 	.inputValidator(fileListSchema)
 	.handler(async ({ data }) => {
 		const conditions = [isNull(file.deletedAt)];
@@ -30,6 +33,7 @@ const getFileList = createServerFn({ method: "GET" })
 	});
 
 const deleteFileFn = createServerFn({ method: "POST" })
+	.middleware([permGuard(PERMISSIONS.FILE_DELETE)])
 	.inputValidator(idSchema)
 	.handler(async ({ data }) => {
 		await db
@@ -40,6 +44,7 @@ const deleteFileFn = createServerFn({ method: "POST" })
 	});
 
 const makePermanentFn = createServerFn({ method: "POST" })
+	.middleware([permGuard(PERMISSIONS.FILE_EDIT)])
 	.inputValidator(idSchema)
 	.handler(async ({ data }) => {
 		await db

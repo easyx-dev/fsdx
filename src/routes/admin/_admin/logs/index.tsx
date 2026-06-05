@@ -30,9 +30,11 @@ const searchLogsFn = createServerFn({ method: "GET" })
 		return queryLogs(data) as unknown as ReturnType<typeof queryLogs>;
 	});
 
-const getDatesFn = createServerFn({ method: "GET" }).handler(async () => {
-	return getLogDates();
-});
+const getDatesFn = createServerFn({ method: "GET" })
+	.middleware([permGuard(PERMISSIONS.LOG_VIEW)])
+	.handler(async () => {
+		return getLogDates();
+	});
 
 const levels = ["", "info", "warn", "error", "debug", "fatal"];
 const levelColors: Record<string, string> = {
