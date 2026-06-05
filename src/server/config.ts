@@ -82,3 +82,22 @@ export async function deleteConfig(id: string) {
 	logger.info({ key: existing.key }, "系统配置已删除");
 	return true;
 }
+// ========== 预置系统配置 ==========
+
+/** 预置系统配置常量 */
+const PRESET_CONFIGS = [
+	{ key: "site_name", value: "FSDX CMS", description: "站点名称" },
+];
+
+/** 运行时校验并插入缺失的预置系统配置（幂等安全） */
+export async function ensurePresetConfigs(): Promise<void> {
+	for (const preset of PRESET_CONFIGS) {
+		const existing = await db.query.systemConfig.findFirst({
+			where: eq(systemConfig.key, preset.key),
+		});
+		if (!existing) {
+			await db.insert(systemConfig).values(preset);
+			logger.info({ key: preset.key }, "预置系统配置已创建");
+		}
+	}
+}

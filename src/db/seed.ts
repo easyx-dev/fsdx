@@ -17,7 +17,6 @@ async function seed() {
 		import("#/db/index"),
 		import("#/db/schema"),
 	]);
-	const { dict, dictItem } = await import("#/db/schema");
 	const { news } = await import("#/db/schema");
 
 	console.log("开始创建种子数据...");
@@ -85,54 +84,6 @@ async function seed() {
 		console.log("初始管理员账号已创建: admin / admin123");
 	} else {
 		console.log("管理员账号已存在，跳过创建");
-	}
-
-	// 预置字典
-	console.log("开始创建预置字典...");
-	const presetDicts = [
-		{
-			slug: "news_status",
-			name: "新闻状态",
-			items: [
-				{ label: "草稿", value: "draft", sortOrder: 0 },
-				{ label: "已发布", value: "published", sortOrder: 1 },
-				{ label: "已归档", value: "archived", sortOrder: 2 },
-			],
-		},
-		{
-			slug: "user_status",
-			name: "用户状态",
-			items: [
-				{ label: "正常", value: "active", sortOrder: 0 },
-				{ label: "禁用", value: "disabled", sortOrder: 1 },
-			],
-		},
-	];
-
-	for (const preset of presetDicts) {
-		const existingDict = await db.query.dict.findFirst({
-			where: eq(dict.slug, preset.slug),
-		});
-
-		if (existingDict) {
-			console.log(`字典 ${preset.name} 已存在，跳过创建`);
-			continue;
-		}
-
-		const [newDict] = await db
-			.insert(dict)
-			.values({ name: preset.name, slug: preset.slug })
-			.returning();
-
-		for (const item of preset.items) {
-			await db.insert(dictItem).values({
-				dictId: newDict.id,
-				label: item.label,
-				value: item.value,
-				sortOrder: item.sortOrder,
-			});
-		}
-		console.log(`字典 ${preset.name} 已创建`);
 	}
 
 	// 预置新闻

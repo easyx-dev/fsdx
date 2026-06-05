@@ -162,3 +162,50 @@ export async function deleteDictItem(id: string) {
 	await loadDictCache();
 	return true;
 }
+// ========== 预置字典 ==========
+
+/** 预置字典常量 */
+const PRESET_DICTS = [
+	{
+		slug: "news_status",
+		name: "新闻状态",
+		items: [
+			{ label: "草稿", value: "draft", sortOrder: 0 },
+			{ label: "已发布", value: "published", sortOrder: 1 },
+			{ label: "已归档", value: "archived", sortOrder: 2 },
+		],
+	},
+	{
+		slug: "user_status",
+		name: "用户状态",
+		items: [
+			{ label: "正常", value: "active", sortOrder: 0 },
+			{ label: "禁用", value: "disabled", sortOrder: 1 },
+		],
+	},
+];
+
+/** 运行时校验并插入缺失的预置字典（幂等安全） */
+export async function ensurePresetDicts(): Promise<void> {
+	for (const preset of PRESET_DICTS) {
+		const existingDict = await db.query.dict.findFirst({
+			where: eq(dict.slug, preset.slug),
+		});
+		if (existingDict) continue;
+
+		const [newDict] = await db
+			.insert(dict)
+			.values({ name: preset.name, slug: preset.slug })
+			.returning();
+
+		for (const item of preset.items) {
+			await db.insert(dictItem).values({
+				dictId: newDict.id,
+				label: item.label,
+				value: item.value,
+				sortOrder: item.sortOrder,
+			});
+		}
+		logger.info({ slug: preset.slug }, "预置字典已创建");
+	}
+}
