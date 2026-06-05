@@ -13,7 +13,7 @@ import {
 	type LogEntry,
 	type LogQueryResult,
 	queryLogs,
-} from "#/lib/log-reader";
+} from "#/lib/logger";
 
 const searchLogsFn = createServerFn({ method: "GET" })
 	.inputValidator(
