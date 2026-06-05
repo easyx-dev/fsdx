@@ -3,6 +3,7 @@
  */
 import { jwtVerify, SignJWT } from "jose";
 import { getEnv } from "#/lib/env";
+import { logger } from "#/lib/logger";
 
 /** JWT 配置 */
 const JWT_SECRET = new TextEncoder().encode(getEnv().JWT_SECRET);
@@ -36,7 +37,8 @@ export async function verifyToken(token: string): Promise<JwtPayload | null> {
 	try {
 		const { payload } = await jwtVerify(token, JWT_SECRET);
 		return payload as unknown as JwtPayload;
-	} catch {
+	} catch (err) {
+		logger.error({ err }, "JWT 校验失败");
 		return null;
 	}
 }

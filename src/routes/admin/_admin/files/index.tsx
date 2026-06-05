@@ -103,7 +103,8 @@ function FilesPage() {
 			} else {
 				setUploadMsg("上传失败");
 			}
-		} catch {
+		} catch (err) {
+			console.error("[文件上传失败]", err);
 			setUploadMsg("上传失败: 网络错误");
 		} finally {
 			setUploading(false);

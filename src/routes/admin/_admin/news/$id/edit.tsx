@@ -103,7 +103,8 @@ function NewsEditPage() {
 				},
 			});
 			navigate({ to: "/admin/news" });
-		} catch {
+		} catch (err) {
+			console.error("[新闻更新失败]", err);
 			setError("保存失败");
 		} finally {
 			setSaving(false);

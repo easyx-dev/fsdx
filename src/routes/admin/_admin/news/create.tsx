@@ -95,7 +95,8 @@ function NewsCreatePage() {
 				},
 			});
 			navigate({ to: "/admin/news/$id/edit", params: { id: record.id } });
-		} catch {
+		} catch (err) {
+			console.error("[新闻创建失败]", err);
 			setError("保存失败");
 		} finally {
 			setSaving(false);

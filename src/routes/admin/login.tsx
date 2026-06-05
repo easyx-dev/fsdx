@@ -29,8 +29,11 @@ function AdminLoginPage() {
 				return;
 			}
 			navigate({ to: "/admin" });
-		} catch {
-			setError("网络错误，请稍后重试");
+		} catch (err) {
+			const errorMessage =
+				err instanceof Error ? err.message : "网络错误，请稍后重试";
+			console.error("[登录失败]", err);
+			setError(errorMessage);
 		} finally {
 			setLoading(false);
 		}

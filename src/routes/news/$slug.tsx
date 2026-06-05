@@ -10,6 +10,8 @@ import { ArrowLeft } from "lucide-react";
 import { db } from "#/db/index";
 import { news } from "#/db/schema";
 
+import { logger } from "#/lib/logger";
+
 const getNewsDetail = createServerFn({ method: "GET" })
 	.inputValidator((data: { slug: string }) => data)
 	.handler(async ({ data: { slug } }) => {
@@ -27,7 +29,11 @@ const getNewsDetail = createServerFn({ method: "GET" })
 		if (record.content) {
 			try {
 				html = generateHTML(JSON.parse(record.content), [StarterKit]);
-			} catch {
+			} catch (err) {
+				logger.error(
+					{ err, slug: record.slug },
+					"TipTap 内容解析失败，使用原始内容展示",
+				);
 				html = record.content;
 			}
 		}

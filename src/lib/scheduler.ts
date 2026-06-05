@@ -44,10 +44,7 @@ export function registerTask(task: ScheduledTask): void {
 				await task.handler();
 				logger.info({ name: task.name }, "定时任务执行完成");
 			} catch (err) {
-				logger.error(
-					{ name: task.name, error: (err as Error).message },
-					"定时任务执行失败",
-				);
+				logger.error({ name: task.name, err }, "定时任务执行失败");
 			}
 		},
 		{ scheduled: true } as any,
@@ -58,10 +55,7 @@ export function registerTask(task: ScheduledTask): void {
 	if (task.runOnInit) {
 		logger.info({ name: task.name }, "定时任务注册完成，立即执行一次");
 		task.handler().catch((err) => {
-			logger.error(
-				{ name: task.name, error: (err as Error).message },
-				"定时任务首次执行失败",
-			);
+			logger.error({ name: task.name, err }, "定时任务首次执行失败");
 		});
 	} else {
 		logger.info({ name: task.name }, "定时任务注册完成");
