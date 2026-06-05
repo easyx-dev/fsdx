@@ -123,7 +123,7 @@ const deleteDictItemFn = createServerFn({ method: "POST" })
 		return { success: true };
 	});
 
-export const Route = createFileRoute("/admin/dicts/")({
+export const Route = createFileRoute("/admin/_admin/dicts/")({
 	component: DictsPage,
 	loader: async () => await getDictList(),
 });

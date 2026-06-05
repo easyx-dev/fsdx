@@ -60,7 +60,7 @@ function formatDate(d: Date | string | null): string {
 	return new Date(d).toLocaleString("zh-CN");
 }
 
-export const Route = createFileRoute("/admin/files/")({
+export const Route = createFileRoute("/admin/_admin/files/")({
 	component: FilesPage,
 	loader: async () => await getFileList({ data: {} }),
 });

@@ -4,7 +4,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { AdminShell } from "#/components/admin/AdminShell";
 
-export const Route = createFileRoute("/admin/users/clients/")({
+export const Route = createFileRoute("/admin/_admin/users/clients/")({
 	component: ClientUserList,
 });
 

@@ -21,7 +21,10 @@ const smtpSchema = z.object({
 
 const envSchema = z.object({
 	DATABASE_URL: z.string().min(1, "DATABASE_URL 不能为空"),
-	JWT_SECRET: z.string().default("cms-dev-secret-change-in-production"),
+	JWT_SECRET: z
+		.string()
+		.min(32, "JWT_SECRET 至少需要 32 个字符")
+		.default("cms-dev-secret-change-in-production"),
 	LOG_LEVEL: z
 		.enum(["fatal", "error", "warn", "info", "debug", "trace"])
 		.default("info"),
@@ -41,7 +44,7 @@ const envSchema = z.object({
 export type Env = {
 	/** PostgreSQL 连接 URL */
 	DATABASE_URL: string;
-	/** JWT access token 密钥 */
+	/** JWT access token 密钥（至少 32 字符） */
 	JWT_SECRET: string;
 	/** Pino 日志级别 */
 	LOG_LEVEL: "fatal" | "error" | "warn" | "info" | "debug" | "trace";

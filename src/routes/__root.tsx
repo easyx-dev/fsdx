@@ -1,6 +1,11 @@
+/**
+ * 根路由：HTML Shell 文档结构
+ */
+
 import { TanStackDevtools } from "@tanstack/react-devtools";
 import { createRootRoute, HeadContent, Scripts } from "@tanstack/react-router";
 import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
+import { AuthProvider } from "../components/AuthProvider";
 import Footer from "../components/Footer";
 import Header from "../components/Header";
 
@@ -40,9 +45,11 @@ function RootDocument({ children }: { children: React.ReactNode }) {
 				<HeadContent />
 			</head>
 			<body className="font-sans antialiased [overflow-wrap:anywhere] selection:bg-[rgba(79,184,178,0.24)]">
-				<Header />
-				{children}
-				<Footer />
+				<AuthProvider>
+					<Header />
+					{children}
+					<Footer />
+				</AuthProvider>
 				<TanStackDevtools
 					config={{
 						position: "bottom-right",

@@ -58,7 +58,7 @@ const updateNewsFn = createServerFn({ method: "POST" })
 		return updated;
 	});
 
-export const Route = createFileRoute("/admin/news/$id/edit")({
+export const Route = createFileRoute("/admin/_admin/news/$id/edit")({
 	component: NewsEditPage,
 	loader: async ({ params }) => await getNewsFn({ data: { id: params.id } }),
 });

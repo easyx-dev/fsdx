@@ -35,7 +35,7 @@ const getStats = createServerFn({ method: "GET" }).handler(async () => {
 	return { newsTotal, publishedNews, adminTotal, clientTotal, storageTotal };
 });
 
-export const Route = createFileRoute("/admin/")({
+export const Route = createFileRoute("/admin/_admin/")({
 	component: Dashboard,
 	loader: async () => await getStats(),
 });

@@ -43,7 +43,7 @@ const levelColors: Record<string, string> = {
 	fatal: "text-red-700 bg-red-100",
 };
 
-export const Route = createFileRoute("/admin/logs/")({
+export const Route = createFileRoute("/admin/_admin/logs/")({
 	component: LogsPage,
 	loader: async () => {
 		const [result, dates]: [LogQueryResult, string[]] = await Promise.all([

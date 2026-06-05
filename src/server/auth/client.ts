@@ -66,7 +66,7 @@ export const clientLogin = createServerFn({ method: "POST" })
 			secure: process.env.NODE_ENV === "production",
 			sameSite: "lax",
 			path: "/",
-			maxAge: 3600,
+			maxAge: 7 * 24 * 3600, // 7 天
 		});
 
 		logger.info({ username: user.username }, "客户端用户登录成功");

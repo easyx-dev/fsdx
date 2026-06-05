@@ -64,7 +64,7 @@ const deleteConfigFn = createServerFn({ method: "POST" })
 		return { success: true };
 	});
 
-export const Route = createFileRoute("/admin/config/")({
+export const Route = createFileRoute("/admin/_admin/config/")({
 	component: ConfigPage,
 	loader: async () => await getConfigList(),
 });

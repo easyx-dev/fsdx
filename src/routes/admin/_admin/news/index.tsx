@@ -67,7 +67,7 @@ const changeStatusFn = createServerFn({ method: "POST" })
 		return { success: true };
 	});
 
-export const Route = createFileRoute("/admin/news/")({
+export const Route = createFileRoute("/admin/_admin/news/")({
 	component: NewsListPage,
 	loader: async () => await getNewsListFn({ data: {} }),
 });

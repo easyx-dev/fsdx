@@ -11,20 +11,21 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as AdminIndexRouteImport } from './routes/admin/index'
 import { Route as NewsSlugRouteImport } from './routes/news/$slug'
 import { Route as DemoDrizzleRouteImport } from './routes/demo/drizzle'
 import { Route as AdminLoginRouteImport } from './routes/admin/login'
-import { Route as AdminRolesIndexRouteImport } from './routes/admin/roles/index'
-import { Route as AdminNewsIndexRouteImport } from './routes/admin/news/index'
-import { Route as AdminLogsIndexRouteImport } from './routes/admin/logs/index'
-import { Route as AdminFilesIndexRouteImport } from './routes/admin/files/index'
-import { Route as AdminDictsIndexRouteImport } from './routes/admin/dicts/index'
-import { Route as AdminConfigIndexRouteImport } from './routes/admin/config/index'
-import { Route as AdminNewsCreateRouteImport } from './routes/admin/news/create'
-import { Route as AdminUsersClientsIndexRouteImport } from './routes/admin/users/clients/index'
-import { Route as AdminUsersAdminsIndexRouteImport } from './routes/admin/users/admins/index'
-import { Route as AdminNewsIdEditRouteImport } from './routes/admin/news/$id/edit'
+import { Route as AdminAdminRouteImport } from './routes/admin/_admin'
+import { Route as AdminAdminIndexRouteImport } from './routes/admin/_admin/index'
+import { Route as AdminAdminRolesIndexRouteImport } from './routes/admin/_admin/roles/index'
+import { Route as AdminAdminNewsIndexRouteImport } from './routes/admin/_admin/news/index'
+import { Route as AdminAdminLogsIndexRouteImport } from './routes/admin/_admin/logs/index'
+import { Route as AdminAdminFilesIndexRouteImport } from './routes/admin/_admin/files/index'
+import { Route as AdminAdminDictsIndexRouteImport } from './routes/admin/_admin/dicts/index'
+import { Route as AdminAdminConfigIndexRouteImport } from './routes/admin/_admin/config/index'
+import { Route as AdminAdminNewsCreateRouteImport } from './routes/admin/_admin/news/create'
+import { Route as AdminAdminUsersClientsIndexRouteImport } from './routes/admin/_admin/users/clients/index'
+import { Route as AdminAdminUsersAdminsIndexRouteImport } from './routes/admin/_admin/users/admins/index'
+import { Route as AdminAdminNewsIdEditRouteImport } from './routes/admin/_admin/news/$id/edit'
 
 const AboutRoute = AboutRouteImport.update({
   id: '/about',
@@ -34,11 +35,6 @@ const AboutRoute = AboutRouteImport.update({
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AdminIndexRoute = AdminIndexRouteImport.update({
-  id: '/admin/',
-  path: '/admin/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const NewsSlugRoute = NewsSlugRouteImport.update({
@@ -56,74 +52,87 @@ const AdminLoginRoute = AdminLoginRouteImport.update({
   path: '/admin/login',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AdminRolesIndexRoute = AdminRolesIndexRouteImport.update({
-  id: '/admin/roles/',
-  path: '/admin/roles/',
+const AdminAdminRoute = AdminAdminRouteImport.update({
+  id: '/admin/_admin',
+  path: '/admin',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AdminNewsIndexRoute = AdminNewsIndexRouteImport.update({
-  id: '/admin/news/',
-  path: '/admin/news/',
-  getParentRoute: () => rootRouteImport,
+const AdminAdminIndexRoute = AdminAdminIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AdminAdminRoute,
 } as any)
-const AdminLogsIndexRoute = AdminLogsIndexRouteImport.update({
-  id: '/admin/logs/',
-  path: '/admin/logs/',
-  getParentRoute: () => rootRouteImport,
+const AdminAdminRolesIndexRoute = AdminAdminRolesIndexRouteImport.update({
+  id: '/roles/',
+  path: '/roles/',
+  getParentRoute: () => AdminAdminRoute,
 } as any)
-const AdminFilesIndexRoute = AdminFilesIndexRouteImport.update({
-  id: '/admin/files/',
-  path: '/admin/files/',
-  getParentRoute: () => rootRouteImport,
+const AdminAdminNewsIndexRoute = AdminAdminNewsIndexRouteImport.update({
+  id: '/news/',
+  path: '/news/',
+  getParentRoute: () => AdminAdminRoute,
 } as any)
-const AdminDictsIndexRoute = AdminDictsIndexRouteImport.update({
-  id: '/admin/dicts/',
-  path: '/admin/dicts/',
-  getParentRoute: () => rootRouteImport,
+const AdminAdminLogsIndexRoute = AdminAdminLogsIndexRouteImport.update({
+  id: '/logs/',
+  path: '/logs/',
+  getParentRoute: () => AdminAdminRoute,
 } as any)
-const AdminConfigIndexRoute = AdminConfigIndexRouteImport.update({
-  id: '/admin/config/',
-  path: '/admin/config/',
-  getParentRoute: () => rootRouteImport,
+const AdminAdminFilesIndexRoute = AdminAdminFilesIndexRouteImport.update({
+  id: '/files/',
+  path: '/files/',
+  getParentRoute: () => AdminAdminRoute,
 } as any)
-const AdminNewsCreateRoute = AdminNewsCreateRouteImport.update({
-  id: '/admin/news/create',
-  path: '/admin/news/create',
-  getParentRoute: () => rootRouteImport,
+const AdminAdminDictsIndexRoute = AdminAdminDictsIndexRouteImport.update({
+  id: '/dicts/',
+  path: '/dicts/',
+  getParentRoute: () => AdminAdminRoute,
 } as any)
-const AdminUsersClientsIndexRoute = AdminUsersClientsIndexRouteImport.update({
-  id: '/admin/users/clients/',
-  path: '/admin/users/clients/',
-  getParentRoute: () => rootRouteImport,
+const AdminAdminConfigIndexRoute = AdminAdminConfigIndexRouteImport.update({
+  id: '/config/',
+  path: '/config/',
+  getParentRoute: () => AdminAdminRoute,
 } as any)
-const AdminUsersAdminsIndexRoute = AdminUsersAdminsIndexRouteImport.update({
-  id: '/admin/users/admins/',
-  path: '/admin/users/admins/',
-  getParentRoute: () => rootRouteImport,
+const AdminAdminNewsCreateRoute = AdminAdminNewsCreateRouteImport.update({
+  id: '/news/create',
+  path: '/news/create',
+  getParentRoute: () => AdminAdminRoute,
 } as any)
-const AdminNewsIdEditRoute = AdminNewsIdEditRouteImport.update({
-  id: '/admin/news/$id/edit',
-  path: '/admin/news/$id/edit',
-  getParentRoute: () => rootRouteImport,
+const AdminAdminUsersClientsIndexRoute =
+  AdminAdminUsersClientsIndexRouteImport.update({
+    id: '/users/clients/',
+    path: '/users/clients/',
+    getParentRoute: () => AdminAdminRoute,
+  } as any)
+const AdminAdminUsersAdminsIndexRoute =
+  AdminAdminUsersAdminsIndexRouteImport.update({
+    id: '/users/admins/',
+    path: '/users/admins/',
+    getParentRoute: () => AdminAdminRoute,
+  } as any)
+const AdminAdminNewsIdEditRoute = AdminAdminNewsIdEditRouteImport.update({
+  id: '/news/$id/edit',
+  path: '/news/$id/edit',
+  getParentRoute: () => AdminAdminRoute,
 } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
+  '/admin': typeof AdminAdminRouteWithChildren
   '/admin/login': typeof AdminLoginRoute
   '/demo/drizzle': typeof DemoDrizzleRoute
   '/news/$slug': typeof NewsSlugRoute
-  '/admin/': typeof AdminIndexRoute
-  '/admin/news/create': typeof AdminNewsCreateRoute
-  '/admin/config/': typeof AdminConfigIndexRoute
-  '/admin/dicts/': typeof AdminDictsIndexRoute
-  '/admin/files/': typeof AdminFilesIndexRoute
-  '/admin/logs/': typeof AdminLogsIndexRoute
-  '/admin/news/': typeof AdminNewsIndexRoute
-  '/admin/roles/': typeof AdminRolesIndexRoute
-  '/admin/news/$id/edit': typeof AdminNewsIdEditRoute
-  '/admin/users/admins/': typeof AdminUsersAdminsIndexRoute
-  '/admin/users/clients/': typeof AdminUsersClientsIndexRoute
+  '/admin/': typeof AdminAdminIndexRoute
+  '/admin/news/create': typeof AdminAdminNewsCreateRoute
+  '/admin/config/': typeof AdminAdminConfigIndexRoute
+  '/admin/dicts/': typeof AdminAdminDictsIndexRoute
+  '/admin/files/': typeof AdminAdminFilesIndexRoute
+  '/admin/logs/': typeof AdminAdminLogsIndexRoute
+  '/admin/news/': typeof AdminAdminNewsIndexRoute
+  '/admin/roles/': typeof AdminAdminRolesIndexRoute
+  '/admin/news/$id/edit': typeof AdminAdminNewsIdEditRoute
+  '/admin/users/admins/': typeof AdminAdminUsersAdminsIndexRoute
+  '/admin/users/clients/': typeof AdminAdminUsersClientsIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -131,42 +140,44 @@ export interface FileRoutesByTo {
   '/admin/login': typeof AdminLoginRoute
   '/demo/drizzle': typeof DemoDrizzleRoute
   '/news/$slug': typeof NewsSlugRoute
-  '/admin': typeof AdminIndexRoute
-  '/admin/news/create': typeof AdminNewsCreateRoute
-  '/admin/config': typeof AdminConfigIndexRoute
-  '/admin/dicts': typeof AdminDictsIndexRoute
-  '/admin/files': typeof AdminFilesIndexRoute
-  '/admin/logs': typeof AdminLogsIndexRoute
-  '/admin/news': typeof AdminNewsIndexRoute
-  '/admin/roles': typeof AdminRolesIndexRoute
-  '/admin/news/$id/edit': typeof AdminNewsIdEditRoute
-  '/admin/users/admins': typeof AdminUsersAdminsIndexRoute
-  '/admin/users/clients': typeof AdminUsersClientsIndexRoute
+  '/admin': typeof AdminAdminIndexRoute
+  '/admin/news/create': typeof AdminAdminNewsCreateRoute
+  '/admin/config': typeof AdminAdminConfigIndexRoute
+  '/admin/dicts': typeof AdminAdminDictsIndexRoute
+  '/admin/files': typeof AdminAdminFilesIndexRoute
+  '/admin/logs': typeof AdminAdminLogsIndexRoute
+  '/admin/news': typeof AdminAdminNewsIndexRoute
+  '/admin/roles': typeof AdminAdminRolesIndexRoute
+  '/admin/news/$id/edit': typeof AdminAdminNewsIdEditRoute
+  '/admin/users/admins': typeof AdminAdminUsersAdminsIndexRoute
+  '/admin/users/clients': typeof AdminAdminUsersClientsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
+  '/admin/_admin': typeof AdminAdminRouteWithChildren
   '/admin/login': typeof AdminLoginRoute
   '/demo/drizzle': typeof DemoDrizzleRoute
   '/news/$slug': typeof NewsSlugRoute
-  '/admin/': typeof AdminIndexRoute
-  '/admin/news/create': typeof AdminNewsCreateRoute
-  '/admin/config/': typeof AdminConfigIndexRoute
-  '/admin/dicts/': typeof AdminDictsIndexRoute
-  '/admin/files/': typeof AdminFilesIndexRoute
-  '/admin/logs/': typeof AdminLogsIndexRoute
-  '/admin/news/': typeof AdminNewsIndexRoute
-  '/admin/roles/': typeof AdminRolesIndexRoute
-  '/admin/news/$id/edit': typeof AdminNewsIdEditRoute
-  '/admin/users/admins/': typeof AdminUsersAdminsIndexRoute
-  '/admin/users/clients/': typeof AdminUsersClientsIndexRoute
+  '/admin/_admin/': typeof AdminAdminIndexRoute
+  '/admin/_admin/news/create': typeof AdminAdminNewsCreateRoute
+  '/admin/_admin/config/': typeof AdminAdminConfigIndexRoute
+  '/admin/_admin/dicts/': typeof AdminAdminDictsIndexRoute
+  '/admin/_admin/files/': typeof AdminAdminFilesIndexRoute
+  '/admin/_admin/logs/': typeof AdminAdminLogsIndexRoute
+  '/admin/_admin/news/': typeof AdminAdminNewsIndexRoute
+  '/admin/_admin/roles/': typeof AdminAdminRolesIndexRoute
+  '/admin/_admin/news/$id/edit': typeof AdminAdminNewsIdEditRoute
+  '/admin/_admin/users/admins/': typeof AdminAdminUsersAdminsIndexRoute
+  '/admin/_admin/users/clients/': typeof AdminAdminUsersClientsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
     | '/about'
+    | '/admin'
     | '/admin/login'
     | '/demo/drizzle'
     | '/news/$slug'
@@ -203,39 +214,30 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/about'
+    | '/admin/_admin'
     | '/admin/login'
     | '/demo/drizzle'
     | '/news/$slug'
-    | '/admin/'
-    | '/admin/news/create'
-    | '/admin/config/'
-    | '/admin/dicts/'
-    | '/admin/files/'
-    | '/admin/logs/'
-    | '/admin/news/'
-    | '/admin/roles/'
-    | '/admin/news/$id/edit'
-    | '/admin/users/admins/'
-    | '/admin/users/clients/'
+    | '/admin/_admin/'
+    | '/admin/_admin/news/create'
+    | '/admin/_admin/config/'
+    | '/admin/_admin/dicts/'
+    | '/admin/_admin/files/'
+    | '/admin/_admin/logs/'
+    | '/admin/_admin/news/'
+    | '/admin/_admin/roles/'
+    | '/admin/_admin/news/$id/edit'
+    | '/admin/_admin/users/admins/'
+    | '/admin/_admin/users/clients/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AboutRoute: typeof AboutRoute
+  AdminAdminRoute: typeof AdminAdminRouteWithChildren
   AdminLoginRoute: typeof AdminLoginRoute
   DemoDrizzleRoute: typeof DemoDrizzleRoute
   NewsSlugRoute: typeof NewsSlugRoute
-  AdminIndexRoute: typeof AdminIndexRoute
-  AdminNewsCreateRoute: typeof AdminNewsCreateRoute
-  AdminConfigIndexRoute: typeof AdminConfigIndexRoute
-  AdminDictsIndexRoute: typeof AdminDictsIndexRoute
-  AdminFilesIndexRoute: typeof AdminFilesIndexRoute
-  AdminLogsIndexRoute: typeof AdminLogsIndexRoute
-  AdminNewsIndexRoute: typeof AdminNewsIndexRoute
-  AdminRolesIndexRoute: typeof AdminRolesIndexRoute
-  AdminNewsIdEditRoute: typeof AdminNewsIdEditRoute
-  AdminUsersAdminsIndexRoute: typeof AdminUsersAdminsIndexRoute
-  AdminUsersClientsIndexRoute: typeof AdminUsersClientsIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -252,13 +254,6 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/admin/': {
-      id: '/admin/'
-      path: '/admin'
-      fullPath: '/admin/'
-      preLoaderRoute: typeof AdminIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/news/$slug': {
@@ -282,96 +277,132 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminLoginRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/admin/roles/': {
-      id: '/admin/roles/'
-      path: '/admin/roles'
+    '/admin/_admin': {
+      id: '/admin/_admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AdminAdminRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/_admin/': {
+      id: '/admin/_admin/'
+      path: '/'
+      fullPath: '/admin/'
+      preLoaderRoute: typeof AdminAdminIndexRouteImport
+      parentRoute: typeof AdminAdminRoute
+    }
+    '/admin/_admin/roles/': {
+      id: '/admin/_admin/roles/'
+      path: '/roles'
       fullPath: '/admin/roles/'
-      preLoaderRoute: typeof AdminRolesIndexRouteImport
-      parentRoute: typeof rootRouteImport
+      preLoaderRoute: typeof AdminAdminRolesIndexRouteImport
+      parentRoute: typeof AdminAdminRoute
     }
-    '/admin/news/': {
-      id: '/admin/news/'
-      path: '/admin/news'
+    '/admin/_admin/news/': {
+      id: '/admin/_admin/news/'
+      path: '/news'
       fullPath: '/admin/news/'
-      preLoaderRoute: typeof AdminNewsIndexRouteImport
-      parentRoute: typeof rootRouteImport
+      preLoaderRoute: typeof AdminAdminNewsIndexRouteImport
+      parentRoute: typeof AdminAdminRoute
     }
-    '/admin/logs/': {
-      id: '/admin/logs/'
-      path: '/admin/logs'
+    '/admin/_admin/logs/': {
+      id: '/admin/_admin/logs/'
+      path: '/logs'
       fullPath: '/admin/logs/'
-      preLoaderRoute: typeof AdminLogsIndexRouteImport
-      parentRoute: typeof rootRouteImport
+      preLoaderRoute: typeof AdminAdminLogsIndexRouteImport
+      parentRoute: typeof AdminAdminRoute
     }
-    '/admin/files/': {
-      id: '/admin/files/'
-      path: '/admin/files'
+    '/admin/_admin/files/': {
+      id: '/admin/_admin/files/'
+      path: '/files'
       fullPath: '/admin/files/'
-      preLoaderRoute: typeof AdminFilesIndexRouteImport
-      parentRoute: typeof rootRouteImport
+      preLoaderRoute: typeof AdminAdminFilesIndexRouteImport
+      parentRoute: typeof AdminAdminRoute
     }
-    '/admin/dicts/': {
-      id: '/admin/dicts/'
-      path: '/admin/dicts'
+    '/admin/_admin/dicts/': {
+      id: '/admin/_admin/dicts/'
+      path: '/dicts'
       fullPath: '/admin/dicts/'
-      preLoaderRoute: typeof AdminDictsIndexRouteImport
-      parentRoute: typeof rootRouteImport
+      preLoaderRoute: typeof AdminAdminDictsIndexRouteImport
+      parentRoute: typeof AdminAdminRoute
     }
-    '/admin/config/': {
-      id: '/admin/config/'
-      path: '/admin/config'
+    '/admin/_admin/config/': {
+      id: '/admin/_admin/config/'
+      path: '/config'
       fullPath: '/admin/config/'
-      preLoaderRoute: typeof AdminConfigIndexRouteImport
-      parentRoute: typeof rootRouteImport
+      preLoaderRoute: typeof AdminAdminConfigIndexRouteImport
+      parentRoute: typeof AdminAdminRoute
     }
-    '/admin/news/create': {
-      id: '/admin/news/create'
-      path: '/admin/news/create'
+    '/admin/_admin/news/create': {
+      id: '/admin/_admin/news/create'
+      path: '/news/create'
       fullPath: '/admin/news/create'
-      preLoaderRoute: typeof AdminNewsCreateRouteImport
-      parentRoute: typeof rootRouteImport
+      preLoaderRoute: typeof AdminAdminNewsCreateRouteImport
+      parentRoute: typeof AdminAdminRoute
     }
-    '/admin/users/clients/': {
-      id: '/admin/users/clients/'
-      path: '/admin/users/clients'
+    '/admin/_admin/users/clients/': {
+      id: '/admin/_admin/users/clients/'
+      path: '/users/clients'
       fullPath: '/admin/users/clients/'
-      preLoaderRoute: typeof AdminUsersClientsIndexRouteImport
-      parentRoute: typeof rootRouteImport
+      preLoaderRoute: typeof AdminAdminUsersClientsIndexRouteImport
+      parentRoute: typeof AdminAdminRoute
     }
-    '/admin/users/admins/': {
-      id: '/admin/users/admins/'
-      path: '/admin/users/admins'
+    '/admin/_admin/users/admins/': {
+      id: '/admin/_admin/users/admins/'
+      path: '/users/admins'
       fullPath: '/admin/users/admins/'
-      preLoaderRoute: typeof AdminUsersAdminsIndexRouteImport
-      parentRoute: typeof rootRouteImport
+      preLoaderRoute: typeof AdminAdminUsersAdminsIndexRouteImport
+      parentRoute: typeof AdminAdminRoute
     }
-    '/admin/news/$id/edit': {
-      id: '/admin/news/$id/edit'
-      path: '/admin/news/$id/edit'
+    '/admin/_admin/news/$id/edit': {
+      id: '/admin/_admin/news/$id/edit'
+      path: '/news/$id/edit'
       fullPath: '/admin/news/$id/edit'
-      preLoaderRoute: typeof AdminNewsIdEditRouteImport
-      parentRoute: typeof rootRouteImport
+      preLoaderRoute: typeof AdminAdminNewsIdEditRouteImport
+      parentRoute: typeof AdminAdminRoute
     }
   }
 }
 
+interface AdminAdminRouteChildren {
+  AdminAdminIndexRoute: typeof AdminAdminIndexRoute
+  AdminAdminNewsCreateRoute: typeof AdminAdminNewsCreateRoute
+  AdminAdminConfigIndexRoute: typeof AdminAdminConfigIndexRoute
+  AdminAdminDictsIndexRoute: typeof AdminAdminDictsIndexRoute
+  AdminAdminFilesIndexRoute: typeof AdminAdminFilesIndexRoute
+  AdminAdminLogsIndexRoute: typeof AdminAdminLogsIndexRoute
+  AdminAdminNewsIndexRoute: typeof AdminAdminNewsIndexRoute
+  AdminAdminRolesIndexRoute: typeof AdminAdminRolesIndexRoute
+  AdminAdminNewsIdEditRoute: typeof AdminAdminNewsIdEditRoute
+  AdminAdminUsersAdminsIndexRoute: typeof AdminAdminUsersAdminsIndexRoute
+  AdminAdminUsersClientsIndexRoute: typeof AdminAdminUsersClientsIndexRoute
+}
+
+const AdminAdminRouteChildren: AdminAdminRouteChildren = {
+  AdminAdminIndexRoute: AdminAdminIndexRoute,
+  AdminAdminNewsCreateRoute: AdminAdminNewsCreateRoute,
+  AdminAdminConfigIndexRoute: AdminAdminConfigIndexRoute,
+  AdminAdminDictsIndexRoute: AdminAdminDictsIndexRoute,
+  AdminAdminFilesIndexRoute: AdminAdminFilesIndexRoute,
+  AdminAdminLogsIndexRoute: AdminAdminLogsIndexRoute,
+  AdminAdminNewsIndexRoute: AdminAdminNewsIndexRoute,
+  AdminAdminRolesIndexRoute: AdminAdminRolesIndexRoute,
+  AdminAdminNewsIdEditRoute: AdminAdminNewsIdEditRoute,
+  AdminAdminUsersAdminsIndexRoute: AdminAdminUsersAdminsIndexRoute,
+  AdminAdminUsersClientsIndexRoute: AdminAdminUsersClientsIndexRoute,
+}
+
+const AdminAdminRouteWithChildren = AdminAdminRoute._addFileChildren(
+  AdminAdminRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AboutRoute: AboutRoute,
+  AdminAdminRoute: AdminAdminRouteWithChildren,
   AdminLoginRoute: AdminLoginRoute,
   DemoDrizzleRoute: DemoDrizzleRoute,
   NewsSlugRoute: NewsSlugRoute,
-  AdminIndexRoute: AdminIndexRoute,
-  AdminNewsCreateRoute: AdminNewsCreateRoute,
-  AdminConfigIndexRoute: AdminConfigIndexRoute,
-  AdminDictsIndexRoute: AdminDictsIndexRoute,
-  AdminFilesIndexRoute: AdminFilesIndexRoute,
-  AdminLogsIndexRoute: AdminLogsIndexRoute,
-  AdminNewsIndexRoute: AdminNewsIndexRoute,
-  AdminRolesIndexRoute: AdminRolesIndexRoute,
-  AdminNewsIdEditRoute: AdminNewsIdEditRoute,
-  AdminUsersAdminsIndexRoute: AdminUsersAdminsIndexRoute,
-  AdminUsersClientsIndexRoute: AdminUsersClientsIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

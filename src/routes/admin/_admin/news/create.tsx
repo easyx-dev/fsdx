@@ -60,7 +60,7 @@ const createNewsFn = createServerFn({ method: "POST" })
 		return record;
 	});
 
-export const Route = createFileRoute("/admin/news/create")({
+export const Route = createFileRoute("/admin/_admin/news/create")({
 	component: NewsCreatePage,
 });
 
