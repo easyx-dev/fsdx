@@ -8,7 +8,7 @@ import { getCookie } from "@tanstack/react-start/server";
 import { db } from "#/db/index";
 import { COOKIE_NAMES, verifyToken } from "#/lib/jwt";
 import { logger } from "#/lib/logger";
-import type { PermissionDef } from "#/lib/permissions";
+import { hasPermission, type PermissionDef } from "#/lib/permissions";
 
 /** 通过中间件注入 handler 的上下文 */
 export interface AuthContext {
@@ -99,7 +99,7 @@ export function permGuard(required: PermissionDef) {
 			const ctx = opts.context as Record<string, unknown> | undefined;
 			const rolePermissions = (ctx?.rolePermissions ?? []) as string[];
 
-			if (!rolePermissions.includes(required.code)) {
+			if (!hasPermission(rolePermissions, required)) {
 				throw new AuthError("权限不足", 403);
 			}
 

@@ -152,6 +152,29 @@ export const PERMISSIONS = {
 
 // ─── 对外类型 ───
 
+// ─── 权限匹配 ───
+
+/**
+ * 检查角色权限是否匹配指定权限码
+ * 匹配优先级：**（超级通配符）→ 精确匹配 → group:*（分组通配符）
+ */
+export function matchPermission(
+	rolePermissions: string[],
+	requiredCode: string,
+): boolean {
+	// 超级通配符：拥有全部权限
+	if (rolePermissions.includes("**")) return true;
+	// 精确匹配
+	if (rolePermissions.includes(requiredCode)) return true;
+	// 分组通配符：匹配 module:* 前缀
+	const colonIndex = requiredCode.indexOf(":");
+	if (colonIndex !== -1) {
+		const groupWildcard = `${requiredCode.slice(0, colonIndex + 1)}*`;
+		if (rolePermissions.includes(groupWildcard)) return true;
+	}
+	return false;
+}
+
 /** 权限完整定义对象类型 */
 export type PermissionDef = (typeof PERMISSIONS)[keyof typeof PERMISSIONS];
 
@@ -188,7 +211,7 @@ export function hasPermission(
 	rolePermissions: string[],
 	required: PermissionDef,
 ): boolean {
-	return rolePermissions.includes(required.code);
+	return matchPermission(rolePermissions, required.code);
 }
 
 /**
@@ -198,7 +221,7 @@ export function hasAnyPermission(
 	rolePermissions: string[],
 	required: PermissionDef[],
 ): boolean {
-	return required.some((p) => rolePermissions.includes(p.code));
+	return required.some((p) => matchPermission(rolePermissions, p.code));
 }
 
 /**
@@ -208,5 +231,5 @@ export function hasAllPermissions(
 	rolePermissions: string[],
 	required: PermissionDef[],
 ): boolean {
-	return required.every((p) => rolePermissions.includes(p.code));
+	return required.every((p) => matchPermission(rolePermissions, p.code));
 }

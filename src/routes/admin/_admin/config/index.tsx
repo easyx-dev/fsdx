@@ -158,7 +158,7 @@ function ConfigPage() {
 										<div className="flex items-center gap-2">
 											<span className="max-w-xs truncate text-zinc-600 font-mono text-xs">
 												{cfg.value.length > 60
-													? cfg.value.slice(0, 60) + "..."
+													? `${cfg.value.slice(0, 60)}...`
 													: cfg.value}
 											</span>
 											<button
