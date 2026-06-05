@@ -9,7 +9,7 @@ import { eq } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "#/db/index";
 import { clientUser } from "#/db/schema";
-import { COOKIE_NAMES, type JwtPayload, signTokenPair } from "#/lib/jwt";
+import { COOKIE_NAMES, type JwtPayload, signToken } from "#/lib/jwt";
 import { logger } from "#/lib/logger";
 import {
 	sendCaptcha as sendCaptchaUtil,
@@ -59,21 +59,14 @@ export const clientLogin = createServerFn({ method: "POST" })
 			username: user.username,
 			userType: "client",
 		};
-		const tokens = await signTokenPair(payload);
+		const token = await signToken(payload);
 
-		setCookie(COOKIE_NAMES.ACCESS_TOKEN, tokens.accessToken, {
+		setCookie(COOKIE_NAMES.ACCESS_TOKEN, token, {
 			httpOnly: true,
 			secure: process.env.NODE_ENV === "production",
 			sameSite: "lax",
 			path: "/",
 			maxAge: 3600,
-		});
-		setCookie(COOKIE_NAMES.REFRESH_TOKEN, tokens.refreshToken, {
-			httpOnly: true,
-			secure: process.env.NODE_ENV === "production",
-			sameSite: "lax",
-			path: "/",
-			maxAge: 604800,
 		});
 
 		logger.info({ username: user.username }, "客户端用户登录成功");

@@ -25,7 +25,7 @@ export async function getAuthUser(
 	if (!cookieHeader) return null;
 	const token = getCookie(cookieHeader, COOKIE_NAMES.ACCESS_TOKEN);
 	if (!token) return null;
-	return verifyToken(token, "access");
+	return verifyToken(token);
 }
 
 /**

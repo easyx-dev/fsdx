@@ -22,9 +22,6 @@ const smtpSchema = z.object({
 const envSchema = z.object({
 	DATABASE_URL: z.string().min(1, "DATABASE_URL 不能为空"),
 	JWT_SECRET: z.string().default("cms-dev-secret-change-in-production"),
-	JWT_REFRESH_SECRET: z
-		.string()
-		.default("cms-dev-refresh-secret-change-in-production"),
 	LOG_LEVEL: z
 		.enum(["fatal", "error", "warn", "info", "debug", "trace"])
 		.default("info"),
@@ -46,8 +43,6 @@ export type Env = {
 	DATABASE_URL: string;
 	/** JWT access token 密钥 */
 	JWT_SECRET: string;
-	/** JWT refresh token 密钥 */
-	JWT_REFRESH_SECRET: string;
 	/** Pino 日志级别 */
 	LOG_LEVEL: "fatal" | "error" | "warn" | "info" | "debug" | "trace";
 	/** 运行环境 */
@@ -78,7 +73,6 @@ export function getEnv(): Env {
 	_env = {
 		DATABASE_URL: rawEnv.DATABASE_URL,
 		JWT_SECRET: rawEnv.JWT_SECRET,
-		JWT_REFRESH_SECRET: rawEnv.JWT_REFRESH_SECRET,
 		LOG_LEVEL: rawEnv.LOG_LEVEL,
 		NODE_ENV: rawEnv.NODE_ENV,
 		STORAGE_DIR: rawEnv.STORAGE_DIR,
