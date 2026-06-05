@@ -8,7 +8,7 @@ import { getCookie } from "@tanstack/react-start/server";
 import { db } from "#/db/index";
 import { COOKIE_NAMES, verifyToken } from "#/lib/jwt";
 import { logger } from "#/lib/logger";
-import type { PermissionCode } from "#/lib/permissions";
+import type { PermissionDef } from "#/lib/permissions";
 
 /** 通过中间件注入 handler 的上下文 */
 export interface AuthContext {
@@ -89,17 +89,17 @@ export const authGuard = createMiddleware({
 
 /**
  * 权限校验中间件工厂
- * 内部组合 authGuard，先验证登录再校验指定权限码
+ * 内部组合 authGuard，先验证登录再校验指定权限
  * 无登录或权限不足抛出 AuthError
  */
-export function permGuard(required: PermissionCode) {
+export function permGuard(required: PermissionDef) {
 	return createMiddleware({ type: "function" })
 		.middleware([authGuard])
 		.server(async (opts) => {
 			const ctx = opts.context as Record<string, unknown> | undefined;
 			const rolePermissions = (ctx?.rolePermissions ?? []) as string[];
 
-			if (!rolePermissions.includes(required)) {
+			if (!rolePermissions.includes(required.code)) {
 				throw new AuthError("权限不足", 403);
 			}
 

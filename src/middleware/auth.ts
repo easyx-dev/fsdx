@@ -2,7 +2,7 @@
  * 鉴权中间件：管理端路由鉴权和权限校验
  */
 import { COOKIE_NAMES, type JwtPayload, verifyToken } from "#/lib/jwt";
-import { hasPermission, type PermissionCode } from "#/lib/permissions";
+import { hasPermission, type PermissionDef } from "#/lib/permissions";
 
 /**
  * 从请求头 Cookie 中提取指定 cookie 值
@@ -53,7 +53,7 @@ export async function requireAdminAuth(
  */
 export function requirePermission(
 	rolePermissions: string[],
-	required: PermissionCode,
+	required: PermissionDef,
 ): void {
 	if (!hasPermission(rolePermissions, required)) {
 		throw new AuthError("权限不足", 403);
