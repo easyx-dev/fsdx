@@ -9,7 +9,16 @@ import {
 } from "@ant-design/icons";
 import { createFileRoute } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
-import { App, Button, DatePicker, Form, Input, Select, Table, Tag } from "antd";
+import {
+	Button,
+	DatePicker,
+	Form,
+	Input,
+	message,
+	Select,
+	Table,
+	Tag,
+} from "antd";
 import { useState } from "react";
 import { z } from "zod";
 import { PERMISSIONS } from "#/lib/permissions";
@@ -91,7 +100,6 @@ function LogsPage() {
 	const [page, setPage] = useState(1);
 	const [pageSize] = useState(20);
 	const [form] = Form.useForm();
-	const { message } = App.useApp();
 
 	/** 执行日志搜索 */
 	const doSearch = async (p = 1) => {
@@ -179,7 +187,7 @@ function LogsPage() {
 	];
 
 	return (
-		<App>
+		<div>
 			<h1 style={{ fontSize: 24, fontWeight: 700, marginBottom: 4 }}>
 				日志查询
 			</h1>
@@ -283,6 +291,6 @@ function LogsPage() {
 					onChange: (p: number) => doSearch(p),
 				}}
 			/>
-		</App>
+		</div>
 	);
 }

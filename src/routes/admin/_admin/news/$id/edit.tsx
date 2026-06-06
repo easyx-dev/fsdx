@@ -4,7 +4,7 @@
 
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
-import { App, Button, Form, Input, Select, Switch } from "antd";
+import { Button, Form, Input, message, Select, Switch } from "antd";
 import { useEffect } from "react";
 import { z } from "zod";
 import { NewsEditor } from "#/components/admin/NewsEditor";
@@ -46,7 +46,6 @@ function NewsEditPage() {
 	const navigate = useNavigate();
 	const record = Route.useLoaderData();
 	const [form] = Form.useForm();
-	const { message } = App.useApp();
 
 	useEffect(() => {
 		if (record) {

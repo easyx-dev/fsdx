@@ -10,8 +10,8 @@ import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
 import type { UploadProps } from "antd";
 import {
-	App,
 	Button,
+	message,
 	Popconfirm,
 	Segmented,
 	Space,
@@ -81,7 +81,6 @@ function FilesPage() {
 	const [files, setFiles] = useState(initialFiles);
 	const [filter, setFilter] = useState("");
 	const [uploading, setUploading] = useState(false);
-	const { message } = App.useApp();
 
 	/** 按当前筛选项刷新文件列表 */
 	const refreshFiles = async () => {
@@ -195,46 +194,40 @@ function FilesPage() {
 	];
 
 	return (
-		<App>
-			<div>
-				<div className="mb-4 flex items-center justify-between">
-					<h1 className="text-2xl font-bold">文件管理</h1>
-					<Upload
-						customRequest={customRequest}
-						showUploadList={false}
-						disabled={uploading}
-					>
-						<Button
-							type="primary"
-							icon={<UploadOutlined />}
-							loading={uploading}
-						>
-							{uploading ? "上传中..." : "上传文件"}
-						</Button>
-					</Upload>
-				</div>
+		<div>
+			<div className="mb-4 flex items-center justify-between">
+				<h1 className="text-2xl font-bold">文件管理</h1>
+				<Upload
+					customRequest={customRequest}
+					showUploadList={false}
+					disabled={uploading}
+				>
+					<Button type="primary" icon={<UploadOutlined />} loading={uploading}>
+						{uploading ? "上传中..." : "上传文件"}
+					</Button>
+				</Upload>
+			</div>
 
-				<div className="mb-4">
-					<Segmented
-						options={[
-							{ label: "全部", value: "" },
-							{ label: "临时", value: "temp" },
-							{ label: "永久", value: "permanent" },
-						]}
-						value={filter}
-						onChange={(value) => {
-							handleFilterChange(value as string);
-						}}
-					/>
-				</div>
-
-				<Table
-					dataSource={files}
-					columns={columns}
-					rowKey="id"
-					locale={{ emptyText: "暂无文件" }}
+			<div className="mb-4">
+				<Segmented
+					options={[
+						{ label: "全部", value: "" },
+						{ label: "临时", value: "temp" },
+						{ label: "永久", value: "permanent" },
+					]}
+					value={filter}
+					onChange={(value) => {
+						handleFilterChange(value as string);
+					}}
 				/>
 			</div>
-		</App>
+
+			<Table
+				dataSource={files}
+				columns={columns}
+				rowKey="id"
+				locale={{ emptyText: "暂无文件" }}
+			/>
+		</div>
 	);
 }

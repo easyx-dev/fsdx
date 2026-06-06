@@ -6,13 +6,13 @@ import { DeleteOutlined, EditOutlined, PlusOutlined } from "@ant-design/icons";
 import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
 import {
-	App,
 	Button,
 	Col,
 	Form,
 	Input,
 	InputNumber,
 	Modal,
+	message,
 	Popconfirm,
 	Row,
 	Space,
@@ -132,7 +132,6 @@ export const Route = createFileRoute("/admin/_admin/dicts/")({
 /** 字典管理页面组件 */
 function DictsPage() {
 	const router = useRouter();
-	const { message } = App.useApp();
 	const dictList = Route.useLoaderData();
 	const [selectedDictId, setSelectedDictId] = useState<string | null>(null);
 	const [items, setItems] = useState<DictItemRecord[]>([]);
@@ -361,142 +360,138 @@ function DictsPage() {
 	];
 
 	return (
-		<App>
-			<div>
-				<div className="mb-4 flex items-center justify-between">
-					<h1 className="text-2xl font-bold">字典管理</h1>
-					<Button
-						type="primary"
-						icon={<PlusOutlined />}
-						onClick={() => openDictModal()}
-					>
-						新建字典
-					</Button>
-				</div>
-
-				<Row gutter={16}>
-					<Col span={8}>
-						<Table
-							dataSource={dictList}
-							columns={dictColumns}
-							rowKey="id"
-							size="small"
-							pagination={false}
-							locale={{ emptyText: "暂无字典" }}
-						/>
-					</Col>
-					<Col span={16}>
-						{selectedDictId ? (
-							<div>
-								<div className="mb-3 flex items-center justify-between">
-									<span className="text-sm text-muted-foreground">
-										字典条目
-									</span>
-									<Button
-										type="primary"
-										size="small"
-										icon={<PlusOutlined />}
-										onClick={() => openItemModal()}
-									>
-										新建条目
-									</Button>
-								</div>
-								<Table
-									dataSource={items}
-									columns={itemColumns}
-									rowKey="id"
-									size="small"
-									pagination={false}
-									locale={{ emptyText: "暂无条目" }}
-								/>
-							</div>
-						) : (
-							<div className="flex items-center justify-center rounded-lg border py-16 text-sm text-muted-foreground">
-								请选择左侧字典查看条目
-							</div>
-						)}
-					</Col>
-				</Row>
-
-				{/* 字典创建/编辑弹窗 */}
-				<Modal
-					title={editingDict ? "编辑字典" : "新建字典"}
-					open={dictModalOpen}
-					onCancel={closeDictModal}
-					footer={null}
-					destroyOnClose
+		<div>
+			<div className="mb-4 flex items-center justify-between">
+				<h1 className="text-2xl font-bold">字典管理</h1>
+				<Button
+					type="primary"
+					icon={<PlusOutlined />}
+					onClick={() => openDictModal()}
 				>
-					<Form form={dictForm} layout="vertical" onFinish={handleDictSubmit}>
-						<Form.Item
-							name="name"
-							label="名称"
-							rules={[{ required: true, message: "请输入字典名称" }]}
-						>
-							<Input placeholder="字典名称" />
-						</Form.Item>
-						<Form.Item
-							name="slug"
-							label="标识 (slug)"
-							rules={[{ required: true, message: "请输入字典标识" }]}
-						>
-							<Input placeholder="唯一标识" disabled={!!editingDict} />
-						</Form.Item>
-						<Form.Item name="description" label="描述">
-							<Input.TextArea rows={2} placeholder="字典描述（可选）" />
-						</Form.Item>
-						<Form.Item className="mb-0 text-right">
-							<Space>
-								<Button onClick={closeDictModal}>取消</Button>
-								<Button type="primary" htmlType="submit">
-									{editingDict ? "保存" : "创建"}
-								</Button>
-							</Space>
-						</Form.Item>
-					</Form>
-				</Modal>
-
-				{/* 条目创建/编辑弹窗 */}
-				<Modal
-					title={editingItem ? "编辑条目" : "新建条目"}
-					open={itemModalOpen}
-					onCancel={closeItemModal}
-					footer={null}
-					destroyOnClose
-				>
-					<Form
-						form={itemForm}
-						layout="vertical"
-						onFinish={handleItemSubmit}
-						initialValues={{ sortOrder: 0 }}
-					>
-						<Form.Item
-							name="label"
-							label="标签"
-							rules={[{ required: true, message: "请输入标签" }]}
-						>
-							<Input placeholder="显示名称" />
-						</Form.Item>
-						<Form.Item
-							name="value"
-							label="值"
-							rules={[{ required: true, message: "请输入值" }]}
-						>
-							<Input placeholder="存储值" />
-						</Form.Item>
-						<Form.Item name="sortOrder" label="排序">
-							<InputNumber className="w-full" min={0} placeholder="排序序号" />
-						</Form.Item>
-						<Form.Item className="mb-0 text-right">
-							<Space>
-								<Button onClick={closeItemModal}>取消</Button>
-								<Button type="primary" htmlType="submit">
-									{editingItem ? "保存" : "创建"}
-								</Button>
-							</Space>
-						</Form.Item>
-					</Form>
-				</Modal>
+					新建字典
+				</Button>
 			</div>
-		</App>
+
+			<Row gutter={16}>
+				<Col span={8}>
+					<Table
+						dataSource={dictList}
+						columns={dictColumns}
+						rowKey="id"
+						size="small"
+						pagination={false}
+						locale={{ emptyText: "暂无字典" }}
+					/>
+				</Col>
+				<Col span={16}>
+					{selectedDictId ? (
+						<div>
+							<div className="mb-3 flex items-center justify-between">
+								<span className="text-sm text-muted-foreground">字典条目</span>
+								<Button
+									type="primary"
+									size="small"
+									icon={<PlusOutlined />}
+									onClick={() => openItemModal()}
+								>
+									新建条目
+								</Button>
+							</div>
+							<Table
+								dataSource={items}
+								columns={itemColumns}
+								rowKey="id"
+								size="small"
+								pagination={false}
+								locale={{ emptyText: "暂无条目" }}
+							/>
+						</div>
+					) : (
+						<div className="flex items-center justify-center rounded-lg border py-16 text-sm text-muted-foreground">
+							请选择左侧字典查看条目
+						</div>
+					)}
+				</Col>
+			</Row>
+
+			{/* 字典创建/编辑弹窗 */}
+			<Modal
+				title={editingDict ? "编辑字典" : "新建字典"}
+				open={dictModalOpen}
+				onCancel={closeDictModal}
+				footer={null}
+				destroyOnClose
+			>
+				<Form form={dictForm} layout="vertical" onFinish={handleDictSubmit}>
+					<Form.Item
+						name="name"
+						label="名称"
+						rules={[{ required: true, message: "请输入字典名称" }]}
+					>
+						<Input placeholder="字典名称" />
+					</Form.Item>
+					<Form.Item
+						name="slug"
+						label="标识 (slug)"
+						rules={[{ required: true, message: "请输入字典标识" }]}
+					>
+						<Input placeholder="唯一标识" disabled={!!editingDict} />
+					</Form.Item>
+					<Form.Item name="description" label="描述">
+						<Input.TextArea rows={2} placeholder="字典描述（可选）" />
+					</Form.Item>
+					<Form.Item className="mb-0 text-right">
+						<Space>
+							<Button onClick={closeDictModal}>取消</Button>
+							<Button type="primary" htmlType="submit">
+								{editingDict ? "保存" : "创建"}
+							</Button>
+						</Space>
+					</Form.Item>
+				</Form>
+			</Modal>
+
+			{/* 条目创建/编辑弹窗 */}
+			<Modal
+				title={editingItem ? "编辑条目" : "新建条目"}
+				open={itemModalOpen}
+				onCancel={closeItemModal}
+				footer={null}
+				destroyOnClose
+			>
+				<Form
+					form={itemForm}
+					layout="vertical"
+					onFinish={handleItemSubmit}
+					initialValues={{ sortOrder: 0 }}
+				>
+					<Form.Item
+						name="label"
+						label="标签"
+						rules={[{ required: true, message: "请输入标签" }]}
+					>
+						<Input placeholder="显示名称" />
+					</Form.Item>
+					<Form.Item
+						name="value"
+						label="值"
+						rules={[{ required: true, message: "请输入值" }]}
+					>
+						<Input placeholder="存储值" />
+					</Form.Item>
+					<Form.Item name="sortOrder" label="排序">
+						<InputNumber className="w-full" min={0} placeholder="排序序号" />
+					</Form.Item>
+					<Form.Item className="mb-0 text-right">
+						<Space>
+							<Button onClick={closeItemModal}>取消</Button>
+							<Button type="primary" htmlType="submit">
+								{editingItem ? "保存" : "创建"}
+							</Button>
+						</Space>
+					</Form.Item>
+				</Form>
+			</Modal>
+		</div>
 	);
 }

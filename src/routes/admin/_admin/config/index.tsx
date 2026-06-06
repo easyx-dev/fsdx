@@ -10,11 +10,11 @@ import {
 import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
 import {
-	App,
 	Button,
 	Form,
 	Input,
 	Modal,
+	message,
 	Popconfirm,
 	Space,
 	Table,
@@ -83,20 +83,11 @@ export const Route = createFileRoute("/admin/_admin/config/")({
 });
 
 function ConfigPage() {
-	return (
-		<App>
-			<ConfigPageInner />
-		</App>
-	);
-}
-
-function ConfigPageInner() {
 	const router = useRouter();
 	const configs = Route.useLoaderData();
 	const [modalOpen, setModalOpen] = useState(false);
 	const [editing, setEditing] = useState<ConfigRecord | null>(null);
 	const [form] = Form.useForm();
-	const { message } = App.useApp();
 
 	/** 打开新建/编辑弹窗 */
 	const openModal = (record?: ConfigRecord) => {

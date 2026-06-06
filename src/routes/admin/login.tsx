@@ -48,7 +48,6 @@ const adminLogin = createServerFn({ method: "POST" })
 	});
 
 export const Route = createFileRoute("/admin/login")({
-	ssr: false,
 	beforeLoad: async () => {
 		const initialized = await checkInitStatusFn();
 		if (!initialized) {
@@ -70,6 +69,11 @@ function AdminLoginPage() {
 		const handler = (e: MediaQueryListEvent) => setIsDark(e.matches);
 		mq.addEventListener("change", handler);
 		return () => mq.removeEventListener("change", handler);
+	}, []);
+
+	// 设置 message 默认 duration 为 5s
+	useEffect(() => {
+		message.config({ duration: 5 });
 	}, []);
 
 	const handleSubmit = async (values: {

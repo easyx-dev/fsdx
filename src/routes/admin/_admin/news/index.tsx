@@ -4,7 +4,15 @@
 import { DeleteOutlined, EditOutlined, PlusOutlined } from "@ant-design/icons";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
-import { App, Button, Popconfirm, Segmented, Space, Table, Tag } from "antd";
+import {
+	Button,
+	message,
+	Popconfirm,
+	Segmented,
+	Space,
+	Table,
+	Tag,
+} from "antd";
 import { useState } from "react";
 import { z } from "zod";
 import { PERMISSIONS } from "#/lib/permissions";
@@ -69,7 +77,6 @@ function NewsListPage() {
 	const initial = Route.useLoaderData();
 	const [data, setData] = useState(initial);
 	const [filter, setFilter] = useState<string>("");
-	const { message } = App.useApp();
 
 	async function refresh(s?: string) {
 		const status = s !== undefined ? s : filter;

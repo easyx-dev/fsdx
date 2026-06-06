@@ -4,7 +4,7 @@
 
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
-import { App, Button, Form, Input, Select, Switch } from "antd";
+import { Button, Form, Input, message, Select, Switch } from "antd";
 import { z } from "zod";
 import { NewsEditor } from "#/components/admin/NewsEditor";
 import { PERMISSIONS } from "#/lib/permissions";
@@ -34,7 +34,6 @@ export const Route = createFileRoute("/admin/_admin/news/create")({
 function NewsCreatePage() {
 	const navigate = useNavigate();
 	const [form] = Form.useForm();
-	const { message } = App.useApp();
 
 	const handleSubmit = async (values: Record<string, unknown>) => {
 		try {

@@ -16,7 +16,14 @@ import {
 	SettingOutlined,
 	TeamOutlined,
 } from "@ant-design/icons";
-import { theme as antdTheme, ConfigProvider, Layout, Menu } from "antd";
+import {
+	theme as antdTheme,
+	ConfigProvider,
+	Layout,
+	Menu,
+	message,
+	notification,
+} from "antd";
 import {
 	createContext,
 	type ReactNode,
@@ -93,7 +100,6 @@ function resolveIsDark(mode: ThemeMode): boolean {
 export function AdminLayout({ children }: { children: ReactNode }) {
 	const [collapsed, setCollapsed] = useState(false);
 	const [mode, setMode] = useState<ThemeMode>("auto");
-
 	// 初始化主题模式
 	useEffect(() => {
 		setMode(getStoredMode());
@@ -133,6 +139,12 @@ export function AdminLayout({ children }: { children: ReactNode }) {
 	// 获取当前路径作为菜单选中项
 	const currentPath =
 		typeof window !== "undefined" ? window.location.pathname : "/admin";
+
+	// 设置全局 message / notification 默认 duration 为 5s
+	useEffect(() => {
+		message.config({ duration: 5 });
+		notification.config({ duration: 5 });
+	}, []);
 
 	return (
 		<AdminThemeContext.Provider value={ctxValue}>
