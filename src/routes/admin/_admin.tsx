@@ -8,7 +8,7 @@ import { createFileRoute, redirect } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
 import { deleteCookie, getCookie } from "@tanstack/react-start/server";
 import { COOKIE_NAMES } from "#/lib/jwt";
-import { getCurrentUser } from "#/server/auth/current-user";
+import { getCurrentUser } from "#/server/auth";
 
 /**
  * 获取当前登录用户信息

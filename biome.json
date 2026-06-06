@@ -20,7 +20,13 @@
 		"enabled": true,
 		"indentStyle": "tab"
 	},
-	"assist": { "actions": { "source": { "organizeImports": "on" } } },
+	"assist": {
+		"actions": {
+			"source": {
+				"organizeImports": "on"
+			}
+		}
+	},
 	"linter": {
 		"enabled": true,
 		"rules": {
@@ -40,7 +46,22 @@
 				"noArrayIndexKey": "off"
 			},
 			"style": {
-				"noNonNullAssertion": "off"
+				"noNonNullAssertion": "off",
+				"noRestrictedImports": {
+					"level": "error",
+					"options": {
+						"patterns": [
+							{
+								"group": ["#/server/*/*"],
+								"message": "请通过 #/server/<模块名> 导入，子模块应通过 index.ts 统一导出"
+							},
+							{
+								"group": ["#/lib/*/*"],
+								"message": "请通过 #/lib/<模块名> 导入，子模块应通过 index.ts 统一导出"
+							}
+						]
+					}
+				}
 			}
 		}
 	},

@@ -6,7 +6,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
 import { useState } from "react";
 import { z } from "zod";
-import { clientRegisterService } from "#/server/auth/client";
+import { clientRegisterService } from "#/server/auth";
 import { sendCaptcha } from "#/server/captcha";
 
 const registerSchema = z.object({

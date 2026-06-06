@@ -11,7 +11,7 @@ import {
 	useState,
 } from "react";
 import { getCurrentUserFn } from "#/routes/admin/_admin";
-import type { AuthUser } from "#/server/auth/current-user";
+import type { AuthUser } from "#/server/auth";
 
 interface AuthContextType {
 	/** 当前登录用户，null 表示未登录 */

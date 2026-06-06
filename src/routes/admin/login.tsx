@@ -8,7 +8,7 @@ import { setCookie } from "@tanstack/react-start/server";
 import { useState } from "react";
 import { z } from "zod";
 import { COOKIE_NAMES } from "#/lib/jwt";
-import { adminLoginService } from "#/server/auth/admin";
+import { adminLoginService } from "#/server/auth";
 
 const loginSchema = z.object({
 	username: z.string().min(1, "用户名不能为空").max(50),
