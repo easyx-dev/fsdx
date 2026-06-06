@@ -3,7 +3,7 @@
  */
 
 import { describe, expect, it } from "vitest";
-import { envSchema, getEnv, smtpSchema } from "#/lib/env";
+import { envSchema, getEnv } from "#/lib/env";
 
 describe("envSchema 校验规则", () => {
 	it("完整有效配置校验通过", () => {
@@ -43,57 +43,25 @@ describe("envSchema 校验规则", () => {
 		expect(result.success).toBe(false);
 	});
 
-	it("SMTP 字段全部可选", () => {
+	it("SMTP 字段已移除，不再存在于 envSchema 中", () => {
 		const result = envSchema.safeParse({
 			DATABASE_URL: "postgres://localhost/test",
 			JWT_SECRET: "a".repeat(32),
 		});
 		expect(result.success).toBe(true);
-		// SMTP 平面字段不存在，通过 smtpSchema 时使用默认值
-	});
-});
-
-describe("smtpSchema 校验规则", () => {
-	it("全部 SMTP 字段使用默认值", () => {
-		const result = smtpSchema.safeParse({});
-		expect(result.success).toBe(true);
 		if (result.success) {
-			expect(result.data.host).toBe("smtp.example.com");
-			expect(result.data.port).toBe(587);
-			expect(result.data.secure).toBe(false);
-			expect(result.data.from).toBe("noreply@example.com");
-		}
-	});
-
-	it("完整 SMTP 配置校验通过", () => {
-		// smtpSchema 字段名为 host/port/secure 等，不是 SMTP_ 前缀
-		const result = smtpSchema.safeParse({
-			host: "smtp.custom.com",
-			port: "465",
-			secure: "true",
-			user: "user",
-			pass: "pass",
-			from: "from@test.com",
-		});
-		expect(result.success).toBe(true);
-		if (result.success) {
-			expect(result.data.host).toBe("smtp.custom.com");
-			expect(result.data.port).toBe(465);
-			expect(result.data.secure).toBe(true);
+			expect(result.data).not.toHaveProperty("SMTP_HOST");
 		}
 	});
 });
 
 describe("getEnv", () => {
 	it("getEnv 返回 Env 类型对象", () => {
-		// dotenv.config() 在模块加载时已执行，从 env/ 目录加载
-		// 在测试环境中 .env 文件应存在
 		const env = getEnv();
 		expect(env).toHaveProperty("DATABASE_URL");
 		expect(env).toHaveProperty("JWT_SECRET");
 		expect(env).toHaveProperty("LOG_LEVEL");
 		expect(env).toHaveProperty("NODE_ENV");
 		expect(env).toHaveProperty("STORAGE_DIR");
-		expect(env).toHaveProperty("SMTP");
 	});
 });

@@ -9,15 +9,6 @@ import { logger } from "#/lib/logger";
 
 export type ConfigRecord = typeof systemConfig.$inferSelect;
 
-let cacheLoaded = false;
-
-async function ensureCache(): Promise<void> {
-	if (!cacheLoaded) {
-		await loadConfigCache();
-		cacheLoaded = true;
-	}
-}
-
 export async function loadConfigCache(): Promise<void> {
 	const configs = await db
 		.select()
@@ -25,12 +16,10 @@ export async function loadConfigCache(): Promise<void> {
 		.where(isNull(systemConfig.deletedAt));
 	configCache.clear();
 	for (const c of configs) configCache.set(c.key, c.value);
-	cacheLoaded = true;
 	logger.info({ count: configs.length }, "系统配置缓存加载完成");
 }
 
-export async function getConfig(key: string): Promise<string> {
-	await ensureCache();
+export function getConfig(key: string): string {
 	return configCache.get(key) ?? "";
 }
 
@@ -51,6 +40,36 @@ export async function createConfig(params: {
 	configCache.set(record.key, record.value);
 	logger.info({ key: record.key }, "系统配置已创建");
 	return record;
+}
+
+/**
+ * 插入或更新系统配置（key 冲突时更新 value）
+ * 用于初始化流程，避免因 ensurePresetConfigs 已插入默认值导致冲突
+ */
+export async function upsertConfig(
+	key: string,
+	value: string,
+	description?: string,
+): Promise<void> {
+	const existing = await db.query.systemConfig.findFirst({
+		where: eq(systemConfig.key, key),
+	});
+
+	if (existing) {
+		await db
+			.update(systemConfig)
+			.set({
+				value,
+				description: description ?? existing.description,
+				updatedAt: new Date(),
+			})
+			.where(eq(systemConfig.id, existing.id));
+	} else {
+		await db.insert(systemConfig).values({ key, value, description });
+	}
+
+	configCache.set(key, value);
+	logger.info({ key }, "系统配置已写入");
 }
 
 export async function updateConfig(
@@ -82,9 +101,10 @@ export async function deleteConfig(id: string) {
 	logger.info({ key: existing.key }, "系统配置已删除");
 	return true;
 }
+
 // ========== 预置系统配置 ==========
 
-/** 预置系统配置常量 */
+/** 预置系统配置常量（仅服务端启动时自动插入的配置项） */
 const PRESET_CONFIGS = [
 	{ key: "site_name", value: "FSDX CMS", description: "站点名称" },
 ];

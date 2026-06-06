@@ -1,17 +1,8 @@
 /**
  * 鉴权中间件测试：authGuard 和 permGuard
- * 通过 mock 依赖直接测试 server 回调的错误分支
  */
 
 import { describe, expect, it } from "vitest";
-
-// 由于 authGuard 使用了 createMiddleware().server()，无法直接导出 server 回调
-// 中间件的核心逻辑已通过以下测试间接覆盖：
-// - JWT 验证：src/lib/jwt/__tests__/jwt.test.ts
-// - 权限匹配：src/lib/permissions/__tests__/permissions.test.ts
-// - 用户查询：src/server/auth/__tests__/current-user.test.ts
-//
-// 此处测试中间件的 AuthError 类和类型定义
 
 import type { AuthContext } from "#/middleware/server-fn-auth";
 import { AuthError } from "#/middleware/server-fn-auth";
@@ -32,17 +23,34 @@ describe("AuthError", () => {
 });
 
 describe("AuthContext 类型", () => {
-	it("user 包含必要字段", () => {
+	it("user 包含必要字段，包括 isRoot", () => {
 		const ctx: AuthContext = {
 			user: {
 				id: "user-1",
 				username: "admin",
 				email: "admin@test.com",
 				userType: "admin",
+				isRoot: false,
 			},
 			rolePermissions: ["news:*", "admin:view"],
 		};
 		expect(ctx.user.id).toBe("user-1");
+		expect(ctx.user.isRoot).toBe(false);
 		expect(ctx.rolePermissions).toHaveLength(2);
+	});
+
+	it("isRoot 为 true 的 root 用户", () => {
+		const ctx: AuthContext = {
+			user: {
+				id: "root-1",
+				username: "root",
+				email: "root@test.com",
+				userType: "admin",
+				isRoot: true,
+			},
+			rolePermissions: ["**"],
+		};
+		expect(ctx.user.isRoot).toBe(true);
+		expect(ctx.rolePermissions).toEqual(["**"]);
 	});
 });

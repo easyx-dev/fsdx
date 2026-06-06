@@ -1,5 +1,6 @@
 /**
  * 系统配置管理测试：CRUD + 缓存
+ * getConfig 已改为同步方法，直接从缓存读取
  */
 
 import { describe, expect, it, vi } from "vitest";
@@ -56,7 +57,37 @@ import {
 	deleteConfig,
 	getConfig,
 	getConfigList,
+	loadConfigCache,
 } from "#/server/config";
+
+describe("loadConfigCache", () => {
+	it("从 DB 加载配置到缓存", async () => {
+		mockDb.select.mockReturnValue({
+			from: vi.fn(() => ({
+				where: vi
+					.fn()
+					.mockResolvedValue([{ key: "site_name", value: "FSDX CMS" }]),
+			})),
+		});
+		await loadConfigCache();
+		expect(mockConfigCache.clear).toHaveBeenCalled();
+		expect(mockConfigCache.set).toHaveBeenCalledWith("site_name", "FSDX CMS");
+	});
+});
+
+describe("getConfig", () => {
+	it("从缓存同步获取配置值", () => {
+		// 手动预填缓存
+		mockConfigCache.set("site_name", "FSDX CMS");
+		const value = getConfig("site_name");
+		expect(value).toBe("FSDX CMS");
+	});
+
+	it("缓存中不存在时返回空字符串", () => {
+		const value = getConfig("nonexistent_key");
+		expect(value).toBe("");
+	});
+});
 
 describe("getConfigList", () => {
 	it("返回配置列表", async () => {
@@ -69,20 +100,7 @@ describe("getConfigList", () => {
 		expect(Array.isArray(result)).toBe(true);
 	});
 });
-describe("loadConfigCache / getConfig", () => {
-	it("从缓存获取配置值", async () => {
-		// mock loadConfigCache 的 DB 查询
-		mockDb.select.mockReturnValue({
-			from: vi.fn(() => ({
-				where: vi
-					.fn()
-					.mockResolvedValue([{ key: "site_name", value: "FSDX CMS" }]),
-			})),
-		});
-		const value = await getConfig("site_name");
-		expect(value).toBe("FSDX CMS");
-	});
-});
+
 describe("createConfig", () => {
 	it("创建配置并更新缓存", async () => {
 		mockDb.insert.mockReturnValue({
@@ -97,6 +115,7 @@ describe("createConfig", () => {
 		expect(mockConfigCache.set).toHaveBeenCalledWith("new_key", "val");
 	});
 });
+
 describe("deleteConfig", () => {
 	it("删除配置并移除缓存", async () => {
 		mockDb.query.systemConfig.findFirst.mockResolvedValue({

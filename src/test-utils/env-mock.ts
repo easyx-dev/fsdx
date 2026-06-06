@@ -12,12 +12,4 @@ export const testEnv: Env = {
 	LOG_LEVEL: "info",
 	NODE_ENV: "test",
 	STORAGE_DIR: ".tmp",
-	SMTP: {
-		host: "smtp.test.com",
-		port: 587,
-		secure: false,
-		user: "test-user",
-		pass: "test-pass",
-		from: "noreply@test.com",
-	},
 };

@@ -1,3 +1,4 @@
+
 # AGENTS.md
 
 ## 项目概况
@@ -15,15 +16,14 @@ src/
 │   └── *.tsx                 # 公共组件（Header、Footer、ThemeToggle）
 ├── db/
 │   ├── index.ts              # Drizzle 客户端实例化
-│   ├── schema/               # 数据库表定义（按模块拆分，9 张表）
-│   └── seed.ts               # 种子数据脚本
+│   └── schema/               # 数据库表定义（按模块拆分）
 ├── lib/                      # 基础库（无业务逻辑）
 │   ├── env.ts                # 环境变量统一管理（zod 校验 + getEnv()）
 │   ├── logger.ts             # pino + pino-roll 日志
 │   ├── cache.ts              # 内存缓存（字典、系统配置）
 │   ├── storage.ts            # 文件存储抽象层（本地实现）
 │   ├── jwt.ts                # JWT 签发与校验（jose）
-│   ├── mail.ts               # 邮件发送（nodemailer）
+│   ├── mail.ts               # 邮件发送（nodemailer，SMTP 配置从系统配置表读取）
 │   ├── permissions.ts        # 权限码常量
 │   ├── scheduler.ts          # 定时任务调度（node-cron）
 │   └── log-reader.ts         # 管理端日志文件查询
@@ -32,17 +32,20 @@ src/
 ├── server/                   # 服务端业务逻辑
 │   ├── auth/                 # 认证模块（admin、client、common）
 │   ├── captcha.ts            # 验证码
+│   ├── config.ts             # 系统配置 + 缓存（含 upsertConfig）
 │   ├── dict.ts               # 字典管理 + 缓存
-│   ├── config.ts             # 系统配置 + 缓存
 │   ├── file.ts               # 文件上传/秒传/清理
+│   ├── init.ts               # 系统初始化（root 管理员创建 + 配置写入）
 │   ├── news.ts               # 新闻 CRUD
-│   ├── tasks.ts              # 定时任务注册
-│   └── init.ts               # 服务端初始化
+│   └── tasks.ts              # 定时任务注册
 ├── routes/
 │   ├── __root.tsx            # 根布局（HTML shell）
 │   ├── index.tsx             # 前台首页（新闻列表 SSR）
 │   ├── news/$slug.tsx        # 新闻详情（SSR）
 │   └── admin/                # 管理端页面
+│       ├── init.tsx          # 系统初始化页面（首次部署）
+│       ├── login.tsx         # 管理员登录
+│       └── _admin/           # 受保护管理端页面
 ├── router.tsx                # TanStack Router 实例
 └── styles.css                # 全局样式 + Tailwind
 ```
@@ -56,6 +59,7 @@ src/
 | 构建 | Vite | 8 |
 | 语言 | TypeScript（strict） | 6 |
 | 样式 | Tailwind CSS + shadcn/ui (new-york) | 4 |
+| 管理端 UI | Ant Design | 6 |
 | 数据库 | PostgreSQL + Drizzle ORM | - |
 | 校验 | Zod | - |
 | Lint/Format | Biome | 2.4 |
@@ -65,7 +69,7 @@ src/
 | 认证 | JWT（jose）+ bcryptjs | - |
 | 编辑器 | TipTap（富文本） | 3.24 |
 | 定时任务 | node-cron | - |
-| 邮件 | nodemailer | - |
+| 邮件 | nodemailer（SMTP 配置由初始化流程写入系统配置表） | - |
 
 ## 接口约定
 
@@ -80,12 +84,22 @@ src/
 - 环境变量文件统一放在 `env/` 目录（`.env`、`.env.local`）
 - 应用代码通过 `getEnv()` 获取环境变量，禁止直接读取 `process.env`
 - zod schema 定义所有环境变量及默认值，启动时校验
+- SMTP 邮件配置已迁移至系统配置表，不再通过环境变量管理
+
+### 系统初始化
+
+- 首次部署时自动跳转 `/admin/init` 初始化页面
+- 通过 `admin_user` 表的 `is_root` 字段（数据库唯一约束）判断是否已初始化
+- 初始化流程在事务中完成：角色创建 → root 用户创建 → 系统配置写入
+- 已初始化后禁止重复操作，`/admin/init` 路由 `beforeLoad` 将重定向到 `/admin/login`
+- 支持通过 JSON 文件导入初始化配置
 
 ### 路由
 
 - 页面路由使用 `createFileRoute`，位于 `src/routes/`
 - 管理端路由 `/admin/*`，前台路由 `/*`
-- 根布局 `__root.tsx` 根据 pathname 前缀隐藏 Header/Footer
+- 根布局 `__root.tsx` 根据 pathname 前缀决定是否显示 AdminLayout
+- `/admin/login` 和 `/admin/init` 无布局外壳
 
 ### 数据库
 
@@ -93,6 +107,7 @@ src/
 - 支持删除的表统一使用 `deleted_at` 软删除
 - 表名使用单数（如 `admin_user`、`file`）
 - Schema 文件按模块拆分在 `src/db/schema/`，通过 `index.ts` 统一导出
+- `admin_user` 表包含 `is_root` 布尔字段 + 数据库部分唯一索引，保证仅一个 root 用户
 
 ## 日志约定
 
@@ -113,14 +128,13 @@ src/
 | `pnpm lint` | Biome 代码检查并自动修复 |
 | `pnpm test` | 运行 Vitest 测试 |
 | `pnpm db:push` | 推送 Schema 到数据库 |
-| `pnpm db:seed` | 创建种子数据（初始账号、预置字典、示例新闻） |
 | `pnpm db:studio` | 启动 Drizzle Studio |
 
 ## 开发边界
 
- - 修改时以现有代码为准
+- 修改时以现有代码为准
 - 任务完成后必须执行 `pnpm check`，确保 TypeScript 类型检查与 Biome 规范检查通过
- - 涉及项目流程状态时，同步更新 `CHANGELOG.md`
+- 涉及项目流程状态时，同步更新 `CHANGELOG.md`
 - 不提交临时文件、测试产物、密钥、`.env`
 - 临时文件统一放入仓库根目录 `.tmp/`，不要散落在其他目录
 

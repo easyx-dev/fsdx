@@ -29,6 +29,7 @@ export const logout = createServerFn({ method: "POST" }).handler(async () => {
 });
 
 export const Route = createFileRoute("/admin/_admin")({
+	ssr: false,
 	beforeLoad: async ({ location }) => {
 		const user = await getCurrentUserFn();
 

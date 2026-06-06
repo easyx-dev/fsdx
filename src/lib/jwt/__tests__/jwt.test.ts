@@ -4,7 +4,6 @@
 
 import { describe, expect, it, vi } from "vitest";
 
-// vi.mock 是编译时提升的，不能引用外部变量，必须内联
 vi.mock("#/lib/env", () => ({
 	getEnv: vi.fn(() => ({
 		JWT_SECRET: "test-jwt-secret-at-least-32-characters-long!!",
@@ -12,7 +11,6 @@ vi.mock("#/lib/env", () => ({
 		LOG_LEVEL: "info",
 		NODE_ENV: "test",
 		STORAGE_DIR: ".tmp",
-		SMTP: { host: "", port: 587, secure: false, user: "", pass: "", from: "" },
 	})),
 }));
 vi.mock("#/lib/logger", () => ({
@@ -66,7 +64,6 @@ describe("signToken / verifyToken", () => {
 			username: "test",
 			userType: "admin" as const,
 		});
-		// 篡改中间部分
 		const parts = token.split(".");
 		parts[1] = "tamperedPayload";
 		const tampered = parts.join(".");

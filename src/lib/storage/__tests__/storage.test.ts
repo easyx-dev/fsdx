@@ -15,7 +15,6 @@ vi.mock("#/lib/env", () => ({
 		JWT_SECRET: "test-secret-at-least-32-chars!!",
 		LOG_LEVEL: "info",
 		NODE_ENV: "test",
-		SMTP: { host: "", port: 587, secure: false, user: "", pass: "", from: "" },
 	})),
 }));
 
@@ -70,7 +69,6 @@ describe("LocalStorageAdapter", () => {
 	});
 
 	it("getUrl 返回正确的 URL 格式", async () => {
-		// 传入 baseDir，URL 基于 getEnv().STORAGE_DIR + /uploads/
 		const url = adapter.getUrl("images/photo.jpg");
 		expect(url).toContain("photo.jpg");
 		expect(url).toContain("/uploads/");

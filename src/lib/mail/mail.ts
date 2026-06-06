@@ -1,9 +1,9 @@
 /**
- * 邮件发送模块：基于 nodemailer，用于发送验证码等邮件
+ * 邮件发送模块：基于 nodemailer，SMTP 配置从系统配置表读取
  */
 import { createTransport, type Transporter } from "nodemailer";
-import { getEnv } from "#/lib/env";
 import { logger } from "#/lib/logger";
+import { getConfig as getSystemConfig } from "#/server/config";
 
 /** 邮件发送参数 */
 export interface SendMailOptions {
@@ -12,22 +12,42 @@ export interface SendMailOptions {
 	html: string;
 }
 
-/** 懒加载 transporter */
 let _transporter: Transporter | null = null;
+let _lastConfigFingerprint = "";
 
-function getTransporter(): Transporter {
-	if (!_transporter) {
-		const { SMTP } = getEnv();
-		_transporter = createTransport({
-			host: SMTP.host,
-			port: SMTP.port,
-			secure: SMTP.secure,
-			auth: {
-				user: SMTP.user,
-				pass: SMTP.pass,
-			},
-		});
+/** 读取系统配置并确保返回纯字符串 */
+function readConfig(key: string): string {
+	return getSystemConfig(key) as unknown as string;
+}
+
+/**
+ * 懒加载创建 transporter，配置变更时自动重建
+ */
+function getTransporter(): Transporter | null {
+	const host = readConfig("smtp_host");
+	if (!host) {
+		logger.warn("SMTP 未配置（smtp_host 为空），邮件功能不可用");
+		return null;
 	}
+
+	const port = Number(readConfig("smtp_port")) || 587;
+	const secure = readConfig("smtp_secure") === "true";
+	const user = readConfig("smtp_user");
+	const pass = readConfig("smtp_pass");
+	const from = readConfig("smtp_from");
+	const fingerprint = [host, port, secure, user, pass, from].join("|");
+
+	if (_transporter && _lastConfigFingerprint === fingerprint) {
+		return _transporter;
+	}
+
+	_transporter = createTransport({
+		host,
+		port,
+		secure,
+		auth: user ? { user, pass } : undefined,
+	});
+	_lastConfigFingerprint = fingerprint;
 	return _transporter;
 }
 
@@ -37,8 +57,14 @@ function getTransporter(): Transporter {
 export async function sendMail(options: SendMailOptions): Promise<boolean> {
 	try {
 		const transporter = getTransporter();
+		if (!transporter) {
+			logger.warn({ to: options.to }, "邮件发送跳过：SMTP 未配置");
+			return false;
+		}
+
+		const from = readConfig("smtp_from") || "noreply@example.com";
 		await transporter.sendMail({
-			from: getEnv().SMTP.from,
+			from,
 			to: options.to,
 			subject: options.subject,
 			html: options.html,

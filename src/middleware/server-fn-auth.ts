@@ -17,6 +17,7 @@ export interface AuthContext {
 		username: string;
 		email: string;
 		userType: "admin" | "client";
+		isRoot: boolean;
 	};
 	rolePermissions: string[];
 }
@@ -34,7 +35,7 @@ export class AuthError extends Error {
 
 /**
  * 校验管理员登录，将用户信息和角色权限注入 context
- * 未登录或非管理员用户抛出 AuthError
+ * isRoot 用户自动拥有所有权限，不依赖角色表
  */
 export const authGuard = createMiddleware({
 	type: "function",
@@ -62,15 +63,19 @@ export const authGuard = createMiddleware({
 		throw new AuthError("账号已被禁用或删除", 403);
 	}
 
-	// 查角色权限
+	// Root 用户自动拥有全部权限，无需查询角色表
 	let rolePermissions: string[] = [];
-	const userRole = await db.query.role.findFirst({
-		where: (t, { eq }) => eq(t.id, user.roleId),
-	});
-	rolePermissions = (userRole?.permissions ?? []) as string[];
+	if (user.isRoot) {
+		rolePermissions = ["**"];
+	} else {
+		const userRole = await db.query.role.findFirst({
+			where: (t, { eq }) => eq(t.id, user.roleId),
+		});
+		rolePermissions = (userRole?.permissions ?? []) as string[];
+	}
 
 	logger.info(
-		{ userId: user.id, username: user.username },
+		{ userId: user.id, username: user.username, isRoot: user.isRoot },
 		"Server Function 鉴权通过",
 	);
 
@@ -81,6 +86,7 @@ export const authGuard = createMiddleware({
 				username: user.username,
 				email: user.email,
 				userType: "admin" as const,
+				isRoot: user.isRoot,
 			},
 			rolePermissions,
 		} as AuthContext,
@@ -90,7 +96,6 @@ export const authGuard = createMiddleware({
 /**
  * 权限校验中间件工厂
  * 内部组合 authGuard，先验证登录再校验指定权限
- * 无登录或权限不足抛出 AuthError
  */
 export function permGuard(required: PermissionDef) {
 	return createMiddleware({ type: "function" })

@@ -1,5 +1,6 @@
 /**
  * 环境变量统一管理：zod 校验 + 默认值
+ * SMTP 相关配置已迁移至系统配置，不再通过环境变量管理
  */
 
 import { resolve } from "node:path";
@@ -9,15 +10,6 @@ import { z } from "zod";
 // 从 env/ 目录加载环境变量（优先级：.env.local > .env）
 config({ path: resolve(process.cwd(), "env", ".env") });
 config({ path: resolve(process.cwd(), "env", ".env.local"), override: true });
-
-export const smtpSchema = z.object({
-	host: z.string().default("smtp.example.com"),
-	port: z.coerce.number().int().default(587),
-	secure: z.preprocess((v) => v === "true", z.boolean().default(false)),
-	user: z.string().default(""),
-	pass: z.string().default(""),
-	from: z.string().default("noreply@example.com"),
-});
 
 export const envSchema = z.object({
 	DATABASE_URL: z.string().min(1, "DATABASE_URL 不能为空"),
@@ -32,12 +24,6 @@ export const envSchema = z.object({
 		.enum(["development", "production", "test"])
 		.default("development"),
 	STORAGE_DIR: z.string().default(".tmp"),
-	SMTP_HOST: z.string().optional(),
-	SMTP_PORT: z.string().optional(),
-	SMTP_SECURE: z.string().optional(),
-	SMTP_USER: z.string().optional(),
-	SMTP_PASS: z.string().optional(),
-	SMTP_FROM: z.string().optional(),
 });
 
 /** 环境变量类型 */
@@ -52,8 +38,6 @@ export type Env = {
 	NODE_ENV: "development" | "production" | "test";
 	/** 数据存储目录（日志、上传文件等） */
 	STORAGE_DIR: string;
-	/** SMTP 邮件配置 */
-	SMTP: z.infer<typeof smtpSchema>;
 };
 
 let _env: Env | null = null;
@@ -71,15 +55,12 @@ export function getEnv(): Env {
 		throw new Error(`环境变量校验失败: ${parsed.error.message}`);
 	}
 
-	const rawEnv = parsed.data;
-
 	_env = {
-		DATABASE_URL: rawEnv.DATABASE_URL,
-		JWT_SECRET: rawEnv.JWT_SECRET,
-		LOG_LEVEL: rawEnv.LOG_LEVEL,
-		NODE_ENV: rawEnv.NODE_ENV,
-		STORAGE_DIR: rawEnv.STORAGE_DIR,
-		SMTP: smtpSchema.parse(rawEnv),
+		DATABASE_URL: parsed.data.DATABASE_URL,
+		JWT_SECRET: parsed.data.JWT_SECRET,
+		LOG_LEVEL: parsed.data.LOG_LEVEL,
+		NODE_ENV: parsed.data.NODE_ENV,
+		STORAGE_DIR: parsed.data.STORAGE_DIR,
 	};
 
 	return _env;

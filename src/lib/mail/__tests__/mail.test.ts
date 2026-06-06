@@ -12,22 +12,20 @@ vi.mock("nodemailer", () => ({
 	})),
 }));
 
-vi.mock("#/lib/env", () => ({
-	getEnv: vi.fn(() => ({
-		SMTP: {
-			host: "smtp.test.com",
-			port: 587,
-			secure: false,
-			user: "test-user",
-			pass: "test-pass",
-			from: "noreply@test.com",
-		},
-		DATABASE_URL: "",
-		JWT_SECRET: "test-secret-at-least-32-chars!!",
-		LOG_LEVEL: "info",
-		NODE_ENV: "test",
-		STORAGE_DIR: ".tmp",
-	})),
+vi.mock("#/server/config", () => ({
+	getConfig: vi.fn((key: string) => {
+		const map: Record<string, string> = {
+			smtp_host: "smtp.test.com",
+			smtp_port: "587",
+			smtp_secure: "false",
+			smtp_user: "test-user",
+			smtp_pass: "test-pass",
+			smtp_from: "noreply@test.com",
+		};
+		return map[key] ?? "";
+	}),
+	loadConfigCache: vi.fn(),
+	upsertConfig: vi.fn(),
 }));
 
 vi.mock("#/lib/logger", () => ({
@@ -78,7 +76,6 @@ describe("sendCaptchaMail", () => {
 		mockSendMail.mockResolvedValueOnce({ messageId: "msg-2" });
 		const result = await sendCaptchaMail("user@test.com", "123456");
 		expect(result).toBe(true);
-		// 验证 HTML 中包含验证码
 		const callArgs = mockSendMail.mock.calls[0][0];
 		expect(callArgs.html).toContain("123456");
 		expect(callArgs.subject).toBe("验证码");

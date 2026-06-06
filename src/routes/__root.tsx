@@ -1,5 +1,5 @@
 /**
- * 根路由：根据路径前缀分离 Admin（antd 客户端渲染）与 SSR 前端（shadcn/ui）
+ * 根路由：根据路径前缀分离 Admin（客户端渲染）与前台（SSR）
  */
 import { TanStackDevtools } from "@tanstack/react-devtools";
 import {
@@ -20,7 +20,6 @@ import Header from "../components/Header";
 
 import appCss from "../styles/index.css?url";
 
-/** 主题初始化脚本：从 localStorage 读取并应用到 <html> 的 class/color-scheme */
 const THEME_INIT_SCRIPT = `(function(){try{var s=window.localStorage.getItem('theme');var m=(s==='light'||s==='dark'||s==='auto')?s:'auto';var d=m==='auto'?window.matchMedia('(prefers-color-scheme: dark)').matches:m==='dark';var r=document.documentElement;r.classList.remove('light','dark');r.classList.add(d?'dark':'light');if(m==='auto'){r.removeAttribute('data-theme')}else{r.setAttribute('data-theme',m)}r.style.colorScheme=d?'dark':'light'}catch(e){}})();`;
 
 export const Route = createRootRoute({
@@ -40,12 +39,6 @@ export const Route = createRootRoute({
 	shellComponent: RootDocument,
 });
 
-/**
- * RootDocument：按路径前缀分离 Admin 与 SSR 布局
- * - /admin/login  → 独立登录页（无布局外壳）
- * - /admin/*      → antd AdminLayout（AuthProvider 包裹）
- * - /*            → shadcn/ui Header + Footer
- */
 function RootDocument({ children }: { children: React.ReactNode }) {
 	return (
 		<html lang="zh-CN" suppressHydrationWarning>
@@ -70,18 +63,15 @@ function RootDocument({ children }: { children: React.ReactNode }) {
 	);
 }
 
-/**
- * 根据路由路径动态选择布局
- * 使用 useRouterState 获取路径，SSR 和客户端均可生效
- */
 function RouteLayout({ children }: { children: React.ReactNode }) {
 	const pathname = useRouterState({
 		select: (s) => s.location.pathname,
 	});
-	const isAdminLogin = pathname === "/admin/login";
+	const isStandalone =
+		pathname === "/admin/login" || pathname === "/admin/init";
 	const isAdmin = pathname.startsWith("/admin");
 
-	if (isAdminLogin) {
+	if (isStandalone) {
 		return children;
 	}
 
