@@ -1,16 +1,17 @@
 /**
  * 客户端用户注册页面（TanStack Form）
+ * 集成图片验证码防护，禁用浏览器自动填充
  */
 
 import { useForm } from "@tanstack/react-form";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import { CaptchaInput } from "#/components/CaptchaInput";
 import { Button } from "#/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "#/components/ui/card";
 import { Input } from "#/components/ui/input";
 import { clientRegisterService } from "#/server/auth";
-import { sendCaptcha } from "#/server/captcha";
 
 const registerSchema = z.object({
 	username: z.string().min(1, "用户名不能为空").max(50),
@@ -19,20 +20,10 @@ const registerSchema = z.object({
 	captcha: z.string().length(6, "验证码为 6 位"),
 });
 
-const sendCaptchaSchema = z.object({
-	email: z.string().email("邮箱格式不正确"),
-});
-
 const clientRegister = createServerFn({ method: "POST" })
 	.inputValidator(registerSchema)
 	.handler(async ({ data: { username, email, password, captcha } }) => {
 		return clientRegisterService(username, email, password, captcha);
-	});
-
-const sendCaptchaFn = createServerFn({ method: "POST" })
-	.inputValidator(sendCaptchaSchema)
-	.handler(async ({ data: { email } }) => {
-		return sendCaptcha("email", email);
 	});
 
 export const Route = createFileRoute("/register")({
@@ -83,6 +74,7 @@ function ClientRegisterPage() {
 								form.handleSubmit();
 							}}
 							className="space-y-3 sm:space-y-4"
+							autoComplete="off"
 						>
 							<form.Field
 								name="username"
@@ -103,6 +95,7 @@ function ClientRegisterPage() {
 											value={field.state.value}
 											onBlur={field.handleBlur}
 											onChange={(e) => field.handleChange(e.target.value)}
+											autoComplete="off"
 											autoFocus
 										/>
 										{field.state.meta.isTouched &&
@@ -131,52 +124,15 @@ function ClientRegisterPage() {
 										<label htmlFor={field.name} className="text-sm font-medium">
 											邮箱
 										</label>
-										<div className="flex flex-col gap-2 xs:flex-row">
-											<Input
-												id={field.name}
-												name={field.name}
-												type="email"
-												value={field.state.value}
-												onBlur={field.handleBlur}
-												onChange={(e) => field.handleChange(e.target.value)}
-												className="flex-1"
-											/>
-											<Button
-												type="button"
-												variant="outline"
-												size="sm"
-												className="shrink-0"
-												onClick={async () => {
-													const email = field.state.value;
-													if (!email) {
-														form.setFieldValue("captchaMsg", "请先输入邮箱");
-														return;
-													}
-													form.setFieldValue("captchaMsg", "发送中...");
-													try {
-														const r = await sendCaptchaFn({
-															data: { email },
-														});
-														form.setFieldValue("captchaMsg", r.message);
-													} catch {
-														form.setFieldValue("captchaMsg", "发送失败");
-													}
-												}}
-											>
-												获取验证码
-											</Button>
-										</div>
-										<form.Subscribe
-											selector={(state) => state.values.captchaMsg}
-										>
-											{(captchaMsg) =>
-												captchaMsg ? (
-													<p className="text-xs text-muted-foreground">
-														{captchaMsg}
-													</p>
-												) : null
-											}
-										</form.Subscribe>
+										<Input
+											id={field.name}
+											name={field.name}
+											type="email"
+											value={field.state.value}
+											onBlur={field.handleBlur}
+											onChange={(e) => field.handleChange(e.target.value)}
+											autoComplete="off"
+										/>
 										{field.state.meta.isTouched &&
 											field.state.meta.errors.length > 0 && (
 												<p className="text-xs text-destructive">
@@ -187,6 +143,7 @@ function ClientRegisterPage() {
 								)}
 							</form.Field>
 
+							{/* 邮箱验证码 + 图片验证码弹窗 */}
 							<form.Field
 								name="captcha"
 								validators={{
@@ -200,18 +157,20 @@ function ClientRegisterPage() {
 								{(field) => (
 									<div className="space-y-1.5 sm:space-y-2">
 										<label htmlFor={field.name} className="text-sm font-medium">
-											验证码
+											邮箱验证码
 										</label>
-										<Input
-											id={field.name}
-											name={field.name}
-											type="text"
-											value={field.state.value}
-											onBlur={field.handleBlur}
-											onChange={(e) => field.handleChange(e.target.value)}
-											maxLength={6}
-											placeholder="6 位数字验证码"
-										/>
+										<form.Subscribe selector={(state) => state.values.email}>
+											{(email) => (
+												<CaptchaInput
+													email={email}
+													value={field.state.value}
+													onChange={field.handleChange}
+													onMessage={(msg) => {
+														form.setFieldValue("captchaMsg", msg);
+													}}
+												/>
+											)}
+										</form.Subscribe>
 										{field.state.meta.isTouched &&
 											field.state.meta.errors.length > 0 && (
 												<p className="text-xs text-destructive">
@@ -221,6 +180,17 @@ function ClientRegisterPage() {
 									</div>
 								)}
 							</form.Field>
+
+							{/* 验证码发送状态消息 */}
+							<form.Subscribe selector={(state) => state.values.captchaMsg}>
+								{(captchaMsg) =>
+									captchaMsg ? (
+										<p className="text-xs text-muted-foreground">
+											{captchaMsg}
+										</p>
+									) : null
+								}
+							</form.Subscribe>
 
 							<form.Field
 								name="password"
@@ -244,6 +214,7 @@ function ClientRegisterPage() {
 											value={field.state.value}
 											onBlur={field.handleBlur}
 											onChange={(e) => field.handleChange(e.target.value)}
+											autoComplete="new-password"
 										/>
 										{field.state.meta.isTouched &&
 											field.state.meta.errors.length > 0 && (

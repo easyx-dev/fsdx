@@ -7,6 +7,8 @@ import { captchaCode } from "#/db/schema";
 import { logger } from "#/lib/logger";
 import { sendCaptchaMail } from "#/lib/mail";
 
+export { generateImageCaptcha, verifyImageCaptcha } from "./image-captcha";
+
 /** 验证码有效期（5 分钟） */
 const CAPTCHA_EXPIRE_MINUTES = 5;
 /** 发送频率限制（60 秒） */
