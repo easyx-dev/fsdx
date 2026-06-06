@@ -1,19 +1,16 @@
-// @ts-nocheck
 /**
  * 编辑新闻页面
  */
 
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
-import { eq } from "drizzle-orm";
 import { useState } from "react";
 import { z } from "zod";
 import { AdminShell } from "#/components/admin/AdminShell";
 import { NewsEditor } from "#/components/admin/NewsEditor";
-import { db } from "#/db/index";
-import { news } from "#/db/schema";
 import { PERMISSIONS } from "#/lib/permissions";
 import { permGuard } from "#/middleware/server-fn-auth";
+import { getNewsById, updateNews } from "#/server/news";
 
 const getSchema = z.object({ id: z.string().min(1) });
 const updateSchema = z.object({
@@ -30,36 +27,14 @@ const getNewsFn = createServerFn({ method: "GET" })
 	.middleware([permGuard(PERMISSIONS.NEWS_VIEW)])
 	.inputValidator(getSchema)
 	.handler(async ({ data: { id } }) => {
-		return db.query.news.findFirst({
-			where: (t, { eq: e, and, isNull: n }) => and(e(t.id, id), n(t.deletedAt)),
-		});
+		return getNewsById(id);
 	});
 
 const updateNewsFn = createServerFn({ method: "POST" })
 	.middleware([permGuard(PERMISSIONS.NEWS_EDIT)])
 	.inputValidator(updateSchema)
 	.handler(async ({ data }) => {
-		const updateData: Record<string, unknown> = {
-			title: data.title,
-			summary: data.summary,
-			content: data.content,
-			status: data.status,
-			isPinned: data.isPinned,
-			updatedAt: new Date(),
-		};
-		if (data.slug) updateData.slug = data.slug;
-		if (data.status === "published") {
-			const rec = await db.query.news.findFirst({
-				where: (t, { eq: e }) => e(t.id, data.id),
-			});
-			if (rec && !rec.publishedAt) updateData.publishedAt = new Date();
-		}
-		const [updated] = await db
-			.update(news)
-			.set(updateData)
-			.where(eq(news.id, data.id))
-			.returning();
-		return updated;
+		return updateNews(data.id, data);
 	});
 
 export const Route = createFileRoute("/admin/_admin/news/$id/edit")({

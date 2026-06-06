@@ -16,7 +16,7 @@ import {
 	Users,
 } from "lucide-react";
 import { type ReactNode, useState } from "react";
-import { logout } from "#/server/auth/common";
+import { logout } from "#/routes/admin/_admin";
 
 /** 导航菜单项 */
 interface NavItem {

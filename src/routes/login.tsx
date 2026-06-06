@@ -1,25 +1,25 @@
 /**
- * 管理员登录页面
+ * 客户端用户登录页面
  */
 
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
 import { setCookie } from "@tanstack/react-start/server";
 import { useState } from "react";
 import { z } from "zod";
 import { COOKIE_NAMES } from "#/lib/jwt";
-import { adminLoginService } from "#/server/auth/admin";
+import { clientLoginService } from "#/server/auth/client";
 
 const loginSchema = z.object({
 	username: z.string().min(1, "用户名不能为空").max(50),
 	password: z.string().min(1, "密码不能为空").max(100),
 });
 
-/** 管理员登录 SF */
-const adminLogin = createServerFn({ method: "POST" })
+/** 客户端登录 SF */
+const clientLogin = createServerFn({ method: "POST" })
 	.inputValidator(loginSchema)
 	.handler(async ({ data: { username, password } }) => {
-		const result = await adminLoginService(username, password);
+		const result = await clientLoginService(username, password);
 		if (result.success && result.token) {
 			setCookie(COOKIE_NAMES.ACCESS_TOKEN, result.token, {
 				httpOnly: true,
@@ -32,11 +32,11 @@ const adminLogin = createServerFn({ method: "POST" })
 		return result;
 	});
 
-export const Route = createFileRoute("/admin/login")({
-	component: AdminLoginPage,
+export const Route = createFileRoute("/login")({
+	component: ClientLoginPage,
 });
 
-function AdminLoginPage() {
+function ClientLoginPage() {
 	const navigate = useNavigate();
 	const [username, setUsername] = useState("");
 	const [password, setPassword] = useState("");
@@ -49,17 +49,14 @@ function AdminLoginPage() {
 		setLoading(true);
 
 		try {
-			const result = await adminLogin({ data: { username, password } });
+			const result = await clientLogin({ data: { username, password } });
 			if (!result.success) {
 				setError(result.message || "登录失败");
 				return;
 			}
-			navigate({ to: "/admin" });
-		} catch (err) {
-			const errorMessage =
-				err instanceof Error ? err.message : "网络错误，请稍后重试";
-			console.error("[登录失败]", err);
-			setError(errorMessage);
+			navigate({ to: "/" });
+		} catch (_err) {
+			setError("网络错误，请稍后重试");
 		} finally {
 			setLoading(false);
 		}
@@ -70,7 +67,7 @@ function AdminLoginPage() {
 			<div className="w-full max-w-sm">
 				<div className="rounded-lg border border-zinc-200 bg-white p-8 shadow-sm">
 					<h1 className="mb-6 text-center text-2xl font-bold text-zinc-900">
-						管理后台登录
+						用户登录
 					</h1>
 
 					{error && (
@@ -123,6 +120,13 @@ function AdminLoginPage() {
 							{loading ? "登录中..." : "登录"}
 						</button>
 					</form>
+
+					<p className="mt-4 text-center text-sm text-zinc-500">
+						还没有账号？{" "}
+						<Link to="/register" className="text-zinc-900 underline">
+							立即注册
+						</Link>
+					</p>
 				</div>
 			</div>
 		</div>

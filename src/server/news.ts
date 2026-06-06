@@ -1,12 +1,17 @@
 /**
- * 新闻管理：CRUD 操作 + slug 自动生成
+ * 新闻管理：CRUD 操作 + slug 自动生成 + TipTap HTML 渲染
  */
+import { generateHTML } from "@tiptap/html";
+import StarterKit from "@tiptap/starter-kit";
 import { and, desc, eq, isNull, ne } from "drizzle-orm";
 import { db } from "#/db/index";
 import { news } from "#/db/schema";
 import { logger } from "#/lib/logger";
 
 export type NewsRecord = typeof news.$inferSelect;
+
+/** 新闻详情返回类型（扁平结构，避免 SF 序列化嵌套问题） */
+export type NewsDetail = NewsRecord & { html: string };
 
 /**
  * 根据标题生成 slug：中文字符用时间戳后缀，ASCII 直接 slugify
@@ -51,6 +56,20 @@ async function ensureUniqueSlug(
 	return uniqueSlug;
 }
 
+/**
+ * 将 TipTap JSON 内容渲染为 HTML
+ * 解析失败时返回原始内容
+ */
+function renderContent(content: string): string {
+	if (!content) return "";
+	try {
+		return generateHTML(JSON.parse(content), [StarterKit]);
+	} catch (err) {
+		logger.error({ err }, "TipTap 内容解析失败，使用原始内容展示");
+		return content;
+	}
+}
+
 /** 获取新闻列表 */
 export async function getNewsList(params?: {
 	status?: string;
@@ -79,8 +98,11 @@ export async function getNewsList(params?: {
 	return { records, total, page, pageSize };
 }
 
-/** 根据 slug 获取单条新闻 */
-export async function getNewsBySlug(slug: string): Promise<NewsRecord | null> {
+/**
+ * 根据 slug 获取单条新闻（前台用）
+ * 返回扁平结构：NewsRecord 字段 + html
+ */
+export async function getNewsBySlug(slug: string): Promise<NewsDetail | null> {
 	const record = await db.query.news.findFirst({
 		where: and(
 			eq(news.slug, slug),
@@ -88,10 +110,13 @@ export async function getNewsBySlug(slug: string): Promise<NewsRecord | null> {
 			isNull(news.deletedAt),
 		),
 	});
-	return record ?? null;
+	if (!record) return null;
+
+	const html = renderContent(record.content ?? "");
+	return { ...record, html };
 }
 
-/** 根据 id 获取单条新闻 */
+/** 根据 id 获取单条新闻（管理端用） */
 export async function getNewsById(id: string): Promise<NewsRecord | null> {
 	const record = await db.query.news.findFirst({
 		where: and(eq(news.id, id), isNull(news.deletedAt)),
@@ -175,6 +200,25 @@ export async function updateNews(
 		.returning();
 
 	return updated ?? null;
+}
+
+/** 变更新闻状态（发布/归档） */
+export async function changeNewsStatus(
+	id: string,
+	status: string,
+): Promise<{ success: boolean }> {
+	const updateData: Record<string, unknown> = {
+		status,
+		updatedAt: new Date(),
+	};
+	if (status === "published") {
+		const existing = await db.query.news.findFirst({
+			where: eq(news.id, id),
+		});
+		if (existing && !existing.publishedAt) updateData.publishedAt = new Date();
+	}
+	await db.update(news).set(updateData).where(eq(news.id, id));
+	return { success: true };
 }
 
 /** 删除新闻（软删除） */

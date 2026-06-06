@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * 新建新闻页面（TipTap 富文本编辑器）
  */
@@ -9,10 +8,9 @@ import { useState } from "react";
 import { z } from "zod";
 import { AdminShell } from "#/components/admin/AdminShell";
 import { NewsEditor } from "#/components/admin/NewsEditor";
-import { db } from "#/db/index";
-import { news } from "#/db/schema";
 import { PERMISSIONS } from "#/lib/permissions";
 import { permGuard } from "#/middleware/server-fn-auth";
+import { createNews } from "#/server/news";
 
 const createSchema = z.object({
 	title: z.string().min(1, "标题不能为空").max(500),
@@ -27,40 +25,7 @@ const createNewsFn = createServerFn({ method: "POST" })
 	.middleware([permGuard(PERMISSIONS.NEWS_CREATE)])
 	.inputValidator(createSchema)
 	.handler(async ({ data }) => {
-		const generateSlug = (t: string) => {
-			const hasChinese = /[\u4e00-\u9fff]/.test(t);
-			return hasChinese
-				? `news-${Date.now()}`
-				: t
-						.toLowerCase()
-						.replace(/[^\w\s-]/g, "")
-						.replace(/\s+/g, "-")
-						.slice(0, 100) || `news-${Date.now()}`;
-		};
-		let slug = data.slug?.trim() || generateSlug(data.title);
-		let counter = 1;
-		while (
-			await db.query.news.findFirst({
-				where: (t, { eq: e, and, isNull: n }) =>
-					and(e(t.slug, slug), n(t.deletedAt)),
-			})
-		) {
-			slug = `${data.slug || generateSlug(data.title)}-${counter}`;
-			counter++;
-		}
-		const [record] = await db
-			.insert(news)
-			.values({
-				title: data.title,
-				slug,
-				summary: data.summary,
-				content: data.content,
-				status: data.status,
-				isPinned: data.isPinned,
-				publishedAt: data.status === "published" ? new Date() : null,
-			})
-			.returning();
-		return record;
+		return createNews(data);
 	});
 
 export const Route = createFileRoute("/admin/_admin/news/create")({

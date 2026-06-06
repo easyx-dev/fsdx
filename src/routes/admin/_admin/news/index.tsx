@@ -4,15 +4,17 @@
 
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
-import { and, desc, eq, isNull } from "drizzle-orm";
 import { Pencil, Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { z } from "zod";
 import { AdminShell } from "#/components/admin/AdminShell";
-import { db } from "#/db/index";
-import { news } from "#/db/schema";
 import { PERMISSIONS } from "#/lib/permissions";
 import { permGuard } from "#/middleware/server-fn-auth";
+import {
+	changeNewsStatus,
+	deleteNews,
+	getNewsList as getNewsListService,
+} from "#/server/news";
 
 const listSchema = z.object({
 	status: z.string().optional(),
@@ -28,28 +30,14 @@ const getNewsListFn = createServerFn({ method: "GET" })
 	.middleware([permGuard(PERMISSIONS.NEWS_VIEW)])
 	.inputValidator(listSchema)
 	.handler(async ({ data: { status, page = 1 } }) => {
-		const pageSize = 20;
-		const conditions = [isNull(news.deletedAt)];
-		if (status) conditions.push(eq(news.status, status));
-		const whereCondition = and(...conditions);
-		const [records, total] = await Promise.all([
-			db
-				.select()
-				.from(news)
-				.where(whereCondition)
-				.orderBy(desc(news.isPinned), desc(news.createdAt))
-				.limit(pageSize)
-				.offset((page - 1) * pageSize),
-			db.$count(db.select().from(news).where(whereCondition)),
-		]);
-		return { records, total, page, pageSize };
+		return getNewsListService({ status, page, pageSize: 20 });
 	});
 
 const deleteNewsFn = createServerFn({ method: "POST" })
 	.middleware([permGuard(PERMISSIONS.NEWS_DELETE)])
 	.inputValidator(idSchema)
 	.handler(async ({ data: { id } }) => {
-		await db.update(news).set({ deletedAt: new Date() }).where(eq(news.id, id));
+		await deleteNews(id);
 		return { success: true };
 	});
 
@@ -57,19 +45,7 @@ const changeStatusFn = createServerFn({ method: "POST" })
 	.middleware([permGuard(PERMISSIONS.NEWS_PUBLISH)])
 	.inputValidator(statusSchema)
 	.handler(async ({ data: { id, status } }) => {
-		const updateData: Record<string, unknown> = {
-			status,
-			updatedAt: new Date(),
-		};
-		if (status === "published") {
-			const existing = await db.query.news.findFirst({
-				where: eq(news.id, id),
-			});
-			if (existing && !existing.publishedAt)
-				updateData.publishedAt = new Date();
-		}
-		await db.update(news).set(updateData).where(eq(news.id, id));
-		return { success: true };
+		return changeNewsStatus(id, status);
 	});
 
 export const Route = createFileRoute("/admin/_admin/news/")({

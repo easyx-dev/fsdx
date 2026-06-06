@@ -1,9 +1,9 @@
 /**
- * 文件管理：上传（SHA256 秒传）、临时/永久、清理
+ * 文件管理：上传（SHA256 秒传）、临时/永久、清理、列表、删除
  */
 import { createHash, randomUUID } from "node:crypto";
 import { createServerFn } from "@tanstack/react-start";
-import { and, eq, isNull, lt } from "drizzle-orm";
+import { and, desc, eq, isNull, lt } from "drizzle-orm";
 import { db } from "#/db/index";
 import { file } from "#/db/schema";
 import { logger } from "#/lib/logger";
@@ -137,4 +137,39 @@ export async function cleanExpiredFiles(): Promise<number> {
 
 	logger.info({ count: expiredFiles.length }, "过期临时文件已清理");
 	return expiredFiles.length;
+}
+
+/** 获取文件列表 */
+export async function getFileList(status?: string) {
+	const conditions = [isNull(file.deletedAt)];
+	if (status) conditions.push(eq(file.status, status));
+	return db
+		.select()
+		.from(file)
+		.where(and(...conditions))
+		.orderBy(desc(file.createdAt))
+		.limit(100);
+}
+
+/** 删除文件（软删除） */
+export async function deleteFile(id: string): Promise<boolean> {
+	const existing = await db.query.file.findFirst({
+		where: and(eq(file.id, id), isNull(file.deletedAt)),
+	});
+	if (!existing) return false;
+
+	await db.update(file).set({ deletedAt: new Date() }).where(eq(file.id, id));
+
+	logger.info({ id, name: existing.originalName }, "文件已删除");
+	return true;
+}
+
+/** 将临时文件转为永久存储 */
+export async function makePermanent(id: string): Promise<boolean> {
+	await db
+		.update(file)
+		.set({ status: "permanent", expiredAt: null, updatedAt: new Date() })
+		.where(eq(file.id, id));
+
+	return true;
 }

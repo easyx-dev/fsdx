@@ -1,8 +1,7 @@
-// @ts-nocheck
 /**
  * 验证码模块：生成、发送、校验验证码
  */
-import { and, eq, gt } from "drizzle-orm";
+import { and, desc, eq, gt } from "drizzle-orm";
 import { db } from "#/db/index";
 import { captchaCode } from "#/db/schema";
 import { logger } from "#/lib/logger";
@@ -86,7 +85,7 @@ export async function verifyCaptcha(
 			eq(captchaCode.used, false),
 			gt(captchaCode.expiredAt, new Date()),
 		),
-		orderBy: (t: any, { desc }: any) => [desc(t.createdAt)],
+		orderBy: desc(captchaCode.createdAt),
 	});
 
 	if (!record) return false;

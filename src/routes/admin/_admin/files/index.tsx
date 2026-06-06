@@ -4,16 +4,18 @@
 
 import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
-import { and, desc, eq, isNull } from "drizzle-orm";
 import { Check, Download, FolderOpen, Trash2, Upload } from "lucide-react";
 import { useRef, useState } from "react";
 import { z } from "zod";
 import { AdminShell } from "#/components/admin/AdminShell";
-import { db } from "#/db/index";
-import { file } from "#/db/schema";
 import { PERMISSIONS } from "#/lib/permissions";
 import { permGuard } from "#/middleware/server-fn-auth";
-import { uploadFile } from "#/server/file";
+import {
+	deleteFile,
+	getFileList as getFileListService,
+	makePermanent,
+	uploadFile,
+} from "#/server/file";
 
 const fileListSchema = z.object({ status: z.string().optional() });
 const idSchema = z.object({ id: z.string().min(1) });
@@ -22,24 +24,14 @@ const getFileList = createServerFn({ method: "GET" })
 	.middleware([permGuard(PERMISSIONS.FILE_VIEW)])
 	.inputValidator(fileListSchema)
 	.handler(async ({ data }) => {
-		const conditions = [isNull(file.deletedAt)];
-		if (data.status) conditions.push(eq(file.status, data.status));
-		return db
-			.select()
-			.from(file)
-			.where(and(...conditions))
-			.orderBy(desc(file.createdAt))
-			.limit(100);
+		return getFileListService(data.status);
 	});
 
 const deleteFileFn = createServerFn({ method: "POST" })
 	.middleware([permGuard(PERMISSIONS.FILE_DELETE)])
 	.inputValidator(idSchema)
 	.handler(async ({ data }) => {
-		await db
-			.update(file)
-			.set({ deletedAt: new Date() })
-			.where(eq(file.id, data.id));
+		await deleteFile(data.id);
 		return { success: true };
 	});
 
@@ -47,10 +39,7 @@ const makePermanentFn = createServerFn({ method: "POST" })
 	.middleware([permGuard(PERMISSIONS.FILE_EDIT)])
 	.inputValidator(idSchema)
 	.handler(async ({ data }) => {
-		await db
-			.update(file)
-			.set({ status: "permanent", expiredAt: null, updatedAt: new Date() })
-			.where(eq(file.id, data.id));
+		await makePermanent(data.id);
 		return { success: true };
 	});
 

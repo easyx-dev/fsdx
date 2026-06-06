@@ -1,20 +1,26 @@
-// @ts-nocheck
 /**
  * 字典管理页面：字典类型 + 条目 CRUD
  */
 
 import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
-import { and, asc, eq, isNull } from "drizzle-orm";
 import { Pencil, Plus, Trash2, X } from "lucide-react";
 import { useState } from "react";
 import { z } from "zod";
 import { AdminShell } from "#/components/admin/AdminShell";
-import { db } from "#/db/index";
-import { dict, dictItem } from "#/db/schema";
 import { PERMISSIONS } from "#/lib/permissions";
 import { permGuard } from "#/middleware/server-fn-auth";
-import { loadDictCache } from "#/server/dict";
+import type { DictItemRecord, DictRecord } from "#/server/dict";
+import {
+	createDict,
+	createDictItem,
+	deleteDict,
+	deleteDictItem,
+	getDictItemList,
+	getDictList as getDictListService,
+	updateDict,
+	updateDictItem,
+} from "#/server/dict";
 
 const dictIdSchema = z.object({ dictId: z.string().min(1) });
 const idSchema = z.object({ id: z.string().min(1) });
@@ -44,31 +50,22 @@ const updateItemSchema = z.object({
 
 const getDictList = createServerFn({ method: "GET" })
 	.middleware([permGuard(PERMISSIONS.DICT_VIEW)])
-	.handler(async () =>
-		db
-			.select()
-			.from(dict)
-			.where(isNull(dict.deletedAt))
-			.orderBy(asc(dict.createdAt)),
-	);
+	.handler(async () => {
+		return getDictListService();
+	});
 
 const getDictItems = createServerFn({ method: "GET" })
 	.middleware([permGuard(PERMISSIONS.DICT_VIEW)])
 	.inputValidator(dictIdSchema)
-	.handler(async ({ data: { dictId } }) =>
-		db
-			.select()
-			.from(dictItem)
-			.where(and(isNull(dictItem.deletedAt), eq(dictItem.dictId, dictId)))
-			.orderBy(asc(dictItem.sortOrder)),
-	);
+	.handler(async ({ data: { dictId } }) => {
+		return getDictItemList(dictId);
+	});
 
 const createDictFn = createServerFn({ method: "POST" })
 	.middleware([permGuard(PERMISSIONS.DICT_CREATE)])
 	.inputValidator(createDictSchema)
 	.handler(async ({ data }) => {
-		await db.insert(dict).values(data);
-		await loadDictCache();
+		await createDict(data);
 		return { success: true };
 	});
 
@@ -77,10 +74,7 @@ const updateDictFn = createServerFn({ method: "POST" })
 	.inputValidator(updateDictSchema)
 	.handler(async ({ data }) => {
 		const { id, ...rest } = data;
-		await db
-			.update(dict)
-			.set({ ...rest, updatedAt: new Date() })
-			.where(eq(dict.id, id));
+		await updateDict(id, rest);
 		return { success: true };
 	});
 
@@ -88,15 +82,7 @@ const deleteDictFn = createServerFn({ method: "POST" })
 	.middleware([permGuard(PERMISSIONS.DICT_DELETE)])
 	.inputValidator(idSchema)
 	.handler(async ({ data: { id } }) => {
-		const now = new Date();
-		await db.transaction(async (tx) => {
-			await tx
-				.update(dictItem)
-				.set({ deletedAt: now })
-				.where(eq(dictItem.dictId, id));
-			await tx.update(dict).set({ deletedAt: now }).where(eq(dict.id, id));
-		});
-		await loadDictCache();
+		await deleteDict(id);
 		return { success: true };
 	});
 
@@ -104,8 +90,7 @@ const createDictItemFn = createServerFn({ method: "POST" })
 	.middleware([permGuard(PERMISSIONS.DICT_CREATE_ITEM)])
 	.inputValidator(createItemSchema)
 	.handler(async ({ data }) => {
-		await db.insert(dictItem).values(data);
-		await loadDictCache();
+		await createDictItem(data);
 		return { success: true };
 	});
 
@@ -114,11 +99,7 @@ const updateDictItemFn = createServerFn({ method: "POST" })
 	.inputValidator(updateItemSchema)
 	.handler(async ({ data }) => {
 		const { id, ...rest } = data;
-		await db
-			.update(dictItem)
-			.set({ ...rest, updatedAt: new Date() })
-			.where(eq(dictItem.id, id));
-		await loadDictCache();
+		await updateDictItem(id, rest);
 		return { success: true };
 	});
 
@@ -126,11 +107,7 @@ const deleteDictItemFn = createServerFn({ method: "POST" })
 	.middleware([permGuard(PERMISSIONS.DICT_DELETE_ITEM)])
 	.inputValidator(idSchema)
 	.handler(async ({ data: { id } }) => {
-		await db
-			.update(dictItem)
-			.set({ deletedAt: new Date() })
-			.where(eq(dictItem.id, id));
-		await loadDictCache();
+		await deleteDictItem(id);
 		return { success: true };
 	});
 
@@ -143,15 +120,11 @@ function DictsPage() {
 	const router = useRouter();
 	const dictList = Route.useLoaderData();
 	const [selectedDictId, setSelectedDictId] = useState<string | null>(null);
-	const [items, setItems] = useState<(typeof dictItem.$inferSelect)[]>([]);
+	const [items, setItems] = useState<DictItemRecord[]>([]);
 	const [showDictForm, setShowDictForm] = useState(false);
-	const [editingDict, setEditingDict] = useState<
-		typeof dict.$inferSelect | null
-	>(null);
+	const [editingDict, setEditingDict] = useState<DictRecord | null>(null);
 	const [showItemForm, setShowItemForm] = useState(false);
-	const [editingItem, setEditingItem] = useState<
-		typeof dictItem.$inferSelect | null
-	>(null);
+	const [editingItem, setEditingItem] = useState<DictItemRecord | null>(null);
 
 	const refreshItems = async (dictId: string) => {
 		const data = await getDictItems({ data: { dictId } });

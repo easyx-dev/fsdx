@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * 日志查询页面：搜索/筛选操作日志文件
  */
@@ -7,33 +6,37 @@ import { createFileRoute } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
 import { FileText, RefreshCw, Search } from "lucide-react";
 import { useState } from "react";
+import { z } from "zod";
 import { AdminShell } from "#/components/admin/AdminShell";
+import { PERMISSIONS } from "#/lib/permissions";
+import { permGuard } from "#/middleware/server-fn-auth";
 import {
-	getLogDates,
+	getLogDates as getLogDatesService,
 	type LogEntry,
 	type LogQueryResult,
-	queryLogs,
-} from "#/lib/logger";
+	searchLogs as searchLogsService,
+} from "#/server/logs";
+
+const searchLogsSchema = z.object({
+	startDate: z.string().optional(),
+	endDate: z.string().optional(),
+	keyword: z.string().optional(),
+	level: z.string().optional(),
+	page: z.number().optional(),
+	pageSize: z.number().optional(),
+});
 
 const searchLogsFn = createServerFn({ method: "GET" })
-	.inputValidator(
-		(data: {
-			startDate?: string;
-			endDate?: string;
-			keyword?: string;
-			level?: string;
-			page?: number;
-			pageSize?: number;
-		}) => data,
-	)
+	.middleware([permGuard(PERMISSIONS.LOG_VIEW)])
+	.inputValidator(searchLogsSchema)
 	.handler(async ({ data }) => {
-		return queryLogs(data) as unknown as ReturnType<typeof queryLogs>;
+		return searchLogsService(data);
 	});
 
 const getDatesFn = createServerFn({ method: "GET" })
 	.middleware([permGuard(PERMISSIONS.LOG_VIEW)])
 	.handler(async () => {
-		return getLogDates();
+		return getLogDatesService();
 	});
 
 const levels = ["", "info", "warn", "error", "debug", "fatal"];
@@ -48,22 +51,17 @@ const levelColors: Record<string, string> = {
 export const Route = createFileRoute("/admin/_admin/logs/")({
 	component: LogsPage,
 	loader: async () => {
-		const [result, dates]: [LogQueryResult, string[]] = await Promise.all([
+		const [result, dates] = await Promise.all([
 			searchLogsFn({ data: { page: 1, pageSize: 20 } }),
 			getDatesFn(),
 		]);
-		return { ...result, availableDates: dates };
+		return { result, availableDates: dates };
 	},
 });
 
 function LogsPage() {
-	const initial = Route.useLoaderData() as any;
-	const [result, setResult] = useState<LogQueryResult>({
-		entries: initial.entries,
-		total: initial.total,
-		page: initial.page,
-		pageSize: initial.pageSize,
-	});
+	const initial = Route.useLoaderData();
+	const [result, setResult] = useState<LogQueryResult>(initial.result);
 	const [dates] = useState<string[]>(initial.availableDates);
 	const [keyword, setKeyword] = useState("");
 	const [level, setLevel] = useState("");
@@ -83,7 +81,7 @@ function LogsPage() {
 				pageSize,
 			},
 		});
-		setResult(data as LogQueryResult);
+		setResult(data);
 		setPage(p);
 	};
 
@@ -93,7 +91,9 @@ function LogsPage() {
 		const t =
 			typeof entry.time === "number"
 				? new Date(entry.time)
-				: new Date(entry.time as string);
+				: entry.time
+					? new Date(entry.time as string)
+					: new Date();
 		return t.toLocaleString("zh-CN");
 	};
 
@@ -218,7 +218,7 @@ function LogsPage() {
 										{entry.level.toUpperCase()}
 									</span>
 									<span className="font-mono text-xs text-zinc-600 flex-1 truncate">
-										{entry.msg || JSON.stringify(entry)}
+										{entry.msg ?? ""}
 									</span>
 								</div>
 							</div>
@@ -234,27 +234,24 @@ function LogsPage() {
 							>
 								上一页
 							</button>
-							{Array.from(
-								{ length: Math.min(totalPages, 7) } as any,
-								(_: any, i: number) => {
-									const p =
-										page <= 4
-											? i + 1
-											: page >= totalPages - 3
-												? totalPages - 6 + i
-												: page - 3 + i;
-									if (p < 1 || p > totalPages) return null;
-									return (
-										<button
-											key={p}
-											onClick={() => doSearch(p)}
-											className={`rounded px-2 py-1 text-xs ${p === page ? "bg-zinc-900 text-white" : "text-zinc-500 hover:bg-zinc-100"}`}
-										>
-											{p}
-										</button>
-									);
-								},
-							)}
+							{Array.from({ length: Math.min(totalPages, 7) }, (_, i) => {
+								const p =
+									page <= 4
+										? i + 1
+										: page >= totalPages - 3
+											? totalPages - 6 + i
+											: page - 3 + i;
+								if (p < 1 || p > totalPages) return null;
+								return (
+									<button
+										key={p}
+										onClick={() => doSearch(p)}
+										className={`rounded px-2 py-1 text-xs ${p === page ? "bg-zinc-900 text-white" : "text-zinc-500 hover:bg-zinc-100"}`}
+									>
+										{p}
+									</button>
+								);
+							})}
 							<button
 								disabled={page >= totalPages}
 								onClick={() => doSearch(page + 1)}

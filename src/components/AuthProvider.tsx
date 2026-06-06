@@ -10,7 +10,8 @@ import {
 	useEffect,
 	useState,
 } from "react";
-import { type AuthUser, getCurrentUserFn } from "#/server/auth/current-user";
+import { getCurrentUserFn } from "#/routes/admin/_admin";
+import type { AuthUser } from "#/server/auth/current-user";
 
 interface AuthContextType {
 	/** 当前登录用户，null 表示未登录 */

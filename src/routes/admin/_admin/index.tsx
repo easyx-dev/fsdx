@@ -3,46 +3,21 @@
  */
 import { createFileRoute } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
-import { and, eq, isNull, sql } from "drizzle-orm";
 import { HardDrive, Newspaper, ShieldCheck, Users } from "lucide-react";
 import { AdminShell } from "#/components/admin/AdminShell";
-import { db } from "#/db/index";
-import { adminUser, clientUser, file, news } from "#/db/schema";
 import { PERMISSIONS } from "#/lib/permissions";
 import { permGuard } from "#/middleware/server-fn-auth";
+import { getStats } from "#/server/stats";
 
-const getStats = createServerFn({ method: "GET" })
+const getStatsFn = createServerFn({ method: "GET" })
 	.middleware([permGuard(PERMISSIONS.DASHBOARD_VIEW)])
 	.handler(async () => {
-		const [newsTotal, publishedNews, adminTotal, clientTotal] =
-			await Promise.all([
-				db.$count(db.select().from(news).where(isNull(news.deletedAt))),
-				db.$count(
-					db
-						.select()
-						.from(news)
-						.where(and(eq(news.status, "published"), isNull(news.deletedAt))),
-				),
-				db.$count(
-					db.select().from(adminUser).where(isNull(adminUser.deletedAt)),
-				),
-				db.$count(
-					db.select().from(clientUser).where(isNull(clientUser.deletedAt)),
-				),
-			]);
-
-		const storageResult = await db
-			.select({ total: sql<number>`COALESCE(SUM(${file.size}), 0)` })
-			.from(file)
-			.where(and(isNull(file.deletedAt), eq(file.status, "permanent")));
-		const storageTotal = storageResult[0]?.total ?? 0;
-
-		return { newsTotal, publishedNews, adminTotal, clientTotal, storageTotal };
+		return getStats();
 	});
 
 export const Route = createFileRoute("/admin/_admin/")({
 	component: Dashboard,
-	loader: async () => await getStats(),
+	loader: async () => await getStatsFn(),
 });
 
 function formatStorage(bytes: number): string {

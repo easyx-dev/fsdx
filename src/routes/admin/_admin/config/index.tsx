@@ -4,16 +4,19 @@
 
 import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
-import { asc, eq, isNull } from "drizzle-orm";
 import { Copy, Pencil, Plus, Trash2, X } from "lucide-react";
 import { useState } from "react";
 import { z } from "zod";
 import { AdminShell } from "#/components/admin/AdminShell";
-import { db } from "#/db/index";
-import { systemConfig } from "#/db/schema";
 import { PERMISSIONS } from "#/lib/permissions";
 import { permGuard } from "#/middleware/server-fn-auth";
-import { loadConfigCache } from "#/server/config";
+import {
+	type ConfigRecord,
+	createConfig,
+	deleteConfig,
+	getConfigList as getConfigListService,
+	updateConfig,
+} from "#/server/config";
 
 const createConfigSchema = z.object({
 	key: z.string().min(1, "配置键不能为空").max(100),
@@ -30,19 +33,14 @@ const deleteConfigSchema = z.object({ id: z.string().min(1) });
 const getConfigList = createServerFn({ method: "GET" })
 	.middleware([permGuard(PERMISSIONS.CONFIG_VIEW)])
 	.handler(async () => {
-		return db
-			.select()
-			.from(systemConfig)
-			.where(isNull(systemConfig.deletedAt))
-			.orderBy(asc(systemConfig.key));
+		return getConfigListService();
 	});
 
 const createConfigFn = createServerFn({ method: "POST" })
 	.middleware([permGuard(PERMISSIONS.CONFIG_CREATE)])
 	.inputValidator(createConfigSchema)
 	.handler(async ({ data }) => {
-		await db.insert(systemConfig).values(data);
-		await loadConfigCache();
+		await createConfig(data);
 		return { success: true };
 	});
 
@@ -51,11 +49,7 @@ const updateConfigFn = createServerFn({ method: "POST" })
 	.inputValidator(updateConfigSchema)
 	.handler(async ({ data }) => {
 		const { id, ...rest } = data;
-		await db
-			.update(systemConfig)
-			.set({ ...rest, updatedAt: new Date() })
-			.where(eq(systemConfig.id, id));
-		await loadConfigCache();
+		await updateConfig(id, rest);
 		return { success: true };
 	});
 
@@ -63,11 +57,7 @@ const deleteConfigFn = createServerFn({ method: "POST" })
 	.middleware([permGuard(PERMISSIONS.CONFIG_DELETE)])
 	.inputValidator(deleteConfigSchema)
 	.handler(async ({ data }) => {
-		await db
-			.update(systemConfig)
-			.set({ deletedAt: new Date() })
-			.where(eq(systemConfig.id, data.id));
-		await loadConfigCache();
+		await deleteConfig(data.id);
 		return { success: true };
 	});
 
@@ -80,9 +70,7 @@ function ConfigPage() {
 	const router = useRouter();
 	const configs = Route.useLoaderData();
 	const [showForm, setShowForm] = useState(false);
-	const [editing, setEditing] = useState<
-		typeof systemConfig.$inferSelect | null
-	>(null);
+	const [editing, setEditing] = useState<ConfigRecord | null>(null);
 	const [copied, setCopied] = useState<string | null>(null);
 
 	const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {

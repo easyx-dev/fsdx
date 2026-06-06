@@ -3,42 +3,14 @@
  */
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
-import { generateHTML } from "@tiptap/html";
-import StarterKit from "@tiptap/starter-kit";
-import { and, eq, isNull } from "drizzle-orm";
 import { ArrowLeft } from "lucide-react";
-import { db } from "#/db/index";
-import { news } from "#/db/schema";
-
-import { logger } from "#/lib/logger";
+import { z } from "zod";
+import { getNewsBySlug } from "#/server/news";
 
 const getNewsDetail = createServerFn({ method: "GET" })
-	.inputValidator((data: { slug: string }) => data)
+	.inputValidator(z.object({ slug: z.string().min(1) }))
 	.handler(async ({ data: { slug } }) => {
-		const record = await db.query.news.findFirst({
-			where: and(
-				eq(news.slug, slug),
-				eq(news.status, "published"),
-				isNull(news.deletedAt),
-			),
-		});
-
-		if (!record) return null;
-
-		let html = "";
-		if (record.content) {
-			try {
-				html = generateHTML(JSON.parse(record.content), [StarterKit]);
-			} catch (err) {
-				logger.error(
-					{ err, slug: record.slug },
-					"TipTap 内容解析失败，使用原始内容展示",
-				);
-				html = record.content;
-			}
-		}
-
-		return { ...record, html };
+		return getNewsBySlug(slug);
 	});
 
 export const Route = createFileRoute("/news/$slug")({
