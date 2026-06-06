@@ -8,8 +8,8 @@ import { logger } from "#/lib/logger";
 /** JWT 配置 */
 const JWT_SECRET = new TextEncoder().encode(getEnv().JWT_SECRET);
 
-/** Access Token 有效期：1 小时 */
-const ACCESS_TOKEN_EXPIRES = "1h";
+/** Access Token 有效期：7 天 */
+const ACCESS_TOKEN_EXPIRES = "7d";
 
 /** JWT 载荷 */
 export interface JwtPayload {
