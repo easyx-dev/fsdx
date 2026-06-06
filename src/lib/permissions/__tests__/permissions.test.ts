@@ -11,7 +11,7 @@ import {
 	hasPermission,
 	matchPermission,
 	PERMISSIONS,
-} from "#/lib/permissions";
+} from "#/lib/permissions/permissions";
 
 // ─── PermissionDef 辅助工具 ───
 

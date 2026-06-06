@@ -2,11 +2,16 @@
  * JWT 模块：签发和校验 access token
  */
 import { jwtVerify, SignJWT } from "jose";
-import { getEnv } from "#/lib/env";
-import { logger } from "#/lib/logger";
+import { logger } from "#/lib/logger/logger";
 
-/** JWT 配置 */
-const JWT_SECRET = new TextEncoder().encode(getEnv().JWT_SECRET);
+let _jwtSecret: Uint8Array | null = null;
+
+function getJwtSecret(): Uint8Array {
+	if (!_jwtSecret) {
+		_jwtSecret = new TextEncoder().encode(process.env.JWT_SECRET);
+	}
+	return _jwtSecret;
+}
 
 /** Access Token 有效期：7 天 */
 const ACCESS_TOKEN_EXPIRES = "7d";
@@ -27,7 +32,7 @@ export async function signToken(payload: JwtPayload): Promise<string> {
 		.setProtectedHeader({ alg: "HS256" })
 		.setIssuedAt()
 		.setExpirationTime(ACCESS_TOKEN_EXPIRES)
-		.sign(JWT_SECRET);
+		.sign(getJwtSecret());
 }
 
 /**
@@ -35,7 +40,7 @@ export async function signToken(payload: JwtPayload): Promise<string> {
  */
 export async function verifyToken(token: string): Promise<JwtPayload | null> {
 	try {
-		const { payload } = await jwtVerify(token, JWT_SECRET);
+		const { payload } = await jwtVerify(token, getJwtSecret());
 		return payload as unknown as JwtPayload;
 	} catch (err) {
 		logger.error({ err }, "JWT 校验失败");

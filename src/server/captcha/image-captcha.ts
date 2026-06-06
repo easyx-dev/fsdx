@@ -7,7 +7,7 @@ import { and, eq, gt } from "drizzle-orm";
 import { create } from "svg-captcha";
 import { db } from "#/db/index";
 import { captchaCode } from "#/db/schema";
-import { logger } from "#/lib/logger";
+import { logger } from "#/lib/logger/logger";
 
 /** 图片验证码有效期（3 分钟） */
 const IMAGE_CAPTCHA_EXPIRE_MINUTES = 3;

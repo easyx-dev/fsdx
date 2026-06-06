@@ -4,7 +4,7 @@
 
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-vi.mock("#/lib/logger", () => ({
+vi.mock("#/lib/logger/logger", () => ({
 	logger: { error: vi.fn(), info: vi.fn(), warn: vi.fn() },
 }));
 
@@ -13,7 +13,7 @@ vi.mock("bcryptjs", () => ({
 }));
 
 const { mockSignToken } = vi.hoisted(() => ({ mockSignToken: vi.fn() }));
-vi.mock("#/lib/jwt", () => ({ signToken: mockSignToken }));
+vi.mock("#/lib/jwt/jwt", () => ({ signToken: mockSignToken }));
 
 const { mockVerifyCaptcha } = vi.hoisted(() => ({
 	mockVerifyCaptcha: vi.fn(),

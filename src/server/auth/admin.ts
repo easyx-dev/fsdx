@@ -6,8 +6,8 @@ import bcrypt from "bcryptjs";
 import { eq } from "drizzle-orm";
 import { db } from "#/db/index";
 import { adminUser } from "#/db/schema";
-import { type JwtPayload, signToken } from "#/lib/jwt";
-import { logger } from "#/lib/logger";
+import { type JwtPayload, signToken } from "#/lib/jwt/jwt";
+import { logger } from "#/lib/logger/logger";
 
 export interface AdminLoginResult {
 	success: boolean;

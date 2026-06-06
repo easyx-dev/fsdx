@@ -2,7 +2,7 @@
  * 定时任务调度器：基于 node-cron 的轻量级定时任务管理
  */
 import cron from "node-cron";
-import { logger } from "#/lib/logger";
+import { logger } from "#/lib/logger/logger";
 
 /** 任务定义 */
 export interface ScheduledTask {

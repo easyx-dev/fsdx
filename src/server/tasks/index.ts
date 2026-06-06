@@ -2,8 +2,8 @@
  * 定时任务注册：在服务启动时调用
  */
 
-import { logger } from "#/lib/logger";
-import { registerTask } from "#/lib/scheduler";
+import { logger } from "#/lib/logger/logger";
+import { registerTask } from "#/lib/scheduler/scheduler";
 import { cleanExpiredFiles } from "#/server/file";
 
 /** 注册所有定时任务 */

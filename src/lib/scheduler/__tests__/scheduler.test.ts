@@ -16,7 +16,7 @@ vi.mock("node-cron", () => ({
 	},
 }));
 
-vi.mock("#/lib/logger", () => ({
+vi.mock("#/lib/logger/logger", () => ({
 	logger: { error: vi.fn(), info: vi.fn(), warn: vi.fn() },
 }));
 
@@ -26,7 +26,7 @@ import {
 	registerTask,
 	stopAllTasks,
 	stopTask,
-} from "#/lib/scheduler";
+} from "#/lib/scheduler/scheduler";
 
 describe("registerTask", () => {
 	const mockCronSchedule = vi.mocked(cron.schedule);

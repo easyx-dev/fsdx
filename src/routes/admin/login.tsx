@@ -16,7 +16,7 @@ import {
 } from "antd";
 import { useEffect, useState } from "react";
 import { z } from "zod";
-import { COOKIE_NAMES } from "#/lib/jwt";
+import { COOKIE_NAMES } from "#/lib/jwt/jwt";
 import { adminLoginService } from "#/server/auth";
 import { checkInitStatus } from "#/server/init";
 

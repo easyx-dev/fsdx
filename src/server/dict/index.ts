@@ -4,8 +4,8 @@
 import { and, asc, eq, isNull } from "drizzle-orm";
 import { db } from "#/db/index";
 import { dict, dictItem } from "#/db/schema";
-import { dictCache } from "#/lib/cache";
-import { logger } from "#/lib/logger";
+import { dictCache } from "#/lib/cache/cache";
+import { logger } from "#/lib/logger/logger";
 
 export type DictRecord = typeof dict.$inferSelect;
 export type DictItemRecord = typeof dictItem.$inferSelect;

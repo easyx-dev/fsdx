@@ -1,6 +1,6 @@
 /**
  * 日志模块：基于 pino + pino-roll，按天自动切割日志文件
- * 注意：不导入 getEnv()，避免与 pino transport worker 冲突
+ * 注意：直接读取 process.env，避免模块级导入与 pino transport worker 冲突
  */
 import pino from "pino";
 

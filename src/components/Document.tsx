@@ -2,9 +2,8 @@
  * 根路由：根据路径前缀分离 Admin（客户端渲染）与前台（SSR）
  */
 
-import { createCache, extractStyle, StyleProvider } from "@ant-design/cssinjs";
-import { HeadContent, Scripts, useRouterState } from "@tanstack/react-router";
-import { theme as antdTheme, ConfigProvider } from "antd";
+import { HeadContent, Scripts, useLocation } from "@tanstack/react-router";
+import { App, theme as antdTheme, ConfigProvider } from "antd";
 import zhCN from "antd/locale/zh_CN";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
@@ -18,7 +17,7 @@ import Footer from "#/components/Footer";
 import Header from "#/components/Header";
 import adminGlobalCss from "#/styles/admin.global.css?url";
 import ssrGlobalCss from "#/styles/ssr.global.css?url";
-import { AuthProvider } from "../AuthProvider";
+import { AuthProvider } from "./AuthProvider";
 
 const THEME_INIT_SCRIPT = `(function(){try{var s=window.localStorage.getItem('theme');var m=(s==='light'||s==='dark'||s==='auto')?s:'auto';var d=m==='auto'?window.matchMedia('(prefers-color-scheme: dark)').matches:m==='dark';var r=document.documentElement;r.classList.remove('light','dark');r.classList.add(d?'dark':'light');if(m==='auto'){r.removeAttribute('data-theme')}else{r.setAttribute('data-theme',m)}r.style.colorScheme=d?'dark':'light'}catch(e){}})();`;
 
@@ -42,16 +41,13 @@ export function SSRRootDocument({ children }: { children: React.ReactNode }) {
 	);
 }
 
-const styleCache = createCache();
 // Admin 路由：客户端渲染，集成主题管理与 antd ConfigProvider
 export function AdminRootDocument({ children }: { children: React.ReactNode }) {
-	const pathname = useRouterState({
-		select: (s) => s.location.pathname,
-	});
+	const location = useLocation();
+	const pathname = location.pathname;
 	const isStandalone =
 		pathname === "/admin/login" || pathname === "/admin/init";
 	const isAdmin = pathname.startsWith("/admin");
-	const styleText = extractStyle(styleCache);
 
 	// 管理端主题状态
 	const [mode, setMode] = useState<ThemeMode>("auto");
@@ -90,22 +86,21 @@ export function AdminRootDocument({ children }: { children: React.ReactNode }) {
 	return (
 		<html lang="zh-CN" suppressHydrationWarning>
 			<head>
-				<div dangerouslySetInnerHTML={{ __html: styleText }} />
 				<title>FSDX Admin</title>
-				<link rel="stylesheet" href={adminGlobalCss} />
 				<HeadContent />
+				<link rel="stylesheet" href={adminGlobalCss} />
 			</head>
 			<body className="font-sans antialiased">
-				<StyleProvider cache={styleCache}>
-					<AdminThemeContext.Provider value={ctxValue}>
-						<ConfigProvider
-							locale={zhCN}
-							theme={{
-								algorithm: isDark
-									? antdTheme.darkAlgorithm
-									: antdTheme.defaultAlgorithm,
-							}}
-						>
+				<AdminThemeContext.Provider value={ctxValue}>
+					<ConfigProvider
+						locale={zhCN}
+						theme={{
+							algorithm: isDark
+								? antdTheme.darkAlgorithm
+								: antdTheme.defaultAlgorithm,
+						}}
+					>
+						<App>
 							{!isStandalone && isAdmin ? (
 								<AuthProvider>
 									<AdminLayout>{children}</AdminLayout>
@@ -113,9 +108,9 @@ export function AdminRootDocument({ children }: { children: React.ReactNode }) {
 							) : (
 								children
 							)}
-						</ConfigProvider>
-					</AdminThemeContext.Provider>
-				</StyleProvider>
+						</App>
+					</ConfigProvider>
+				</AdminThemeContext.Provider>
 				<Scripts />
 			</body>
 		</html>

@@ -46,22 +46,7 @@
 				"noArrayIndexKey": "off"
 			},
 			"style": {
-				"noNonNullAssertion": "off",
-				"noRestrictedImports": {
-					"level": "error",
-					"options": {
-						"patterns": [
-							{
-								"group": ["#/server/*/*"],
-								"message": "请通过 #/server/<模块名> 导入，子模块应通过 index.ts 统一导出"
-							},
-							{
-								"group": ["#/lib/*/*"],
-								"message": "请通过 #/lib/<模块名> 导入，子模块应通过 index.ts 统一导出"
-							}
-						]
-					}
-				}
+				"noNonNullAssertion": "off"
 			}
 		}
 	},

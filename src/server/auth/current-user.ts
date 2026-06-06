@@ -3,7 +3,7 @@
  */
 
 import { db } from "#/db/index";
-import { verifyToken } from "#/lib/jwt";
+import { verifyToken } from "#/lib/jwt/jwt";
 
 /** 统一用户信息类型 */
 export interface AuthUser {

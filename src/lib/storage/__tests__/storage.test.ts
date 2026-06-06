@@ -5,18 +5,15 @@
 import fs from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { resolve } from "node:path";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { LocalStorageAdapter, type StorageAdapter } from "#/lib/storage";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import {
+	LocalStorageAdapter,
+	type StorageAdapter,
+} from "#/lib/storage/storage";
 
-vi.mock("#/lib/env", () => ({
-	getEnv: vi.fn(() => ({
-		STORAGE_DIR: ".tmp",
-		DATABASE_URL: "",
-		JWT_SECRET: "test-secret-at-least-32-chars!!",
-		LOG_LEVEL: "info",
-		NODE_ENV: "test",
-	})),
-}));
+process.env.STORAGE_DIR = ".tmp";
+process.env.DATABASE_URL = "";
+process.env.JWT_SECRET = "test-secret-at-least-32-chars!!";
 
 describe("LocalStorageAdapter", () => {
 	let adapter: LocalStorageAdapter;

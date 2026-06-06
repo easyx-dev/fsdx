@@ -6,7 +6,7 @@ import StarterKit from "@tiptap/starter-kit";
 import { and, desc, eq, isNull, ne } from "drizzle-orm";
 import { db } from "#/db/index";
 import { news } from "#/db/schema";
-import { logger } from "#/lib/logger";
+import { logger } from "#/lib/logger/logger";
 
 export type NewsRecord = typeof news.$inferSelect;
 

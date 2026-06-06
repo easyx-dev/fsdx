@@ -4,20 +4,13 @@
 
 import { describe, expect, it, vi } from "vitest";
 
-vi.mock("#/lib/env", () => ({
-	getEnv: vi.fn(() => ({
-		JWT_SECRET: "test-jwt-secret-at-least-32-characters-long!!",
-		DATABASE_URL: "postgres://localhost/test",
-		LOG_LEVEL: "info",
-		NODE_ENV: "test",
-		STORAGE_DIR: ".tmp",
-	})),
-}));
-vi.mock("#/lib/logger", () => ({
+process.env.JWT_SECRET = "test-jwt-secret-at-least-32-characters-long!!";
+process.env.DATABASE_URL = "postgres://localhost/test";
+vi.mock("#/lib/logger/logger", () => ({
 	logger: { error: vi.fn(), info: vi.fn(), warn: vi.fn() },
 }));
 
-import { COOKIE_NAMES, signToken, verifyToken } from "#/lib/jwt";
+import { COOKIE_NAMES, signToken, verifyToken } from "#/lib/jwt/jwt";
 
 describe("signToken / verifyToken", () => {
 	it("签发后可用 verifyToken 校验并获取 payload", async () => {

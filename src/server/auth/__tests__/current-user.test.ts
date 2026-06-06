@@ -5,7 +5,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const { mockVerifyToken } = vi.hoisted(() => ({ mockVerifyToken: vi.fn() }));
-vi.mock("#/lib/jwt", () => ({ verifyToken: mockVerifyToken }));
+vi.mock("#/lib/jwt/jwt", () => ({ verifyToken: mockVerifyToken }));
 
 const { mockDb } = vi.hoisted(() => {
 	const q = () => ({ findFirst: vi.fn(), findMany: vi.fn() });

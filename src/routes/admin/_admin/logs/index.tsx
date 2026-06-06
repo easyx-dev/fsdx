@@ -21,7 +21,7 @@ import {
 } from "antd";
 import { useState } from "react";
 import { z } from "zod";
-import { PERMISSIONS } from "#/lib/permissions";
+import { PERMISSIONS } from "#/lib/permissions/permissions";
 import { permGuard } from "#/middleware/server-fn-auth";
 import {
 	getLogDates as getLogDatesService,

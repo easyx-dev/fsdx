@@ -4,11 +4,10 @@
 import { createReadStream, existsSync, readdirSync } from "node:fs";
 import { resolve } from "node:path";
 import { createInterface } from "node:readline";
-import { getEnv } from "#/lib/env";
 
 /** 日志目录路径 */
 function getLogDir(): string {
-	return resolve(getEnv().STORAGE_DIR, "logs");
+	return resolve(process.env.STORAGE_DIR || ".tmp", "logs");
 }
 
 /** 日志条目 */

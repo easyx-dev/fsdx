@@ -11,8 +11,12 @@ export function getRouter() {
 		scrollRestoration: true,
 		defaultPreload: "intent",
 		defaultPreloadStaleTime: 0,
-		defaultErrorComponent: DefaultErrorFallback,
-		defaultNotFoundComponent: NotFoundFallback,
+		defaultErrorComponent: ({ error, reset }) => (
+			<DefaultErrorFallback error={error} reset={reset} />
+		),
+		defaultNotFoundComponent: () => {
+			return <NotFoundFallback />;
+		},
 	});
 
 	return router;

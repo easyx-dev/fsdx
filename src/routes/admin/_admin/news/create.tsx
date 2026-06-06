@@ -7,7 +7,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { Button, Form, Input, message, Select, Switch } from "antd";
 import { z } from "zod";
 import { NewsEditor } from "#/components/admin/NewsEditor";
-import { PERMISSIONS } from "#/lib/permissions";
+import { PERMISSIONS } from "#/lib/permissions/permissions";
 import { permGuard } from "#/middleware/server-fn-auth";
 import { createNews } from "#/server/news";
 

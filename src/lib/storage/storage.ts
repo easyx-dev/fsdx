@@ -6,7 +6,6 @@ import fs from "node:fs/promises";
 import { resolve } from "node:path";
 import type { Readable } from "node:stream";
 import { pipeline } from "node:stream/promises";
-import { getEnv } from "#/lib/env";
 
 /** 存储适配器接口 */
 export interface StorageAdapter {
@@ -26,8 +25,9 @@ export interface StorageAdapter {
 export class LocalStorageAdapter implements StorageAdapter {
 	private baseDir: string;
 
-	constructor(baseDir: string = resolve(getEnv().STORAGE_DIR, "uploads")) {
-		this.baseDir = baseDir;
+	constructor(baseDir?: string) {
+		this.baseDir =
+			baseDir ?? resolve(process.env.STORAGE_DIR || ".tmp", "uploads");
 	}
 
 	async save(filePath: string, content: Buffer | Readable): Promise<string> {
@@ -58,7 +58,7 @@ export class LocalStorageAdapter implements StorageAdapter {
 	}
 
 	getUrl(filePath: string): string {
-		return `/${getEnv().STORAGE_DIR}/uploads/${filePath}`;
+		return `/${process.env.STORAGE_DIR || ".tmp"}/uploads/${filePath}`;
 	}
 
 	async exists(filePath: string): Promise<boolean> {

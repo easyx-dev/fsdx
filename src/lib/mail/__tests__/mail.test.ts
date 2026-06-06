@@ -28,11 +28,11 @@ vi.mock("#/server/config", () => ({
 	upsertConfig: vi.fn(),
 }));
 
-vi.mock("#/lib/logger", () => ({
+vi.mock("#/lib/logger/logger", () => ({
 	logger: { error: vi.fn(), info: vi.fn(), warn: vi.fn() },
 }));
 
-import { sendCaptchaMail, sendMail } from "#/lib/mail";
+import { sendCaptchaMail, sendMail } from "#/lib/mail/mail";
 
 describe("sendMail", () => {
 	beforeEach(() => {

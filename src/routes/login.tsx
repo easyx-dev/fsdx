@@ -10,7 +10,7 @@ import { z } from "zod";
 import { Button } from "#/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "#/components/ui/card";
 import { Input } from "#/components/ui/input";
-import { COOKIE_NAMES } from "#/lib/jwt";
+import { COOKIE_NAMES } from "#/lib/jwt/jwt";
 import { clientLoginService } from "#/server/auth";
 
 const loginSchema = z.object({

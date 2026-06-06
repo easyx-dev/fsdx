@@ -1,8 +1,11 @@
 /**
  * 鉴权中间件：管理端路由鉴权和权限校验
  */
-import { COOKIE_NAMES, type JwtPayload, verifyToken } from "#/lib/jwt";
-import { hasPermission, type PermissionDef } from "#/lib/permissions";
+import { COOKIE_NAMES, type JwtPayload, verifyToken } from "#/lib/jwt/jwt";
+import {
+	hasPermission,
+	type PermissionDef,
+} from "#/lib/permissions/permissions";
 
 /**
  * 从请求头 Cookie 中提取指定 cookie 值

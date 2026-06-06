@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as RegisterRouteImport } from './routes/register'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as AdminRouteImport } from './routes/admin'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as NewsIndexRouteImport } from './routes/news/index'
@@ -40,6 +41,11 @@ const LoginRoute = LoginRouteImport.update({
   path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminRoute = AdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AboutRoute = AboutRouteImport.update({
   id: '/about',
   path: '/about',
@@ -61,19 +67,18 @@ const NewsSlugRoute = NewsSlugRouteImport.update({
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminLoginRoute = AdminLoginRouteImport.update({
-  id: '/admin/login',
-  path: '/admin/login',
-  getParentRoute: () => rootRouteImport,
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => AdminRoute,
 } as any)
 const AdminInitRoute = AdminInitRouteImport.update({
-  id: '/admin/init',
-  path: '/admin/init',
-  getParentRoute: () => rootRouteImport,
+  id: '/init',
+  path: '/init',
+  getParentRoute: () => AdminRoute,
 } as any)
 const AdminAdminRoute = AdminAdminRouteImport.update({
-  id: '/admin/_admin',
-  path: '/admin',
-  getParentRoute: () => rootRouteImport,
+  id: '/_admin',
+  getParentRoute: () => AdminRoute,
 } as any)
 const AdminAdminIndexRoute = AdminAdminIndexRouteImport.update({
   id: '/',
@@ -136,9 +141,9 @@ const AdminAdminNewsIdEditRoute = AdminAdminNewsIdEditRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
+  '/admin': typeof AdminRouteWithChildren
   '/login': typeof LoginRoute
   '/register': typeof RegisterRoute
-  '/admin': typeof AdminAdminRouteWithChildren
   '/admin/init': typeof AdminInitRoute
   '/admin/login': typeof AdminLoginRoute
   '/news/$slug': typeof NewsSlugRoute
@@ -158,13 +163,13 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
+  '/admin': typeof AdminAdminIndexRoute
   '/login': typeof LoginRoute
   '/register': typeof RegisterRoute
   '/admin/init': typeof AdminInitRoute
   '/admin/login': typeof AdminLoginRoute
   '/news/$slug': typeof NewsSlugRoute
   '/news': typeof NewsIndexRoute
-  '/admin': typeof AdminAdminIndexRoute
   '/admin/news/create': typeof AdminAdminNewsCreateRoute
   '/admin/config': typeof AdminAdminConfigIndexRoute
   '/admin/dicts': typeof AdminAdminDictsIndexRoute
@@ -180,6 +185,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
+  '/admin': typeof AdminRouteWithChildren
   '/login': typeof LoginRoute
   '/register': typeof RegisterRoute
   '/admin/_admin': typeof AdminAdminRouteWithChildren
@@ -204,9 +210,9 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/about'
+    | '/admin'
     | '/login'
     | '/register'
-    | '/admin'
     | '/admin/init'
     | '/admin/login'
     | '/news/$slug'
@@ -226,13 +232,13 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/about'
+    | '/admin'
     | '/login'
     | '/register'
     | '/admin/init'
     | '/admin/login'
     | '/news/$slug'
     | '/news'
-    | '/admin'
     | '/admin/news/create'
     | '/admin/config'
     | '/admin/dicts'
@@ -247,6 +253,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/about'
+    | '/admin'
     | '/login'
     | '/register'
     | '/admin/_admin'
@@ -270,11 +277,9 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AboutRoute: typeof AboutRoute
+  AdminRoute: typeof AdminRouteWithChildren
   LoginRoute: typeof LoginRoute
   RegisterRoute: typeof RegisterRoute
-  AdminAdminRoute: typeof AdminAdminRouteWithChildren
-  AdminInitRoute: typeof AdminInitRoute
-  AdminLoginRoute: typeof AdminLoginRoute
   NewsSlugRoute: typeof NewsSlugRoute
   NewsIndexRoute: typeof NewsIndexRoute
 }
@@ -293,6 +298,13 @@ declare module '@tanstack/react-router' {
       path: '/login'
       fullPath: '/login'
       preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin': {
+      id: '/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AdminRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/about': {
@@ -325,24 +337,24 @@ declare module '@tanstack/react-router' {
     }
     '/admin/login': {
       id: '/admin/login'
-      path: '/admin/login'
+      path: '/login'
       fullPath: '/admin/login'
       preLoaderRoute: typeof AdminLoginRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof AdminRoute
     }
     '/admin/init': {
       id: '/admin/init'
-      path: '/admin/init'
+      path: '/init'
       fullPath: '/admin/init'
       preLoaderRoute: typeof AdminInitRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof AdminRoute
     }
     '/admin/_admin': {
       id: '/admin/_admin'
-      path: '/admin'
+      path: ''
       fullPath: '/admin'
       preLoaderRoute: typeof AdminAdminRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof AdminRoute
     }
     '/admin/_admin/': {
       id: '/admin/_admin/'
@@ -456,14 +468,26 @@ const AdminAdminRouteWithChildren = AdminAdminRoute._addFileChildren(
   AdminAdminRouteChildren,
 )
 
-const rootRouteChildren: RootRouteChildren = {
-  IndexRoute: IndexRoute,
-  AboutRoute: AboutRoute,
-  LoginRoute: LoginRoute,
-  RegisterRoute: RegisterRoute,
+interface AdminRouteChildren {
+  AdminAdminRoute: typeof AdminAdminRouteWithChildren
+  AdminInitRoute: typeof AdminInitRoute
+  AdminLoginRoute: typeof AdminLoginRoute
+}
+
+const AdminRouteChildren: AdminRouteChildren = {
   AdminAdminRoute: AdminAdminRouteWithChildren,
   AdminInitRoute: AdminInitRoute,
   AdminLoginRoute: AdminLoginRoute,
+}
+
+const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
+
+const rootRouteChildren: RootRouteChildren = {
+  IndexRoute: IndexRoute,
+  AboutRoute: AboutRoute,
+  AdminRoute: AdminRouteWithChildren,
+  LoginRoute: LoginRoute,
+  RegisterRoute: RegisterRoute,
   NewsSlugRoute: NewsSlugRoute,
   NewsIndexRoute: NewsIndexRoute,
 }

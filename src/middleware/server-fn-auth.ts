@@ -6,9 +6,12 @@
 import { createMiddleware } from "@tanstack/react-start";
 import { getCookie } from "@tanstack/react-start/server";
 import { db } from "#/db/index";
-import { COOKIE_NAMES, verifyToken } from "#/lib/jwt";
-import { logger } from "#/lib/logger";
-import { hasPermission, type PermissionDef } from "#/lib/permissions";
+import { COOKIE_NAMES, verifyToken } from "#/lib/jwt/jwt";
+import { logger } from "#/lib/logger/logger";
+import {
+	hasPermission,
+	type PermissionDef,
+} from "#/lib/permissions/permissions";
 
 /** 通过中间件注入 handler 的上下文 */
 export interface AuthContext {

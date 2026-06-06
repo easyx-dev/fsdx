@@ -3,10 +3,7 @@
  * 不依赖 AuthProvider 等全局 Context，确保错误边界自身渲染稳定
  */
 
-import type {
-	ErrorComponentProps,
-	NotFoundRouteProps,
-} from "@tanstack/react-router";
+import type { ErrorComponentProps } from "@tanstack/react-router";
 import { Link } from "@tanstack/react-router";
 import { AlertTriangle, ArrowLeft, Home, RefreshCw } from "lucide-react";
 
@@ -78,8 +75,9 @@ export function DefaultErrorFallback({
  * 404 回退组件
  * 用于 router.defaultNotFoundComponent
  */
-export function NotFoundFallback({ routeId, data: _data }: NotFoundRouteProps) {
-	logError(new Error(`页面未找到: ${routeId}`), { routeId });
+export function NotFoundFallback() {
+	// const location = useLocation();
+	// logError(new Error(`页面未找到: ${location.pathname}`), { routeId });
 
 	return (
 		<main className="flex min-h-screen items-center justify-center bg-zinc-50 px-4">

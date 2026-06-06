@@ -2,7 +2,7 @@
  * 邮件发送模块：基于 nodemailer，SMTP 配置从系统配置表读取
  */
 import { createTransport, type Transporter } from "nodemailer";
-import { logger } from "#/lib/logger";
+import { logger } from "#/lib/logger/logger";
 import { getConfig as getSystemConfig } from "#/server/config";
 
 /** 邮件发送参数 */

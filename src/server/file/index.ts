@@ -6,9 +6,9 @@ import { createServerFn } from "@tanstack/react-start";
 import { and, desc, eq, isNull, lt } from "drizzle-orm";
 import { db } from "#/db/index";
 import { file } from "#/db/schema";
-import { logger } from "#/lib/logger";
-import { PERMISSIONS } from "#/lib/permissions";
-import { storage } from "#/lib/storage";
+import { logger } from "#/lib/logger/logger";
+import { PERMISSIONS } from "#/lib/permissions/permissions";
+import { storage } from "#/lib/storage/storage";
 import { permGuard } from "#/middleware/server-fn-auth";
 
 export type FileRecord = typeof file.$inferSelect;

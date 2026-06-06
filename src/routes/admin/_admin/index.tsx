@@ -10,7 +10,7 @@ import {
 import { createFileRoute } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
 import { Card, Col, Row, Statistic } from "antd";
-import { PERMISSIONS } from "#/lib/permissions";
+import { PERMISSIONS } from "#/lib/permissions/permissions";
 import { permGuard } from "#/middleware/server-fn-auth";
 import { getStats } from "#/server/stats";
 

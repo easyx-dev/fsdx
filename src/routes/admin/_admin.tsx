@@ -7,7 +7,7 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
 import { deleteCookie, getCookie } from "@tanstack/react-start/server";
-import { COOKIE_NAMES } from "#/lib/jwt";
+import { COOKIE_NAMES } from "#/lib/jwt/jwt";
 import { getCurrentUser } from "#/server/auth";
 
 /**
@@ -29,6 +29,7 @@ export const logout = createServerFn({ method: "POST" }).handler(async () => {
 });
 
 export const Route = createFileRoute("/admin/_admin")({
+	ssr: false,
 	head: async () => {
 		return {
 			styles: [],

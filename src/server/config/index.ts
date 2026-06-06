@@ -4,8 +4,8 @@
 import { asc, eq, isNull } from "drizzle-orm";
 import { db } from "#/db/index";
 import { systemConfig } from "#/db/schema";
-import { configCache } from "#/lib/cache";
-import { logger } from "#/lib/logger";
+import { configCache } from "#/lib/cache/cache";
+import { logger } from "#/lib/logger/logger";
 
 export type ConfigRecord = typeof systemConfig.$inferSelect;
 

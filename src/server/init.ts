@@ -5,7 +5,7 @@ import bcrypt from "bcryptjs";
 import { eq } from "drizzle-orm";
 import { db } from "#/db/index";
 import { adminUser, role } from "#/db/schema";
-import { logger } from "#/lib/logger";
+import { logger } from "#/lib/logger/logger";
 import { loadConfigCache, upsertConfig } from "#/server/config";
 
 /** 初始化表单数据 */

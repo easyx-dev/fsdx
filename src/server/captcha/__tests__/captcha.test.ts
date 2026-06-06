@@ -4,14 +4,14 @@
 
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-vi.mock("#/lib/logger", () => ({
+vi.mock("#/lib/logger/logger", () => ({
 	logger: { error: vi.fn(), info: vi.fn(), warn: vi.fn() },
 }));
 
 const { mockSendCaptchaMail } = vi.hoisted(() => ({
 	mockSendCaptchaMail: vi.fn(),
 }));
-vi.mock("#/lib/mail", () => ({ sendCaptchaMail: mockSendCaptchaMail }));
+vi.mock("#/lib/mail/mail", () => ({ sendCaptchaMail: mockSendCaptchaMail }));
 
 const { mockDb } = vi.hoisted(() => {
 	const q = () => ({ findFirst: vi.fn(), findMany: vi.fn() });

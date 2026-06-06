@@ -5,7 +5,7 @@
 
 import { describe, expect, it, vi } from "vitest";
 
-vi.mock("#/lib/logger", () => ({
+vi.mock("#/lib/logger/logger", () => ({
 	logger: { error: vi.fn(), info: vi.fn(), warn: vi.fn() },
 }));
 
@@ -22,7 +22,7 @@ const { mockConfigCache } = vi.hoisted(() => {
 		},
 	};
 });
-vi.mock("#/lib/cache", () => ({ configCache: mockConfigCache }));
+vi.mock("#/lib/cache/cache", () => ({ configCache: mockConfigCache }));
 
 const { mockDb } = vi.hoisted(() => {
 	const q = () => ({ findFirst: vi.fn(), findMany: vi.fn() });

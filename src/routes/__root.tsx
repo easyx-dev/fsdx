@@ -5,18 +5,10 @@
 import { TanStackDevtools } from "@tanstack/react-devtools";
 import { createRootRoute, useRouterState } from "@tanstack/react-router";
 import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
-import {
-	AdminRootDocument,
-	SSRRootDocument,
-} from "#/components/admin/document";
-import {
-	DefaultErrorFallback,
-	NotFoundFallback,
-} from "../components/ErrorFallback";
+import { Fragment } from "react";
+import { AdminRootDocument, SSRRootDocument } from "#/components/Document";
 
 export const Route = createRootRoute({
-	errorComponent: DefaultErrorFallback,
-	notFoundComponent: NotFoundFallback,
 	head: () => {
 		return {
 			meta: [
@@ -36,23 +28,22 @@ function RootDocument({ children }: { children: React.ReactNode }) {
 		select: (s) => s.location.pathname,
 	});
 	const isAdmin = pathname.startsWith("/admin");
-
-	if (isAdmin) {
-		return <AdminRootDocument>{children}</AdminRootDocument>;
-	}
-	return <SSRRootDocument>{children}</SSRRootDocument>;
-}
-
-function DevTools() {
 	return (
-		<TanStackDevtools
-			config={{ position: "bottom-right" }}
-			plugins={[
-				{
-					name: "Tanstack Router",
-					render: <TanStackRouterDevtoolsPanel />,
-				},
-			]}
-		/>
+		<Fragment>
+			{isAdmin ? (
+				<AdminRootDocument>{children}</AdminRootDocument>
+			) : (
+				<SSRRootDocument>{children}</SSRRootDocument>
+			)}
+			<TanStackDevtools
+				config={{ position: "bottom-right" }}
+				plugins={[
+					{
+						name: "Tanstack Router",
+						render: <TanStackRouterDevtoolsPanel />,
+					},
+				]}
+			/>
+		</Fragment>
 	);
 }

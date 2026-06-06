@@ -8,7 +8,7 @@ import {
 	queryLogs,
 	type LogEntry as RawLogEntry,
 	getLogDates as readLogDates,
-} from "#/lib/logger";
+} from "#/lib/logger/log-reader";
 
 /** SF 安全的日志条目类型（无 index signature） */
 export interface LogEntry {

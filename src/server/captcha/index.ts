@@ -4,8 +4,8 @@
 import { and, desc, eq, gt } from "drizzle-orm";
 import { db } from "#/db/index";
 import { captchaCode } from "#/db/schema";
-import { logger } from "#/lib/logger";
-import { sendCaptchaMail } from "#/lib/mail";
+import { logger } from "#/lib/logger/logger";
+import { sendCaptchaMail } from "#/lib/mail/mail";
 
 export { generateImageCaptcha, verifyImageCaptcha } from "./image-captcha";
 
