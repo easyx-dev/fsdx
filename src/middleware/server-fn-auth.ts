@@ -74,10 +74,10 @@ export const authGuard = createMiddleware({
 		rolePermissions = (userRole?.permissions ?? []) as string[];
 	}
 
-	logger.info(
-		{ userId: user.id, username: user.username, isRoot: user.isRoot },
-		"Server Function 鉴权通过",
-	);
+	// logger.info(
+	// 	{ userId: user.id, username: user.username, isRoot: user.isRoot },
+	// 	"Server Function 鉴权通过",
+	// );
 
 	return next({
 		context: {
