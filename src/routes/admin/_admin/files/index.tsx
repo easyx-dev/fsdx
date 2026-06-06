@@ -1,15 +1,29 @@
 /**
  * 文件管理页面：上传、列表、下载、删除、秒传
  */
-
+import {
+	CheckOutlined,
+	DeleteOutlined,
+	UploadOutlined,
+} from "@ant-design/icons";
 import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
-import { Check, Download, FolderOpen, Trash2, Upload } from "lucide-react";
-import { useRef, useState } from "react";
+import type { UploadProps } from "antd";
+import {
+	App,
+	Button,
+	Popconfirm,
+	Segmented,
+	Space,
+	Table,
+	Tag,
+	Upload,
+} from "antd";
+import { useState } from "react";
 import { z } from "zod";
-import { AdminShell } from "#/components/admin/AdminShell";
 import { PERMISSIONS } from "#/lib/permissions";
 import { permGuard } from "#/middleware/server-fn-auth";
+import type { FileRecord } from "#/server/file";
 import {
 	deleteFile,
 	getFileList as getFileListService,
@@ -43,12 +57,14 @@ const makePermanentFn = createServerFn({ method: "POST" })
 		return { success: true };
 	});
 
+/** 格式化文件大小 */
 function formatSize(bytes: number): string {
 	if (bytes < 1024) return `${bytes} B`;
 	if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
 	return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
+/** 格式化日期 */
 function formatDate(d: Date | string | null): string {
 	if (!d) return "—";
 	return new Date(d).toLocaleString("zh-CN");
@@ -65,162 +81,160 @@ function FilesPage() {
 	const [files, setFiles] = useState(initialFiles);
 	const [filter, setFilter] = useState("");
 	const [uploading, setUploading] = useState(false);
-	const [uploadMsg, setUploadMsg] = useState("");
-	const fileInputRef = useRef<HTMLInputElement>(null);
+	const { message } = App.useApp();
 
+	/** 按当前筛选项刷新文件列表 */
 	const refreshFiles = async () => {
 		const data = await getFileList({ data: { status: filter || undefined } });
 		setFiles(data);
 	};
 
+	/** 切换筛选状态并刷新列表 */
 	const handleFilterChange = async (status: string) => {
 		setFilter(status);
-		const data = await getFileList({ data: { status: status || undefined } });
+		const data = await getFileList({
+			data: { status: status || undefined },
+		});
 		setFiles(data);
 	};
 
-	const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-		const selectedFile = e.target.files?.[0];
-		if (!selectedFile) return;
+	/** antd Upload 自定义上传逻辑：构造 FormData 调用服务端上传接口 */
+	const customRequest: UploadProps["customRequest"] = async (options) => {
+		const { file, onSuccess, onError } = options;
 		setUploading(true);
-		setUploadMsg("");
 		try {
 			const fd = new FormData();
-			fd.append("file", selectedFile);
+			fd.append("file", file as File);
 			const result = await uploadFile({ data: fd });
 			if (result.success) {
-				setUploadMsg(
+				onSuccess?.(result.data);
+				message.success(
 					result.data.isDuplicated ? "秒传成功（文件已存在）" : "上传成功",
 				);
 				await refreshFiles();
 				await router.invalidate();
 			} else {
-				setUploadMsg("上传失败");
+				onError?.(new Error("上传失败"));
+				message.error("上传失败");
 			}
 		} catch (err) {
 			console.error("[文件上传失败]", err);
-			setUploadMsg("上传失败: 网络错误");
+			onError?.(err as Error);
+			message.error("上传失败: 网络错误");
 		} finally {
 			setUploading(false);
-			if (fileInputRef.current) fileInputRef.current.value = "";
 		}
 	};
 
-	return (
-		<AdminShell>
-			<div>
-				<div className="flex items-center justify-between">
-					<h1 className="text-2xl font-bold text-zinc-900">文件管理</h1>
-					<label className="flex cursor-pointer items-center gap-1 rounded-md bg-zinc-900 px-3 py-2 text-sm font-medium text-white hover:bg-zinc-800">
-						<Upload size={16} />
-						{uploading ? "上传中..." : "上传文件"}
-						<input
-							ref={fileInputRef}
-							type="file"
-							className="hidden"
-							onChange={handleUpload}
-							disabled={uploading}
-						/>
-					</label>
-				</div>
-				{uploadMsg && (
-					<div
-						className={`mt-3 rounded-md px-4 py-2 text-sm ${uploadMsg.includes("失败") ? "bg-red-50 text-red-700" : "bg-green-50 text-green-700"}`}
-					>
-						{uploadMsg}
-					</div>
-				)}
-				<div className="mt-4 flex gap-2">
-					{["", "temp", "permanent"].map((s) => (
-						<button
-							key={s}
-							onClick={() => handleFilterChange(s)}
-							className={`rounded-md px-3 py-1 text-xs font-medium ${filter === s ? "bg-zinc-900 text-white" : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200"}`}
+	const columns = [
+		{
+			title: "文件名",
+			dataIndex: "originalName",
+			key: "originalName",
+			ellipsis: true,
+		},
+		{
+			title: "大小",
+			dataIndex: "size",
+			key: "size",
+			width: 100,
+			render: (_: unknown, record: FileRecord) => formatSize(record.size),
+		},
+		{
+			title: "状态",
+			dataIndex: "status",
+			key: "status",
+			width: 100,
+			render: (_: unknown, record: FileRecord) =>
+				record.status === "permanent" ? (
+					<Tag color="green">永久</Tag>
+				) : (
+					<Tag color="gold">临时</Tag>
+				),
+		},
+		{
+			title: "上传时间",
+			dataIndex: "createdAt",
+			key: "createdAt",
+			width: 180,
+			render: (_: unknown, record: FileRecord) => formatDate(record.createdAt),
+		},
+		{
+			title: "操作",
+			key: "actions",
+			width: 160,
+			render: (_: unknown, record: FileRecord) => (
+				<Space size={4}>
+					{record.status === "temp" && (
+						<Button
+							type="link"
+							size="small"
+							icon={<CheckOutlined />}
+							onClick={async () => {
+								await makePermanentFn({ data: { id: record.id } });
+								message.success("已转为永久");
+								await refreshFiles();
+							}}
 						>
-							{s === "" ? "全部" : s === "temp" ? "临时" : "永久"}
-						</button>
-					))}
+							转为永久
+						</Button>
+					)}
+					<Popconfirm
+						title="确定删除？"
+						onConfirm={async () => {
+							await deleteFileFn({ data: { id: record.id } });
+							message.success("已删除");
+							await refreshFiles();
+						}}
+					>
+						<Button type="link" size="small" danger icon={<DeleteOutlined />} />
+					</Popconfirm>
+				</Space>
+			),
+		},
+	];
+
+	return (
+		<App>
+			<div>
+				<div className="mb-4 flex items-center justify-between">
+					<h1 className="text-2xl font-bold">文件管理</h1>
+					<Upload
+						customRequest={customRequest}
+						showUploadList={false}
+						disabled={uploading}
+					>
+						<Button
+							type="primary"
+							icon={<UploadOutlined />}
+							loading={uploading}
+						>
+							{uploading ? "上传中..." : "上传文件"}
+						</Button>
+					</Upload>
 				</div>
-				<div className="mt-4 rounded-lg border border-zinc-200 bg-white">
-					<table className="w-full">
-						<thead>
-							<tr className="border-b border-zinc-200 text-left text-xs text-zinc-500">
-								<th className="px-4 py-3 font-medium">文件名</th>
-								<th className="px-4 py-3 font-medium">大小</th>
-								<th className="px-4 py-3 font-medium">状态</th>
-								<th className="px-4 py-3 font-medium">上传时间</th>
-								<th className="px-4 py-3 font-medium w-28">操作</th>
-							</tr>
-						</thead>
-						<tbody>
-							{files.length === 0 && (
-								<tr>
-									<td
-										colSpan={5}
-										className="px-4 py-12 text-center text-sm text-zinc-400"
-									>
-										<FolderOpen
-											size={32}
-											className="mx-auto mb-2 text-zinc-300"
-										/>
-										暂无文件
-									</td>
-								</tr>
-							)}
-							{files.map((f) => (
-								<tr key={f.id} className="border-b border-zinc-50 text-sm">
-									<td className="px-4 py-3">
-										<div className="max-w-xs truncate font-medium text-zinc-800">
-											{f.originalName}
-										</div>
-									</td>
-									<td className="px-4 py-3 text-zinc-500">
-										{formatSize(f.size)}
-									</td>
-									<td className="px-4 py-3">
-										<span
-											className={`inline-block rounded-full px-2 py-0.5 text-xs ${f.status === "permanent" ? "bg-green-50 text-green-700" : "bg-yellow-50 text-yellow-700"}`}
-										>
-											{f.status === "permanent" ? "永久" : "临时"}
-										</span>
-									</td>
-									<td className="px-4 py-3 text-zinc-400 text-xs">
-										{formatDate(f.createdAt)}
-									</td>
-									<td className="px-4 py-3">
-										<div className="flex items-center gap-1">
-											<Download size={14} className="text-zinc-300" />
-											{f.status === "temp" && (
-												<button
-													onClick={async () => {
-														await makePermanentFn({ data: { id: f.id } });
-														await refreshFiles();
-													}}
-													className="rounded p-1 text-zinc-400 hover:bg-green-50 hover:text-green-600"
-													title="转为永久"
-												>
-													<Check size={14} />
-												</button>
-											)}
-											<button
-												onClick={async () => {
-													if (!confirm("确定删除？")) return;
-													await deleteFileFn({ data: { id: f.id } });
-													await refreshFiles();
-												}}
-												className="rounded p-1 text-zinc-400 hover:bg-red-50 hover:text-red-500"
-												title="删除"
-											>
-												<Trash2 size={14} />
-											</button>
-										</div>
-									</td>
-								</tr>
-							))}
-						</tbody>
-					</table>
+
+				<div className="mb-4">
+					<Segmented
+						options={[
+							{ label: "全部", value: "" },
+							{ label: "临时", value: "temp" },
+							{ label: "永久", value: "permanent" },
+						]}
+						value={filter}
+						onChange={(value) => {
+							handleFilterChange(value as string);
+						}}
+					/>
 				</div>
+
+				<Table
+					dataSource={files}
+					columns={columns}
+					rowKey="id"
+					locale={{ emptyText: "暂无文件" }}
+				/>
 			</div>
-		</AdminShell>
+		</App>
 	);
 }

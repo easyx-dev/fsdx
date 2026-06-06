@@ -5,6 +5,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
 import { ArrowLeft } from "lucide-react";
 import { z } from "zod";
+import { Button } from "#/components/ui/button";
 import { getNewsBySlug } from "#/server/news";
 
 const getNewsDetail = createServerFn({ method: "GET" })
@@ -24,33 +25,35 @@ function NewsDetailPage() {
 
 	if (!data) {
 		return (
-			<main className="mx-auto max-w-3xl px-4 py-20 text-center">
-				<p className="text-lg text-zinc-400">新闻不存在或未发布</p>
-				<Link
-					to="/"
-					className="mt-4 inline-flex items-center gap-1 text-sm text-zinc-500 hover:text-zinc-700"
-				>
-					<ArrowLeft size={14} /> 返回首页
+			<main className="mx-auto max-w-3xl px-4 py-12 text-center sm:py-20">
+				<p className="text-base text-muted-foreground sm:text-lg">
+					新闻不存在或未发布
+				</p>
+				<Link to="/" className="mt-4 inline-block">
+					<Button variant="ghost" size="sm">
+						<ArrowLeft />
+						返回首页
+					</Button>
 				</Link>
 			</main>
 		);
 	}
 
 	return (
-		<main className="mx-auto max-w-3xl px-4 py-12">
-			<Link
-				to="/"
-				className="inline-flex items-center gap-1 text-sm text-zinc-400 hover:text-zinc-600 mb-8"
-			>
-				<ArrowLeft size={14} /> 返回首页
+		<main className="mx-auto max-w-3xl px-4 py-8 sm:py-12">
+			<Link to="/" className="mb-6 inline-block sm:mb-8">
+				<Button variant="ghost" size="sm">
+					<ArrowLeft />
+					返回首页
+				</Button>
 			</Link>
 
 			<article>
-				<header className="mb-8">
-					<h1 className="text-3xl font-bold tracking-tight text-zinc-900 sm:text-4xl">
+				<header className="mb-6 sm:mb-8">
+					<h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-4xl">
 						{data.title}
 					</h1>
-					<div className="mt-4 flex items-center gap-4 text-sm text-zinc-400">
+					<div className="mt-3 flex flex-wrap items-center gap-3 text-sm text-muted-foreground sm:mt-4 sm:gap-4">
 						{data.publishedAt && (
 							<time>
 								{new Date(data.publishedAt).toLocaleDateString("zh-CN", {
@@ -64,13 +67,13 @@ function NewsDetailPage() {
 				</header>
 
 				{data.summary && (
-					<p className="mb-8 text-lg leading-relaxed text-zinc-500 border-l-2 border-zinc-200 pl-4">
+					<p className="mb-6 border-l-2 border-border pl-4 text-base leading-relaxed text-muted-foreground sm:mb-8 sm:text-lg">
 						{data.summary}
 					</p>
 				)}
 
 				<div
-					className="prose prose-zinc max-w-none"
+					className="prose prose-zinc max-w-none prose-sm sm:prose-base"
 					dangerouslySetInnerHTML={{ __html: data.html || "" }}
 				/>
 			</article>

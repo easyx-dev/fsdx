@@ -1,13 +1,17 @@
 /**
- * 日志查询页面：搜索/筛选操作日志文件
+ * 日志查询页面：antd Form + Table 实现日志搜索、筛选与分页
  */
 
+import {
+	FileTextOutlined,
+	ReloadOutlined,
+	SearchOutlined,
+} from "@ant-design/icons";
 import { createFileRoute } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
-import { FileText, RefreshCw, Search } from "lucide-react";
+import { App, Button, DatePicker, Form, Input, Select, Table, Tag } from "antd";
 import { useState } from "react";
 import { z } from "zod";
-import { AdminShell } from "#/components/admin/AdminShell";
 import { PERMISSIONS } from "#/lib/permissions";
 import { permGuard } from "#/middleware/server-fn-auth";
 import {
@@ -39,14 +43,35 @@ const getDatesFn = createServerFn({ method: "GET" })
 		return getLogDatesService();
 	});
 
-const levels = ["", "info", "warn", "error", "debug", "fatal"];
-const levelColors: Record<string, string> = {
-	info: "text-blue-600 bg-blue-50",
-	warn: "text-yellow-600 bg-yellow-50",
-	error: "text-red-600 bg-red-50",
-	debug: "text-zinc-500 bg-zinc-100",
-	fatal: "text-red-700 bg-red-100",
+/** 日志级别对应 Tag 颜色 */
+const LEVEL_COLORS: Record<string, string> = {
+	info: "blue",
+	warn: "gold",
+	error: "red",
+	debug: "default",
+	fatal: "red",
 };
+
+/** 日志级别选项 */
+const LEVEL_OPTIONS = [
+	{ label: "全部", value: "" },
+	{ label: "INFO", value: "info" },
+	{ label: "WARN", value: "warn" },
+	{ label: "ERROR", value: "error" },
+	{ label: "DEBUG", value: "debug" },
+	{ label: "FATAL", value: "fatal" },
+];
+
+/** 将日志时间戳转为本地化时间字符串 */
+function formatTime(entry: LogEntry): string {
+	const t =
+		typeof entry.time === "number"
+			? new Date(entry.time)
+			: entry.time
+				? new Date(entry.time as string)
+				: new Date();
+	return t.toLocaleString("zh-CN");
+}
 
 export const Route = createFileRoute("/admin/_admin/logs/")({
 	component: LogsPage,
@@ -62,207 +87,202 @@ export const Route = createFileRoute("/admin/_admin/logs/")({
 function LogsPage() {
 	const initial = Route.useLoaderData();
 	const [result, setResult] = useState<LogQueryResult>(initial.result);
-	const [dates] = useState<string[]>(initial.availableDates);
-	const [keyword, setKeyword] = useState("");
-	const [level, setLevel] = useState("");
-	const [startDate, setStartDate] = useState("");
-	const [endDate, setEndDate] = useState("");
+	const [availableDates] = useState<string[]>(initial.availableDates);
 	const [page, setPage] = useState(1);
-	const pageSize = 20;
+	const [pageSize] = useState(20);
+	const [form] = Form.useForm();
+	const { message } = App.useApp();
 
+	/** 执行日志搜索 */
 	const doSearch = async (p = 1) => {
-		const data = await searchLogsFn({
-			data: {
-				keyword: keyword || undefined,
-				level: level || undefined,
-				startDate: startDate || undefined,
-				endDate: endDate || undefined,
-				page: p,
-				pageSize,
-			},
-		});
-		setResult(data);
-		setPage(p);
+		const values = form.getFieldsValue();
+		// DatePicker.RangePicker 的值为 dayjs 对象数组，需转为字符串
+		const dateRange: [unknown, unknown] | undefined = values.dateRange;
+		const startDate = dateRange?.[0]
+			? (dateRange[0] as { format: (f: string) => string }).format("YYYY-MM-DD")
+			: "";
+		const endDate = dateRange?.[1]
+			? (dateRange[1] as { format: (f: string) => string }).format("YYYY-MM-DD")
+			: "";
+
+		try {
+			const data = await searchLogsFn({
+				data: {
+					keyword: values.keyword || undefined,
+					level: values.level || undefined,
+					startDate: startDate || undefined,
+					endDate: endDate || undefined,
+					page: p,
+					pageSize,
+				},
+			});
+			setResult(data);
+			setPage(p);
+		} catch {
+			message.error("日志查询失败，请稍后重试");
+		}
 	};
 
-	const totalPages = Math.max(1, Math.ceil(result.total / pageSize));
-
-	const formatTime = (entry: LogEntry): string => {
-		const t =
-			typeof entry.time === "number"
-				? new Date(entry.time)
-				: entry.time
-					? new Date(entry.time as string)
-					: new Date();
-		return t.toLocaleString("zh-CN");
+	/** 重置筛选条件并重新搜索 */
+	const handleReset = () => {
+		form.resetFields();
+		doSearch();
 	};
+
+	/** 点击日期标签快速搜索 */
+	const handleDateClick = (date: string) => {
+		// 绕过 dayjs 对象，直接发起搜索
+		searchLogsFn({
+			data: { startDate: date, endDate: date, page: 1, pageSize },
+		})
+			.then((data) => {
+				setResult(data);
+				setPage(1);
+			})
+			.catch(() => {
+				message.error("日志查询失败，请稍后重试");
+			});
+	};
+
+	/** 将 entry 转为 Table dataSource 可用的记录，追加唯一 key */
+	const dataSource = result.entries.map((entry, idx) => ({
+		...entry,
+		_rowKey: `${result.page}-${idx}`,
+	}));
+
+	const columns = [
+		{
+			title: "时间",
+			dataIndex: "time",
+			key: "time",
+			width: 180,
+			render: (_: unknown, record: LogEntry) => formatTime(record),
+		},
+		{
+			title: "级别",
+			dataIndex: "level",
+			key: "level",
+			width: 90,
+			render: (level: string) => (
+				<Tag color={LEVEL_COLORS[level] || "default"}>
+					{level.toUpperCase()}
+				</Tag>
+			),
+		},
+		{
+			title: "消息内容",
+			dataIndex: "msg",
+			key: "msg",
+			ellipsis: true,
+			render: (msg: string | undefined) => msg ?? "",
+		},
+	];
 
 	return (
-		<AdminShell>
-			<div>
-				<h1 className="text-2xl font-bold text-zinc-900">日志查询</h1>
-				<p className="mt-2 text-zinc-500">搜索和查看系统操作日志文件</p>
+		<App>
+			<h1 style={{ fontSize: 24, fontWeight: 700, marginBottom: 4 }}>
+				日志查询
+			</h1>
+			<p style={{ marginBottom: 16, color: "var(--ant-color-text-tertiary)" }}>
+				搜索和查看系统操作日志文件
+			</p>
 
-				<div className="mt-4 flex flex-wrap items-end gap-2">
-					<div>
-						<label className="mb-1 block text-xs text-zinc-500">关键词</label>
-						<input
-							value={keyword}
-							onChange={(e) => setKeyword(e.target.value)}
-							onKeyDown={(e) => e.key === "Enter" && doSearch()}
-							placeholder="搜索日志..."
-							className="w-48 rounded-md border border-zinc-300 px-3 py-1.5 text-sm focus:border-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-500"
-						/>
-					</div>
-					<div>
-						<label className="mb-1 block text-xs text-zinc-500">级别</label>
-						<select
-							value={level}
-							onChange={(e) => setLevel(e.target.value)}
-							className="rounded-md border border-zinc-300 px-3 py-1.5 text-sm focus:border-zinc-500 focus:outline-none"
+			{/* 搜索表单 */}
+			<Form
+				form={form}
+				layout="inline"
+				onFinish={() => doSearch()}
+				style={{ marginBottom: 12, flexWrap: "wrap", gap: 8 }}
+			>
+				<Form.Item name="keyword" label="关键词">
+					<Input placeholder="搜索日志..." allowClear style={{ width: 180 }} />
+				</Form.Item>
+
+				<Form.Item name="level" label="级别">
+					<Select options={LEVEL_OPTIONS} style={{ width: 110 }} />
+				</Form.Item>
+
+				<Form.Item name="dateRange" label="日期范围">
+					<DatePicker.RangePicker
+						placeholder={["开始日期", "结束日期"]}
+						format="YYYY-MM-DD"
+						style={{ width: 260 }}
+					/>
+				</Form.Item>
+
+				<Form.Item>
+					<Button type="primary" htmlType="submit" icon={<SearchOutlined />}>
+						搜索
+					</Button>
+				</Form.Item>
+
+				<Form.Item>
+					<Button icon={<ReloadOutlined />} onClick={handleReset}>
+						重置
+					</Button>
+				</Form.Item>
+			</Form>
+
+			{/* 可用日期快速选择 */}
+			{availableDates.length > 0 && (
+				<div
+					style={{
+						marginBottom: 16,
+						display: "flex",
+						flexWrap: "wrap",
+						gap: 6,
+						alignItems: "center",
+					}}
+				>
+					<span
+						style={{ fontSize: 12, color: "var(--ant-color-text-tertiary)" }}
+					>
+						日志日期：
+					</span>
+					{availableDates.slice(0, 14).map((d: string) => (
+						<Tag
+							key={d}
+							color="default"
+							style={{ cursor: "pointer", margin: 0 }}
+							onClick={() => handleDateClick(d)}
 						>
-							{levels.map((l) => (
-								<option key={l} value={l}>
-									{l || "全部"}
-								</option>
-							))}
-						</select>
-					</div>
-					<div>
-						<label className="mb-1 block text-xs text-zinc-500">开始日期</label>
-						<input
-							type="date"
-							value={startDate}
-							onChange={(e) => setStartDate(e.target.value)}
-							className="rounded-md border border-zinc-300 px-3 py-1.5 text-sm focus:border-zinc-500 focus:outline-none"
-						/>
-					</div>
-					<div>
-						<label className="mb-1 block text-xs text-zinc-500">结束日期</label>
-						<input
-							type="date"
-							value={endDate}
-							onChange={(e) => setEndDate(e.target.value)}
-							className="rounded-md border border-zinc-300 px-3 py-1.5 text-sm focus:border-zinc-500 focus:outline-none"
-						/>
-					</div>
-					<button
-						onClick={() => doSearch()}
-						className="flex items-center gap-1 rounded-md bg-zinc-900 px-3 py-1.5 text-sm font-medium text-white hover:bg-zinc-800"
-					>
-						<Search size={14} /> 搜索
-					</button>
-					<button
-						onClick={() => {
-							setKeyword("");
-							setLevel("");
-							setStartDate("");
-							setEndDate("");
-							doSearch();
-						}}
-						className="flex items-center gap-1 rounded-md px-3 py-1.5 text-sm text-zinc-500 hover:bg-zinc-100"
-					>
-						<RefreshCw size={14} /> 重置
-					</button>
+							{d}
+						</Tag>
+					))}
 				</div>
+			)}
 
-				{dates.length > 0 && (
-					<div className="mt-3 flex flex-wrap gap-1">
-						<span className="text-xs text-zinc-400 mr-1">日志日期：</span>
-						{dates.slice(0, 14).map((d: string) => (
-							<button
-								key={d}
-								onClick={() => {
-									setStartDate(d);
-									setEndDate(d);
-									doSearch();
+			{/* 日志结果表格 */}
+			<Table
+				dataSource={dataSource}
+				columns={columns}
+				rowKey="_rowKey"
+				locale={{
+					emptyText: (
+						<div style={{ padding: "32px 0" }}>
+							<FileTextOutlined
+								style={{
+									fontSize: 32,
+									color: "var(--ant-color-text-quaternary)",
+									marginBottom: 8,
 								}}
-								className="rounded bg-zinc-100 px-2 py-0.5 text-xs text-zinc-500 hover:bg-zinc-200"
-							>
-								{d}
-							</button>
-						))}
-					</div>
-				)}
-
-				<div className="mt-4 rounded-lg border border-zinc-200 bg-white">
-					<div className="border-b border-zinc-200 px-4 py-3 flex items-center justify-between">
-						<span className="text-sm text-zinc-600">
-							共{" "}
-							<span className="font-medium text-zinc-900">{result.total}</span>{" "}
-							条日志
-						</span>
-						<span className="text-xs text-zinc-400">
-							第 {result.page}/{totalPages} 页
-						</span>
-					</div>
-
-					<div className="divide-y divide-zinc-50">
-						{result.entries.length === 0 && (
-							<div className="px-4 py-16 text-center">
-								<FileText size={32} className="mx-auto mb-2 text-zinc-300" />
-								<p className="text-sm text-zinc-400">
-									{result.total === 0 ? "暂无日志" : "未找到匹配"}
-								</p>
-							</div>
-						)}
-						{result.entries.map((entry: LogEntry, i: number) => (
-							<div key={i} className="px-4 py-2.5 text-sm">
-								<div className="flex items-center gap-2">
-									<span className="text-xs text-zinc-400 whitespace-nowrap">
-										{formatTime(entry)}
-									</span>
-									<span
-										className={`rounded px-1.5 py-0.5 text-xs font-mono font-medium ${levelColors[entry.level] || "text-zinc-500 bg-zinc-100"}`}
-									>
-										{entry.level.toUpperCase()}
-									</span>
-									<span className="font-mono text-xs text-zinc-600 flex-1 truncate">
-										{entry.msg ?? ""}
-									</span>
-								</div>
-							</div>
-						))}
-					</div>
-
-					{totalPages > 1 && (
-						<div className="flex items-center justify-center gap-1 border-t border-zinc-200 px-4 py-2">
-							<button
-								disabled={page <= 1}
-								onClick={() => doSearch(page - 1)}
-								className="rounded px-2 py-1 text-xs text-zinc-500 hover:bg-zinc-100 disabled:opacity-30"
-							>
-								上一页
-							</button>
-							{Array.from({ length: Math.min(totalPages, 7) }, (_, i) => {
-								const p =
-									page <= 4
-										? i + 1
-										: page >= totalPages - 3
-											? totalPages - 6 + i
-											: page - 3 + i;
-								if (p < 1 || p > totalPages) return null;
-								return (
-									<button
-										key={p}
-										onClick={() => doSearch(p)}
-										className={`rounded px-2 py-1 text-xs ${p === page ? "bg-zinc-900 text-white" : "text-zinc-500 hover:bg-zinc-100"}`}
-									>
-										{p}
-									</button>
-								);
-							})}
-							<button
-								disabled={page >= totalPages}
-								onClick={() => doSearch(page + 1)}
-								className="rounded px-2 py-1 text-xs text-zinc-500 hover:bg-zinc-100 disabled:opacity-30"
-							>
-								下一页
-							</button>
+							/>
+							<p style={{ color: "var(--ant-color-text-tertiary)" }}>
+								{result.total === 0 ? "暂无日志" : "未找到匹配"}
+							</p>
 						</div>
-					)}
-				</div>
-			</div>
-		</AdminShell>
+					),
+				}}
+				pagination={{
+					total: result.total,
+					current: page,
+					pageSize,
+					showSizeChanger: false,
+					showTotal: (total, range) =>
+						`第 ${range[0]}-${range[1]} 条，共 ${total} 条`,
+					onChange: (p: number) => doSearch(p),
+				}}
+			/>
+		</App>
 	);
 }

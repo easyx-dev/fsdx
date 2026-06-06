@@ -1,12 +1,15 @@
 /**
- * 客户端用户登录页面
+ * 客户端用户登录页面（TanStack Form）
  */
 
+import { useForm } from "@tanstack/react-form";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
 import { setCookie } from "@tanstack/react-start/server";
-import { useState } from "react";
 import { z } from "zod";
+import { Button } from "#/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "#/components/ui/card";
+import { Input } from "#/components/ui/input";
 import { COOKIE_NAMES } from "#/lib/jwt";
 import { clientLoginService } from "#/server/auth";
 
@@ -15,7 +18,6 @@ const loginSchema = z.object({
 	password: z.string().min(1, "密码不能为空").max(100),
 });
 
-/** 客户端登录 SF */
 const clientLogin = createServerFn({ method: "POST" })
 	.inputValidator(loginSchema)
 	.handler(async ({ data: { username, password } }) => {
@@ -26,7 +28,7 @@ const clientLogin = createServerFn({ method: "POST" })
 				secure: process.env.NODE_ENV === "production",
 				sameSite: "lax",
 				path: "/",
-				maxAge: 7 * 24 * 3600, // 7 天
+				maxAge: 7 * 24 * 3600,
 			});
 		}
 		return result;
@@ -38,97 +40,137 @@ export const Route = createFileRoute("/login")({
 
 function ClientLoginPage() {
 	const navigate = useNavigate();
-	const [username, setUsername] = useState("");
-	const [password, setPassword] = useState("");
-	const [error, setError] = useState("");
-	const [loading, setLoading] = useState(false);
 
-	const handleSubmit = async (e: React.FormEvent) => {
-		e.preventDefault();
-		setError("");
-		setLoading(true);
-
-		try {
-			const result = await clientLogin({ data: { username, password } });
+	const form = useForm({
+		defaultValues: {
+			username: "",
+			password: "",
+		},
+		onSubmit: async ({ value }) => {
+			const result = await clientLogin({ data: value });
 			if (!result.success) {
-				setError(result.message || "登录失败");
-				return;
+				throw new Error(result.message || "登录失败");
 			}
 			navigate({ to: "/" });
-		} catch (_err) {
-			setError("网络错误，请稍后重试");
-		} finally {
-			setLoading(false);
-		}
-	};
+		},
+	});
 
 	return (
-		<div className="flex min-h-screen items-center justify-center bg-zinc-50">
+		<main className="flex flex-1 items-center justify-center bg-background px-4 py-8">
 			<div className="w-full max-w-sm">
-				<div className="rounded-lg border border-zinc-200 bg-white p-8 shadow-sm">
-					<h1 className="mb-6 text-center text-2xl font-bold text-zinc-900">
-						用户登录
-					</h1>
-
-					{error && (
-						<div className="mb-4 rounded-md bg-red-50 px-4 py-2 text-sm text-red-700">
-							{error}
-						</div>
-					)}
-
-					<form onSubmit={handleSubmit} className="space-y-4">
-						<div>
-							<label
-								htmlFor="username"
-								className="mb-1 block text-sm font-medium text-zinc-700"
-							>
-								用户名
-							</label>
-							<input
-								id="username"
-								type="text"
-								value={username}
-								onChange={(e) => setUsername(e.target.value)}
-								className="w-full rounded-md border border-zinc-300 px-3 py-2 text-sm focus:border-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-500"
-								required
-								autoFocus
-							/>
-						</div>
-
-						<div>
-							<label
-								htmlFor="password"
-								className="mb-1 block text-sm font-medium text-zinc-700"
-							>
-								密码
-							</label>
-							<input
-								id="password"
-								type="password"
-								value={password}
-								onChange={(e) => setPassword(e.target.value)}
-								className="w-full rounded-md border border-zinc-300 px-3 py-2 text-sm focus:border-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-500"
-								required
-							/>
-						</div>
-
-						<button
-							type="submit"
-							disabled={loading}
-							className="w-full rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800 disabled:opacity-50"
+				<Card>
+					<CardHeader className="p-4 sm:p-6">
+						<CardTitle className="text-center text-xl sm:text-2xl">
+							用户登录
+						</CardTitle>
+					</CardHeader>
+					<CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
+						<form
+							onSubmit={(e) => {
+								e.preventDefault();
+								e.stopPropagation();
+								form.handleSubmit();
+							}}
+							className="space-y-3 sm:space-y-4"
 						>
-							{loading ? "登录中..." : "登录"}
-						</button>
-					</form>
+							<form.Field
+								name="username"
+								validators={{
+									onChange: ({ value }) =>
+										!value ? "请输入用户名" : undefined,
+								}}
+							>
+								{(field) => (
+									<div className="space-y-1.5 sm:space-y-2">
+										<label htmlFor={field.name} className="text-sm font-medium">
+											用户名
+										</label>
+										<Input
+											id={field.name}
+											name={field.name}
+											type="text"
+											value={field.state.value}
+											onBlur={field.handleBlur}
+											onChange={(e) => field.handleChange(e.target.value)}
+											autoFocus
+										/>
+										{field.state.meta.isTouched &&
+											field.state.meta.errors.length > 0 && (
+												<p className="text-xs text-destructive">
+													{field.state.meta.errors.join(", ")}
+												</p>
+											)}
+									</div>
+								)}
+							</form.Field>
 
-					<p className="mt-4 text-center text-sm text-zinc-500">
-						还没有账号？{" "}
-						<Link to="/register" className="text-zinc-900 underline">
-							立即注册
-						</Link>
-					</p>
-				</div>
+							<form.Field
+								name="password"
+								validators={{
+									onChange: ({ value }) => (!value ? "请输入密码" : undefined),
+								}}
+							>
+								{(field) => (
+									<div className="space-y-1.5 sm:space-y-2">
+										<label htmlFor={field.name} className="text-sm font-medium">
+											密码
+										</label>
+										<Input
+											id={field.name}
+											name={field.name}
+											type="password"
+											value={field.state.value}
+											onBlur={field.handleBlur}
+											onChange={(e) => field.handleChange(e.target.value)}
+										/>
+										{field.state.meta.isTouched &&
+											field.state.meta.errors.length > 0 && (
+												<p className="text-xs text-destructive">
+													{field.state.meta.errors.join(", ")}
+												</p>
+											)}
+									</div>
+								)}
+							</form.Field>
+
+							{/* 服务端错误展示 */}
+							<form.Subscribe selector={(state) => state.errorMap}>
+								{(errorMap) =>
+									errorMap.onSubmit ? (
+										<div className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
+											{errorMap.onSubmit}
+										</div>
+									) : null
+								}
+							</form.Subscribe>
+
+							<form.Subscribe
+								selector={(state) => [state.canSubmit, state.isSubmitting]}
+							>
+								{([canSubmit, isSubmitting]) => (
+									<Button
+										type="submit"
+										disabled={!canSubmit}
+										className="w-full"
+									>
+										{isSubmitting ? "登录中..." : "登录"}
+									</Button>
+								)}
+							</form.Subscribe>
+						</form>
+
+						<p className="mt-3 text-center text-sm text-muted-foreground sm:mt-4">
+							还没有账号？{" "}
+							<Link
+								to="/register"
+								className="underline underline-offset-4 hover:text-foreground"
+							>
+								立即注册
+							</Link>
+						</p>
+					</CardContent>
+				</Card>
 			</div>
-		</div>
+		</main>
 	);
 }

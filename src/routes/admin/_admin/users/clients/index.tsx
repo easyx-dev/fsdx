@@ -1,18 +1,14 @@
 /**
- * 客户端用户列表（占位）
+ * 客户端用户列表（开发中）
  */
+
 import { createFileRoute } from "@tanstack/react-router";
-import { AdminShell } from "#/components/admin/AdminShell";
+import { Result } from "antd";
 
 export const Route = createFileRoute("/admin/_admin/users/clients/")({
-	component: ClientUserList,
+	component: ClientUsersPage,
 });
 
-function ClientUserList() {
-	return (
-		<AdminShell>
-			<h1 className="text-2xl font-bold text-zinc-900">客户端用户列表</h1>
-			<p className="mt-2 text-zinc-500">功能开发中</p>
-		</AdminShell>
-	);
+function ClientUsersPage() {
+	return <Result status="info" title="客户端用户管理" subTitle="功能开发中" />;
 }

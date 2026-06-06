@@ -1,4 +1,8 @@
+/**
+ * 关于页面
+ */
 import { createFileRoute } from "@tanstack/react-router";
+import { Card, CardContent, CardHeader, CardTitle } from "#/components/ui/card";
 
 export const Route = createFileRoute("/about")({
 	component: About,
@@ -6,18 +10,49 @@ export const Route = createFileRoute("/about")({
 
 function About() {
 	return (
-		<main className="page-wrap px-4 py-12">
-			<section className="island-shell rounded-2xl p-6 sm:p-8">
-				<p className="island-kicker mb-2">About</p>
-				<h1 className="display-title mb-3 text-4xl font-bold text-[var(--sea-ink)] sm:text-5xl">
-					A small starter with room to grow.
-				</h1>
-				<p className="m-0 max-w-3xl text-base leading-8 text-[var(--sea-ink-soft)]">
-					TanStack Start gives you type-safe routing, server functions, and
-					modern SSR defaults. Use this as a clean foundation, then layer in
-					your own routes, styling, and add-ons.
-				</p>
-			</section>
+		<main className="mx-auto max-w-3xl px-4 py-8 sm:py-16">
+			<Card>
+				<CardHeader className="p-4 sm:p-6">
+					<CardTitle className="text-xl sm:text-2xl">关于 CMS</CardTitle>
+				</CardHeader>
+				<CardContent className="space-y-4 p-4 pt-0 sm:space-y-6 sm:p-6 sm:pt-0">
+					<p className="text-sm leading-6 text-muted-foreground sm:text-base sm:leading-7">
+						CMS 内容管理系统是一个基于 TanStack Start
+						构建的全栈内容管理平台。支持类型安全路由、Server Functions、SSR
+						流式渲染，并配备强大的管理后台。
+					</p>
+					<div className="grid gap-4 sm:grid-cols-2">
+						<Card>
+							<CardHeader className="p-4 sm:p-5">
+								<CardTitle className="text-sm sm:text-base">技术栈</CardTitle>
+							</CardHeader>
+							<CardContent className="p-4 pt-0 sm:p-5 sm:pt-0">
+								<ul className="space-y-1 text-xs text-muted-foreground sm:text-sm">
+									<li>TanStack Start (SSR)</li>
+									<li>React 19 + TypeScript</li>
+									<li>antd v6 管理后台</li>
+									<li>Tailwind CSS + shadcn/ui</li>
+									<li>PostgreSQL + Drizzle ORM</li>
+								</ul>
+							</CardContent>
+						</Card>
+						<Card>
+							<CardHeader className="p-4 sm:p-5">
+								<CardTitle className="text-sm sm:text-base">核心功能</CardTitle>
+							</CardHeader>
+							<CardContent className="p-4 pt-0 sm:p-5 sm:pt-0">
+								<ul className="space-y-1 text-xs text-muted-foreground sm:text-sm">
+									<li>新闻发布与管理</li>
+									<li>RBAC 权限控制</li>
+									<li>字典与系统配置</li>
+									<li>文件上传管理</li>
+									<li>日志查询分析</li>
+								</ul>
+							</CardContent>
+						</Card>
+					</div>
+				</CardContent>
+			</Card>
 		</main>
 	);
 }

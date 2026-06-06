@@ -1,10 +1,15 @@
 /**
- * 管理端仪表盘：统计概览
+ * 管理端仪表盘（antd Card + Statistic）
  */
+import {
+	DashboardOutlined,
+	FileTextOutlined,
+	SafetyOutlined,
+	TeamOutlined,
+} from "@ant-design/icons";
 import { createFileRoute } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
-import { HardDrive, Newspaper, ShieldCheck, Users } from "lucide-react";
-import { AdminShell } from "#/components/admin/AdminShell";
+import { Card, Col, Row, Statistic } from "antd";
 import { PERMISSIONS } from "#/lib/permissions";
 import { permGuard } from "#/middleware/server-fn-auth";
 import { getStats } from "#/server/stats";
@@ -31,72 +36,61 @@ function formatStorage(bytes: number): string {
 function Dashboard() {
 	const stats = Route.useLoaderData();
 
-	return (
-		<AdminShell>
-			<div>
-				<h1 className="text-2xl font-bold text-zinc-900">仪表盘</h1>
-				<p className="mt-2 text-zinc-500">欢迎使用 CMS 管理系统</p>
-
-				<div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-					<StatCard
-						icon={<Newspaper size={20} />}
-						label="新闻总数"
-						value={stats.newsTotal}
-						sub={`已发布 ${stats.publishedNews} 篇`}
-						color="blue"
-					/>
-					<StatCard
-						icon={<ShieldCheck size={20} />}
-						label="管理员"
-						value={stats.adminTotal}
-						color="purple"
-					/>
-					<StatCard
-						icon={<Users size={20} />}
-						label="客户端用户"
-						value={stats.clientTotal}
-						color="green"
-					/>
-					<StatCard
-						icon={<HardDrive size={20} />}
-						label="存储用量"
-						value={formatStorage(stats.storageTotal)}
-						color="orange"
-					/>
-				</div>
-			</div>
-		</AdminShell>
-	);
-}
-
-function StatCard({
-	icon,
-	label,
-	value,
-	sub,
-	color,
-}: {
-	icon: React.ReactNode;
-	label: string;
-	value: number | string;
-	sub?: string;
-	color: "blue" | "purple" | "green" | "orange";
-}) {
-	const colorMap = {
-		blue: "bg-blue-50 text-blue-600",
-		purple: "bg-purple-50 text-purple-600",
-		green: "bg-green-50 text-green-600",
-		orange: "bg-orange-50 text-orange-600",
-	};
+	const statItems = [
+		{
+			title: "新闻总数",
+			value: stats.newsTotal,
+			suffix: `已发布 ${stats.publishedNews} 篇`,
+			icon: <FileTextOutlined />,
+			color: "#1677ff",
+		},
+		{
+			title: "管理员",
+			value: stats.adminTotal,
+			icon: <SafetyOutlined />,
+			color: "#722ed1",
+		},
+		{
+			title: "客户端用户",
+			value: stats.clientTotal,
+			icon: <TeamOutlined />,
+			color: "#52c41a",
+		},
+		{
+			title: "存储用量",
+			value: formatStorage(stats.storageTotal),
+			icon: <DashboardOutlined />,
+			color: "#fa8c16",
+		},
+	];
 
 	return (
-		<div className="rounded-lg border border-zinc-200 bg-white p-5">
-			<div className="flex items-center justify-between">
-				<div className="text-sm text-zinc-500">{label}</div>
-				<div className={`rounded-lg p-2 ${colorMap[color]}`}>{icon}</div>
-			</div>
-			<div className="mt-3 text-2xl font-bold text-zinc-900">{value}</div>
-			{sub && <div className="mt-1 text-xs text-zinc-400">{sub}</div>}
+		<div>
+			<h1 className="mb-1 text-2xl font-bold">仪表盘</h1>
+			<p className="mb-6 text-muted-foreground">欢迎使用 CMS 管理系统</p>
+
+			<Row gutter={[16, 16]}>
+				{statItems.map((item) => (
+					<Col key={item.title} xs={24} sm={12} lg={6}>
+						<Card>
+							<div className="flex items-center justify-between">
+								<Statistic title={item.title} value={item.value} />
+								<div
+									className="flex h-12 w-12 items-center justify-center rounded-lg text-xl text-white"
+									style={{ backgroundColor: item.color }}
+								>
+									{item.icon}
+								</div>
+							</div>
+							{item.suffix && (
+								<div className="mt-2 text-xs text-muted-foreground">
+									{item.suffix}
+								</div>
+							)}
+						</Card>
+					</Col>
+				))}
+			</Row>
 		</div>
 	);
 }

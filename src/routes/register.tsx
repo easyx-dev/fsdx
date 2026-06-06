@@ -1,11 +1,14 @@
 /**
- * 客户端用户注册页面
+ * 客户端用户注册页面（TanStack Form）
  */
 
+import { useForm } from "@tanstack/react-form";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
-import { useState } from "react";
 import { z } from "zod";
+import { Button } from "#/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "#/components/ui/card";
+import { Input } from "#/components/ui/input";
 import { clientRegisterService } from "#/server/auth";
 import { sendCaptcha } from "#/server/captcha";
 
@@ -20,14 +23,12 @@ const sendCaptchaSchema = z.object({
 	email: z.string().email("邮箱格式不正确"),
 });
 
-/** 客户端注册 SF */
 const clientRegister = createServerFn({ method: "POST" })
 	.inputValidator(registerSchema)
 	.handler(async ({ data: { username, email, password, captcha } }) => {
 		return clientRegisterService(username, email, password, captcha);
 	});
 
-/** 发送验证码 SF */
 const sendCaptchaFn = createServerFn({ method: "POST" })
 	.inputValidator(sendCaptchaSchema)
 	.handler(async ({ data: { email } }) => {
@@ -40,170 +41,258 @@ export const Route = createFileRoute("/register")({
 
 function ClientRegisterPage() {
 	const navigate = useNavigate();
-	const [username, setUsername] = useState("");
-	const [email, setEmail] = useState("");
-	const [password, setPassword] = useState("");
-	const [captcha, setCaptcha] = useState("");
-	const [error, setError] = useState("");
-	const [loading, setLoading] = useState(false);
-	const [sendingCaptcha, setSendingCaptcha] = useState(false);
-	const [captchaMsg, setCaptchaMsg] = useState("");
 
-	const handleSendCaptcha = async () => {
-		if (!email) {
-			setCaptchaMsg("请先输入邮箱");
-			return;
-		}
-		setSendingCaptcha(true);
-		setCaptchaMsg("");
-		try {
-			const result = await sendCaptchaFn({ data: { email } });
-			setCaptchaMsg(result.message);
-		} catch {
-			setCaptchaMsg("发送失败");
-		} finally {
-			setSendingCaptcha(false);
-		}
-	};
-
-	const handleSubmit = async (e: React.FormEvent) => {
-		e.preventDefault();
-		setError("");
-		setLoading(true);
-
-		try {
+	const form = useForm({
+		defaultValues: {
+			username: "",
+			email: "",
+			password: "",
+			captcha: "",
+			captchaMsg: "",
+		},
+		onSubmit: async ({ value }) => {
 			const result = await clientRegister({
-				data: { username, email, password, captcha },
+				data: {
+					username: value.username,
+					email: value.email,
+					password: value.password,
+					captcha: value.captcha,
+				},
 			});
 			if (!result.success) {
-				setError(result.message);
-				return;
+				throw new Error(result.message);
 			}
 			navigate({ to: "/login" });
-		} catch {
-			setError("网络错误，请稍后重试");
-		} finally {
-			setLoading(false);
-		}
-	};
+		},
+	});
 
 	return (
-		<div className="flex min-h-screen items-center justify-center bg-zinc-50">
+		<main className="flex flex-1 items-center justify-center bg-background px-4 py-8">
 			<div className="w-full max-w-sm">
-				<div className="rounded-lg border border-zinc-200 bg-white p-8 shadow-sm">
-					<h1 className="mb-6 text-center text-2xl font-bold text-zinc-900">
-						用户注册
-					</h1>
-
-					{error && (
-						<div className="mb-4 rounded-md bg-red-50 px-4 py-2 text-sm text-red-700">
-							{error}
-						</div>
-					)}
-
-					<form onSubmit={handleSubmit} className="space-y-4">
-						<div>
-							<label
-								htmlFor="username"
-								className="mb-1 block text-sm font-medium text-zinc-700"
-							>
-								用户名
-							</label>
-							<input
-								id="username"
-								type="text"
-								value={username}
-								onChange={(e) => setUsername(e.target.value)}
-								className="w-full rounded-md border border-zinc-300 px-3 py-2 text-sm focus:border-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-500"
-								required
-								autoFocus
-							/>
-						</div>
-
-						<div>
-							<label
-								htmlFor="email"
-								className="mb-1 block text-sm font-medium text-zinc-700"
-							>
-								邮箱
-							</label>
-							<div className="flex gap-2">
-								<input
-									id="email"
-									type="email"
-									value={email}
-									onChange={(e) => setEmail(e.target.value)}
-									className="flex-1 rounded-md border border-zinc-300 px-3 py-2 text-sm focus:border-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-500"
-									required
-								/>
-								<button
-									type="button"
-									onClick={handleSendCaptcha}
-									disabled={sendingCaptcha}
-									className="rounded-md bg-zinc-100 px-3 py-2 text-xs text-zinc-600 hover:bg-zinc-200 disabled:opacity-50 whitespace-nowrap"
-								>
-									{sendingCaptcha ? "发送中..." : "获取验证码"}
-								</button>
-							</div>
-							{captchaMsg && (
-								<p className="mt-1 text-xs text-zinc-500">{captchaMsg}</p>
-							)}
-						</div>
-
-						<div>
-							<label
-								htmlFor="captcha"
-								className="mb-1 block text-sm font-medium text-zinc-700"
-							>
-								验证码
-							</label>
-							<input
-								id="captcha"
-								type="text"
-								value={captcha}
-								onChange={(e) => setCaptcha(e.target.value)}
-								maxLength={6}
-								className="w-full rounded-md border border-zinc-300 px-3 py-2 text-sm focus:border-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-500"
-								required
-								placeholder="6 位数字验证码"
-							/>
-						</div>
-
-						<div>
-							<label
-								htmlFor="password"
-								className="mb-1 block text-sm font-medium text-zinc-700"
-							>
-								密码
-							</label>
-							<input
-								id="password"
-								type="password"
-								value={password}
-								onChange={(e) => setPassword(e.target.value)}
-								className="w-full rounded-md border border-zinc-300 px-3 py-2 text-sm focus:border-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-500"
-								required
-								minLength={6}
-							/>
-						</div>
-
-						<button
-							type="submit"
-							disabled={loading}
-							className="w-full rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800 disabled:opacity-50"
+				<Card>
+					<CardHeader className="p-4 sm:p-6">
+						<CardTitle className="text-center text-xl sm:text-2xl">
+							用户注册
+						</CardTitle>
+					</CardHeader>
+					<CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
+						<form
+							onSubmit={(e) => {
+								e.preventDefault();
+								e.stopPropagation();
+								form.handleSubmit();
+							}}
+							className="space-y-3 sm:space-y-4"
 						>
-							{loading ? "注册中..." : "注册"}
-						</button>
-					</form>
+							<form.Field
+								name="username"
+								validators={{
+									onChange: ({ value }) =>
+										!value ? "请输入用户名" : undefined,
+								}}
+							>
+								{(field) => (
+									<div className="space-y-1.5 sm:space-y-2">
+										<label htmlFor={field.name} className="text-sm font-medium">
+											用户名
+										</label>
+										<Input
+											id={field.name}
+											name={field.name}
+											type="text"
+											value={field.state.value}
+											onBlur={field.handleBlur}
+											onChange={(e) => field.handleChange(e.target.value)}
+											autoFocus
+										/>
+										{field.state.meta.isTouched &&
+											field.state.meta.errors.length > 0 && (
+												<p className="text-xs text-destructive">
+													{field.state.meta.errors.join(", ")}
+												</p>
+											)}
+									</div>
+								)}
+							</form.Field>
 
-					<p className="mt-4 text-center text-sm text-zinc-500">
-						已有账号？{" "}
-						<Link to="/login" className="text-zinc-900 underline">
-							立即登录
-						</Link>
-					</p>
-				</div>
+							<form.Field
+								name="email"
+								validators={{
+									onChange: ({ value }) => {
+										if (!value) return "请输入邮箱";
+										if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value))
+											return "邮箱格式不正确";
+										return undefined;
+									},
+								}}
+							>
+								{(field) => (
+									<div className="space-y-1.5 sm:space-y-2">
+										<label htmlFor={field.name} className="text-sm font-medium">
+											邮箱
+										</label>
+										<div className="flex flex-col gap-2 xs:flex-row">
+											<Input
+												id={field.name}
+												name={field.name}
+												type="email"
+												value={field.state.value}
+												onBlur={field.handleBlur}
+												onChange={(e) => field.handleChange(e.target.value)}
+												className="flex-1"
+											/>
+											<Button
+												type="button"
+												variant="outline"
+												size="sm"
+												className="shrink-0"
+												onClick={async () => {
+													const email = field.state.value;
+													if (!email) {
+														form.setFieldValue("captchaMsg", "请先输入邮箱");
+														return;
+													}
+													form.setFieldValue("captchaMsg", "发送中...");
+													try {
+														const r = await sendCaptchaFn({
+															data: { email },
+														});
+														form.setFieldValue("captchaMsg", r.message);
+													} catch {
+														form.setFieldValue("captchaMsg", "发送失败");
+													}
+												}}
+											>
+												获取验证码
+											</Button>
+										</div>
+										<form.Subscribe
+											selector={(state) => state.values.captchaMsg}
+										>
+											{(captchaMsg) =>
+												captchaMsg ? (
+													<p className="text-xs text-muted-foreground">
+														{captchaMsg}
+													</p>
+												) : null
+											}
+										</form.Subscribe>
+										{field.state.meta.isTouched &&
+											field.state.meta.errors.length > 0 && (
+												<p className="text-xs text-destructive">
+													{field.state.meta.errors.join(", ")}
+												</p>
+											)}
+									</div>
+								)}
+							</form.Field>
+
+							<form.Field
+								name="captcha"
+								validators={{
+									onChange: ({ value }) => {
+										if (!value) return "请输入验证码";
+										if (value.length !== 6) return "验证码为 6 位";
+										return undefined;
+									},
+								}}
+							>
+								{(field) => (
+									<div className="space-y-1.5 sm:space-y-2">
+										<label htmlFor={field.name} className="text-sm font-medium">
+											验证码
+										</label>
+										<Input
+											id={field.name}
+											name={field.name}
+											type="text"
+											value={field.state.value}
+											onBlur={field.handleBlur}
+											onChange={(e) => field.handleChange(e.target.value)}
+											maxLength={6}
+											placeholder="6 位数字验证码"
+										/>
+										{field.state.meta.isTouched &&
+											field.state.meta.errors.length > 0 && (
+												<p className="text-xs text-destructive">
+													{field.state.meta.errors.join(", ")}
+												</p>
+											)}
+									</div>
+								)}
+							</form.Field>
+
+							<form.Field
+								name="password"
+								validators={{
+									onChange: ({ value }) => {
+										if (!value) return "请输入密码";
+										if (value.length < 6) return "密码至少 6 位";
+										return undefined;
+									},
+								}}
+							>
+								{(field) => (
+									<div className="space-y-1.5 sm:space-y-2">
+										<label htmlFor={field.name} className="text-sm font-medium">
+											密码
+										</label>
+										<Input
+											id={field.name}
+											name={field.name}
+											type="password"
+											value={field.state.value}
+											onBlur={field.handleBlur}
+											onChange={(e) => field.handleChange(e.target.value)}
+										/>
+										{field.state.meta.isTouched &&
+											field.state.meta.errors.length > 0 && (
+												<p className="text-xs text-destructive">
+													{field.state.meta.errors.join(", ")}
+												</p>
+											)}
+									</div>
+								)}
+							</form.Field>
+
+							{/* 服务端错误展示 */}
+							<form.Subscribe selector={(state) => state.errorMap}>
+								{(errorMap) =>
+									errorMap.onSubmit ? (
+										<div className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
+											{errorMap.onSubmit}
+										</div>
+									) : null
+								}
+							</form.Subscribe>
+
+							<form.Subscribe
+								selector={(state) => [state.canSubmit, state.isSubmitting]}
+							>
+								{([canSubmit, isSubmitting]) => (
+									<Button
+										type="submit"
+										disabled={!canSubmit}
+										className="w-full"
+									>
+										{isSubmitting ? "注册中..." : "注册"}
+									</Button>
+								)}
+							</form.Subscribe>
+						</form>
+
+						<p className="mt-3 text-center text-sm text-muted-foreground sm:mt-4">
+							已有账号？{" "}
+							<Link
+								to="/login"
+								className="underline underline-offset-4 hover:text-foreground"
+							>
+								立即登录
+							</Link>
+						</p>
+					</CardContent>
+				</Card>
 			</div>
-		</div>
+		</main>
 	);
 }

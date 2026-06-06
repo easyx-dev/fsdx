@@ -13,8 +13,8 @@ import { Route as RegisterRouteImport } from './routes/register'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as NewsIndexRouteImport } from './routes/news/index'
 import { Route as NewsSlugRouteImport } from './routes/news/$slug'
-import { Route as DemoDrizzleRouteImport } from './routes/demo/drizzle'
 import { Route as AdminLoginRouteImport } from './routes/admin/login'
 import { Route as AdminAdminRouteImport } from './routes/admin/_admin'
 import { Route as AdminAdminIndexRouteImport } from './routes/admin/_admin/index'
@@ -49,14 +49,14 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const NewsIndexRoute = NewsIndexRouteImport.update({
+  id: '/news/',
+  path: '/news/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const NewsSlugRoute = NewsSlugRouteImport.update({
   id: '/news/$slug',
   path: '/news/$slug',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const DemoDrizzleRoute = DemoDrizzleRouteImport.update({
-  id: '/demo/drizzle',
-  path: '/demo/drizzle',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminLoginRoute = AdminLoginRouteImport.update({
@@ -134,8 +134,8 @@ export interface FileRoutesByFullPath {
   '/register': typeof RegisterRoute
   '/admin': typeof AdminAdminRouteWithChildren
   '/admin/login': typeof AdminLoginRoute
-  '/demo/drizzle': typeof DemoDrizzleRoute
   '/news/$slug': typeof NewsSlugRoute
+  '/news/': typeof NewsIndexRoute
   '/admin/': typeof AdminAdminIndexRoute
   '/admin/news/create': typeof AdminAdminNewsCreateRoute
   '/admin/config/': typeof AdminAdminConfigIndexRoute
@@ -154,8 +154,8 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/register': typeof RegisterRoute
   '/admin/login': typeof AdminLoginRoute
-  '/demo/drizzle': typeof DemoDrizzleRoute
   '/news/$slug': typeof NewsSlugRoute
+  '/news': typeof NewsIndexRoute
   '/admin': typeof AdminAdminIndexRoute
   '/admin/news/create': typeof AdminAdminNewsCreateRoute
   '/admin/config': typeof AdminAdminConfigIndexRoute
@@ -176,8 +176,8 @@ export interface FileRoutesById {
   '/register': typeof RegisterRoute
   '/admin/_admin': typeof AdminAdminRouteWithChildren
   '/admin/login': typeof AdminLoginRoute
-  '/demo/drizzle': typeof DemoDrizzleRoute
   '/news/$slug': typeof NewsSlugRoute
+  '/news/': typeof NewsIndexRoute
   '/admin/_admin/': typeof AdminAdminIndexRoute
   '/admin/_admin/news/create': typeof AdminAdminNewsCreateRoute
   '/admin/_admin/config/': typeof AdminAdminConfigIndexRoute
@@ -199,8 +199,8 @@ export interface FileRouteTypes {
     | '/register'
     | '/admin'
     | '/admin/login'
-    | '/demo/drizzle'
     | '/news/$slug'
+    | '/news/'
     | '/admin/'
     | '/admin/news/create'
     | '/admin/config/'
@@ -219,8 +219,8 @@ export interface FileRouteTypes {
     | '/login'
     | '/register'
     | '/admin/login'
-    | '/demo/drizzle'
     | '/news/$slug'
+    | '/news'
     | '/admin'
     | '/admin/news/create'
     | '/admin/config'
@@ -240,8 +240,8 @@ export interface FileRouteTypes {
     | '/register'
     | '/admin/_admin'
     | '/admin/login'
-    | '/demo/drizzle'
     | '/news/$slug'
+    | '/news/'
     | '/admin/_admin/'
     | '/admin/_admin/news/create'
     | '/admin/_admin/config/'
@@ -262,8 +262,8 @@ export interface RootRouteChildren {
   RegisterRoute: typeof RegisterRoute
   AdminAdminRoute: typeof AdminAdminRouteWithChildren
   AdminLoginRoute: typeof AdminLoginRoute
-  DemoDrizzleRoute: typeof DemoDrizzleRoute
   NewsSlugRoute: typeof NewsSlugRoute
+  NewsIndexRoute: typeof NewsIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -296,18 +296,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/news/': {
+      id: '/news/'
+      path: '/news'
+      fullPath: '/news/'
+      preLoaderRoute: typeof NewsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/news/$slug': {
       id: '/news/$slug'
       path: '/news/$slug'
       fullPath: '/news/$slug'
       preLoaderRoute: typeof NewsSlugRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/demo/drizzle': {
-      id: '/demo/drizzle'
-      path: '/demo/drizzle'
-      fullPath: '/demo/drizzle'
-      preLoaderRoute: typeof DemoDrizzleRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin/login': {
@@ -443,8 +443,8 @@ const rootRouteChildren: RootRouteChildren = {
   RegisterRoute: RegisterRoute,
   AdminAdminRoute: AdminAdminRouteWithChildren,
   AdminLoginRoute: AdminLoginRoute,
-  DemoDrizzleRoute: DemoDrizzleRoute,
   NewsSlugRoute: NewsSlugRoute,
+  NewsIndexRoute: NewsIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

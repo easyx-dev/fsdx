@@ -1,13 +1,26 @@
 /**
- * 字典管理页面：字典类型 + 条目 CRUD
+ * 字典管理页面：字典类型 + 条目 CRUD（antd）
  */
 
+import { DeleteOutlined, EditOutlined, PlusOutlined } from "@ant-design/icons";
 import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
-import { Pencil, Plus, Trash2, X } from "lucide-react";
+import {
+	App,
+	Button,
+	Col,
+	Form,
+	Input,
+	InputNumber,
+	Modal,
+	Popconfirm,
+	Row,
+	Space,
+	Table,
+	Tag,
+} from "antd";
 import { useState } from "react";
 import { z } from "zod";
-import { AdminShell } from "#/components/admin/AdminShell";
 import { PERMISSIONS } from "#/lib/permissions";
 import { permGuard } from "#/middleware/server-fn-auth";
 import type { DictItemRecord, DictRecord } from "#/server/dict";
@@ -116,402 +129,374 @@ export const Route = createFileRoute("/admin/_admin/dicts/")({
 	loader: async () => await getDictList(),
 });
 
+/** 字典管理页面组件 */
 function DictsPage() {
 	const router = useRouter();
+	const { message } = App.useApp();
 	const dictList = Route.useLoaderData();
 	const [selectedDictId, setSelectedDictId] = useState<string | null>(null);
 	const [items, setItems] = useState<DictItemRecord[]>([]);
-	const [showDictForm, setShowDictForm] = useState(false);
+	const [dictModalOpen, setDictModalOpen] = useState(false);
 	const [editingDict, setEditingDict] = useState<DictRecord | null>(null);
-	const [showItemForm, setShowItemForm] = useState(false);
+	const [itemModalOpen, setItemModalOpen] = useState(false);
 	const [editingItem, setEditingItem] = useState<DictItemRecord | null>(null);
+	const [dictForm] = Form.useForm();
+	const [itemForm] = Form.useForm();
 
 	const refreshItems = async (dictId: string) => {
 		const data = await getDictItems({ data: { dictId } });
 		setItems(data);
 	};
+
 	const handleSelectDict = (dictId: string) => {
 		setSelectedDictId(dictId);
 		refreshItems(dictId);
 	};
 
-	const handleDictSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-		e.preventDefault();
-		const form = new FormData(e.currentTarget);
-		if (editingDict) {
-			await updateDictFn({
-				data: {
-					id: editingDict.id,
-					name: form.get("name") as string,
-					description: (form.get("description") as string) || undefined,
-				},
+	/** 打开字典创建/编辑弹窗 */
+	const openDictModal = (dict?: DictRecord) => {
+		if (dict) {
+			setEditingDict(dict);
+			dictForm.setFieldsValue({
+				name: dict.name,
+				slug: dict.slug,
+				description: dict.description,
 			});
 		} else {
-			await createDictFn({
-				data: {
-					name: form.get("name") as string,
-					slug: form.get("slug") as string,
-					description: (form.get("description") as string) || undefined,
-				},
-			});
+			setEditingDict(null);
+			dictForm.resetFields();
 		}
-		setShowDictForm(false);
+		setDictModalOpen(true);
+	};
+
+	const closeDictModal = () => {
+		setDictModalOpen(false);
 		setEditingDict(null);
+		dictForm.resetFields();
+	};
+
+	const handleDictSubmit = async (values: Record<string, unknown>) => {
+		try {
+			if (editingDict) {
+				await updateDictFn({
+					data: {
+						id: editingDict.id,
+						name: values.name as string,
+						description: (values.description as string) || undefined,
+					},
+				});
+				message.success("字典更新成功");
+			} else {
+				await createDictFn({
+					data: {
+						name: values.name as string,
+						slug: values.slug as string,
+						description: (values.description as string) || undefined,
+					},
+				});
+				message.success("字典创建成功");
+			}
+			closeDictModal();
+			router.invalidate();
+		} catch (err) {
+			message.error(err instanceof Error ? err.message : "操作失败");
+		}
+	};
+
+	/** 打开条目创建/编辑弹窗 */
+	const openItemModal = (item?: DictItemRecord) => {
+		if (item) {
+			setEditingItem(item);
+			itemForm.setFieldsValue({
+				label: item.label,
+				value: item.value,
+				sortOrder: item.sortOrder,
+			});
+		} else {
+			setEditingItem(null);
+			itemForm.resetFields();
+			itemForm.setFieldsValue({ sortOrder: 0 });
+		}
+		setItemModalOpen(true);
+	};
+
+	const closeItemModal = () => {
+		setItemModalOpen(false);
+		setEditingItem(null);
+		itemForm.resetFields();
+	};
+
+	const handleItemSubmit = async (values: Record<string, unknown>) => {
+		if (!selectedDictId) return;
+		try {
+			if (editingItem) {
+				await updateDictItemFn({
+					data: {
+						id: editingItem.id,
+						label: values.label as string,
+						value: values.value as string,
+						sortOrder: (values.sortOrder as number) ?? 0,
+					},
+				});
+				message.success("条目更新成功");
+			} else {
+				await createDictItemFn({
+					data: {
+						dictId: selectedDictId,
+						label: values.label as string,
+						value: values.value as string,
+						sortOrder: (values.sortOrder as number) ?? 0,
+					},
+				});
+				message.success("条目创建成功");
+			}
+			closeItemModal();
+			refreshItems(selectedDictId);
+		} catch (err) {
+			message.error(err instanceof Error ? err.message : "操作失败");
+		}
+	};
+
+	const handleDeleteDict = async (id: string) => {
+		await deleteDictFn({ data: { id } });
+		message.success("字典已删除");
+		if (selectedDictId === id) {
+			setSelectedDictId(null);
+			setItems([]);
+		}
 		router.invalidate();
 	};
 
-	const handleItemSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-		e.preventDefault();
-		if (!selectedDictId) return;
-		const form = new FormData(e.currentTarget);
-		const sortOrder = Number(form.get("sortOrder")) || 0;
-		if (editingItem) {
-			await updateDictItemFn({
-				data: {
-					id: editingItem.id,
-					label: form.get("label") as string,
-					value: form.get("value") as string,
-					sortOrder,
-				},
-			});
-		} else {
-			await createDictItemFn({
-				data: {
-					dictId: selectedDictId,
-					label: form.get("label") as string,
-					value: form.get("value") as string,
-					sortOrder,
-				},
-			});
-		}
-		setShowItemForm(false);
-		setEditingItem(null);
-		refreshItems(selectedDictId);
+	const handleDeleteItem = async (id: string) => {
+		await deleteDictItemFn({ data: { id } });
+		message.success("条目已删除");
+		if (selectedDictId) refreshItems(selectedDictId);
 	};
 
-	return (
-		<AdminShell>
-			<div>
-				<div className="flex items-center justify-between">
-					<h1 className="text-2xl font-bold text-zinc-900">字典管理</h1>
-					<button
-						onClick={() => {
-							setEditingDict(null);
-							setShowDictForm(true);
-						}}
-						className="flex items-center gap-1 rounded-md bg-zinc-900 px-3 py-2 text-sm font-medium text-white hover:bg-zinc-800"
-					>
-						<Plus size={16} />
-						新建字典
-					</button>
+	/** 字典类型表格列定义 */
+	const dictColumns = [
+		{
+			title: "字典名称",
+			dataIndex: "name",
+			key: "name",
+			render: (_: string, record: DictRecord) => (
+				<div
+					className={
+						selectedDictId === record.id
+							? "cursor-pointer font-medium text-primary"
+							: "cursor-pointer"
+					}
+					onClick={() => handleSelectDict(record.id)}
+				>
+					<div>{record.name}</div>
+					<div className="text-xs text-muted-foreground">{record.slug}</div>
 				</div>
-				<div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-3">
-					<div className="rounded-lg border border-zinc-200 bg-white">
-						<div className="border-b border-zinc-200 px-4 py-3">
-							<h2 className="text-sm font-medium text-zinc-700">字典类型</h2>
-						</div>
-						<div className="divide-y divide-zinc-100">
-							{dictList.length === 0 && (
-								<div className="px-4 py-8 text-center text-sm text-zinc-400">
-									暂无字典
+			),
+		},
+		{
+			title: "操作",
+			key: "actions",
+			width: 100,
+			render: (_: unknown, record: DictRecord) => (
+				<Space size={4}>
+					<Button
+						type="link"
+						size="small"
+						icon={<EditOutlined />}
+						onClick={() => openDictModal(record)}
+					/>
+					<Popconfirm
+						title="确定删除该字典及所有条目？"
+						onConfirm={() => handleDeleteDict(record.id)}
+					>
+						<Button type="link" size="small" danger icon={<DeleteOutlined />} />
+					</Popconfirm>
+				</Space>
+			),
+		},
+	];
+
+	/** 字典条目表格列定义 */
+	const itemColumns = [
+		{ title: "标签", dataIndex: "label", key: "label" },
+		{
+			title: "值",
+			dataIndex: "value",
+			key: "value",
+			render: (val: string) => <code className="text-xs">{val}</code>,
+		},
+		{ title: "排序", dataIndex: "sortOrder", key: "sortOrder", width: 60 },
+		{
+			title: "状态",
+			dataIndex: "status",
+			key: "status",
+			width: 70,
+			render: (val: string) => (
+				<Tag color={val === "active" ? "green" : "default"}>
+					{val === "active" ? "启用" : "禁用"}
+				</Tag>
+			),
+		},
+		{
+			title: "操作",
+			key: "actions",
+			width: 100,
+			render: (_: unknown, record: DictItemRecord) => (
+				<Space size={4}>
+					<Button
+						type="link"
+						size="small"
+						icon={<EditOutlined />}
+						onClick={() => openItemModal(record)}
+					/>
+					<Popconfirm
+						title="确定删除该条目？"
+						onConfirm={() => handleDeleteItem(record.id)}
+					>
+						<Button type="link" size="small" danger icon={<DeleteOutlined />} />
+					</Popconfirm>
+				</Space>
+			),
+		},
+	];
+
+	return (
+		<App>
+			<div>
+				<div className="mb-4 flex items-center justify-between">
+					<h1 className="text-2xl font-bold">字典管理</h1>
+					<Button
+						type="primary"
+						icon={<PlusOutlined />}
+						onClick={() => openDictModal()}
+					>
+						新建字典
+					</Button>
+				</div>
+
+				<Row gutter={16}>
+					<Col span={8}>
+						<Table
+							dataSource={dictList}
+							columns={dictColumns}
+							rowKey="id"
+							size="small"
+							pagination={false}
+							locale={{ emptyText: "暂无字典" }}
+						/>
+					</Col>
+					<Col span={16}>
+						{selectedDictId ? (
+							<div>
+								<div className="mb-3 flex items-center justify-between">
+									<span className="text-sm text-muted-foreground">
+										字典条目
+									</span>
+									<Button
+										type="primary"
+										size="small"
+										icon={<PlusOutlined />}
+										onClick={() => openItemModal()}
+									>
+										新建条目
+									</Button>
 								</div>
-							)}
-							{dictList.map((d) => (
-								<div
-									key={d.id}
-									onClick={() => handleSelectDict(d.id)}
-									className={`flex items-center justify-between px-4 py-3 cursor-pointer hover:bg-zinc-50 ${selectedDictId === d.id ? "bg-zinc-50" : ""}`}
-								>
-									<div>
-										<div className="text-sm font-medium text-zinc-800">
-											{d.name}
-										</div>
-										<div className="text-xs text-zinc-400">{d.slug}</div>
-									</div>
-									<div className="flex gap-1">
-										<button
-											onClick={(e) => {
-												e.stopPropagation();
-												setEditingDict(d);
-												setShowDictForm(true);
-											}}
-											className="rounded p-1 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-600"
-										>
-											<Pencil size={14} />
-										</button>
-										<button
-											onClick={async (e) => {
-												e.stopPropagation();
-												if (!confirm("确定删除？")) return;
-												await deleteDictFn({ data: { id: d.id } });
-												if (selectedDictId === d.id) {
-													setSelectedDictId(null);
-													setItems([]);
-												}
-												router.invalidate();
-											}}
-											className="rounded p-1 text-zinc-400 hover:bg-red-50 hover:text-red-500"
-										>
-											<Trash2 size={14} />
-										</button>
-									</div>
-								</div>
-							))}
-						</div>
-					</div>
-					<div className="rounded-lg border border-zinc-200 bg-white lg:col-span-2">
-						<div className="flex items-center justify-between border-b border-zinc-200 px-4 py-3">
-							<h2 className="text-sm font-medium text-zinc-700">
-								{selectedDictId ? "字典条目" : "请选择左侧字典"}
-							</h2>
-							{selectedDictId && (
-								<button
-									onClick={() => {
-										setEditingItem(null);
-										setShowItemForm(true);
-									}}
-									className="flex items-center gap-1 rounded-md bg-zinc-900 px-3 py-1.5 text-xs font-medium text-white hover:bg-zinc-800"
-								>
-									<Plus size={14} />
-									新建条目
-								</button>
-							)}
-						</div>
-						{!selectedDictId && (
-							<div className="px-4 py-12 text-center text-sm text-zinc-400">
+								<Table
+									dataSource={items}
+									columns={itemColumns}
+									rowKey="id"
+									size="small"
+									pagination={false}
+									locale={{ emptyText: "暂无条目" }}
+								/>
+							</div>
+						) : (
+							<div className="flex items-center justify-center rounded-lg border py-16 text-sm text-muted-foreground">
 								请选择左侧字典查看条目
 							</div>
 						)}
-						{selectedDictId && (
-							<table className="w-full">
-								<thead>
-									<tr className="border-b border-zinc-100 text-left text-xs text-zinc-500">
-										<th className="px-4 py-2 font-medium">标签</th>
-										<th className="px-4 py-2 font-medium">值</th>
-										<th className="px-4 py-2 font-medium">排序</th>
-										<th className="px-4 py-2 font-medium">状态</th>
-										<th className="px-4 py-2 font-medium w-20">操作</th>
-									</tr>
-								</thead>
-								<tbody>
-									{items.length === 0 && (
-										<tr>
-											<td
-												colSpan={5}
-												className="px-4 py-8 text-center text-sm text-zinc-400"
-											>
-												暂无条目
-											</td>
-										</tr>
-									)}
-									{items.map((item) => (
-										<tr
-											key={item.id}
-											className="border-b border-zinc-50 text-sm"
-										>
-											<td className="px-4 py-2.5 text-zinc-800">
-												{item.label}
-											</td>
-											<td className="px-4 py-2.5 text-zinc-500 font-mono text-xs">
-												{item.value}
-											</td>
-											<td className="px-4 py-2.5 text-zinc-500">
-												{item.sortOrder}
-											</td>
-											<td className="px-4 py-2.5">
-												<span
-													className={`inline-block rounded-full px-2 py-0.5 text-xs ${item.status === "active" ? "bg-green-50 text-green-700" : "bg-zinc-100 text-zinc-500"}`}
-												>
-													{item.status === "active" ? "启用" : "禁用"}
-												</span>
-											</td>
-											<td className="px-4 py-2.5">
-												<div className="flex gap-1">
-													<button
-														onClick={() => {
-															setEditingItem(item);
-															setShowItemForm(true);
-														}}
-														className="rounded p-1 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-600"
-													>
-														<Pencil size={13} />
-													</button>
-													<button
-														onClick={async () => {
-															if (!confirm("确定删除？")) return;
-															await deleteDictItemFn({ data: { id: item.id } });
-															refreshItems(selectedDictId);
-														}}
-														className="rounded p-1 text-zinc-400 hover:bg-red-50 hover:text-red-500"
-													>
-														<Trash2 size={13} />
-													</button>
-												</div>
-											</td>
-										</tr>
-									))}
-								</tbody>
-							</table>
-						)}
-					</div>
-				</div>
-				{showDictForm && (
-					<Modal
-						onClose={() => {
-							setShowDictForm(false);
-							setEditingDict(null);
-						}}
-					>
-						<h3 className="mb-4 text-lg font-medium text-zinc-900">
-							{editingDict ? "编辑字典" : "新建字典"}
-						</h3>
-						<form onSubmit={handleDictSubmit} className="space-y-3">
-							<FormField label="名称" required>
-								<input
-									name="name"
-									defaultValue={editingDict?.name}
-									className="w-full rounded-md border border-zinc-300 px-3 py-2 text-sm focus:border-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-500"
-									required
-								/>
-							</FormField>
-							<FormField label="标识 (slug)" required={!editingDict}>
-								<input
-									name="slug"
-									defaultValue={editingDict?.slug}
-									disabled={!!editingDict}
-									className="w-full rounded-md border border-zinc-300 px-3 py-2 text-sm focus:border-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-500 disabled:bg-zinc-50"
-									required={!editingDict}
-								/>
-							</FormField>
-							<FormField label="描述">
-								<textarea
-									name="description"
-									defaultValue={editingDict?.description ?? ""}
-									rows={2}
-									className="w-full rounded-md border border-zinc-300 px-3 py-2 text-sm focus:border-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-500"
-								/>
-							</FormField>
-							<div className="flex justify-end gap-2 pt-2">
-								<button
-									type="button"
-									onClick={() => {
-										setShowDictForm(false);
-										setEditingDict(null);
-									}}
-									className="rounded-md px-3 py-2 text-sm text-zinc-600 hover:bg-zinc-100"
-								>
-									取消
-								</button>
-								<button
-									type="submit"
-									className="rounded-md bg-zinc-900 px-3 py-2 text-sm font-medium text-white hover:bg-zinc-800"
-								>
-									{editingDict ? "保存" : "创建"}
-								</button>
-							</div>
-						</form>
-					</Modal>
-				)}
-				{showItemForm && (
-					<Modal
-						onClose={() => {
-							setShowItemForm(false);
-							setEditingItem(null);
-						}}
-					>
-						<h3 className="mb-4 text-lg font-medium text-zinc-900">
-							{editingItem ? "编辑条目" : "新建条目"}
-						</h3>
-						<form onSubmit={handleItemSubmit} className="space-y-3">
-							<FormField label="标签" required>
-								<input
-									name="label"
-									defaultValue={editingItem?.label}
-									className="w-full rounded-md border border-zinc-300 px-3 py-2 text-sm focus:border-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-500"
-									required
-								/>
-							</FormField>
-							<FormField label="值" required>
-								<input
-									name="value"
-									defaultValue={editingItem?.value}
-									className="w-full rounded-md border border-zinc-300 px-3 py-2 text-sm focus:border-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-500"
-									required
-								/>
-							</FormField>
-							<FormField label="排序">
-								<input
-									name="sortOrder"
-									type="number"
-									defaultValue={editingItem?.sortOrder ?? 0}
-									className="w-full rounded-md border border-zinc-300 px-3 py-2 text-sm focus:border-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-500"
-								/>
-							</FormField>
-							<div className="flex justify-end gap-2 pt-2">
-								<button
-									type="button"
-									onClick={() => {
-										setShowItemForm(false);
-										setEditingItem(null);
-									}}
-									className="rounded-md px-3 py-2 text-sm text-zinc-600 hover:bg-zinc-100"
-								>
-									取消
-								</button>
-								<button
-									type="submit"
-									className="rounded-md bg-zinc-900 px-3 py-2 text-sm font-medium text-white hover:bg-zinc-800"
-								>
-									{editingItem ? "保存" : "创建"}
-								</button>
-							</div>
-						</form>
-					</Modal>
-				)}
-			</div>
-		</AdminShell>
-	);
-}
+					</Col>
+				</Row>
 
-function Modal({
-	children,
-	onClose,
-}: {
-	children: React.ReactNode;
-	onClose: () => void;
-}) {
-	return (
-		<div className="fixed inset-0 z-50 flex items-center justify-center">
-			<div className="absolute inset-0 bg-black/30" onClick={onClose} />
-			<div className="relative w-full max-w-md rounded-lg border border-zinc-200 bg-white p-6 shadow-lg">
-				<button
-					onClick={onClose}
-					className="absolute right-4 top-4 rounded p-0.5 text-zinc-400 hover:text-zinc-600"
+				{/* 字典创建/编辑弹窗 */}
+				<Modal
+					title={editingDict ? "编辑字典" : "新建字典"}
+					open={dictModalOpen}
+					onCancel={closeDictModal}
+					footer={null}
+					destroyOnClose
 				>
-					<X size={18} />
-				</button>
-				{children}
-			</div>
-		</div>
-	);
-}
+					<Form form={dictForm} layout="vertical" onFinish={handleDictSubmit}>
+						<Form.Item
+							name="name"
+							label="名称"
+							rules={[{ required: true, message: "请输入字典名称" }]}
+						>
+							<Input placeholder="字典名称" />
+						</Form.Item>
+						<Form.Item
+							name="slug"
+							label="标识 (slug)"
+							rules={[{ required: true, message: "请输入字典标识" }]}
+						>
+							<Input placeholder="唯一标识" disabled={!!editingDict} />
+						</Form.Item>
+						<Form.Item name="description" label="描述">
+							<Input.TextArea rows={2} placeholder="字典描述（可选）" />
+						</Form.Item>
+						<Form.Item className="mb-0 text-right">
+							<Space>
+								<Button onClick={closeDictModal}>取消</Button>
+								<Button type="primary" htmlType="submit">
+									{editingDict ? "保存" : "创建"}
+								</Button>
+							</Space>
+						</Form.Item>
+					</Form>
+				</Modal>
 
-function FormField({
-	label,
-	required,
-	children,
-}: {
-	label: string;
-	required?: boolean;
-	children: React.ReactNode;
-}) {
-	return (
-		<div>
-			<label className="mb-1 block text-sm font-medium text-zinc-700">
-				{label}
-				{required && <span className="ml-0.5 text-red-500">*</span>}
-			</label>
-			{children}
-		</div>
+				{/* 条目创建/编辑弹窗 */}
+				<Modal
+					title={editingItem ? "编辑条目" : "新建条目"}
+					open={itemModalOpen}
+					onCancel={closeItemModal}
+					footer={null}
+					destroyOnClose
+				>
+					<Form
+						form={itemForm}
+						layout="vertical"
+						onFinish={handleItemSubmit}
+						initialValues={{ sortOrder: 0 }}
+					>
+						<Form.Item
+							name="label"
+							label="标签"
+							rules={[{ required: true, message: "请输入标签" }]}
+						>
+							<Input placeholder="显示名称" />
+						</Form.Item>
+						<Form.Item
+							name="value"
+							label="值"
+							rules={[{ required: true, message: "请输入值" }]}
+						>
+							<Input placeholder="存储值" />
+						</Form.Item>
+						<Form.Item name="sortOrder" label="排序">
+							<InputNumber className="w-full" min={0} placeholder="排序序号" />
+						</Form.Item>
+						<Form.Item className="mb-0 text-right">
+							<Space>
+								<Button onClick={closeItemModal}>取消</Button>
+								<Button type="primary" htmlType="submit">
+									{editingItem ? "保存" : "创建"}
+								</Button>
+							</Space>
+						</Form.Item>
+					</Form>
+				</Modal>
+			</div>
+		</App>
 	);
 }

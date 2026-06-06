@@ -1,14 +1,14 @@
 /**
- * 角色管理（占位）
+ * 角色管理（开发中）
  */
+
 import { createFileRoute } from "@tanstack/react-router";
-import { AdminShell } from "#/components/admin/AdminShell";
+import { Result } from "antd";
 
 export const Route = createFileRoute("/admin/_admin/roles/")({
-	component: () => (
-		<AdminShell>
-			<h1 className="text-2xl font-bold text-zinc-900">角色管理</h1>
-			<p className="mt-2 text-zinc-500">功能开发中</p>
-		</AdminShell>
-	),
+	component: RolesPage,
 });
+
+function RolesPage() {
+	return <Result status="info" title="角色管理" subTitle="功能开发中" />;
+}

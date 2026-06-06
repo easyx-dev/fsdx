@@ -1,11 +1,16 @@
 /**
- * 根路由：HTML Shell 文档结构
+ * 根路由：根据路径前缀分离 Admin（antd 客户端渲染）与 SSR 前端（shadcn/ui）
  */
-
 import { TanStackDevtools } from "@tanstack/react-devtools";
-import { createRootRoute, HeadContent, Scripts } from "@tanstack/react-router";
+import {
+	createRootRoute,
+	HeadContent,
+	Scripts,
+	useRouterState,
+} from "@tanstack/react-router";
 import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
 import { AuthProvider } from "../components/AuthProvider";
+import { AdminLayout } from "../components/admin/AdminLayout";
 import {
 	DefaultErrorFallback,
 	NotFoundFallback,
@@ -13,53 +18,45 @@ import {
 import Footer from "../components/Footer";
 import Header from "../components/Header";
 
-import appCss from "../styles.css?url";
+import appCss from "../styles/index.css?url";
 
-const THEME_INIT_SCRIPT = `(function(){try{var stored=window.localStorage.getItem('theme');var mode=(stored==='light'||stored==='dark'||stored==='auto')?stored:'auto';var prefersDark=window.matchMedia('(prefers-color-scheme: dark)').matches;var resolved=mode==='auto'?(prefersDark?'dark':'light'):mode;var root=document.documentElement;root.classList.remove('light','dark');root.classList.add(resolved);if(mode==='auto'){root.removeAttribute('data-theme')}else{root.setAttribute('data-theme',mode)}root.style.colorScheme=resolved;}catch(e){}})();`;
+/** 主题初始化脚本：从 localStorage 读取并应用到 <html> 的 class/color-scheme */
+const THEME_INIT_SCRIPT = `(function(){try{var s=window.localStorage.getItem('theme');var m=(s==='light'||s==='dark'||s==='auto')?s:'auto';var d=m==='auto'?window.matchMedia('(prefers-color-scheme: dark)').matches:m==='dark';var r=document.documentElement;r.classList.remove('light','dark');r.classList.add(d?'dark':'light');if(m==='auto'){r.removeAttribute('data-theme')}else{r.setAttribute('data-theme',m)}r.style.colorScheme=d?'dark':'light'}catch(e){}})();`;
 
 export const Route = createRootRoute({
 	errorComponent: DefaultErrorFallback,
 	notFoundComponent: NotFoundFallback,
 	head: () => ({
 		meta: [
-			{
-				charSet: "utf-8",
-			},
+			{ charSet: "utf-8" },
 			{
 				name: "viewport",
 				content: "width=device-width, initial-scale=1",
 			},
-			{
-				title: "TanStack Start Starter",
-			},
+			{ title: "CMS 内容管理系统" },
 		],
-		links: [
-			{
-				rel: "stylesheet",
-				href: appCss,
-			},
-		],
+		links: [{ rel: "stylesheet", href: appCss }],
 	}),
 	shellComponent: RootDocument,
 });
 
+/**
+ * RootDocument：按路径前缀分离 Admin 与 SSR 布局
+ * - /admin/login  → 独立登录页（无布局外壳）
+ * - /admin/*      → antd AdminLayout（AuthProvider 包裹）
+ * - /*            → shadcn/ui Header + Footer
+ */
 function RootDocument({ children }: { children: React.ReactNode }) {
 	return (
-		<html lang="en" suppressHydrationWarning>
+		<html lang="zh-CN" suppressHydrationWarning>
 			<head>
 				<script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
 				<HeadContent />
 			</head>
-			<body className="font-sans antialiased [overflow-wrap:anywhere] selection:bg-[rgba(79,184,178,0.24)]">
-				<AuthProvider>
-					<Header />
-					{children}
-					<Footer />
-				</AuthProvider>
+			<body className="font-sans antialiased">
+				<RouteLayout>{children}</RouteLayout>
 				<TanStackDevtools
-					config={{
-						position: "bottom-right",
-					}}
+					config={{ position: "bottom-right" }}
 					plugins={[
 						{
 							name: "Tanstack Router",
@@ -70,5 +67,37 @@ function RootDocument({ children }: { children: React.ReactNode }) {
 				<Scripts />
 			</body>
 		</html>
+	);
+}
+
+/**
+ * 根据路由路径动态选择布局
+ * 使用 useRouterState 获取路径，SSR 和客户端均可生效
+ */
+function RouteLayout({ children }: { children: React.ReactNode }) {
+	const pathname = useRouterState({
+		select: (s) => s.location.pathname,
+	});
+	const isAdminLogin = pathname === "/admin/login";
+	const isAdmin = pathname.startsWith("/admin");
+
+	if (isAdminLogin) {
+		return children;
+	}
+
+	if (isAdmin) {
+		return (
+			<AuthProvider>
+				<AdminLayout>{children}</AdminLayout>
+			</AuthProvider>
+		);
+	}
+
+	return (
+		<div className="flex min-h-screen flex-col">
+			<Header />
+			<div className="flex-1">{children}</div>
+			<Footer />
+		</div>
 	);
 }
