@@ -12,6 +12,7 @@
     "test": "vitest run",
     "format": "biome format",
     "lint": "biome lint",
+    "lint:fix": "biome check --write",
     "check": "tsc --noEmit && biome check",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",

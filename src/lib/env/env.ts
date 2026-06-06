@@ -10,7 +10,7 @@ import { z } from "zod";
 config({ path: resolve(process.cwd(), "env", ".env") });
 config({ path: resolve(process.cwd(), "env", ".env.local"), override: true });
 
-const smtpSchema = z.object({
+export const smtpSchema = z.object({
 	host: z.string().default("smtp.example.com"),
 	port: z.coerce.number().int().default(587),
 	secure: z.preprocess((v) => v === "true", z.boolean().default(false)),
@@ -19,7 +19,7 @@ const smtpSchema = z.object({
 	from: z.string().default("noreply@example.com"),
 });
 
-const envSchema = z.object({
+export const envSchema = z.object({
 	DATABASE_URL: z.string().min(1, "DATABASE_URL 不能为空"),
 	JWT_SECRET: z
 		.string()
