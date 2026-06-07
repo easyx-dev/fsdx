@@ -7,7 +7,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { Button, Form, Input, message, Select, Switch } from "antd";
 import { z } from "zod";
 import { AdminPageContent } from "#/components/admin/AdminPageContent";
-import { NewsEditor } from "#/components/admin/NewsEditor";
+import { RichEditor } from "#/components/admin/RichEditor";
 import { PERMISSIONS } from "#/lib/permissions/permissions";
 import { permGuard } from "#/middleware/server-fn-auth";
 import { createNews } from "#/server/news/news.server";
@@ -81,7 +81,7 @@ function NewsCreatePage() {
 					</Form.Item>
 
 					<Form.Item name="content" label="正文">
-						<NewsEditorInput />
+						<RichEditor />
 					</Form.Item>
 
 					<div className="flex gap-8">
@@ -112,20 +112,5 @@ function NewsCreatePage() {
 				</Form>
 			</div>
 		</AdminPageContent>
-	);
-}
-
-/** Form.Item 内嵌 TipTap 编辑器 */
-function NewsEditorInput({
-	value,
-	onChange,
-}: {
-	value?: string;
-	onChange?: (val: string) => void;
-}) {
-	return (
-		<div className="rounded-md border border-border">
-			<NewsEditor content={value || ""} onChange={onChange || (() => {})} />
-		</div>
 	);
 }

@@ -1,8 +1,7 @@
 /**
- * 新闻管理：CRUD 操作 + slug 自动生成 + TipTap HTML 渲染
+ * 新闻管理：CRUD 操作 + slug 自动生成
+ * wangEditor 直接存储 HTML，无需服务端渲染转换
  */
-import { generateHTML } from "@tiptap/html";
-import StarterKit from "@tiptap/starter-kit";
 import { and, desc, eq, isNull, ne } from "drizzle-orm";
 import { db } from "#/db/index";
 import { news } from "#/db/schema";
@@ -56,20 +55,6 @@ async function ensureUniqueSlug(
 	return uniqueSlug;
 }
 
-/**
- * 将 TipTap JSON 内容渲染为 HTML
- * 解析失败时返回原始内容
- */
-function renderContent(content: string): string {
-	if (!content) return "";
-	try {
-		return generateHTML(JSON.parse(content), [StarterKit]);
-	} catch (err) {
-		logger.error({ err }, "TipTap 内容解析失败，使用原始内容展示");
-		return content;
-	}
-}
-
 /** 获取新闻列表 */
 export async function getNewsList(params?: {
 	status?: string;
@@ -100,7 +85,7 @@ export async function getNewsList(params?: {
 
 /**
  * 根据 slug 获取单条新闻（前台用）
- * 返回扁平结构：NewsRecord 字段 + html
+ * 返回扁平结构：NewsRecord 字段 + html（wangEditor 直接存 HTML，无需转换）
  */
 export async function getNewsBySlug(slug: string): Promise<NewsDetail | null> {
 	const record = await db.query.news.findFirst({
@@ -112,8 +97,7 @@ export async function getNewsBySlug(slug: string): Promise<NewsDetail | null> {
 	});
 	if (!record) return null;
 
-	const html = renderContent(record.content ?? "");
-	return { ...record, html };
+	return { ...record, html: record.content ?? "" };
 }
 
 /** 根据 id 获取单条新闻（管理端用） */

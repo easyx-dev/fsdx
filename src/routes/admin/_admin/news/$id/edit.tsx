@@ -8,7 +8,7 @@ import { Button, Form, Input, message, Select, Switch } from "antd";
 import { useEffect } from "react";
 import { z } from "zod";
 import { AdminPageContent } from "#/components/admin/AdminPageContent";
-import { NewsEditor } from "#/components/admin/NewsEditor";
+import { RichEditor } from "#/components/admin/RichEditor";
 import { PERMISSIONS } from "#/lib/permissions/permissions";
 import { permGuard } from "#/middleware/server-fn-auth";
 import { getNewsById, updateNews } from "#/server/news/news.server";
@@ -105,7 +105,7 @@ function NewsEditPage() {
 						<Input.TextArea rows={2} placeholder="新闻摘要（可选）" />
 					</Form.Item>
 					<Form.Item name="content" label="正文">
-						<NewsEditorInput />
+						<RichEditor />
 					</Form.Item>
 					<div className="flex gap-8">
 						<Form.Item name="status" label="状态" className="min-w-28">
@@ -134,19 +134,5 @@ function NewsEditPage() {
 				</Form>
 			</div>
 		</AdminPageContent>
-	);
-}
-
-function NewsEditorInput({
-	value,
-	onChange,
-}: {
-	value?: string;
-	onChange?: (val: string) => void;
-}) {
-	return (
-		<div className="rounded-md border border-border">
-			<NewsEditor content={value || ""} onChange={onChange || (() => {})} />
-		</div>
 	);
 }

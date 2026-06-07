@@ -108,7 +108,7 @@ describe("getNewsBySlug", () => {
 		mockDb.query.news.findFirst.mockResolvedValue({
 			...newsRecord,
 			status: "published",
-			content: '{"type":"doc"}',
+			content: "<p>Hello</p>",
 		});
 		const result = await getNewsBySlug("test-news");
 		expect(result).not.toBeNull();
@@ -161,15 +161,13 @@ describe("deleteNews", () => {
 	});
 });
 describe("renderContent", () => {
-	it("getNewsBySlug 返回 html 字段", async () => {
+	it("getNewsBySlug 返回 html 字段（wangEditor 直接存 HTML）", async () => {
 		mockDb.query.news.findFirst.mockResolvedValue({
 			...newsRecord,
 			status: "published",
-			content:
-				'{"type":"doc","content":[{"type":"paragraph","content":[{"type":"text","text":"Hello"}]}]}',
+			content: "<p>Hello</p>",
 		});
 		const result = await getNewsBySlug("slug");
-		// 有效的 TipTap JSON 被渲染为 HTML
 		expect(result!.html).toContain("<p>Hello</p>");
 	});
 });
