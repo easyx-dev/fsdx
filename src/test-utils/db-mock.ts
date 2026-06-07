@@ -26,7 +26,6 @@ export function createMockDb() {
 			news: _createQueryMock(),
 			role: _createQueryMock(),
 			systemConfig: _createQueryMock(),
-			todos: _createQueryMock(),
 		},
 		$count: vi.fn(),
 		select: vi.fn(() => ({

@@ -29,7 +29,7 @@ export async function loadDictCache(): Promise<void> {
 		db
 			.select({ slug: dict.slug, label: dictItem.label, value: dictItem.value })
 			.from(dictItem)
-			.innerJoin(dict, eq(dictItem.dictId, dict.id))
+			.innerJoin(dict, eq(dictItem.dictSlug, dict.slug))
 			.where(isNull(dictItem.deletedAt))
 			.orderBy(asc(dictItem.sortOrder)),
 	]);
@@ -81,13 +81,38 @@ export async function createDict(params: {
 
 export async function updateDict(
 	id: string,
-	params: { name?: string; description?: string },
+	params: { name?: string; slug?: string; description?: string },
 ) {
+	const existing = await db.query.dict.findFirst({ where: eq(dict.id, id) });
+	if (!existing) return null;
+
+	// slug 变更时在事务中更新（ON UPDATE CASCADE 自动级联 dictItem）
+	if (params.slug && params.slug !== existing.slug) {
+		const [updated] = await db
+			.update(dict)
+			.set({ ...params, updatedAt: new Date() })
+			.where(eq(dict.id, id))
+			.returning();
+		if (updated) {
+			invalidateCache();
+			await loadDictCache();
+			logger.info(
+				{ slug: updated.slug, oldSlug: existing.slug },
+				"字典 slug 已更新",
+			);
+		}
+		return updated ?? null;
+	}
+
 	const [updated] = await db
 		.update(dict)
 		.set({ ...params, updatedAt: new Date() })
 		.where(eq(dict.id, id))
 		.returning();
+	if (updated) {
+		invalidateCache();
+		await loadDictCache();
+	}
 	return updated ?? null;
 }
 
@@ -99,7 +124,7 @@ export async function deleteDict(id: string) {
 		await tx
 			.update(dictItem)
 			.set({ deletedAt: now })
-			.where(eq(dictItem.dictId, id));
+			.where(eq(dictItem.dictSlug, existing.slug));
 		await tx.update(dict).set({ deletedAt: now }).where(eq(dict.id, id));
 	});
 	invalidateCache();
@@ -108,16 +133,16 @@ export async function deleteDict(id: string) {
 	return true;
 }
 
-export async function getDictItemList(dictId: string) {
+export async function getDictItemList(dictSlug: string) {
 	return db
 		.select()
 		.from(dictItem)
-		.where(and(isNull(dictItem.deletedAt), eq(dictItem.dictId, dictId)))
+		.where(and(isNull(dictItem.deletedAt), eq(dictItem.dictSlug, dictSlug)))
 		.orderBy(asc(dictItem.sortOrder));
 }
 
 export async function createDictItem(params: {
-	dictId: string;
+	dictSlug: string;
 	label: string;
 	value: string;
 	sortOrder?: number;
@@ -138,6 +163,9 @@ export async function updateDictItem(
 		value?: string;
 		sortOrder?: number;
 		status?: string;
+		extraType?: string;
+		extra?: string;
+		color?: string;
 	},
 ) {
 	const [updated] = await db
@@ -165,6 +193,7 @@ export async function deleteDictItem(id: string) {
 	await loadDictCache();
 	return true;
 }
+
 // ========== 预置字典 ==========
 
 /** 预置字典常量 */
@@ -203,7 +232,7 @@ export async function ensurePresetDicts(): Promise<void> {
 
 		for (const item of preset.items) {
 			await db.insert(dictItem).values({
-				dictId: newDict.id,
+				dictSlug: newDict.slug,
 				label: item.label,
 				value: item.value,
 				sortOrder: item.sortOrder,

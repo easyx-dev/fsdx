@@ -27,7 +27,6 @@ const { mockDb } = vi.hoisted(() => {
 				dictItem: q(),
 				systemConfig: q(),
 				file: q(),
-				todos: q(),
 			},
 			$count: vi.fn(),
 			select: vi.fn(() => ({ from: vi.fn(() => ({ where: vi.fn() })) })),

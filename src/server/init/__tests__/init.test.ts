@@ -42,7 +42,6 @@ const { mockDb, mockTx } = vi.hoisted(() => {
 				dictItem: q(),
 				file: q(),
 				captchaCode: q(),
-				todos: q(),
 			},
 			insert: vi.fn(() => ({ values: vi.fn(() => ({ returning: vi.fn() })) })),
 			update: vi.fn(() => ({ set: vi.fn(() => ({ where: vi.fn() })) })),

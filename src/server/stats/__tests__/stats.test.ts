@@ -18,7 +18,6 @@ const { mockDb } = vi.hoisted(() => {
 				systemConfig: q(),
 				file: q(),
 				captchaCode: q(),
-				todos: q(),
 			},
 			$count: vi.fn(),
 			select: vi.fn(() => ({ from: vi.fn(() => ({ where: vi.fn() })) })),

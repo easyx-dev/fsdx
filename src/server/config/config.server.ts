@@ -28,12 +28,14 @@ export async function getConfigList() {
 		.select()
 		.from(systemConfig)
 		.where(isNull(systemConfig.deletedAt))
-		.orderBy(asc(systemConfig.key));
+		.orderBy(asc(systemConfig.groupName), asc(systemConfig.key));
 }
 
 export async function createConfig(params: {
 	key: string;
 	value: string;
+	valueType?: string;
+	groupName?: string;
 	description?: string;
 }) {
 	const [record] = await db.insert(systemConfig).values(params).returning();
@@ -50,6 +52,8 @@ export async function upsertConfig(
 	key: string,
 	value: string,
 	description?: string,
+	valueType?: string,
+	groupName?: string,
 ): Promise<void> {
 	const existing = await db.query.systemConfig.findFirst({
 		where: eq(systemConfig.key, key),
@@ -65,7 +69,9 @@ export async function upsertConfig(
 			})
 			.where(eq(systemConfig.id, existing.id));
 	} else {
-		await db.insert(systemConfig).values({ key, value, description });
+		await db
+			.insert(systemConfig)
+			.values({ key, value, description, valueType, groupName });
 	}
 
 	configCache.set(key, value);
@@ -74,7 +80,12 @@ export async function upsertConfig(
 
 export async function updateConfig(
 	id: string,
-	params: { value?: string; description?: string },
+	params: {
+		value?: string;
+		valueType?: string;
+		groupName?: string;
+		description?: string;
+	},
 ) {
 	const [updated] = await db
 		.update(systemConfig)

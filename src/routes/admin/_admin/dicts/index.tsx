@@ -53,7 +53,7 @@ import {
 	updateDictItem,
 } from "#/server/dict/dict.server";
 
-const dictIdSchema = z.object({ dictId: z.string().min(1) });
+const dictSlugSchema = z.object({ dictSlug: z.string().min(1) });
 const idSchema = z.object({ id: z.string().min(1) });
 const createDictSchema = z.object({
 	name: z.string().min(1).max(100),
@@ -62,11 +62,12 @@ const createDictSchema = z.object({
 });
 const updateDictSchema = z.object({
 	id: z.string().min(1),
+	slug: z.string().min(1).max(50).optional(),
 	name: z.string().min(1).max(100).optional(),
 	description: z.string().optional(),
 });
 const createItemSchema = z.object({
-	dictId: z.string().min(1),
+	dictSlug: z.string().min(1),
 	label: z.string().min(1).max(100),
 	value: z.string().min(1).max(100),
 	sortOrder: z.number().default(0),
@@ -93,9 +94,9 @@ const getDictList = createServerFn({ method: "GET" })
 
 const getDictItems = createServerFn({ method: "GET" })
 	.middleware([permGuard(PERMISSIONS.DICT_VIEW)])
-	.inputValidator(dictIdSchema)
-	.handler(async ({ data: { dictId } }) => {
-		return getDictItemList(dictId);
+	.inputValidator(dictSlugSchema)
+	.handler(async ({ data: { dictSlug } }) => {
+		return getDictItemList(dictSlug);
 	});
 
 const createDictFn = createServerFn({ method: "POST" })
@@ -157,7 +158,7 @@ export const Route = createFileRoute("/admin/_admin/dicts/")({
 function DictsPage() {
 	const router = useRouter();
 	const dictList = Route.useLoaderData();
-	const [selectedDictId, setSelectedDictId] = useState<string | null>(null);
+	const [selectedDictSlug, setSelectedDictSlug] = useState<string | null>(null);
 	const [items, setItems] = useState<DictItemRecord[]>([]);
 	const [dictModalOpen, setDictModalOpen] = useState(false);
 	const [editingDict, setEditingDict] = useState<DictRecord | null>(null);
@@ -170,14 +171,14 @@ function DictsPage() {
 		| EditorType
 		| undefined;
 
-	const refreshItems = async (dictId: string) => {
-		const data = await getDictItems({ data: { dictId } });
+	const refreshItems = async (dictSlug: string) => {
+		const data = await getDictItems({ data: { dictSlug } });
 		setItems(data);
 	};
 
-	const handleSelectDict = (dictId: string) => {
-		setSelectedDictId(dictId);
-		refreshItems(dictId);
+	const handleSelectDict = (dictSlug: string) => {
+		setSelectedDictSlug(dictSlug);
+		refreshItems(dictSlug);
 	};
 
 	/** 打开字典创建/编辑弹窗 */
@@ -208,6 +209,7 @@ function DictsPage() {
 				await updateDictFn({
 					data: {
 						id: editingDict.id,
+						slug: (values.slug as string) || undefined,
 						name: values.name as string,
 						description: (values.description as string) || undefined,
 					},
@@ -261,7 +263,7 @@ function DictsPage() {
 	};
 
 	const handleItemSubmit = async (values: Record<string, unknown>) => {
-		if (!selectedDictId) return;
+		if (!selectedDictSlug) return;
 		try {
 			if (editingItem) {
 				await updateDictItemFn({
@@ -279,7 +281,7 @@ function DictsPage() {
 			} else {
 				await createDictItemFn({
 					data: {
-						dictId: selectedDictId,
+						dictSlug: selectedDictSlug,
 						label: values.label as string,
 						value: values.value as string,
 						sortOrder: (values.sortOrder as number) ?? 0,
@@ -291,7 +293,7 @@ function DictsPage() {
 				message.success("条目创建成功");
 			}
 			closeItemModal();
-			refreshItems(selectedDictId);
+			refreshItems(selectedDictSlug);
 		} catch (err) {
 			message.error(err instanceof Error ? err.message : "操作失败");
 		}
@@ -300,8 +302,8 @@ function DictsPage() {
 	const handleDeleteDict = async (id: string) => {
 		await deleteDictFn({ data: { id } });
 		message.success("字典已删除");
-		if (selectedDictId === id) {
-			setSelectedDictId(null);
+		if (selectedDict?.id === id) {
+			setSelectedDictSlug(null);
 			setItems([]);
 		}
 		router.invalidate();
@@ -310,7 +312,7 @@ function DictsPage() {
 	const handleDeleteItem = async (id: string) => {
 		await deleteDictItemFn({ data: { id } });
 		message.success("条目已删除");
-		if (selectedDictId) refreshItems(selectedDictId);
+		if (selectedDictSlug) refreshItems(selectedDictSlug);
 	};
 
 	/** 表格内直接修改排序或状态 */
@@ -320,7 +322,7 @@ function DictsPage() {
 	) => {
 		try {
 			await updateDictItemFn({ data: { id, ...params } });
-			if (selectedDictId) refreshItems(selectedDictId);
+			if (selectedDictSlug) refreshItems(selectedDictSlug);
 		} catch (err) {
 			message.error(err instanceof Error ? err.message : "操作失败");
 		}
@@ -333,7 +335,7 @@ function DictsPage() {
 			dataIndex: "name",
 			key: "name",
 			render: (_: string, record: DictRecord) => {
-				const isActive = selectedDictId === record.id;
+				const isActive = selectedDictSlug === record.slug;
 				return (
 					<div className="flex items-center gap-2">
 						{isActive && (
@@ -472,7 +474,7 @@ function DictsPage() {
 		},
 	];
 
-	const selectedDict = dictList.find((d) => d.id === selectedDictId);
+	const selectedDict = dictList.find((d) => d.slug === selectedDictSlug);
 
 	return (
 		<AdminPageContent title="字典管理">
@@ -502,11 +504,11 @@ function DictsPage() {
 							pagination={false}
 							locale={{ emptyText: "暂无字典" }}
 							onRow={(record) => ({
-								onClick: () => handleSelectDict(record.id),
+								onClick: () => handleSelectDict(record.slug),
 								style: { cursor: "pointer" },
 							})}
 							rowClassName={(record) =>
-								selectedDictId === record.id
+								selectedDictSlug === record.slug
 									? "bg-blue-50/80 dark:bg-blue-950/40"
 									: ""
 							}
@@ -517,7 +519,7 @@ function DictsPage() {
 					<Card
 						size="small"
 						title={
-							selectedDictId ? (
+							selectedDictSlug ? (
 								<span className="text-sm">
 									<span className="font-medium">
 										{selectedDict?.name ?? "—"}
@@ -531,7 +533,7 @@ function DictsPage() {
 							)
 						}
 						extra={
-							selectedDictId ? (
+							selectedDictSlug ? (
 								<Button
 									type="primary"
 									size="small"
@@ -544,7 +546,7 @@ function DictsPage() {
 						}
 						styles={{ body: { padding: 0 } }}
 					>
-						{selectedDictId ? (
+						{selectedDictSlug ? (
 							<Table
 								dataSource={items}
 								columns={itemColumns}
@@ -583,7 +585,7 @@ function DictsPage() {
 						label="标识 (slug)"
 						rules={[{ required: true, message: "请输入字典标识" }]}
 					>
-						<Input placeholder="唯一标识" disabled={!!editingDict} />
+						<Input placeholder="唯一标识" />
 					</Form.Item>
 					<Form.Item name="description" label="描述">
 						<Input.TextArea rows={2} placeholder="字典描述（可选）" />

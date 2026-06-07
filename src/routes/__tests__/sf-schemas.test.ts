@@ -101,7 +101,7 @@ const initSchema = z
 	});
 
 // ── 字典管理 ──
-const dictIdSchema = z.object({ dictId: z.string().min(1) });
+const dictSlugSchema = z.object({ dictSlug: z.string().min(1) });
 const updateDictSchema = z.object({
 	id: z.string().min(1),
 	name: z.string().min(1).max(100).optional(),
@@ -457,13 +457,13 @@ describe("initSchema（系统初始化）", () => {
 	});
 });
 
-describe("dictIdSchema", () => {
-	it("有效 dictId 通过", () => {
-		expect(dictIdSchema.safeParse({ dictId: "d-1" }).success).toBe(true);
+describe("dictSlugSchema", () => {
+	it("有效 dictSlug 通过", () => {
+		expect(dictSlugSchema.safeParse({ dictSlug: "d-1" }).success).toBe(true);
 	});
 
-	it("空 dictId 失败", () => {
-		expect(dictIdSchema.safeParse({ dictId: "" }).success).toBe(false);
+	it("空 dictSlug 失败", () => {
+		expect(dictSlugSchema.safeParse({ dictSlug: "" }).success).toBe(false);
 	});
 });
 

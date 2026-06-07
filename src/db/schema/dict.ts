@@ -27,8 +27,8 @@ export const dictItem = pgTable(
 	"dict_item",
 	{
 		id: uuid().defaultRandom().primaryKey(),
-		dictId: uuid("dict_id")
-			.references(() => dict.id)
+		dictSlug: varchar("dict_slug", { length: 50 })
+			.references(() => dict.slug, { onUpdate: "cascade" })
 			.notNull(),
 		label: varchar({ length: 100 }).notNull(),
 		value: varchar({ length: 100 }).notNull(),
@@ -42,6 +42,6 @@ export const dictItem = pgTable(
 		deletedAt: timestamp("deleted_at"),
 	},
 	(table) => [
-		uniqueIndex("uq_dict_item_dict_value").on(table.dictId, table.value),
+		uniqueIndex("uq_dict_item_dict_slug_value").on(table.dictSlug, table.value),
 	],
 );
