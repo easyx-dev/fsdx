@@ -281,7 +281,7 @@ function RolesPage() {
 				onOk={handleSubmit}
 				confirmLoading={saving}
 				width={600}
-				destroyOnClose
+				destroyOnHidden
 			>
 				<Form form={form} layout="vertical" className="mt-4">
 					<Form.Item

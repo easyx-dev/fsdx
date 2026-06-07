@@ -152,7 +152,6 @@ const THEME_CYCLE: ThemeMode[] = ["light", "dark", "auto"];
 
 export function AdminLayout({ children }: { children: ReactNode }) {
 	const [collapsed, setCollapsed] = useState(false);
-	const [mounted, setMounted] = useState(false);
 	const { mode, setMode, isDark } = useAdminTheme();
 	const { user } = useAuth();
 	const location = useLocation();
@@ -173,7 +172,6 @@ export function AdminLayout({ children }: { children: ReactNode }) {
 	useEffect(() => {
 		message.config({ duration: 5 });
 		notification.config({ duration: 5 });
-		setMounted(true);
 	}, []);
 
 	return (
@@ -209,8 +207,8 @@ export function AdminLayout({ children }: { children: ReactNode }) {
 										title={collapsed ? item.label : undefined}
 										className={`mx-2 my-0.5 flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors ${
 											active
-												? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
-												: "text-sidebar-foreground hover:bg-sidebar-accent/60 hover:text-sidebar-accent-foreground"
+												? "bg-sidebar-accent text-sidebar-primary font-medium border-l-[3px] border-l-sidebar-primary"
+												: "text-sidebar-foreground hover:bg-sidebar-accent/60 hover:text-sidebar-accent-foreground border-l-[3px] border-l-transparent"
 										} ${collapsed ? "justify-center px-0" : ""}`}
 									>
 										<span className="flex shrink-0 items-center justify-center text-base">
@@ -245,17 +243,7 @@ export function AdminLayout({ children }: { children: ReactNode }) {
 							<Button
 								type="text"
 								onClick={cycleTheme}
-								icon={
-									mounted ? (
-										isDark ? (
-											<MoonOutlined />
-										) : (
-											<SunOutlined />
-										)
-									) : (
-										<SunOutlined />
-									)
-								}
+								icon={isDark ? <MoonOutlined /> : <SunOutlined />}
 							/>
 						</Tooltip>
 					</div>

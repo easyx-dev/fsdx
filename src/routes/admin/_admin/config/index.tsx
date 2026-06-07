@@ -364,7 +364,7 @@ function ConfigPage() {
 				open={modalOpen}
 				onCancel={closeModal}
 				footer={null}
-				destroyOnClose
+				destroyOnHidden
 			>
 				<Form
 					form={form}

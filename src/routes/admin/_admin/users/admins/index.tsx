@@ -339,7 +339,7 @@ function AdminsPage() {
 				onOk={handleSubmit}
 				confirmLoading={saving}
 				width={520}
-				destroyOnClose
+				destroyOnHidden
 			>
 				<Form form={form} layout="vertical" className="mt-4">
 					<Form.Item
@@ -404,7 +404,7 @@ function AdminsPage() {
 				onCancel={() => setPwdModalOpen(false)}
 				onOk={handlePwdSubmit}
 				width={400}
-				destroyOnClose
+				destroyOnHidden
 			>
 				<Form form={pwdForm} layout="vertical" className="mt-4">
 					<Form.Item

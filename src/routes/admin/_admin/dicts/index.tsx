@@ -570,7 +570,7 @@ function DictsPage() {
 				open={dictModalOpen}
 				onCancel={closeDictModal}
 				footer={null}
-				destroyOnClose
+				destroyOnHidden
 			>
 				<Form form={dictForm} layout="vertical" onFinish={handleDictSubmit}>
 					<Form.Item
@@ -608,7 +608,7 @@ function DictsPage() {
 				onCancel={closeItemModal}
 				footer={null}
 				width={advancedExpanded ? 720 : 520}
-				destroyOnClose
+				destroyOnHidden
 			>
 				<Form
 					form={itemForm}
