@@ -15,6 +15,7 @@ import {
 } from "antd";
 import { useState } from "react";
 import { z } from "zod";
+import { AdminPageContent } from "#/components/admin/AdminPageContent";
 import { PERMISSIONS } from "#/lib/permissions/permissions";
 import { permGuard } from "#/middleware/server-fn-auth";
 import type { NewsRecord } from "#/server/news";
@@ -175,16 +176,16 @@ function NewsListPage() {
 	];
 
 	return (
-		<div>
-			<div className="mb-4 flex items-center justify-between">
-				<h1 className="text-2xl font-bold">新闻管理</h1>
+		<AdminPageContent
+			title="新闻管理"
+			extra={
 				<Link to="/admin/news/create">
 					<Button type="primary" icon={<PlusOutlined />}>
 						新建新闻
 					</Button>
 				</Link>
-			</div>
-
+			}
+		>
 			<div className="mb-4">
 				<Segmented
 					options={[
@@ -217,6 +218,6 @@ function NewsListPage() {
 					},
 				}}
 			/>
-		</div>
+		</AdminPageContent>
 	);
 }

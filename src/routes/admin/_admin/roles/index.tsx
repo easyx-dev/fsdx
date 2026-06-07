@@ -23,7 +23,7 @@ import {
 } from "antd";
 import { useState } from "react";
 import { z } from "zod";
-import { PageHeader } from "#/components/admin/PageHeader";
+import { AdminPageContent } from "#/components/admin/AdminPageContent";
 import {
 	PERMISSIONS,
 	PERMISSIONS_BY_GROUP,
@@ -243,17 +243,15 @@ function RolesPage() {
 	];
 
 	return (
-		<div>
-			<PageHeader
-				title="角色管理"
-				description="管理系统角色及其权限分配"
-				extra={
-					<Button type="primary" icon={<PlusOutlined />} onClick={handleCreate}>
-						新建角色
-					</Button>
-				}
-			/>
-
+		<AdminPageContent
+			title="角色管理"
+			description="管理系统角色及其权限分配"
+			extra={
+				<Button type="primary" icon={<PlusOutlined />} onClick={handleCreate}>
+					新建角色
+				</Button>
+			}
+		>
 			{/* 搜索栏 */}
 			<div className="mb-4 flex items-center gap-2">
 				<Input
@@ -323,6 +321,6 @@ function RolesPage() {
 					</Form.Item>
 				</Form>
 			</Modal>
-		</div>
+		</AdminPageContent>
 	);
 }

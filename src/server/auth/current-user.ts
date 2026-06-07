@@ -10,6 +10,9 @@ export interface AuthUser {
 	id: string;
 	username: string;
 	email: string;
+	avatar?: string | null;
+	isRoot: boolean;
+	roleName?: string;
 	userType: "admin" | "client";
 }
 
@@ -37,10 +40,20 @@ export async function getCurrentUser(
 			where: (t, { eq }) => eq(t.id, jwtPayload.userId),
 		});
 		if (!user || user.deletedAt || user.status !== "active") return null;
+		let roleName: string | undefined;
+		if (!user.isRoot) {
+			const roleRecord = await db.query.role.findFirst({
+				where: (t, { eq }) => eq(t.id, user.roleId),
+			});
+			roleName = roleRecord?.name ?? undefined;
+		}
 		return {
 			id: user.id,
 			username: user.username,
 			email: user.email,
+			avatar: user.avatar,
+			isRoot: user.isRoot,
+			roleName,
 			userType: "admin",
 		};
 	}
@@ -53,6 +66,8 @@ export async function getCurrentUser(
 		id: user.id,
 		username: user.username,
 		email: user.email,
+		avatar: user.avatar,
+		isRoot: false,
 		userType: "client",
 	};
 }

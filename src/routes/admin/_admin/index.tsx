@@ -10,6 +10,7 @@ import {
 import { createFileRoute } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
 import { Card, Col, Row, Statistic } from "antd";
+import { AdminPageContent } from "#/components/admin/AdminPageContent";
 import { PERMISSIONS } from "#/lib/permissions/permissions";
 import { permGuard } from "#/middleware/server-fn-auth";
 import { getStats } from "#/server/stats";
@@ -65,10 +66,7 @@ function Dashboard() {
 	];
 
 	return (
-		<div>
-			<h1 className="mb-1 text-2xl font-bold">仪表盘</h1>
-			<p className="mb-6 text-muted-foreground">欢迎使用 CMS 管理系统</p>
-
+		<AdminPageContent title="仪表盘" description="欢迎使用 CMS 管理系统">
 			<Row gutter={[16, 16]}>
 				{statItems.map((item) => (
 					<Col key={item.title} xs={24} sm={12} lg={6}>
@@ -91,6 +89,6 @@ function Dashboard() {
 					</Col>
 				))}
 			</Row>
-		</div>
+		</AdminPageContent>
 	);
 }

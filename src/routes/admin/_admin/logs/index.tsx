@@ -21,6 +21,7 @@ import {
 } from "antd";
 import { useState } from "react";
 import { z } from "zod";
+import { AdminPageContent } from "#/components/admin/AdminPageContent";
 import { PERMISSIONS } from "#/lib/permissions/permissions";
 import { permGuard } from "#/middleware/server-fn-auth";
 import {
@@ -187,14 +188,7 @@ function LogsPage() {
 	];
 
 	return (
-		<div>
-			<h1 style={{ fontSize: 24, fontWeight: 700, marginBottom: 4 }}>
-				日志查询
-			</h1>
-			<p style={{ marginBottom: 16, color: "var(--ant-color-text-tertiary)" }}>
-				搜索和查看系统操作日志文件
-			</p>
-
+		<AdminPageContent title="日志查询" description="搜索和查看系统操作日志文件">
 			{/* 搜索表单 */}
 			<Form
 				form={form}
@@ -291,6 +285,6 @@ function LogsPage() {
 					onChange: (p: number) => doSearch(p),
 				}}
 			/>
-		</div>
+		</AdminPageContent>
 	);
 }

@@ -25,7 +25,7 @@ import {
 } from "antd";
 import { useState } from "react";
 import { z } from "zod";
-import { PageHeader } from "#/components/admin/PageHeader";
+import { AdminPageContent } from "#/components/admin/AdminPageContent";
 import { PERMISSIONS } from "#/lib/permissions/permissions";
 import { permGuard } from "#/middleware/server-fn-auth";
 import {
@@ -265,17 +265,15 @@ function ClientsPage() {
 	];
 
 	return (
-		<div>
-			<PageHeader
-				title="客户端用户管理"
-				description="管理前台注册用户账号与状态"
-				extra={
-					<Button type="primary" icon={<PlusOutlined />} onClick={handleCreate}>
-						新建用户
-					</Button>
-				}
-			/>
-
+		<AdminPageContent
+			title="客户端用户管理"
+			description="管理前台注册用户账号与状态"
+			extra={
+				<Button type="primary" icon={<PlusOutlined />} onClick={handleCreate}>
+					新建用户
+				</Button>
+			}
+		>
 			<div className="mb-4 flex items-center gap-2">
 				<Input
 					placeholder="搜索用户名或邮箱..."
@@ -388,6 +386,6 @@ function ClientsPage() {
 					</Form.Item>
 				</Form>
 			</Modal>
-		</div>
+		</AdminPageContent>
 	);
 }

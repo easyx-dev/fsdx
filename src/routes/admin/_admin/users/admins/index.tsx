@@ -24,7 +24,7 @@ import {
 } from "antd";
 import { useState } from "react";
 import { z } from "zod";
-import { PageHeader } from "#/components/admin/PageHeader";
+import { AdminPageContent } from "#/components/admin/AdminPageContent";
 import { PERMISSIONS } from "#/lib/permissions/permissions";
 import { permGuard } from "#/middleware/server-fn-auth";
 import {
@@ -294,17 +294,15 @@ function AdminsPage() {
 	];
 
 	return (
-		<div>
-			<PageHeader
-				title="管理员管理"
-				description="管理系统管理员账号与角色分配"
-				extra={
-					<Button type="primary" icon={<PlusOutlined />} onClick={handleCreate}>
-						新建管理员
-					</Button>
-				}
-			/>
-
+		<AdminPageContent
+			title="管理员管理"
+			description="管理系统管理员账号与角色分配"
+			extra={
+				<Button type="primary" icon={<PlusOutlined />} onClick={handleCreate}>
+					新建管理员
+				</Button>
+			}
+		>
 			<div className="mb-4 flex items-center gap-2">
 				<Input
 					placeholder="搜索用户名或邮箱..."
@@ -421,7 +419,7 @@ function AdminsPage() {
 					</Form.Item>
 				</Form>
 			</Modal>
-		</div>
+		</AdminPageContent>
 	);
 }
 

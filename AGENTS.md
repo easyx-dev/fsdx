@@ -109,6 +109,22 @@ src/
 - Schema 文件按模块拆分在 `src/db/schema/`，通过 `index.ts` 统一导出
 - `admin_user` 表包含 `is_root` 布尔字段 + 数据库部分唯一索引，保证仅一个 root 用户
 
+## 组件约定
+
+- 管理端页面（`/admin/*`）优先使用 antd 组件
+  - 组件文档导航：https://ant.design/llms.txt
+  - 组件索引：https://ant.design/components/overview.md
+- 前台 SSR 页面（非`/admin/*`）优先使用 shadcn/ui 组件
+  - 组件索引：https://ui.shadcn.com/docs/components.md
+- 选型原则：
+  - antd 适用于数据密集型后台场景（Form、Table、Modal、Select、Menu 等）
+  - shadcn/ui 适用于展示型前台场景，样式可定制且无运行时开销
+  - 同一页面不要混用两套组件库的同类组件（如 Button、Dialog），保持风格统一
+- 公共组件（`src/components/*.tsx`）根据使用场景判断：
+  - 仅管理端使用 → antd
+  - 仅前台使用 → shadcn/ui
+  - 两端共用 → 偏向前台（shadcn/ui），管理端适配时可用 antd 包裹
+
 ## 日志约定
 
 - 使用 pino + pino-roll，日志文件存储在 `{STORAGE_DIR}/logs/` 下

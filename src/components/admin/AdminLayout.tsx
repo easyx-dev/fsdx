@@ -1,23 +1,35 @@
 /**
- * 管理端布局：纯 Tailwind 侧边栏 + 顶栏 + 内容区
- * 不依赖 antd Layout 组件
+ * 管理端布局：纯 Tailwind 侧边栏 + 内容区
+ * 顶栏由 AdminPageContent 组件在每个页面中提供
  */
 import {
 	AppstoreOutlined,
 	BookOutlined,
 	DashboardOutlined,
+	EditOutlined,
 	FileTextOutlined,
 	FolderOpenOutlined,
 	LogoutOutlined,
 	MenuFoldOutlined,
 	MenuUnfoldOutlined,
+	MoonOutlined,
 	ReadOutlined,
 	SafetyOutlined,
 	SettingOutlined,
+	SunOutlined,
 	TeamOutlined,
 } from "@ant-design/icons";
 import { Link, useLocation } from "@tanstack/react-router";
-import { message, notification } from "antd";
+import {
+	Avatar,
+	Button,
+	Divider,
+	Flex,
+	message,
+	notification,
+	Popover,
+	Tooltip,
+} from "antd";
 import {
 	createContext,
 	type ReactNode,
@@ -25,6 +37,7 @@ import {
 	useEffect,
 	useState,
 } from "react";
+import { useAuth } from "#/components/AuthProvider";
 import { logout } from "#/routes/admin/_admin";
 
 /** 主题模式 */
@@ -132,17 +145,27 @@ function isActive(itemKey: string, currentPath: string): boolean {
 	return currentPath.startsWith(itemKey);
 }
 
+/** 主题模式循环顺序 */
+const THEME_CYCLE: ThemeMode[] = ["light", "dark", "auto"];
+
 export function AdminLayout({ children }: { children: ReactNode }) {
 	const [collapsed, setCollapsed] = useState(false);
 	const { mode, setMode } = useAdminTheme();
+	const { user } = useAuth();
 	const location = useLocation();
+	const isDark = resolveIsDark(mode);
+	const currentPath = location.pathname;
 
 	const handleLogout = async () => {
 		await logout();
 		window.location.href = "/admin/login";
 	};
 
-	const currentPath = location.pathname;
+	/** 循环切换主题模式 */
+	const cycleTheme = () => {
+		const idx = THEME_CYCLE.indexOf(mode);
+		setMode(THEME_CYCLE[(idx + 1) % THEME_CYCLE.length]);
+	};
 
 	// 设置全局 message / notification 默认 duration 为 5s
 	useEffect(() => {
@@ -150,12 +173,25 @@ export function AdminLayout({ children }: { children: ReactNode }) {
 		notification.config({ duration: 5 });
 	}, []);
 
+	/** 首字母头像颜色 */
+	const avatarColors = [
+		"bg-blue-500",
+		"bg-emerald-500",
+		"bg-violet-500",
+		"bg-amber-500",
+		"bg-rose-500",
+		"bg-cyan-500",
+	];
+	const avatarColor = user?.username
+		? avatarColors[user.username.charCodeAt(0) % avatarColors.length]
+		: "bg-blue-500";
+
 	return (
 		<div className="flex h-screen overflow-hidden bg-background">
 			{/* 侧边栏 */}
 			<aside
 				className={`flex flex-col border-r border-border bg-sidebar transition-all duration-300 ${
-					collapsed ? "w-16" : "w-60"
+					collapsed ? "w-16" : "w-50"
 				}`}
 			>
 				{/* Logo 区域 */}
@@ -169,7 +205,6 @@ export function AdminLayout({ children }: { children: ReactNode }) {
 				<nav className="flex-1 overflow-y-auto overflow-x-hidden py-2">
 					{NAV_GROUPS.map((group) => (
 						<div key={group.label} className="mb-1">
-							{/* 分组标题 — 折叠时隐藏 */}
 							{!collapsed && (
 								<div className="px-4 pt-3 pb-1.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
 									{group.label}
@@ -203,60 +238,100 @@ export function AdminLayout({ children }: { children: ReactNode }) {
 
 				{/* 底部操作区 */}
 				<div className="shrink-0 border-t border-border px-2 py-3">
-					{/* 主题切换 */}
+					{/* Row 1: 折叠 + 主题切换（纯图标） */}
 					<div
 						className={`mb-2 flex items-center gap-1 ${collapsed ? "flex-col" : "justify-center"}`}
 					>
-						{(["light", "dark", "auto"] as ThemeMode[]).map((m) => (
-							<button
-								type="button"
-								key={m}
-								onClick={() => setMode(m)}
-								title={
-									m === "light" ? "亮色" : m === "dark" ? "暗色" : "跟随系统"
-								}
-								className={`rounded px-2 py-1 text-xs transition-colors ${
-									m === mode
-										? "bg-primary text-primary-foreground"
-										: "text-muted-foreground hover:bg-sidebar-accent"
-								}`}
-							>
-								{m === "light" ? "亮" : m === "dark" ? "暗" : "自动"}
-							</button>
-						))}
+						<Tooltip title={collapsed ? "展开侧边栏" : "收起侧边栏"}>
+							<Button
+								type="text"
+								onClick={() => setCollapsed(!collapsed)}
+								icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
+							/>
+						</Tooltip>
+						<Tooltip
+							title={`当前：${mode === "light" ? "亮色" : mode === "dark" ? "暗色" : "跟随系统"}`}
+						>
+							<Button
+								type="text"
+								onClick={cycleTheme}
+								icon={isDark ? <MoonOutlined /> : <SunOutlined />}
+							/>
+						</Tooltip>
 					</div>
 
-					{/* 退出登录 */}
-					<button
-						type="button"
-						onClick={handleLogout}
-						title={collapsed ? "退出登录" : undefined}
-						className={`flex w-full items-center gap-2 rounded p-2 text-sm text-muted-foreground transition-colors hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950 dark:hover:text-red-400 ${
-							collapsed ? "justify-center" : ""
-						}`}
-					>
-						<LogoutOutlined />
-						{!collapsed && <span>退出登录</span>}
-					</button>
+					{/* Row 2: 用户块（hover Popover） */}
+					{user && (
+						<Popover
+							trigger="hover"
+							placement="rightBottom"
+							content={
+								<div className="w-56">
+									{/* 用户信息卡片 */}
+									<div className="flex items-center gap-3 pb-1">
+										<Avatar
+											src={user.avatar ?? undefined}
+											size="large"
+											shape="square"
+										>
+											{user.username.charAt(0).toUpperCase()}
+										</Avatar>
+										<div className="min-w-0 flex-1">
+											<div className="truncate text-sm font-medium">
+												{user.username}
+											</div>
+											<div className="truncate text-xs text-muted-foreground">
+												{user.email}
+											</div>
+										</div>
+									</div>
+									<Divider size="small" />
+									{/* 退出登录 */}
+									<Flex justify="space-between" align="center">
+										<Button type="link">
+											<EditOutlined />
+											修改资料
+										</Button>
+										<Divider size="small" vertical />
+										<Button type="link" onClick={handleLogout} danger>
+											<LogoutOutlined />
+											退出登录
+										</Button>
+									</Flex>
+								</div>
+							}
+						>
+							{/* 触发区 */}
+							<div
+								className={`flex cursor-pointer items-center gap-2.5 rounded-lg px-2 py-1.5 transition-colors hover:bg-sidebar-accent ${
+									collapsed ? "justify-center" : ""
+								}`}
+							>
+								<Avatar
+									src={user.avatar ?? undefined}
+									size="large"
+									shape="square"
+								>
+									{user.username.charAt(0).toUpperCase()}
+								</Avatar>
+								{!collapsed && (
+									<div className="min-w-0 flex-1 text-left">
+										<div className="truncate text-sm font-medium text-sidebar-foreground">
+											{user.username}
+										</div>
+										<div className="truncate text-xs text-muted-foreground">
+											{user.isRoot ? "超级管理员" : (user.roleName ?? "管理员")}
+										</div>
+									</div>
+								)}
+							</div>
+						</Popover>
+					)}
 				</div>
 			</aside>
 
-			{/* 主内容区 */}
-			<div className="flex flex-1 flex-col overflow-hidden">
-				{/* 顶栏 */}
-				<header className="flex h-14 shrink-0 items-center border-b border-border bg-background px-4">
-					<button
-						type="button"
-						onClick={() => setCollapsed(!collapsed)}
-						className="rounded p-1.5 text-base text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-					>
-						{collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
-					</button>
-				</header>
-
-				{/* 内容区 */}
-				<main className="flex-1 overflow-auto p-6">{children}</main>
-			</div>
+			{/* 主内容区 — 顶栏由 AdminPageContent 在各页面中提供 */}
+			<main className="flex flex-1 flex-col overflow-hidden">{children}</main>
 		</div>
 	);
 }

@@ -22,6 +22,7 @@ import {
 } from "antd";
 import { useState } from "react";
 import { z } from "zod";
+import { AdminPageContent } from "#/components/admin/AdminPageContent";
 import { PERMISSIONS } from "#/lib/permissions/permissions";
 import { permGuard } from "#/middleware/server-fn-auth";
 import {
@@ -208,9 +209,9 @@ function ConfigPage() {
 	];
 
 	return (
-		<div>
-			<div className="mb-4 flex items-center justify-between">
-				<h1 className="text-2xl font-bold text-zinc-900">系统配置</h1>
+		<AdminPageContent
+			title="系统配置"
+			extra={
 				<Button
 					type="primary"
 					icon={<PlusOutlined />}
@@ -218,8 +219,8 @@ function ConfigPage() {
 				>
 					新建配置
 				</Button>
-			</div>
-
+			}
+		>
 			<Table
 				dataSource={configs}
 				columns={columns}
@@ -264,6 +265,6 @@ function ConfigPage() {
 					</Form.Item>
 				</Form>
 			</Modal>
-		</div>
+		</AdminPageContent>
 	);
 }

@@ -21,6 +21,7 @@ import {
 } from "antd";
 import { useState } from "react";
 import { z } from "zod";
+import { AdminPageContent } from "#/components/admin/AdminPageContent";
 import { PERMISSIONS } from "#/lib/permissions/permissions";
 import { permGuard } from "#/middleware/server-fn-auth";
 import type { FileRecord } from "#/server/file";
@@ -194,9 +195,9 @@ function FilesPage() {
 	];
 
 	return (
-		<div>
-			<div className="mb-4 flex items-center justify-between">
-				<h1 className="text-2xl font-bold">文件管理</h1>
+		<AdminPageContent
+			title="文件管理"
+			extra={
 				<Upload
 					customRequest={customRequest}
 					showUploadList={false}
@@ -206,8 +207,8 @@ function FilesPage() {
 						{uploading ? "上传中..." : "上传文件"}
 					</Button>
 				</Upload>
-			</div>
-
+			}
+		>
 			<div className="mb-4">
 				<Segmented
 					options={[
@@ -228,6 +229,6 @@ function FilesPage() {
 				rowKey="id"
 				locale={{ emptyText: "暂无文件" }}
 			/>
-		</div>
+		</AdminPageContent>
 	);
 }
