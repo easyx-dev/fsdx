@@ -3,16 +3,23 @@
  */
 import {
 	CheckOutlined,
+	ClockCircleOutlined,
+	CloudUploadOutlined,
 	DeleteOutlined,
-	UploadOutlined,
+	DownloadOutlined,
+	EyeOutlined,
 } from "@ant-design/icons";
 import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
 import type { UploadProps } from "antd";
 import {
 	Button,
+	Col,
+	Input,
+	Modal,
 	message,
 	Popconfirm,
+	Row,
 	Segmented,
 	Space,
 	Table,
@@ -32,14 +39,19 @@ import {
 	makePermanent,
 } from "#/server/file/file.server";
 
-const fileListSchema = z.object({ status: z.string().optional() });
+const fileListSchema = z.object({
+	status: z.string().optional(),
+	keyword: z.string().optional(),
+	sortField: z.string().optional(),
+	sortOrder: z.string().optional(),
+});
 const idSchema = z.object({ id: z.string().min(1) });
 
 const getFileList = createServerFn({ method: "GET" })
 	.middleware([permGuard(PERMISSIONS.FILE_VIEW)])
 	.inputValidator(fileListSchema)
 	.handler(async ({ data }) => {
-		return getFileListService(data.status);
+		return getFileListService(data);
 	});
 
 const deleteFileFn = createServerFn({ method: "POST" })
@@ -82,31 +94,72 @@ function FilesPage() {
 	const [files, setFiles] = useState(initialFiles);
 	const [filter, setFilter] = useState("");
 	const [uploading, setUploading] = useState(false);
+	const [keyword, setKeyword] = useState("");
+	const [sortField, setSortField] = useState<string | undefined>();
+	const [sortOrder, setSortOrder] = useState<string | undefined>();
+	const [previewFile, setPreviewFile] = useState<FileRecord | null>(null);
 
-	/** 按当前筛选项刷新文件列表 */
-	const refreshFiles = async () => {
-		const data = await getFileList({ data: { status: filter || undefined } });
+	/** 按当前条件刷新文件列表 */
+	const refreshFiles = async (params?: {
+		status?: string;
+		keyword?: string;
+		sortField?: string;
+		sortOrder?: string;
+	}) => {
+		const data = await getFileList({
+			data: {
+				status: (params?.status ?? filter) || undefined,
+				keyword: (params?.keyword ?? keyword) || undefined,
+				sortField: params?.sortField ?? sortField,
+				sortOrder: params?.sortOrder ?? sortOrder,
+			},
+		});
 		setFiles(data);
 	};
 
 	/** 切换筛选状态并刷新列表 */
 	const handleFilterChange = async (status: string) => {
 		setFilter(status);
-		const data = await getFileList({
-			data: { status: status || undefined },
-		});
-		setFiles(data);
+		await refreshFiles({ status });
 	};
 
-	/** antd Upload 自定义上传逻辑：构造 FormData 调用服务端上传接口 */
-	const customRequest: UploadProps["customRequest"] = async (options) => {
-		const { file, onSuccess, onError } = options;
+	/** 按关键词搜索 */
+	const handleSearch = async (value: string) => {
+		setKeyword(value);
+		await refreshFiles({ keyword: value });
+	};
+
+	/** 表格排序变更 */
+	const handleTableChange = async (
+		_pagination: unknown,
+		_filters: unknown,
+		sorter: unknown,
+	) => {
+		const s = sorter as { field?: string; order?: string };
+		const field = s.field as string | undefined;
+		const order = s.order as string | undefined;
+		setSortField(field);
+		setSortOrder(order);
+		await refreshFiles({ sortField: field, sortOrder: order });
+	};
+
+	/** 上传核心逻辑 */
+	const doUpload = async (
+		file: File,
+		onSuccess: (body: unknown) => void,
+		onError: (err: Error) => void,
+		makePermanentAfter?: boolean,
+	) => {
 		setUploading(true);
 		try {
 			const fd = new FormData();
-			fd.append("file", file as File);
+			fd.append("file", file);
 			const result = await uploadFile({ data: fd });
 			if (result.success) {
+				// 永久文件上传后立即转为永久
+				if (makePermanentAfter && !result.data.isDuplicated) {
+					await makePermanentFn({ data: { id: result.data.id } });
+				}
 				onSuccess?.(result.data);
 				message.success(
 					result.data.isDuplicated ? "秒传成功（文件已存在）" : "上传成功",
@@ -126,6 +179,21 @@ function FilesPage() {
 		}
 	};
 
+	/** 临时文件上传 */
+	const tempRequest: UploadProps["customRequest"] = async (options) => {
+		const { file, onSuccess, onError } = options;
+		await doUpload(file as File, onSuccess!, onError!);
+	};
+
+	/** 永久文件上传 */
+	const permanentRequest: UploadProps["customRequest"] = async (options) => {
+		const { file, onSuccess, onError } = options;
+		await doUpload(file as File, onSuccess!, onError!, true);
+	};
+
+	/** 判断是否为图片类型 */
+	const isImage = (mimeType: string) => mimeType.startsWith("image/");
+
 	const columns = [
 		{
 			title: "文件名",
@@ -138,6 +206,7 @@ function FilesPage() {
 			dataIndex: "size",
 			key: "size",
 			width: 100,
+			sorter: true,
 			render: (_: unknown, record: FileRecord) => formatSize(record.size),
 		},
 		{
@@ -157,14 +226,35 @@ function FilesPage() {
 			dataIndex: "createdAt",
 			key: "createdAt",
 			width: 180,
+			sorter: true,
 			render: (_: unknown, record: FileRecord) => formatDate(record.createdAt),
 		},
 		{
 			title: "操作",
 			key: "actions",
-			width: 160,
+			width: 200,
 			render: (_: unknown, record: FileRecord) => (
 				<Space size={4}>
+					{isImage(record.mimeType) && (
+						<Button
+							type="link"
+							size="small"
+							icon={<EyeOutlined />}
+							onClick={() => setPreviewFile(record)}
+						>
+							预览
+						</Button>
+					)}
+					<a
+						href={`/api/download/file/${record.id}`}
+						target="_blank"
+						rel="noreferrer"
+					>
+						<Button type="link" size="small" icon={<DownloadOutlined />}>
+							下载
+						</Button>
+					</a>
+
 					{record.status === "temp" && (
 						<Button
 							type="link"
@@ -195,21 +285,47 @@ function FilesPage() {
 	];
 
 	return (
-		<AdminPageContent
-			title="文件管理"
-			extra={
-				<Upload
-					customRequest={customRequest}
-					showUploadList={false}
-					disabled={uploading}
-				>
-					<Button type="primary" icon={<UploadOutlined />} loading={uploading}>
-						{uploading ? "上传中..." : "上传文件"}
-					</Button>
-				</Upload>
-			}
-		>
-			<div className="mb-4">
+		<AdminPageContent title="文件管理">
+			{/* 双路上传区：永久 / 临时 */}
+			<Row gutter={16} style={{ marginBottom: 16 }}>
+				<Col span={12}>
+					<Upload.Dragger
+						customRequest={permanentRequest}
+						showUploadList={true}
+						disabled={uploading}
+						className="compact-dragger"
+					>
+						<p className="ant-upload-text">
+							<CloudUploadOutlined style={{ marginRight: 6 }} />
+							永久文件上传
+						</p>
+					</Upload.Dragger>
+				</Col>
+				<Col span={12}>
+					<Upload.Dragger
+						customRequest={tempRequest}
+						showUploadList={true}
+						disabled={uploading}
+						className="compact-dragger"
+					>
+						<p className="ant-upload-text">
+							<ClockCircleOutlined style={{ marginRight: 6 }} />
+							临时文件上传（24 小时后过期）
+						</p>
+					</Upload.Dragger>
+				</Col>
+			</Row>
+
+			{/* 筛选 + 搜索栏 */}
+			<div
+				style={{
+					marginBottom: 16,
+					display: "flex",
+					gap: 12,
+					alignItems: "center",
+					flexWrap: "wrap",
+				}}
+			>
 				<Segmented
 					options={[
 						{ label: "全部", value: "" },
@@ -221,6 +337,12 @@ function FilesPage() {
 						handleFilterChange(value as string);
 					}}
 				/>
+				<Input.Search
+					placeholder="搜索文件名..."
+					allowClear
+					onSearch={handleSearch}
+					style={{ width: 240 }}
+				/>
 			</div>
 
 			<Table
@@ -228,7 +350,26 @@ function FilesPage() {
 				columns={columns}
 				rowKey="id"
 				locale={{ emptyText: "暂无文件" }}
+				onChange={handleTableChange}
 			/>
+
+			{/* 图片预览 Modal */}
+			<Modal
+				open={!!previewFile}
+				title={previewFile?.originalName}
+				footer={null}
+				onCancel={() => setPreviewFile(null)}
+				width="auto"
+				centered
+			>
+				{previewFile && isImage(previewFile.mimeType) && (
+					<img
+						src={`/api/download/file/${previewFile.id}`}
+						alt={previewFile.originalName}
+						style={{ maxWidth: "80vw", maxHeight: "80vh" }}
+					/>
+				)}
+			</Modal>
 		</AdminPageContent>
 	);
 }

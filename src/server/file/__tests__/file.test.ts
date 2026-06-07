@@ -178,7 +178,7 @@ describe("getFileList", () => {
 			})),
 		});
 
-		const result = await getFileList("permanent");
+		const result = await getFileList({ status: "permanent" });
 		expect(result).toHaveLength(1);
 		expect(result[0].status).toBe("temp");
 	});

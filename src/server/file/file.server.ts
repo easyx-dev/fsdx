@@ -2,7 +2,7 @@
  * 文件管理：服务端辅助函数（上传逻辑、存储、清理、列表、删除）
  */
 import { createHash } from "node:crypto";
-import { and, desc, eq, isNull, lt } from "drizzle-orm";
+import { and, asc, desc, eq, ilike, isNull, lt, type SQL } from "drizzle-orm";
 import { db } from "#/db/index";
 import { file } from "#/db/schema";
 import { logger } from "#/lib/logger/logger";
@@ -66,15 +66,26 @@ export async function cleanExpiredFiles(): Promise<number> {
 	return expiredFiles.length;
 }
 
-/** 获取文件列表 */
-export async function getFileList(status?: string) {
-	const conditions = [isNull(file.deletedAt)];
+/** 获取文件列表（支持筛选、关键词搜索、排序） */
+export async function getFileList(params?: {
+	status?: string;
+	keyword?: string;
+	sortField?: string;
+	sortOrder?: string;
+}) {
+	const { status, keyword, sortField, sortOrder = "descend" } = params ?? {};
+	const conditions: SQL[] = [isNull(file.deletedAt)];
 	if (status) conditions.push(eq(file.status, status));
+	if (keyword) conditions.push(ilike(file.originalName, `%${keyword}%`));
+
+	const sortColumn = sortField === "size" ? file.size : file.createdAt;
+	const direction = sortOrder === "ascend" ? asc(sortColumn) : desc(sortColumn);
+
 	return db
 		.select()
 		.from(file)
 		.where(and(...conditions))
-		.orderBy(desc(file.createdAt))
+		.orderBy(direction)
 		.limit(100);
 }
 

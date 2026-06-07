@@ -3,6 +3,7 @@
  */
 
 import {
+	DownloadOutlined,
 	FileTextOutlined,
 	ReloadOutlined,
 	SearchOutlined,
@@ -16,8 +17,10 @@ import {
 	Input,
 	message,
 	Select,
+	Space,
 	Table,
 	Tag,
+	Tooltip,
 } from "antd";
 import { useState } from "react";
 import { z } from "zod";
@@ -242,14 +245,32 @@ function LogsPage() {
 						日志日期：
 					</span>
 					{availableDates.slice(0, 14).map((d: string) => (
-						<Tag
-							key={d}
-							color="default"
-							style={{ cursor: "pointer", margin: 0 }}
-							onClick={() => handleDateClick(d)}
-						>
-							{d}
-						</Tag>
+						<Space key={d} size={0}>
+							<Tag
+								color="default"
+								style={{ cursor: "pointer", margin: 0 }}
+								onClick={() => handleDateClick(d)}
+							>
+								{d}
+							</Tag>
+							<Tooltip title="下载该日日志文件">
+								<a
+									href={`/api/download/log/${d}`}
+									style={{
+										display: "inline-flex",
+										alignItems: "center",
+										padding: "0 4px",
+									}}
+								>
+									<DownloadOutlined
+										style={{
+											fontSize: 12,
+											color: "var(--ant-color-text-tertiary)",
+										}}
+									/>
+								</a>
+							</Tooltip>
+						</Space>
 					))}
 				</div>
 			)}
@@ -259,6 +280,24 @@ function LogsPage() {
 				dataSource={dataSource}
 				columns={columns}
 				rowKey="_rowKey"
+				expandable={{
+					expandedRowRender: (record: LogEntry) => (
+						<pre
+							style={{
+								maxHeight: 300,
+								overflow: "auto",
+								padding: 12,
+								fontSize: 12,
+								backgroundColor: "var(--ant-color-fill-tertiary)",
+								borderRadius: 6,
+								margin: 0,
+							}}
+						>
+							{JSON.stringify(record, null, 2)}
+						</pre>
+					),
+					rowExpandable: () => true,
+				}}
 				locale={{
 					emptyText: (
 						<div style={{ padding: "32px 0" }}>

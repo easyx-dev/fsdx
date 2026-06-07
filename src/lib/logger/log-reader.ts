@@ -137,6 +137,20 @@ export async function queryLogs(query: LogQuery = {}): Promise<LogQueryResult> {
 }
 
 /**
+ * 读取指定日期的日志文件完整内容
+ */
+export async function readLogFileContent(date: string): Promise<string | null> {
+	const logPath = resolve(getLogDir(), `${date}.log`);
+	if (!existsSync(logPath)) return null;
+	try {
+		const lines = await readLogLines(logPath);
+		return lines.join("\n");
+	} catch {
+		return null;
+	}
+}
+
+/**
  * 获取可用的日志日期列表
  */
 export function getLogDates(): string[] {

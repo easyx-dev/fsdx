@@ -42,7 +42,7 @@ export function RichEditor({ value = "", onChange }: Props) {
 							fd.append("file", file);
 							const result = await uploadFile({ data: fd });
 							if (result?.data?.id) {
-								insertFn(`/admin/files/download/${result.data.id}`);
+								insertFn(`/api/download/file/${result.data.id}`);
 							}
 						} catch {
 							// 上传失败静默忽略

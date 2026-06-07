@@ -168,3 +168,13 @@ pre code {
     color: var(--foreground);
   }
 }
+
+/* 紧凑型拖拽上传区域 */
+.compact-dragger .ant-upload-drag {
+	height: auto !important;
+	padding: 20px 16px !important;
+}
+.compact-dragger .ant-upload-drag .ant-upload-text {
+	margin: 0 !important;
+	font-size: 14px;
+}

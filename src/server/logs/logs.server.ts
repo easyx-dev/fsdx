@@ -8,6 +8,7 @@ import {
 	queryLogs,
 	type LogEntry as RawLogEntry,
 	getLogDates as readLogDates,
+	readLogFileContent,
 } from "#/lib/logger/log-reader";
 
 /** SF 安全的日志条目类型（无 index signature） */
@@ -72,6 +73,11 @@ export async function searchLogs(
 		...result,
 		entries: result.entries.map(toSerializable),
 	};
+}
+
+/** 获取指定日期的日志原始内容 */
+export async function getLogRawContent(date: string): Promise<string | null> {
+	return readLogFileContent(date);
 }
 
 /** 获取可用的日志日期列表 */
