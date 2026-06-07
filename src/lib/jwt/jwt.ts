@@ -8,7 +8,11 @@ let _jwtSecret: Uint8Array | null = null;
 
 function getJwtSecret(): Uint8Array {
 	if (!_jwtSecret) {
-		_jwtSecret = new TextEncoder().encode(process.env.JWT_SECRET);
+		const secret = process.env.JWT_SECRET;
+		if (!secret) {
+			throw new Error("环境变量 JWT_SECRET 未配置，无法签发 JWT Token");
+		}
+		_jwtSecret = new TextEncoder().encode(secret);
 	}
 	return _jwtSecret;
 }

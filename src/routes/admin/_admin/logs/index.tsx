@@ -173,7 +173,7 @@ function LogsPage() {
 			width: 90,
 			render: (level: string) => (
 				<Tag color={LEVEL_COLORS[level] || "default"}>
-					{level.toUpperCase()}
+					{typeof level === "string" ? level.toUpperCase() : "—"}
 				</Tag>
 			),
 		},

@@ -73,6 +73,21 @@ export const PERMISSIONS = {
 		"查看客户端用户",
 		"允许查看前台注册用户列表",
 	),
+	CLIENT_CREATE: definePermission(
+		"client:create",
+		"创建客户端用户",
+		"允许创建新的客户端用户账号",
+	),
+	CLIENT_EDIT: definePermission(
+		"client:edit",
+		"编辑客户端用户",
+		"允许编辑客户端用户信息",
+	),
+	CLIENT_DELETE: definePermission(
+		"client:delete",
+		"删除客户端用户",
+		"允许删除客户端用户账号",
+	),
 	// 角色管理
 	ROLE_VIEW: definePermission("role:view", "查看角色", "允许查看角色列表"),
 	ROLE_CREATE: definePermission("role:create", "创建角色", "允许创建新的角色"),

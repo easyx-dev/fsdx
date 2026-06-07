@@ -6,7 +6,6 @@ import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
 import { setCookie } from "@tanstack/react-start/server";
 import {
-	Alert,
 	theme as antdTheme,
 	Button,
 	ConfigProvider,
@@ -111,12 +110,6 @@ function AdminLoginPage() {
 						<h1 className="mb-6 text-center text-2xl font-bold">
 							管理后台登录
 						</h1>
-						<Alert
-							message={<span>系统已初始化，请使用 root 管理员账号登录。</span>}
-							type="success"
-							showIcon
-							className="mb-4"
-						/>
 						<Form
 							form={form}
 							onFinish={handleSubmit}

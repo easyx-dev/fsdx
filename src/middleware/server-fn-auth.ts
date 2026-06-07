@@ -7,7 +7,6 @@ import { createMiddleware } from "@tanstack/react-start";
 import { getCookie } from "@tanstack/react-start/server";
 import { db } from "#/db/index";
 import { COOKIE_NAMES, verifyToken } from "#/lib/jwt/jwt";
-import { logger } from "#/lib/logger/logger";
 import {
 	hasPermission,
 	type PermissionDef,
@@ -76,11 +75,6 @@ export const authGuard = createMiddleware({
 		});
 		rolePermissions = (userRole?.permissions ?? []) as string[];
 	}
-
-	// logger.info(
-	// 	{ userId: user.id, username: user.username, isRoot: user.isRoot },
-	// 	"Server Function 鉴权通过",
-	// );
 
 	return next({
 		context: {

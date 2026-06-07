@@ -83,6 +83,13 @@ export function AdminRootDocument({ children }: { children: React.ReactNode }) {
 		[mode, handleSetMode],
 	);
 
+	// 同步 dark class 到 <html> 以启用 Tailwind dark: 变体
+	useEffect(() => {
+		const el = document.documentElement;
+		el.classList.toggle("dark", isDark);
+		el.style.colorScheme = isDark ? "dark" : "light";
+	}, [isDark]);
+
 	return (
 		<html lang="zh-CN" suppressHydrationWarning>
 			<head>
