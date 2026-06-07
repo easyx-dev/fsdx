@@ -1,9 +1,10 @@
+import type { IncomingMessage, ServerResponse } from "node:http";
 import tailwindcss from "@tailwindcss/vite";
 import { devtools } from "@tanstack/devtools-vite";
 import { tanstackStart } from "@tanstack/react-start/plugin/vite";
 import viteReact from "@vitejs/plugin-react";
 import { nitro } from "nitro/vite";
-import { defineConfig } from "vite";
+import { defineConfig, type PluginOption } from "vite";
 
 const config = defineConfig({
 	envDir: "./env",
@@ -26,7 +27,32 @@ const config = defineConfig({
 		nitro({
 			plugins: ["./src/startup.ts"],
 		}),
+		// 修复：Vite dev server 在 Sec-Fetch-Dest: image 时会将路由当作静态资源拦截，
+		// 导致 <img> 标签加载图片返回 404。此插件在 Vite 内部中间件之前移除该请求头
+		secFetchDestImageFix(),
 	],
 });
+
+/** 开发环境修复：移除 Sec-Fetch-Dest: image 避免 Vite 内部中间件拦截 */
+function secFetchDestImageFix(): PluginOption {
+	return {
+		name: "sec-fetch-dest-image-fix",
+		configureServer(server) {
+			server.middlewares.stack.unshift({
+				route: "",
+				handle: (
+					req: IncomingMessage,
+					_res: ServerResponse,
+					next: () => void,
+				) => {
+					if (req.headers["sec-fetch-dest"] === "image") {
+						delete req.headers["sec-fetch-dest"];
+					}
+					next();
+				},
+			} as never);
+		},
+	};
+}
 
 export default config;
