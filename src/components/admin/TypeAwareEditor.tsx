@@ -1,0 +1,216 @@
+/**
+ * 类型感知编辑器组件
+ * 根据 type 切换不同编辑器：input / text / number / json / rich / code
+ * json 和 code 类型使用 CodeEditor（monaco-editor），rich 类型复用 RichEditor
+ * 支持预览模式（preview），以只读形式展示内容
+ * value / onChange 兼容 antd Form.Item 注入
+ */
+import { Input, InputNumber } from "antd";
+import { lazy, Suspense } from "react";
+import { RichEditor } from "#/components/admin/RichEditor";
+
+// 按需懒加载 CodeEditor，避免 SSR 报错和初始包体积
+const CodeEditor = lazy(() =>
+	import("#/components/admin/CodeEditor").then((mod) => ({
+		default: mod.CodeEditor,
+	})),
+);
+
+/** 支持的编辑器类型 */
+export type EditorType = "input" | "text" | "number" | "json" | "rich" | "code";
+
+export interface TypeAwareEditorProps {
+	/** 编辑器类型，决定使用何种编辑控件 */
+	type: EditorType;
+	/** 当前值（兼容 antd Form.Item 注入） */
+	value?: string | number;
+	/** 值变化回调（兼容 antd Form.Item 注入） */
+	onChange?: (value: string | number) => void;
+	/** 是否为预览模式，开启后所有编辑器变为只读展示 */
+	preview?: boolean;
+	/** 编程语言标识（json / code 类型使用），默认 json 为 'json'，code 为 'plaintext' */
+	language?: string;
+	/** 数字编辑器最小值 */
+	min?: number;
+	/** 数字编辑器最大值 */
+	max?: number;
+	/** 数字编辑器步长 */
+	step?: number;
+	/** 文本域行数 */
+	rows?: number;
+	/** 占位文字 */
+	placeholder?: string;
+	/** 是否禁用 */
+	disabled?: boolean;
+	/** DOM id */
+	id?: string;
+}
+
+/** CodeEditor 加载中的占位 */
+function EditorLoading() {
+	return (
+		<div className="flex items-center justify-center h-[300px] rounded-md border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 text-zinc-400 text-sm">
+			编辑器加载中...
+		</div>
+	);
+}
+
+/** JSON 值格式化：尝试解析并美化，失败则返回原字符串 */
+function formatJsonValue(raw: string): string {
+	try {
+		return JSON.stringify(JSON.parse(raw), null, 2);
+	} catch {
+		return raw;
+	}
+}
+
+/** 预览模式组件 */
+function PreviewContent({
+	type,
+	value,
+	language,
+}: {
+	type: EditorType;
+	value: string;
+	language?: string;
+}) {
+	switch (type) {
+		case "json": {
+			const formatted = formatJsonValue(value);
+			return (
+				<Suspense fallback={<EditorLoading />}>
+					<CodeEditor value={formatted} language="json" readOnly />
+				</Suspense>
+			);
+		}
+		case "code":
+			return (
+				<Suspense fallback={<EditorLoading />}>
+					<CodeEditor
+						value={value}
+						language={language ?? "plaintext"}
+						readOnly
+					/>
+				</Suspense>
+			);
+		case "rich":
+			return (
+				<div
+					className="prose prose-sm dark:prose-invert max-w-none rounded-md border border-zinc-200 dark:border-zinc-700 p-4 min-h-[120px]"
+					dangerouslySetInnerHTML={{ __html: value }}
+				/>
+			);
+		case "text":
+			return (
+				<pre className="rounded-md border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 p-4 min-h-[80px] text-sm whitespace-pre-wrap break-words">
+					{value || <span className="text-zinc-400">—</span>}
+				</pre>
+			);
+		default:
+			return (
+				<div className="rounded-md border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 px-3 py-2 text-sm min-h-[40px]">
+					{value || <span className="text-zinc-400">—</span>}
+				</div>
+			);
+	}
+}
+
+export function TypeAwareEditor({
+	type,
+	value,
+	onChange,
+	preview = false,
+	language,
+	min,
+	max,
+	step,
+	rows = 3,
+	placeholder,
+	disabled = false,
+	id,
+}: TypeAwareEditorProps) {
+	// 预览模式
+	if (preview) {
+		return (
+			<PreviewContent
+				type={type}
+				value={value != null ? String(value) : ""}
+				language={language}
+			/>
+		);
+	}
+
+	// 编辑模式：根据类型渲染不同编辑器
+	switch (type) {
+		case "input":
+			return (
+				<Input
+					id={id}
+					value={value as string}
+					onChange={(e) => onChange?.(e.target.value)}
+					placeholder={placeholder}
+					disabled={disabled}
+				/>
+			);
+
+		case "text":
+			return (
+				<Input.TextArea
+					id={id}
+					value={value as string}
+					onChange={(e) => onChange?.(e.target.value)}
+					rows={rows}
+					placeholder={placeholder}
+					disabled={disabled}
+				/>
+			);
+
+		case "number":
+			return (
+				<InputNumber
+					id={id}
+					value={value as number}
+					onChange={(v) => onChange?.(v ?? 0)}
+					min={min}
+					max={max}
+					step={step}
+					placeholder={placeholder}
+					disabled={disabled}
+					className="w-full"
+				/>
+			);
+
+		case "json":
+			return (
+				<Suspense fallback={<EditorLoading />}>
+					<CodeEditor
+						value={value != null ? String(value) : ""}
+						onChange={(v) => onChange?.(v)}
+						language="json"
+					/>
+				</Suspense>
+			);
+
+		case "code":
+			return (
+				<Suspense fallback={<EditorLoading />}>
+					<CodeEditor
+						value={value != null ? String(value) : ""}
+						onChange={(v) => onChange?.(v)}
+						language={language ?? "plaintext"}
+					/>
+				</Suspense>
+			);
+
+		case "rich":
+			return (
+				<RichEditor
+					value={value as string}
+					onChange={(html) => onChange?.(html)}
+				/>
+			);
+
+		default:
+			return null;
+	}
+}

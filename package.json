@@ -46,6 +46,7 @@
     "drizzle-orm": "^0.45.2",
     "jose": "^6.2.3",
     "lucide-react": "^0.577.0",
+    "monaco-editor": "^0.55.1",
     "nodemailer": "^8.0.10",
     "pg": "^8.21.0",
     "pino": "^10.3.1",

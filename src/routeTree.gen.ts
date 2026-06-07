@@ -25,6 +25,7 @@ import { Route as AdminAdminNewsIndexRouteImport } from './routes/admin/_admin/n
 import { Route as AdminAdminLogsIndexRouteImport } from './routes/admin/_admin/logs/index'
 import { Route as AdminAdminFilesIndexRouteImport } from './routes/admin/_admin/files/index'
 import { Route as AdminAdminDictsIndexRouteImport } from './routes/admin/_admin/dicts/index'
+import { Route as AdminAdminDemoIndexRouteImport } from './routes/admin/_admin/demo/index'
 import { Route as AdminAdminConfigIndexRouteImport } from './routes/admin/_admin/config/index'
 import { Route as AdminAdminNewsCreateRouteImport } from './routes/admin/_admin/news/create'
 import { Route as AdminAdminUsersClientsIndexRouteImport } from './routes/admin/_admin/users/clients/index'
@@ -111,6 +112,11 @@ const AdminAdminDictsIndexRoute = AdminAdminDictsIndexRouteImport.update({
   path: '/dicts/',
   getParentRoute: () => AdminAdminRoute,
 } as any)
+const AdminAdminDemoIndexRoute = AdminAdminDemoIndexRouteImport.update({
+  id: '/demo/',
+  path: '/demo/',
+  getParentRoute: () => AdminAdminRoute,
+} as any)
 const AdminAdminConfigIndexRoute = AdminAdminConfigIndexRouteImport.update({
   id: '/config/',
   path: '/config/',
@@ -158,6 +164,7 @@ export interface FileRoutesByFullPath {
   '/admin/': typeof AdminAdminIndexRoute
   '/admin/news/create': typeof AdminAdminNewsCreateRoute
   '/admin/config/': typeof AdminAdminConfigIndexRoute
+  '/admin/demo/': typeof AdminAdminDemoIndexRoute
   '/admin/dicts/': typeof AdminAdminDictsIndexRoute
   '/admin/files/': typeof AdminAdminFilesIndexRoute
   '/admin/logs/': typeof AdminAdminLogsIndexRoute
@@ -180,6 +187,7 @@ export interface FileRoutesByTo {
   '/news': typeof NewsIndexRoute
   '/admin/news/create': typeof AdminAdminNewsCreateRoute
   '/admin/config': typeof AdminAdminConfigIndexRoute
+  '/admin/demo': typeof AdminAdminDemoIndexRoute
   '/admin/dicts': typeof AdminAdminDictsIndexRoute
   '/admin/files': typeof AdminAdminFilesIndexRoute
   '/admin/logs': typeof AdminAdminLogsIndexRoute
@@ -205,6 +213,7 @@ export interface FileRoutesById {
   '/admin/_admin/': typeof AdminAdminIndexRoute
   '/admin/_admin/news/create': typeof AdminAdminNewsCreateRoute
   '/admin/_admin/config/': typeof AdminAdminConfigIndexRoute
+  '/admin/_admin/demo/': typeof AdminAdminDemoIndexRoute
   '/admin/_admin/dicts/': typeof AdminAdminDictsIndexRoute
   '/admin/_admin/files/': typeof AdminAdminFilesIndexRoute
   '/admin/_admin/logs/': typeof AdminAdminLogsIndexRoute
@@ -230,6 +239,7 @@ export interface FileRouteTypes {
     | '/admin/'
     | '/admin/news/create'
     | '/admin/config/'
+    | '/admin/demo/'
     | '/admin/dicts/'
     | '/admin/files/'
     | '/admin/logs/'
@@ -252,6 +262,7 @@ export interface FileRouteTypes {
     | '/news'
     | '/admin/news/create'
     | '/admin/config'
+    | '/admin/demo'
     | '/admin/dicts'
     | '/admin/files'
     | '/admin/logs'
@@ -276,6 +287,7 @@ export interface FileRouteTypes {
     | '/admin/_admin/'
     | '/admin/_admin/news/create'
     | '/admin/_admin/config/'
+    | '/admin/_admin/demo/'
     | '/admin/_admin/dicts/'
     | '/admin/_admin/files/'
     | '/admin/_admin/logs/'
@@ -411,6 +423,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminAdminDictsIndexRouteImport
       parentRoute: typeof AdminAdminRoute
     }
+    '/admin/_admin/demo/': {
+      id: '/admin/_admin/demo/'
+      path: '/demo'
+      fullPath: '/admin/demo/'
+      preLoaderRoute: typeof AdminAdminDemoIndexRouteImport
+      parentRoute: typeof AdminAdminRoute
+    }
     '/admin/_admin/config/': {
       id: '/admin/_admin/config/'
       path: '/config'
@@ -460,6 +479,7 @@ interface AdminAdminRouteChildren {
   AdminAdminIndexRoute: typeof AdminAdminIndexRoute
   AdminAdminNewsCreateRoute: typeof AdminAdminNewsCreateRoute
   AdminAdminConfigIndexRoute: typeof AdminAdminConfigIndexRoute
+  AdminAdminDemoIndexRoute: typeof AdminAdminDemoIndexRoute
   AdminAdminDictsIndexRoute: typeof AdminAdminDictsIndexRoute
   AdminAdminFilesIndexRoute: typeof AdminAdminFilesIndexRoute
   AdminAdminLogsIndexRoute: typeof AdminAdminLogsIndexRoute
@@ -475,6 +495,7 @@ const AdminAdminRouteChildren: AdminAdminRouteChildren = {
   AdminAdminIndexRoute: AdminAdminIndexRoute,
   AdminAdminNewsCreateRoute: AdminAdminNewsCreateRoute,
   AdminAdminConfigIndexRoute: AdminAdminConfigIndexRoute,
+  AdminAdminDemoIndexRoute: AdminAdminDemoIndexRoute,
   AdminAdminDictsIndexRoute: AdminAdminDictsIndexRoute,
   AdminAdminFilesIndexRoute: AdminAdminFilesIndexRoute,
   AdminAdminLogsIndexRoute: AdminAdminLogsIndexRoute,
