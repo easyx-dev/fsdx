@@ -1,7 +1,9 @@
 /**
- * 日志模块：基于 pino + pino-roll，按天自动切割日志文件
- * 注意：直接读取 process.env，避免模块级导入与 pino transport worker 冲突
+ * 日志模块：基于 pino，按天写入日志文件
+ * 不使用 pino transport（pino-roll），避免 ESM 打包后 __dirname 未定义问题
  */
+import { createWriteStream, existsSync, mkdirSync } from "node:fs";
+import { join } from "node:path";
 import pino from "pino";
 
 /** 获取当前日期的日志文件名 */
@@ -17,26 +19,24 @@ const logLevel = process.env.LOG_LEVEL || "info";
 const isProd = process.env.NODE_ENV === "production";
 const storageDir = process.env.STORAGE_DIR || ".tmp";
 
-/** 创建 pino 日志实例，同时输出到 stdout（开发）和按天切割的文件 */
-export const logger = pino({
-	level: logLevel,
-	transport: {
-		targets: [
-			{
-				target: "pino-roll",
-				options: {
-					file: `${storageDir}/logs/${getLogDate()}`,
-					frequency: "daily",
-					mkdir: true,
-					extension: ".log",
-				},
-				level: "info",
-			},
-			{
-				target: "pino/file",
-				options: { destination: 1 },
-				level: isProd ? "warn" : "info",
-			},
-		],
+const logDir = join(storageDir, "logs");
+if (!existsSync(logDir)) {
+	mkdirSync(logDir, { recursive: true });
+}
+
+const logFile = join(logDir, `${getLogDate()}.log`);
+const fileStream = createWriteStream(logFile, { flags: "a" });
+
+/** 创建 pino 日志实例，同时输出到文件和控制台 */
+export const logger = pino(
+	{
+		level: logLevel,
 	},
-});
+	pino.multistream([
+		{ stream: fileStream, level: "info" },
+		{
+			stream: process.stdout,
+			level: isProd ? "warn" : "info",
+		},
+	]),
+);

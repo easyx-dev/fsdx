@@ -1,14 +1,14 @@
 /**
- * 定时任务调度器：基于 node-cron 的轻量级定时任务管理
+ * 定时任务调度器：基于 cron 库的轻量级定时任务管理
  */
-import cron from "node-cron";
+import { CronJob, CronTime } from "cron";
 import { logger } from "#/lib/logger/logger";
 
 /** 任务定义 */
 export interface ScheduledTask {
 	/** 任务名称 */
 	name: string;
-	/** cron 表达式 */
+	/** cron 表达式（标准 5 或 6 字段） */
 	cronExpression: string;
 	/** 任务执行函数 */
 	handler: () => Promise<void>;
@@ -17,15 +17,20 @@ export interface ScheduledTask {
 }
 
 /** 已注册的任务映射 */
-const tasks = new Map();
+const tasks = new Map<string, CronJob>();
 
 /**
  * 注册并启动定时任务
  */
 export function registerTask(task: ScheduledTask): void {
-	if (!cron.validate(task.cronExpression)) {
+	const validation = CronTime.validateCronExpression(task.cronExpression);
+	if (!validation.valid) {
 		logger.error(
-			{ name: task.name, expr: task.cronExpression },
+			{
+				name: task.name,
+				expr: task.cronExpression,
+				error: validation.error?.message,
+			},
 			"无效的 cron 表达式",
 		);
 		return;
@@ -36,29 +41,33 @@ export function registerTask(task: ScheduledTask): void {
 		return;
 	}
 
-	const cronTask = cron.schedule(
-		task.cronExpression,
-		async () => {
+	const job = CronJob.from({
+		cronTime: task.cronExpression,
+		onTick: () => {
 			logger.info({ name: task.name }, "定时任务开始执行");
-			try {
-				await task.handler();
-				logger.info({ name: task.name }, "定时任务执行完成");
-			} catch (err) {
-				logger.error({ name: task.name, err }, "定时任务执行失败");
-			}
+			task
+				.handler()
+				.then(() => {
+					logger.info({ name: task.name }, "定时任务执行完成");
+				})
+				.catch((err) => {
+					logger.error({ name: task.name, err }, "定时任务执行失败");
+				});
 		},
-		{ scheduled: true } as any,
-	);
+		start: true,
+		runOnInit: task.runOnInit ?? false,
+		name: task.name,
+	});
 
-	tasks.set(task.name, cronTask);
+	tasks.set(task.name, job);
 
 	if (task.runOnInit) {
 		logger.info({ name: task.name }, "定时任务注册完成，立即执行一次");
-		task.handler().catch((err) => {
-			logger.error({ name: task.name, err }, "定时任务首次执行失败");
-		});
 	} else {
-		logger.info({ name: task.name }, "定时任务注册完成");
+		logger.info(
+			{ name: task.name, cron: task.cronExpression },
+			"定时任务注册完成",
+		);
 	}
 }
 
@@ -66,9 +75,13 @@ export function registerTask(task: ScheduledTask): void {
  * 停止指定任务
  */
 export function stopTask(name: string): void {
-	const task = tasks.get(name);
-	if (task) {
-		task.stop();
+	const job = tasks.get(name);
+	if (job) {
+		// cron v4 stop() 可能返回 Promise，忽略异步
+		const result = job.stop();
+		if (result && typeof result.then === "function") {
+			result.catch(() => {});
+		}
 		tasks.delete(name);
 		logger.info({ name }, "定时任务已停止");
 	}
@@ -78,8 +91,11 @@ export function stopTask(name: string): void {
  * 停止所有任务
  */
 export function stopAllTasks(): void {
-	for (const [name, task] of tasks) {
-		task.stop();
+	for (const [name, job] of tasks) {
+		const result = job.stop();
+		if (result && typeof result.then === "function") {
+			result.catch(() => {});
+		}
 		logger.info({ name }, "定时任务已停止");
 	}
 	tasks.clear();

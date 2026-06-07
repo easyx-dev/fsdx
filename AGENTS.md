@@ -19,13 +19,13 @@ src/
 │   └── schema/               # 数据库表定义（按模块拆分）
 ├── lib/                      # 基础库（无业务逻辑）
 │   ├── env.ts                # 环境变量统一管理（zod 校验 + getEnv()）
-│   ├── logger.ts             # pino + pino-roll 日志
+│   ├── logger.ts             # pino 日志（multistream，按天写入文件）
 │   ├── cache.ts              # 内存缓存（字典、系统配置）
 │   ├── storage.ts            # 文件存储抽象层（本地实现）
 │   ├── jwt.ts                # JWT 签发与校验（jose）
 │   ├── mail.ts               # 邮件发送（nodemailer，SMTP 配置从系统配置表读取）
 │   ├── permissions.ts        # 权限码常量
-│   ├── scheduler.ts          # 定时任务调度（node-cron）
+│   ├── scheduler.ts          # 定时任务调度（cron）
 │   └── log-reader.ts         # 管理端日志文件查询
 ├── middleware/
 │   └── server-fn-auth.ts     # Server Function 鉴权与权限中间件（createMiddleware）
@@ -84,10 +84,10 @@ src/
 | Lint/Format | Biome | 2.4 |
 | 测试 | Vitest | 4 |
 | 包管理 | pnpm | - |
-| 日志 | pino + pino-roll（按天切割） | - |
+| 日志 | pino（multistream，按天写入文件） | - |
 | 认证 | JWT（jose）+ bcryptjs | - |
 | 编辑器 | TipTap（富文本） | 3.24 |
-| 定时任务 | node-cron | - |
+| 定时任务 | cron | - |
 | 邮件 | nodemailer（SMTP 配置由初始化流程写入系统配置表） | - |
 
 ## 接口约定
@@ -247,10 +247,10 @@ import { getConfig } from "#/server/config/config.server";
 
 ## 日志约定
 
-- 使用 pino + pino-roll，日志文件存储在 `{STORAGE_DIR}/logs/` 下
+- 使用 pino multistream，日志文件存储在 `{STORAGE_DIR}/logs/` 下
 - 文件名格式：`YYYY-MM-DD.log`，自动按天切割
 - 管理端可在 `/admin/logs` 页面按关键词、级别、日期范围查询日志文件
-- 日志模块不导入 `getEnv()`，直接读取 `process.env`（避让 pino transport worker 上下文冲突）
+- 日志模块不导入 `getEnv()`，直接读取 `process.env`（pino transport worker 在 ESM 环境下存在 __dirname 兼容问题）
 
 ## 命令
 
