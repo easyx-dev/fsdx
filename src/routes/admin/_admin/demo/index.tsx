@@ -6,10 +6,9 @@ import { createFileRoute } from "@tanstack/react-router";
 import { Card, Space, Switch, Typography } from "antd";
 import { useState } from "react";
 import { AdminPageContent } from "#/components/admin/AdminPageContent";
-import {
-	type EditorType,
-	TypeAwareEditor,
-} from "#/components/admin/TypeAwareEditor";
+import { TypeAwareEditor } from "#/components/admin/TypeAwareEditor";
+import type { EditorType } from "#/lib/editor-types";
+import { EDITOR_TYPE_LABELS, EDITOR_TYPES } from "#/lib/editor-types";
 
 const { Text } = Typography;
 
@@ -25,15 +24,6 @@ const DEMO_VALUES: Record<EditorType, string | number> = {
 	),
 	code: 'function hello(name: string) {\n  console.log("Hello, " + name + "!");\n}\n\nhello("CMS");',
 	rich: "<h2>富文本演示</h2><p>这是一段<strong>富文本</strong>内容，支持各种排版样式。</p><ul><li>列表项一</li><li>列表项二</li></ul>",
-};
-
-const TYPE_LABELS: Record<EditorType, string> = {
-	input: "Input 单行输入",
-	text: "Text 多行文本域",
-	number: "Number 数字输入",
-	json: "JSON 编辑器",
-	code: "Code 代码编辑器",
-	rich: "Rich 富文本编辑器",
 };
 
 export const Route = createFileRoute("/admin/_admin/demo/")({
@@ -57,12 +47,10 @@ function DemoPage() {
 			}
 		>
 			<div className="space-y-6 flex flex-col gap-4">
-				{(
-					["input", "text", "number", "json", "code", "rich"] as EditorType[]
-				).map((type) => (
+				{EDITOR_TYPES.map((type) => (
 					<Card
 						key={type}
-						title={TYPE_LABELS[type]}
+						title={EDITOR_TYPE_LABELS[type]}
 						size="small"
 						styles={{ body: { padding: 16 } }}
 					>
@@ -74,7 +62,7 @@ function DemoPage() {
 							}
 							language="typescript"
 							preview={preview}
-							placeholder={`请输入${TYPE_LABELS[type]}内容`}
+							placeholder={`请输入${EDITOR_TYPE_LABELS[type]}内容`}
 						/>
 					</Card>
 				))}

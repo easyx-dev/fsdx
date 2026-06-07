@@ -16,8 +16,8 @@ const CodeEditor = lazy(() =>
 	})),
 );
 
-/** 支持的编辑器类型 */
-export type EditorType = "input" | "text" | "number" | "json" | "rich" | "code";
+import type { EditorType } from "#/lib/editor-types";
+export type { EditorType };
 
 export interface TypeAwareEditorProps {
 	/** 编辑器类型，决定使用何种编辑控件 */

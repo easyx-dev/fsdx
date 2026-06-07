@@ -121,6 +121,9 @@ export async function createDictItem(params: {
 	label: string;
 	value: string;
 	sortOrder?: number;
+	extraType?: string;
+	extra?: string;
+	color?: string;
 }) {
 	const [record] = await db.insert(dictItem).values(params).returning();
 	invalidateCache();

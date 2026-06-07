@@ -2,12 +2,21 @@
  * 字典管理页面：字典类型 + 条目 CRUD（antd）
  */
 
-import { DeleteOutlined, EditOutlined, PlusOutlined } from "@ant-design/icons";
+import {
+	CaretDownOutlined,
+	CaretUpOutlined,
+	DeleteOutlined,
+	EditOutlined,
+	PlusOutlined,
+} from "@ant-design/icons";
 import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
 import {
 	Button,
+	Card,
 	Col,
+	ColorPicker,
+	Divider,
 	Form,
 	Input,
 	InputNumber,
@@ -15,13 +24,18 @@ import {
 	message,
 	Popconfirm,
 	Row,
+	Select,
 	Space,
+	Switch,
 	Table,
 	Tag,
 } from "antd";
 import { useState } from "react";
 import { z } from "zod";
 import { AdminPageContent } from "#/components/admin/AdminPageContent";
+import { TypeAwareEditor } from "#/components/admin/TypeAwareEditor";
+import type { EditorType } from "#/lib/editor-types";
+import { EDITOR_TYPE_LABELS, EDITOR_TYPES } from "#/lib/editor-types";
 import { PERMISSIONS } from "#/lib/permissions/permissions";
 import { permGuard } from "#/middleware/server-fn-auth";
 import type { DictItemRecord, DictRecord } from "#/server/dict/dict.server";
@@ -53,6 +67,9 @@ const createItemSchema = z.object({
 	label: z.string().min(1).max(100),
 	value: z.string().min(1).max(100),
 	sortOrder: z.number().default(0),
+	extraType: z.string().optional(),
+	extra: z.string().optional(),
+	color: z.string().optional(),
 });
 const updateItemSchema = z.object({
 	id: z.string().min(1),
@@ -60,6 +77,9 @@ const updateItemSchema = z.object({
 	value: z.string().max(100).optional(),
 	sortOrder: z.number().optional(),
 	status: z.string().optional(),
+	extraType: z.string().optional(),
+	extra: z.string().optional(),
+	color: z.string().optional(),
 });
 
 const getDictList = createServerFn({ method: "GET" })
@@ -140,8 +160,12 @@ function DictsPage() {
 	const [editingDict, setEditingDict] = useState<DictRecord | null>(null);
 	const [itemModalOpen, setItemModalOpen] = useState(false);
 	const [editingItem, setEditingItem] = useState<DictItemRecord | null>(null);
+	const [advancedExpanded, setAdvancedExpanded] = useState(false);
 	const [dictForm] = Form.useForm();
 	const [itemForm] = Form.useForm();
+	const watchedExtraType = Form.useWatch("extraType", itemForm) as
+		| EditorType
+		| undefined;
 
 	const refreshItems = async (dictId: string) => {
 		const data = await getDictItems({ data: { dictId } });
@@ -211,11 +235,17 @@ function DictsPage() {
 				label: item.label,
 				value: item.value,
 				sortOrder: item.sortOrder,
+				extraType: item.extraType ?? undefined,
+				extra: item.extra ?? undefined,
+				color: item.color ?? undefined,
 			});
+			// 编辑时如果已存在高级配置则自动展开
+			setAdvancedExpanded(!!(item.extraType || item.extra || item.color));
 		} else {
 			setEditingItem(null);
 			itemForm.resetFields();
 			itemForm.setFieldsValue({ sortOrder: 0 });
+			setAdvancedExpanded(false);
 		}
 		setItemModalOpen(true);
 	};
@@ -223,6 +253,7 @@ function DictsPage() {
 	const closeItemModal = () => {
 		setItemModalOpen(false);
 		setEditingItem(null);
+		setAdvancedExpanded(false);
 		itemForm.resetFields();
 	};
 
@@ -236,6 +267,9 @@ function DictsPage() {
 						label: values.label as string,
 						value: values.value as string,
 						sortOrder: (values.sortOrder as number) ?? 0,
+						extraType: (values.extraType as string) || undefined,
+						extra: (values.extra as string) || undefined,
+						color: (values.color as string) || undefined,
 					},
 				});
 				message.success("条目更新成功");
@@ -246,6 +280,9 @@ function DictsPage() {
 						label: values.label as string,
 						value: values.value as string,
 						sortOrder: (values.sortOrder as number) ?? 0,
+						extraType: (values.extraType as string) || undefined,
+						extra: (values.extra as string) || undefined,
+						color: (values.color as string) || undefined,
 					},
 				});
 				message.success("条目创建成功");
@@ -273,25 +310,47 @@ function DictsPage() {
 		if (selectedDictId) refreshItems(selectedDictId);
 	};
 
+	/** 表格内直接修改排序或状态 */
+	const handleInlineUpdate = async (
+		id: string,
+		params: { sortOrder?: number; status?: string },
+	) => {
+		try {
+			await updateDictItemFn({ data: { id, ...params } });
+			if (selectedDictId) refreshItems(selectedDictId);
+		} catch (err) {
+			message.error(err instanceof Error ? err.message : "操作失败");
+		}
+	};
+
 	/** 字典类型表格列定义 */
 	const dictColumns = [
 		{
 			title: "字典名称",
 			dataIndex: "name",
 			key: "name",
-			render: (_: string, record: DictRecord) => (
-				<div
-					className={
-						selectedDictId === record.id
-							? "cursor-pointer font-medium text-primary"
-							: "cursor-pointer"
-					}
-					onClick={() => handleSelectDict(record.id)}
-				>
-					<div>{record.name}</div>
-					<div className="text-xs text-muted-foreground">{record.slug}</div>
-				</div>
-			),
+			render: (_: string, record: DictRecord) => {
+				const isActive = selectedDictId === record.id;
+				return (
+					<div className="flex items-center gap-2">
+						{isActive && (
+							<span className="w-1 h-6 rounded-full bg-blue-500 flex-shrink-0" />
+						)}
+						<div>
+							<div
+								className={
+									isActive
+										? "font-semibold text-blue-600 dark:text-blue-400"
+										: ""
+								}
+							>
+								{record.name}
+							</div>
+							<div className="text-xs text-muted-foreground">{record.slug}</div>
+						</div>
+					</div>
+				);
+			},
 		},
 		{
 			title: "操作",
@@ -325,17 +384,67 @@ function DictsPage() {
 			key: "value",
 			render: (val: string) => <code className="text-xs">{val}</code>,
 		},
-		{ title: "排序", dataIndex: "sortOrder", key: "sortOrder", width: 60 },
+		{
+			title: "排序",
+			dataIndex: "sortOrder",
+			key: "sortOrder",
+			width: 120,
+			render: (val: number, record: DictItemRecord) => (
+				<InputNumber
+					size="small"
+					className="w-full"
+					min={0}
+					value={val}
+					onChange={(v) => {
+						if (v != null && v !== val) {
+							handleInlineUpdate(record.id, { sortOrder: v });
+						}
+					}}
+				/>
+			),
+		},
 		{
 			title: "状态",
 			dataIndex: "status",
 			key: "status",
-			width: 70,
-			render: (val: string) => (
-				<Tag color={val === "active" ? "green" : "default"}>
-					{val === "active" ? "启用" : "禁用"}
-				</Tag>
+			width: 80,
+			render: (val: string, record: DictItemRecord) => (
+				<Switch
+					size="small"
+					checked={val === "active"}
+					checkedChildren="启用"
+					unCheckedChildren="禁用"
+					onChange={(checked) => {
+						handleInlineUpdate(record.id, {
+							status: checked ? "active" : "disabled",
+						});
+					}}
+				/>
 			),
+		},
+		{
+			title: "额外类型",
+			dataIndex: "extraType",
+			key: "extraType",
+			width: 110,
+			render: (val: string | null) =>
+				val ? (EDITOR_TYPE_LABELS[val as EditorType] ?? val) : "—",
+		},
+		{
+			title: "额外值",
+			dataIndex: "extra",
+			key: "extra",
+			width: 120,
+			ellipsis: true,
+			render: (val: string | null) => val || "—",
+		},
+		{
+			title: "颜色",
+			dataIndex: "color",
+			key: "color",
+			width: 80,
+			render: (val: string | null) =>
+				val ? <Tag color={val}>{val}</Tag> : "—",
 		},
 		{
 			title: "操作",
@@ -360,35 +469,66 @@ function DictsPage() {
 		},
 	];
 
+	const selectedDict = dictList.find((d) => d.id === selectedDictId);
+
 	return (
-		<AdminPageContent
-			title="字典管理"
-			extra={
-				<Button
-					type="primary"
-					icon={<PlusOutlined />}
-					onClick={() => openDictModal()}
-				>
-					新建字典
-				</Button>
-			}
-		>
-			<Row gutter={16}>
+		<AdminPageContent title="字典管理">
+			<Row gutter={20}>
 				<Col span={8}>
-					<Table
-						dataSource={dictList}
-						columns={dictColumns}
-						rowKey="id"
+					<Card
 						size="small"
-						pagination={false}
-						locale={{ emptyText: "暂无字典" }}
-					/>
+						title="字典类型"
+						extra={
+							<Button
+								type="primary"
+								size="small"
+								icon={<PlusOutlined />}
+								onClick={() => openDictModal()}
+							>
+								新建字典
+							</Button>
+						}
+						styles={{ body: { padding: 0 } }}
+					>
+						<Table
+							dataSource={dictList}
+							columns={dictColumns}
+							rowKey="id"
+							size="small"
+							showHeader={false}
+							pagination={false}
+							locale={{ emptyText: "暂无字典" }}
+							onRow={(record) => ({
+								onClick: () => handleSelectDict(record.id),
+								style: { cursor: "pointer" },
+							})}
+							rowClassName={(record) =>
+								selectedDictId === record.id
+									? "bg-blue-50/80 dark:bg-blue-950/40"
+									: ""
+							}
+						/>
+					</Card>
 				</Col>
 				<Col span={16}>
-					{selectedDictId ? (
-						<div>
-							<div className="mb-3 flex items-center justify-between">
-								<span className="text-sm text-muted-foreground">字典条目</span>
+					<Card
+						size="small"
+						title={
+							selectedDictId ? (
+								<span className="text-sm">
+									<span className="font-medium">
+										{selectedDict?.name ?? "—"}
+									</span>
+									<span className="text-muted-foreground ml-2">
+										· 条目 ({items.length})
+									</span>
+								</span>
+							) : (
+								"字典条目"
+							)
+						}
+						extra={
+							selectedDictId ? (
 								<Button
 									type="primary"
 									size="small"
@@ -397,7 +537,11 @@ function DictsPage() {
 								>
 									新建条目
 								</Button>
-							</div>
+							) : undefined
+						}
+						styles={{ body: { padding: 0 } }}
+					>
+						{selectedDictId ? (
 							<Table
 								dataSource={items}
 								columns={itemColumns}
@@ -406,12 +550,12 @@ function DictsPage() {
 								pagination={false}
 								locale={{ emptyText: "暂无条目" }}
 							/>
-						</div>
-					) : (
-						<div className="flex items-center justify-center rounded-lg border py-16 text-sm text-muted-foreground">
-							请选择左侧字典查看条目
-						</div>
-					)}
+						) : (
+							<div className="flex items-center justify-center py-16 text-sm text-muted-foreground">
+								请选择左侧字典查看条目
+							</div>
+						)}
+					</Card>
 				</Col>
 			</Row>
 
@@ -458,6 +602,7 @@ function DictsPage() {
 				open={itemModalOpen}
 				onCancel={closeItemModal}
 				footer={null}
+				width={advancedExpanded ? 720 : 520}
 				destroyOnClose
 			>
 				<Form
@@ -480,9 +625,74 @@ function DictsPage() {
 					>
 						<Input placeholder="存储值" />
 					</Form.Item>
-					<Form.Item name="sortOrder" label="排序">
-						<InputNumber className="w-full" min={0} placeholder="排序序号" />
-					</Form.Item>
+					<Divider plain style={{ margin: "8px 0 12px" }}>
+						<Button
+							type="link"
+							size="small"
+							className="px-0 text-xs"
+							icon={
+								advancedExpanded ? <CaretUpOutlined /> : <CaretDownOutlined />
+							}
+							onClick={() => setAdvancedExpanded(!advancedExpanded)}
+						>
+							高级配置
+						</Button>
+					</Divider>
+					{advancedExpanded && (
+						<>
+							<Row gutter={16}>
+								<Col span={12}>
+									<Form.Item name="sortOrder" label="排序">
+										<InputNumber
+											className="w-full"
+											min={0}
+											placeholder="排序序号"
+										/>
+									</Form.Item>
+								</Col>
+								<Col span={12}>
+									<Form.Item
+										name="color"
+										label="颜色"
+										getValueFromEvent={(
+											color: { toHexString?: () => string } | string,
+										) =>
+											typeof color === "string"
+												? color
+												: (color?.toHexString?.() ?? undefined)
+										}
+									>
+										<ColorPicker allowClear format="hex" />
+									</Form.Item>
+								</Col>
+							</Row>
+							<Form.Item name="extraType" label="额外类型">
+								<Select
+									allowClear
+									placeholder="选择编辑器类型"
+									options={EDITOR_TYPES.map((t) => ({
+										label: EDITOR_TYPE_LABELS[t],
+										value: t,
+									}))}
+								/>
+							</Form.Item>
+							{watchedExtraType ? (
+								<Form.Item name="extra" label="额外值">
+									<TypeAwareEditor
+										type={watchedExtraType}
+										placeholder="额外扩展值"
+									/>
+								</Form.Item>
+							) : (
+								<Form.Item name="extra" label="额外值">
+									<Input.TextArea
+										rows={3}
+										placeholder="额外扩展值（选择额外类型后可切换编辑器）"
+									/>
+								</Form.Item>
+							)}
+						</>
+					)}
 					<Form.Item className="mb-0 text-right">
 						<Space>
 							<Button onClick={closeItemModal}>取消</Button>
