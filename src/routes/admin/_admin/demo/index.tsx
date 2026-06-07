@@ -7,8 +7,11 @@ import { Card, Space, Switch, Typography } from "antd";
 import { useState } from "react";
 import { AdminPageContent } from "#/components/admin/AdminPageContent";
 import { TypeAwareEditor } from "#/components/admin/TypeAwareEditor";
-import type { EditorType } from "#/lib/editor-types";
-import { EDITOR_TYPE_LABELS, EDITOR_TYPES } from "#/lib/editor-types";
+import type { EditorType } from "#/lib/editor-types/editor-types";
+import {
+	EDITOR_TYPE_LABELS,
+	EDITOR_TYPES,
+} from "#/lib/editor-types/editor-types";
 
 const { Text } = Typography;
 

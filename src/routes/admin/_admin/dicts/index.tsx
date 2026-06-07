@@ -34,8 +34,11 @@ import { useState } from "react";
 import { z } from "zod";
 import { AdminPageContent } from "#/components/admin/AdminPageContent";
 import { TypeAwareEditor } from "#/components/admin/TypeAwareEditor";
-import type { EditorType } from "#/lib/editor-types";
-import { EDITOR_TYPE_LABELS, EDITOR_TYPES } from "#/lib/editor-types";
+import type { EditorType } from "#/lib/editor-types/editor-types";
+import {
+	EDITOR_TYPE_LABELS,
+	EDITOR_TYPES,
+} from "#/lib/editor-types/editor-types";
 import { PERMISSIONS } from "#/lib/permissions/permissions";
 import { permGuard } from "#/middleware/server-fn-auth";
 import type { DictItemRecord, DictRecord } from "#/server/dict/dict.server";

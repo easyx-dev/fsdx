@@ -80,6 +80,125 @@ const fileListSchema = z.object({
 	status: z.string().optional(),
 });
 
+// ── 系统初始化 ──
+const initSchema = z
+	.object({
+		username: z.string().min(1).max(50),
+		password: z.string().min(6).max(100),
+		confirmPassword: z.string().min(1),
+		email: z.string().email(),
+		siteName: z.string().default("FSDX CMS"),
+		smtpHost: z.string().optional(),
+		smtpPort: z.number().int().optional(),
+		smtpSecure: z.boolean().optional(),
+		smtpUser: z.string().optional(),
+		smtpPass: z.string().optional(),
+		smtpFrom: z.string().optional(),
+	})
+	.refine((d) => d.password === d.confirmPassword, {
+		message: "两次输入的密码不一致",
+		path: ["confirmPassword"],
+	});
+
+// ── 字典管理 ──
+const dictIdSchema = z.object({ dictId: z.string().min(1) });
+const updateDictSchema = z.object({
+	id: z.string().min(1),
+	name: z.string().min(1).max(100).optional(),
+	description: z.string().optional(),
+});
+const dictItemCreateSchema = z.object({
+	dictId: z.string().min(1),
+	label: z.string().min(1).max(100),
+	value: z.string().min(1).max(100),
+	sortOrder: z.number().default(0),
+	extraType: z.string().optional(),
+	extra: z.string().optional(),
+	color: z.string().optional(),
+});
+const dictItemUpdateSchema = z.object({
+	id: z.string().min(1),
+	label: z.string().max(100).optional(),
+	value: z.string().max(100).optional(),
+	sortOrder: z.number().optional(),
+	status: z.string().optional(),
+	extraType: z.string().optional(),
+	extra: z.string().optional(),
+	color: z.string().optional(),
+});
+
+// ── 系统配置 ──
+const updateConfigSchema = z.object({
+	id: z.string().min(1),
+	value: z.string().optional(),
+	description: z.string().optional(),
+});
+
+// ── 角色管理 ──
+const roleListSchema = z.object({ keyword: z.string().optional() });
+const roleCreateSchema = z.object({
+	name: z.string().min(1).max(50),
+	slug: z.string().min(1).max(50),
+	permissions: z.array(z.string()).default([]),
+	description: z.string().optional(),
+});
+const roleUpdateSchema = z.object({
+	id: z.string().min(1),
+	name: z.string().min(1).max(50).optional(),
+	slug: z.string().min(1).max(50).optional(),
+	permissions: z.array(z.string()).optional(),
+	description: z.string().optional(),
+});
+
+// ── 管理员用户管理 ──
+const adminUserCreateSchema = z.object({
+	username: z.string().min(1).max(50),
+	email: z.string().email().max(255),
+	password: z.string().min(6).max(100),
+	roleId: z.string().min(1),
+});
+const adminUserUpdateSchema = z.object({
+	id: z.string().min(1),
+	username: z.string().min(1).max(50).optional(),
+	email: z.string().email().max(255).optional(),
+	roleId: z.string().optional(),
+	status: z.string().optional(),
+});
+const resetPwdSchema = z.object({
+	id: z.string().min(1),
+	password: z.string().min(6).max(100),
+});
+
+// ── 客户端用户管理 ──
+const clientUserCreateSchema = z.object({
+	username: z.string().min(1).max(50),
+	email: z.string().email().max(255),
+	password: z.string().min(6).max(100),
+});
+const clientUserUpdateSchema = z.object({
+	id: z.string().min(1),
+	username: z.string().min(1).max(50).optional(),
+	email: z.string().email().max(255).optional(),
+	status: z.string().optional(),
+	emailVerified: z.boolean().optional(),
+});
+
+// ── 日志查询 ──
+const searchLogsSchema = z.object({
+	startDate: z.string().optional(),
+	endDate: z.string().optional(),
+	keyword: z.string().optional(),
+	level: z.string().optional(),
+	page: z.number().optional(),
+	pageSize: z.number().optional(),
+});
+
+// ── 前台新闻列表分页 ──
+const publishedNewsSchema = z.object({
+	page: z.number().int().min(1).optional().default(1),
+	pageSize: z.number().int().min(1).max(50).optional().default(12),
+});
+
 // ═══════════════════════════════════════════════════════════
 // 验证测试
 // ═══════════════════════════════════════════════════════════
@@ -288,5 +407,366 @@ describe("fileListSchema", () => {
 
 	it("带 status 参数通过", () => {
 		expect(fileListSchema.safeParse({ status: "temp" }).success).toBe(true);
+	});
+});
+
+describe("initSchema（系统初始化）", () => {
+	it("合法输入校验通过", () => {
+		const result = initSchema.safeParse({
+			username: "admin",
+			password: "123456",
+			confirmPassword: "123456",
+			email: "admin@example.com",
+		});
+		expect(result.success).toBe(true);
+		if (result.success) {
+			expect(result.data.siteName).toBe("FSDX CMS");
+		}
+	});
+
+	it("两次密码不一致失败", () => {
+		const result = initSchema.safeParse({
+			username: "admin",
+			password: "123456",
+			confirmPassword: "654321",
+			email: "admin@example.com",
+		});
+		expect(result.success).toBe(false);
+	});
+
+	it("邮箱格式错误失败", () => {
+		expect(
+			initSchema.safeParse({
+				username: "admin",
+				password: "123456",
+				confirmPassword: "123456",
+				email: "invalid",
+			}).success,
+		).toBe(false);
+	});
+
+	it("密码不足 6 位失败", () => {
+		expect(
+			initSchema.safeParse({
+				username: "admin",
+				password: "12345",
+				confirmPassword: "12345",
+				email: "admin@example.com",
+			}).success,
+		).toBe(false);
+	});
+});
+
+describe("dictIdSchema", () => {
+	it("有效 dictId 通过", () => {
+		expect(dictIdSchema.safeParse({ dictId: "d-1" }).success).toBe(true);
+	});
+
+	it("空 dictId 失败", () => {
+		expect(dictIdSchema.safeParse({ dictId: "" }).success).toBe(false);
+	});
+});
+
+describe("updateDictSchema", () => {
+	it("全字段更新通过", () => {
+		expect(
+			updateDictSchema.safeParse({
+				id: "d-1",
+				name: "新名称",
+				description: "新描述",
+			}).success,
+		).toBe(true);
+	});
+
+	it("仅更新 description 通过", () => {
+		expect(
+			updateDictSchema.safeParse({ id: "d-1", description: "新描述" }).success,
+		).toBe(true);
+	});
+
+	it("缺少 id 失败", () => {
+		expect(updateDictSchema.safeParse({ name: "x" }).success).toBe(false);
+	});
+});
+
+describe("dictItemCreateSchema", () => {
+	it("最小字段创建通过", () => {
+		const result = dictItemCreateSchema.safeParse({
+			dictId: "d-1",
+			label: "标签",
+			value: "val",
+		});
+		expect(result.success).toBe(true);
+		if (result.success) expect(result.data.sortOrder).toBe(0);
+	});
+
+	it("label 为空失败", () => {
+		expect(
+			dictItemCreateSchema.safeParse({
+				dictId: "d-1",
+				label: "",
+				value: "val",
+			}).success,
+		).toBe(false);
+	});
+});
+
+describe("dictItemUpdateSchema", () => {
+	it("部分字段更新通过", () => {
+		expect(
+			dictItemUpdateSchema.safeParse({
+				id: "di-1",
+				label: "新标签",
+				sortOrder: 10,
+			}).success,
+		).toBe(true);
+	});
+
+	it("缺少 id 失败", () => {
+		expect(dictItemUpdateSchema.safeParse({ label: "x" }).success).toBe(false);
+	});
+});
+
+describe("updateConfigSchema", () => {
+	it("合法更新通过", () => {
+		expect(
+			updateConfigSchema.safeParse({
+				id: "c-1",
+				value: "new value",
+				description: "desc",
+			}).success,
+		).toBe(true);
+	});
+
+	it("仅更新 description 通过", () => {
+		expect(
+			updateConfigSchema.safeParse({
+				id: "c-1",
+				description: "desc",
+			}).success,
+		).toBe(true);
+	});
+
+	it("缺少 id 失败", () => {
+		expect(updateConfigSchema.safeParse({ value: "v" }).success).toBe(false);
+	});
+});
+
+describe("roleListSchema", () => {
+	it("无参数通过", () => {
+		expect(roleListSchema.safeParse({}).success).toBe(true);
+	});
+
+	it("带关键词通过", () => {
+		expect(roleListSchema.safeParse({ keyword: "admin" }).success).toBe(true);
+	});
+});
+
+describe("roleCreateSchema", () => {
+	it("合法输入通过", () => {
+		const result = roleCreateSchema.safeParse({
+			name: "编辑者",
+			slug: "editor",
+			permissions: ["news:read", "news:create"],
+		});
+		expect(result.success).toBe(true);
+		if (result.success) {
+			expect(result.data.permissions).toEqual(["news:read", "news:create"]);
+		}
+	});
+
+	it("permissions 默认空数组", () => {
+		const result = roleCreateSchema.safeParse({
+			name: "查看者",
+			slug: "viewer",
+		});
+		expect(result.success).toBe(true);
+		if (result.success) expect(result.data.permissions).toEqual([]);
+	});
+
+	it("name 为空失败", () => {
+		expect(roleCreateSchema.safeParse({ name: "", slug: "e" }).success).toBe(
+			false,
+		);
+	});
+});
+
+describe("roleUpdateSchema", () => {
+	it("部分字段更新通过", () => {
+		expect(
+			roleUpdateSchema.safeParse({
+				id: "r-1",
+				permissions: ["news:read"],
+			}).success,
+		).toBe(true);
+	});
+
+	it("slug 不可为空字符串", () => {
+		expect(roleUpdateSchema.safeParse({ id: "r-1", slug: "" }).success).toBe(
+			false,
+		);
+	});
+
+	it("缺少 id 失败", () => {
+		expect(roleUpdateSchema.safeParse({ name: "x" }).success).toBe(false);
+	});
+});
+
+describe("adminUserCreateSchema", () => {
+	it("合法输入通过", () => {
+		expect(
+			adminUserCreateSchema.safeParse({
+				username: "admin",
+				email: "admin@example.com",
+				password: "123456",
+				roleId: "r-1",
+			}).success,
+		).toBe(true);
+	});
+
+	it("缺少 roleId 失败", () => {
+		expect(
+			adminUserCreateSchema.safeParse({
+				username: "admin",
+				email: "admin@example.com",
+				password: "123456",
+			}).success,
+		).toBe(false);
+	});
+
+	it("邮箱格式错误失败", () => {
+		expect(
+			adminUserCreateSchema.safeParse({
+				username: "admin",
+				email: "bad",
+				password: "123456",
+				roleId: "r-1",
+			}).success,
+		).toBe(false);
+	});
+});
+
+describe("adminUserUpdateSchema", () => {
+	it("部分字段更新通过", () => {
+		expect(
+			adminUserUpdateSchema.safeParse({
+				id: "u-1",
+				status: "disabled",
+			}).success,
+		).toBe(true);
+	});
+
+	it("缺少 id 失败", () => {
+		expect(adminUserUpdateSchema.safeParse({ username: "x" }).success).toBe(
+			false,
+		);
+	});
+});
+
+describe("resetPwdSchema（管理员/客户端用户共用）", () => {
+	it("合法输入通过", () => {
+		expect(
+			resetPwdSchema.safeParse({ id: "u-1", password: "newpwd1" }).success,
+		).toBe(true);
+	});
+
+	it("密码不足 6 位失败", () => {
+		expect(
+			resetPwdSchema.safeParse({ id: "u-1", password: "12345" }).success,
+		).toBe(false);
+	});
+
+	it("缺少 id 失败", () => {
+		expect(resetPwdSchema.safeParse({ password: "123456" }).success).toBe(
+			false,
+		);
+	});
+});
+
+describe("clientUserCreateSchema", () => {
+	it("合法输入通过", () => {
+		expect(
+			clientUserCreateSchema.safeParse({
+				username: "user",
+				email: "user@example.com",
+				password: "123456",
+			}).success,
+		).toBe(true);
+	});
+
+	it("密码不足 6 位失败", () => {
+		expect(
+			clientUserCreateSchema.safeParse({
+				username: "user",
+				email: "user@example.com",
+				password: "12345",
+			}).success,
+		).toBe(false);
+	});
+});
+
+describe("clientUserUpdateSchema", () => {
+	it("部分字段更新通过", () => {
+		expect(
+			clientUserUpdateSchema.safeParse({
+				id: "u-1",
+				emailVerified: true,
+			}).success,
+		).toBe(true);
+	});
+
+	it("缺少 id 失败", () => {
+		expect(clientUserUpdateSchema.safeParse({ username: "x" }).success).toBe(
+			false,
+		);
+	});
+});
+
+describe("searchLogsSchema", () => {
+	it("无参数通过", () => {
+		expect(searchLogsSchema.safeParse({}).success).toBe(true);
+	});
+
+	it("全部参数通过", () => {
+		expect(
+			searchLogsSchema.safeParse({
+				startDate: "2025-01-01",
+				endDate: "2025-01-31",
+				keyword: "error",
+				level: "error",
+				page: 1,
+				pageSize: 20,
+			}).success,
+		).toBe(true);
+	});
+});
+
+describe("publishedNewsSchema（前台新闻列表分页）", () => {
+	it("无参数使用默认值", () => {
+		const result = publishedNewsSchema.safeParse({});
+		expect(result.success).toBe(true);
+		if (result.success) {
+			expect(result.data.page).toBe(1);
+			expect(result.data.pageSize).toBe(12);
+		}
+	});
+
+	it("pageSize 超过 50 失败", () => {
+		expect(publishedNewsSchema.safeParse({ pageSize: 100 }).success).toBe(
+			false,
+		);
+	});
+
+	it("page 小于 1 失败", () => {
+		expect(publishedNewsSchema.safeParse({ page: 0 }).success).toBe(false);
+	});
+
+	it("自定义分页通过", () => {
+		const result = publishedNewsSchema.safeParse({ page: 2, pageSize: 6 });
+		expect(result.success).toBe(true);
+		if (result.success) {
+			expect(result.data.page).toBe(2);
+			expect(result.data.pageSize).toBe(6);
+		}
 	});
 });

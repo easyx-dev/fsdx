@@ -16,7 +16,7 @@ const CodeEditor = lazy(() =>
 	})),
 );
 
-import type { EditorType } from "#/lib/editor-types";
+import type { EditorType } from "#/lib/editor-types/editor-types";
 export type { EditorType };
 
 export interface TypeAwareEditorProps {

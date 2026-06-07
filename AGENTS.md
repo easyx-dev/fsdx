@@ -18,44 +18,35 @@ src/
 │   ├── index.ts              # Drizzle 客户端实例化
 │   └── schema/               # 数据库表定义（按模块拆分）
 ├── lib/                      # 基础库（无业务逻辑）
-│   ├── env.ts                # 环境变量统一管理（zod 校验 + getEnv()）
-│   ├── logger.ts             # pino 日志（multistream，按天写入文件）
-│   ├── cache.ts              # 内存缓存（字典、系统配置）
-│   ├── storage.ts            # 文件存储抽象层（本地实现）
-│   ├── jwt.ts                # JWT 签发与校验（jose）
-│   ├── mail.ts               # 邮件发送（nodemailer，SMTP 配置从系统配置表读取）
-│   ├── permissions.ts        # 权限码常量
-│   ├── scheduler.ts          # 定时任务调度（cron）
-│   └── log-reader.ts         # 管理端日志文件查询
+│   ├── cache/                # 内存缓存（字典、系统配置）
+│   ├── editor-types/         # 编辑器类型常量（类型、标签映射）
+│   ├── jwt/                  # JWT 签发与校验（jose）
+│   ├── logger/               # pino 日志 + 管理端日志文件查询
+│   ├── mail/                 # 邮件发送
+│   ├── permissions/          # 权限码常量
+│   ├── scheduler/            # 定时任务调度（cron）
+│   ├── storage/              # 文件存储抽象层（本地实现）
+│   └── utils/                # 通用工具函数（cn、分页等）
 ├── middleware/
 │   └── server-fn-auth.ts     # Server Function 鉴权与权限中间件（createMiddleware）
 ├── server/                   # 服务端业务逻辑
 │   ├── auth/
 │   │   ├── auth.server.ts        # 认证核心逻辑（登录、注册、当前用户查询）
 │   │   └── auth.types.ts         # 认证模块共享类型（AuthUser 等）
-│   ├── captcha/
-│   │   └── captcha.server.ts     # 验证码生成、发送、校验
-│   ├── config/
-│   │   └── config.server.ts      # 系统配置管理 + 缓存
-│   ├── dict/
-│   │   └── dict.server.ts        # 字典管理 + 缓存
+│   ├── captcha/              # 验证码生成、发送、校验
+│   ├── config/               # 系统配置管理 + 缓存（SMTP 从系统配置表读取）
+│   ├── dict/                 # 字典管理 + 缓存
 │   ├── file/
 │   │   ├── file.server.ts        # 文件管理辅助函数（上传逻辑、清理、列表、删除）
 │   │   └── file.functions.ts     # 文件管理 Server Function 包装器
-│   ├── admin-user/
-│   │   └── admin-user.server.ts      # 管理员用户 CRUD
-│   ├── client-user/
-│   │   └── client-user.server.ts     # 客户端用户 CRUD
-│   ├── init/
-│   │   └── init.server.ts            # 系统初始化
-│   ├── role/
-│   │   └── role.server.ts            # 角色管理
-│   ├── stats/
-│   │   └── stats.server.ts       # 仪表盘统计
-│   ├── logs/
-│   │   └── logs.server.ts        # 日志查询
-│   └── tasks/
-│       └── tasks.server.ts       # 定时任务注册
+│   ├── admin-user/           # 管理员用户 CRUD
+│   ├── client-user/          # 客户端用户 CRUD
+│   ├── init/                 # 系统初始化
+│   ├── news/                 # 新闻 CRUD
+│   ├── role/                 # 角色管理
+│   ├── stats/                # 仪表盘统计
+│   ├── logs/                 # 日志查询
+│   └── tasks/                # 定时任务注册
 ├── routes/
 │   ├── __root.tsx            # 根布局（HTML shell）
 │   ├── index.tsx             # 前台首页（新闻列表 SSR）
@@ -114,6 +105,7 @@ src/
 - 路由文件中 `createServerFn` 的 handler 内部引用 `.server.ts` 的函数是安全的——编译器会在客户端构建时移除整个 handler
 - 禁止在路由文件顶层直接调用或导出 `.server.ts` 中的函数（超出 handler 边界）
 - 混合 barrel（同时导出类型和运行时值）应拆分：类型走 `.types.ts`，运行时值走 `.server.ts` 或 `.functions.ts`
+- `src/lib/` 和 `src/server/` 下禁止直接放置文件，所有模块必须组织到独立子目录中（例如 `lib/permissions/permissions.ts` 而非 `lib/permissions.ts`）；子目录内文件名与目录名对应（如 `permissions/permissions.ts`）
 
 ### 鉴权中间件
 
@@ -172,9 +164,14 @@ src/
 
 - 测试文件与被测模块同目录，放在 `__tests__/` 子目录下
 - 文件名：`<模块名>.test.ts`
-- 每个 `src/server/` 模块必须覆盖其所有导出函数的测试
+- 每个 `src/server/` 和 `src/lib/` 模块必须覆盖其所有导出函数的测试
 
 ```
+src/lib/permissions/
+├── permissions.ts
+└── __tests__/
+    └── permissions.test.ts
+
 src/server/config/
 ├── config.server.ts
 └── __tests__/
@@ -222,12 +219,19 @@ import { getConfig } from "#/server/config/config.server";
 - 源模块导入**必须**在所有 `vi.mock` 之后，确保 mock 先生效
 - `mockDb` 必须包含所有表对应的 `query` 方法（即使当前模块不查询），避免其他模块交叉引用时报 undefined
 - `vi.clearAllMocks()` 在 `beforeEach` 中调用，保证测试隔离
+- 纯类型/常量模块（无服务端依赖）的测试无需 mock，直接从源模块导入（如 `src/lib/permissions/__tests__/permissions.test.ts`）
 
 ### 命名与覆盖
 
 - `describe` 名称对应被测函数名，`it` 名称描述具体场景（中文）
 - 每个导出函数至少覆盖：正常路径、边界条件（空值/不存在）、错误路径
 - `pnpm test -- --run` 运行全部测试（不加 `--run` 为 watch 模式）
+
+### 路由层 Server Function 测试
+
+- `src/routes/` 下所有 `createServerFn` 的 `inputValidator` zod schema 必须编写校验测试
+- 测试文件统一放在 `src/routes/__tests__/sf-schemas.test.ts`
+- schema 测试仅校验合法输入通过、非法输入失败，不涉及 handler 业务逻辑（后者由 `src/server/` 服务层测试覆盖）
 
 ## 组件约定
 
