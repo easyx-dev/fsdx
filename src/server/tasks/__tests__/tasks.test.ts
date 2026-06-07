@@ -17,7 +17,7 @@ vi.mock("#/server/file", () => ({
 	cleanExpiredFiles: vi.fn().mockResolvedValue(0),
 }));
 
-import { registerAllTasks } from "#/server/tasks";
+import { registerAllTasks } from "#/server/tasks/tasks.server";
 
 describe("registerAllTasks", () => {
 	it("注册两个定时任务", () => {

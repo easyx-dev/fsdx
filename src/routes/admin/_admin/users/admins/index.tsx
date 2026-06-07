@@ -36,8 +36,8 @@ import {
 	resetAdminPassword,
 	type UpdateAdminUserInput,
 	updateAdminUser,
-} from "#/server/admin-user";
-import { getRoleList as getRoleListService } from "#/server/role";
+} from "#/server/admin-user/admin-user.server";
+import { getRoleList as getRoleListService } from "#/server/role/role.server";
 
 // ─── Server Functions ──────────────────────────────────────────────
 
@@ -423,4 +423,4 @@ function AdminsPage() {
 	);
 }
 
-import type { RoleRecord } from "#/server/role";
+import type { RoleRecord } from "#/server/role/role.server";

@@ -24,13 +24,13 @@ import { z } from "zod";
 import { AdminPageContent } from "#/components/admin/AdminPageContent";
 import { PERMISSIONS } from "#/lib/permissions/permissions";
 import { permGuard } from "#/middleware/server-fn-auth";
-import type { FileRecord } from "#/server/file";
+import { uploadFile } from "#/server/file/file.functions";
+import type { FileRecord } from "#/server/file/file.server";
 import {
 	deleteFile,
 	getFileList as getFileListService,
 	makePermanent,
-	uploadFile,
-} from "#/server/file";
+} from "#/server/file/file.server";
 
 const fileListSchema = z.object({ status: z.string().optional() });
 const idSchema = z.object({ id: z.string().min(1) });

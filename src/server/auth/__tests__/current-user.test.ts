@@ -33,7 +33,7 @@ const { mockDb } = vi.hoisted(() => {
 });
 vi.mock("#/db", () => ({ db: mockDb }));
 
-import { getCurrentUser } from "#/server/auth";
+import { getCurrentUser } from "#/server/auth/auth.server";
 
 describe("getCurrentUser", () => {
 	beforeEach(() => vi.clearAllMocks());
@@ -91,6 +91,8 @@ describe("getCurrentUser", () => {
 			id: "c-1",
 			username: "client",
 			email: "c@t.com",
+			avatar: undefined,
+			isRoot: false,
 			userType: "client",
 		});
 	});

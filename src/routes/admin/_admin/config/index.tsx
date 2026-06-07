@@ -31,7 +31,7 @@ import {
 	deleteConfig,
 	getConfigList as getConfigListService,
 	updateConfig,
-} from "#/server/config";
+} from "#/server/config/config.server";
 
 const { Text } = Typography;
 

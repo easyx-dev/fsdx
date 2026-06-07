@@ -16,8 +16,8 @@ import {
 import { useEffect, useState } from "react";
 import { z } from "zod";
 import { COOKIE_NAMES } from "#/lib/jwt/jwt";
-import { adminLoginService } from "#/server/auth";
-import { checkInitStatus } from "#/server/init";
+import { adminLoginService } from "#/server/auth/auth.server";
+import { checkInitStatus } from "#/server/init/init.server";
 
 const checkInitStatusFn = createServerFn({ method: "GET" }).handler(
 	async () => {

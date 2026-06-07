@@ -29,7 +29,7 @@ import {
 	checkInitStatus as checkInitStatusService,
 	type InitData,
 	initSystem,
-} from "#/server/init";
+} from "#/server/init/init.server";
 
 const checkInitStatusFn = createServerFn({ method: "GET" }).handler(
 	async () => {

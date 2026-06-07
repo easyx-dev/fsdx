@@ -11,7 +11,7 @@ import { CaptchaInput } from "#/components/CaptchaInput";
 import { Button } from "#/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "#/components/ui/card";
 import { Input } from "#/components/ui/input";
-import { clientRegisterService } from "#/server/auth";
+import { clientRegisterService } from "#/server/auth/auth.server";
 
 const registerSchema = z.object({
 	username: z.string().min(1, "用户名不能为空").max(50),

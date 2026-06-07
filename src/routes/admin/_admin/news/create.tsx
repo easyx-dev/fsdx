@@ -10,7 +10,7 @@ import { AdminPageContent } from "#/components/admin/AdminPageContent";
 import { NewsEditor } from "#/components/admin/NewsEditor";
 import { PERMISSIONS } from "#/lib/permissions/permissions";
 import { permGuard } from "#/middleware/server-fn-auth";
-import { createNews } from "#/server/news";
+import { createNews } from "#/server/news/news.server";
 
 const createSchema = z.object({
 	title: z.string().min(1, "标题不能为空").max(500),

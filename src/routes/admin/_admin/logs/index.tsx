@@ -29,7 +29,7 @@ import {
 	type LogEntry,
 	type LogQueryResult,
 	searchLogs as searchLogsService,
-} from "#/server/logs";
+} from "#/server/logs/logs.server";
 
 const searchLogsSchema = z.object({
 	startDate: z.string().optional(),

@@ -173,19 +173,6 @@ export function AdminLayout({ children }: { children: ReactNode }) {
 		notification.config({ duration: 5 });
 	}, []);
 
-	/** 首字母头像颜色 */
-	const avatarColors = [
-		"bg-blue-500",
-		"bg-emerald-500",
-		"bg-violet-500",
-		"bg-amber-500",
-		"bg-rose-500",
-		"bg-cyan-500",
-	];
-	const avatarColor = user?.username
-		? avatarColors[user.username.charCodeAt(0) % avatarColors.length]
-		: "bg-blue-500";
-
 	return (
 		<div className="flex h-screen overflow-hidden bg-background">
 			{/* 侧边栏 */}

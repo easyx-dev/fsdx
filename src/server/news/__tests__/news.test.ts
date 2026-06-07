@@ -43,7 +43,7 @@ import {
 	getNewsById,
 	getNewsBySlug,
 	getNewsList,
-} from "#/server/news";
+} from "#/server/news/news.server";
 
 const newsRecord = {
 	id: "n-1",

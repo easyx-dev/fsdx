@@ -18,12 +18,12 @@ import { z } from "zod";
 import { AdminPageContent } from "#/components/admin/AdminPageContent";
 import { PERMISSIONS } from "#/lib/permissions/permissions";
 import { permGuard } from "#/middleware/server-fn-auth";
-import type { NewsRecord } from "#/server/news";
+import type { NewsRecord } from "#/server/news/news.server";
 import {
 	changeNewsStatus,
 	deleteNews,
 	getNewsList as getNewsListService,
-} from "#/server/news";
+} from "#/server/news/news.server";
 
 const listSchema = z.object({
 	status: z.string().optional(),

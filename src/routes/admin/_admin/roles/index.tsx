@@ -37,7 +37,7 @@ import {
 	type RoleRecord,
 	type UpdateRoleInput,
 	updateRole,
-} from "#/server/role";
+} from "#/server/role/role.server";
 
 // ─── Server Functions ──────────────────────────────────────────────
 

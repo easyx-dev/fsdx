@@ -11,7 +11,7 @@ vi.mock("#/lib/logger/log-reader", () => ({
 
 // 动态导入 #/lib/logger mock 引用
 import { queryLogs } from "#/lib/logger/log-reader";
-import { searchLogs } from "#/server/logs";
+import { searchLogs } from "#/server/logs/logs.server";
 
 describe("searchLogs", () => {
 	beforeEach(() => vi.clearAllMocks());

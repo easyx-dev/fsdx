@@ -6,7 +6,7 @@ import { eq } from "drizzle-orm";
 import { db } from "#/db/index";
 import { adminUser, role } from "#/db/schema";
 import { logger } from "#/lib/logger/logger";
-import { loadConfigCache, upsertConfig } from "#/server/config";
+import { loadConfigCache, upsertConfig } from "#/server/config/config.server";
 
 /** 初始化表单数据 */
 export interface InitData {

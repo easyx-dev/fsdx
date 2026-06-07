@@ -15,6 +15,11 @@ const config = defineConfig({
 			router: {
 				routeFileIgnorePattern: "__tests__",
 			},
+			importProtection: {
+				client: {
+					specifiers: ["bcryptjs", "drizzle-orm"],
+				},
+			},
 		}),
 		viteReact(),
 		// 注册服务启动前初始化插件，确保预置数据就绪后再开始接收请求

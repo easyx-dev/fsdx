@@ -37,7 +37,7 @@ import {
 	resetClientPassword,
 	type UpdateClientUserInput,
 	updateClientUser,
-} from "#/server/client-user";
+} from "#/server/client-user/client-user.server";
 
 // ─── Server Functions ──────────────────────────────────────────────
 

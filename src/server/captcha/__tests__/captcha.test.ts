@@ -39,7 +39,7 @@ const { mockDb } = vi.hoisted(() => {
 });
 vi.mock("#/db", () => ({ db: mockDb }));
 
-import { sendCaptcha, verifyCaptcha } from "#/server/captcha";
+import { sendCaptcha, verifyCaptcha } from "#/server/captcha/captcha.server";
 
 describe("sendCaptcha", () => {
 	beforeEach(() => vi.clearAllMocks());

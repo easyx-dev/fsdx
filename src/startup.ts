@@ -2,9 +2,9 @@ import { resolve } from "node:path";
 import { config } from "dotenv";
 import { definePlugin } from "nitro";
 import { logger } from "#/lib/logger/logger";
-import { ensurePresetConfigs } from "#/server/config";
-import { ensurePresetDicts } from "#/server/dict";
-import { registerAllTasks } from "#/server/tasks";
+import { ensurePresetConfigs } from "#/server/config/config.server";
+import { ensurePresetDicts } from "#/server/dict/dict.server";
+import { registerAllTasks } from "#/server/tasks/tasks.server";
 
 export default definePlugin(() => {
 	console.log("=======INIT START========");

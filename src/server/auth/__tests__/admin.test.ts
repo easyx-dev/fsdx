@@ -51,7 +51,7 @@ const { mockDb } = vi.hoisted(() => {
 vi.mock("#/db", () => ({ db: mockDb }));
 
 import bcrypt from "bcryptjs";
-import { adminLoginService } from "#/server/auth";
+import { adminLoginService } from "#/server/auth/auth.server";
 
 describe("adminLoginService", () => {
 	const mockUser = {

@@ -18,7 +18,9 @@ vi.mock("#/lib/jwt/jwt", () => ({ signToken: mockSignToken }));
 const { mockVerifyCaptcha } = vi.hoisted(() => ({
 	mockVerifyCaptcha: vi.fn(),
 }));
-vi.mock("#/server/captcha", () => ({ verifyCaptcha: mockVerifyCaptcha }));
+vi.mock("#/server/captcha/captcha.server", () => ({
+	verifyCaptcha: mockVerifyCaptcha,
+}));
 
 const { mockDb } = vi.hoisted(() => {
 	const q = () => ({ findFirst: vi.fn(), findMany: vi.fn() });
@@ -47,7 +49,10 @@ const { mockDb } = vi.hoisted(() => {
 vi.mock("#/db", () => ({ db: mockDb }));
 
 import bcrypt from "bcryptjs";
-import { clientLoginService, clientRegisterService } from "#/server/auth";
+import {
+	clientLoginService,
+	clientRegisterService,
+} from "#/server/auth/auth.server";
 
 const mockClientUser = {
 	id: "client-1",

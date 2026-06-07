@@ -58,7 +58,7 @@ import {
 	getConfig,
 	getConfigList,
 	loadConfigCache,
-} from "#/server/config";
+} from "#/server/config/config.server";
 
 describe("loadConfigCache", () => {
 	it("从 DB 加载配置到缓存", async () => {

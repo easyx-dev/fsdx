@@ -11,7 +11,7 @@ import { AdminPageContent } from "#/components/admin/AdminPageContent";
 import { NewsEditor } from "#/components/admin/NewsEditor";
 import { PERMISSIONS } from "#/lib/permissions/permissions";
 import { permGuard } from "#/middleware/server-fn-auth";
-import { getNewsById, updateNews } from "#/server/news";
+import { getNewsById, updateNews } from "#/server/news/news.server";
 
 const getSchema = z.object({ id: z.string().min(1) });
 const updateSchema = z.object({

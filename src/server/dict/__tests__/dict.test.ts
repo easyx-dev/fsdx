@@ -58,7 +58,7 @@ const { mockDb } = vi.hoisted(() => {
 });
 vi.mock("#/db", () => ({ db: mockDb }));
 
-import { createDict, deleteDict, getDictList } from "#/server/dict";
+import { createDict, deleteDict, getDictList } from "#/server/dict/dict.server";
 
 describe("getDictList", () => {
 	it("返回字典列表", async () => {

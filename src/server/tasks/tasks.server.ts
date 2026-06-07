@@ -4,7 +4,7 @@
 
 import { logger } from "#/lib/logger/logger";
 import { registerTask } from "#/lib/scheduler/scheduler";
-import { cleanExpiredFiles } from "#/server/file";
+import { cleanExpiredFiles } from "#/server/file/file.server";
 
 /** 注册所有定时任务 */
 export function registerAllTasks(): void {

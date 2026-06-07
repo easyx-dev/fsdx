@@ -12,8 +12,8 @@ import {
 	CardHeader,
 	CardTitle,
 } from "#/components/ui/card";
-import type { NewsRecord } from "#/server/news";
-import { getNewsList } from "#/server/news";
+import type { NewsRecord } from "#/server/news/news.server";
+import { getNewsList } from "#/server/news/news.server";
 
 const getLatestNews = createServerFn({ method: "GET" }).handler(async () => {
 	return getNewsList({ status: "published", pageSize: 6 });

@@ -24,7 +24,7 @@ import { z } from "zod";
 import { AdminPageContent } from "#/components/admin/AdminPageContent";
 import { PERMISSIONS } from "#/lib/permissions/permissions";
 import { permGuard } from "#/middleware/server-fn-auth";
-import type { DictItemRecord, DictRecord } from "#/server/dict";
+import type { DictItemRecord, DictRecord } from "#/server/dict/dict.server";
 import {
 	createDict,
 	createDictItem,
@@ -34,7 +34,7 @@ import {
 	getDictList as getDictListService,
 	updateDict,
 	updateDictItem,
-} from "#/server/dict";
+} from "#/server/dict/dict.server";
 
 const dictIdSchema = z.object({ dictId: z.string().min(1) });
 const idSchema = z.object({ id: z.string().min(1) });

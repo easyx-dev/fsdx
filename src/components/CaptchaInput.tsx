@@ -13,7 +13,7 @@ import {
 	generateImageCaptcha,
 	sendCaptcha,
 	verifyImageCaptcha,
-} from "#/server/captcha";
+} from "#/server/captcha/captcha.server";
 
 const getImageCaptcha = createServerFn({ method: "GET" }).handler(async () => {
 	return generateImageCaptcha();

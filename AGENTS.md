@@ -28,16 +28,34 @@ src/
 │   ├── scheduler.ts          # 定时任务调度（node-cron）
 │   └── log-reader.ts         # 管理端日志文件查询
 ├── middleware/
-│   └── auth.ts               # 鉴权中间件
+│   └── server-fn-auth.ts     # Server Function 鉴权与权限中间件（createMiddleware）
 ├── server/                   # 服务端业务逻辑
-│   ├── auth/                 # 认证模块（admin、client、common）
-│   ├── captcha.ts            # 验证码
-│   ├── config.ts             # 系统配置 + 缓存（含 upsertConfig）
-│   ├── dict.ts               # 字典管理 + 缓存
-│   ├── file.ts               # 文件上传/秒传/清理
-│   ├── init.ts               # 系统初始化（root 管理员创建 + 配置写入）
-│   ├── news.ts               # 新闻 CRUD
-│   └── tasks.ts              # 定时任务注册
+│   ├── auth/
+│   │   ├── auth.server.ts        # 认证核心逻辑（登录、注册、当前用户查询）
+│   │   └── auth.types.ts         # 认证模块共享类型（AuthUser 等）
+│   ├── captcha/
+│   │   └── captcha.server.ts     # 验证码生成、发送、校验
+│   ├── config/
+│   │   └── config.server.ts      # 系统配置管理 + 缓存
+│   ├── dict/
+│   │   └── dict.server.ts        # 字典管理 + 缓存
+│   ├── file/
+│   │   ├── file.server.ts        # 文件管理辅助函数（上传逻辑、清理、列表、删除）
+│   │   └── file.functions.ts     # 文件管理 Server Function 包装器
+│   ├── admin-user/
+│   │   └── admin-user.server.ts      # 管理员用户 CRUD
+│   ├── client-user/
+│   │   └── client-user.server.ts     # 客户端用户 CRUD
+│   ├── init/
+│   │   └── init.server.ts            # 系统初始化
+│   ├── role/
+│   │   └── role.server.ts            # 角色管理
+│   ├── stats/
+│   │   └── stats.server.ts       # 仪表盘统计
+│   ├── logs/
+│   │   └── logs.server.ts        # 日志查询
+│   └── tasks/
+│       └── tasks.server.ts       # 定时任务注册
 ├── routes/
 │   ├── __root.tsx            # 根布局（HTML shell）
 │   ├── index.tsx             # 前台首页（新闻列表 SSR）
@@ -47,6 +65,7 @@ src/
 │       ├── login.tsx         # 管理员登录
 │       └── _admin/           # 受保护管理端页面
 ├── router.tsx                # TanStack Router 实例
+├── start.ts                  # TanStack Start 入口配置（CSRF 中间件）
 └── styles.css                # 全局样式 + Tailwind
 ```
 
@@ -79,6 +98,44 @@ src/
 - 格式：`createServerFn({ method: "GET" | "POST" }).inputValidator(schema).handler(async ({ data }) => { ... })`
 - 调用方通过 `{ data: ... }` 传参
 
+### 文件命名约定
+
+遵循 TanStack Start 推荐的 `.server.ts` / `.functions.ts` / `.ts` 三层分离：
+
+| 后缀 | 用途 | 可导入位置 |
+|------|------|------------|
+| `.server.ts` | 服务端辅助函数（DB 查询、内部逻辑），不含 `createServerFn` | 仅 `.functions.ts` 和 `.server.ts`，禁止路由/组件直接导入 |
+| `.functions.ts` | `createServerFn` 包装器，对外暴露可调用的 RPC 接口 | 任何位置（路由 loader、组件、hook），构建时替换为 RPC stub |
+| `.ts`（无后缀） | 客户端安全代码（类型、常量、schema） | 任何位置 |
+| `.types.ts` | 纯类型定义，不含运行时值 | 任何位置（支持 type-only import） |
+
+规则：
+- `.server.ts` 之间的交叉引用使用完整路径（如 `#/server/config/config.server`）
+- 路由文件中 `createServerFn` 的 handler 内部引用 `.server.ts` 的函数是安全的——编译器会在客户端构建时移除整个 handler
+- 禁止在路由文件顶层直接调用或导出 `.server.ts` 中的函数（超出 handler 边界）
+- 混合 barrel（同时导出类型和运行时值）应拆分：类型走 `.types.ts`，运行时值走 `.server.ts` 或 `.functions.ts`
+
+### 鉴权中间件
+
+- 所有管理端 Server Function 使用 `src/middleware/server-fn-auth.ts` 的 `permGuard` 中间件
+- `permGuard(permission)` 组合 `authGuard` 先验证登录，再校验指定权限
+- `authGuard` 基于 TanStack Start `createMiddleware` 实现，从 Cookie 读取 JWT 并注入 `context.user` 和 `context.rolePermissions`
+- Root 管理员自动拥有 `**` 权限，无需查询角色表
+- 路由 `beforeLoad` 中通过 Server Function 调用 `getCurrentUser` 获取当前用户信息
+
+### CSRF 保护
+
+- `src/start.ts` 通过 `createCsrfMiddleware` 显式注册 CSRF 中间件
+- 过滤条件 `ctx.handlerType === 'serverFn'`，仅对 Server Function 请求生效
+- 默认校验 `Origin` / `Referer` / `Sec-Fetch-Site` 头，拒绝跨站请求
+
+### Import Protection
+
+- 构建时启用 TanStack Start import protection（默认配置）
+- 默认规则：客户端构建禁止导入 `*.server.*` 文件；服务端构建禁止导入 `*.client.*` 文件
+- `vite.config.ts` 额外配置：客户端禁止导入 `bcryptjs` 和 `drizzle-orm`（防止服务端包泄漏）
+- type-only import（`import type` / `export type`）不触发保护，因为运行时被擦除
+
 ### 环境变量
 
 - 环境变量文件统一放在 `env/` 目录（`.env`、`.env.local`）
@@ -108,6 +165,69 @@ src/
 - 表名使用单数（如 `admin_user`、`file`）
 - Schema 文件按模块拆分在 `src/db/schema/`，通过 `index.ts` 统一导出
 - `admin_user` 表包含 `is_root` 布尔字段 + 数据库部分唯一索引，保证仅一个 root 用户
+
+## 测试约定
+
+### 目录结构
+
+- 测试文件与被测模块同目录，放在 `__tests__/` 子目录下
+- 文件名：`<模块名>.test.ts`
+- 每个 `src/server/` 模块必须覆盖其所有导出函数的测试
+
+```
+src/server/config/
+├── config.server.ts
+└── __tests__/
+    └── config.test.ts
+```
+
+### Mock 模式
+
+测试使用 Vitest 的 `vi.hoisted()` + `vi.mock()` 模式，**严格遵循三段式结构**：
+
+1. **顶部 `vi.mock`（静态路径）**：mock 无运行时依赖的模块（如 logger）
+2. **`vi.hoisted()` 块**：创建 mock 对象（mockDb、mockStorage 等），定义在 `vi.mock` 之前可被后者引用
+3. **`vi.mock`（依赖 hoisted 值）**：使用 hoisted 值 mock 数据库、外部服务等模块
+4. **源模块导入**：所有 mock 之后的 `import` 语句，模块导入时 mock 已生效
+
+示例：
+
+```ts
+// 1. 静态 mock
+vi.mock("#/lib/logger/logger", () => ({
+	logger: { error: vi.fn(), info: vi.fn(), warn: vi.fn() },
+}));
+
+// 2. hoisted 创建 mock 对象
+const { mockDb } = vi.hoisted(() => {
+	const q = () => ({ findFirst: vi.fn(), findMany: vi.fn() });
+	return {
+		mockDb: {
+			query: { adminUser: q(), clientUser: q(), /* 所有表 */ },
+			select: vi.fn(() => ({ from: vi.fn(() => ({ where: vi.fn() })) })),
+			insert: vi.fn(() => ({ values: vi.fn(() => ({ returning: vi.fn() })) })),
+			update: vi.fn(() => ({ set: vi.fn(() => ({ where: vi.fn() })) })),
+		},
+	};
+});
+
+// 3. 使用 hoisted 值 mock 模块
+vi.mock("#/db", () => ({ db: mockDb }));
+
+// 4. 所有 mock 之后导入被测模块
+import { getConfig } from "#/server/config/config.server";
+```
+
+规则：
+- 源模块导入**必须**在所有 `vi.mock` 之后，确保 mock 先生效
+- `mockDb` 必须包含所有表对应的 `query` 方法（即使当前模块不查询），避免其他模块交叉引用时报 undefined
+- `vi.clearAllMocks()` 在 `beforeEach` 中调用，保证测试隔离
+
+### 命名与覆盖
+
+- `describe` 名称对应被测函数名，`it` 名称描述具体场景（中文）
+- 每个导出函数至少覆盖：正常路径、边界条件（空值/不存在）、错误路径
+- `pnpm test -- --run` 运行全部测试（不加 `--run` 为 watch 模式）
 
 ## 组件约定
 

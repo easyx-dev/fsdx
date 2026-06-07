@@ -11,7 +11,7 @@ import { Button } from "#/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "#/components/ui/card";
 import { Input } from "#/components/ui/input";
 import { COOKIE_NAMES } from "#/lib/jwt/jwt";
-import { clientLoginService } from "#/server/auth";
+import { clientLoginService } from "#/server/auth/auth.server";
 
 const loginSchema = z.object({
 	username: z.string().min(1, "用户名不能为空").max(50),

@@ -6,7 +6,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { ArrowLeft } from "lucide-react";
 import { z } from "zod";
 import { Button } from "#/components/ui/button";
-import { getNewsBySlug } from "#/server/news";
+import { getNewsBySlug } from "#/server/news/news.server";
 
 const getNewsDetail = createServerFn({ method: "GET" })
 	.inputValidator(z.object({ slug: z.string().min(1) }))
