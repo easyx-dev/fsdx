@@ -2,7 +2,12 @@
  * 根路由：根据路径前缀分离 Admin（客户端渲染）与前台（SSR）
  */
 
-import { HeadContent, Scripts, useLocation } from "@tanstack/react-router";
+import {
+	ClientOnly,
+	HeadContent,
+	Scripts,
+	useLocation,
+} from "@tanstack/react-router";
 import { App, theme as antdTheme, ConfigProvider } from "antd";
 import zhCN from "antd/locale/zh_CN";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -43,6 +48,24 @@ export function SSRRootDocument({ children }: { children: React.ReactNode }) {
 
 // Admin 路由：客户端渲染，集成主题管理与 antd ConfigProvider
 export function AdminRootDocument({ children }: { children: React.ReactNode }) {
+	return (
+		<html lang="zh-CN" suppressHydrationWarning>
+			<head>
+				<title>FSDX Admin</title>
+				<HeadContent />
+				<link rel="stylesheet" href={adminGlobalCss} />
+			</head>
+			<body className="font-sans antialiased">
+				<ClientOnly>
+					<AdminProvider>{children}</AdminProvider>
+				</ClientOnly>
+				<Scripts />
+			</body>
+		</html>
+	);
+}
+
+function AdminProvider({ children }: { children: React.ReactNode }) {
 	const location = useLocation();
 	const pathname = location.pathname;
 	const isStandalone =
@@ -51,10 +74,13 @@ export function AdminRootDocument({ children }: { children: React.ReactNode }) {
 
 	// 管理端主题状态
 	const [mode, setMode] = useState<ThemeMode>("auto");
+	// 水合完成标记 — 避免服务端/客户端首次渲染差异
+	const [mounted, setMounted] = useState(false);
 
 	// 初始化主题模式
 	useEffect(() => {
 		setMode(getStoredMode());
+		setMounted(true);
 	}, []);
 
 	// 持久化主题模式
@@ -76,11 +102,15 @@ export function AdminRootDocument({ children }: { children: React.ReactNode }) {
 		return () => mq.removeEventListener("change", handler);
 	}, [mode]);
 
-	const isDark = useMemo(() => resolveIsDark(mode), [mode]);
+	// 水合完成前统一返回 false（亮色），确保服务端/客户端首次渲染一致
+	const isDark = useMemo(
+		() => (mounted ? resolveIsDark(mode) : false),
+		[mounted, mode],
+	);
 
 	const ctxValue = useMemo(
-		() => ({ mode, setMode: handleSetMode }),
-		[mode, handleSetMode],
+		() => ({ mode, setMode: handleSetMode, isDark }),
+		[mode, handleSetMode, isDark],
 	);
 
 	// 同步 dark class 到 <html> 以启用 Tailwind dark: 变体
@@ -91,35 +121,25 @@ export function AdminRootDocument({ children }: { children: React.ReactNode }) {
 	}, [isDark]);
 
 	return (
-		<html lang="zh-CN" suppressHydrationWarning>
-			<head>
-				<title>FSDX Admin</title>
-				<HeadContent />
-				<link rel="stylesheet" href={adminGlobalCss} />
-			</head>
-			<body className="font-sans antialiased">
-				<AdminThemeContext.Provider value={ctxValue}>
-					<ConfigProvider
-						locale={zhCN}
-						theme={{
-							algorithm: isDark
-								? antdTheme.darkAlgorithm
-								: antdTheme.defaultAlgorithm,
-						}}
-					>
-						<App>
-							{!isStandalone && isAdmin ? (
-								<AuthProvider>
-									<AdminLayout>{children}</AdminLayout>
-								</AuthProvider>
-							) : (
-								children
-							)}
-						</App>
-					</ConfigProvider>
-				</AdminThemeContext.Provider>
-				<Scripts />
-			</body>
-		</html>
+		<AdminThemeContext.Provider value={ctxValue}>
+			<ConfigProvider
+				locale={zhCN}
+				theme={{
+					algorithm: isDark
+						? antdTheme.darkAlgorithm
+						: antdTheme.defaultAlgorithm,
+				}}
+			>
+				<App>
+					{!isStandalone && isAdmin ? (
+						<AuthProvider>
+							<AdminLayout>{children}</AdminLayout>
+						</AuthProvider>
+					) : (
+						children
+					)}
+				</App>
+			</ConfigProvider>
+		</AdminThemeContext.Provider>
 	);
 }

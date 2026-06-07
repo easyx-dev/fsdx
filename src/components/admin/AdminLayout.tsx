@@ -47,6 +47,8 @@ export type ThemeMode = "light" | "dark" | "auto";
 interface AdminThemeContextType {
 	mode: ThemeMode;
 	setMode: (mode: ThemeMode) => void;
+	/** 当前是否为暗色模式（水合完成前为 false） */
+	isDark: boolean;
 }
 
 export const AdminThemeContext = createContext<
@@ -150,10 +152,10 @@ const THEME_CYCLE: ThemeMode[] = ["light", "dark", "auto"];
 
 export function AdminLayout({ children }: { children: ReactNode }) {
 	const [collapsed, setCollapsed] = useState(false);
-	const { mode, setMode } = useAdminTheme();
+	const [mounted, setMounted] = useState(false);
+	const { mode, setMode, isDark } = useAdminTheme();
 	const { user } = useAuth();
 	const location = useLocation();
-	const isDark = resolveIsDark(mode);
 	const currentPath = location.pathname;
 
 	const handleLogout = async () => {
@@ -171,6 +173,7 @@ export function AdminLayout({ children }: { children: ReactNode }) {
 	useEffect(() => {
 		message.config({ duration: 5 });
 		notification.config({ duration: 5 });
+		setMounted(true);
 	}, []);
 
 	return (
@@ -242,7 +245,17 @@ export function AdminLayout({ children }: { children: ReactNode }) {
 							<Button
 								type="text"
 								onClick={cycleTheme}
-								icon={isDark ? <MoonOutlined /> : <SunOutlined />}
+								icon={
+									mounted ? (
+										isDark ? (
+											<MoonOutlined />
+										) : (
+											<SunOutlined />
+										)
+									) : (
+										<SunOutlined />
+									)
+								}
 							/>
 						</Tooltip>
 					</div>
