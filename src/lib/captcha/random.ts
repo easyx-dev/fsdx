@@ -1,0 +1,156 @@
+/**
+ * 随机生成工具（对应 svg-captcha-fixed 的 random.js）
+ */
+import { options } from "./option-manager";
+
+/** 区间随机整数 */
+export function int(min: number, max: number): number {
+	return Math.round(min + Math.random() * (max - min));
+}
+
+/** 生成灰色调 */
+export function greyColor(min?: number, max?: number): string {
+	const mn = min ?? 1;
+	const mx = max ?? 9;
+	const v = int(mn, mx).toString(16);
+	return `#${v}${v}${v}`;
+}
+
+/** 从字符串中移除指定字符 */
+function stripChars(str: string, chars: string): string {
+	return str
+		.split("")
+		.filter((c) => chars.indexOf(c) === -1)
+		.join("");
+}
+
+/** 计算 hex 颜色的亮度值（0~1），用于背景对比度判断 */
+function getLightness(hexColor: string): number {
+	if (!hexColor || hexColor[0] !== "#") return 1;
+	let c = hexColor.slice(1);
+	if (c.length === 3) c = c[0] + c[0] + c[1] + c[1] + c[2] + c[2];
+	const n = parseInt(c, 16);
+	const r = (n >> 16) & 255;
+	const g = (n >> 8) & 255;
+	const b = n & 255;
+	return (Math.max(r, g, b) + Math.min(r, g, b)) / (2 * 255);
+}
+
+/** HSL → RGB 辅助函数 */
+function hue2rgb(p: number, q: number, t: number): number {
+	if (t < 0) t += 1;
+	if (t > 1) t -= 1;
+	if (t < 1 / 6) return p + (q - p) * 6 * t;
+	if (t < 1 / 2) return q;
+	if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6;
+	return p;
+}
+
+/**
+ * 生成随机 HSL 颜色，根据背景亮度自动调整对比度
+ * 参考 svg-captcha-fixed 的 color()
+ */
+export function color(bgColor?: string): string {
+	const hue = int(0, 24) / 24;
+	const saturation = int(60, 80) / 100;
+	const bgLightness = bgColor ? getLightness(bgColor) : 1.0;
+
+	let minL: number;
+	let maxL: number;
+	if (bgLightness >= 0.5) {
+		minL = Math.round(bgLightness * 100) - 45;
+		maxL = Math.round(bgLightness * 100) - 25;
+	} else {
+		minL = Math.round(bgLightness * 100) + 25;
+		maxL = Math.round(bgLightness * 100) + 45;
+	}
+	const lightness = int(minL, maxL) / 100;
+
+	const q =
+		lightness < 0.5
+			? lightness * (lightness + saturation)
+			: lightness + saturation - lightness * saturation;
+	const p = 2 * lightness - q;
+
+	const r = Math.floor(hue2rgb(p, q, hue + 1 / 3) * 255);
+	const g = Math.floor(hue2rgb(p, q, hue) * 255);
+	const b = Math.floor(hue2rgb(p, q, hue - 1 / 3) * 255);
+
+	return `#${((b | (g << 8) | (r << 16) | (1 << 24)) >>> 0)
+		.toString(16)
+		.slice(1)}`;
+}
+
+/** 验证码文本选项 */
+export interface CaptchaTextOptions {
+	size?: number;
+	ignoreChars?: string;
+	charPreset?: string;
+}
+
+/**
+ * 生成随机验证码文本
+ * 参考 svg-captcha-fixed 的 captchaText()
+ */
+export function captchaText(userOptions?: number | CaptchaTextOptions): string {
+	let opts: CaptchaTextOptions;
+	if (typeof userOptions === "number") {
+		opts = { size: userOptions };
+	} else {
+		opts = userOptions ?? {};
+	}
+
+	const size = opts.size ?? options.size;
+	const ignoreChars = opts.ignoreChars ?? options.ignoreChars;
+	let chars = opts.charPreset ?? options.charPreset;
+
+	if (ignoreChars) {
+		chars = stripChars(chars, ignoreChars);
+	}
+
+	const len = chars.length - 1;
+	let out = "";
+	for (let i = -1; ++i < size; ) {
+		out += chars[int(0, len)];
+	}
+	return out;
+}
+
+/** 数学表达式结果 */
+export interface MathExprResult {
+	text: string;
+	equation: string;
+}
+
+/**
+ * 生成随机数学表达式
+ * 参考 svg-captcha-fixed 的 mathExpr()
+ */
+export function mathExpr(
+	min?: number,
+	max?: number,
+	operator?: string,
+): MathExprResult {
+	const mn = min ?? 1;
+	const mx = max ?? 9;
+	const op = operator ?? "+";
+	const left = int(mn, mx);
+	const right = int(mn, mx);
+
+	switch (op) {
+		case "+":
+			return {
+				text: (left + right).toString(),
+				equation: `${left}+${right}`,
+			};
+		case "-":
+			return {
+				text: (left - right).toString(),
+				equation: `${left}-${right}`,
+			};
+		default:
+			return int(1, 2) % 2
+				? { text: (left + right).toString(), equation: `${left}+${right}` }
+				: { text: (left - right).toString(), equation: `${left}-${right}` };
+	}
+}

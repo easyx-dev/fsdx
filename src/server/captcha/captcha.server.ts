@@ -3,9 +3,9 @@
  */
 import { randomUUID } from "node:crypto";
 import { and, desc, eq, gt } from "drizzle-orm";
-import { create } from "svg-captcha";
 import { db } from "#/db/index";
 import { captchaCode } from "#/db/schema";
+import { create } from "#/lib/captcha/captcha";
 import { logger } from "#/lib/logger/logger";
 import { sendCaptchaMail } from "#/lib/mail/mail";
 
