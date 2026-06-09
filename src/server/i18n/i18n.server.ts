@@ -11,6 +11,7 @@ import type { Locale } from "#/lib/i18n/i18n.types";
 import { DEFAULT_LOCALE } from "#/lib/i18n/i18n.types";
 import { logger } from "#/lib/logger/logger";
 
+import { refreshConfigTranslationCache } from "#/server/config/config.server";
 // ═══════════════════════════════════════════════════
 // UI 翻译查询
 // ═══════════════════════════════════════════════════
@@ -354,6 +355,11 @@ export async function upsertContentTranslation(params: {
 		"实体翻译已更新",
 	);
 
+	// 系统配置翻译变更时刷新对应缓存
+	if (params.entityType === "system_config") {
+		await refreshConfigTranslationCache(params.locale);
+	}
+
 	return { success: true };
 }
 
@@ -369,6 +375,11 @@ export async function deleteContentTranslation(id: string): Promise<boolean> {
 		{ id, entityType: existing.entityType, fieldName: existing.fieldName },
 		"实体翻译已删除",
 	);
+
+	// 系统配置翻译删除时刷新对应缓存
+	if (existing.entityType === "system_config" && existing.locale) {
+		await refreshConfigTranslationCache(existing.locale as Locale);
+	}
 
 	return true;
 }

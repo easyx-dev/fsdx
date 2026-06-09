@@ -5,6 +5,8 @@ import { I18nProvider } from "../i18n/i18n-context";
 interface GlobalStoreValue {
 	locale: Locale;
 	translations: Translations;
+	/** 客户端可见的系统配置：key → 当前语言解析后的值 */
+	systemConfig: Record<string, string>;
 }
 
 export const globalStoreContext = createContext<GlobalStoreValue>(
@@ -28,9 +30,10 @@ export function GlobalStoreProvider({
 }
 
 export function useGlobalStore() {
-	const { locale, translations } = useContext(globalStoreContext);
+	const { locale, translations, systemConfig } = useContext(globalStoreContext);
 	return {
 		locale,
 		translations,
+		systemConfig,
 	};
 }

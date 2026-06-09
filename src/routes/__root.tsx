@@ -13,6 +13,7 @@ import { Fragment } from "react";
 import { AdminRootDocument, SSRRootDocument } from "#/components/Document";
 import { GlobalStoreProvider } from "#/lib/global-store/global-store";
 import type { Locale, Translations } from "#/lib/i18n/i18n.types";
+import { getVisibleConfigsFn } from "#/server/config/config.functions";
 import { getLocaleBundle } from "#/server/i18n/i18n.functions";
 
 export const Route = createRootRouteWithContext<{
@@ -31,7 +32,11 @@ export const Route = createRootRouteWithContext<{
 	},
 	async beforeLoad({ context }) {
 		void context.locale;
-		return getLocaleBundle();
+		const [bundle, systemConfig] = await Promise.all([
+			getLocaleBundle(),
+			getVisibleConfigsFn(),
+		]);
+		return { ...bundle, systemConfig };
 	},
 	shellComponent: RootDocument,
 });
@@ -41,6 +46,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
 	const context = Route.useRouteContext() as {
 		locale: Locale;
 		translations: Translations;
+		systemConfig: Record<string, string>;
 	};
 
 	const isAdmin = pathname.startsWith("/admin");
@@ -50,7 +56,11 @@ function RootDocument({ children }: { children: React.ReactNode }) {
 				<AdminRootDocument>{children}</AdminRootDocument>
 			) : (
 				<GlobalStoreProvider
-					value={{ locale: context.locale, translations: context.translations }}
+					value={{
+						locale: context.locale,
+						translations: context.translations,
+						systemConfig: context.systemConfig,
+					}}
 				>
 					<SSRRootDocument>{children}</SSRRootDocument>
 				</GlobalStoreProvider>

@@ -16,11 +16,16 @@ import {
 	Row,
 	Select,
 	Space,
+	Switch,
 	Table,
 } from "antd";
 import { useMemo, useState } from "react";
 import { z } from "zod";
 import { AdminPageContent } from "#/components/admin/AdminPageContent";
+import {
+	FieldTranslationDrawer,
+	type TranslatableField,
+} from "#/components/admin/FieldTranslationDrawer";
 import { TypeAwareEditor } from "#/components/admin/TypeAwareEditor";
 import type { EditorType } from "#/lib/editor-types/editor-types";
 import {
@@ -39,9 +44,15 @@ import {
 
 const UNGROUPED_KEY = "__ungrouped__";
 
+/** 系统配置可翻译字段定义 */
+const CONFIG_TRANSLATABLE_FIELDS: TranslatableField[] = [
+	{ name: "value", label: "配置值", valueType: "text" },
+];
+
 const createConfigSchema = z.object({
 	key: z.string().min(1, "配置键不能为空").max(100),
 	value: z.string().min(1, "配置值不能为空"),
+	clientVisible: z.boolean().optional(),
 	valueType: z.string().optional(),
 	groupName: z.string().optional(),
 	description: z.string().optional(),
@@ -49,6 +60,7 @@ const createConfigSchema = z.object({
 const updateConfigSchema = z.object({
 	id: z.string().min(1),
 	value: z.string().optional(),
+	clientVisible: z.boolean().optional(),
 	valueType: z.string().optional(),
 	groupName: z.string().optional(),
 	description: z.string().optional(),
@@ -144,6 +156,7 @@ function ConfigPage() {
 			form.setFieldsValue({
 				key: record.key,
 				value: record.value,
+				clientVisible: record.clientVisible,
 				valueType: record.valueType ?? undefined,
 				groupName: record.groupName ?? undefined,
 				description: record.description ?? undefined,
@@ -263,6 +276,13 @@ function ConfigPage() {
 			render: (val: string | null) => val || "未分组",
 		},
 		{
+			title: "客户端可见",
+			dataIndex: "clientVisible",
+			key: "clientVisible",
+			width: 100,
+			render: (val: boolean) => (val ? "是" : "否"),
+		},
+		{
 			title: "描述",
 			dataIndex: "description",
 			key: "description",
@@ -272,23 +292,40 @@ function ConfigPage() {
 		{
 			title: "操作",
 			key: "actions",
-			width: 100,
-			render: (_: unknown, record: ConfigRecord) => (
-				<Space size={4}>
-					<Button
-						type="link"
-						size="small"
-						icon={<EditOutlined />}
-						onClick={() => openModal(record)}
-					/>
-					<Popconfirm
-						title="确定删除该配置？"
-						onConfirm={() => handleDelete(record.id)}
-					>
-						<Button type="link" size="small" danger icon={<DeleteOutlined />} />
-					</Popconfirm>
-				</Space>
-			),
+			width: 160,
+			render: (_: unknown, record: ConfigRecord) => {
+				// 确保 clientVisible 为真时才显示翻译入口
+				const showTranslation = record.clientVisible === true;
+				return (
+					<Space size={4}>
+						<Button
+							type="link"
+							size="small"
+							icon={<EditOutlined />}
+							onClick={() => openModal(record)}
+						/>
+						<Popconfirm
+							title="确定删除该配置？"
+							onConfirm={() => handleDelete(record.id)}
+						>
+							<Button
+								type="link"
+								size="small"
+								danger
+								icon={<DeleteOutlined />}
+							/>
+						</Popconfirm>
+						{showTranslation && (
+							<FieldTranslationDrawer
+								entityType="system_config"
+								entityId={record.id}
+								fields={CONFIG_TRANSLATABLE_FIELDS}
+								originalValues={{ value: record.value }}
+							/>
+						)}
+					</Space>
+				);
+			},
 		},
 	];
 
@@ -415,6 +452,13 @@ function ConfigPage() {
 					)}
 					<Form.Item name="groupName" label="配置分组">
 						<Input placeholder="分组（可选，为空归入未分组）" />
+					</Form.Item>
+					<Form.Item
+						name="clientVisible"
+						label="客户端可见"
+						valuePropName="checked"
+					>
+						<Switch />
 					</Form.Item>
 					<Form.Item name="description" label="描述">
 						<Input.TextArea rows={2} placeholder="描述（可选）" />

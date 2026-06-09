@@ -22,12 +22,15 @@ afterEach(cleanup);
  * 渲染 GlobalStoreProvider 并显示 locale 和指定 key 的翻译
  */
 function TestComponent({ testKey }: { testKey: string }) {
-	const { locale, translations } = useGlobalStore();
+	const { locale, translations, systemConfig } = useGlobalStore();
 	return (
 		<div>
 			<span data-testid="locale">{locale}</span>
 			<span data-testid="translation">
 				{translations[testKey] ?? "MISSING"}
+			</span>
+			<span data-testid="config-site-name">
+				{systemConfig?.site_name ?? "NO_CONFIG"}
 			</span>
 		</div>
 	);
@@ -36,10 +39,11 @@ function TestComponent({ testKey }: { testKey: string }) {
 function renderWithGlobalStore(
 	locale: Locale,
 	translations: Translations,
+	systemConfig: Record<string, string> = {},
 	testKey = "首页",
 ) {
 	return render(
-		<GlobalStoreProvider value={{ locale, translations }}>
+		<GlobalStoreProvider value={{ locale, translations, systemConfig }}>
 			<TestComponent testKey={testKey} />
 		</GlobalStoreProvider>,
 	);
@@ -66,7 +70,7 @@ describe("GlobalStoreProvider", () => {
 	});
 
 	it("缺失的翻译 key 返回 MISSING", () => {
-		renderWithGlobalStore("en", {}, "不存在的key");
+		renderWithGlobalStore("en", {}, {}, "不存在的key");
 		expect(screen.getByTestId("translation").textContent).toBe("MISSING");
 	});
 
@@ -111,5 +115,23 @@ describe("globalStoreContext", () => {
 		expect(globalStoreContext).toBeDefined();
 		expect(globalStoreContext.Provider).toBeDefined();
 		expect(globalStoreContext.Consumer).toBeDefined();
+	});
+});
+
+// ═══════════════════════════════════════════════════════════════════
+// systemConfig 字段
+// ═══════════════════════════════════════════════════════════════════
+
+describe("useGlobalStore systemConfig", () => {
+	it("透传 systemConfig 到子组件", () => {
+		renderWithGlobalStore("zh", {}, { site_name: "我的站点" });
+		expect(screen.getByTestId("config-site-name").textContent).toBe("我的站点");
+	});
+
+	it("空 systemConfig 时显示 NO_CONFIG", () => {
+		renderWithGlobalStore("zh", {}, {});
+		expect(screen.getByTestId("config-site-name").textContent).toBe(
+			"NO_CONFIG",
+		);
 	});
 });

@@ -97,12 +97,25 @@ export const dictCache = new MemoryCache<Record<string, string>>({
 	name: "dict",
 });
 
-/** 系统配置缓存实例 */
-export const configCache = new MemoryCache<string>({
+/** 缓存的系统配置条目（按需扩展字段） */
+export interface CachedConfig {
+	id: string;
+	key: string;
+	value: string;
+	clientVisible: boolean;
+}
+
+/** 系统配置缓存实例：全量缓存配置列表，key 固定为 "all" */
+export const configCache = new MemoryCache<CachedConfig[]>({
 	name: "config",
 });
 
 /** UI 翻译缓存：key = locale，value = { 中文文本: 翻译 } */
 export const uiTranslationCache = new MemoryCache<Record<string, string>>({
 	name: "ui_translation",
+});
+
+/** 系统配置的 content_translation 翻译缓存：key = locale，value = { entityId: translatedValue } */
+export const configTranslationCache = new MemoryCache<Record<string, string>>({
+	name: "config_translation",
 });

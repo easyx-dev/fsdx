@@ -217,8 +217,9 @@ describe("dictCache / configCache", () => {
 	it("configCache 是 MemoryCache 实例且可正常读写", async () => {
 		const { configCache } = await import("#/lib/cache/cache");
 		expect(configCache).toBeInstanceOf(MemoryCache);
-		configCache.set("test", "value");
-		expect(configCache.get("test")).toBe("value");
+		const data = [{ id: "1", key: "test", value: "val", clientVisible: false }];
+		configCache.set("test", data);
+		expect(configCache.get("test")).toEqual(data);
 		configCache.delete("test");
 	});
 });

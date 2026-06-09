@@ -1,26 +1,32 @@
 /**
  * 系统配置管理：CRUD 操作 + 内存缓存
  */
-import { asc, eq, isNull } from "drizzle-orm";
+import { and, asc, eq, isNull } from "drizzle-orm";
 import { db } from "#/db/index";
-import { systemConfig } from "#/db/schema";
-import { configCache } from "#/lib/cache/cache";
+import { contentTranslation, systemConfig } from "#/db/schema";
+import { configCache, configTranslationCache } from "#/lib/cache/cache";
+import { DEFAULT_LOCALE, type Locale } from "#/lib/i18n/i18n.types";
 import { logger } from "#/lib/logger/logger";
 
 export type ConfigRecord = typeof systemConfig.$inferSelect;
 
 export async function loadConfigCache(): Promise<void> {
 	const configs = await db
-		.select()
+		.select({
+			id: systemConfig.id,
+			key: systemConfig.key,
+			value: systemConfig.value,
+			clientVisible: systemConfig.clientVisible,
+		})
 		.from(systemConfig)
 		.where(isNull(systemConfig.deletedAt));
-	configCache.clear();
-	for (const c of configs) configCache.set(c.key, c.value);
+	configCache.set("all", configs);
 	logger.info({ count: configs.length }, "系统配置缓存加载完成");
 }
 
 export function getConfig(key: string): string {
-	return configCache.get(key) ?? "";
+	const list = configCache.get("all") ?? [];
+	return list.find((c) => c.key === key)?.value ?? "";
 }
 
 export async function getConfigList() {
@@ -34,12 +40,13 @@ export async function getConfigList() {
 export async function createConfig(params: {
 	key: string;
 	value: string;
+	clientVisible?: boolean;
 	valueType?: string;
 	groupName?: string;
 	description?: string;
 }) {
 	const [record] = await db.insert(systemConfig).values(params).returning();
-	configCache.set(record.key, record.value);
+	await loadConfigCache();
 	logger.info({ key: record.key }, "系统配置已创建");
 	return record;
 }
@@ -54,6 +61,7 @@ export async function upsertConfig(
 	description?: string,
 	valueType?: string,
 	groupName?: string,
+	clientVisible?: boolean,
 ): Promise<void> {
 	const existing = await db.query.systemConfig.findFirst({
 		where: eq(systemConfig.key, key),
@@ -64,17 +72,23 @@ export async function upsertConfig(
 			.update(systemConfig)
 			.set({
 				value,
+				clientVisible: clientVisible ?? existing.clientVisible,
 				description: description ?? existing.description,
 				updatedAt: new Date(),
 			})
 			.where(eq(systemConfig.id, existing.id));
 	} else {
-		await db
-			.insert(systemConfig)
-			.values({ key, value, description, valueType, groupName });
+		await db.insert(systemConfig).values({
+			key,
+			value,
+			description,
+			valueType,
+			groupName,
+			clientVisible,
+		});
 	}
 
-	configCache.set(key, value);
+	await loadConfigCache();
 	logger.info({ key }, "系统配置已写入");
 }
 
@@ -82,6 +96,7 @@ export async function updateConfig(
 	id: string,
 	params: {
 		value?: string;
+		clientVisible?: boolean;
 		valueType?: string;
 		groupName?: string;
 		description?: string;
@@ -93,7 +108,7 @@ export async function updateConfig(
 		.where(eq(systemConfig.id, id))
 		.returning();
 	if (updated) {
-		configCache.set(updated.key, updated.value);
+		await loadConfigCache();
 		logger.info({ key: updated.key }, "系统配置已更新");
 	}
 	return updated ?? null;
@@ -108,7 +123,7 @@ export async function deleteConfig(id: string) {
 		.update(systemConfig)
 		.set({ deletedAt: new Date() })
 		.where(eq(systemConfig.id, id));
-	configCache.delete(existing.key);
+	await loadConfigCache();
 	logger.info({ key: existing.key }, "系统配置已删除");
 	return true;
 }
@@ -117,18 +132,95 @@ export async function deleteConfig(id: string) {
 
 /** 预置系统配置常量（仅服务端启动时自动插入的配置项） */
 const PRESET_CONFIGS = [
-	{ key: "site_name", value: "FSDX CMS", description: "站点名称" },
+	{
+		key: "site_name",
+		value: "FSDX",
+		description: "站点名称",
+		clientVisible: true,
+	},
 ];
 
-/** 运行时校验并插入缺失的预置系统配置（幂等安全） */
+/** 运行时校验预置系统配置（幂等安全，恢复软删除的预设项） */
 export async function ensurePresetConfigs(): Promise<void> {
+	let changed = false;
 	for (const preset of PRESET_CONFIGS) {
 		const existing = await db.query.systemConfig.findFirst({
 			where: eq(systemConfig.key, preset.key),
 		});
-		if (!existing) {
+		if (existing?.deletedAt) {
+			// 预置配置不允许删除，恢复软删除的记录
+			await db
+				.update(systemConfig)
+				.set({
+					value: preset.value,
+					clientVisible: preset.clientVisible,
+					description: preset.description,
+					deletedAt: null,
+					updatedAt: new Date(),
+				})
+				.where(eq(systemConfig.id, existing.id));
+			changed = true;
+			logger.info({ key: preset.key }, "预置系统配置已恢复");
+		} else if (!existing) {
 			await db.insert(systemConfig).values(preset);
+			changed = true;
 			logger.info({ key: preset.key }, "预置系统配置已创建");
 		}
+	}
+	if (changed) await loadConfigCache();
+}
+
+// ========== 客户端可见配置 ==========
+
+/** 客户端可见的配置行：从缓存的配置列表中过滤 */
+export function getVisibleConfigRows(): {
+	id: string;
+	key: string;
+	value: string;
+}[] {
+	const list = configCache.get("all") ?? [];
+	return list.filter((c) => c.clientVisible);
+}
+
+/** 获取系统配置的 content_translation 翻译（按 locale 缓存） */
+export async function getConfigTranslations(
+	locale: Locale,
+): Promise<Record<string, string>> {
+	if (locale === DEFAULT_LOCALE) return {};
+
+	const cached = configTranslationCache.get(locale);
+	if (cached) return cached;
+
+	const translations = await db
+		.select()
+		.from(contentTranslation)
+		.where(
+			and(
+				eq(contentTranslation.entityType, "system_config"),
+				eq(contentTranslation.locale, locale),
+			),
+		);
+
+	const result: Record<string, string> = {};
+	for (const t of translations) result[t.entityId] = t.value;
+
+	configTranslationCache.set(locale, result);
+	logger.info({ locale, count: translations.length }, "系统配置翻译缓存已加载");
+	return result;
+}
+
+/** 刷新系统配置翻译缓存（管理端编辑翻译后调用） */
+export async function refreshConfigTranslationCache(
+	locale?: Locale,
+): Promise<void> {
+	if (locale) {
+		configTranslationCache.delete(locale);
+		await getConfigTranslations(locale);
+		logger.info({ locale }, "系统配置翻译缓存已刷新");
+	} else {
+		for (const key of configTranslationCache.keys()) {
+			configTranslationCache.delete(key);
+		}
+		logger.info("全部系统配置翻译缓存已清理");
 	}
 }
