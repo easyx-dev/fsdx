@@ -29,6 +29,14 @@ export const getI18nBundle = createServerFn({ method: "GET" })
 		return getUITranslations(locale);
 	});
 
+/** 获取当前请求的 locale 及对应翻译（从 requestMiddleware context 读取 Cookie locale） */
+export const getLocaleBundle = createServerFn({ method: "GET" }).handler(
+	async ({ context }) => {
+		const locale: Locale = (context.locale as Locale) || DEFAULT_LOCALE;
+		const translations = await getUITranslations(locale);
+		return { locale, translations };
+	},
+);
 /** 获取某实体的字段翻译 */
 export const getEntityTranslations = createServerFn({ method: "GET" })
 	.inputValidator(
@@ -146,3 +154,5 @@ export const deleteContentTranslationFn = createServerFn({ method: "POST" })
 		await deleteContentTranslation(id);
 		return { success: true };
 	});
+
+import type { Locale } from "#/lib/i18n/i18n.types";

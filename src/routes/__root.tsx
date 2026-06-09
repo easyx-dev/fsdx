@@ -1,6 +1,6 @@
 /**
  * 根路由：根据路径前缀分离 Admin（客户端渲染）与前台（SSR）
- * locale 由 start.ts 全局中间件注入 context，beforeLoad 仅加载翻译
+ * locale 由 localeMiddleware 注入 request context，通过 getLocaleBundle 读取
  */
 
 import { TanStackDevtools } from "@tanstack/react-devtools";
@@ -13,7 +13,7 @@ import { Fragment } from "react";
 import { AdminRootDocument, SSRRootDocument } from "#/components/Document";
 import { GlobalStoreProvider } from "#/lib/global-store/global-store";
 import type { Locale, Translations } from "#/lib/i18n/i18n.types";
-import { getI18nBundle } from "#/server/i18n/i18n.functions";
+import { getLocaleBundle } from "#/server/i18n/i18n.functions";
 
 export const Route = createRootRouteWithContext<{
 	locale: Locale;
@@ -30,10 +30,8 @@ export const Route = createRootRouteWithContext<{
 		};
 	},
 	async beforeLoad({ context }) {
-		const translations = await getI18nBundle({
-			data: { locale: context.locale },
-		});
-		return { locale: context.locale, translations };
+		void context.locale;
+		return getLocaleBundle();
 	},
 	shellComponent: RootDocument,
 });
