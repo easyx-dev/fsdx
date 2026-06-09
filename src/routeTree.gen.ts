@@ -29,6 +29,8 @@ import { Route as AdminAdminDemoIndexRouteImport } from './routes/admin/_admin/d
 import { Route as AdminAdminConfigIndexRouteImport } from './routes/admin/_admin/config/index'
 import { Route as ApiDownloadLogIdRouteImport } from './routes/api/download/log.$id'
 import { Route as ApiDownloadFileIdRouteImport } from './routes/api/download/file.$id'
+import { Route as AdminAdminTranslationsUiRouteImport } from './routes/admin/_admin/translations/ui'
+import { Route as AdminAdminTranslationsContentRouteImport } from './routes/admin/_admin/translations/content'
 import { Route as AdminAdminNewsCreateRouteImport } from './routes/admin/_admin/news/create'
 import { Route as AdminAdminUsersClientsIndexRouteImport } from './routes/admin/_admin/users/clients/index'
 import { Route as AdminAdminUsersAdminsIndexRouteImport } from './routes/admin/_admin/users/admins/index'
@@ -133,6 +135,18 @@ const ApiDownloadFileIdRoute = ApiDownloadFileIdRouteImport.update({
   path: '/api/download/file/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminAdminTranslationsUiRoute =
+  AdminAdminTranslationsUiRouteImport.update({
+    id: '/translations/ui',
+    path: '/translations/ui',
+    getParentRoute: () => AdminAdminRoute,
+  } as any)
+const AdminAdminTranslationsContentRoute =
+  AdminAdminTranslationsContentRouteImport.update({
+    id: '/translations/content',
+    path: '/translations/content',
+    getParentRoute: () => AdminAdminRoute,
+  } as any)
 const AdminAdminNewsCreateRoute = AdminAdminNewsCreateRouteImport.update({
   id: '/news/create',
   path: '/news/create',
@@ -168,6 +182,8 @@ export interface FileRoutesByFullPath {
   '/news/': typeof NewsIndexRoute
   '/admin/': typeof AdminAdminIndexRoute
   '/admin/news/create': typeof AdminAdminNewsCreateRoute
+  '/admin/translations/content': typeof AdminAdminTranslationsContentRoute
+  '/admin/translations/ui': typeof AdminAdminTranslationsUiRoute
   '/api/download/file/$id': typeof ApiDownloadFileIdRoute
   '/api/download/log/$id': typeof ApiDownloadLogIdRoute
   '/admin/config/': typeof AdminAdminConfigIndexRoute
@@ -192,6 +208,8 @@ export interface FileRoutesByTo {
   '/news/$slug': typeof NewsSlugRoute
   '/news': typeof NewsIndexRoute
   '/admin/news/create': typeof AdminAdminNewsCreateRoute
+  '/admin/translations/content': typeof AdminAdminTranslationsContentRoute
+  '/admin/translations/ui': typeof AdminAdminTranslationsUiRoute
   '/api/download/file/$id': typeof ApiDownloadFileIdRoute
   '/api/download/log/$id': typeof ApiDownloadLogIdRoute
   '/admin/config': typeof AdminAdminConfigIndexRoute
@@ -219,6 +237,8 @@ export interface FileRoutesById {
   '/news/': typeof NewsIndexRoute
   '/admin/_admin/': typeof AdminAdminIndexRoute
   '/admin/_admin/news/create': typeof AdminAdminNewsCreateRoute
+  '/admin/_admin/translations/content': typeof AdminAdminTranslationsContentRoute
+  '/admin/_admin/translations/ui': typeof AdminAdminTranslationsUiRoute
   '/api/download/file/$id': typeof ApiDownloadFileIdRoute
   '/api/download/log/$id': typeof ApiDownloadLogIdRoute
   '/admin/_admin/config/': typeof AdminAdminConfigIndexRoute
@@ -246,6 +266,8 @@ export interface FileRouteTypes {
     | '/news/'
     | '/admin/'
     | '/admin/news/create'
+    | '/admin/translations/content'
+    | '/admin/translations/ui'
     | '/api/download/file/$id'
     | '/api/download/log/$id'
     | '/admin/config/'
@@ -270,6 +292,8 @@ export interface FileRouteTypes {
     | '/news/$slug'
     | '/news'
     | '/admin/news/create'
+    | '/admin/translations/content'
+    | '/admin/translations/ui'
     | '/api/download/file/$id'
     | '/api/download/log/$id'
     | '/admin/config'
@@ -296,6 +320,8 @@ export interface FileRouteTypes {
     | '/news/'
     | '/admin/_admin/'
     | '/admin/_admin/news/create'
+    | '/admin/_admin/translations/content'
+    | '/admin/_admin/translations/ui'
     | '/api/download/file/$id'
     | '/api/download/log/$id'
     | '/admin/_admin/config/'
@@ -464,6 +490,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiDownloadFileIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/_admin/translations/ui': {
+      id: '/admin/_admin/translations/ui'
+      path: '/translations/ui'
+      fullPath: '/admin/translations/ui'
+      preLoaderRoute: typeof AdminAdminTranslationsUiRouteImport
+      parentRoute: typeof AdminAdminRoute
+    }
+    '/admin/_admin/translations/content': {
+      id: '/admin/_admin/translations/content'
+      path: '/translations/content'
+      fullPath: '/admin/translations/content'
+      preLoaderRoute: typeof AdminAdminTranslationsContentRouteImport
+      parentRoute: typeof AdminAdminRoute
+    }
     '/admin/_admin/news/create': {
       id: '/admin/_admin/news/create'
       path: '/news/create'
@@ -498,6 +538,8 @@ declare module '@tanstack/react-router' {
 interface AdminAdminRouteChildren {
   AdminAdminIndexRoute: typeof AdminAdminIndexRoute
   AdminAdminNewsCreateRoute: typeof AdminAdminNewsCreateRoute
+  AdminAdminTranslationsContentRoute: typeof AdminAdminTranslationsContentRoute
+  AdminAdminTranslationsUiRoute: typeof AdminAdminTranslationsUiRoute
   AdminAdminConfigIndexRoute: typeof AdminAdminConfigIndexRoute
   AdminAdminDemoIndexRoute: typeof AdminAdminDemoIndexRoute
   AdminAdminDictsIndexRoute: typeof AdminAdminDictsIndexRoute
@@ -513,6 +555,8 @@ interface AdminAdminRouteChildren {
 const AdminAdminRouteChildren: AdminAdminRouteChildren = {
   AdminAdminIndexRoute: AdminAdminIndexRoute,
   AdminAdminNewsCreateRoute: AdminAdminNewsCreateRoute,
+  AdminAdminTranslationsContentRoute: AdminAdminTranslationsContentRoute,
+  AdminAdminTranslationsUiRoute: AdminAdminTranslationsUiRoute,
   AdminAdminConfigIndexRoute: AdminAdminConfigIndexRoute,
   AdminAdminDemoIndexRoute: AdminAdminDemoIndexRoute,
   AdminAdminDictsIndexRoute: AdminAdminDictsIndexRoute,

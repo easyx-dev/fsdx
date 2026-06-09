@@ -3,6 +3,7 @@
  */
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
+import { getCookie } from "@tanstack/react-start/server";
 import { ArrowRight } from "lucide-react";
 import { Button } from "#/components/ui/button";
 import {
@@ -12,11 +13,28 @@ import {
 	CardHeader,
 	CardTitle,
 } from "#/components/ui/card";
+import type { Locale } from "#/lib/i18n/i18n.types";
+import {
+	DEFAULT_LOCALE,
+	LOCALE_COOKIE,
+	SUPPORTED_LOCALES,
+} from "#/lib/i18n/i18n.types";
+import { useTranslation } from "#/lib/i18n/i18n-context";
 import type { NewsRecord } from "#/server/news/news.server";
-import { getNewsList } from "#/server/news/news.server";
+import { getNewsList, translateNewsRecords } from "#/server/news/news.server";
 
 const getLatestNews = createServerFn({ method: "GET" }).handler(async () => {
-	return getNewsList({ status: "published", pageSize: 6 });
+	const cookieLocale = getCookie(LOCALE_COOKIE);
+	const locale: Locale = (SUPPORTED_LOCALES as readonly string[]).includes(
+		cookieLocale ?? "",
+	)
+		? (cookieLocale as Locale)
+		: DEFAULT_LOCALE;
+	const { records, ...rest } = await getNewsList({
+		status: "published",
+		pageSize: 6,
+	});
+	return { records: await translateNewsRecords(records, locale), ...rest };
 });
 
 export const Route = createFileRoute("/")({
@@ -24,30 +42,56 @@ export const Route = createFileRoute("/")({
 	loader: async () => await getLatestNews(),
 });
 
+const features = [
+	{
+		label: "类型安全路由",
+		desc: "TanStack Router 提供编译期路由校验，链接与参数始终同步。",
+	},
+	{
+		label: "Server Functions",
+		desc: "直接在组件中调用服务端逻辑，无需手动创建 API 层。",
+	},
+	{ label: "SSR 流式渲染", desc: "渐进式页面加载，首屏速度更快，SEO 友好。" },
+	{
+		label: "强大的管理后台",
+		desc: "基于 antd 的后台管理，支持新闻、字典、配置、文件管理。",
+	},
+	{
+		label: "RBAC 权限控制",
+		desc: "细粒度角色权限，管理员与客户端用户双通道。",
+	},
+	{
+		label: "Tailwind CSS",
+		desc: "高效构建现代 UI，统一设计令牌，响应式开箱即用。",
+	},
+];
+
 function HomePage() {
 	const data = Route.useLoaderData();
+	const { t, locale } = useTranslation();
 
 	return (
 		<main className="mx-auto max-w-5xl px-4 py-8 sm:py-16">
 			{/* Hero 区域 */}
 			<section className="mb-12 text-center sm:mb-20">
 				<h1 className="text-3xl font-bold tracking-tight text-foreground sm:text-5xl">
-					CMS 内容管理系统
+					{t("CMS 内容管理系统")}
 				</h1>
 				<p className="mx-auto mt-3 max-w-2xl text-base text-muted-foreground sm:mt-4 sm:text-lg">
-					轻量、安全、可扩展的全栈内容管理解决方案，基于 TanStack Start
-					构建，支持 SSR 与强大的管理后台。
+					{t(
+						"轻量、安全、可扩展的全栈内容管理解决方案，基于 TanStack Start 构建，支持 SSR 与强大的管理后台。",
+					)}
 				</p>
 				<div className="mt-6 flex flex-col items-center justify-center gap-3 sm:mt-8 sm:flex-row sm:gap-4">
 					<Link to="/news">
 						<Button className="w-full sm:w-auto">
-							浏览新闻
+							{t("浏览新闻")}
 							<ArrowRight />
 						</Button>
 					</Link>
 					<Link to="/about">
 						<Button variant="outline" className="w-full sm:w-auto">
-							了解更多
+							{t("了解更多")}
 						</Button>
 					</Link>
 				</div>
@@ -55,36 +99,11 @@ function HomePage() {
 
 			{/* 特性卡片 */}
 			<section className="mb-12 grid gap-4 sm:mb-20 sm:grid-cols-2 sm:gap-6 lg:grid-cols-3">
-				{[
-					{
-						title: "类型安全路由",
-						desc: "TanStack Router 提供编译期路由校验，链接与参数始终同步。",
-					},
-					{
-						title: "Server Functions",
-						desc: "直接在组件中调用服务端逻辑，无需手动创建 API 层。",
-					},
-					{
-						title: "SSR 流式渲染",
-						desc: "渐进式页面加载，首屏速度更快，SEO 友好。",
-					},
-					{
-						title: "强大的管理后台",
-						desc: "基于 antd 的后台管理，支持新闻、字典、配置、文件管理。",
-					},
-					{
-						title: "RBAC 权限控制",
-						desc: "细粒度角色权限，管理员与客户端用户双通道。",
-					},
-					{
-						title: "Tailwind CSS",
-						desc: "高效构建现代 UI，统一设计令牌，响应式开箱即用。",
-					},
-				].map((item) => (
-					<Card key={item.title}>
+				{features.map((item) => (
+					<Card key={item.label}>
 						<CardHeader>
-							<CardTitle>{item.title}</CardTitle>
-							<CardDescription>{item.desc}</CardDescription>
+							<CardTitle>{t(item.label)}</CardTitle>
+							<CardDescription>{t(item.desc)}</CardDescription>
 						</CardHeader>
 					</Card>
 				))}
@@ -94,20 +113,20 @@ function HomePage() {
 			<section>
 				<div className="mb-4 flex items-center justify-between sm:mb-6">
 					<h2 className="text-xl font-bold text-foreground sm:text-2xl">
-						最新新闻
+						{t("最新新闻")}
 					</h2>
 					<Link
 						to="/news"
 						className="flex shrink-0 items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
 					>
-						查看全部
+						{t("查看全部")}
 						<ArrowRight size={14} />
 					</Link>
 				</div>
 
 				{data.records.length === 0 ? (
 					<div className="rounded-lg border border-border py-12 text-center text-sm text-muted-foreground">
-						暂无新闻
+						{t("暂无数据")}
 					</div>
 				) : (
 					<div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -128,7 +147,7 @@ function HomePage() {
 										<time className="text-xs text-muted-foreground">
 											{item.publishedAt
 												? new Date(item.publishedAt).toLocaleDateString(
-														"zh-CN",
+														locale,
 														{ year: "numeric", month: "long", day: "numeric" },
 													)
 												: ""}

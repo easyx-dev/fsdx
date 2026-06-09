@@ -4,6 +4,7 @@ import { definePlugin } from "nitro";
 import { logger } from "#/lib/logger/logger";
 import { ensurePresetConfigs } from "#/server/config/config.server";
 import { ensurePresetDicts } from "#/server/dict/dict.server";
+import { ensurePresetTranslations } from "#/server/i18n/i18n-seed";
 import { registerAllTasks } from "#/server/tasks/tasks.server";
 
 export default definePlugin(() => {
@@ -26,5 +27,6 @@ export default definePlugin(() => {
 	// 服务进程启动时同步等待，确保预置数据写入完成后才开始接收请求
 	ensurePresetDicts();
 	ensurePresetConfigs();
+	ensurePresetTranslations();
 	registerAllTasks();
 });

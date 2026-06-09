@@ -163,6 +163,17 @@ export const PERMISSIONS = {
 		"查看仪表盘",
 		"允许查看管理端首页统计信息",
 	),
+	// 翻译管理
+	TRANSLATION_VIEW: definePermission(
+		"translation:view",
+		"查看翻译",
+		"允许查看 UI 翻译和实体字段翻译",
+	),
+	TRANSLATION_MANAGE: definePermission(
+		"translation:manage",
+		"管理翻译",
+		"允许新增、编辑、删除翻译内容",
+	),
 } as const;
 
 // ─── 对外类型 ───

@@ -10,6 +10,7 @@ import { z } from "zod";
 import { Button } from "#/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "#/components/ui/card";
 import { Input } from "#/components/ui/input";
+import { useTranslation } from "#/lib/i18n/i18n-context";
 import { COOKIE_NAMES } from "#/lib/jwt/jwt";
 import { clientLoginService } from "#/server/auth/auth.server";
 
@@ -40,6 +41,7 @@ export const Route = createFileRoute("/login")({
 
 function ClientLoginPage() {
 	const navigate = useNavigate();
+	const { t } = useTranslation();
 
 	const form = useForm({
 		defaultValues: {
@@ -49,7 +51,7 @@ function ClientLoginPage() {
 		onSubmit: async ({ value }) => {
 			const result = await clientLogin({ data: value });
 			if (!result.success) {
-				throw new Error(result.message || "登录失败");
+				throw new Error(result.message || t("loginBtn"));
 			}
 			navigate({ to: "/" });
 		},
@@ -61,7 +63,7 @@ function ClientLoginPage() {
 				<Card>
 					<CardHeader className="p-4 sm:p-6">
 						<CardTitle className="text-center text-xl sm:text-2xl">
-							用户登录
+							{t("用户登录")}
 						</CardTitle>
 					</CardHeader>
 					<CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
@@ -77,13 +79,13 @@ function ClientLoginPage() {
 								name="username"
 								validators={{
 									onChange: ({ value }) =>
-										!value ? "请输入用户名" : undefined,
+										!value ? t("请输入用户名") : undefined,
 								}}
 							>
 								{(field) => (
 									<div className="space-y-1.5 sm:space-y-2">
 										<label htmlFor={field.name} className="text-sm font-medium">
-											用户名
+											{t("用户名")}
 										</label>
 										<Input
 											id={field.name}
@@ -107,13 +109,14 @@ function ClientLoginPage() {
 							<form.Field
 								name="password"
 								validators={{
-									onChange: ({ value }) => (!value ? "请输入密码" : undefined),
+									onChange: ({ value }) =>
+										!value ? t("请输入密码") : undefined,
 								}}
 							>
 								{(field) => (
 									<div className="space-y-1.5 sm:space-y-2">
 										<label htmlFor={field.name} className="text-sm font-medium">
-											密码
+											{t("密码")}
 										</label>
 										<Input
 											id={field.name}
@@ -153,19 +156,19 @@ function ClientLoginPage() {
 										disabled={!canSubmit}
 										className="w-full"
 									>
-										{isSubmitting ? "登录中..." : "登录"}
+										{isSubmitting ? t("loggingIn") : t("loginBtn")}
 									</Button>
 								)}
 							</form.Subscribe>
 						</form>
 
 						<p className="mt-3 text-center text-sm text-muted-foreground sm:mt-4">
-							还没有账号？{" "}
+							{t("还没有账号？")}{" "}
 							<Link
 								to="/register"
 								className="underline underline-offset-4 hover:text-foreground"
 							>
-								立即注册
+								{t("立即注册")}
 							</Link>
 						</p>
 					</CardContent>

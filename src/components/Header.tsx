@@ -1,20 +1,23 @@
 /**
  * 前台公共 Header（SSR 端 shadcn/ui，移动优先）
+ * 集成国际化：语言切换按钮，中文作为翻译 key
  */
-import { Link } from "@tanstack/react-router";
+import { ClientOnly, Link } from "@tanstack/react-router";
 import { Menu, X } from "lucide-react";
 import { useState } from "react";
 import { Button } from "#/components/ui/button";
+import { useTranslation } from "#/lib/i18n/i18n-context";
 import ThemeToggle from "./ThemeToggle";
-
-const NAV_LINKS = [
-	{ to: "/", label: "首页" },
-	{ to: "/news", label: "新闻" },
-	{ to: "/about", label: "关于" },
-] as const;
 
 export default function Header() {
 	const [mobileOpen, setMobileOpen] = useState(false);
+	const { t, locale } = useTranslation();
+
+	const NAV_LINKS = [
+		{ to: "/", label: t("首页") },
+		{ to: "/news", label: t("新闻") },
+		{ to: "/about", label: t("关于") },
+	] as const;
 
 	return (
 		<header className="sticky top-0 z-50 border-b border-border bg-background/80 px-4 backdrop-blur-lg">
@@ -46,9 +49,25 @@ export default function Header() {
 
 				{/* 右侧操作区 */}
 				<div className="flex items-center gap-1 sm:gap-2">
+					{/* 语言切换按钮 */}
+					<ClientOnly>
+						<Button
+							variant="ghost"
+							size="sm"
+							onClick={async () => {
+								const l = await cookieStore.get("lang");
+								await cookieStore.set("lang", l?.value === "zh" ? "en" : "zh");
+								window.location.reload();
+							}}
+							title={t("切换语言")}
+							className="text-xs uppercase"
+						>
+							{locale === "zh" ? "EN" : "中文"}
+						</Button>
+					</ClientOnly>
 					<Link to="/login" className="hidden sm:block">
 						<Button variant="ghost" size="sm">
-							登录
+							{t("登录")}
 						</Button>
 					</Link>
 					<ThemeToggle />
@@ -85,7 +104,7 @@ export default function Header() {
 							className="block rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
 							onClick={() => setMobileOpen(false)}
 						>
-							登录
+							{t("登录")}
 						</Link>
 					</div>
 				</div>

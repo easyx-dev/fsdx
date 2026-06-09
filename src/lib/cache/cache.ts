@@ -101,3 +101,8 @@ export const dictCache = new MemoryCache<Record<string, string>>({
 export const configCache = new MemoryCache<string>({
 	name: "config",
 });
+
+/** UI 翻译缓存：key = locale，value = { 中文文本: 翻译 } */
+export const uiTranslationCache = new MemoryCache<Record<string, string>>({
+	name: "ui_translation",
+});

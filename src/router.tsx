@@ -1,12 +1,13 @@
-import { createRouter as createTanStackRouter } from "@tanstack/react-router";
+import { createRouter } from "@tanstack/react-router";
 import {
 	DefaultErrorFallback,
 	NotFoundFallback,
 } from "./components/ErrorFallback";
+import { DEFAULT_LOCALE } from "./lib/i18n/i18n.types";
 import { routeTree } from "./routeTree.gen";
 
 export function getRouter() {
-	const router = createTanStackRouter({
+	const router = createRouter({
 		routeTree,
 		scrollRestoration: true,
 		defaultPreload: "intent",
@@ -16,6 +17,9 @@ export function getRouter() {
 		),
 		defaultNotFoundComponent: () => {
 			return <NotFoundFallback />;
+		},
+		context: {
+			locale: DEFAULT_LOCALE,
 		},
 	});
 

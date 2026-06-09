@@ -11,6 +11,7 @@ import { CaptchaInput } from "#/components/CaptchaInput";
 import { Button } from "#/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "#/components/ui/card";
 import { Input } from "#/components/ui/input";
+import { useTranslation } from "#/lib/i18n/i18n-context";
 import { clientRegisterService } from "#/server/auth/auth.server";
 
 const registerSchema = z.object({
@@ -32,6 +33,7 @@ export const Route = createFileRoute("/register")({
 
 function ClientRegisterPage() {
 	const navigate = useNavigate();
+	const { t } = useTranslation();
 
 	const form = useForm({
 		defaultValues: {
@@ -63,7 +65,7 @@ function ClientRegisterPage() {
 				<Card>
 					<CardHeader className="p-4 sm:p-6">
 						<CardTitle className="text-center text-xl sm:text-2xl">
-							用户注册
+							{t("用户注册")}
 						</CardTitle>
 					</CardHeader>
 					<CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
@@ -80,13 +82,13 @@ function ClientRegisterPage() {
 								name="username"
 								validators={{
 									onChange: ({ value }) =>
-										!value ? "请输入用户名" : undefined,
+										!value ? t("请输入用户名") : undefined,
 								}}
 							>
 								{(field) => (
 									<div className="space-y-1.5 sm:space-y-2">
 										<label htmlFor={field.name} className="text-sm font-medium">
-											用户名
+											{t("用户名")}
 										</label>
 										<Input
 											id={field.name}
@@ -112,9 +114,9 @@ function ClientRegisterPage() {
 								name="email"
 								validators={{
 									onChange: ({ value }) => {
-										if (!value) return "请输入邮箱";
+										if (!value) return t("请输入邮箱");
 										if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value))
-											return "邮箱格式不正确";
+											return t("邮箱格式不正确");
 										return undefined;
 									},
 								}}
@@ -122,7 +124,7 @@ function ClientRegisterPage() {
 								{(field) => (
 									<div className="space-y-1.5 sm:space-y-2">
 										<label htmlFor={field.name} className="text-sm font-medium">
-											邮箱
+											{t("邮箱")}
 										</label>
 										<Input
 											id={field.name}
@@ -148,8 +150,8 @@ function ClientRegisterPage() {
 								name="captcha"
 								validators={{
 									onChange: ({ value }) => {
-										if (!value) return "请输入验证码";
-										if (value.length !== 6) return "验证码为 6 位";
+										if (!value) return t("请输入验证码");
+										if (value.length !== 6) return t("验证码为 6 位");
 										return undefined;
 									},
 								}}
@@ -157,7 +159,7 @@ function ClientRegisterPage() {
 								{(field) => (
 									<div className="space-y-1.5 sm:space-y-2">
 										<label htmlFor={field.name} className="text-sm font-medium">
-											邮箱验证码
+											{t("邮箱验证码")}
 										</label>
 										<form.Subscribe selector={(state) => state.values.email}>
 											{(email) => (
@@ -196,8 +198,8 @@ function ClientRegisterPage() {
 								name="password"
 								validators={{
 									onChange: ({ value }) => {
-										if (!value) return "请输入密码";
-										if (value.length < 6) return "密码至少 6 位";
+										if (!value) return t("请输入密码");
+										if (value.length < 6) return t("密码至少 6 位");
 										return undefined;
 									},
 								}}
@@ -205,7 +207,7 @@ function ClientRegisterPage() {
 								{(field) => (
 									<div className="space-y-1.5 sm:space-y-2">
 										<label htmlFor={field.name} className="text-sm font-medium">
-											密码
+											{t("密码")}
 										</label>
 										<Input
 											id={field.name}
@@ -246,19 +248,19 @@ function ClientRegisterPage() {
 										disabled={!canSubmit}
 										className="w-full"
 									>
-										{isSubmitting ? "注册中..." : "注册"}
+										{isSubmitting ? t("registering") : t("registerBtn")}
 									</Button>
 								)}
 							</form.Subscribe>
 						</form>
 
 						<p className="mt-3 text-center text-sm text-muted-foreground sm:mt-4">
-							已有账号？{" "}
+							{t("已有账号？")}{" "}
 							<Link
 								to="/login"
 								className="underline underline-offset-4 hover:text-foreground"
 							>
-								立即登录
+								{t("立即登录")}
 							</Link>
 						</p>
 					</CardContent>

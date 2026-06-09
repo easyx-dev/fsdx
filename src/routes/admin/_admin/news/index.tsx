@@ -16,13 +16,14 @@ import {
 import { useState } from "react";
 import { z } from "zod";
 import { AdminPageContent } from "#/components/admin/AdminPageContent";
+import { FieldTranslationDrawer } from "#/components/admin/FieldTranslationDrawer";
 import { PERMISSIONS } from "#/lib/permissions/permissions";
 import { permGuard } from "#/middleware/server-fn-auth";
 import type { NewsRecord } from "#/server/news/news.server";
 import {
 	changeNewsStatus,
 	deleteNews,
-	getNewsList as getNewsListService,
+	getNewsList,
 } from "#/server/news/news.server";
 
 const listSchema = z.object({
@@ -39,7 +40,7 @@ const getNewsListFn = createServerFn({ method: "GET" })
 	.middleware([permGuard(PERMISSIONS.NEWS_VIEW)])
 	.inputValidator(listSchema)
 	.handler(async ({ data: { status, page = 1 } }) => {
-		return getNewsListService({ status, page, pageSize: 20 });
+		return getNewsList({ status, page, pageSize: 20 });
 	});
 
 const deleteNewsFn = createServerFn({ method: "POST" })
@@ -68,6 +69,12 @@ const STATUS_LABELS: Record<string, string> = {
 	archived: "已归档",
 };
 
+const NEWS_TRANSLATABLE_FIELDS = [
+	{ name: "title", label: "新闻标题", valueType: "input" as const },
+	{ name: "summary", label: "新闻摘要", valueType: "text" as const },
+	{ name: "content", label: "新闻内容", valueType: "rich" as const },
+];
+
 const STATUS_COLORS: Record<string, string> = {
 	draft: "gold",
 	published: "green",
@@ -92,18 +99,20 @@ function NewsListPage() {
 			title: "标题",
 			dataIndex: "title",
 			key: "title",
-			render: (_: string, record: NewsRecord) => (
-				<div>
-					<div className="font-medium">{record.title}</div>
-					<div className="text-xs text-muted-foreground">{record.slug}</div>
-				</div>
-			),
+			width: 200,
+		},
+		{
+			title: "摘要",
+			dataIndex: "summary",
+			key: "summary",
+			width: 200,
+			ellipsis: true,
 		},
 		{
 			title: "状态",
 			dataIndex: "status",
 			key: "status",
-			width: 120,
+			width: 100,
 			render: (_: string, record: NewsRecord) => (
 				<Space size={4}>
 					<Tag color={STATUS_COLORS[record.status ?? ""]}>
@@ -124,9 +133,19 @@ function NewsListPage() {
 		{
 			title: "操作",
 			key: "actions",
-			width: 200,
 			render: (_: unknown, record: NewsRecord) => (
 				<Space size={4}>
+					<FieldTranslationDrawer
+						entityType="news"
+						entityId={record.id}
+						fields={NEWS_TRANSLATABLE_FIELDS}
+						trigger="button"
+						originalValues={{
+							title: record.title ?? "",
+							summary: record.summary ?? "",
+							content: record.content ?? "",
+						}}
+					/>
 					{record.status === "draft" && (
 						<Button
 							type="link"

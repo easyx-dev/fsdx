@@ -1,11 +1,14 @@
 /**
  * 新闻管理：CRUD 操作 + slug 自动生成
  * wangEditor 直接存储 HTML，无需服务端渲染转换
+ * 国际化数据通过 translateNewsRecord / translateNewsRecords 按需组合获取
  */
 import { and, desc, eq, isNull, ne } from "drizzle-orm";
 import { db } from "#/db/index";
 import { news } from "#/db/schema";
+import { DEFAULT_LOCALE, type Locale } from "#/lib/i18n/i18n.types";
 import { logger } from "#/lib/logger/logger";
+import { getContentTranslations } from "#/server/i18n/i18n.server";
 
 export type NewsRecord = typeof news.$inferSelect;
 
@@ -55,6 +58,26 @@ async function ensureUniqueSlug(
 	return uniqueSlug;
 }
 
+/**
+ * 对单条新闻记录应用 content_translation 翻译
+ * 仅非默认语言时调用，zh 直接从主表读取
+ */
+export async function translateNewsRecord(
+	record: NewsRecord,
+	locale: Locale,
+): Promise<NewsRecord> {
+	if (locale === DEFAULT_LOCALE) return record;
+
+	const translations = await getContentTranslations("news", record.id, locale);
+
+	const result = { ...record };
+	for (const [fieldName, ct] of Object.entries(translations)) {
+		(result as Record<string, unknown>)[fieldName] = ct.value;
+	}
+
+	return result;
+}
+
 /** 获取新闻列表 */
 export async function getNewsList(params?: {
 	status?: string;
@@ -85,7 +108,7 @@ export async function getNewsList(params?: {
 
 /**
  * 根据 slug 获取单条新闻（前台用）
- * 返回扁平结构：NewsRecord 字段 + html（wangEditor 直接存 HTML，无需转换）
+ * 返回扁平结构：NewsRecord 字段 + html，不包含国际化翻译
  */
 export async function getNewsBySlug(slug: string): Promise<NewsDetail | null> {
 	const record = await db.query.news.findFirst({
@@ -214,4 +237,13 @@ export async function deleteNews(id: string): Promise<boolean> {
 
 	logger.info({ id, title: existing.title }, "新闻已删除");
 	return true;
+}
+
+/** 批量翻译新闻记录（函数式组合，调用方在获取列表后按需调用） */
+export async function translateNewsRecords(
+	records: NewsRecord[],
+	locale: Locale,
+): Promise<NewsRecord[]> {
+	if (locale === DEFAULT_LOCALE) return records;
+	return Promise.all(records.map((r) => translateNewsRecord(r, locale)));
 }

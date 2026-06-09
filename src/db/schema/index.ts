@@ -9,3 +9,4 @@ export { file } from "./file";
 export { news } from "./news";
 export { role } from "./role";
 export { systemConfig } from "./system-config";
+export { contentTranslation, uiTranslation } from "./translation";

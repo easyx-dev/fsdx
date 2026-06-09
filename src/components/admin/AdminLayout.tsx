@@ -9,6 +9,7 @@ import {
 	EditOutlined,
 	FileTextOutlined,
 	FolderOpenOutlined,
+	GlobalOutlined,
 	LogoutOutlined,
 	MenuFoldOutlined,
 	MenuUnfoldOutlined,
@@ -105,7 +106,7 @@ const NAV_GROUPS: NavGroup[] = [
 		],
 	},
 	{
-		label: "系统设置",
+		label: "系统管理",
 		items: [
 			{ key: "/admin/dicts", label: "字典管理", icon: <BookOutlined /> },
 			{ key: "/admin/config", label: "系统配置", icon: <SettingOutlined /> },
@@ -115,6 +116,16 @@ const NAV_GROUPS: NavGroup[] = [
 				icon: <FolderOpenOutlined />,
 			},
 			{ key: "/admin/logs", label: "日志查询", icon: <FileTextOutlined /> },
+			{
+				key: "/admin/translations/ui",
+				label: "UI 翻译",
+				icon: <GlobalOutlined />,
+			},
+			{
+				key: "/admin/translations/content",
+				label: "实体翻译",
+				icon: <GlobalOutlined />,
+			},
 		],
 	},
 ];

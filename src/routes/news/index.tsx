@@ -12,8 +12,9 @@ import {
 	CardHeader,
 	CardTitle,
 } from "#/components/ui/card";
+import { useTranslation } from "#/lib/i18n/i18n-context";
 import type { NewsRecord } from "#/server/news/news.server";
-import { getNewsList } from "#/server/news/news.server";
+import { getNewsList, translateNewsRecords } from "#/server/news/news.server";
 
 const getPublishedNews = createServerFn({ method: "GET" })
 	.inputValidator(
@@ -22,8 +23,15 @@ const getPublishedNews = createServerFn({ method: "GET" })
 			pageSize: z.number().int().min(1).max(50).optional().default(12),
 		}),
 	)
-	.handler(async ({ data }) => {
-		return getNewsList({ status: "published", ...data });
+	.handler(async ({ data, context }) => {
+		const { records, ...rest } = await getNewsList({
+			status: "published",
+			...data,
+		});
+		return {
+			records: await translateNewsRecords(records, context.locale),
+			...rest,
+		};
 	});
 
 export const Route = createFileRoute("/news/")({
@@ -35,21 +43,22 @@ function NewsListPage() {
 	const data = Route.useLoaderData();
 	const { records, total, page, pageSize } = data;
 	const totalPages = Math.ceil(total / pageSize);
+	const { t, locale } = useTranslation();
 
 	return (
 		<main className="mx-auto max-w-5xl px-4 py-8 sm:py-12">
 			<header className="mb-6 sm:mb-10">
 				<h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
-					新闻资讯
+					{t("新闻资讯")}
 				</h1>
 				<p className="mt-1 text-sm text-muted-foreground sm:mt-2">
-					共 {total} 篇
+					{t("共 {total} 篇", { total })}
 				</p>
 			</header>
 
 			{records.length === 0 ? (
 				<div className="py-20 text-center text-sm text-muted-foreground">
-					暂无新闻
+					{t("暂无新闻")}
 				</div>
 			) : (
 				<div className="grid gap-4 sm:grid-cols-2 sm:gap-6 lg:grid-cols-3">
@@ -63,7 +72,7 @@ function NewsListPage() {
 										</CardTitle>
 										{item.isPinned && (
 											<Badge variant="secondary" className="shrink-0 text-xs">
-												置顶
+												{t("置顶")}
 											</Badge>
 										)}
 									</div>
@@ -76,7 +85,7 @@ function NewsListPage() {
 								<CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
 									<time className="text-xs text-muted-foreground">
 										{item.publishedAt
-											? new Date(item.publishedAt).toLocaleDateString("zh-CN", {
+											? new Date(item.publishedAt).toLocaleDateString(locale, {
 													year: "numeric",
 													month: "long",
 													day: "numeric",

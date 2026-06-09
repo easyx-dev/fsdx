@@ -6,12 +6,16 @@ import { createServerFn } from "@tanstack/react-start";
 import { ArrowLeft } from "lucide-react";
 import { z } from "zod";
 import { Button } from "#/components/ui/button";
-import { getNewsBySlug } from "#/server/news/news.server";
+import { useTranslation } from "#/lib/i18n/i18n-context";
+import { getNewsBySlug, translateNewsRecord } from "#/server/news/news.server";
 
 const getNewsDetail = createServerFn({ method: "GET" })
 	.inputValidator(z.object({ slug: z.string().min(1) }))
-	.handler(async ({ data: { slug } }) => {
-		return getNewsBySlug(slug);
+	.handler(async ({ data: { slug }, context }) => {
+		const record = await getNewsBySlug(slug);
+		if (!record) return null;
+		const translated = await translateNewsRecord(record, context.locale);
+		return { ...translated, html: translated.content ?? "" };
 	});
 
 export const Route = createFileRoute("/news/$slug")({
@@ -22,17 +26,18 @@ export const Route = createFileRoute("/news/$slug")({
 
 function NewsDetailPage() {
 	const data = Route.useLoaderData();
+	const { t, locale } = useTranslation();
 
 	if (!data) {
 		return (
 			<main className="mx-auto max-w-3xl px-4 py-12 text-center sm:py-20">
 				<p className="text-base text-muted-foreground sm:text-lg">
-					新闻不存在或未发布
+					{t("新闻不存在或未发布")}
 				</p>
 				<Link to="/" className="mt-4 inline-block">
 					<Button variant="ghost" size="sm">
 						<ArrowLeft />
-						返回首页
+						{t("返回首页")}
 					</Button>
 				</Link>
 			</main>
@@ -44,7 +49,7 @@ function NewsDetailPage() {
 			<Link to="/" className="mb-6 inline-block sm:mb-8">
 				<Button variant="ghost" size="sm">
 					<ArrowLeft />
-					返回首页
+					{t("backHome")}
 				</Button>
 			</Link>
 
@@ -56,7 +61,7 @@ function NewsDetailPage() {
 					<div className="mt-3 flex flex-wrap items-center gap-3 text-sm text-muted-foreground sm:mt-4 sm:gap-4">
 						{data.publishedAt && (
 							<time>
-								{new Date(data.publishedAt).toLocaleDateString("zh-CN", {
+								{new Date(data.publishedAt).toLocaleDateString(locale, {
 									year: "numeric",
 									month: "long",
 									day: "numeric",

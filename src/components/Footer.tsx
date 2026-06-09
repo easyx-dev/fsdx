@@ -1,10 +1,13 @@
 /**
  * 前台公共 Footer（SSR 端 shadcn/ui）
+ * 导航链接通过 useTranslation 国际化
  */
 import { Link } from "@tanstack/react-router";
+import { useTranslation } from "#/lib/i18n/i18n-context";
 
 export default function Footer() {
 	const year = new Date().getFullYear();
+	const { t } = useTranslation();
 
 	return (
 		<footer className="border-t border-border px-4 py-8 sm:py-10">
@@ -18,13 +21,13 @@ export default function Footer() {
 					</div>
 					<nav className="flex flex-wrap items-center justify-center gap-3 text-sm text-muted-foreground sm:gap-4">
 						<Link to="/" className="hover:text-foreground">
-							首页
+							{t("首页")}
 						</Link>
 						<Link to="/news" className="hover:text-foreground">
-							新闻
+							{t("新闻")}
 						</Link>
 						<Link to="/about" className="hover:text-foreground">
-							关于
+							{t("关于")}
 						</Link>
 					</nav>
 					<p className="text-xs text-muted-foreground sm:text-sm">
