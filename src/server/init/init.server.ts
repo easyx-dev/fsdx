@@ -92,24 +92,64 @@ export async function initSystem(data: InitData): Promise<{
 
 		// 3. 写入站点名称配置
 		if (siteName) {
-			await upsertConfig("site_name", siteName, "站点名称");
+			await upsertConfig(
+				"site_name",
+				siteName,
+				"站点名称",
+				"input",
+				"站点设置",
+			);
 		}
 
 		// 4. 写入 SMTP 配置（用户可选填写）
 		if (smtp) {
 			if (smtp.host)
-				await upsertConfig("smtp_host", smtp.host, "SMTP 服务器地址");
+				await upsertConfig(
+					"smtp_host",
+					smtp.host,
+					"SMTP 服务器地址",
+					"input",
+					"邮件设置",
+				);
 			if (smtp.port !== undefined)
-				await upsertConfig("smtp_port", String(smtp.port), "SMTP 端口");
+				await upsertConfig(
+					"smtp_port",
+					String(smtp.port),
+					"SMTP 端口",
+					"number",
+					"邮件设置",
+				);
 			await upsertConfig(
 				"smtp_secure",
 				smtp.secure ? "true" : "false",
 				"是否使用 SSL/TLS",
+				"input",
+				"邮件设置",
 			);
-			if (smtp.user) await upsertConfig("smtp_user", smtp.user, "SMTP 用户名");
-			if (smtp.pass) await upsertConfig("smtp_pass", smtp.pass, "SMTP 密码");
+			if (smtp.user)
+				await upsertConfig(
+					"smtp_user",
+					smtp.user,
+					"SMTP 用户名",
+					"input",
+					"邮件设置",
+				);
+			if (smtp.pass)
+				await upsertConfig(
+					"smtp_pass",
+					smtp.pass,
+					"SMTP 密码",
+					"input",
+					"邮件设置",
+				);
 			if (smtp.from)
-				await upsertConfig("smtp_from", smtp.from, "发件人邮箱地址");
+				await upsertConfig(
+					"smtp_from",
+					smtp.from,
+					"发件人邮箱地址",
+					"input",
+					"邮件设置",
+				);
 		}
 
 		// 5. 重新加载配置缓存，确保 getConfig 能读取到最新值

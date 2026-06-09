@@ -195,31 +195,43 @@ describe("initSystem", () => {
 			"smtp_host",
 			"smtp.example.com",
 			expect.any(String),
+			"input",
+			"邮件设置",
 		);
 		expect(upsertConfig).toHaveBeenCalledWith(
 			"smtp_port",
 			"587",
 			expect.any(String),
+			"number",
+			"邮件设置",
 		);
 		expect(upsertConfig).toHaveBeenCalledWith(
 			"smtp_secure",
 			"true",
 			expect.any(String),
+			"input",
+			"邮件设置",
 		);
 		expect(upsertConfig).toHaveBeenCalledWith(
 			"smtp_user",
 			"user@example.com",
 			expect.any(String),
+			"input",
+			"邮件设置",
 		);
 		expect(upsertConfig).toHaveBeenCalledWith(
 			"smtp_pass",
 			"secret",
 			expect.any(String),
+			"input",
+			"邮件设置",
 		);
 		expect(upsertConfig).toHaveBeenCalledWith(
 			"smtp_from",
 			"noreply@example.com",
 			expect.any(String),
+			"input",
+			"邮件设置",
 		);
 	});
 
@@ -251,6 +263,8 @@ describe("initSystem", () => {
 			"smtp_secure",
 			"false",
 			expect.any(String),
+			"input",
+			"邮件设置",
 		);
 	});
 
@@ -282,12 +296,16 @@ describe("initSystem", () => {
 			"smtp_host",
 			"smtp.example.com",
 			expect.any(String),
+			"input",
+			"邮件设置",
 		);
 		// secure 始终会写入（因为 smtp 对象存在就会走 smtp.secure 分支）
 		expect(upsertConfig).toHaveBeenCalledWith(
 			"smtp_secure",
 			"false",
 			expect.any(String),
+			"input",
+			"邮件设置",
 		);
 		// 未传入的字段不应被调用
 		expect(upsertConfig).not.toHaveBeenCalledWith(

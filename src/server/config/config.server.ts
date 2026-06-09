@@ -5,6 +5,7 @@ import { and, asc, eq, isNull } from "drizzle-orm";
 import { db } from "#/db/index";
 import { contentTranslation, systemConfig } from "#/db/schema";
 import { configCache, configTranslationCache } from "#/lib/cache/cache";
+import type { EditorType } from "#/lib/editor-types/editor-types";
 import { DEFAULT_LOCALE, type Locale } from "#/lib/i18n/i18n.types";
 import { logger } from "#/lib/logger/logger";
 
@@ -73,6 +74,8 @@ export async function upsertConfig(
 			.set({
 				value,
 				clientVisible: clientVisible ?? existing.clientVisible,
+				valueType: valueType ?? existing.valueType,
+				groupName: groupName ?? existing.groupName,
 				description: description ?? existing.description,
 				updatedAt: new Date(),
 			})
@@ -131,12 +134,109 @@ export async function deleteConfig(id: string) {
 // ========== 预置系统配置 ==========
 
 /** 预置系统配置常量（仅服务端启动时自动插入的配置项） */
-const PRESET_CONFIGS = [
+const PRESET_CONFIGS: {
+	key: string;
+	value: string;
+	description: string;
+	clientVisible: boolean;
+	valueType: EditorType;
+	groupName: string;
+}[] = [
 	{
 		key: "site_name",
 		value: "FSDX",
 		description: "站点名称",
 		clientVisible: true,
+		valueType: "input",
+		groupName: "站点设置",
+	},
+	{
+		key: "keywords",
+		value: "",
+		description: "SEO head 关键词",
+		clientVisible: true,
+		valueType: "text",
+		groupName: "SEO设置",
+	},
+	{
+		key: "description",
+		value: "",
+		description: "SEO head 站点描述",
+		clientVisible: true,
+		valueType: "text",
+		groupName: "SEO设置",
+	},
+	{
+		key: "company_address",
+		value: "",
+		description: "公司地址",
+		clientVisible: true,
+		valueType: "text",
+		groupName: "公司信息",
+	},
+	{
+		key: "company_tell",
+		value: "",
+		description: "公司电话",
+		clientVisible: true,
+		valueType: "input",
+		groupName: "公司信息",
+	},
+	{
+		key: "company_email",
+		value: "",
+		description: "公司邮箱",
+		clientVisible: true,
+		valueType: "input",
+		groupName: "公司信息",
+	},
+	{
+		key: "smtp_host",
+		value: "",
+		description: "SMTP 服务器地址",
+		clientVisible: false,
+		valueType: "input",
+		groupName: "邮件设置",
+	},
+	{
+		key: "smtp_port",
+		value: "",
+		description: "SMTP 端口",
+		clientVisible: false,
+		valueType: "number",
+		groupName: "邮件设置",
+	},
+	{
+		key: "smtp_secure",
+		value: "false",
+		description: "是否使用 SSL/TLS",
+		clientVisible: false,
+		valueType: "input",
+		groupName: "邮件设置",
+	},
+	{
+		key: "smtp_user",
+		value: "",
+		description: "SMTP 用户名",
+		clientVisible: false,
+		valueType: "input",
+		groupName: "邮件设置",
+	},
+	{
+		key: "smtp_pass",
+		value: "",
+		description: "SMTP 密码",
+		clientVisible: false,
+		valueType: "input",
+		groupName: "邮件设置",
+	},
+	{
+		key: "smtp_from",
+		value: "",
+		description: "发件人邮箱地址",
+		clientVisible: false,
+		valueType: "input",
+		groupName: "邮件设置",
 	},
 ];
 
@@ -154,6 +254,8 @@ export async function ensurePresetConfigs(): Promise<void> {
 				.set({
 					value: preset.value,
 					clientVisible: preset.clientVisible,
+					valueType: preset.valueType,
+					groupName: preset.groupName,
 					description: preset.description,
 					deletedAt: null,
 					updatedAt: new Date(),

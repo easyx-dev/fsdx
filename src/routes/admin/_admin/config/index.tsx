@@ -107,6 +107,7 @@ export const Route = createFileRoute("/admin/_admin/config/")({
 function ConfigPage() {
 	const router = useRouter();
 	const configs = Route.useLoaderData();
+	const [searchText, setSearchText] = useState("");
 	const [selectedGroup, setSelectedGroup] = useState<string | null>(null);
 	const [modalOpen, setModalOpen] = useState(false);
 	const [editing, setEditing] = useState<ConfigRecord | null>(null);
@@ -125,13 +126,25 @@ function ConfigPage() {
 		return ["全部", ...Array.from(set).sort()];
 	}, [configs]);
 
-	/** 根据选中分组过滤配置 */
+	/** 根据选中分组和搜索文本过滤配置 */
 	const filteredConfigs = useMemo(() => {
-		if (!selectedGroup || selectedGroup === "全部") return configs;
-		if (selectedGroup === UNGROUPED_KEY)
-			return configs.filter((c) => !c.groupName);
-		return configs.filter((c) => c.groupName === selectedGroup);
-	}, [configs, selectedGroup]);
+		let result = configs;
+		if (selectedGroup && selectedGroup !== "全部") {
+			if (selectedGroup === UNGROUPED_KEY)
+				result = result.filter((c) => !c.groupName);
+			else result = result.filter((c) => c.groupName === selectedGroup);
+		}
+		if (searchText) {
+			const lower = searchText.toLowerCase();
+			result = result.filter(
+				(c) =>
+					c.key.toLowerCase().includes(lower) ||
+					c.value.toLowerCase().includes(lower) ||
+					(c.description ?? "").toLowerCase().includes(lower),
+			);
+		}
+		return result;
+	}, [configs, selectedGroup, searchText]);
 
 	/** 分组列表数据源 */
 	const groupDataSource = useMemo(
@@ -254,11 +267,6 @@ function ConfigPage() {
 			dataIndex: "value",
 			key: "value",
 			ellipsis: true,
-			render: (value: string) => (
-				<span className="text-xs max-w-[300px] truncate inline-block">
-					{value}
-				</span>
-			),
 		},
 		{
 			title: "值类型",
@@ -374,14 +382,24 @@ function ConfigPage() {
 							</span>
 						}
 						extra={
-							<Button
-								type="primary"
-								size="small"
-								icon={<PlusOutlined />}
-								onClick={() => openModal()}
-							>
-								新建配置
-							</Button>
+							<Space>
+								<Input.Search
+									placeholder="搜索配置键或值"
+									allowClear
+									size="small"
+									style={{ width: 200 }}
+									value={searchText}
+									onChange={(e) => setSearchText(e.target.value)}
+								/>
+								<Button
+									type="primary"
+									size="small"
+									icon={<PlusOutlined />}
+									onClick={() => openModal()}
+								>
+									新建配置
+								</Button>
+							</Space>
 						}
 						styles={{ body: { padding: 0 } }}
 					>
@@ -390,6 +408,7 @@ function ConfigPage() {
 							columns={configColumns}
 							rowKey="id"
 							size="small"
+							pagination={false}
 							locale={{ emptyText: "暂无配置" }}
 						/>
 					</Card>
