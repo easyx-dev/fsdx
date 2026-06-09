@@ -94,6 +94,10 @@ const initSchema = z
 		smtpUser: z.string().optional(),
 		smtpPass: z.string().optional(),
 		smtpFrom: z.string().optional(),
+		aiBaseUrl: z.string().optional(),
+		aiApiKey: z.string().optional(),
+		aiDeepModel: z.string().optional(),
+		aiFastModel: z.string().optional(),
 	})
 	.refine((d) => d.password === d.confirmPassword, {
 		message: "两次输入的密码不一致",
@@ -454,6 +458,30 @@ describe("initSchema（系统初始化）", () => {
 				email: "admin@example.com",
 			}).success,
 		).toBe(false);
+	});
+
+	it("包含 AI 配置字段合法通过", () => {
+		const result = initSchema.safeParse({
+			username: "admin",
+			password: "123456",
+			confirmPassword: "123456",
+			email: "admin@example.com",
+			aiBaseUrl: "https://api.openai.com/v1",
+			aiApiKey: "sk-xxx",
+			aiDeepModel: "gpt-4o",
+			aiFastModel: "gpt-4o-mini",
+		});
+		expect(result.success).toBe(true);
+	});
+
+	it("AI 配置字段均为可选", () => {
+		const result = initSchema.safeParse({
+			username: "admin",
+			password: "123456",
+			confirmPassword: "123456",
+			email: "admin@example.com",
+		});
+		expect(result.success).toBe(true);
 	});
 });
 

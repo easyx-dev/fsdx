@@ -238,6 +238,38 @@ const PRESET_CONFIGS: {
 		valueType: "input",
 		groupName: "邮件设置",
 	},
+	{
+		key: "ai_base_url",
+		value: "",
+		description: "AI API 基础地址",
+		clientVisible: false,
+		valueType: "input",
+		groupName: "AI设置",
+	},
+	{
+		key: "ai_api_key",
+		value: "",
+		description: "AI API 密钥",
+		clientVisible: false,
+		valueType: "input",
+		groupName: "AI设置",
+	},
+	{
+		key: "ai_deep_model",
+		value: "",
+		description: "深度思考模型名称",
+		clientVisible: false,
+		valueType: "input",
+		groupName: "AI设置",
+	},
+	{
+		key: "ai_fast_model",
+		value: "",
+		description: "快速模型名称",
+		clientVisible: false,
+		valueType: "input",
+		groupName: "AI设置",
+	},
 ];
 
 /** 运行时校验预置系统配置（幂等安全，恢复软删除的预设项） */

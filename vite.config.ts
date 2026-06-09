@@ -18,7 +18,7 @@ const config = defineConfig({
 			},
 			importProtection: {
 				client: {
-					specifiers: ["bcryptjs", "drizzle-orm"],
+					specifiers: ["bcryptjs", "drizzle-orm", "openai"],
 				},
 			},
 		}),

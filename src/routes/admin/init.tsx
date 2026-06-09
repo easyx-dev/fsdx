@@ -5,6 +5,7 @@ import {
 	CloudUploadOutlined,
 	LockOutlined,
 	MailOutlined,
+	RobotOutlined,
 	UserOutlined,
 } from "@ant-design/icons";
 import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
@@ -50,6 +51,10 @@ const initSchema = z
 		smtpUser: z.string().optional(),
 		smtpPass: z.string().optional(),
 		smtpFrom: z.string().optional(),
+		aiBaseUrl: z.string().optional(),
+		aiApiKey: z.string().optional(),
+		aiDeepModel: z.string().optional(),
+		aiFastModel: z.string().optional(),
 	})
 	.refine((d) => d.password === d.confirmPassword, {
 		message: "两次输入的密码不一致",
@@ -67,6 +72,13 @@ const init = createServerFn({ method: "POST" })
 			data.smtpFrom
 		);
 
+		const aiProvided = !!(
+			data.aiBaseUrl ||
+			data.aiApiKey ||
+			data.aiDeepModel ||
+			data.aiFastModel
+		);
+
 		const payload: InitData = {
 			admin: {
 				username: data.username,
@@ -82,6 +94,14 @@ const init = createServerFn({ method: "POST" })
 						user: data.smtpUser,
 						pass: data.smtpPass,
 						from: data.smtpFrom,
+					}
+				: undefined,
+			ai: aiProvided
+				? {
+						baseUrl: data.aiBaseUrl,
+						apiKey: data.aiApiKey,
+						deepModel: data.aiDeepModel,
+						fastModel: data.aiFastModel,
 					}
 				: undefined,
 		};
@@ -115,6 +135,12 @@ interface ImportJson {
 		pass?: string;
 		from?: string;
 	};
+	ai?: {
+		baseUrl?: string;
+		apiKey?: string;
+		deepModel?: string;
+		fastModel?: string;
+	};
 }
 
 function AdminInitPage() {
@@ -122,6 +148,7 @@ function AdminInitPage() {
 	const [form] = Form.useForm();
 	const [loading, setLoading] = useState(false);
 	const [smtpExpanded, setSmtpExpanded] = useState(false);
+	const [aiExpanded, setAiExpanded] = useState(false);
 
 	const [isDark, setIsDark] = useState(false);
 	useEffect(() => {
@@ -162,6 +189,13 @@ function AdminInitPage() {
 					if (json.smtp.user) values.smtpUser = json.smtp.user;
 					if (json.smtp.pass) values.smtpPass = json.smtp.pass;
 					if (json.smtp.from) values.smtpFrom = json.smtp.from;
+				}
+				if (json.ai) {
+					setAiExpanded(true);
+					if (json.ai.baseUrl) values.aiBaseUrl = json.ai.baseUrl;
+					if (json.ai.apiKey) values.aiApiKey = json.ai.apiKey;
+					if (json.ai.deepModel) values.aiDeepModel = json.ai.deepModel;
+					if (json.ai.fastModel) values.aiFastModel = json.ai.fastModel;
 				}
 
 				form.setFieldsValue(values);
@@ -328,6 +362,39 @@ function AdminInitPage() {
 									</Form.Item>
 									<Form.Item name="smtpFrom">
 										<Input placeholder="发件人邮箱，如 noreply@example.com" />
+									</Form.Item>
+								</>
+							)}
+
+							<Divider>AI 接入配置（可选）</Divider>
+
+							<Button
+								type="link"
+								onClick={() => setAiExpanded(!aiExpanded)}
+								className="mb-2 p-0"
+							>
+								{aiExpanded ? "收起 AI 配置" : "展开 AI 配置"}
+							</Button>
+
+							{aiExpanded && (
+								<>
+									<Form.Item name="aiBaseUrl">
+										<Input
+											prefix={<RobotOutlined />}
+											placeholder="API 基础地址，如 https://api.openai.com/v1"
+										/>
+									</Form.Item>
+									<Form.Item name="aiApiKey">
+										<Input.Password
+											prefix={<RobotOutlined />}
+											placeholder="API 密钥"
+										/>
+									</Form.Item>
+									<Form.Item name="aiDeepModel">
+										<Input placeholder="深度思考模型，如 gpt-4o" />
+									</Form.Item>
+									<Form.Item name="aiFastModel">
+										<Input placeholder="快速模型，如 gpt-4o-mini" />
 									</Form.Item>
 								</>
 							)}

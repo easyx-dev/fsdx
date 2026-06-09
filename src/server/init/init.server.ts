@@ -24,6 +24,12 @@ export interface InitData {
 		pass?: string;
 		from?: string;
 	};
+	ai?: {
+		baseUrl?: string;
+		apiKey?: string;
+		deepModel?: string;
+		fastModel?: string;
+	};
 }
 
 /**
@@ -45,7 +51,7 @@ export async function initSystem(data: InitData): Promise<{
 	success: boolean;
 	message: string;
 }> {
-	const { admin, siteName, smtp } = data;
+	const { admin, siteName, smtp, ai } = data;
 
 	// 使用事务包裹，避免并发初始化
 	return db.transaction(async (tx) => {
@@ -152,7 +158,43 @@ export async function initSystem(data: InitData): Promise<{
 				);
 		}
 
-		// 5. 重新加载配置缓存，确保 getConfig 能读取到最新值
+		// 5. 写入 AI 配置（用户可选填写）
+		if (ai) {
+			if (ai.baseUrl)
+				await upsertConfig(
+					"ai_base_url",
+					ai.baseUrl,
+					"AI API 基础地址",
+					"input",
+					"AI设置",
+				);
+			if (ai.apiKey)
+				await upsertConfig(
+					"ai_api_key",
+					ai.apiKey,
+					"AI API 密钥",
+					"input",
+					"AI设置",
+				);
+			if (ai.deepModel)
+				await upsertConfig(
+					"ai_deep_model",
+					ai.deepModel,
+					"深度思考模型名称",
+					"input",
+					"AI设置",
+				);
+			if (ai.fastModel)
+				await upsertConfig(
+					"ai_fast_model",
+					ai.fastModel,
+					"快速模型名称",
+					"input",
+					"AI设置",
+				);
+		}
+
+		// 6. 重新加载配置缓存，确保 getConfig 能读取到最新值
 		await loadConfigCache();
 
 		logger.info("系统初始化完成");
