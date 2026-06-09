@@ -32,6 +32,7 @@ import { Route as ApiDownloadFileIdRouteImport } from './routes/api/download/fil
 import { Route as AdminAdminTranslationsUiRouteImport } from './routes/admin/_admin/translations/ui'
 import { Route as AdminAdminTranslationsContentRouteImport } from './routes/admin/_admin/translations/content'
 import { Route as AdminAdminNewsCreateRouteImport } from './routes/admin/_admin/news/create'
+import { Route as AdminAdminDemoAiRouteImport } from './routes/admin/_admin/demo/ai'
 import { Route as AdminAdminUsersClientsIndexRouteImport } from './routes/admin/_admin/users/clients/index'
 import { Route as AdminAdminUsersAdminsIndexRouteImport } from './routes/admin/_admin/users/admins/index'
 import { Route as AdminAdminNewsIdEditRouteImport } from './routes/admin/_admin/news/$id/edit'
@@ -152,6 +153,11 @@ const AdminAdminNewsCreateRoute = AdminAdminNewsCreateRouteImport.update({
   path: '/news/create',
   getParentRoute: () => AdminAdminRoute,
 } as any)
+const AdminAdminDemoAiRoute = AdminAdminDemoAiRouteImport.update({
+  id: '/demo/ai',
+  path: '/demo/ai',
+  getParentRoute: () => AdminAdminRoute,
+} as any)
 const AdminAdminUsersClientsIndexRoute =
   AdminAdminUsersClientsIndexRouteImport.update({
     id: '/users/clients/',
@@ -181,6 +187,7 @@ export interface FileRoutesByFullPath {
   '/news/$slug': typeof NewsSlugRoute
   '/news/': typeof NewsIndexRoute
   '/admin/': typeof AdminAdminIndexRoute
+  '/admin/demo/ai': typeof AdminAdminDemoAiRoute
   '/admin/news/create': typeof AdminAdminNewsCreateRoute
   '/admin/translations/content': typeof AdminAdminTranslationsContentRoute
   '/admin/translations/ui': typeof AdminAdminTranslationsUiRoute
@@ -207,6 +214,7 @@ export interface FileRoutesByTo {
   '/admin/login': typeof AdminLoginRoute
   '/news/$slug': typeof NewsSlugRoute
   '/news': typeof NewsIndexRoute
+  '/admin/demo/ai': typeof AdminAdminDemoAiRoute
   '/admin/news/create': typeof AdminAdminNewsCreateRoute
   '/admin/translations/content': typeof AdminAdminTranslationsContentRoute
   '/admin/translations/ui': typeof AdminAdminTranslationsUiRoute
@@ -236,6 +244,7 @@ export interface FileRoutesById {
   '/news/$slug': typeof NewsSlugRoute
   '/news/': typeof NewsIndexRoute
   '/admin/_admin/': typeof AdminAdminIndexRoute
+  '/admin/_admin/demo/ai': typeof AdminAdminDemoAiRoute
   '/admin/_admin/news/create': typeof AdminAdminNewsCreateRoute
   '/admin/_admin/translations/content': typeof AdminAdminTranslationsContentRoute
   '/admin/_admin/translations/ui': typeof AdminAdminTranslationsUiRoute
@@ -265,6 +274,7 @@ export interface FileRouteTypes {
     | '/news/$slug'
     | '/news/'
     | '/admin/'
+    | '/admin/demo/ai'
     | '/admin/news/create'
     | '/admin/translations/content'
     | '/admin/translations/ui'
@@ -291,6 +301,7 @@ export interface FileRouteTypes {
     | '/admin/login'
     | '/news/$slug'
     | '/news'
+    | '/admin/demo/ai'
     | '/admin/news/create'
     | '/admin/translations/content'
     | '/admin/translations/ui'
@@ -319,6 +330,7 @@ export interface FileRouteTypes {
     | '/news/$slug'
     | '/news/'
     | '/admin/_admin/'
+    | '/admin/_admin/demo/ai'
     | '/admin/_admin/news/create'
     | '/admin/_admin/translations/content'
     | '/admin/_admin/translations/ui'
@@ -511,6 +523,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminAdminNewsCreateRouteImport
       parentRoute: typeof AdminAdminRoute
     }
+    '/admin/_admin/demo/ai': {
+      id: '/admin/_admin/demo/ai'
+      path: '/demo/ai'
+      fullPath: '/admin/demo/ai'
+      preLoaderRoute: typeof AdminAdminDemoAiRouteImport
+      parentRoute: typeof AdminAdminRoute
+    }
     '/admin/_admin/users/clients/': {
       id: '/admin/_admin/users/clients/'
       path: '/users/clients'
@@ -537,6 +556,7 @@ declare module '@tanstack/react-router' {
 
 interface AdminAdminRouteChildren {
   AdminAdminIndexRoute: typeof AdminAdminIndexRoute
+  AdminAdminDemoAiRoute: typeof AdminAdminDemoAiRoute
   AdminAdminNewsCreateRoute: typeof AdminAdminNewsCreateRoute
   AdminAdminTranslationsContentRoute: typeof AdminAdminTranslationsContentRoute
   AdminAdminTranslationsUiRoute: typeof AdminAdminTranslationsUiRoute
@@ -554,6 +574,7 @@ interface AdminAdminRouteChildren {
 
 const AdminAdminRouteChildren: AdminAdminRouteChildren = {
   AdminAdminIndexRoute: AdminAdminIndexRoute,
+  AdminAdminDemoAiRoute: AdminAdminDemoAiRoute,
   AdminAdminNewsCreateRoute: AdminAdminNewsCreateRoute,
   AdminAdminTranslationsContentRoute: AdminAdminTranslationsContentRoute,
   AdminAdminTranslationsUiRoute: AdminAdminTranslationsUiRoute,

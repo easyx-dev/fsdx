@@ -6,6 +6,7 @@ import { describe, expect, it, vi } from "vitest";
 const mockCreate = vi.fn();
 
 vi.mock("openai", () => ({
+	// biome-ignore lint/complexity/useArrowFunction: 必须用 function 以支持 new 构造调用
 	default: vi.fn(function () {
 		return { chat: { completions: { create: mockCreate } } };
 	}),

@@ -7,6 +7,7 @@ import {
 	BookOutlined,
 	DashboardOutlined,
 	EditOutlined,
+	ExperimentOutlined,
 	FileTextOutlined,
 	FolderOpenOutlined,
 	GlobalOutlined,
@@ -15,6 +16,7 @@ import {
 	MenuUnfoldOutlined,
 	MoonOutlined,
 	ReadOutlined,
+	RobotOutlined,
 	SafetyOutlined,
 	SettingOutlined,
 	SunOutlined,
@@ -125,6 +127,21 @@ const NAV_GROUPS: NavGroup[] = [
 				key: "/admin/translations/content",
 				label: "实体翻译",
 				icon: <GlobalOutlined />,
+			},
+		],
+	},
+	{
+		label: "测试页",
+		items: [
+			{
+				key: "/admin/demo",
+				label: "编辑器演示",
+				icon: <ExperimentOutlined />,
+			},
+			{
+				key: "/admin/demo/ai",
+				label: "AI 测试",
+				icon: <RobotOutlined />,
 			},
 		],
 	},
