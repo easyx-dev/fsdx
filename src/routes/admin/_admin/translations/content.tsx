@@ -1,7 +1,13 @@
 /**
  * 实体翻译管理页：维护 content_translation 表
  */
-import { DeleteOutlined, EditOutlined, PlusOutlined } from "@ant-design/icons";
+import {
+	DeleteOutlined,
+	DownloadOutlined,
+	EditOutlined,
+	PlusOutlined,
+	UploadOutlined,
+} from "@ant-design/icons";
 import { createFileRoute } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
 import {
@@ -15,17 +21,19 @@ import {
 	Space,
 	Tag,
 } from "antd";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { z } from "zod";
 import { AdminPageContent } from "#/components/admin/AdminPageContent";
+import { EditorTypeSelect } from "#/components/admin/EditorTypeSelect";
 import { ProTable } from "#/components/admin/ProTable";
-import {
-	EDITOR_TYPE_LABELS,
-	EDITOR_TYPES,
-} from "#/lib/editor-types/editor-types";
+import { downloadFile } from "#/lib/export/export.utils";
 import { SUPPORTED_LOCALES } from "#/lib/i18n/i18n.types";
 import { PERMISSIONS } from "#/lib/permissions/permissions";
 import { permGuard } from "#/middleware/server-fn-auth";
+import {
+	exportContentTranslationsFn,
+	importContentTranslationsFn,
+} from "#/server/i18n/i18n.functions";
 import {
 	deleteContentTranslation,
 	listContentTranslations,
@@ -89,13 +97,40 @@ function ContentTranslationPage() {
 		string | undefined
 	>();
 	const [filterLocale, setFilterLocale] = useState<string | undefined>();
+	const [filterKeyword, setFilterKeyword] = useState<string>("");
+	// 防抖后的搜索关键字
+	const [debouncedKeyword, setDebouncedKeyword] = useState<string>("");
 	const [form] = Form.useForm();
+	const fileInputRef = useRef<HTMLInputElement>(null);
+
+	// 搜索关键字输入防抖（300ms）
+	useEffect(() => {
+		const timer = setTimeout(() => setDebouncedKeyword(filterKeyword), 300);
+		return () => clearTimeout(timer);
+	}, [filterKeyword]);
+
+	// 筛选条件变更时重置到第一页并刷新
+	useEffect(() => {
+		async function doRefresh() {
+			const result = await getList({
+				data: {
+					entityType: filterEntityType,
+					locale: filterLocale,
+					keyword: debouncedKeyword,
+					page: 1,
+				},
+			});
+			setData(result);
+		}
+		doRefresh();
+	}, [filterEntityType, filterLocale, debouncedKeyword]);
 
 	async function refresh() {
 		const result = await getList({
 			data: {
 				entityType: filterEntityType,
 				locale: filterLocale,
+				keyword: debouncedKeyword,
 				page: data.page,
 			},
 		});
@@ -141,6 +176,42 @@ function ContentTranslationPage() {
 		} catch (err: unknown) {
 			message.error(err instanceof Error ? err.message : "删除失败");
 		}
+	}
+
+	/** 导出实体翻译数据（JSON） */
+	async function handleExport() {
+		try {
+			const json = await exportContentTranslationsFn();
+			const timestamp = new Date().toISOString().slice(0, 10);
+			downloadFile(
+				json,
+				`content_translations_export_${timestamp}.json`,
+				"application/json",
+			);
+			message.success("导出完成");
+		} catch (err: unknown) {
+			message.error(err instanceof Error ? err.message : "导出失败");
+		}
+	}
+
+	/** 导入实体翻译数据（JSON） */
+	async function handleImport(e: React.ChangeEvent<HTMLInputElement>) {
+		const file = e.target.files?.[0];
+		if (!file) return;
+		try {
+			const text = await file.text();
+			const data = JSON.parse(text);
+			const result = await importContentTranslationsFn({ data: { data } });
+			message.success(
+				`导入完成：新增 ${result.created} / 更新 ${result.updated}`,
+			);
+			await refresh();
+		} catch (err: unknown) {
+			message.error(
+				err instanceof Error ? err.message : "导入失败，请检查 JSON 格式",
+			);
+		}
+		if (fileInputRef.current) fileInputRef.current.value = "";
 	}
 
 	const columns = [
@@ -205,13 +276,35 @@ function ContentTranslationPage() {
 		<AdminPageContent
 			title="实体翻译管理"
 			extra={
-				<Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>
-					新增翻译
-				</Button>
+				<Space>
+					<Button icon={<DownloadOutlined />} onClick={handleExport}>
+						导出 JSON
+					</Button>
+					<Button
+						icon={<UploadOutlined />}
+						onClick={() => fileInputRef.current?.click()}
+					>
+						导入 JSON
+					</Button>
+					<Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>
+						新增翻译
+					</Button>
+				</Space>
 			}
 		>
 			<div className="mb-4">
 				<Space>
+					<Input.Search
+						placeholder="搜索字段名或翻译值"
+						allowClear
+						style={{ width: 260 }}
+						value={filterKeyword}
+						onChange={(e) => setFilterKeyword(e.target.value)}
+						onSearch={(v) => {
+							setFilterKeyword(v);
+							setDebouncedKeyword(v);
+						}}
+					/>
 					<Select
 						placeholder="实体类型"
 						allowClear
@@ -219,7 +312,6 @@ function ContentTranslationPage() {
 						value={filterEntityType}
 						onChange={(v) => {
 							setFilterEntityType(v);
-							setTimeout(refresh, 0);
 						}}
 						options={[{ label: "新闻", value: "news" }]}
 					/>
@@ -230,7 +322,6 @@ function ContentTranslationPage() {
 						value={filterLocale}
 						onChange={(v) => {
 							setFilterLocale(v);
-							setTimeout(refresh, 0);
 						}}
 						options={SUPPORTED_LOCALES.map((l) => ({
 							label: l.toUpperCase(),
@@ -253,6 +344,7 @@ function ContentTranslationPage() {
 							data: {
 								entityType: filterEntityType,
 								locale: filterLocale,
+								keyword: debouncedKeyword,
 								page,
 							},
 						});
@@ -305,15 +397,19 @@ function ContentTranslationPage() {
 						<Input.TextArea rows={3} />
 					</Form.Item>
 					<Form.Item name="valueType" label="编辑器类型">
-						<Select
-							options={EDITOR_TYPES.map((t) => ({
-								label: EDITOR_TYPE_LABELS[t],
-								value: t,
-							}))}
-						/>
+						<EditorTypeSelect />
 					</Form.Item>
 				</Form>
 			</Modal>
+
+			{/* 隐藏的文件选择器，用于导入 JSON */}
+			<input
+				type="file"
+				ref={fileInputRef}
+				accept=".json"
+				className="hidden"
+				onChange={handleImport}
+			/>
 		</AdminPageContent>
 	);
 }

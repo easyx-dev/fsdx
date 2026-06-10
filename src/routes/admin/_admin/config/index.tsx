@@ -19,13 +19,14 @@ import {
 	Modal,
 	message,
 	Popconfirm,
-	Select,
 	Space,
 	Switch,
 } from "antd";
 import { useMemo, useRef, useState } from "react";
 import { z } from "zod";
 import { AdminPageContent } from "#/components/admin/AdminPageContent";
+import { EditorTypePreview } from "#/components/admin/EditorTypePreview";
+import { EditorTypeSelect } from "#/components/admin/EditorTypeSelect";
 import {
 	FieldTranslationDrawer,
 	type TranslatableField,
@@ -33,10 +34,6 @@ import {
 import { ProTable } from "#/components/admin/ProTable";
 import { TypeAwareEditor } from "#/components/admin/TypeAwareEditor";
 import type { EditorType } from "#/lib/editor-types/editor-types";
-import {
-	EDITOR_TYPE_LABELS,
-	EDITOR_TYPES,
-} from "#/lib/editor-types/editor-types";
 import { downloadFile } from "#/lib/export/export.utils";
 import { PERMISSIONS } from "#/lib/permissions/permissions";
 import { permGuard } from "#/middleware/server-fn-auth";
@@ -284,8 +281,9 @@ function ConfigPage() {
 			dataIndex: "valueType",
 			key: "valueType",
 			width: 130,
-			render: (val: string | null) =>
-				val ? (EDITOR_TYPE_LABELS[val as EditorType] ?? val) : "Text",
+			render: (val: string | null) => (
+				<EditorTypePreview valueType={val} fallback="Text" />
+			),
 		},
 		{
 			title: "分组",
@@ -502,14 +500,7 @@ function ConfigPage() {
 						/>
 					</Form.Item>
 					<Form.Item name="valueType" label="值类型">
-						<Select
-							allowClear
-							placeholder="默认文本"
-							options={EDITOR_TYPES.map((t) => ({
-								label: EDITOR_TYPE_LABELS[t],
-								value: t,
-							}))}
-						/>
+						<EditorTypeSelect allowClear placeholder="默认文本" />
 					</Form.Item>
 					{watchedValueType ? (
 						<Form.Item

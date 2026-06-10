@@ -199,6 +199,16 @@ export const PERMISSIONS = {
 		"管理翻译",
 		"允许新增、编辑、删除翻译内容",
 	),
+	TRANSLATION_EXPORT: definePermission(
+		"translation:export",
+		"导出翻译",
+		"允许将翻译数据导出为 JSON 文件",
+	),
+	TRANSLATION_IMPORT: definePermission(
+		"translation:import",
+		"导入翻译",
+		"允许从 JSON 文件导入翻译数据",
+	),
 } as const;
 
 // ─── 对外类型 ───

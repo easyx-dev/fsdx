@@ -6,7 +6,7 @@ import { and, eq, like, or } from "drizzle-orm";
 import { db } from "#/db/index";
 import { contentTranslation, uiTranslation } from "#/db/schema";
 import { uiTranslationCache } from "#/lib/cache/cache";
-import type { EditorType } from "#/lib/editor-types/editor-types";
+import { EDITOR_TYPES, type EditorType } from "#/lib/editor-types/editor-types";
 import type { Locale } from "#/lib/i18n/i18n.types";
 import { DEFAULT_LOCALE } from "#/lib/i18n/i18n.types";
 import { logger } from "#/lib/logger/logger";
@@ -168,6 +168,184 @@ export async function deleteUITranslation(id: string): Promise<boolean> {
 	logger.info({ id, key: existing.key }, "UI 翻译已删除");
 
 	return true;
+}
+
+// ═══════════════════════════════════════════════════
+// UI 翻译导出 / 导入
+// ═══════════════════════════════════════════════════
+
+/** UI 翻译导出数据格式 */
+export interface UiTranslationExportData {
+	translations: {
+		locale: string;
+		key: string;
+		value: string;
+		valueType: string;
+	}[];
+}
+
+/** UI 翻译导入返回值 */
+export interface TranslationImportResult {
+	created: number;
+	updated: number;
+}
+
+/** 获取所有 UI 翻译（用于导出） */
+export async function getAllUITranslationsForExport(): Promise<
+	UiTranslationExportData["translations"]
+> {
+	const rows = await db
+		.select()
+		.from(uiTranslation)
+		.orderBy(uiTranslation.locale, uiTranslation.key);
+	return rows.map((row) => ({
+		locale: row.locale,
+		key: row.key,
+		value: row.value,
+		valueType: row.valueType,
+	}));
+}
+
+/** 导入 UI 翻译（逐个 upsert） */
+export async function importUiTranslations(
+	data: UiTranslationExportData,
+): Promise<TranslationImportResult> {
+	let created = 0;
+	let updated = 0;
+
+	const affectedLocales = new Set<string>();
+
+	for (const item of data.translations) {
+		if (!EDITOR_TYPES.includes(item.valueType as EditorType)) {
+			item.valueType = "input";
+		}
+
+		const existing = await db.query.uiTranslation.findFirst({
+			where: and(
+				eq(uiTranslation.locale, item.locale),
+				eq(uiTranslation.key, item.key),
+			),
+		});
+
+		if (existing) {
+			await db
+				.update(uiTranslation)
+				.set({
+					value: item.value,
+					valueType: item.valueType,
+					updatedAt: new Date(),
+				})
+				.where(eq(uiTranslation.id, existing.id));
+			updated++;
+		} else {
+			await db.insert(uiTranslation).values({
+				locale: item.locale,
+				key: item.key,
+				value: item.value,
+				valueType: item.valueType,
+			});
+			created++;
+		}
+
+		affectedLocales.add(item.locale);
+	}
+
+	// 刷新受影响语言的缓存
+	for (const locale of affectedLocales) {
+		await refreshUITranslationCache(locale as Locale);
+	}
+
+	logger.info({ created, updated }, "UI 翻译导入完成");
+	return { created, updated };
+}
+
+// ═══════════════════════════════════════════════════
+// 实体翻译导出 / 导入
+// ═══════════════════════════════════════════════════
+
+/** 实体翻译导出数据格式 */
+export interface ContentTranslationExportData {
+	translations: {
+		entityType: string;
+		entityId: string;
+		fieldName: string;
+		locale: string;
+		value: string;
+		valueType: string;
+	}[];
+}
+
+/** 获取所有实体翻译（用于导出） */
+export async function getAllContentTranslationsForExport(): Promise<
+	ContentTranslationExportData["translations"]
+> {
+	const rows = await db
+		.select()
+		.from(contentTranslation)
+		.orderBy(
+			contentTranslation.entityType,
+			contentTranslation.entityId,
+			contentTranslation.fieldName,
+			contentTranslation.locale,
+		);
+	return rows.map((row) => ({
+		entityType: row.entityType,
+		entityId: row.entityId,
+		fieldName: row.fieldName,
+		locale: row.locale,
+		value: row.value,
+		valueType: row.valueType,
+	}));
+}
+
+/** 导入实体翻译（逐个 upsert，在事务中完成） */
+export async function importContentTranslations(
+	data: ContentTranslationExportData,
+): Promise<TranslationImportResult> {
+	let created = 0;
+	let updated = 0;
+
+	await db.transaction(async (tx) => {
+		for (const item of data.translations) {
+			if (!EDITOR_TYPES.includes(item.valueType as EditorType)) {
+				item.valueType = "text";
+			}
+
+			const existing = await tx.query.contentTranslation.findFirst({
+				where: and(
+					eq(contentTranslation.entityType, item.entityType),
+					eq(contentTranslation.entityId, item.entityId),
+					eq(contentTranslation.fieldName, item.fieldName),
+					eq(contentTranslation.locale, item.locale),
+				),
+			});
+
+			if (existing) {
+				await tx
+					.update(contentTranslation)
+					.set({
+						value: item.value,
+						valueType: item.valueType,
+						updatedAt: new Date(),
+					})
+					.where(eq(contentTranslation.id, existing.id));
+				updated++;
+			} else {
+				await tx.insert(contentTranslation).values({
+					entityType: item.entityType,
+					entityId: item.entityId,
+					fieldName: item.fieldName,
+					locale: item.locale,
+					value: item.value,
+					valueType: item.valueType,
+				});
+				created++;
+			}
+		}
+	});
+
+	logger.info({ created, updated }, "实体翻译导入完成");
+	return { created, updated };
 }
 
 // ═══════════════════════════════════════════════════

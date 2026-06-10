@@ -1,17 +1,28 @@
 /**
- * 国际化 Server Function 包装器：查询 + 维护翻译数据
+ * 国际化 Server Function 包装器：查询 + 维护翻译数据 + 导出 / 导入
  */
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import { toJson } from "#/lib/export/export.utils";
+import type { Locale } from "#/lib/i18n/i18n.types";
 import { DEFAULT_LOCALE, SUPPORTED_LOCALES } from "#/lib/i18n/i18n.types";
 import { PERMISSIONS } from "#/lib/permissions/permissions";
 import { permGuard } from "#/middleware/server-fn-auth";
+import type {
+	ContentTranslationExportData,
+	TranslationImportResult,
+	UiTranslationExportData,
+} from "#/server/i18n/i18n.server";
 import {
 	deleteContentTranslation,
 	deleteUITranslation,
+	getAllContentTranslationsForExport,
+	getAllUITranslationsForExport,
 	getContentTranslations,
 	getFieldTranslations,
 	getUITranslations,
+	importContentTranslations,
+	importUiTranslations,
 	listContentTranslations,
 	listUITranslations,
 	upsertContentTranslation,
@@ -94,6 +105,37 @@ export const deleteUITranslationFn = createServerFn({ method: "POST" })
 		return { success: true };
 	});
 
+// ══════════════════ UI 翻译导出 / 导入 ══════════════════
+
+/** 导出 UI 翻译数据（JSON） */
+export const exportUITranslationsFn = createServerFn({ method: "GET" })
+	.middleware([permGuard(PERMISSIONS.TRANSLATION_EXPORT)])
+	.handler(async () => {
+		const translations = await getAllUITranslationsForExport();
+		return toJson({ translations });
+	});
+
+/** 导入 UI 翻译数据（JSON） */
+export const importUITranslationsFn = createServerFn({ method: "POST" })
+	.middleware([permGuard(PERMISSIONS.TRANSLATION_IMPORT)])
+	.inputValidator(
+		z.object({
+			data: z.object({
+				translations: z.array(
+					z.object({
+						locale: z.string().min(1),
+						key: z.string().min(1),
+						value: z.string().min(1),
+						valueType: z.string().optional(),
+					}),
+				),
+			}),
+		}),
+	)
+	.handler(async ({ data: { data } }): Promise<TranslationImportResult> => {
+		return importUiTranslations(data as UiTranslationExportData);
+	});
+
 // ══════════════════ 实体翻译维护 ══════════════════
 
 /** 实体翻译列表 */
@@ -155,4 +197,35 @@ export const deleteContentTranslationFn = createServerFn({ method: "POST" })
 		return { success: true };
 	});
 
-import type { Locale } from "#/lib/i18n/i18n.types";
+// ══════════════════ 实体翻译导出 / 导入 ══════════════════
+
+/** 导出实体翻译数据（JSON） */
+export const exportContentTranslationsFn = createServerFn({ method: "GET" })
+	.middleware([permGuard(PERMISSIONS.TRANSLATION_EXPORT)])
+	.handler(async () => {
+		const translations = await getAllContentTranslationsForExport();
+		return toJson({ translations });
+	});
+
+/** 导入实体翻译数据（JSON） */
+export const importContentTranslationsFn = createServerFn({ method: "POST" })
+	.middleware([permGuard(PERMISSIONS.TRANSLATION_IMPORT)])
+	.inputValidator(
+		z.object({
+			data: z.object({
+				translations: z.array(
+					z.object({
+						entityType: z.string().min(1),
+						entityId: z.string().min(1),
+						fieldName: z.string().min(1),
+						locale: z.string().min(1),
+						value: z.string().min(1),
+						valueType: z.string().optional(),
+					}),
+				),
+			}),
+		}),
+	)
+	.handler(async ({ data: { data } }): Promise<TranslationImportResult> => {
+		return importContentTranslations(data as ContentTranslationExportData);
+	});

@@ -1,7 +1,13 @@
 /**
  * UI 翻译管理页：维护 ui_translation 表
  */
-import { DeleteOutlined, EditOutlined, PlusOutlined } from "@ant-design/icons";
+import {
+	DeleteOutlined,
+	DownloadOutlined,
+	EditOutlined,
+	PlusOutlined,
+	UploadOutlined,
+} from "@ant-design/icons";
 import { createFileRoute } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
 import {
@@ -15,17 +21,20 @@ import {
 	Space,
 	Tag,
 } from "antd";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { z } from "zod";
 import { AdminPageContent } from "#/components/admin/AdminPageContent";
+import { EditorTypePreview } from "#/components/admin/EditorTypePreview";
+import { EditorTypeSelect } from "#/components/admin/EditorTypeSelect";
 import { ProTable } from "#/components/admin/ProTable";
-import {
-	EDITOR_TYPE_LABELS,
-	EDITOR_TYPES,
-} from "#/lib/editor-types/editor-types";
+import { downloadFile } from "#/lib/export/export.utils";
 import { SUPPORTED_LOCALES } from "#/lib/i18n/i18n.types";
 import { PERMISSIONS } from "#/lib/permissions/permissions";
 import { permGuard } from "#/middleware/server-fn-auth";
+import {
+	exportUITranslationsFn,
+	importUITranslationsFn,
+} from "#/server/i18n/i18n.functions";
 import {
 	deleteUITranslation,
 	listUITranslations,
@@ -81,11 +90,23 @@ function UITranslationPage() {
 	const [modalOpen, setModalOpen] = useState(false);
 	const [editing, setEditing] = useState<Record<string, unknown> | null>(null);
 	const [filterLocale, setFilterLocale] = useState<string | undefined>();
+	const [filterKeyword, setFilterKeyword] = useState<string>("");
+	// 防抖后的搜索关键字，用于触发 API 请求
+	const [debouncedKeyword, setDebouncedKeyword] = useState<string>("");
 	const [form] = Form.useForm();
+	const fileInputRef = useRef<HTMLInputElement>(null);
+
+	// 搜索关键字输入防抖（300ms）
+	useEffect(() => {
+		const timer = setTimeout(() => setDebouncedKeyword(filterKeyword), 300);
+		return () => clearTimeout(timer);
+	}, [filterKeyword]);
 
 	const refresh = useCallback(
-		async (locale?: string) => {
-			const result = await getList({ data: { locale, page: data.page } });
+		async (locale?: string, keyword?: string) => {
+			const result = await getList({
+				data: { locale, keyword, page: data.page },
+			});
 			setData(result);
 		},
 		[data.page],
@@ -99,7 +120,7 @@ function UITranslationPage() {
 			setModalOpen(false);
 			setEditing(null);
 			form.resetFields();
-			await refresh(filterLocale);
+			await refresh(filterLocale, debouncedKeyword);
 		} catch (err: unknown) {
 			message.error(err instanceof Error ? err.message : "操作失败");
 		}
@@ -122,15 +143,51 @@ function UITranslationPage() {
 		try {
 			await deleteFn({ data: { id } });
 			message.success("翻译已删除");
-			await refresh(filterLocale);
+			await refresh(filterLocale, debouncedKeyword);
 		} catch (err: unknown) {
 			message.error(err instanceof Error ? err.message : "删除失败");
 		}
 	}
 
+	/** 导出 UI 翻译数据（JSON） */
+	async function handleExport() {
+		try {
+			const json = await exportUITranslationsFn();
+			const timestamp = new Date().toISOString().slice(0, 10);
+			downloadFile(
+				json,
+				`ui_translations_export_${timestamp}.json`,
+				"application/json",
+			);
+			message.success("导出完成");
+		} catch (err: unknown) {
+			message.error(err instanceof Error ? err.message : "导出失败");
+		}
+	}
+
+	/** 导入 UI 翻译数据（JSON） */
+	async function handleImport(e: React.ChangeEvent<HTMLInputElement>) {
+		const file = e.target.files?.[0];
+		if (!file) return;
+		try {
+			const text = await file.text();
+			const data = JSON.parse(text);
+			const result = await importUITranslationsFn({ data: { data } });
+			message.success(
+				`导入完成：新增 ${result.created} / 更新 ${result.updated}`,
+			);
+			await refresh(filterLocale, debouncedKeyword);
+		} catch (err: unknown) {
+			message.error(
+				err instanceof Error ? err.message : "导入失败，请检查 JSON 格式",
+			);
+		}
+		if (fileInputRef.current) fileInputRef.current.value = "";
+	}
+
 	useEffect(() => {
-		refresh(filterLocale);
-	}, [filterLocale, refresh]);
+		refresh(filterLocale, debouncedKeyword);
+	}, [filterLocale, debouncedKeyword, refresh]);
 
 	const columns = [
 		{
@@ -158,7 +215,7 @@ function UITranslationPage() {
 			dataIndex: "valueType",
 			key: "valueType",
 			width: 120,
-			render: (v: string) => <Tag>{v}</Tag>,
+			render: (v: string) => <EditorTypePreview valueType={v} />,
 		},
 		{
 			title: "操作",
@@ -187,13 +244,35 @@ function UITranslationPage() {
 		<AdminPageContent
 			title="UI 翻译管理"
 			extra={
-				<Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>
-					新增翻译
-				</Button>
+				<Space>
+					<Button icon={<DownloadOutlined />} onClick={handleExport}>
+						导出 JSON
+					</Button>
+					<Button
+						icon={<UploadOutlined />}
+						onClick={() => fileInputRef.current?.click()}
+					>
+						导入 JSON
+					</Button>
+					<Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>
+						新增翻译
+					</Button>
+				</Space>
 			}
 		>
 			<div className="mb-4">
 				<Space>
+					<Input.Search
+						placeholder="搜索 Key 或翻译值"
+						allowClear
+						style={{ width: 260 }}
+						value={filterKeyword}
+						onChange={(e) => setFilterKeyword(e.target.value)}
+						onSearch={(v) => {
+							setFilterKeyword(v);
+							setDebouncedKeyword(v);
+						}}
+					/>
 					<Select
 						placeholder="筛选语言"
 						allowClear
@@ -217,7 +296,9 @@ function UITranslationPage() {
 					pageSize: data.pageSize,
 					current: data.page,
 					onChange: async (page) => {
-						const r = await getList({ data: { locale: filterLocale, page } });
+						const r = await getList({
+							data: { locale: filterLocale, keyword: debouncedKeyword, page },
+						});
 						setData(r);
 					},
 				}}
@@ -249,15 +330,19 @@ function UITranslationPage() {
 						<Input.TextArea rows={3} />
 					</Form.Item>
 					<Form.Item name="valueType" label="编辑器类型">
-						<Select
-							options={EDITOR_TYPES.map((t) => ({
-								label: EDITOR_TYPE_LABELS[t],
-								value: t,
-							}))}
-						/>
+						<EditorTypeSelect />
 					</Form.Item>
 				</Form>
 			</Modal>
+
+			{/* 隐藏的文件选择器，用于导入 JSON */}
+			<input
+				type="file"
+				ref={fileInputRef}
+				accept=".json"
+				className="hidden"
+				onChange={handleImport}
+			/>
 		</AdminPageContent>
 	);
 }
