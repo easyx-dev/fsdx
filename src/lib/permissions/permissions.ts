@@ -46,6 +46,11 @@ export const PERMISSIONS = {
 		"发布新闻",
 		"允许发布、归档等状态变更操作",
 	),
+	NEWS_EXPORT: definePermission(
+		"news:export",
+		"导出新闻",
+		"允许将新闻数据导出为 CSV 或 JSON 文件",
+	),
 	// 管理员管理
 	ADMIN_VIEW: definePermission(
 		"admin:view",
@@ -125,6 +130,16 @@ export const PERMISSIONS = {
 		"删除字典条目",
 		"允许删除字典条目",
 	),
+	DICT_EXPORT: definePermission(
+		"dict:export",
+		"导出字典",
+		"允许将字典数据导出为 JSON 文件",
+	),
+	DICT_IMPORT: definePermission(
+		"dict:import",
+		"导入字典",
+		"允许从 JSON 文件导入字典数据",
+	),
 	// 系统配置
 	CONFIG_VIEW: definePermission(
 		"config:view",
@@ -145,6 +160,16 @@ export const PERMISSIONS = {
 		"config:delete",
 		"删除配置",
 		"允许删除系统配置项",
+	),
+	CONFIG_EXPORT: definePermission(
+		"config:export",
+		"导出配置",
+		"允许将系统配置导出为 JSON 文件",
+	),
+	CONFIG_IMPORT: definePermission(
+		"config:import",
+		"导入配置",
+		"允许从 JSON 文件导入系统配置项",
 	),
 	// 文件管理
 	FILE_VIEW: definePermission("file:view", "查看文件", "允许查看文件列表"),

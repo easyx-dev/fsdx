@@ -247,3 +247,26 @@ export async function translateNewsRecords(
 	if (locale === DEFAULT_LOCALE) return records;
 	return Promise.all(records.map((r) => translateNewsRecord(r, locale)));
 }
+
+/** 获取所有未删除新闻（用于导出） */
+export async function getAllNewsForExport(): Promise<NewsRecord[]> {
+	return db
+		.select()
+		.from(news)
+		.where(isNull(news.deletedAt))
+		.orderBy(desc(news.createdAt));
+}
+
+/** 新闻导出 CSV 列定义 */
+export const NEWS_EXPORT_COLUMNS: { key: string; title: string }[] = [
+	{ key: "id", title: "ID" },
+	{ key: "title", title: "标题" },
+	{ key: "slug", title: "Slug" },
+	{ key: "summary", title: "摘要" },
+	{ key: "content", title: "正文" },
+	{ key: "status", title: "状态" },
+	{ key: "isPinned", title: "是否置顶" },
+	{ key: "publishedAt", title: "发布时间" },
+	{ key: "createdAt", title: "创建时间" },
+	{ key: "updatedAt", title: "更新时间" },
+];

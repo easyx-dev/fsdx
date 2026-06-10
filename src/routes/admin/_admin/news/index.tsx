@@ -1,7 +1,13 @@
 /**
  * 新闻列表页（antd Table）
  */
-import { DeleteOutlined, EditOutlined, PlusOutlined } from "@ant-design/icons";
+import {
+	DeleteOutlined,
+	DownloadOutlined,
+	EditOutlined,
+	FileTextOutlined,
+	PlusOutlined,
+} from "@ant-design/icons";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
 import {
@@ -17,8 +23,10 @@ import { useState } from "react";
 import { z } from "zod";
 import { AdminPageContent } from "#/components/admin/AdminPageContent";
 import { FieldTranslationDrawer } from "#/components/admin/FieldTranslationDrawer";
+import { downloadFile } from "#/lib/export/export.utils";
 import { PERMISSIONS } from "#/lib/permissions/permissions";
 import { permGuard } from "#/middleware/server-fn-auth";
+import { exportNewsFn } from "#/server/news/news.functions";
 import type { NewsRecord } from "#/server/news/news.server";
 import {
 	changeNewsStatus,
@@ -92,6 +100,17 @@ function NewsListPage() {
 			data: { status: status || undefined },
 		});
 		setData(result);
+	}
+
+	/** 导出新闻数据 */
+	async function handleExport(format: "csv" | "json") {
+		const result = await exportNewsFn({ data: { format } });
+		const timestamp = new Date().toISOString().slice(0, 10);
+		const ext = format === "csv" ? "csv" : "json";
+		const mime =
+			format === "csv" ? "text/csv;charset=utf-8" : "application/json";
+		downloadFile(result.content, `news_export_${timestamp}.${ext}`, mime);
+		message.success("导出完成");
 	}
 
 	const columns = [
@@ -198,11 +217,25 @@ function NewsListPage() {
 		<AdminPageContent
 			title="新闻管理"
 			extra={
-				<Link to="/admin/news/create">
-					<Button type="primary" icon={<PlusOutlined />}>
-						新建新闻
+				<Space>
+					<Button
+						icon={<DownloadOutlined />}
+						onClick={() => handleExport("csv")}
+					>
+						导出 CSV
 					</Button>
-				</Link>
+					<Button
+						icon={<FileTextOutlined />}
+						onClick={() => handleExport("json")}
+					>
+						导出 JSON
+					</Button>
+					<Link to="/admin/news/create">
+						<Button type="primary" icon={<PlusOutlined />}>
+							新建新闻
+						</Button>
+					</Link>
+				</Space>
 			}
 		>
 			<div className="mb-4">

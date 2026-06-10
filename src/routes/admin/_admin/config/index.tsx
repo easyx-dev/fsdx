@@ -1,7 +1,13 @@
 /**
  * 系统配置管理页面：键值对 CRUD（antd Table + Form + Modal）
  */
-import { DeleteOutlined, EditOutlined, PlusOutlined } from "@ant-design/icons";
+import {
+	DeleteOutlined,
+	DownloadOutlined,
+	EditOutlined,
+	PlusOutlined,
+	UploadOutlined,
+} from "@ant-design/icons";
 import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
 import {
@@ -18,7 +24,7 @@ import {
 	Switch,
 	Table,
 } from "antd";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { z } from "zod";
 import { AdminPageContent } from "#/components/admin/AdminPageContent";
 import {
@@ -31,8 +37,13 @@ import {
 	EDITOR_TYPE_LABELS,
 	EDITOR_TYPES,
 } from "#/lib/editor-types/editor-types";
+import { downloadFile } from "#/lib/export/export.utils";
 import { PERMISSIONS } from "#/lib/permissions/permissions";
 import { permGuard } from "#/middleware/server-fn-auth";
+import {
+	exportConfigsFn,
+	importConfigsFn,
+} from "#/server/config/config.functions";
 import {
 	type ConfigRecord,
 	createConfig,
@@ -114,6 +125,7 @@ function ConfigPage() {
 	const watchedValueType = Form.useWatch("valueType", form) as
 		| EditorType
 		| undefined;
+	const fileInputRef = useRef<HTMLInputElement>(null);
 
 	/** 从配置数据中提取分组列表 */
 	const groups = useMemo(() => {
@@ -212,6 +224,36 @@ function ConfigPage() {
 		await deleteConfigFn({ data: { id } });
 		message.success("已删除");
 		router.invalidate();
+	};
+
+	/** 导出系统配置数据（JSON） */
+	const handleExportConfigs = async () => {
+		const json = await exportConfigsFn();
+		const timestamp = new Date().toISOString().slice(0, 10);
+		downloadFile(json, `configs_export_${timestamp}.json`, "application/json");
+		message.success("导出完成");
+	};
+
+	/** 导入系统配置数据（JSON） */
+	const handleImportConfigs = async (
+		e: React.ChangeEvent<HTMLInputElement>,
+	) => {
+		const file = e.target.files?.[0];
+		if (!file) return;
+		try {
+			const text = await file.text();
+			const data = JSON.parse(text);
+			const result = await importConfigsFn({ data: { data } });
+			message.success(
+				`导入完成：新增 ${result.created} / 更新 ${result.updated}`,
+			);
+			router.invalidate();
+		} catch (err) {
+			message.error(
+				err instanceof Error ? err.message : "导入失败，请检查 JSON 格式",
+			);
+		}
+		if (fileInputRef.current) fileInputRef.current.value = "";
 	};
 
 	/** 分组列表表格列定义 */
@@ -345,7 +387,29 @@ function ConfigPage() {
 				: selectedGroup;
 
 	return (
-		<AdminPageContent title="系统配置">
+		<AdminPageContent
+			title="系统配置"
+			extra={
+				<Space>
+					<Button icon={<DownloadOutlined />} onClick={handleExportConfigs}>
+						导出 JSON
+					</Button>
+					<Button
+						icon={<UploadOutlined />}
+						onClick={() => fileInputRef.current?.click()}
+					>
+						导入 JSON
+					</Button>
+					<Button
+						type="primary"
+						icon={<PlusOutlined />}
+						onClick={() => openModal()}
+					>
+						新建配置
+					</Button>
+				</Space>
+			}
+		>
 			<Flex gap={20}>
 				<Card
 					size="small"
@@ -396,14 +460,6 @@ function ConfigPage() {
 								value={searchText}
 								onChange={(e) => setSearchText(e.target.value)}
 							/>
-							<Button
-								type="primary"
-								size="small"
-								icon={<PlusOutlined />}
-								onClick={() => openModal()}
-							>
-								新建配置
-							</Button>
 						</Space>
 					}
 					classNames={{
@@ -500,6 +556,14 @@ function ConfigPage() {
 					</Form.Item>
 				</Form>
 			</Modal>
+			{/* 隐藏的文件选择器，用于导入 JSON */}
+			<input
+				type="file"
+				ref={fileInputRef}
+				accept=".json"
+				className="hidden"
+				onChange={handleImportConfigs}
+			/>
 		</AdminPageContent>
 	);
 }

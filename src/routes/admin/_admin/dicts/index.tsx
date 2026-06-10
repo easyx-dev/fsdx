@@ -6,8 +6,10 @@ import {
 	CaretDownOutlined,
 	CaretUpOutlined,
 	DeleteOutlined,
+	DownloadOutlined,
 	EditOutlined,
 	PlusOutlined,
+	UploadOutlined,
 } from "@ant-design/icons";
 import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
@@ -30,7 +32,7 @@ import {
 	Table,
 	Tag,
 } from "antd";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { z } from "zod";
 import { AdminPageContent } from "#/components/admin/AdminPageContent";
 import { TypeAwareEditor } from "#/components/admin/TypeAwareEditor";
@@ -39,8 +41,10 @@ import {
 	EDITOR_TYPE_LABELS,
 	EDITOR_TYPES,
 } from "#/lib/editor-types/editor-types";
+import { downloadFile } from "#/lib/export/export.utils";
 import { PERMISSIONS } from "#/lib/permissions/permissions";
 import { permGuard } from "#/middleware/server-fn-auth";
+import { exportDictsFn, importDictsFn } from "#/server/dict/dict.functions";
 import type { DictItemRecord, DictRecord } from "#/server/dict/dict.server";
 import {
 	createDict,
@@ -170,6 +174,7 @@ function DictsPage() {
 	const watchedExtraType = Form.useWatch("extraType", itemForm) as
 		| EditorType
 		| undefined;
+	const fileInputRef = useRef<HTMLInputElement>(null);
 
 	const refreshItems = async (dictSlug: string) => {
 		const data = await getDictItems({ data: { dictSlug } });
@@ -328,6 +333,38 @@ function DictsPage() {
 		}
 	};
 
+	/** 导出字典数据（JSON） */
+	const handleExportDicts = async () => {
+		const json = await exportDictsFn();
+		const timestamp = new Date().toISOString().slice(0, 10);
+		downloadFile(json, `dicts_export_${timestamp}.json`, "application/json");
+		message.success("导出完成");
+	};
+
+	/** 导入字典数据（JSON） */
+	const handleImportDicts = async (e: React.ChangeEvent<HTMLInputElement>) => {
+		const file = e.target.files?.[0];
+		if (!file) return;
+		try {
+			const text = await file.text();
+			const data = JSON.parse(text);
+			const result = await importDictsFn({ data: { data } });
+			message.success(
+				`导入完成：字典类型 新增 ${result.dictsCreated} / 更新 ${result.dictsUpdated}，` +
+					`条目 新增 ${result.itemsCreated} / 更新 ${result.itemsUpdated}` +
+					(result.itemsSkipped > 0 ? ` / 跳过 ${result.itemsSkipped}` : ""),
+			);
+			router.invalidate();
+			if (selectedDictSlug) refreshItems(selectedDictSlug);
+		} catch (err) {
+			message.error(
+				err instanceof Error ? err.message : "导入失败，请检查 JSON 格式",
+			);
+		}
+		// 重置 input 以允许重复选择同一文件
+		if (fileInputRef.current) fileInputRef.current.value = "";
+	};
+
 	/** 字典类型表格列定义 */
 	const dictColumns = [
 		{
@@ -477,7 +514,22 @@ function DictsPage() {
 	const selectedDict = dictList.find((d) => d.slug === selectedDictSlug);
 
 	return (
-		<AdminPageContent title="字典管理">
+		<AdminPageContent
+			title="字典管理"
+			extra={
+				<Space>
+					<Button icon={<DownloadOutlined />} onClick={handleExportDicts}>
+						导出 JSON
+					</Button>
+					<Button
+						icon={<UploadOutlined />}
+						onClick={() => fileInputRef.current?.click()}
+					>
+						导入 JSON
+					</Button>
+				</Space>
+			}
+		>
 			<Row gutter={20}>
 				<Col span={8}>
 					<Card
@@ -708,6 +760,14 @@ function DictsPage() {
 					</Form.Item>
 				</Form>
 			</Modal>
+			{/* 隐藏的文件选择器，用于导入 JSON */}
+			<input
+				type="file"
+				ref={fileInputRef}
+				accept=".json"
+				className="hidden"
+				onChange={handleImportDicts}
+			/>
 		</AdminPageContent>
 	);
 }
