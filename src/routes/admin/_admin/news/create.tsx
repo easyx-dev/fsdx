@@ -9,7 +9,7 @@ import { z } from "zod";
 import { AdminPageContent } from "#/components/admin/AdminPageContent";
 import { RichEditor } from "#/components/admin/RichEditor";
 import { PERMISSIONS } from "#/lib/permissions/permissions";
-import { permGuard } from "#/middleware/server-fn-auth";
+import { adminPermGuard } from "#/middleware/admin-auth";
 import { createNews } from "#/server/news/news.server";
 
 const createSchema = z.object({
@@ -22,7 +22,7 @@ const createSchema = z.object({
 });
 
 const createNewsFn = createServerFn({ method: "POST" })
-	.middleware([permGuard(PERMISSIONS.NEWS_CREATE)])
+	.middleware([adminPermGuard(PERMISSIONS.NEWS_CREATE)])
 	.inputValidator(createSchema)
 	.handler(async ({ data }) => {
 		return createNews(data);

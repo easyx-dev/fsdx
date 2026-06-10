@@ -50,9 +50,9 @@ const { mockDb } = vi.hoisted(() => {
 vi.mock("#/db", () => ({ db: mockDb }));
 
 import bcrypt from "bcryptjs";
-import { adminLoginService } from "#/server/auth/auth.server";
+import { adminLogin } from "#/server/admin-auth/admin-auth.server";
 
-describe("adminLoginService", () => {
+describe("adminLogin", () => {
 	const mockUser = {
 		id: "admin-1",
 		username: "admin",
@@ -71,7 +71,7 @@ describe("adminLoginService", () => {
 		vi.mocked(bcrypt.compare).mockResolvedValue(true as never);
 		mockSignToken.mockResolvedValue("jwt-token-abc");
 
-		const result = await adminLoginService("admin", "correct-password");
+		const result = await adminLogin("admin", "correct-password");
 
 		expect(result.success).toBe(true);
 		expect(result.token).toBe("jwt-token-abc");
@@ -85,7 +85,7 @@ describe("adminLoginService", () => {
 	it("用户不存在返回失败", async () => {
 		mockDb.query.adminUser.findFirst.mockResolvedValue(undefined);
 
-		const result = await adminLoginService("nobody", "pw");
+		const result = await adminLogin("nobody", "pw");
 		expect(result.success).toBe(false);
 		expect(result.message).toBe("用户名或密码错误");
 	});
@@ -94,7 +94,7 @@ describe("adminLoginService", () => {
 		mockDb.query.adminUser.findFirst.mockResolvedValue(mockUser);
 		vi.mocked(bcrypt.compare).mockResolvedValue(false as never);
 
-		const result = await adminLoginService("admin", "wrong");
+		const result = await adminLogin("admin", "wrong");
 		expect(result.success).toBe(false);
 		expect(result.message).toBe("用户名或密码错误");
 	});
@@ -105,7 +105,7 @@ describe("adminLoginService", () => {
 			deletedAt: new Date(),
 		});
 
-		const result = await adminLoginService("admin", "pw");
+		const result = await adminLogin("admin", "pw");
 		expect(result.success).toBe(false);
 	});
 
@@ -115,7 +115,7 @@ describe("adminLoginService", () => {
 			status: "disabled",
 		});
 
-		const result = await adminLoginService("admin", "pw");
+		const result = await adminLogin("admin", "pw");
 		expect(result.success).toBe(false);
 	});
 
@@ -124,7 +124,7 @@ describe("adminLoginService", () => {
 		vi.mocked(bcrypt.compare).mockResolvedValue(true as never);
 		mockSignToken.mockResolvedValue("token");
 
-		await adminLoginService("admin", "pw");
+		await adminLogin("admin", "pw");
 
 		expect(mockDb.update).toHaveBeenCalled();
 	});

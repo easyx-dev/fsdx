@@ -5,7 +5,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { toCsv, toJson } from "#/lib/export/export.utils";
 import { PERMISSIONS } from "#/lib/permissions/permissions";
-import { permGuard } from "#/middleware/server-fn-auth";
+import { adminPermGuard } from "#/middleware/admin-auth";
 import {
 	getAllNewsForExport,
 	NEWS_EXPORT_COLUMNS,
@@ -17,7 +17,7 @@ const exportSchema = z.object({
 
 /** 导出新闻数据（CSV 或 JSON） */
 export const exportNewsFn = createServerFn({ method: "GET" })
-	.middleware([permGuard(PERMISSIONS.NEWS_EXPORT)])
+	.middleware([adminPermGuard(PERMISSIONS.NEWS_EXPORT)])
 	.inputValidator(exportSchema)
 	.handler(async ({ data: { format } }) => {
 		const records = await getAllNewsForExport();

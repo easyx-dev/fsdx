@@ -13,7 +13,7 @@ import {
 	resolveIsDark,
 	type ThemeMode,
 } from "#/components/admin/AdminLayout";
-import { AuthProvider } from "../AuthProvider";
+import { AdminAuthProvider } from "./AdminAuthProvider";
 
 export function AdminProvider({ children }: { children: React.ReactNode }) {
 	const location = useLocation();
@@ -82,9 +82,9 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
 			>
 				<App>
 					{!isStandalone && isAdmin ? (
-						<AuthProvider>
+						<AdminAuthProvider>
 							<AdminLayout>{children}</AdminLayout>
-						</AuthProvider>
+						</AdminAuthProvider>
 					) : (
 						children
 					)}

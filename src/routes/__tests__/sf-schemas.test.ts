@@ -206,7 +206,7 @@ const publishedNewsSchema = z.object({
 // ═══════════════════════════════════════════════════════════
 // 验证测试
 // ═══════════════════════════════════════════════════════════
-describe("loginSchema（clientLogin / adminLogin 共用）", () => {
+describe("loginSchema（clientLoginFn / adminLoginFn 共用）", () => {
 	it("合法输入校验通过", () => {
 		expect(
 			loginSchema.safeParse({ username: "admin", password: "pw" }).success,

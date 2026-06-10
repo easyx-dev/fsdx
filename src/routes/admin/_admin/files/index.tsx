@@ -30,7 +30,7 @@ import { z } from "zod";
 import { AdminPageContent } from "#/components/admin/AdminPageContent";
 import { ProTable } from "#/components/admin/ProTable";
 import { PERMISSIONS } from "#/lib/permissions/permissions";
-import { permGuard } from "#/middleware/server-fn-auth";
+import { adminPermGuard } from "#/middleware/admin-auth";
 import { uploadFile } from "#/server/file/file.functions";
 import type { FileRecord } from "#/server/file/file.server";
 import {
@@ -48,14 +48,14 @@ const fileListSchema = z.object({
 const idSchema = z.object({ id: z.string().min(1) });
 
 const getFileList = createServerFn({ method: "GET" })
-	.middleware([permGuard(PERMISSIONS.FILE_VIEW)])
+	.middleware([adminPermGuard(PERMISSIONS.FILE_VIEW)])
 	.inputValidator(fileListSchema)
 	.handler(async ({ data }) => {
 		return getFileListService(data);
 	});
 
 const deleteFileFn = createServerFn({ method: "POST" })
-	.middleware([permGuard(PERMISSIONS.FILE_DELETE)])
+	.middleware([adminPermGuard(PERMISSIONS.FILE_DELETE)])
 	.inputValidator(idSchema)
 	.handler(async ({ data }) => {
 		await deleteFile(data.id);
@@ -63,7 +63,7 @@ const deleteFileFn = createServerFn({ method: "POST" })
 	});
 
 const makePermanentFn = createServerFn({ method: "POST" })
-	.middleware([permGuard(PERMISSIONS.FILE_EDIT)])
+	.middleware([adminPermGuard(PERMISSIONS.FILE_EDIT)])
 	.inputValidator(idSchema)
 	.handler(async ({ data }) => {
 		await makePermanent(data.id);

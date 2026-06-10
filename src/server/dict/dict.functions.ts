@@ -5,7 +5,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { toJson } from "#/lib/export/export.utils";
 import { PERMISSIONS } from "#/lib/permissions/permissions";
-import { permGuard } from "#/middleware/server-fn-auth";
+import { adminPermGuard } from "#/middleware/admin-auth";
 import {
 	type DictImportData,
 	type DictImportResult,
@@ -39,7 +39,7 @@ const dictImportSchema = z.object({
 
 /** 导出字典数据（树形 JSON，dicts → children → items） */
 export const exportDictsFn = createServerFn({ method: "GET" })
-	.middleware([permGuard(PERMISSIONS.DICT_EXPORT)])
+	.middleware([adminPermGuard(PERMISSIONS.DICT_EXPORT)])
 	.handler(async () => {
 		const [dicts, dictItems] = await Promise.all([
 			getAllDictsForExport(),
@@ -56,7 +56,7 @@ export const exportDictsFn = createServerFn({ method: "GET" })
 
 /** 导入字典数据（树形 JSON，自动展平为内部格式） */
 export const importDictsFn = createServerFn({ method: "POST" })
-	.middleware([permGuard(PERMISSIONS.DICT_IMPORT)])
+	.middleware([adminPermGuard(PERMISSIONS.DICT_IMPORT)])
 	.inputValidator(z.object({ data: dictImportSchema }))
 	.handler(async ({ data: { data } }): Promise<DictImportResult> => {
 		const flat: DictImportData = {

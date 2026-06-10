@@ -6,7 +6,7 @@ import { z } from "zod";
 import { toJson } from "#/lib/export/export.utils";
 import { DEFAULT_LOCALE, type Locale } from "#/lib/i18n/i18n.types";
 import { PERMISSIONS } from "#/lib/permissions/permissions";
-import { permGuard } from "#/middleware/server-fn-auth";
+import { adminPermGuard } from "#/middleware/admin-auth";
 import {
 	type ConfigImportResult,
 	getConfigList as getConfigListService,
@@ -44,7 +44,7 @@ const configImportSchema = z.object({
 
 /** 导出系统配置数据（JSON） */
 export const exportConfigsFn = createServerFn({ method: "GET" })
-	.middleware([permGuard(PERMISSIONS.CONFIG_EXPORT)])
+	.middleware([adminPermGuard(PERMISSIONS.CONFIG_EXPORT)])
 	.handler(async () => {
 		const configs = await getConfigListService();
 		return toJson({ configs });
@@ -52,7 +52,7 @@ export const exportConfigsFn = createServerFn({ method: "GET" })
 
 /** 导入系统配置数据（JSON） */
 export const importConfigsFn = createServerFn({ method: "POST" })
-	.middleware([permGuard(PERMISSIONS.CONFIG_IMPORT)])
+	.middleware([adminPermGuard(PERMISSIONS.CONFIG_IMPORT)])
 	.inputValidator(z.object({ data: configImportSchema }))
 	.handler(async ({ data: { data } }): Promise<ConfigImportResult> => {
 		return importConfigs(data);

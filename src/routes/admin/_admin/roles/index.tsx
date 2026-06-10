@@ -30,7 +30,7 @@ import {
 	PERMISSIONS,
 	type PermissionCode,
 } from "#/lib/permissions/permissions";
-import { permGuard } from "#/middleware/server-fn-auth";
+import { adminPermGuard } from "#/middleware/admin-auth";
 import {
 	type CreateRoleInput,
 	createRole,
@@ -60,22 +60,22 @@ const roleUpdateSchema = z.object({
 const idSchema = z.object({ id: z.string().min(1) });
 
 const getRolesFn = createServerFn({ method: "GET" })
-	.middleware([permGuard(PERMISSIONS.ROLE_VIEW)])
+	.middleware([adminPermGuard(PERMISSIONS.ROLE_VIEW)])
 	.inputValidator(roleListSchema)
 	.handler(async ({ data }) => getRoleList(data.keyword));
 
 const createRoleFn = createServerFn({ method: "POST" })
-	.middleware([permGuard(PERMISSIONS.ROLE_CREATE)])
+	.middleware([adminPermGuard(PERMISSIONS.ROLE_CREATE)])
 	.inputValidator(roleCreateSchema)
 	.handler(async ({ data }) => createRole(data as CreateRoleInput));
 
 const updateRoleFn = createServerFn({ method: "POST" })
-	.middleware([permGuard(PERMISSIONS.ROLE_EDIT)])
+	.middleware([adminPermGuard(PERMISSIONS.ROLE_EDIT)])
 	.inputValidator(roleUpdateSchema)
 	.handler(async ({ data }) => updateRole(data.id, data as UpdateRoleInput));
 
 const deleteRoleFn = createServerFn({ method: "POST" })
-	.middleware([permGuard(PERMISSIONS.ROLE_DELETE)])
+	.middleware([adminPermGuard(PERMISSIONS.ROLE_DELETE)])
 	.inputValidator(idSchema)
 	.handler(async ({ data }) => deleteRole(data.id));
 

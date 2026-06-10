@@ -49,9 +49,9 @@ vi.mock("#/db", () => ({ db: mockDb }));
 
 import bcrypt from "bcryptjs";
 import {
-	clientLoginService,
-	clientRegisterService,
-} from "#/server/auth/auth.server";
+	clientLogin,
+	clientRegister,
+} from "#/server/client-auth/client-auth.server";
 
 const mockClientUser = {
 	id: "client-1",
@@ -62,7 +62,7 @@ const mockClientUser = {
 	deletedAt: null,
 };
 
-describe("clientLoginService", () => {
+describe("clientLogin", () => {
 	beforeEach(() => vi.clearAllMocks());
 
 	it("正确凭据登录成功", async () => {
@@ -70,21 +70,21 @@ describe("clientLoginService", () => {
 		vi.mocked(bcrypt.compare).mockResolvedValue(true as never);
 		mockSignToken.mockResolvedValue("jwt-token");
 
-		const result = await clientLoginService("testuser", "pw");
+		const result = await clientLogin("testuser", "pw");
 		expect(result.success).toBe(true);
 		expect(result.token).toBe("jwt-token");
 	});
 
 	it("用户不存在返回失败", async () => {
 		mockDb.query.clientUser.findFirst.mockResolvedValue(undefined);
-		const result = await clientLoginService("nobody", "pw");
+		const result = await clientLogin("nobody", "pw");
 		expect(result.success).toBe(false);
 	});
 
 	it("密码错误返回失败", async () => {
 		mockDb.query.clientUser.findFirst.mockResolvedValue(mockClientUser);
 		vi.mocked(bcrypt.compare).mockResolvedValue(false as never);
-		const result = await clientLoginService("testuser", "wrong");
+		const result = await clientLogin("testuser", "wrong");
 		expect(result.success).toBe(false);
 	});
 
@@ -93,12 +93,12 @@ describe("clientLoginService", () => {
 			...mockClientUser,
 			status: "disabled",
 		});
-		const result = await clientLoginService("testuser", "pw");
+		const result = await clientLogin("testuser", "pw");
 		expect(result.success).toBe(false);
 	});
 });
 
-describe("clientRegisterService", () => {
+describe("clientRegister", () => {
 	beforeEach(() => vi.clearAllMocks());
 
 	it("注册成功", async () => {
@@ -106,7 +106,7 @@ describe("clientRegisterService", () => {
 		mockDb.query.clientUser.findFirst.mockResolvedValue(undefined);
 		vi.mocked(bcrypt.hash).mockResolvedValue("hashed-pw" as never);
 
-		const result = await clientRegisterService(
+		const result = await clientRegister(
 			"newuser",
 			"new@test.com",
 			"password123",
@@ -119,7 +119,7 @@ describe("clientRegisterService", () => {
 
 	it("验证码错误返回失败", async () => {
 		mockVerifyCaptcha.mockResolvedValue(false);
-		const result = await clientRegisterService("u", "e@t.com", "pw", "000000");
+		const result = await clientRegister("u", "e@t.com", "pw", "000000");
 		expect(result.success).toBe(false);
 		expect(result.message).toBe("验证码错误或已过期");
 	});
@@ -127,7 +127,7 @@ describe("clientRegisterService", () => {
 	it("用户名或邮箱已存在返回失败", async () => {
 		mockVerifyCaptcha.mockResolvedValue(true);
 		mockDb.query.clientUser.findFirst.mockResolvedValue(mockClientUser);
-		const result = await clientRegisterService(
+		const result = await clientRegister(
 			"testuser",
 			"test@test.com",
 			"pw",

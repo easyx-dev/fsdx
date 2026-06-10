@@ -18,7 +18,7 @@ import { FieldTranslationDrawer } from "#/components/admin/FieldTranslationDrawe
 import { ProTable } from "#/components/admin/ProTable";
 import { downloadFile } from "#/lib/export/export.utils";
 import { PERMISSIONS } from "#/lib/permissions/permissions";
-import { permGuard } from "#/middleware/server-fn-auth";
+import { adminPermGuard } from "#/middleware/admin-auth";
 import { exportNewsFn } from "#/server/news/news.functions";
 import type { NewsRecord } from "#/server/news/news.server";
 import {
@@ -38,14 +38,14 @@ const statusSchema = z.object({
 });
 
 const getNewsListFn = createServerFn({ method: "GET" })
-	.middleware([permGuard(PERMISSIONS.NEWS_VIEW)])
+	.middleware([adminPermGuard(PERMISSIONS.NEWS_VIEW)])
 	.inputValidator(listSchema)
 	.handler(async ({ data: { status, page = 1 } }) => {
 		return getNewsList({ status, page, pageSize: 20 });
 	});
 
 const deleteNewsFn = createServerFn({ method: "POST" })
-	.middleware([permGuard(PERMISSIONS.NEWS_DELETE)])
+	.middleware([adminPermGuard(PERMISSIONS.NEWS_DELETE)])
 	.inputValidator(idSchema)
 	.handler(async ({ data: { id } }) => {
 		await deleteNews(id);
@@ -53,7 +53,7 @@ const deleteNewsFn = createServerFn({ method: "POST" })
 	});
 
 const changeStatusFn = createServerFn({ method: "POST" })
-	.middleware([permGuard(PERMISSIONS.NEWS_PUBLISH)])
+	.middleware([adminPermGuard(PERMISSIONS.NEWS_PUBLISH)])
 	.inputValidator(statusSchema)
 	.handler(async ({ data: { id, status } }) => {
 		return changeNewsStatus(id, status);

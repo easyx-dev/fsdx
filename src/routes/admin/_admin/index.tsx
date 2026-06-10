@@ -12,11 +12,11 @@ import { createServerFn } from "@tanstack/react-start";
 import { Card, Col, Row, Statistic } from "antd";
 import { AdminPageContent } from "#/components/admin/AdminPageContent";
 import { PERMISSIONS } from "#/lib/permissions/permissions";
-import { permGuard } from "#/middleware/server-fn-auth";
+import { adminPermGuard } from "#/middleware/admin-auth";
 import { getStats } from "#/server/stats/stats.server";
 
 const getStatsFn = createServerFn({ method: "GET" })
-	.middleware([permGuard(PERMISSIONS.DASHBOARD_VIEW)])
+	.middleware([adminPermGuard(PERMISSIONS.DASHBOARD_VIEW)])
 	.handler(async () => {
 		return getStats();
 	});

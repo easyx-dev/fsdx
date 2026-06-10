@@ -30,7 +30,7 @@ import { ProTable } from "#/components/admin/ProTable";
 import { downloadFile } from "#/lib/export/export.utils";
 import { SUPPORTED_LOCALES } from "#/lib/i18n/i18n.types";
 import { PERMISSIONS } from "#/lib/permissions/permissions";
-import { permGuard } from "#/middleware/server-fn-auth";
+import { adminPermGuard } from "#/middleware/admin-auth";
 import {
 	exportUITranslationsFn,
 	importUITranslationsFn,
@@ -52,7 +52,7 @@ const formSchema = z.object({
 
 // ── Server Functions ──
 const getList = createServerFn({ method: "GET" })
-	.middleware([permGuard(PERMISSIONS.TRANSLATION_VIEW)])
+	.middleware([adminPermGuard(PERMISSIONS.TRANSLATION_VIEW)])
 	.inputValidator(
 		z.object({
 			locale: z.string().optional(),
@@ -65,14 +65,14 @@ const getList = createServerFn({ method: "GET" })
 	);
 
 const saveFn = createServerFn({ method: "POST" })
-	.middleware([permGuard(PERMISSIONS.TRANSLATION_MANAGE)])
+	.middleware([adminPermGuard(PERMISSIONS.TRANSLATION_MANAGE)])
 	.inputValidator(formSchema)
 	.handler(async ({ data }) =>
 		upsertUITranslation(data as Parameters<typeof upsertUITranslation>[0]),
 	);
 
 const deleteFn = createServerFn({ method: "POST" })
-	.middleware([permGuard(PERMISSIONS.TRANSLATION_MANAGE)])
+	.middleware([adminPermGuard(PERMISSIONS.TRANSLATION_MANAGE)])
 	.inputValidator(z.object({ id: z.string().min(1) }))
 	.handler(async ({ data }) => {
 		await deleteUITranslation(data.id);

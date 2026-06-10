@@ -27,7 +27,7 @@ import { z } from "zod";
 import { AdminPageContent } from "#/components/admin/AdminPageContent";
 import { ProTable } from "#/components/admin/ProTable";
 import { PERMISSIONS } from "#/lib/permissions/permissions";
-import { permGuard } from "#/middleware/server-fn-auth";
+import { adminPermGuard } from "#/middleware/admin-auth";
 import {
 	type ClientUserRecord,
 	type CreateClientUserInput,
@@ -65,31 +65,31 @@ const resetPwdSchema = z.object({
 });
 
 const getListFn = createServerFn({ method: "GET" })
-	.middleware([permGuard(PERMISSIONS.CLIENT_VIEW)])
+	.middleware([adminPermGuard(PERMISSIONS.CLIENT_VIEW)])
 	.inputValidator(listSchema)
 	.handler(async ({ data }) =>
 		getClientUserList(data.page, data.pageSize, data.keyword),
 	);
 
 const createFn = createServerFn({ method: "POST" })
-	.middleware([permGuard(PERMISSIONS.CLIENT_CREATE)])
+	.middleware([adminPermGuard(PERMISSIONS.CLIENT_CREATE)])
 	.inputValidator(createSchema)
 	.handler(async ({ data }) => createClientUser(data as CreateClientUserInput));
 
 const updateFn = createServerFn({ method: "POST" })
-	.middleware([permGuard(PERMISSIONS.CLIENT_EDIT)])
+	.middleware([adminPermGuard(PERMISSIONS.CLIENT_EDIT)])
 	.inputValidator(updateSchema)
 	.handler(async ({ data }) =>
 		updateClientUser(data.id, data as UpdateClientUserInput),
 	);
 
 const deleteFn = createServerFn({ method: "POST" })
-	.middleware([permGuard(PERMISSIONS.CLIENT_DELETE)])
+	.middleware([adminPermGuard(PERMISSIONS.CLIENT_DELETE)])
 	.inputValidator(idSchema)
 	.handler(async ({ data }) => deleteClientUser(data.id));
 
 const resetPwdFn = createServerFn({ method: "POST" })
-	.middleware([permGuard(PERMISSIONS.CLIENT_EDIT)])
+	.middleware([adminPermGuard(PERMISSIONS.CLIENT_EDIT)])
 	.inputValidator(resetPwdSchema)
 	.handler(async ({ data }) => resetClientPassword(data.id, data.password));
 

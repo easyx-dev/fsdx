@@ -16,7 +16,7 @@ import {
 import { useEffect, useState } from "react";
 import { z } from "zod";
 import { COOKIE_NAMES } from "#/lib/jwt/jwt";
-import { adminLoginService } from "#/server/auth/auth.server";
+import { adminLogin } from "#/server/admin-auth/admin-auth.server";
 import { checkInitStatus } from "#/server/init/init.server";
 
 const checkInitStatusFn = createServerFn({ method: "GET" }).handler(
@@ -30,12 +30,12 @@ const loginSchema = z.object({
 	password: z.string().min(1, "密码不能为空").max(100),
 });
 
-const adminLogin = createServerFn({ method: "POST" })
+const adminLoginFn = createServerFn({ method: "POST" })
 	.inputValidator(loginSchema)
 	.handler(async ({ data: { username, password } }) => {
-		const result = await adminLoginService(username, password);
+		const result = await adminLogin(username, password);
 		if (result.success && result.token) {
-			setCookie(COOKIE_NAMES.ACCESS_TOKEN, result.token, {
+			setCookie(COOKIE_NAMES.ADMIN_TOKEN, result.token, {
 				httpOnly: true,
 				secure: process.env.NODE_ENV === "production",
 				sameSite: "lax",
@@ -81,7 +81,7 @@ function AdminLoginPage() {
 	}) => {
 		setLoading(true);
 		try {
-			const result = await adminLogin({ data: values });
+			const result = await adminLoginFn({ data: values });
 			if (!result.success) {
 				message.error(result.message || "登录失败");
 				return;

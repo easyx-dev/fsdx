@@ -12,7 +12,7 @@ import { Button } from "#/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "#/components/ui/card";
 import { Input } from "#/components/ui/input";
 import { useTranslation } from "#/lib/i18n/i18n-context";
-import { clientRegisterService } from "#/server/auth/auth.server";
+import { clientRegister } from "#/server/client-auth/client-auth.server";
 
 const registerSchema = z.object({
 	username: z.string().min(1, "用户名不能为空").max(50),
@@ -21,10 +21,10 @@ const registerSchema = z.object({
 	captcha: z.string().length(6, "验证码为 6 位"),
 });
 
-const clientRegister = createServerFn({ method: "POST" })
+const clientRegisterFn = createServerFn({ method: "POST" })
 	.inputValidator(registerSchema)
 	.handler(async ({ data: { username, email, password, captcha } }) => {
-		return clientRegisterService(username, email, password, captcha);
+		return clientRegister(username, email, password, captcha);
 	});
 
 export const Route = createFileRoute("/register")({
@@ -44,7 +44,7 @@ function ClientRegisterPage() {
 			captchaMsg: "",
 		},
 		onSubmit: async ({ value }) => {
-			const result = await clientRegister({
+			const result = await clientRegisterFn({
 				data: {
 					username: value.username,
 					email: value.email,

@@ -7,7 +7,7 @@ import { toJson } from "#/lib/export/export.utils";
 import type { Locale } from "#/lib/i18n/i18n.types";
 import { DEFAULT_LOCALE, SUPPORTED_LOCALES } from "#/lib/i18n/i18n.types";
 import { PERMISSIONS } from "#/lib/permissions/permissions";
-import { permGuard } from "#/middleware/server-fn-auth";
+import { adminPermGuard } from "#/middleware/admin-auth";
 import type {
 	ContentTranslationExportData,
 	TranslationImportResult,
@@ -65,7 +65,7 @@ export const getEntityTranslations = createServerFn({ method: "GET" })
 
 /** UI 翻译列表 */
 export const listUITranslationsFn = createServerFn({ method: "GET" })
-	.middleware([permGuard(PERMISSIONS.TRANSLATION_VIEW)])
+	.middleware([adminPermGuard(PERMISSIONS.TRANSLATION_VIEW)])
 	.inputValidator(
 		z.object({
 			locale: localeSchema.optional(),
@@ -80,7 +80,7 @@ export const listUITranslationsFn = createServerFn({ method: "GET" })
 
 /** UI 翻译创建/更新 */
 export const saveUITranslationFn = createServerFn({ method: "POST" })
-	.middleware([permGuard(PERMISSIONS.TRANSLATION_MANAGE)])
+	.middleware([adminPermGuard(PERMISSIONS.TRANSLATION_MANAGE)])
 	.inputValidator(
 		z.object({
 			id: z.string().optional(),
@@ -98,7 +98,7 @@ export const saveUITranslationFn = createServerFn({ method: "POST" })
 
 /** UI 翻译删除 */
 export const deleteUITranslationFn = createServerFn({ method: "POST" })
-	.middleware([permGuard(PERMISSIONS.TRANSLATION_MANAGE)])
+	.middleware([adminPermGuard(PERMISSIONS.TRANSLATION_MANAGE)])
 	.inputValidator(z.object({ id: z.string().min(1) }))
 	.handler(async ({ data: { id } }) => {
 		await deleteUITranslation(id);
@@ -109,7 +109,7 @@ export const deleteUITranslationFn = createServerFn({ method: "POST" })
 
 /** 导出 UI 翻译数据（JSON） */
 export const exportUITranslationsFn = createServerFn({ method: "GET" })
-	.middleware([permGuard(PERMISSIONS.TRANSLATION_EXPORT)])
+	.middleware([adminPermGuard(PERMISSIONS.TRANSLATION_EXPORT)])
 	.handler(async () => {
 		const translations = await getAllUITranslationsForExport();
 		return toJson({ translations });
@@ -117,7 +117,7 @@ export const exportUITranslationsFn = createServerFn({ method: "GET" })
 
 /** 导入 UI 翻译数据（JSON） */
 export const importUITranslationsFn = createServerFn({ method: "POST" })
-	.middleware([permGuard(PERMISSIONS.TRANSLATION_IMPORT)])
+	.middleware([adminPermGuard(PERMISSIONS.TRANSLATION_IMPORT)])
 	.inputValidator(
 		z.object({
 			data: z.object({
@@ -140,7 +140,7 @@ export const importUITranslationsFn = createServerFn({ method: "POST" })
 
 /** 实体翻译列表 */
 export const listContentTranslationsFn = createServerFn({ method: "GET" })
-	.middleware([permGuard(PERMISSIONS.TRANSLATION_VIEW)])
+	.middleware([adminPermGuard(PERMISSIONS.TRANSLATION_VIEW)])
 	.inputValidator(
 		z.object({
 			entityType: z.string().optional(),
@@ -156,7 +156,7 @@ export const listContentTranslationsFn = createServerFn({ method: "GET" })
 
 /** 获取某实体某字段的所有语言翻译（抽屉用） */
 export const getFieldTranslationsFn = createServerFn({ method: "GET" })
-	.middleware([permGuard(PERMISSIONS.TRANSLATION_VIEW)])
+	.middleware([adminPermGuard(PERMISSIONS.TRANSLATION_VIEW)])
 	.inputValidator(
 		z.object({
 			entityType: z.string(),
@@ -170,7 +170,7 @@ export const getFieldTranslationsFn = createServerFn({ method: "GET" })
 
 /** 实体翻译创建/更新 */
 export const saveContentTranslationFn = createServerFn({ method: "POST" })
-	.middleware([permGuard(PERMISSIONS.TRANSLATION_MANAGE)])
+	.middleware([adminPermGuard(PERMISSIONS.TRANSLATION_MANAGE)])
 	.inputValidator(
 		z.object({
 			id: z.string().optional(),
@@ -190,7 +190,7 @@ export const saveContentTranslationFn = createServerFn({ method: "POST" })
 
 /** 实体翻译删除 */
 export const deleteContentTranslationFn = createServerFn({ method: "POST" })
-	.middleware([permGuard(PERMISSIONS.TRANSLATION_MANAGE)])
+	.middleware([adminPermGuard(PERMISSIONS.TRANSLATION_MANAGE)])
 	.inputValidator(z.object({ id: z.string().min(1) }))
 	.handler(async ({ data: { id } }) => {
 		await deleteContentTranslation(id);
@@ -201,7 +201,7 @@ export const deleteContentTranslationFn = createServerFn({ method: "POST" })
 
 /** 导出实体翻译数据（JSON） */
 export const exportContentTranslationsFn = createServerFn({ method: "GET" })
-	.middleware([permGuard(PERMISSIONS.TRANSLATION_EXPORT)])
+	.middleware([adminPermGuard(PERMISSIONS.TRANSLATION_EXPORT)])
 	.handler(async () => {
 		const translations = await getAllContentTranslationsForExport();
 		return toJson({ translations });
@@ -209,7 +209,7 @@ export const exportContentTranslationsFn = createServerFn({ method: "GET" })
 
 /** 导入实体翻译数据（JSON） */
 export const importContentTranslationsFn = createServerFn({ method: "POST" })
-	.middleware([permGuard(PERMISSIONS.TRANSLATION_IMPORT)])
+	.middleware([adminPermGuard(PERMISSIONS.TRANSLATION_IMPORT)])
 	.inputValidator(
 		z.object({
 			data: z.object({

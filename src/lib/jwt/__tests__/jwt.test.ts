@@ -66,7 +66,8 @@ describe("signToken / verifyToken", () => {
 });
 
 describe("COOKIE_NAMES", () => {
-	it("ACCESS_TOKEN 名称正确", () => {
-		expect(COOKIE_NAMES.ACCESS_TOKEN).toBe("cms_access_token");
+	it("ADMIN_TOKEN 和 CLIENT_TOKEN 名称正确", () => {
+		expect(COOKIE_NAMES.ADMIN_TOKEN).toBe("fsdx_admin_token");
+		expect(COOKIE_NAMES.CLIENT_TOKEN).toBe("fsdx_client_token");
 	});
 });

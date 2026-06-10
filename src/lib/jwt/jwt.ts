@@ -54,7 +54,11 @@ export async function verifyToken(token: string): Promise<JwtPayload | null> {
 
 /**
  * Cookie 名称
+ * 管理端和客户端使用独立的 Cookie，避免同一浏览器同时登录时互相覆盖
  */
 export const COOKIE_NAMES = {
-	ACCESS_TOKEN: "cms_access_token",
+	/** 管理端 JWT Token Cookie */
+	ADMIN_TOKEN: "fsdx_admin_token",
+	/** 客户端 JWT Token Cookie */
+	CLIENT_TOKEN: "fsdx_client_token",
 } as const;

@@ -10,7 +10,7 @@ import { z } from "zod";
 import { AdminPageContent } from "#/components/admin/AdminPageContent";
 import { RichEditor } from "#/components/admin/RichEditor";
 import { PERMISSIONS } from "#/lib/permissions/permissions";
-import { permGuard } from "#/middleware/server-fn-auth";
+import { adminPermGuard } from "#/middleware/admin-auth";
 import { getNewsById, updateNews } from "#/server/news/news.server";
 
 const getSchema = z.object({ id: z.string().min(1) });
@@ -25,14 +25,14 @@ const updateSchema = z.object({
 });
 
 const getNewsFn = createServerFn({ method: "GET" })
-	.middleware([permGuard(PERMISSIONS.NEWS_VIEW)])
+	.middleware([adminPermGuard(PERMISSIONS.NEWS_VIEW)])
 	.inputValidator(getSchema)
 	.handler(async ({ data: { id } }) => {
 		return getNewsById(id);
 	});
 
 const updateNewsFn = createServerFn({ method: "POST" })
-	.middleware([permGuard(PERMISSIONS.NEWS_EDIT)])
+	.middleware([adminPermGuard(PERMISSIONS.NEWS_EDIT)])
 	.inputValidator(updateSchema)
 	.handler(async ({ data }) => {
 		return updateNews(data.id, data);

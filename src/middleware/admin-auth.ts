@@ -1,5 +1,5 @@
 /**
- * Server Function 鉴权与权限中间件
+ * 管理端 Server Function 鉴权与权限中间件
  * 使用 createMiddleware 实现可复用的函数级中间件
  */
 
@@ -12,48 +12,48 @@ import {
 	type PermissionDef,
 } from "#/lib/permissions/permissions";
 
-/** 通过中间件注入 handler 的上下文 */
-export interface AuthContext {
+/** 通过中间件注入 handler 的管理端鉴权上下文 */
+export interface AdminAuthContext {
 	user: {
 		id: string;
 		username: string;
 		email: string;
-		userType: "admin" | "client";
+		userType: "admin";
 		isRoot: boolean;
 	};
 	rolePermissions: string[];
 }
 
-/** 鉴权错误 */
-export class AuthError extends Error {
+/** 管理端鉴权错误 */
+export class AdminAuthError extends Error {
 	statusCode: number;
 
 	constructor(message: string, statusCode: number) {
 		super(message);
 		this.statusCode = statusCode;
-		this.name = "AuthError";
+		this.name = "AdminAuthError";
 	}
 }
 
 /**
- * 校验管理员登录，将用户信息和角色权限注入 context
+ * 管理端登录校验中间件：读取管理端 Cookie，校验 JWT，将用户信息和角色权限注入 context
  * isRoot 用户自动拥有所有权限，不依赖角色表
  */
-export const authGuard = createMiddleware({
+export const adminAuthGuard = createMiddleware({
 	type: "function",
 }).server(async ({ next }) => {
-	const token = getCookie(COOKIE_NAMES.ACCESS_TOKEN);
+	const token = getCookie(COOKIE_NAMES.ADMIN_TOKEN);
 	if (!token) {
-		throw new AuthError("未登录或登录已过期", 401);
+		throw new AdminAuthError("未登录或登录已过期", 401);
 	}
 
 	const jwtPayload = await verifyToken(token);
 	if (!jwtPayload) {
-		throw new AuthError("未登录或登录已过期", 401);
+		throw new AdminAuthError("未登录或登录已过期", 401);
 	}
 
 	if (jwtPayload.userType !== "admin") {
-		throw new AuthError("无权访问管理端", 403);
+		throw new AdminAuthError("无权访问管理端", 403);
 	}
 
 	// 查管理员用户
@@ -62,7 +62,7 @@ export const authGuard = createMiddleware({
 	});
 
 	if (!user || user.deletedAt || user.status !== "active") {
-		throw new AuthError("账号已被禁用或删除", 403);
+		throw new AdminAuthError("账号已被禁用或删除", 403);
 	}
 
 	// Root 用户自动拥有全部权限，无需查询角色表
@@ -86,23 +86,23 @@ export const authGuard = createMiddleware({
 				isRoot: user.isRoot,
 			},
 			rolePermissions,
-		} as AuthContext,
+		} as AdminAuthContext,
 	});
 });
 
 /**
- * 权限校验中间件工厂
- * 内部组合 authGuard，先验证登录再校验指定权限
+ * 管理端权限校验中间件工厂
+ * 内部组合 adminAuthGuard，先验证登录再校验指定权限
  */
-export function permGuard(required: PermissionDef) {
+export function adminPermGuard(required: PermissionDef) {
 	return createMiddleware({ type: "function" })
-		.middleware([authGuard])
+		.middleware([adminAuthGuard])
 		.server(async (opts) => {
-			const ctx = opts.context as Record<string, unknown> | undefined;
-			const rolePermissions = (ctx?.rolePermissions ?? []) as string[];
+			const ctx = opts.context as Partial<AdminAuthContext> | undefined;
+			const rolePermissions = ctx?.rolePermissions ?? [];
 
 			if (!hasPermission(rolePermissions, required)) {
-				throw new AuthError("权限不足", 403);
+				throw new AdminAuthError("权限不足", 403);
 			}
 
 			return opts.next();

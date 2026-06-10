@@ -36,7 +36,7 @@ import { TypeAwareEditor } from "#/components/admin/TypeAwareEditor";
 import type { EditorType } from "#/lib/editor-types/editor-types";
 import { downloadFile } from "#/lib/export/export.utils";
 import { PERMISSIONS } from "#/lib/permissions/permissions";
-import { permGuard } from "#/middleware/server-fn-auth";
+import { adminPermGuard } from "#/middleware/admin-auth";
 import {
 	exportConfigsFn,
 	importConfigsFn,
@@ -75,13 +75,13 @@ const updateConfigSchema = z.object({
 const deleteConfigSchema = z.object({ id: z.string().min(1) });
 
 const getConfigList = createServerFn({ method: "GET" })
-	.middleware([permGuard(PERMISSIONS.CONFIG_VIEW)])
+	.middleware([adminPermGuard(PERMISSIONS.CONFIG_VIEW)])
 	.handler(async () => {
 		return getConfigListService();
 	});
 
 const createConfigFn = createServerFn({ method: "POST" })
-	.middleware([permGuard(PERMISSIONS.CONFIG_CREATE)])
+	.middleware([adminPermGuard(PERMISSIONS.CONFIG_CREATE)])
 	.inputValidator(createConfigSchema)
 	.handler(async ({ data }) => {
 		await createConfig(data);
@@ -89,7 +89,7 @@ const createConfigFn = createServerFn({ method: "POST" })
 	});
 
 const updateConfigFn = createServerFn({ method: "POST" })
-	.middleware([permGuard(PERMISSIONS.CONFIG_EDIT)])
+	.middleware([adminPermGuard(PERMISSIONS.CONFIG_EDIT)])
 	.inputValidator(updateConfigSchema)
 	.handler(async ({ data }) => {
 		const { id, ...rest } = data;
@@ -98,7 +98,7 @@ const updateConfigFn = createServerFn({ method: "POST" })
 	});
 
 const deleteConfigFn = createServerFn({ method: "POST" })
-	.middleware([permGuard(PERMISSIONS.CONFIG_DELETE)])
+	.middleware([adminPermGuard(PERMISSIONS.CONFIG_DELETE)])
 	.inputValidator(deleteConfigSchema)
 	.handler(async ({ data }) => {
 		await deleteConfig(data.id);

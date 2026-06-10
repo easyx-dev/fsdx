@@ -26,7 +26,7 @@ import { z } from "zod";
 import { AdminPageContent } from "#/components/admin/AdminPageContent";
 import { ProTable } from "#/components/admin/ProTable";
 import { PERMISSIONS } from "#/lib/permissions/permissions";
-import { permGuard } from "#/middleware/server-fn-auth";
+import { adminPermGuard } from "#/middleware/admin-auth";
 import {
 	getLogDates as getLogDatesService,
 	type LogEntry,
@@ -44,14 +44,14 @@ const searchLogsSchema = z.object({
 });
 
 const searchLogsFn = createServerFn({ method: "GET" })
-	.middleware([permGuard(PERMISSIONS.LOG_VIEW)])
+	.middleware([adminPermGuard(PERMISSIONS.LOG_VIEW)])
 	.inputValidator(searchLogsSchema)
 	.handler(async ({ data }) => {
 		return searchLogsService(data);
 	});
 
 const getDatesFn = createServerFn({ method: "GET" })
-	.middleware([permGuard(PERMISSIONS.LOG_VIEW)])
+	.middleware([adminPermGuard(PERMISSIONS.LOG_VIEW)])
 	.handler(async () => {
 		return getLogDatesService();
 	});

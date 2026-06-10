@@ -26,7 +26,7 @@ import { z } from "zod";
 import { AdminPageContent } from "#/components/admin/AdminPageContent";
 import { ProTable } from "#/components/admin/ProTable";
 import { PERMISSIONS } from "#/lib/permissions/permissions";
-import { permGuard } from "#/middleware/server-fn-auth";
+import { adminPermGuard } from "#/middleware/admin-auth";
 import {
 	type AdminUserListItem,
 	type CreateAdminUserInput,
@@ -48,7 +48,7 @@ const listSchema = z.object({
 });
 
 const getRolesForSelect = createServerFn({ method: "GET" })
-	.middleware([permGuard(PERMISSIONS.ADMIN_VIEW)])
+	.middleware([adminPermGuard(PERMISSIONS.ADMIN_VIEW)])
 	.handler(async () => getRoleListService());
 const createSchema = z.object({
 	username: z.string().min(1).max(50),
@@ -70,26 +70,26 @@ const resetPwdSchema = z.object({
 });
 
 const getListFn = createServerFn({ method: "GET" })
-	.middleware([permGuard(PERMISSIONS.ADMIN_VIEW)])
+	.middleware([adminPermGuard(PERMISSIONS.ADMIN_VIEW)])
 	.inputValidator(listSchema)
 	.handler(async ({ data }) =>
 		getAdminUserList(data.page, data.pageSize, data.keyword),
 	);
 
 const createFn = createServerFn({ method: "POST" })
-	.middleware([permGuard(PERMISSIONS.ADMIN_CREATE)])
+	.middleware([adminPermGuard(PERMISSIONS.ADMIN_CREATE)])
 	.inputValidator(createSchema)
 	.handler(async ({ data }) => createAdminUser(data as CreateAdminUserInput));
 
 const updateFn = createServerFn({ method: "POST" })
-	.middleware([permGuard(PERMISSIONS.ADMIN_EDIT)])
+	.middleware([adminPermGuard(PERMISSIONS.ADMIN_EDIT)])
 	.inputValidator(updateSchema)
 	.handler(async ({ data }) =>
 		updateAdminUser(data.id, data as UpdateAdminUserInput),
 	);
 
 const deleteFn = createServerFn({ method: "POST" })
-	.middleware([permGuard(PERMISSIONS.ADMIN_DELETE)])
+	.middleware([adminPermGuard(PERMISSIONS.ADMIN_DELETE)])
 	.inputValidator(idSchema)
 	.handler(async ({ data, context }) => {
 		const ctx = context as { user?: { id: string } } | undefined;
@@ -97,7 +97,7 @@ const deleteFn = createServerFn({ method: "POST" })
 	});
 
 const resetPwdFn = createServerFn({ method: "POST" })
-	.middleware([permGuard(PERMISSIONS.ADMIN_EDIT)])
+	.middleware([adminPermGuard(PERMISSIONS.ADMIN_EDIT)])
 	.inputValidator(resetPwdSchema)
 	.handler(async ({ data }) => resetAdminPassword(data.id, data.password));
 

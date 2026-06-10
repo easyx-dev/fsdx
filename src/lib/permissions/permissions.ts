@@ -6,7 +6,7 @@
 
 /**
  * 创建权限码常量
- * 返回值即权限的完整定义对象，直接作为 permGuard / hasPermission 的入参
+ * 返回值即权限的完整定义对象，直接作为 adminPermGuard / hasPermission 的入参
  */
 function definePermission<C extends string, N extends string, D extends string>(
 	code: C,

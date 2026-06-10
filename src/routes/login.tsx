@@ -12,19 +12,19 @@ import { Card, CardContent, CardHeader, CardTitle } from "#/components/ui/card";
 import { Input } from "#/components/ui/input";
 import { useTranslation } from "#/lib/i18n/i18n-context";
 import { COOKIE_NAMES } from "#/lib/jwt/jwt";
-import { clientLoginService } from "#/server/auth/auth.server";
+import { clientLogin } from "#/server/client-auth/client-auth.server";
 
 const loginSchema = z.object({
 	username: z.string().min(1, "用户名不能为空").max(50),
 	password: z.string().min(1, "密码不能为空").max(100),
 });
 
-const clientLogin = createServerFn({ method: "POST" })
+const clientLoginFn = createServerFn({ method: "POST" })
 	.inputValidator(loginSchema)
 	.handler(async ({ data: { username, password } }) => {
-		const result = await clientLoginService(username, password);
+		const result = await clientLogin(username, password);
 		if (result.success && result.token) {
-			setCookie(COOKIE_NAMES.ACCESS_TOKEN, result.token, {
+			setCookie(COOKIE_NAMES.CLIENT_TOKEN, result.token, {
 				httpOnly: true,
 				secure: process.env.NODE_ENV === "production",
 				sameSite: "lax",
@@ -49,7 +49,7 @@ function ClientLoginPage() {
 			password: "",
 		},
 		onSubmit: async ({ value }) => {
-			const result = await clientLogin({ data: value });
+			const result = await clientLoginFn({ data: value });
 			if (!result.success) {
 				throw new Error(result.message || t("loginBtn"));
 			}

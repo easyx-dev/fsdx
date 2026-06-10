@@ -1,5 +1,5 @@
 /**
- * getCurrentUser 逻辑测试：JWT 解析 + 用户查询
+ * getCurrentClient 逻辑测试：JWT 解析 + 客户端用户查询
  */
 
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -32,46 +32,33 @@ const { mockDb } = vi.hoisted(() => {
 });
 vi.mock("#/db", () => ({ db: mockDb }));
 
-import { getCurrentUser } from "#/server/auth/auth.server";
+import { getCurrentClient } from "#/server/client-auth/client-auth.server";
 
-describe("getCurrentUser", () => {
+describe("getCurrentClient", () => {
 	beforeEach(() => vi.clearAllMocks());
 
 	it("token 为 undefined 返回 null", async () => {
-		const result = await getCurrentUser(undefined);
+		const result = await getCurrentClient(undefined);
 		expect(result).toBeNull();
 	});
 
 	it("无效 token 返回 null", async () => {
 		mockVerifyToken.mockResolvedValue(null);
-		const result = await getCurrentUser("invalid-token");
+		const result = await getCurrentClient("invalid-token");
 		expect(result).toBeNull();
 	});
 
-	it("有效 admin token 返回用户信息", async () => {
+	it("admin 类型 token 返回 null", async () => {
 		mockVerifyToken.mockResolvedValue({
 			userId: "admin-1",
 			username: "admin",
 			userType: "admin",
 		});
-		mockDb.query.adminUser.findFirst.mockResolvedValue({
-			id: "admin-1",
-			username: "admin",
-			email: "admin@t.com",
-			status: "active",
-			deletedAt: null,
-		});
-
-		const result = await getCurrentUser("valid-token");
-		expect(result).toEqual({
-			id: "admin-1",
-			username: "admin",
-			email: "admin@t.com",
-			userType: "admin",
-		});
+		const result = await getCurrentClient("admin-token");
+		expect(result).toBeNull();
 	});
 
-	it("有效 client token 返回用户信息", async () => {
+	it("有效 client token 返回客户端用户信息", async () => {
 		mockVerifyToken.mockResolvedValue({
 			userId: "c-1",
 			username: "client",
@@ -81,36 +68,36 @@ describe("getCurrentUser", () => {
 			id: "c-1",
 			username: "client",
 			email: "c@t.com",
+			avatar: null,
 			status: "active",
 			deletedAt: null,
 		});
 
-		const result = await getCurrentUser("valid-token");
-		expect(result).toEqual({
+		const result = await getCurrentClient("valid-token");
+		expect(result).toMatchObject({
 			id: "c-1",
 			username: "client",
 			email: "c@t.com",
-			avatar: undefined,
 			isRoot: false,
 			userType: "client",
 		});
 	});
 
-	it("admin 用户被软删除返回 null", async () => {
+	it("client 用户被禁用返回 null", async () => {
 		mockVerifyToken.mockResolvedValue({
-			userId: "admin-1",
-			username: "admin",
-			userType: "admin",
+			userId: "c-1",
+			username: "client",
+			userType: "client",
 		});
-		mockDb.query.adminUser.findFirst.mockResolvedValue({
-			id: "admin-1",
-			username: "admin",
-			email: "a@t.com",
-			status: "active",
-			deletedAt: new Date(),
+		mockDb.query.clientUser.findFirst.mockResolvedValue({
+			id: "c-1",
+			username: "client",
+			email: "c@t.com",
+			status: "disabled",
+			deletedAt: null,
 		});
 
-		const result = await getCurrentUser("valid-token");
+		const result = await getCurrentClient("valid-token");
 		expect(result).toBeNull();
 	});
 });

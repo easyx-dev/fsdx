@@ -40,7 +40,7 @@ import {
 	useEffect,
 	useState,
 } from "react";
-import { useAuth } from "#/components/AuthProvider";
+import { useAdminAuth } from "#/components/admin/AdminAuthProvider";
 import { logout } from "#/routes/admin/_admin";
 
 /** 主题模式 */
@@ -181,7 +181,7 @@ const THEME_CYCLE: ThemeMode[] = ["light", "dark", "auto"];
 export function AdminLayout({ children }: { children: ReactNode }) {
 	const [collapsed, setCollapsed] = useState(false);
 	const { mode, setMode, isDark } = useAdminTheme();
-	const { user } = useAuth();
+	const { user } = useAdminAuth();
 	const location = useLocation();
 	const currentPath = location.pathname;
 
