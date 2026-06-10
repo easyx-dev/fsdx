@@ -2,9 +2,10 @@
  * 权限选择器：表格形式，支持分组通配符
  * 选择分组时自动写入 group:* 通配符，选择单个权限时写入具体权限码
  */
-import { Checkbox, Table } from "antd";
+import { Checkbox } from "antd";
 import type { ColumnsType } from "antd/es/table";
 import { useMemo } from "react";
+import { ProTable } from "#/components/admin/ProTable";
 import {
 	PERMISSIONS_BY_GROUP,
 	type PermissionDef,
@@ -112,12 +113,11 @@ export function PermissionSelector({
 	];
 
 	return (
-		<Table<GroupRow>
+		<ProTable<GroupRow>
 			columns={columns}
 			dataSource={groupData}
 			pagination={false}
 			size="small"
-			bordered
 		/>
 	);
 }

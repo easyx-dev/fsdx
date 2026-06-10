@@ -22,13 +22,13 @@ import {
 	Row,
 	Segmented,
 	Space,
-	Table,
 	Tag,
 	Upload,
 } from "antd";
 import { useState } from "react";
 import { z } from "zod";
 import { AdminPageContent } from "#/components/admin/AdminPageContent";
+import { ProTable } from "#/components/admin/ProTable";
 import { PERMISSIONS } from "#/lib/permissions/permissions";
 import { permGuard } from "#/middleware/server-fn-auth";
 import { uploadFile } from "#/server/file/file.functions";
@@ -345,7 +345,7 @@ function FilesPage() {
 				/>
 			</div>
 
-			<Table
+			<ProTable
 				dataSource={files}
 				columns={columns}
 				rowKey="id"

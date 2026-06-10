@@ -22,7 +22,6 @@ import {
 	Select,
 	Space,
 	Switch,
-	Table,
 } from "antd";
 import { useMemo, useRef, useState } from "react";
 import { z } from "zod";
@@ -31,6 +30,7 @@ import {
 	FieldTranslationDrawer,
 	type TranslatableField,
 } from "#/components/admin/FieldTranslationDrawer";
+import { ProTable } from "#/components/admin/ProTable";
 import { TypeAwareEditor } from "#/components/admin/TypeAwareEditor";
 import type { EditorType } from "#/lib/editor-types/editor-types";
 import {
@@ -134,7 +134,12 @@ function ConfigPage() {
 			if (c.groupName) set.add(c.groupName);
 			else set.add(UNGROUPED_KEY);
 		}
-		return ["全部", ...Array.from(set).sort()];
+		// 未分组排在最后
+		const sorted = Array.from(set)
+			.filter((g) => g !== UNGROUPED_KEY)
+			.sort();
+		if (set.has(UNGROUPED_KEY)) sorted.push(UNGROUPED_KEY);
+		return ["全部", ...sorted];
 	}, [configs]);
 
 	/** 根据选中分组和搜索文本过滤配置 */
@@ -255,42 +260,6 @@ function ConfigPage() {
 		}
 		if (fileInputRef.current) fileInputRef.current.value = "";
 	};
-
-	/** 分组列表表格列定义 */
-	const groupColumns = [
-		{
-			title: "分组",
-			dataIndex: "name",
-			key: "name",
-			render: (
-				name: string,
-				record: { key: string; name: string; count: number },
-			) => {
-				const isActive = (selectedGroup ?? "全部") === record.key;
-				return (
-					<div className="flex items-center gap-2">
-						{isActive && (
-							<span className="w-1 h-6 rounded-full bg-blue-500 flex-shrink-0" />
-						)}
-						<div>
-							<div
-								className={
-									isActive
-										? "font-semibold text-blue-600 dark:text-blue-400"
-										: ""
-								}
-							>
-								{name}
-							</div>
-							<div className="text-xs text-muted-foreground">
-								{record.count} 项
-							</div>
-						</div>
-					</div>
-				);
-			},
-		},
-	];
 
 	/** 配置项表格列定义 */
 	const configColumns = [
@@ -419,25 +388,51 @@ function ConfigPage() {
 					}}
 					styles={{ body: { padding: 0 } }}
 				>
-					<Table
-						dataSource={groupDataSource}
-						columns={groupColumns}
-						rowKey="key"
-						size="small"
-						showHeader={false}
-						pagination={false}
-						locale={{ emptyText: "暂无分组" }}
-						onRow={(record) => ({
-							onClick: () =>
-								setSelectedGroup(record.key === "全部" ? null : record.key),
-							style: { cursor: "pointer" },
-						})}
-						rowClassName={(record) =>
-							(selectedGroup ?? "全部") === record.key
-								? "bg-blue-50/80 dark:bg-blue-950/40"
-								: ""
-						}
-					/>
+					{groupDataSource.length === 0 ? (
+						<div className="p-4 text-center text-muted-foreground text-sm">
+							暂无分组
+						</div>
+					) : (
+						<div className="divide-y divide-border">
+							{groupDataSource.map((record) => {
+								const activeKey = selectedGroup ?? "全部";
+								const isActive = activeKey === record.key;
+								return (
+									<div
+										key={record.key}
+										className={`flex items-center px-3 py-2.5 cursor-pointer transition-colors hover:bg-gray-50 dark:hover:bg-gray-800/50 ${
+											isActive ? "bg-blue-50/80 dark:bg-blue-950/40" : ""
+										}`}
+										onClick={() =>
+											setSelectedGroup(
+												record.key === "全部" ? null : record.key,
+											)
+										}
+									>
+										<div className="flex items-center gap-2 min-w-0">
+											{isActive && (
+												<span className="w-1 h-6 rounded-full bg-blue-500 flex-shrink-0" />
+											)}
+											<div className="min-w-0">
+												<div
+													className={
+														isActive
+															? "font-semibold text-blue-600 dark:text-blue-400 truncate"
+															: "truncate"
+													}
+												>
+													{record.name}
+												</div>
+												<div className="text-xs text-muted-foreground">
+													{record.count} 项
+												</div>
+											</div>
+										</div>
+									</div>
+								);
+							})}
+						</div>
+					)}
 				</Card>
 
 				<Card
@@ -467,12 +462,12 @@ function ConfigPage() {
 					}}
 					styles={{ body: { padding: 0 } }}
 				>
-					<Table
+					<ProTable
 						dataSource={filteredConfigs}
 						columns={configColumns}
+						scroll={{ x: 1100 }}
 						rowKey="id"
 						size="small"
-						bordered
 						pagination={false}
 						locale={{ emptyText: "暂无配置" }}
 					/>

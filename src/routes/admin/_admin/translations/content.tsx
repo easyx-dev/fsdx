@@ -13,12 +13,12 @@ import {
 	Popconfirm,
 	Select,
 	Space,
-	Table,
 	Tag,
 } from "antd";
 import { useState } from "react";
 import { z } from "zod";
 import { AdminPageContent } from "#/components/admin/AdminPageContent";
+import { ProTable } from "#/components/admin/ProTable";
 import {
 	EDITOR_TYPE_LABELS,
 	EDITOR_TYPES,
@@ -240,7 +240,7 @@ function ContentTranslationPage() {
 				</Space>
 			</div>
 
-			<Table
+			<ProTable
 				dataSource={data.records}
 				columns={columns}
 				rowKey="id"

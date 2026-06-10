@@ -20,12 +20,12 @@ import {
 	Select,
 	Space,
 	Switch,
-	Table,
 	Tag,
 } from "antd";
 import { useState } from "react";
 import { z } from "zod";
 import { AdminPageContent } from "#/components/admin/AdminPageContent";
+import { ProTable } from "#/components/admin/ProTable";
 import { PERMISSIONS } from "#/lib/permissions/permissions";
 import { permGuard } from "#/middleware/server-fn-auth";
 import {
@@ -287,7 +287,7 @@ function ClientsPage() {
 				<Button onClick={handleSearch}>搜索</Button>
 			</div>
 
-			<Table
+			<ProTable
 				dataSource={data.rows}
 				columns={columns}
 				rowKey="id"

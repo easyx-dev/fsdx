@@ -18,13 +18,13 @@ import {
 	message,
 	Select,
 	Space,
-	Table,
 	Tag,
 	Tooltip,
 } from "antd";
 import { useState } from "react";
 import { z } from "zod";
 import { AdminPageContent } from "#/components/admin/AdminPageContent";
+import { ProTable } from "#/components/admin/ProTable";
 import { PERMISSIONS } from "#/lib/permissions/permissions";
 import { permGuard } from "#/middleware/server-fn-auth";
 import {
@@ -276,7 +276,7 @@ function LogsPage() {
 			)}
 
 			{/* 日志结果表格 */}
-			<Table
+			<ProTable
 				dataSource={dataSource}
 				columns={columns}
 				rowKey="_rowKey"

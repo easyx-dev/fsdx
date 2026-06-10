@@ -19,6 +19,7 @@ import {
 	Col,
 	ColorPicker,
 	Divider,
+	Flex,
 	Form,
 	Input,
 	InputNumber,
@@ -29,12 +30,12 @@ import {
 	Select,
 	Space,
 	Switch,
-	Table,
 	Tag,
 } from "antd";
 import { useRef, useState } from "react";
 import { z } from "zod";
 import { AdminPageContent } from "#/components/admin/AdminPageContent";
+import { ProTable } from "#/components/admin/ProTable";
 import { TypeAwareEditor } from "#/components/admin/TypeAwareEditor";
 import type { EditorType } from "#/lib/editor-types/editor-types";
 import {
@@ -365,58 +366,6 @@ function DictsPage() {
 		if (fileInputRef.current) fileInputRef.current.value = "";
 	};
 
-	/** 字典类型表格列定义 */
-	const dictColumns = [
-		{
-			title: "字典名称",
-			dataIndex: "name",
-			key: "name",
-			render: (_: string, record: DictRecord) => {
-				const isActive = selectedDictSlug === record.slug;
-				return (
-					<div className="flex items-center gap-2">
-						{isActive && (
-							<span className="w-1 h-6 rounded-full bg-blue-500 flex-shrink-0" />
-						)}
-						<div>
-							<div
-								className={
-									isActive
-										? "font-semibold text-blue-600 dark:text-blue-400"
-										: ""
-								}
-							>
-								{record.name}
-							</div>
-							<div className="text-xs text-muted-foreground">{record.slug}</div>
-						</div>
-					</div>
-				);
-			},
-		},
-		{
-			title: "操作",
-			key: "actions",
-			width: 100,
-			render: (_: unknown, record: DictRecord) => (
-				<Space size={4}>
-					<Button
-						type="link"
-						size="small"
-						icon={<EditOutlined />}
-						onClick={() => openDictModal(record)}
-					/>
-					<Popconfirm
-						title="确定删除该字典及所有条目？"
-						onConfirm={() => handleDeleteDict(record.id)}
-					>
-						<Button type="link" size="small" danger icon={<DeleteOutlined />} />
-					</Popconfirm>
-				</Space>
-			),
-		},
-	];
-
 	/** 字典条目表格列定义 */
 	const itemColumns = [
 		{ title: "标签", dataIndex: "label", key: "label" },
@@ -530,91 +479,140 @@ function DictsPage() {
 				</Space>
 			}
 		>
-			<Row gutter={20}>
-				<Col span={8}>
-					<Card
-						size="small"
-						title="字典类型"
-						extra={
+			<Flex gap={20}>
+				<Card
+					size="small"
+					classNames={{
+						root: "flex-[0_0_240px]",
+					}}
+					title="字典类型"
+					extra={
+						<Button
+							type="primary"
+							size="small"
+							icon={<PlusOutlined />}
+							onClick={() => openDictModal()}
+						>
+							新建字典
+						</Button>
+					}
+					styles={{ body: { padding: 0 } }}
+				>
+					{dictList.length === 0 ? (
+						<div className="p-4 text-center text-muted-foreground text-sm">
+							暂无字典
+						</div>
+					) : (
+						<div className="divide-y divide-border">
+							{dictList.map((record) => {
+								const isActive = selectedDictSlug === record.slug;
+								return (
+									<div
+										key={record.id}
+										className={`flex items-center justify-between px-3 py-2.5 cursor-pointer transition-colors hover:bg-gray-50 dark:hover:bg-gray-800/50 ${
+											isActive ? "bg-blue-50/80 dark:bg-blue-950/40" : ""
+										}`}
+										onClick={() => handleSelectDict(record.slug)}
+									>
+										<div className="flex items-center gap-2 min-w-0">
+											{isActive && (
+												<span className="w-1 h-6 rounded-full bg-blue-500 flex-shrink-0" />
+											)}
+											<div className="min-w-0">
+												<div
+													className={
+														isActive
+															? "font-semibold text-blue-600 dark:text-blue-400 truncate"
+															: "truncate"
+													}
+												>
+													{record.name}
+												</div>
+												<div className="text-xs text-muted-foreground truncate">
+													{record.slug}
+												</div>
+											</div>
+										</div>
+										<Space size={4} className="flex-shrink-0 ml-2">
+											<Button
+												type="link"
+												size="small"
+												icon={<EditOutlined />}
+												onClick={(e) => {
+													e.stopPropagation();
+													openDictModal(record);
+												}}
+											/>
+											<Popconfirm
+												title="确定删除该字典及所有条目？"
+												onConfirm={(e) => {
+													e?.stopPropagation();
+													handleDeleteDict(record.id);
+												}}
+												onCancel={(e) => e?.stopPropagation()}
+											>
+												<Button
+													type="link"
+													size="small"
+													danger
+													icon={<DeleteOutlined />}
+													onClick={(e) => e.stopPropagation()}
+												/>
+											</Popconfirm>
+										</Space>
+									</div>
+								);
+							})}
+						</div>
+					)}
+				</Card>
+				<Card
+					size="small"
+					classNames={{
+						root: "flex-1",
+					}}
+					title={
+						selectedDictSlug ? (
+							<span className="text-sm">
+								<span className="font-medium">{selectedDict?.name ?? "—"}</span>
+								<span className="text-muted-foreground ml-2">
+									· 条目 ({items.length})
+								</span>
+							</span>
+						) : (
+							"字典条目"
+						)
+					}
+					extra={
+						selectedDictSlug ? (
 							<Button
 								type="primary"
 								size="small"
 								icon={<PlusOutlined />}
-								onClick={() => openDictModal()}
+								onClick={() => openItemModal()}
 							>
-								新建字典
+								新建条目
 							</Button>
-						}
-						styles={{ body: { padding: 0 } }}
-					>
-						<Table
-							dataSource={dictList}
-							columns={dictColumns}
+						) : undefined
+					}
+					styles={{ body: { padding: 0 } }}
+				>
+					{selectedDictSlug ? (
+						<ProTable
+							dataSource={items}
+							columns={itemColumns}
 							rowKey="id"
 							size="small"
-							showHeader={false}
 							pagination={false}
-							locale={{ emptyText: "暂无字典" }}
-							onRow={(record) => ({
-								onClick: () => handleSelectDict(record.slug),
-								style: { cursor: "pointer" },
-							})}
-							rowClassName={(record) =>
-								selectedDictSlug === record.slug
-									? "bg-blue-50/80 dark:bg-blue-950/40"
-									: ""
-							}
+							locale={{ emptyText: "暂无条目" }}
 						/>
-					</Card>
-				</Col>
-				<Col span={16}>
-					<Card
-						size="small"
-						title={
-							selectedDictSlug ? (
-								<span className="text-sm">
-									<span className="font-medium">
-										{selectedDict?.name ?? "—"}
-									</span>
-									<span className="text-muted-foreground ml-2">
-										· 条目 ({items.length})
-									</span>
-								</span>
-							) : (
-								"字典条目"
-							)
-						}
-						extra={
-							selectedDictSlug ? (
-								<Button
-									type="primary"
-									size="small"
-									icon={<PlusOutlined />}
-									onClick={() => openItemModal()}
-								>
-									新建条目
-								</Button>
-							) : undefined
-						}
-						styles={{ body: { padding: 0 } }}
-					>
-						{selectedDictSlug ? (
-							<Table
-								dataSource={items}
-								columns={itemColumns}
-								rowKey="id"
-								size="small"
-								pagination={false}
-								locale={{ emptyText: "暂无条目" }}
-							/>
-						) : (
-							<div className="flex items-center justify-center py-16 text-sm text-muted-foreground">
-								请选择左侧字典查看条目
-							</div>
-						)}
-					</Card>
-				</Col>
-			</Row>
+					) : (
+						<div className="flex items-center justify-center py-16 text-sm text-muted-foreground">
+							请选择左侧字典查看条目
+						</div>
+					)}
+				</Card>
+			</Flex>
 
 			{/* 字典创建/编辑弹窗 */}
 			<Modal

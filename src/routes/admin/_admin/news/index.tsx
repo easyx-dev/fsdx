@@ -10,19 +10,12 @@ import {
 } from "@ant-design/icons";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
-import {
-	Button,
-	message,
-	Popconfirm,
-	Segmented,
-	Space,
-	Table,
-	Tag,
-} from "antd";
+import { Button, message, Popconfirm, Segmented, Space, Tag } from "antd";
 import { useState } from "react";
 import { z } from "zod";
 import { AdminPageContent } from "#/components/admin/AdminPageContent";
 import { FieldTranslationDrawer } from "#/components/admin/FieldTranslationDrawer";
+import { ProTable } from "#/components/admin/ProTable";
 import { downloadFile } from "#/lib/export/export.utils";
 import { PERMISSIONS } from "#/lib/permissions/permissions";
 import { permGuard } from "#/middleware/server-fn-auth";
@@ -254,7 +247,7 @@ function NewsListPage() {
 				/>
 			</div>
 
-			<Table
+			<ProTable
 				dataSource={data.records}
 				columns={columns}
 				rowKey="id"

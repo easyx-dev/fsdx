@@ -18,13 +18,13 @@ import {
 	Popconfirm,
 	Popover,
 	Space,
-	Table,
 	Tag,
 } from "antd";
 import { useState } from "react";
 import { z } from "zod";
 import { AdminPageContent } from "#/components/admin/AdminPageContent";
 import { PermissionSelector } from "#/components/admin/PermissionSelector";
+import { ProTable } from "#/components/admin/ProTable";
 import {
 	PERMISSION_META,
 	PERMISSIONS,
@@ -296,7 +296,7 @@ function RolesPage() {
 				<Button onClick={handleSearch}>搜索</Button>
 			</div>
 
-			<Table
+			<ProTable
 				dataSource={roles}
 				columns={columns}
 				scroll={{ x: 900 }}
