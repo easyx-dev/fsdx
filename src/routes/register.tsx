@@ -248,7 +248,7 @@ function ClientRegisterPage() {
 										disabled={!canSubmit}
 										className="w-full"
 									>
-										{isSubmitting ? t("registering") : t("registerBtn")}
+										{isSubmitting ? t("注册中") : t("注册")}
 									</Button>
 								)}
 							</form.Subscribe>

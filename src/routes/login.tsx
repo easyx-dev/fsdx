@@ -51,7 +51,7 @@ function ClientLoginPage() {
 		onSubmit: async ({ value }) => {
 			const result = await clientLoginFn({ data: value });
 			if (!result.success) {
-				throw new Error(result.message || t("loginBtn"));
+				throw new Error(result.message || t("登录失败"));
 			}
 			navigate({ to: "/" });
 		},
@@ -156,7 +156,7 @@ function ClientLoginPage() {
 										disabled={!canSubmit}
 										className="w-full"
 									>
-										{isSubmitting ? t("loggingIn") : t("loginBtn")}
+										{isSubmitting ? t("登录中") : t("登录")}
 									</Button>
 								)}
 							</form.Subscribe>
