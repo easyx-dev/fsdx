@@ -3,9 +3,11 @@
  */
 import {
 	CloudUploadOutlined,
+	DownOutlined,
 	LockOutlined,
 	MailOutlined,
 	RobotOutlined,
+	UpOutlined,
 	UserOutlined,
 } from "@ant-design/icons";
 import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
@@ -240,23 +242,20 @@ function AdminInitPage() {
 					<div className="rounded-lg border border-border bg-card p-8 shadow-sm">
 						<h1 className="mb-4 text-center text-2xl font-bold">系统初始化</h1>
 						<Alert
-							message="检测到系统尚未初始化，请创建超级管理员账号并完成基础配置"
-							type="info"
+							title="检测到系统尚未初始化，请创建超级管理员账号并完成基础配置"
+							type="warning"
 							showIcon
 							className="mb-4"
 						/>
-
-						<Upload
+						<br />
+						<Upload.Dragger
 							accept=".json"
 							showUploadList={false}
 							beforeUpload={handleJsonImport}
 							className="mb-4"
 						>
-							<Button icon={<CloudUploadOutlined />} block>
-								导入 JSON 配置快速填写
-							</Button>
-						</Upload>
-
+							<CloudUploadOutlined /> <span>导入 JSON 配置快速填写</span>
+						</Upload.Dragger>
 						<Form
 							form={form}
 							layout="vertical"
@@ -278,6 +277,7 @@ function AdminInitPage() {
 								<Input
 									prefix={<UserOutlined />}
 									placeholder="超级管理员用户名"
+									autoComplete="off"
 								/>
 							</Form.Item>
 
@@ -288,6 +288,7 @@ function AdminInitPage() {
 								<Input
 									prefix={<MailOutlined />}
 									placeholder="admin@example.com"
+									autoComplete="off"
 								/>
 							</Form.Item>
 
@@ -298,6 +299,7 @@ function AdminInitPage() {
 								<Input.Password
 									prefix={<LockOutlined />}
 									placeholder="密码（至少 6 位）"
+									autoComplete="off"
 								/>
 							</Form.Item>
 
@@ -314,18 +316,19 @@ function AdminInitPage() {
 							<Divider>站点设置</Divider>
 
 							<Form.Item name="siteName">
-								<Input placeholder="FSDX CMS" />
+								<Input placeholder="站点名称" />
 							</Form.Item>
 
-							<Divider>SMTP 邮件配置（可选，推荐填写）</Divider>
-
-							<Button
-								type="link"
-								onClick={() => setSmtpExpanded(!smtpExpanded)}
-								className="mb-2 p-0"
-							>
-								{smtpExpanded ? "收起 SMTP 配置" : "展开 SMTP 配置"}
-							</Button>
+							<Divider>
+								<Button
+									type="link"
+									onClick={() => setSmtpExpanded(!smtpExpanded)}
+									className="mb-2 p-0"
+								>
+									SMTP 邮件配置（可选，推荐填写）
+									{smtpExpanded ? <UpOutlined /> : <DownOutlined />}
+								</Button>
+							</Divider>
 
 							{smtpExpanded && (
 								<>
@@ -366,15 +369,16 @@ function AdminInitPage() {
 								</>
 							)}
 
-							<Divider>AI 接入配置（可选）</Divider>
-
-							<Button
-								type="link"
-								onClick={() => setAiExpanded(!aiExpanded)}
-								className="mb-2 p-0"
-							>
-								{aiExpanded ? "收起 AI 配置" : "展开 AI 配置"}
-							</Button>
+							<Divider>
+								<Button
+									type="link"
+									onClick={() => setAiExpanded(!aiExpanded)}
+									className="mb-2 p-0"
+								>
+									AI 接入配置（可选）
+									{smtpExpanded ? <UpOutlined /> : <DownOutlined />}
+								</Button>
+							</Divider>
 
 							{aiExpanded && (
 								<>

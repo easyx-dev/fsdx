@@ -66,7 +66,7 @@ function Dashboard() {
 	];
 
 	return (
-		<AdminPageContent title="仪表盘" description="欢迎使用 CMS 管理系统">
+		<AdminPageContent title="仪表盘">
 			<Row gutter={[16, 16]}>
 				{statItems.map((item) => (
 					<Col key={item.title} xs={24} sm={12} lg={6}>

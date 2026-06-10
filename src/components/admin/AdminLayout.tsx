@@ -233,7 +233,7 @@ export function AdminLayout({ children }: { children: ReactNode }) {
 										key={item.key}
 										to={item.key}
 										title={collapsed ? item.label : undefined}
-										className={`mx-2 my-0.5 flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors ${
+										className={`mx-2 my-0.5 flex items-center gap-3 px-3 py-2 text-sm transition-colors ${
 											active
 												? "bg-sidebar-accent text-sidebar-primary font-medium border-l-[3px] border-l-sidebar-primary"
 												: "text-sidebar-foreground hover:bg-sidebar-accent/60 hover:text-sidebar-accent-foreground border-l-[3px] border-l-transparent"

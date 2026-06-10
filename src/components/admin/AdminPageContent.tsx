@@ -20,7 +20,7 @@ export function AdminPageContent({
 	return (
 		<div className="flex flex-1 flex-col overflow-hidden">
 			{/* 吸顶标题栏 */}
-			<div className="sticky top-0 z-10 flex h-14 shrink-0 items-center border-b border-border bg-background px-6">
+			<div className="sticky top-0 z-10 flex h-14 shrink-0 items-center border-b border-border bg-background px-5">
 				<div className="flex min-w-0 flex-1 items-center justify-between gap-4">
 					<div className="min-w-0">
 						<h1 className="text-base font-semibold text-foreground">{title}</h1>
@@ -36,7 +36,7 @@ export function AdminPageContent({
 				</div>
 			</div>
 			{/* 内容区 */}
-			<div className="flex-1 overflow-auto p-6">{children}</div>
+			<div className="flex-1 overflow-auto p-5">{children}</div>
 		</div>
 	);
 }

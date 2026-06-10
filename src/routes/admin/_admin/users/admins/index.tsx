@@ -384,7 +384,7 @@ function AdminsPage() {
 							}))}
 						/>
 					</Form.Item>
-					{editingUser && (
+					{editingUser && !editingUser.isRoot && (
 						<Form.Item name="status" label="状态">
 							<Select
 								options={[

@@ -105,6 +105,13 @@ export async function createAdminUser(input: CreateAdminUserInput) {
 export async function updateAdminUser(id: string, input: UpdateAdminUserInput) {
 	const setData: Record<string, unknown> = { updatedAt: new Date() };
 	if (input.username !== undefined) setData.username = input.username;
+
+	// 禁止将 root 管理员设为禁用状态
+	if (input.status === "disabled") {
+		const existing = await getAdminUser(id);
+		if (existing?.isRoot) throw new Error("不允许禁用 root 管理员");
+	}
+
 	if (input.email !== undefined) setData.email = input.email;
 	if (input.roleId !== undefined) setData.roleId = input.roleId;
 	if (input.status !== undefined) setData.status = input.status;
