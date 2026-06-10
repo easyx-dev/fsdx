@@ -134,7 +134,7 @@ const NAV_GROUPS: NavGroup[] = [
 		label: "测试页",
 		items: [
 			{
-				key: "/admin/demo",
+				key: "/admin/demo/editor",
 				label: "编辑器演示",
 				icon: <ExperimentOutlined />,
 			},

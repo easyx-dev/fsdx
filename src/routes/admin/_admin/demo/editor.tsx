@@ -29,7 +29,7 @@ const DEMO_VALUES: Record<EditorType, string | number> = {
 	rich: "<h2>富文本演示</h2><p>这是一段<strong>富文本</strong>内容，支持各种排版样式。</p><ul><li>列表项一</li><li>列表项二</li></ul>",
 };
 
-export const Route = createFileRoute("/admin/_admin/demo/")({
+export const Route = createFileRoute("/admin/_admin/demo/editor")({
 	component: DemoPage,
 });
 

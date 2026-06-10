@@ -25,13 +25,13 @@ import { Route as AdminAdminNewsIndexRouteImport } from './routes/admin/_admin/n
 import { Route as AdminAdminLogsIndexRouteImport } from './routes/admin/_admin/logs/index'
 import { Route as AdminAdminFilesIndexRouteImport } from './routes/admin/_admin/files/index'
 import { Route as AdminAdminDictsIndexRouteImport } from './routes/admin/_admin/dicts/index'
-import { Route as AdminAdminDemoIndexRouteImport } from './routes/admin/_admin/demo/index'
 import { Route as AdminAdminConfigIndexRouteImport } from './routes/admin/_admin/config/index'
 import { Route as ApiDownloadLogIdRouteImport } from './routes/api/download/log.$id'
 import { Route as ApiDownloadFileIdRouteImport } from './routes/api/download/file.$id'
 import { Route as AdminAdminTranslationsUiRouteImport } from './routes/admin/_admin/translations/ui'
 import { Route as AdminAdminTranslationsContentRouteImport } from './routes/admin/_admin/translations/content'
 import { Route as AdminAdminNewsCreateRouteImport } from './routes/admin/_admin/news/create'
+import { Route as AdminAdminDemoEditorRouteImport } from './routes/admin/_admin/demo/editor'
 import { Route as AdminAdminDemoAiRouteImport } from './routes/admin/_admin/demo/ai'
 import { Route as AdminAdminUsersClientsIndexRouteImport } from './routes/admin/_admin/users/clients/index'
 import { Route as AdminAdminUsersAdminsIndexRouteImport } from './routes/admin/_admin/users/admins/index'
@@ -116,11 +116,6 @@ const AdminAdminDictsIndexRoute = AdminAdminDictsIndexRouteImport.update({
   path: '/dicts/',
   getParentRoute: () => AdminAdminRoute,
 } as any)
-const AdminAdminDemoIndexRoute = AdminAdminDemoIndexRouteImport.update({
-  id: '/demo/',
-  path: '/demo/',
-  getParentRoute: () => AdminAdminRoute,
-} as any)
 const AdminAdminConfigIndexRoute = AdminAdminConfigIndexRouteImport.update({
   id: '/config/',
   path: '/config/',
@@ -151,6 +146,11 @@ const AdminAdminTranslationsContentRoute =
 const AdminAdminNewsCreateRoute = AdminAdminNewsCreateRouteImport.update({
   id: '/news/create',
   path: '/news/create',
+  getParentRoute: () => AdminAdminRoute,
+} as any)
+const AdminAdminDemoEditorRoute = AdminAdminDemoEditorRouteImport.update({
+  id: '/demo/editor',
+  path: '/demo/editor',
   getParentRoute: () => AdminAdminRoute,
 } as any)
 const AdminAdminDemoAiRoute = AdminAdminDemoAiRouteImport.update({
@@ -188,13 +188,13 @@ export interface FileRoutesByFullPath {
   '/news/': typeof NewsIndexRoute
   '/admin/': typeof AdminAdminIndexRoute
   '/admin/demo/ai': typeof AdminAdminDemoAiRoute
+  '/admin/demo/editor': typeof AdminAdminDemoEditorRoute
   '/admin/news/create': typeof AdminAdminNewsCreateRoute
   '/admin/translations/content': typeof AdminAdminTranslationsContentRoute
   '/admin/translations/ui': typeof AdminAdminTranslationsUiRoute
   '/api/download/file/$id': typeof ApiDownloadFileIdRoute
   '/api/download/log/$id': typeof ApiDownloadLogIdRoute
   '/admin/config/': typeof AdminAdminConfigIndexRoute
-  '/admin/demo/': typeof AdminAdminDemoIndexRoute
   '/admin/dicts/': typeof AdminAdminDictsIndexRoute
   '/admin/files/': typeof AdminAdminFilesIndexRoute
   '/admin/logs/': typeof AdminAdminLogsIndexRoute
@@ -215,13 +215,13 @@ export interface FileRoutesByTo {
   '/news/$slug': typeof NewsSlugRoute
   '/news': typeof NewsIndexRoute
   '/admin/demo/ai': typeof AdminAdminDemoAiRoute
+  '/admin/demo/editor': typeof AdminAdminDemoEditorRoute
   '/admin/news/create': typeof AdminAdminNewsCreateRoute
   '/admin/translations/content': typeof AdminAdminTranslationsContentRoute
   '/admin/translations/ui': typeof AdminAdminTranslationsUiRoute
   '/api/download/file/$id': typeof ApiDownloadFileIdRoute
   '/api/download/log/$id': typeof ApiDownloadLogIdRoute
   '/admin/config': typeof AdminAdminConfigIndexRoute
-  '/admin/demo': typeof AdminAdminDemoIndexRoute
   '/admin/dicts': typeof AdminAdminDictsIndexRoute
   '/admin/files': typeof AdminAdminFilesIndexRoute
   '/admin/logs': typeof AdminAdminLogsIndexRoute
@@ -245,13 +245,13 @@ export interface FileRoutesById {
   '/news/': typeof NewsIndexRoute
   '/admin/_admin/': typeof AdminAdminIndexRoute
   '/admin/_admin/demo/ai': typeof AdminAdminDemoAiRoute
+  '/admin/_admin/demo/editor': typeof AdminAdminDemoEditorRoute
   '/admin/_admin/news/create': typeof AdminAdminNewsCreateRoute
   '/admin/_admin/translations/content': typeof AdminAdminTranslationsContentRoute
   '/admin/_admin/translations/ui': typeof AdminAdminTranslationsUiRoute
   '/api/download/file/$id': typeof ApiDownloadFileIdRoute
   '/api/download/log/$id': typeof ApiDownloadLogIdRoute
   '/admin/_admin/config/': typeof AdminAdminConfigIndexRoute
-  '/admin/_admin/demo/': typeof AdminAdminDemoIndexRoute
   '/admin/_admin/dicts/': typeof AdminAdminDictsIndexRoute
   '/admin/_admin/files/': typeof AdminAdminFilesIndexRoute
   '/admin/_admin/logs/': typeof AdminAdminLogsIndexRoute
@@ -275,13 +275,13 @@ export interface FileRouteTypes {
     | '/news/'
     | '/admin/'
     | '/admin/demo/ai'
+    | '/admin/demo/editor'
     | '/admin/news/create'
     | '/admin/translations/content'
     | '/admin/translations/ui'
     | '/api/download/file/$id'
     | '/api/download/log/$id'
     | '/admin/config/'
-    | '/admin/demo/'
     | '/admin/dicts/'
     | '/admin/files/'
     | '/admin/logs/'
@@ -302,13 +302,13 @@ export interface FileRouteTypes {
     | '/news/$slug'
     | '/news'
     | '/admin/demo/ai'
+    | '/admin/demo/editor'
     | '/admin/news/create'
     | '/admin/translations/content'
     | '/admin/translations/ui'
     | '/api/download/file/$id'
     | '/api/download/log/$id'
     | '/admin/config'
-    | '/admin/demo'
     | '/admin/dicts'
     | '/admin/files'
     | '/admin/logs'
@@ -331,13 +331,13 @@ export interface FileRouteTypes {
     | '/news/'
     | '/admin/_admin/'
     | '/admin/_admin/demo/ai'
+    | '/admin/_admin/demo/editor'
     | '/admin/_admin/news/create'
     | '/admin/_admin/translations/content'
     | '/admin/_admin/translations/ui'
     | '/api/download/file/$id'
     | '/api/download/log/$id'
     | '/admin/_admin/config/'
-    | '/admin/_admin/demo/'
     | '/admin/_admin/dicts/'
     | '/admin/_admin/files/'
     | '/admin/_admin/logs/'
@@ -474,13 +474,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminAdminDictsIndexRouteImport
       parentRoute: typeof AdminAdminRoute
     }
-    '/admin/_admin/demo/': {
-      id: '/admin/_admin/demo/'
-      path: '/demo'
-      fullPath: '/admin/demo/'
-      preLoaderRoute: typeof AdminAdminDemoIndexRouteImport
-      parentRoute: typeof AdminAdminRoute
-    }
     '/admin/_admin/config/': {
       id: '/admin/_admin/config/'
       path: '/config'
@@ -523,6 +516,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminAdminNewsCreateRouteImport
       parentRoute: typeof AdminAdminRoute
     }
+    '/admin/_admin/demo/editor': {
+      id: '/admin/_admin/demo/editor'
+      path: '/demo/editor'
+      fullPath: '/admin/demo/editor'
+      preLoaderRoute: typeof AdminAdminDemoEditorRouteImport
+      parentRoute: typeof AdminAdminRoute
+    }
     '/admin/_admin/demo/ai': {
       id: '/admin/_admin/demo/ai'
       path: '/demo/ai'
@@ -557,11 +557,11 @@ declare module '@tanstack/react-router' {
 interface AdminAdminRouteChildren {
   AdminAdminIndexRoute: typeof AdminAdminIndexRoute
   AdminAdminDemoAiRoute: typeof AdminAdminDemoAiRoute
+  AdminAdminDemoEditorRoute: typeof AdminAdminDemoEditorRoute
   AdminAdminNewsCreateRoute: typeof AdminAdminNewsCreateRoute
   AdminAdminTranslationsContentRoute: typeof AdminAdminTranslationsContentRoute
   AdminAdminTranslationsUiRoute: typeof AdminAdminTranslationsUiRoute
   AdminAdminConfigIndexRoute: typeof AdminAdminConfigIndexRoute
-  AdminAdminDemoIndexRoute: typeof AdminAdminDemoIndexRoute
   AdminAdminDictsIndexRoute: typeof AdminAdminDictsIndexRoute
   AdminAdminFilesIndexRoute: typeof AdminAdminFilesIndexRoute
   AdminAdminLogsIndexRoute: typeof AdminAdminLogsIndexRoute
@@ -575,11 +575,11 @@ interface AdminAdminRouteChildren {
 const AdminAdminRouteChildren: AdminAdminRouteChildren = {
   AdminAdminIndexRoute: AdminAdminIndexRoute,
   AdminAdminDemoAiRoute: AdminAdminDemoAiRoute,
+  AdminAdminDemoEditorRoute: AdminAdminDemoEditorRoute,
   AdminAdminNewsCreateRoute: AdminAdminNewsCreateRoute,
   AdminAdminTranslationsContentRoute: AdminAdminTranslationsContentRoute,
   AdminAdminTranslationsUiRoute: AdminAdminTranslationsUiRoute,
   AdminAdminConfigIndexRoute: AdminAdminConfigIndexRoute,
-  AdminAdminDemoIndexRoute: AdminAdminDemoIndexRoute,
   AdminAdminDictsIndexRoute: AdminAdminDictsIndexRoute,
   AdminAdminFilesIndexRoute: AdminAdminFilesIndexRoute,
   AdminAdminLogsIndexRoute: AdminAdminLogsIndexRoute,
