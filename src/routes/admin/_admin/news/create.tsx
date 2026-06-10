@@ -1,13 +1,12 @@
 /**
- * 新建新闻页面（antd Form + TipTap 编辑器）
+ * 新建新闻页面
  */
-
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
-import { Button, Form, Input, message, Select, Switch } from "antd";
+import { Form, message } from "antd";
 import { z } from "zod";
 import { AdminPageContent } from "#/components/admin/AdminPageContent";
-import { RichEditor } from "#/components/admin/RichEditor";
+import { NewsForm, type NewsFormValues } from "#/components/admin/NewsForm";
 import { PERMISSIONS } from "#/lib/permissions/permissions";
 import { adminPermGuard } from "#/middleware/admin-auth";
 import { createNews } from "#/server/news/news.server";
@@ -36,16 +35,16 @@ function NewsCreatePage() {
 	const navigate = useNavigate();
 	const [form] = Form.useForm();
 
-	const handleSubmit = async (values: Record<string, unknown>) => {
+	const handleSubmit = async (values: NewsFormValues) => {
 		try {
 			const record = await createNewsFn({
 				data: {
-					title: values.title as string,
-					slug: (values.slug as string) || undefined,
-					summary: (values.summary as string) || undefined,
-					content: (values.content as string) || undefined,
+					title: values.title,
+					slug: values.slug || undefined,
+					summary: values.summary || undefined,
+					content: values.content || undefined,
 					status: values.status as "draft" | "published",
-					isPinned: (values.isPinned as boolean) || false,
+					isPinned: values.isPinned || false,
 				},
 			});
 			message.success("新闻创建成功");
@@ -58,58 +57,13 @@ function NewsCreatePage() {
 	return (
 		<AdminPageContent title="新建新闻" description="创建一篇新的新闻文章">
 			<div className="max-w-4xl">
-				<Form
+				<NewsForm
+					mode="create"
 					form={form}
-					layout="vertical"
-					onFinish={handleSubmit}
 					initialValues={{ status: "draft", isPinned: false, content: "" }}
-				>
-					<Form.Item
-						name="title"
-						label="标题"
-						rules={[{ required: true, message: "请输入标题" }]}
-					>
-						<Input placeholder="新闻标题" />
-					</Form.Item>
-
-					<Form.Item name="slug" label="Slug" extra="留空自动生成">
-						<Input placeholder="自动生成" style={{ fontFamily: "monospace" }} />
-					</Form.Item>
-
-					<Form.Item name="summary" label="摘要">
-						<Input.TextArea rows={2} placeholder="新闻摘要（可选）" />
-					</Form.Item>
-
-					<Form.Item name="content" label="正文">
-						<RichEditor />
-					</Form.Item>
-
-					<div className="flex gap-8">
-						<Form.Item name="status" label="状态" className="min-w-28">
-							<Select
-								options={[
-									{ label: "草稿", value: "draft" },
-									{ label: "发布", value: "published" },
-								]}
-							/>
-						</Form.Item>
-
-						<Form.Item name="isPinned" label="置顶" valuePropName="checked">
-							<Switch />
-						</Form.Item>
-					</div>
-
-					<Form.Item>
-						<div className="flex gap-2">
-							<Button type="primary" htmlType="submit">
-								保存
-							</Button>
-							<Button onClick={() => navigate({ to: "/admin/news" })}>
-								取消
-							</Button>
-						</div>
-					</Form.Item>
-				</Form>
+					onSubmit={handleSubmit}
+					onCancel={() => navigate({ to: "/admin/news" })}
+				/>
 			</div>
 		</AdminPageContent>
 	);

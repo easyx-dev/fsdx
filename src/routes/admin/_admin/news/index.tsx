@@ -16,8 +16,13 @@ import { z } from "zod";
 import { AdminPageContent } from "#/components/admin/AdminPageContent";
 import { FieldTranslationDrawer } from "#/components/admin/FieldTranslationDrawer";
 import { ProTable } from "#/components/admin/ProTable";
+import {
+	NEWS_STATUS_COLORS,
+	NEWS_STATUS_LABELS,
+} from "#/lib/constants/admin-constants";
 import { downloadFile } from "#/lib/export/export.utils";
 import { PERMISSIONS } from "#/lib/permissions/permissions";
+import { formatDate } from "#/lib/utils/format-date";
 import { adminPermGuard } from "#/middleware/admin-auth";
 import { exportNewsFn } from "#/server/news/news.functions";
 import type { NewsRecord } from "#/server/news/news.server";
@@ -64,23 +69,11 @@ export const Route = createFileRoute("/admin/_admin/news/")({
 	loader: async () => await getNewsListFn({ data: {} }),
 });
 
-const STATUS_LABELS: Record<string, string> = {
-	draft: "草稿",
-	published: "已发布",
-	archived: "已归档",
-};
-
 const NEWS_TRANSLATABLE_FIELDS = [
 	{ name: "title", label: "新闻标题", valueType: "input" as const },
 	{ name: "summary", label: "新闻摘要", valueType: "text" as const },
 	{ name: "content", label: "新闻内容", valueType: "rich" as const },
 ];
-
-const STATUS_COLORS: Record<string, string> = {
-	draft: "gold",
-	published: "green",
-	archived: "default",
-};
 
 function NewsListPage() {
 	const initial = Route.useLoaderData();
@@ -127,8 +120,8 @@ function NewsListPage() {
 			width: 100,
 			render: (_: string, record: NewsRecord) => (
 				<Space size={4}>
-					<Tag color={STATUS_COLORS[record.status ?? ""]}>
-						{STATUS_LABELS[record.status ?? ""] || record.status}
+					<Tag color={NEWS_STATUS_COLORS[record.status ?? ""]}>
+						{NEWS_STATUS_LABELS[record.status ?? ""] || record.status}
 					</Tag>
 					{record.isPinned && <Tag color="blue">置顶</Tag>}
 				</Space>
@@ -139,8 +132,7 @@ function NewsListPage() {
 			dataIndex: "publishedAt",
 			key: "publishedAt",
 			width: 130,
-			render: (val: string | null) =>
-				val ? new Date(val).toLocaleDateString("zh-CN") : "—",
+			render: (val: string | null) => (val ? formatDate(val, "zh-CN") : "—"),
 		},
 		{
 			title: "操作",

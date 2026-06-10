@@ -13,6 +13,7 @@ import {
 	CardTitle,
 } from "#/components/ui/card";
 import { useTranslation } from "#/lib/i18n/i18n-context";
+import { formatDate } from "#/lib/utils/format-date";
 import type { NewsRecord } from "#/server/news/news.server";
 import { getNewsList, translateNewsRecords } from "#/server/news/news.server";
 
@@ -85,7 +86,7 @@ function NewsListPage() {
 								<CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
 									<time className="text-xs text-muted-foreground">
 										{item.publishedAt
-											? new Date(item.publishedAt).toLocaleDateString(locale, {
+											? formatDate(item.publishedAt, locale, {
 													year: "numeric",
 													month: "long",
 													day: "numeric",

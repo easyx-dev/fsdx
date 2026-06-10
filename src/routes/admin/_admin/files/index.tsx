@@ -30,6 +30,7 @@ import { z } from "zod";
 import { AdminPageContent } from "#/components/admin/AdminPageContent";
 import { ProTable } from "#/components/admin/ProTable";
 import { PERMISSIONS } from "#/lib/permissions/permissions";
+import { formatDateTime } from "#/lib/utils/format-date";
 import { adminPermGuard } from "#/middleware/admin-auth";
 import { uploadFile } from "#/server/file/file.functions";
 import type { FileRecord } from "#/server/file/file.server";
@@ -75,12 +76,6 @@ function formatSize(bytes: number): string {
 	if (bytes < 1024) return `${bytes} B`;
 	if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
 	return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-}
-
-/** 格式化日期 */
-function formatDate(d: Date | string | null): string {
-	if (!d) return "—";
-	return new Date(d).toLocaleString("zh-CN");
 }
 
 export const Route = createFileRoute("/admin/_admin/files/")({
@@ -227,7 +222,8 @@ function FilesPage() {
 			key: "createdAt",
 			width: 180,
 			sorter: true,
-			render: (_: unknown, record: FileRecord) => formatDate(record.createdAt),
+			render: (_: unknown, record: FileRecord) =>
+				formatDateTime(record.createdAt, "zh-CN"),
 		},
 		{
 			title: "操作",

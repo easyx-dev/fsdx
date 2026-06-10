@@ -26,6 +26,7 @@ import { z } from "zod";
 import { AdminPageContent } from "#/components/admin/AdminPageContent";
 import { ProTable } from "#/components/admin/ProTable";
 import { PERMISSIONS } from "#/lib/permissions/permissions";
+import { formatDateTime } from "#/lib/utils/format-date";
 import { adminPermGuard } from "#/middleware/admin-auth";
 import {
 	type AdminUserListItem,
@@ -250,8 +251,7 @@ function AdminsPage() {
 			dataIndex: "lastLoginAt",
 			key: "lastLoginAt",
 			width: 170,
-			render: (v: string | null) =>
-				v ? new Date(v).toLocaleString("zh-CN") : "—",
+			render: (v: string | null) => (v ? formatDateTime(v, "zh-CN") : "—"),
 		},
 		{
 			title: "操作",

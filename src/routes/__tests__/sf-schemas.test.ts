@@ -376,8 +376,8 @@ describe("newsStatusSchema", () => {
 describe("dictCreateSchema", () => {
 	it("合法输入通过", () => {
 		const result = dictCreateSchema.safeParse({
-			name: "新闻状态",
-			slug: "news_status",
+			name: "测试字典",
+			slug: "test_dict",
 		});
 		expect(result.success).toBe(true);
 	});

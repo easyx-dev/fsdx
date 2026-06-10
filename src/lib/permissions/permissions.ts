@@ -182,6 +182,11 @@ export const PERMISSIONS = {
 	FILE_DELETE: definePermission("file:delete", "删除文件", "允许删除文件"),
 	// 日志管理
 	LOG_VIEW: definePermission("log:view", "查看日志", "允许查询和查看系统日志"),
+	LOG_DOWNLOAD: definePermission(
+		"log:download",
+		"下载日志",
+		"允许下载系统日志文件",
+	),
 	// 仪表盘
 	DASHBOARD_VIEW: definePermission(
 		"dashboard:view",

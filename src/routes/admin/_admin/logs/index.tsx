@@ -25,7 +25,9 @@ import { useState } from "react";
 import { z } from "zod";
 import { AdminPageContent } from "#/components/admin/AdminPageContent";
 import { ProTable } from "#/components/admin/ProTable";
+import { LEVEL_COLORS, LEVEL_OPTIONS } from "#/lib/constants/admin-constants";
 import { PERMISSIONS } from "#/lib/permissions/permissions";
+import { formatDateTime } from "#/lib/utils/format-date";
 import { adminPermGuard } from "#/middleware/admin-auth";
 import {
 	getLogDates as getLogDatesService,
@@ -56,25 +58,6 @@ const getDatesFn = createServerFn({ method: "GET" })
 		return getLogDatesService();
 	});
 
-/** 日志级别对应 Tag 颜色 */
-const LEVEL_COLORS: Record<string, string> = {
-	info: "blue",
-	warn: "gold",
-	error: "red",
-	debug: "default",
-	fatal: "red",
-};
-
-/** 日志级别选项 */
-const LEVEL_OPTIONS = [
-	{ label: "全部", value: "" },
-	{ label: "INFO", value: "info" },
-	{ label: "WARN", value: "warn" },
-	{ label: "ERROR", value: "error" },
-	{ label: "DEBUG", value: "debug" },
-	{ label: "FATAL", value: "fatal" },
-];
-
 /** 将日志时间戳转为本地化时间字符串 */
 function formatTime(entry: LogEntry): string {
 	const t =
@@ -83,7 +66,7 @@ function formatTime(entry: LogEntry): string {
 			: entry.time
 				? new Date(entry.time as string)
 				: new Date();
-	return t.toLocaleString("zh-CN");
+	return formatDateTime(t, "zh-CN");
 }
 
 export const Route = createFileRoute("/admin/_admin/logs/")({

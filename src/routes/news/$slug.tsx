@@ -3,10 +3,12 @@
  */
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
-import { ArrowLeft } from "lucide-react";
+import DOMPurify from "dompurify";
+import { ArrowLeft, ChevronRight, Home } from "lucide-react";
 import { z } from "zod";
 import { Button } from "#/components/ui/button";
 import { useTranslation } from "#/lib/i18n/i18n-context";
+import { formatDate } from "#/lib/utils/format-date";
 import { getNewsBySlug, translateNewsRecord } from "#/server/news/news.server";
 
 const getNewsDetail = createServerFn({ method: "GET" })
@@ -15,13 +17,32 @@ const getNewsDetail = createServerFn({ method: "GET" })
 		const record = await getNewsBySlug(slug);
 		if (!record) return null;
 		const translated = await translateNewsRecord(record, context.locale);
-		return { ...translated, html: translated.content ?? "" };
+		const safeHtml = DOMPurify.sanitize(translated.content ?? "");
+		return { ...translated, html: safeHtml };
 	});
 
 export const Route = createFileRoute("/news/$slug")({
 	component: NewsDetailPage,
 	loader: async ({ params }) =>
 		await getNewsDetail({ data: { slug: params.slug } }),
+	head: ({ loaderData }) => {
+		const detail = loaderData as Awaited<ReturnType<typeof getNewsDetail>>;
+		if (!detail) {
+			return {
+				title: "新闻不存在",
+				meta: [{ name: "description", content: "该新闻不存在或未发布" }],
+			};
+		}
+		return {
+			title: `${detail.title} - 新闻资讯`,
+			meta: [
+				{ name: "description", content: detail.summary || detail.title },
+				{ property: "og:title", content: detail.title },
+				{ property: "og:description", content: detail.summary || detail.title },
+				{ property: "og:type", content: "article" },
+			],
+		};
+	},
 });
 
 function NewsDetailPage() {
@@ -46,12 +67,22 @@ function NewsDetailPage() {
 
 	return (
 		<main className="mx-auto max-w-3xl px-4 py-8 sm:py-12">
-			<Link to="/" className="mb-6 inline-block sm:mb-8">
-				<Button variant="ghost" size="sm">
-					<ArrowLeft />
-					{t("backHome")}
-				</Button>
-			</Link>
+			{/* 面包屑导航 */}
+			<nav className="mb-4 flex items-center gap-1.5 text-sm text-muted-foreground">
+				<Link
+					to="/"
+					className="flex items-center gap-1 hover:text-foreground transition-colors"
+				>
+					<Home className="h-3.5 w-3.5" />
+					{t("首页")}
+				</Link>
+				<ChevronRight className="h-3.5 w-3.5" />
+				<Link to="/news" className="hover:text-foreground transition-colors">
+					{t("新闻资讯")}
+				</Link>
+				<ChevronRight className="h-3.5 w-3.5" />
+				<span className="text-foreground line-clamp-1">{data.title}</span>
+			</nav>
 
 			<article>
 				<header className="mb-6 sm:mb-8">
@@ -61,7 +92,7 @@ function NewsDetailPage() {
 					<div className="mt-3 flex flex-wrap items-center gap-3 text-sm text-muted-foreground sm:mt-4 sm:gap-4">
 						{data.publishedAt && (
 							<time>
-								{new Date(data.publishedAt).toLocaleDateString(locale, {
+								{formatDate(data.publishedAt, locale, {
 									year: "numeric",
 									month: "long",
 									day: "numeric",

@@ -199,15 +199,6 @@ export async function deleteDictItem(id: string) {
 /** 预置字典常量 */
 const PRESET_DICTS = [
 	{
-		slug: "news_status",
-		name: "新闻状态",
-		items: [
-			{ label: "草稿", value: "draft", sortOrder: 0 },
-			{ label: "已发布", value: "published", sortOrder: 1 },
-			{ label: "已归档", value: "archived", sortOrder: 2 },
-		],
-	},
-	{
 		slug: "user_status",
 		name: "用户状态",
 		items: [
