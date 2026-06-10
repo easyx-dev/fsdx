@@ -6,7 +6,6 @@ import {
 	DownloadOutlined,
 	EditOutlined,
 	PlusOutlined,
-	UploadOutlined,
 } from "@ant-design/icons";
 import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
@@ -22,7 +21,7 @@ import {
 	Space,
 	Switch,
 } from "antd";
-import { useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 import { z } from "zod";
 import { AdminPageContent } from "#/components/admin/AdminPageContent";
 import { EditorTypePreview } from "#/components/admin/EditorTypePreview";
@@ -31,6 +30,7 @@ import {
 	FieldTranslationDrawer,
 	type TranslatableField,
 } from "#/components/admin/FieldTranslationDrawer";
+import { JsonImportButton } from "#/components/admin/JsonImportButton";
 import { ProTable } from "#/components/admin/ProTable";
 import { TypeAwareEditor } from "#/components/admin/TypeAwareEditor";
 import type { EditorType } from "#/lib/editor-types/editor-types";
@@ -122,7 +122,6 @@ function ConfigPage() {
 	const watchedValueType = Form.useWatch("valueType", form) as
 		| EditorType
 		| undefined;
-	const fileInputRef = useRef<HTMLInputElement>(null);
 
 	/** 从配置数据中提取分组列表 */
 	const groups = useMemo(() => {
@@ -236,28 +235,6 @@ function ConfigPage() {
 		message.success("导出完成");
 	};
 
-	/** 导入系统配置数据（JSON） */
-	const handleImportConfigs = async (
-		e: React.ChangeEvent<HTMLInputElement>,
-	) => {
-		const file = e.target.files?.[0];
-		if (!file) return;
-		try {
-			const text = await file.text();
-			const data = JSON.parse(text);
-			const result = await importConfigsFn({ data: { data } });
-			message.success(
-				`导入完成：新增 ${result.created} / 更新 ${result.updated}`,
-			);
-			router.invalidate();
-		} catch (err) {
-			message.error(
-				err instanceof Error ? err.message : "导入失败，请检查 JSON 格式",
-			);
-		}
-		if (fileInputRef.current) fileInputRef.current.value = "";
-	};
-
 	/** 配置项表格列定义 */
 	const configColumns = [
 		{
@@ -361,12 +338,21 @@ function ConfigPage() {
 					<Button icon={<DownloadOutlined />} onClick={handleExportConfigs}>
 						导出 JSON
 					</Button>
-					<Button
-						icon={<UploadOutlined />}
-						onClick={() => fileInputRef.current?.click()}
+
+					<JsonImportButton
+						successMessage="导入完成"
+						onImport={async (jsonString) => {
+							const data = JSON.parse(jsonString);
+							const result = await importConfigsFn({ data: { data } });
+							message.success(
+								`导入完成：新增 ${result.created} / 更新 ${result.updated}`,
+							);
+							router.invalidate();
+						}}
 					>
 						导入 JSON
-					</Button>
+					</JsonImportButton>
+
 					<Button
 						type="primary"
 						icon={<PlusOutlined />}
@@ -542,14 +528,6 @@ function ConfigPage() {
 					</Form.Item>
 				</Form>
 			</Modal>
-			{/* 隐藏的文件选择器，用于导入 JSON */}
-			<input
-				type="file"
-				ref={fileInputRef}
-				accept=".json"
-				className="hidden"
-				onChange={handleImportConfigs}
-			/>
 		</AdminPageContent>
 	);
 }

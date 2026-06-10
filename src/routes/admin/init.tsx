@@ -2,7 +2,6 @@
  * 系统初始化页面：首次部署时创建 root 管理员与基础配置
  */
 import {
-	CloudUploadOutlined,
 	DownOutlined,
 	LockOutlined,
 	MailOutlined,
@@ -24,10 +23,10 @@ import {
 	message,
 	Space,
 	Switch,
-	Upload,
 } from "antd";
 import { useEffect, useState } from "react";
 import { z } from "zod";
+import { JsonImportButton } from "#/components/admin/JsonImportButton";
 import {
 	checkInitStatus as checkInitStatusService,
 	type InitData,
@@ -120,31 +119,6 @@ export const Route = createFileRoute("/admin/init")({
 	},
 	component: AdminInitPage,
 });
-
-/** JSON 导入的数据格式 */
-interface ImportJson {
-	admin?: {
-		username?: string;
-		password?: string;
-		email?: string;
-	};
-	siteName?: string;
-	smtp?: {
-		host?: string;
-		port?: number;
-		secure?: boolean;
-		user?: string;
-		pass?: string;
-		from?: string;
-	};
-	ai?: {
-		baseUrl?: string;
-		apiKey?: string;
-		deepModel?: string;
-		fastModel?: string;
-	};
-}
-
 function AdminInitPage() {
 	const navigate = useNavigate();
 	const [form] = Form.useForm();
@@ -165,51 +139,6 @@ function AdminInitPage() {
 	useEffect(() => {
 		message.config({ duration: 5 });
 	}, []);
-
-	const handleJsonImport = (file: File) => {
-		const reader = new FileReader();
-		reader.onload = (e) => {
-			try {
-				const json: ImportJson = JSON.parse(e.target?.result as string);
-				const values: Record<string, unknown> = {};
-
-				if (json.admin) {
-					if (json.admin.username) values.username = json.admin.username;
-					if (json.admin.password) {
-						values.password = json.admin.password;
-						values.confirmPassword = json.admin.password;
-					}
-					if (json.admin.email) values.email = json.admin.email;
-				}
-				if (json.siteName) values.siteName = json.siteName;
-				if (json.smtp) {
-					setSmtpExpanded(true);
-					if (json.smtp.host) values.smtpHost = json.smtp.host;
-					if (json.smtp.port !== undefined) values.smtpPort = json.smtp.port;
-					if (json.smtp.secure !== undefined)
-						values.smtpSecure = json.smtp.secure;
-					if (json.smtp.user) values.smtpUser = json.smtp.user;
-					if (json.smtp.pass) values.smtpPass = json.smtp.pass;
-					if (json.smtp.from) values.smtpFrom = json.smtp.from;
-				}
-				if (json.ai) {
-					setAiExpanded(true);
-					if (json.ai.baseUrl) values.aiBaseUrl = json.ai.baseUrl;
-					if (json.ai.apiKey) values.aiApiKey = json.ai.apiKey;
-					if (json.ai.deepModel) values.aiDeepModel = json.ai.deepModel;
-					if (json.ai.fastModel) values.aiFastModel = json.ai.fastModel;
-				}
-
-				form.setFieldsValue(values);
-				message.success("JSON 配置已导入，请核对信息后提交");
-			} catch {
-				message.error("JSON 解析失败，请检查文件格式");
-			}
-		};
-		reader.readAsText(file);
-		return false;
-	};
-
 	const handleSubmit = async (values: z.infer<typeof initSchema>) => {
 		setLoading(true);
 		try {
@@ -248,14 +177,48 @@ function AdminInitPage() {
 							className="mb-4"
 						/>
 						<br />
-						<Upload.Dragger
-							accept=".json"
-							showUploadList={false}
-							beforeUpload={handleJsonImport}
+						<JsonImportButton
+							title="导入 JSON 配置快速填写"
 							className="mb-4"
+							block
+							successMessage="JSON 配置已导入，请核对信息后提交"
+							onImport={(jsonString) => {
+								const json: Record<string, unknown> = JSON.parse(jsonString);
+								const values: Record<string, unknown> = {};
+								if (json.admin && typeof json.admin === "object") {
+									const a = json.admin as Record<string, unknown>;
+									if (a.username) values.username = a.username;
+									if (a.password) {
+										values.password = a.password;
+										values.confirmPassword = a.password;
+									}
+									if (a.email) values.email = a.email;
+								}
+								if (json.siteName) values.siteName = json.siteName;
+								if (json.smtp && typeof json.smtp === "object") {
+									setSmtpExpanded(true);
+									const s = json.smtp as Record<string, unknown>;
+									if (s.host) values.smtpHost = s.host;
+									if (s.port !== undefined) values.smtpPort = s.port;
+									if (s.secure !== undefined) values.smtpSecure = s.secure;
+									if (s.user) values.smtpUser = s.user;
+									if (s.pass) values.smtpPass = s.pass;
+									if (s.from) values.smtpFrom = s.from;
+								}
+								if (json.ai && typeof json.ai === "object") {
+									setAiExpanded(true);
+									const ai = json.ai as Record<string, unknown>;
+									if (ai.baseUrl) values.aiBaseUrl = ai.baseUrl;
+									if (ai.apiKey) values.aiApiKey = ai.apiKey;
+									if (ai.deepModel) values.aiDeepModel = ai.deepModel;
+									if (ai.fastModel) values.aiFastModel = ai.fastModel;
+								}
+								form.setFieldsValue(values);
+							}}
 						>
-							<CloudUploadOutlined /> <span>导入 JSON 配置快速填写</span>
-						</Upload.Dragger>
+							导入 JSON 配置快速填写
+						</JsonImportButton>
+
 						<Form
 							form={form}
 							layout="vertical"

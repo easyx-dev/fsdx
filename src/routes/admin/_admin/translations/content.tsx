@@ -6,7 +6,6 @@ import {
 	DownloadOutlined,
 	EditOutlined,
 	PlusOutlined,
-	UploadOutlined,
 } from "@ant-design/icons";
 import { createFileRoute } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
@@ -21,10 +20,11 @@ import {
 	Space,
 	Tag,
 } from "antd";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { z } from "zod";
 import { AdminPageContent } from "#/components/admin/AdminPageContent";
 import { EditorTypeSelect } from "#/components/admin/EditorTypeSelect";
+import { JsonImportButton } from "#/components/admin/JsonImportButton";
 import { ProTable } from "#/components/admin/ProTable";
 import { downloadFile } from "#/lib/export/export.utils";
 import { SUPPORTED_LOCALES } from "#/lib/i18n/i18n.types";
@@ -101,7 +101,6 @@ function ContentTranslationPage() {
 	// 防抖后的搜索关键字
 	const [debouncedKeyword, setDebouncedKeyword] = useState<string>("");
 	const [form] = Form.useForm();
-	const fileInputRef = useRef<HTMLInputElement>(null);
 
 	// 搜索关键字输入防抖（300ms）
 	useEffect(() => {
@@ -193,27 +192,6 @@ function ContentTranslationPage() {
 			message.error(err instanceof Error ? err.message : "导出失败");
 		}
 	}
-
-	/** 导入实体翻译数据（JSON） */
-	async function handleImport(e: React.ChangeEvent<HTMLInputElement>) {
-		const file = e.target.files?.[0];
-		if (!file) return;
-		try {
-			const text = await file.text();
-			const data = JSON.parse(text);
-			const result = await importContentTranslationsFn({ data: { data } });
-			message.success(
-				`导入完成：新增 ${result.created} / 更新 ${result.updated}`,
-			);
-			await refresh();
-		} catch (err: unknown) {
-			message.error(
-				err instanceof Error ? err.message : "导入失败，请检查 JSON 格式",
-			);
-		}
-		if (fileInputRef.current) fileInputRef.current.value = "";
-	}
-
 	const columns = [
 		{
 			title: "实体类型",
@@ -280,12 +258,22 @@ function ContentTranslationPage() {
 					<Button icon={<DownloadOutlined />} onClick={handleExport}>
 						导出 JSON
 					</Button>
-					<Button
-						icon={<UploadOutlined />}
-						onClick={() => fileInputRef.current?.click()}
+
+					<JsonImportButton
+						onImport={async (jsonString) => {
+							const data = JSON.parse(jsonString);
+							const result = await importContentTranslationsFn({
+								data: { data },
+							});
+							message.success(
+								`导入完成：新增 ${result.created} / 更新 ${result.updated}`,
+							);
+							await refresh();
+						}}
 					>
 						导入 JSON
-					</Button>
+					</JsonImportButton>
+
 					<Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>
 						新增翻译
 					</Button>
@@ -401,15 +389,6 @@ function ContentTranslationPage() {
 					</Form.Item>
 				</Form>
 			</Modal>
-
-			{/* 隐藏的文件选择器，用于导入 JSON */}
-			<input
-				type="file"
-				ref={fileInputRef}
-				accept=".json"
-				className="hidden"
-				onChange={handleImport}
-			/>
 		</AdminPageContent>
 	);
 }

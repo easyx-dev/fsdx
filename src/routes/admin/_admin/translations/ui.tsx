@@ -6,7 +6,6 @@ import {
 	DownloadOutlined,
 	EditOutlined,
 	PlusOutlined,
-	UploadOutlined,
 } from "@ant-design/icons";
 import { createFileRoute } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
@@ -21,11 +20,12 @@ import {
 	Space,
 	Tag,
 } from "antd";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { z } from "zod";
 import { AdminPageContent } from "#/components/admin/AdminPageContent";
 import { EditorTypePreview } from "#/components/admin/EditorTypePreview";
 import { EditorTypeSelect } from "#/components/admin/EditorTypeSelect";
+import { JsonImportButton } from "#/components/admin/JsonImportButton";
 import { ProTable } from "#/components/admin/ProTable";
 import { downloadFile } from "#/lib/export/export.utils";
 import { SUPPORTED_LOCALES } from "#/lib/i18n/i18n.types";
@@ -94,7 +94,6 @@ function UITranslationPage() {
 	// 防抖后的搜索关键字，用于触发 API 请求
 	const [debouncedKeyword, setDebouncedKeyword] = useState<string>("");
 	const [form] = Form.useForm();
-	const fileInputRef = useRef<HTMLInputElement>(null);
 
 	// 搜索关键字输入防抖（300ms）
 	useEffect(() => {
@@ -164,27 +163,6 @@ function UITranslationPage() {
 			message.error(err instanceof Error ? err.message : "导出失败");
 		}
 	}
-
-	/** 导入 UI 翻译数据（JSON） */
-	async function handleImport(e: React.ChangeEvent<HTMLInputElement>) {
-		const file = e.target.files?.[0];
-		if (!file) return;
-		try {
-			const text = await file.text();
-			const data = JSON.parse(text);
-			const result = await importUITranslationsFn({ data: { data } });
-			message.success(
-				`导入完成：新增 ${result.created} / 更新 ${result.updated}`,
-			);
-			await refresh(filterLocale, debouncedKeyword);
-		} catch (err: unknown) {
-			message.error(
-				err instanceof Error ? err.message : "导入失败，请检查 JSON 格式",
-			);
-		}
-		if (fileInputRef.current) fileInputRef.current.value = "";
-	}
-
 	useEffect(() => {
 		refresh(filterLocale, debouncedKeyword);
 	}, [filterLocale, debouncedKeyword, refresh]);
@@ -248,12 +226,20 @@ function UITranslationPage() {
 					<Button icon={<DownloadOutlined />} onClick={handleExport}>
 						导出 JSON
 					</Button>
-					<Button
-						icon={<UploadOutlined />}
-						onClick={() => fileInputRef.current?.click()}
+
+					<JsonImportButton
+						onImport={async (jsonString) => {
+							const data = JSON.parse(jsonString);
+							const result = await importUITranslationsFn({ data: { data } });
+							message.success(
+								`导入完成：新增 ${result.created} / 更新 ${result.updated}`,
+							);
+							await refresh(filterLocale, debouncedKeyword);
+						}}
 					>
 						导入 JSON
-					</Button>
+					</JsonImportButton>
+
 					<Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>
 						新增翻译
 					</Button>
@@ -334,15 +320,6 @@ function UITranslationPage() {
 					</Form.Item>
 				</Form>
 			</Modal>
-
-			{/* 隐藏的文件选择器，用于导入 JSON */}
-			<input
-				type="file"
-				ref={fileInputRef}
-				accept=".json"
-				className="hidden"
-				onChange={handleImport}
-			/>
 		</AdminPageContent>
 	);
 }

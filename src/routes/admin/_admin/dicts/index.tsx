@@ -9,7 +9,6 @@ import {
 	DownloadOutlined,
 	EditOutlined,
 	PlusOutlined,
-	UploadOutlined,
 } from "@ant-design/icons";
 import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
@@ -31,11 +30,12 @@ import {
 	Switch,
 	Tag,
 } from "antd";
-import { useRef, useState } from "react";
+import { useState } from "react";
 import { z } from "zod";
 import { AdminPageContent } from "#/components/admin/AdminPageContent";
 import { EditorTypePreview } from "#/components/admin/EditorTypePreview";
 import { EditorTypeSelect } from "#/components/admin/EditorTypeSelect";
+import { JsonImportButton } from "#/components/admin/JsonImportButton";
 import { ProTable } from "#/components/admin/ProTable";
 import { TypeAwareEditor } from "#/components/admin/TypeAwareEditor";
 import type { EditorType } from "#/lib/editor-types/editor-types";
@@ -172,7 +172,6 @@ function DictsPage() {
 	const watchedExtraType = Form.useWatch("extraType", itemForm) as
 		| EditorType
 		| undefined;
-	const fileInputRef = useRef<HTMLInputElement>(null);
 
 	const refreshItems = async (dictSlug: string) => {
 		const data = await getDictItems({ data: { dictSlug } });
@@ -338,31 +337,6 @@ function DictsPage() {
 		downloadFile(json, `dicts_export_${timestamp}.json`, "application/json");
 		message.success("导出完成");
 	};
-
-	/** 导入字典数据（JSON） */
-	const handleImportDicts = async (e: React.ChangeEvent<HTMLInputElement>) => {
-		const file = e.target.files?.[0];
-		if (!file) return;
-		try {
-			const text = await file.text();
-			const data = JSON.parse(text);
-			const result = await importDictsFn({ data: { data } });
-			message.success(
-				`导入完成：字典类型 新增 ${result.dictsCreated} / 更新 ${result.dictsUpdated}，` +
-					`条目 新增 ${result.itemsCreated} / 更新 ${result.itemsUpdated}` +
-					(result.itemsSkipped > 0 ? ` / 跳过 ${result.itemsSkipped}` : ""),
-			);
-			router.invalidate();
-			if (selectedDictSlug) refreshItems(selectedDictSlug);
-		} catch (err) {
-			message.error(
-				err instanceof Error ? err.message : "导入失败，请检查 JSON 格式",
-			);
-		}
-		// 重置 input 以允许重复选择同一文件
-		if (fileInputRef.current) fileInputRef.current.value = "";
-	};
-
 	/** 字典条目表格列定义 */
 	const itemColumns = [
 		{ title: "标签", dataIndex: "label", key: "label" },
@@ -466,12 +440,24 @@ function DictsPage() {
 					<Button icon={<DownloadOutlined />} onClick={handleExportDicts}>
 						导出 JSON
 					</Button>
-					<Button
-						icon={<UploadOutlined />}
-						onClick={() => fileInputRef.current?.click()}
+
+					<JsonImportButton
+						onImport={async (jsonString) => {
+							const data = JSON.parse(jsonString);
+							const result = await importDictsFn({ data: { data } });
+							message.success(
+								`导入完成：字典类型 新增 ${result.dictsCreated} / 更新 ${result.dictsUpdated}，` +
+									`条目 新增 ${result.itemsCreated} / 更新 ${result.itemsUpdated}` +
+									(result.itemsSkipped > 0
+										? ` / 跳过 ${result.itemsSkipped}`
+										: ""),
+							);
+							router.invalidate();
+							if (selectedDictSlug) refreshItems(selectedDictSlug);
+						}}
 					>
 						导入 JSON
-					</Button>
+					</JsonImportButton>
 				</Space>
 			}
 		>
@@ -747,14 +733,6 @@ function DictsPage() {
 					</Form.Item>
 				</Form>
 			</Modal>
-			{/* 隐藏的文件选择器，用于导入 JSON */}
-			<input
-				type="file"
-				ref={fileInputRef}
-				accept=".json"
-				className="hidden"
-				onChange={handleImportDicts}
-			/>
 		</AdminPageContent>
 	);
 }

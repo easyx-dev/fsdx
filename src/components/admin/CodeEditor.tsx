@@ -31,6 +31,8 @@ self.MonacoEnvironment = {
 };
 
 export interface CodeEditorProps {
+	/** 自定义类名 */
+	className?: string;
 	/** 编辑器内容 */
 	value: string;
 	/** 内容变化回调 */
@@ -42,6 +44,7 @@ export interface CodeEditorProps {
 }
 
 export function CodeEditor({
+	className,
 	value,
 	onChange,
 	language,
@@ -121,7 +124,7 @@ export function CodeEditor({
 	return (
 		<div
 			ref={containerRef}
-			className="h-[300px] rounded-md border border-zinc-200 dark:border-zinc-700 overflow-hidden"
+			className={`h-[300px] rounded-md border border-zinc-200 dark:border-zinc-700 overflow-hidden ${className}`}
 		/>
 	);
 }
