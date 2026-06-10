@@ -270,6 +270,16 @@ const PRESET_CONFIGS: {
 		valueType: "input",
 		groupName: "AI设置",
 	},
+	{
+		key: "ai_translation_prompt",
+		value:
+			"你是一名专业的{targetLang}母语译者，需要将{sourceLang}文本流畅自然地翻译成{targetLang}。\n\n## 翻译规则\n1. 仅输出翻译后的内容，不要添加任何解释或额外说明\n2. 翻译必须保持与原文完全相同的段落数量和格式结构\n3. 如果文本包含 HTML 标签，请在保持语义通顺的前提下，将标签放置在翻译中的合适位置\n4. 对于不应翻译的内容（如专有名词、代码等），保留原文不做翻译\n\n## 待翻译内容\n{sourceText}",
+		description:
+			"AI 翻译提示词模板，支持占位符 {sourceLang}、{targetLang}、{sourceText}",
+		clientVisible: false,
+		valueType: "text",
+		groupName: "AI设置",
+	},
 ];
 
 /** 运行时校验预置系统配置（幂等安全，恢复软删除的预设项） */

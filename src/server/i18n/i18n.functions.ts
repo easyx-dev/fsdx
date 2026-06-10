@@ -3,11 +3,13 @@
  */
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import { fastChat } from "#/lib/ai/ai";
 import { toJson } from "#/lib/export/export.utils";
 import type { Locale } from "#/lib/i18n/i18n.types";
 import { DEFAULT_LOCALE, SUPPORTED_LOCALES } from "#/lib/i18n/i18n.types";
 import { PERMISSIONS } from "#/lib/permissions/permissions";
 import { adminPermGuard } from "#/middleware/admin-auth";
+import { getConfig } from "#/server/config/config.server";
 import type {
 	ContentTranslationExportData,
 	TranslationImportResult,
@@ -228,4 +230,37 @@ export const importContentTranslationsFn = createServerFn({ method: "POST" })
 	)
 	.handler(async ({ data: { data } }): Promise<TranslationImportResult> => {
 		return importContentTranslations(data as ContentTranslationExportData);
+	});
+
+// ══════════════════ AI 翻译 ══════════════════
+
+/** AI 翻译字段内容（使用 fast 模型） */
+export const aiTranslateFieldFn = createServerFn({ method: "POST" })
+	.middleware([adminPermGuard(PERMISSIONS.TRANSLATION_MANAGE)])
+	.inputValidator(
+		z.object({
+			sourceText: z.string().min(1, "源文本不能为空"),
+			targetLang: z.string().min(1),
+			sourceLang: z.string().min(1),
+		}),
+	)
+	.handler(async ({ data: { sourceText, targetLang, sourceLang } }) => {
+		const promptTemplate = getConfig("ai_translation_prompt");
+		if (!promptTemplate) {
+			throw new Error(
+				"AI 翻译提示词未配置，请在系统配置中设置 ai_translation_prompt",
+			);
+		}
+		const prompt = promptTemplate
+			.replace(/\{sourceLang\}/g, sourceLang)
+			.replace(/\{targetLang\}/g, targetLang)
+			.replace(/\{sourceText\}/g, sourceText);
+
+		const result = await fastChat([{ role: "user", content: prompt }], {
+			temperature: 0.3,
+		});
+		if (!result || !result.content) {
+			throw new Error("AI 翻译服务不可用，请检查 AI 配置");
+		}
+		return result.content;
 	});

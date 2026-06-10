@@ -1,7 +1,7 @@
 /**
  * 字段翻译抽屉组件：在实体表格中为字段提供国际化翻译编辑入口
  */
-import { GlobalOutlined } from "@ant-design/icons";
+import { GlobalOutlined, RobotOutlined } from "@ant-design/icons";
 import { Button, Card, Drawer, message, Tabs, Tooltip } from "antd";
 import { useCallback, useEffect, useState } from "react";
 import { TypeAwareEditor } from "#/components/admin/TypeAwareEditor";
@@ -12,6 +12,7 @@ import {
 	SUPPORTED_LOCALES,
 } from "#/lib/i18n/i18n.types";
 import {
+	aiTranslateFieldFn,
 	getFieldTranslationsFn,
 	saveContentTranslationFn,
 } from "#/server/i18n/i18n.functions";
@@ -57,6 +58,7 @@ export function FieldTranslationDrawer({
 		Record<string, Record<string, string>>
 	>({});
 	const [saving, setSaving] = useState<string | null>(null);
+	const [aiTranslating, setAiTranslating] = useState<string | null>(null);
 
 	const loadTranslations = useCallback(
 		async (fieldName: string) => {
@@ -111,6 +113,35 @@ export function FieldTranslationDrawer({
 			);
 		} finally {
 			setSaving(null);
+		}
+	}
+
+	async function handleAiTranslate(fieldName: string, targetLocale: string) {
+		const sourceText = originalValues?.[fieldName];
+		if (!sourceText?.trim()) {
+			message.warning("源文本为空，无法翻译");
+			return;
+		}
+
+		const key = `${fieldName}:${targetLocale}`;
+		setAiTranslating(key);
+		try {
+			const translated = await aiTranslateFieldFn({
+				data: {
+					sourceText,
+					targetLang: LOCALE_LABELS[targetLocale] ?? targetLocale,
+					sourceLang: LOCALE_LABELS[DEFAULT_LOCALE] ?? DEFAULT_LOCALE,
+				},
+			});
+			if (translated) {
+				updateValue(fieldName, targetLocale, translated);
+			}
+		} catch (err: unknown) {
+			message.error(
+				`AI 翻译失败: ${err instanceof Error ? err.message : "未知错误"}`,
+			);
+		} finally {
+			setAiTranslating(null);
 		}
 	}
 
@@ -181,7 +212,37 @@ export function FieldTranslationDrawer({
 											key={locale}
 											size="small"
 											type="inner"
-											title={LOCALE_LABELS[locale] ?? locale.toUpperCase()}
+											title={
+												isDefault ? (
+													(LOCALE_LABELS[locale] ?? locale.toUpperCase())
+												) : (
+													<span className="flex items-center gap-2">
+														{LOCALE_LABELS[locale] ?? locale.toUpperCase()}
+														<Button
+															type="link"
+															size="small"
+															icon={
+																<RobotOutlined style={{ color: "#a855f7" }} />
+															}
+															loading={aiTranslating === saveKey}
+															disabled={!originalValues?.[field.name]?.trim()}
+															className="font-medium"
+															style={{
+																background:
+																	"linear-gradient(to right, #a855f7, #c084fc, #e879f9, #ec4899)",
+																backgroundClip: "text",
+																WebkitBackgroundClip: "text",
+																WebkitTextFillColor: "transparent",
+															}}
+															onClick={() =>
+																handleAiTranslate(field.name, locale)
+															}
+														>
+															AI 翻译
+														</Button>
+													</span>
+												)
+											}
 											styles={{ root: { marginBottom: 20 } }}
 											extra={
 												isDefault ? (
