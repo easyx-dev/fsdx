@@ -3,7 +3,12 @@
  */
 
 import { useForm } from "@tanstack/react-form";
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import {
+	createFileRoute,
+	Link,
+	redirect,
+	useNavigate,
+} from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
 import { setCookie } from "@tanstack/react-start/server";
 import { z } from "zod";
@@ -12,6 +17,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "#/components/ui/card";
 import { Input } from "#/components/ui/input";
 import { useTranslation } from "#/lib/i18n/i18n-context";
 import { COOKIE_NAMES } from "#/lib/jwt/jwt";
+import { getCurrentClientFn } from "#/server/client-auth/client-auth.functions";
 import { clientLogin } from "#/server/client-auth/client-auth.server";
 
 const loginSchema = z.object({
@@ -36,6 +42,12 @@ const clientLoginFn = createServerFn({ method: "POST" })
 	});
 
 export const Route = createFileRoute("/login")({
+	beforeLoad: async () => {
+		const user = await getCurrentClientFn();
+		if (user) {
+			throw redirect({ to: "/" });
+		}
+	},
 	component: ClientLoginPage,
 });
 

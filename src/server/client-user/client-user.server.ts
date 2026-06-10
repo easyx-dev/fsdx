@@ -5,6 +5,7 @@ import bcrypt from "bcryptjs";
 import { and, eq, ilike, isNull, or } from "drizzle-orm";
 import { db } from "#/db/index";
 import { clientUser } from "#/db/schema";
+import { clientUserCache } from "#/lib/cache/cache";
 import { logger } from "#/lib/logger/logger";
 
 export type ClientUserRecord = typeof clientUser.$inferSelect;
@@ -98,6 +99,10 @@ export async function updateClientUser(
 		.returning();
 	if (record) {
 		logger.info({ id, username: record.username }, "客户端用户信息已更新");
+		// 状态变更时清除缓存，避免返回已禁用的用户
+		if (input.status !== undefined) {
+			clientUserCache.delete(id);
+		}
 	}
 	return record;
 }
@@ -112,6 +117,7 @@ export async function deleteClientUser(id: string): Promise<boolean> {
 		.set({ deletedAt: new Date() })
 		.where(eq(clientUser.id, id));
 	logger.info({ id, username: existing.username }, "客户端用户已删除");
+	clientUserCache.delete(id);
 	return true;
 }
 

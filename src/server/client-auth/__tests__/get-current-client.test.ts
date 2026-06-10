@@ -32,10 +32,14 @@ const { mockDb } = vi.hoisted(() => {
 });
 vi.mock("#/db", () => ({ db: mockDb }));
 
+import { clientUserCache } from "#/lib/cache/cache";
 import { getCurrentClient } from "#/server/client-auth/client-auth.server";
 
 describe("getCurrentClient", () => {
-	beforeEach(() => vi.clearAllMocks());
+	beforeEach(() => {
+		vi.clearAllMocks();
+		clientUserCache.clear();
+	});
 
 	it("token 为 undefined 返回 null", async () => {
 		const result = await getCurrentClient(undefined);

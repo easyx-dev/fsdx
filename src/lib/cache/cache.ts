@@ -119,3 +119,18 @@ export const uiTranslationCache = new MemoryCache<Record<string, string>>({
 export const configTranslationCache = new MemoryCache<Record<string, string>>({
 	name: "config_translation",
 });
+
+/** 缓存的客户端用户信息 */
+export interface CachedClientUser {
+	id: string;
+	username: string;
+	email: string;
+	avatar: string | null;
+	status: string;
+}
+
+/** 客户端用户缓存：key = userId，TTL 5 分钟避免频繁查库 */
+export const clientUserCache = new MemoryCache<CachedClientUser>({
+	name: "client_user",
+	defaultTTL: 5 * 60 * 1000,
+});

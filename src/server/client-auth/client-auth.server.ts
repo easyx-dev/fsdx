@@ -6,6 +6,7 @@ import bcrypt from "bcryptjs";
 import { eq } from "drizzle-orm";
 import { db } from "#/db/index";
 import { clientUser } from "#/db/schema";
+import { type CachedClientUser, clientUserCache } from "#/lib/cache/cache";
 import { type JwtPayload, signToken, verifyToken } from "#/lib/jwt/jwt";
 import { logger } from "#/lib/logger/logger";
 import { verifyCaptcha } from "#/server/captcha/captcha.server";
@@ -92,6 +93,7 @@ export async function clientRegister(
 
 /**
  * 从客户端 JWT token 获取当前登录用户信息
+ * 优先从缓存读取，缓存在用户信息变更时需主动清除
  * 返回 null 表示未登录或 token 无效
  */
 export async function getCurrentClient(
@@ -102,10 +104,32 @@ export async function getCurrentClient(
 	const jwtPayload = await verifyToken(token);
 	if (!jwtPayload || jwtPayload.userType !== "client") return null;
 
+	// 查缓存（缓存中存有 status，读取时校验是否仍为 active）
+	const cached = clientUserCache.get(jwtPayload.userId);
+	if (cached && cached.status === "active") {
+		return {
+			id: cached.id,
+			username: cached.username,
+			email: cached.email,
+			avatar: cached.avatar,
+			isRoot: false,
+			userType: "client" as const,
+		};
+	}
+
 	const user = await db.query.clientUser.findFirst({
 		where: (t, { eq }) => eq(t.id, jwtPayload.userId),
 	});
 	if (!user || user.deletedAt || user.status !== "active") return null;
+
+	const cacheEntry: CachedClientUser = {
+		id: user.id,
+		username: user.username,
+		email: user.email,
+		avatar: user.avatar,
+		status: user.status,
+	};
+	clientUserCache.set(jwtPayload.userId, cacheEntry);
 
 	return {
 		id: user.id,

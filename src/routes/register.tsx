@@ -4,7 +4,12 @@
  */
 
 import { useForm } from "@tanstack/react-form";
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import {
+	createFileRoute,
+	Link,
+	redirect,
+	useNavigate,
+} from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { CaptchaInput } from "#/components/CaptchaInput";
@@ -12,6 +17,7 @@ import { Button } from "#/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "#/components/ui/card";
 import { Input } from "#/components/ui/input";
 import { useTranslation } from "#/lib/i18n/i18n-context";
+import { getCurrentClientFn } from "#/server/client-auth/client-auth.functions";
 import { clientRegister } from "#/server/client-auth/client-auth.server";
 
 const registerSchema = z.object({
@@ -28,6 +34,12 @@ const clientRegisterFn = createServerFn({ method: "POST" })
 	});
 
 export const Route = createFileRoute("/register")({
+	beforeLoad: async () => {
+		const user = await getCurrentClientFn();
+		if (user) {
+			throw redirect({ to: "/" });
+		}
+	},
 	component: ClientRegisterPage,
 });
 

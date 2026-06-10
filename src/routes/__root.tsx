@@ -10,6 +10,7 @@ import {
 } from "@tanstack/react-router";
 import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
 import { Fragment } from "react";
+import { ClientAuthProvider } from "#/components/ClientAuthProvider";
 import { AdminRootDocument, SSRRootDocument } from "#/components/Document";
 import { GlobalStoreProvider } from "#/lib/global-store/global-store";
 import type { Locale, Translations } from "#/lib/i18n/i18n.types";
@@ -62,18 +63,22 @@ function RootDocument({ children }: { children: React.ReactNode }) {
 						systemConfig: context.systemConfig,
 					}}
 				>
-					<SSRRootDocument>{children}</SSRRootDocument>
+					<ClientAuthProvider>
+						<SSRRootDocument>{children}</SSRRootDocument>
+					</ClientAuthProvider>
 				</GlobalStoreProvider>
 			)}
-			<TanStackDevtools
-				config={{ position: "bottom-right" }}
-				plugins={[
-					{
-						name: "Tanstack Router",
-						render: <TanStackRouterDevtoolsPanel />,
-					},
-				]}
-			/>
+			{process.env.NODE_ENV === "development" && (
+				<TanStackDevtools
+					config={{ position: "bottom-right" }}
+					plugins={[
+						{
+							name: "Tanstack Router",
+							render: <TanStackRouterDevtoolsPanel />,
+						},
+					]}
+				/>
+			)}
 		</Fragment>
 	);
 }

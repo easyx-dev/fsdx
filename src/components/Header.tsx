@@ -1,10 +1,12 @@
 /**
  * 前台公共 Header（SSR 端 shadcn/ui，移动优先）
  * 集成国际化：语言切换按钮，中文作为翻译 key
+ * 根据客户端登录状态显示用户名/退出或登录链接
  */
 import { ClientOnly, Link } from "@tanstack/react-router";
-import { Menu, X } from "lucide-react";
+import { LogOut, Menu, User, X } from "lucide-react";
 import { useState } from "react";
+import { useClientAuth } from "#/components/ClientAuthProvider";
 import { Button } from "#/components/ui/button";
 import { useTranslation } from "#/lib/i18n/i18n-context";
 import ThemeToggle from "./ThemeToggle";
@@ -12,12 +14,18 @@ import ThemeToggle from "./ThemeToggle";
 export default function Header() {
 	const [mobileOpen, setMobileOpen] = useState(false);
 	const { t, locale } = useTranslation();
+	const { user, logout } = useClientAuth();
 
 	const NAV_LINKS = [
 		{ to: "/", label: t("首页") },
 		{ to: "/news", label: t("新闻") },
 		{ to: "/about", label: t("关于") },
 	] as const;
+
+	const handleLogout = async () => {
+		await logout();
+		setMobileOpen(false);
+	};
 
 	return (
 		<header className="sticky top-0 z-50 border-b border-border bg-background/80 px-4 backdrop-blur-lg">
@@ -65,11 +73,29 @@ export default function Header() {
 							{locale === "zh" ? "EN" : "中文"}
 						</Button>
 					</ClientOnly>
-					<Link to="/login" className="hidden sm:block">
-						<Button variant="ghost" size="sm">
-							{t("登录")}
-						</Button>
-					</Link>
+					{/* 桌面端用户区 */}
+					{user ? (
+						<div className="hidden items-center gap-2 sm:flex">
+							<span className="flex items-center gap-1 text-sm text-muted-foreground">
+								<User className="h-4 w-4" />
+								{user.username}
+							</span>
+							<Button
+								variant="ghost"
+								size="sm"
+								onClick={handleLogout}
+								aria-label={t("退出登录")}
+							>
+								<LogOut className="h-4 w-4" />
+							</Button>
+						</div>
+					) : (
+						<Link to="/login" className="hidden sm:block">
+							<Button variant="ghost" size="sm">
+								{t("登录")}
+							</Button>
+						</Link>
+					)}
 					<ThemeToggle />
 					{/* 移动端菜单按钮 */}
 					<Button
@@ -99,13 +125,30 @@ export default function Header() {
 						</Link>
 					))}
 					<div className="mt-1 border-t border-border pt-1">
-						<Link
-							to="/login"
-							className="block rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-							onClick={() => setMobileOpen(false)}
-						>
-							{t("登录")}
-						</Link>
+						{user ? (
+							<>
+								<div className="flex items-center gap-2 px-3 py-2 text-sm text-muted-foreground">
+									<User className="h-4 w-4" />
+									{user.username}
+								</div>
+								<button
+									type="button"
+									className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+									onClick={handleLogout}
+								>
+									<LogOut className="h-4 w-4" />
+									{t("退出登录")}
+								</button>
+							</>
+						) : (
+							<Link
+								to="/login"
+								className="block rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+								onClick={() => setMobileOpen(false)}
+							>
+								{t("登录")}
+							</Link>
+						)}
 					</div>
 				</div>
 			)}
