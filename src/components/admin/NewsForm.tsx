@@ -4,7 +4,8 @@
  */
 
 import type { FormInstance } from "antd";
-import { Button, Form, Input, Select, Switch } from "antd";
+import { Button, Form, Input, Switch } from "antd";
+import { DictSelect } from "#/components/admin/DictSelect";
 import { RichEditor } from "#/components/admin/RichEditor";
 
 export interface NewsFormValues {
@@ -39,12 +40,6 @@ export function NewsForm({
 	onCancel,
 	submitting,
 }: NewsFormProps) {
-	const statusOptions = [
-		{ label: "草稿", value: "draft" },
-		{ label: "发布", value: "published" },
-		...(mode === "edit" ? [{ label: "归档", value: "archived" }] : []),
-	];
-
 	return (
 		<Form
 			form={form}
@@ -78,7 +73,10 @@ export function NewsForm({
 
 			<div className="flex gap-8">
 				<Form.Item name="status" label="状态" className="min-w-28">
-					<Select options={statusOptions} />
+					<DictSelect
+						dictSlug="news_status"
+						excludeValues={mode === "create" ? ["archived"] : undefined}
+					/>
 				</Form.Item>
 
 				<Form.Item name="isPinned" label="置顶" valuePropName="checked">

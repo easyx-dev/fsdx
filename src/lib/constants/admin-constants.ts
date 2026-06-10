@@ -1,5 +1,5 @@
 /**
- * 管理端共享常量：日志级别颜色、新闻状态标签等散落在各页面的常量集中管理
+ * 管理端共享常量：日志级别颜色、预置字典定义等
  */
 
 /** 日志级别对应 Tag 颜色 */
@@ -21,16 +21,37 @@ export const LEVEL_OPTIONS = [
 	{ label: "FATAL", value: "fatal" },
 ];
 
-/** 新闻状态对应 Tag 颜色 */
-export const NEWS_STATUS_COLORS: Record<string, string> = {
-	draft: "gold",
-	published: "green",
-	archived: "default",
-};
+/** 预置字典条目类型 */
+export interface PresetDictItem {
+	label: string;
+	value: string;
+	sortOrder: number;
+	color?: string;
+	extraType?: string;
+	extra?: string;
+}
 
-/** 新闻状态标签 */
-export const NEWS_STATUS_LABELS: Record<string, string> = {
-	draft: "草稿",
-	published: "已发布",
-	archived: "已归档",
-};
+/** 预置字典常量（slug 和条目 value 不可修改、不可删除） */
+export const PRESET_DICTS: {
+	slug: string;
+	name: string;
+	items: PresetDictItem[];
+}[] = [
+	{
+		slug: "user_status",
+		name: "用户状态",
+		items: [
+			{ label: "正常", value: "active", sortOrder: 0, color: "green" },
+			{ label: "禁用", value: "disabled", sortOrder: 1, color: "red" },
+		],
+	},
+	{
+		slug: "news_status",
+		name: "新闻状态",
+		items: [
+			{ label: "草稿", value: "draft", sortOrder: 0, color: "gold" },
+			{ label: "已发布", value: "published", sortOrder: 1, color: "green" },
+			{ label: "已归档", value: "archived", sortOrder: 2, color: "default" },
+		],
+	},
+];

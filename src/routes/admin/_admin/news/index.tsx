@@ -11,16 +11,14 @@ import {
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
 import { Button, message, Popconfirm, Segmented, Space, Tag } from "antd";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { z } from "zod";
 import { AdminPageContent } from "#/components/admin/AdminPageContent";
+import { DictTag } from "#/components/admin/DictTag";
 import { FieldTranslationDrawer } from "#/components/admin/FieldTranslationDrawer";
 import { ProTable } from "#/components/admin/ProTable";
-import {
-	NEWS_STATUS_COLORS,
-	NEWS_STATUS_LABELS,
-} from "#/lib/constants/admin-constants";
 import { downloadFile } from "#/lib/export/export.utils";
+import { useAdminDictStore } from "#/lib/global-store/admin-dict-store";
 import { PERMISSIONS } from "#/lib/permissions/permissions";
 import { formatDate } from "#/lib/utils/format-date";
 import { adminPermGuard } from "#/middleware/admin-auth";
@@ -66,7 +64,7 @@ const changeStatusFn = createServerFn({ method: "POST" })
 
 export const Route = createFileRoute("/admin/_admin/news/")({
 	component: NewsListPage,
-	loader: async () => await getNewsListFn({ data: {} }),
+	loader: async () => getNewsListFn({ data: {} }),
 });
 
 const NEWS_TRANSLATABLE_FIELDS = [
@@ -76,9 +74,19 @@ const NEWS_TRANSLATABLE_FIELDS = [
 ];
 
 function NewsListPage() {
-	const initial = Route.useLoaderData();
-	const [data, setData] = useState(initial);
+	const newsData = Route.useLoaderData();
+	const [data, setData] = useState(newsData);
 	const [filter, setFilter] = useState<string>("");
+
+	const newsStatusOptions = useAdminDictStore((s) => s.dicts.news_status ?? []);
+
+	const segmentedOptions = useMemo(
+		() => [
+			{ label: "全部", value: "" },
+			...newsStatusOptions.map((o) => ({ label: o.label, value: o.value })),
+		],
+		[newsStatusOptions],
+	);
 
 	async function refresh(s?: string) {
 		const status = s !== undefined ? s : filter;
@@ -118,14 +126,14 @@ function NewsListPage() {
 			dataIndex: "status",
 			key: "status",
 			width: 100,
-			render: (_: string, record: NewsRecord) => (
-				<Space size={4}>
-					<Tag color={NEWS_STATUS_COLORS[record.status ?? ""]}>
-						{NEWS_STATUS_LABELS[record.status ?? ""] || record.status}
-					</Tag>
-					{record.isPinned && <Tag color="blue">置顶</Tag>}
-				</Space>
-			),
+			render: (_: string, record: NewsRecord) => {
+				return (
+					<Space size={4}>
+						<DictTag dictSlug="news_status" value={record.status ?? ""} />
+						{record.isPinned && <Tag color="blue">置顶</Tag>}
+					</Space>
+				);
+			},
 		},
 		{
 			title: "发布时间",
@@ -225,12 +233,7 @@ function NewsListPage() {
 		>
 			<div className="mb-4">
 				<Segmented
-					options={[
-						{ label: "全部", value: "" },
-						{ label: "草稿", value: "draft" },
-						{ label: "已发布", value: "published" },
-						{ label: "已归档", value: "archived" },
-					]}
+					options={segmentedOptions}
 					value={filter}
 					onChange={(value) => {
 						setFilter(value as string);

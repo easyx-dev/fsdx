@@ -31,6 +31,7 @@ import {
 import { useAdminAuth } from "#/components/admin/AdminAuthProvider";
 import { NAV_GROUPS } from "#/components/admin/nav-config";
 import type { ThemeMode } from "#/hooks/use-theme-mode";
+import { useAdminDictStore } from "#/lib/global-store/admin-dict-store";
 import { logout } from "#/routes/admin/_admin";
 
 /** Admin 主题 Context */
@@ -82,6 +83,11 @@ export function AdminLayout({ children }: { children: ReactNode }) {
 	useEffect(() => {
 		message.config({ duration: 5 });
 		notification.config({ duration: 5 });
+	}, []);
+
+	// 进入 admin 时一次性加载全部字典到 zustand store
+	useEffect(() => {
+		useAdminDictStore.getState().loadAll();
 	}, []);
 
 	return (

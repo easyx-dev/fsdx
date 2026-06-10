@@ -5,6 +5,7 @@ import { and, asc, eq, isNull } from "drizzle-orm";
 import { db } from "#/db/index";
 import { dict, dictItem } from "#/db/schema";
 import { dictCache } from "#/lib/cache/cache";
+import { PRESET_DICTS } from "#/lib/constants/admin-constants";
 import { logger } from "#/lib/logger/logger";
 
 export type DictRecord = typeof dict.$inferSelect;
@@ -27,7 +28,12 @@ export async function loadDictCache(): Promise<void> {
 	const [dicts, items] = await Promise.all([
 		db.select().from(dict).where(isNull(dict.deletedAt)),
 		db
-			.select({ slug: dict.slug, label: dictItem.label, value: dictItem.value })
+			.select({
+				slug: dict.slug,
+				label: dictItem.label,
+				value: dictItem.value,
+				color: dictItem.color,
+			})
 			.from(dictItem)
 			.innerJoin(dict, eq(dictItem.dictSlug, dict.slug))
 			.where(isNull(dictItem.deletedAt))
@@ -37,7 +43,7 @@ export async function loadDictCache(): Promise<void> {
 	for (const d of dicts) dictCache.set(d.slug, {});
 	for (const item of items) {
 		const map = dictCache.get(item.slug) || {};
-		map[item.value] = item.label;
+		map[item.value] = { label: item.label, color: item.color };
 		dictCache.set(item.slug, map);
 	}
 	cacheLoaded = true;
@@ -50,14 +56,58 @@ export async function getDictLabel(
 ): Promise<string> {
 	await ensureCache();
 	const map = dictCache.get(slug);
-	return map?.[value] ?? value;
+	return map?.[value]?.label ?? value;
 }
 
 export async function getDictMap(
 	slug: string,
 ): Promise<Record<string, string>> {
 	await ensureCache();
-	return dictCache.get(slug) ?? {};
+	const map = dictCache.get(slug);
+	if (!map) return {};
+	const result: Record<string, string> = {};
+	for (const [value, info] of Object.entries(map)) {
+		result[value] = info.label;
+	}
+	return result;
+}
+
+/** 字典选项（供 UI Select/Segmented/Tag 使用） */
+export interface DictOption {
+	label: string;
+	value: string;
+	color?: string | null;
+}
+
+/** 获取指定字典的所有条目选项（含颜色） */
+export async function getDictOptions(slug: string): Promise<DictOption[]> {
+	await ensureCache();
+	const map = dictCache.get(slug);
+	if (!map) return [];
+	return Object.entries(map).map(([value, info]) => ({
+		label: info.label,
+		value,
+		color: info.color,
+	}));
+}
+
+/** 获取全部字典选项（按 slug 分组，供 zustand store 一次性加载） */
+export async function getAllDictOptions(): Promise<
+	Record<string, DictOption[]>
+> {
+	await ensureCache();
+	const result: Record<string, DictOption[]> = {};
+	for (const slug of dictCache.keys()) {
+		const map = dictCache.get(slug);
+		if (map) {
+			result[slug] = Object.entries(map).map(([value, info]) => ({
+				label: info.label,
+				value,
+				color: info.color,
+			}));
+		}
+	}
+	return result;
 }
 
 export async function getDictList() {
@@ -85,6 +135,15 @@ export async function updateDict(
 ) {
 	const existing = await db.query.dict.findFirst({ where: eq(dict.id, id) });
 	if (!existing) return null;
+
+	// 预置字典 slug 不允许修改
+	if (
+		params.slug &&
+		params.slug !== existing.slug &&
+		PRESET_DICTS.some((d) => d.slug === existing.slug)
+	) {
+		throw new Error("预置字典的标识(slug)不允许修改");
+	}
 
 	// slug 变更时在事务中更新（ON UPDATE CASCADE 自动级联 dictItem）
 	if (params.slug && params.slug !== existing.slug) {
@@ -119,6 +178,12 @@ export async function updateDict(
 export async function deleteDict(id: string) {
 	const existing = await db.query.dict.findFirst({ where: eq(dict.id, id) });
 	if (!existing) return false;
+
+	// 预置字典不允许删除
+	if (PRESET_DICTS.some((d) => d.slug === existing.slug)) {
+		throw new Error("预置字典不允许删除");
+	}
+
 	const now = new Date();
 	await db.transaction(async (tx) => {
 		await tx
@@ -168,6 +233,16 @@ export async function updateDictItem(
 		color?: string;
 	},
 ) {
+	// 预置字典条目的 value 不允许修改
+	if (params.value) {
+		const item = await db.query.dictItem.findFirst({
+			where: eq(dictItem.id, id),
+		});
+		if (item && PRESET_DICTS.some((d) => d.slug === item.dictSlug)) {
+			throw new Error("预置字典条目的值(value)不允许修改");
+		}
+	}
+
 	const [updated] = await db
 		.update(dictItem)
 		.set({ ...params, updatedAt: new Date() })
@@ -185,6 +260,12 @@ export async function deleteDictItem(id: string) {
 		where: eq(dictItem.id, id),
 	});
 	if (!existing) return false;
+
+	// 预置字典条目不允许删除
+	if (PRESET_DICTS.some((d) => d.slug === existing.dictSlug)) {
+		throw new Error("预置字典条目不允许删除");
+	}
+
 	await db
 		.update(dictItem)
 		.set({ deletedAt: new Date() })
@@ -195,18 +276,6 @@ export async function deleteDictItem(id: string) {
 }
 
 // ========== 预置字典 ==========
-
-/** 预置字典常量 */
-const PRESET_DICTS = [
-	{
-		slug: "user_status",
-		name: "用户状态",
-		items: [
-			{ label: "正常", value: "active", sortOrder: 0 },
-			{ label: "禁用", value: "disabled", sortOrder: 1 },
-		],
-	},
-];
 
 /** 运行时校验并插入缺失的预置字典（幂等安全） */
 export async function ensurePresetDicts(): Promise<void> {
@@ -227,6 +296,9 @@ export async function ensurePresetDicts(): Promise<void> {
 				label: item.label,
 				value: item.value,
 				sortOrder: item.sortOrder,
+				color: item.color ?? null,
+				extraType: item.extraType ?? null,
+				extra: item.extra ?? null,
 			});
 		}
 		logger.info({ slug: preset.slug }, "预置字典已创建");

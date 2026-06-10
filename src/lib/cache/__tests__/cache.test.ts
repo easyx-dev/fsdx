@@ -209,8 +209,8 @@ describe("dictCache / configCache", () => {
 		// 通过动态导入获取实例（避免与其他测试共享状态）
 		const { dictCache } = await import("#/lib/cache/cache");
 		expect(dictCache).toBeInstanceOf(MemoryCache);
-		dictCache.set("test", { label: "测试" });
-		expect(dictCache.get("test")).toEqual({ label: "测试" });
+		dictCache.set("test", { active: { label: "正常" } });
+		expect(dictCache.get("test")).toEqual({ active: { label: "正常" } });
 		dictCache.delete("test");
 	});
 

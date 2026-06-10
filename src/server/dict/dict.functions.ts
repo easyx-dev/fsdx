@@ -10,7 +10,9 @@ import {
 	type DictImportData,
 	type DictImportResult,
 	getAllDictItemsForExport,
+	getAllDictOptions,
 	getAllDictsForExport,
+	getDictOptions,
 	importDicts,
 } from "#/server/dict/dict.server";
 
@@ -67,3 +69,17 @@ export const importDictsFn = createServerFn({ method: "POST" })
 		};
 		return importDicts(flat);
 	});
+
+/** 获取字典选项（供各页面 Select/Segmented/Tag 使用） */
+export const getDictOptionsFn = createServerFn({ method: "GET" })
+	.inputValidator(z.object({ slug: z.string().min(1) }))
+	.handler(async ({ data: { slug } }) => {
+		return getDictOptions(slug);
+	});
+
+/** 获取全部字典选项（按 slug 分组，供 zustand store 一次性加载） */
+export const getAllDictOptionsFn = createServerFn({ method: "GET" }).handler(
+	async () => {
+		return getAllDictOptions();
+	},
+);

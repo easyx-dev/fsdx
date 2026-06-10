@@ -17,7 +17,6 @@ import {
 	Modal,
 	message,
 	Popconfirm,
-	Select,
 	Space,
 	Switch,
 	Tag,
@@ -25,6 +24,8 @@ import {
 import { useState } from "react";
 import { z } from "zod";
 import { AdminPageContent } from "#/components/admin/AdminPageContent";
+import { DictSelect } from "#/components/admin/DictSelect";
+import { DictTag } from "#/components/admin/DictTag";
 import { ProTable } from "#/components/admin/ProTable";
 import { PERMISSIONS } from "#/lib/permissions/permissions";
 import { formatDateTime } from "#/lib/utils/format-date";
@@ -217,12 +218,7 @@ function ClientsPage() {
 			dataIndex: "status",
 			key: "status",
 			width: 80,
-			render: (v: string) =>
-				v === "active" ? (
-					<Tag color="green">正常</Tag>
-				) : (
-					<Tag color="red">禁用</Tag>
-				),
+			render: (v: string) => <DictTag dictSlug="user_status" value={v} />,
 		},
 		{
 			title: "最后登录",
@@ -345,12 +341,7 @@ function ClientsPage() {
 					{editingUser && (
 						<>
 							<Form.Item name="status" label="状态">
-								<Select
-									options={[
-										{ label: "正常", value: "active" },
-										{ label: "禁用", value: "disabled" },
-									]}
-								/>
+								<DictSelect dictSlug="user_status" />
 							</Form.Item>
 							<Form.Item
 								name="emailVerified"

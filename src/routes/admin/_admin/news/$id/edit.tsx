@@ -39,12 +39,12 @@ const updateNewsFn = createServerFn({ method: "POST" })
 
 export const Route = createFileRoute("/admin/_admin/news/$id/edit")({
 	component: NewsEditPage,
-	loader: async ({ params }) => await getNewsFn({ data: { id: params.id } }),
+	loader: async ({ params }) => getNewsFn({ data: { id: params.id } }),
 });
 
 function NewsEditPage() {
-	const navigate = useNavigate();
 	const record = Route.useLoaderData();
+	const navigate = useNavigate();
 	const [form] = Form.useForm();
 
 	useEffect(() => {

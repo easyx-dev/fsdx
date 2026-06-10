@@ -38,6 +38,7 @@ import { EditorTypeSelect } from "#/components/admin/EditorTypeSelect";
 import { JsonImportButton } from "#/components/admin/JsonImportButton";
 import { ProTable } from "#/components/admin/ProTable";
 import { TypeAwareEditor } from "#/components/admin/TypeAwareEditor";
+import { PRESET_DICTS } from "#/lib/constants/admin-constants";
 import type { EditorType } from "#/lib/editor-types/editor-types";
 import { downloadFile } from "#/lib/export/export.utils";
 import { PERMISSIONS } from "#/lib/permissions/permissions";
@@ -419,18 +420,28 @@ function DictsPage() {
 						icon={<EditOutlined />}
 						onClick={() => openItemModal(record)}
 					/>
-					<Popconfirm
-						title="确定删除该条目？"
-						onConfirm={() => handleDeleteItem(record.id)}
-					>
-						<Button type="link" size="small" danger icon={<DeleteOutlined />} />
-					</Popconfirm>
+					{!isPresetDict(record.dictSlug) && (
+						<Popconfirm
+							title="确定删除该条目？"
+							onConfirm={() => handleDeleteItem(record.id)}
+						>
+							<Button
+								type="link"
+								size="small"
+								danger
+								icon={<DeleteOutlined />}
+							/>
+						</Popconfirm>
+					)}
 				</Space>
 			),
 		},
 	];
 
 	const selectedDict = dictList.find((d) => d.slug === selectedDictSlug);
+
+	const isPresetDict = (slug: string) =>
+		PRESET_DICTS.some((d) => d.slug === slug);
 
 	return (
 		<AdminPageContent
@@ -525,22 +536,24 @@ function DictsPage() {
 													openDictModal(record);
 												}}
 											/>
-											<Popconfirm
-												title="确定删除该字典及所有条目？"
-												onConfirm={(e) => {
-													e?.stopPropagation();
-													handleDeleteDict(record.id);
-												}}
-												onCancel={(e) => e?.stopPropagation()}
-											>
-												<Button
-													type="link"
-													size="small"
-													danger
-													icon={<DeleteOutlined />}
-													onClick={(e) => e.stopPropagation()}
-												/>
-											</Popconfirm>
+											{!isPresetDict(record.slug) && (
+												<Popconfirm
+													title="确定删除该字典及所有条目？"
+													onConfirm={(e) => {
+														e?.stopPropagation();
+														handleDeleteDict(record.id);
+													}}
+													onCancel={(e) => e?.stopPropagation()}
+												>
+													<Button
+														type="link"
+														size="small"
+														danger
+														icon={<DeleteOutlined />}
+														onClick={(e) => e.stopPropagation()}
+													/>
+												</Popconfirm>
+											)}
 										</Space>
 									</div>
 								);
@@ -617,7 +630,10 @@ function DictsPage() {
 						label="标识 (slug)"
 						rules={[{ required: true, message: "请输入字典标识" }]}
 					>
-						<Input placeholder="唯一标识" />
+						<Input
+							placeholder="唯一标识"
+							disabled={!!editingDict && isPresetDict(editingDict.slug)}
+						/>
 					</Form.Item>
 					<Form.Item name="description" label="描述">
 						<Input.TextArea rows={2} placeholder="字典描述（可选）" />
@@ -660,7 +676,10 @@ function DictsPage() {
 						label="值"
 						rules={[{ required: true, message: "请输入值" }]}
 					>
-						<Input placeholder="存储值" />
+						<Input
+							placeholder="存储值"
+							disabled={!!editingItem && isPresetDict(editingItem.dictSlug)}
+						/>
 					</Form.Item>
 					<Divider plain style={{ margin: "8px 0 12px" }}>
 						<Button
