@@ -12,7 +12,7 @@ import {
 } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { CaptchaInput } from "#/components/CaptchaInput";
+import { CaptchaInput } from "#/components/client/CaptchaInput";
 import { Button } from "#/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "#/components/ui/card";
 import { Input } from "#/components/ui/input";

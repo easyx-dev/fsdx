@@ -3,8 +3,8 @@
  */
 
 import { ClientOnly, HeadContent, Scripts } from "@tanstack/react-router";
-import Footer from "#/components/Footer";
-import Header from "#/components/Header";
+import Footer from "#/components/client/Footer";
+import Header from "#/components/client/Header";
 import { useGlobalStore } from "#/lib/global-store/global-store";
 import adminGlobalCss from "#/styles/admin.global.css?url";
 import ssrGlobalCss from "#/styles/ssr.global.css?url";

@@ -127,7 +127,7 @@ new Date(item.publishedAt).toLocaleDateString(locale, {
 
 ### 语言切换按钮
 
-语言切换通过修改 `lang` Cookie 后刷新页面实现。参见 `src/components/Header.tsx` 中 `ClientOnly` 包裹的切换按钮：
+语言切换通过修改 `lang` Cookie 后刷新页面实现。参见 `src/components/client/Header.tsx` 中 `ClientOnly` 包裹的切换按钮：
 
 ```tsx
 <ClientOnly>

@@ -10,7 +10,7 @@ import {
 } from "@tanstack/react-router";
 import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
 import { Fragment } from "react";
-import { ClientAuthProvider } from "#/components/ClientAuthProvider";
+import { ClientAuthProvider } from "#/components/client/ClientAuthProvider";
 import { AdminRootDocument, SSRRootDocument } from "#/components/Document";
 import { GlobalStoreProvider } from "#/lib/global-store/global-store";
 import type { Locale, Translations } from "#/lib/i18n/i18n.types";

@@ -6,7 +6,7 @@
 import { ClientOnly, Link } from "@tanstack/react-router";
 import { LogOut, Menu, User, X } from "lucide-react";
 import { useState } from "react";
-import { useClientAuth } from "#/components/ClientAuthProvider";
+import { useClientAuth } from "#/components/client/ClientAuthProvider";
 import { Button } from "#/components/ui/button";
 import { useTranslation } from "#/lib/i18n/i18n-context";
 import ThemeToggle from "./ThemeToggle";

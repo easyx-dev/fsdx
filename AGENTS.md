@@ -12,8 +12,11 @@
 env/                          # 环境变量配置（.env、.env.local、.env.example）
 src/
 ├── components/
-│   ├── admin/                # 管理端专用组件（Shell、NewsEditor）
-│   └── *.tsx                 # 公共组件（Header、Footer、ThemeToggle）
+│   ├── admin/                # 管理端专用组件
+│   ├── client/               # 客户端前台专用组件（Header、Footer、CaptchaInput 等）
+│   ├── ui/                   # shadcn/ui 基础组件
+│   ├── Document.tsx          # 根布局（AdminRootDocument / SSRRootDocument）
+│   └── ErrorFallback.tsx     # 全局错误处理
 ├── db/
 │   ├── index.ts              # Drizzle 客户端实例化
 │   └── schema/               # 数据库表定义（按模块拆分）
@@ -244,7 +247,7 @@ import { getConfig } from "#/server/config/config.server";
   - antd 适用于数据密集型后台场景（Form、Table、Modal、Select、Menu 等）
   - shadcn/ui 适用于展示型前台场景，样式可定制且无运行时开销
   - 同一页面不要混用两套组件库的同类组件（如 Button、Dialog），保持风格统一
-- 公共组件（`src/components/*.tsx`）根据使用场景判断：
+- 公共组件（`src/components/` 顶层或 `client/` 子目录）根据使用场景判断：
   - 仅管理端使用 → antd
   - 仅前台使用 → shadcn/ui
   - 两端共用 → 偏向前台（shadcn/ui），管理端适配时可用 antd 包裹
