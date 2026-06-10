@@ -16,17 +16,19 @@ import {
 	Modal,
 	message,
 	Popconfirm,
+	Popover,
 	Space,
 	Table,
 	Tag,
-	Tree,
 } from "antd";
 import { useState } from "react";
 import { z } from "zod";
 import { AdminPageContent } from "#/components/admin/AdminPageContent";
+import { PermissionSelector } from "#/components/admin/PermissionSelector";
 import {
+	PERMISSION_META,
 	PERMISSIONS,
-	PERMISSIONS_BY_GROUP,
+	type PermissionCode,
 } from "#/lib/permissions/permissions";
 import { permGuard } from "#/middleware/server-fn-auth";
 import {
@@ -76,19 +78,6 @@ const deleteRoleFn = createServerFn({ method: "POST" })
 	.middleware([permGuard(PERMISSIONS.ROLE_DELETE)])
 	.inputValidator(idSchema)
 	.handler(async ({ data }) => deleteRole(data.id));
-
-// ─── 权限树数据 ─────────────────────────────────────────────────────
-
-const permissionTreeData = Object.entries(PERMISSIONS_BY_GROUP).map(
-	([group, perms]) => ({
-		title: group,
-		key: group,
-		children: perms.map((p) => ({
-			title: `${p.name} (${p.code})`,
-			key: p.code,
-		})),
-	}),
-);
 
 // ─── Route & Component ──────────────────────────────────────────────
 
@@ -191,34 +180,75 @@ function RolesPage() {
 			title: "权限",
 			dataIndex: "permissions",
 			key: "permissions",
-			render: (perms: string[]) => (
-				<div className="flex flex-wrap gap-1">
-					{perms.length === 0 ? (
-						<span className="text-muted-foreground text-xs">无权限</span>
-					) : (
-						perms.slice(0, 5).map((p) => (
-							<Tag key={p} color="blue" className="text-xs">
-								{p}
-							</Tag>
-						))
-					)}
-					{perms.length > 5 && (
-						<Tag className="text-xs">+{perms.length - 5}</Tag>
-					)}
-				</div>
-			),
+			width: 280,
+			render: (perms: string[]) => {
+				const format = (code: string) => {
+					if (code.endsWith(":*")) {
+						const group = code.slice(0, -2);
+						return `${group}(*)`;
+					}
+					return PERMISSION_META[code as PermissionCode]?.name ?? code;
+				};
+				const wildcards = perms.filter((p) => p.endsWith(":*")).sort();
+				const individuals = perms.filter((p) => !p.endsWith(":*")).sort();
+				const sorted = [...wildcards, ...individuals];
+				const visible = sorted.slice(0, 2);
+				const overflow = perms.length - 2;
+				if (perms.length === 0) {
+					return <span className="text-muted-foreground text-xs">无权限</span>;
+				}
+				const tagList = visible.map((code) => (
+					<Tag
+						key={code}
+						color={code.endsWith(":*") ? "green" : "blue"}
+						className="text-xs"
+					>
+						{format(code)}
+					</Tag>
+				));
+				if (overflow > 0) {
+					tagList.push(
+						<Tag key="overflow" className="text-xs">
+							+{overflow}
+						</Tag>,
+					);
+				}
+				if (overflow > 0) {
+					return (
+						<Popover
+							content={
+								<div className="flex flex-wrap gap-1 max-w-xs">
+									{sorted.map((code) => (
+										<Tag
+											key={code}
+											color={code.endsWith(":*") ? "green" : "blue"}
+											className="text-xs"
+										>
+											{format(code)}
+										</Tag>
+									))}
+								</div>
+							}
+						>
+							<div className="flex flex-wrap gap-1 cursor-pointer">
+								{tagList}
+							</div>
+						</Popover>
+					);
+				}
+				return <div className="flex flex-wrap gap-1">{tagList}</div>;
+			},
 		},
 		{
 			title: "描述",
 			dataIndex: "description",
 			key: "description",
 			ellipsis: true,
-			render: (v: string | null) => v ?? "—",
+			width: 140,
 		},
 		{
 			title: "操作",
 			key: "actions",
-			width: 120,
 			render: (_: unknown, record: RoleRecord) => (
 				<Space size={4}>
 					<Button
@@ -269,6 +299,7 @@ function RolesPage() {
 			<Table
 				dataSource={roles}
 				columns={columns}
+				scroll={{ x: 900 }}
 				rowKey="id"
 				locale={{ emptyText: "暂无角色" }}
 			/>
@@ -301,23 +332,8 @@ function RolesPage() {
 					<Form.Item name="description" label="描述">
 						<Input.TextArea rows={2} placeholder="角色描述（可选）" />
 					</Form.Item>
-					<Form.Item
-						name="permissions"
-						label="权限分配"
-						rules={[
-							{
-								required: true,
-								message: "请选择至少一个权限",
-								type: "array",
-								min: 1,
-							},
-						]}
-					>
-						<Tree
-							checkable
-							treeData={permissionTreeData}
-							style={{ maxHeight: 320, overflow: "auto" }}
-						/>
+					<Form.Item name="permissions" label="权限分配">
+						<PermissionSelector />
 					</Form.Item>
 				</Form>
 			</Modal>
