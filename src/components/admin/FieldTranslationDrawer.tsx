@@ -2,7 +2,7 @@
  * 字段翻译抽屉组件：在实体表格中为字段提供国际化翻译编辑入口
  */
 import { GlobalOutlined } from "@ant-design/icons";
-import { Button, Card, Drawer, message, Tabs } from "antd";
+import { Button, Card, Drawer, message, Tabs, Tooltip } from "antd";
 import { useCallback, useEffect, useState } from "react";
 import { TypeAwareEditor } from "#/components/admin/TypeAwareEditor";
 import type { EditorType } from "#/lib/editor-types/editor-types";
@@ -124,13 +124,15 @@ export function FieldTranslationDrawer({
 	// 根据触发方式渲染触发器
 	const triggerEl =
 		trigger === "icon" ? (
-			<GlobalOutlined
-				className="cursor-pointer text-muted-foreground hover:text-primary ml-1"
-				onClick={(e) => {
-					e.stopPropagation();
-					setOpen(true);
-				}}
-			/>
+			<Tooltip title="国际化">
+				<GlobalOutlined
+					className="cursor-pointer text-muted-foreground hover:text-primary ml-1"
+					onClick={(e) => {
+						e.stopPropagation();
+						setOpen(true);
+					}}
+				/>
+			</Tooltip>
 		) : (
 			<Button
 				type="link"

@@ -7,13 +7,12 @@ import { createServerFn } from "@tanstack/react-start";
 import {
 	Button,
 	Card,
-	Col,
+	Flex,
 	Form,
 	Input,
 	Modal,
 	message,
 	Popconfirm,
-	Row,
 	Select,
 	Space,
 	Switch,
@@ -257,7 +256,7 @@ function ConfigPage() {
 			title: "配置键",
 			dataIndex: "key",
 			key: "key",
-			width: 200,
+			width: 180,
 			render: (key: string) => (
 				<code className="text-xs text-blue-600 dark:text-blue-400">{key}</code>
 			),
@@ -266,13 +265,14 @@ function ConfigPage() {
 			title: "配置值",
 			dataIndex: "value",
 			key: "value",
+			width: 180,
 			ellipsis: true,
 		},
 		{
 			title: "值类型",
 			dataIndex: "valueType",
 			key: "valueType",
-			width: 110,
+			width: 130,
 			render: (val: string | null) =>
 				val ? (EDITOR_TYPE_LABELS[val as EditorType] ?? val) : "Text",
 		},
@@ -280,7 +280,7 @@ function ConfigPage() {
 			title: "分组",
 			dataIndex: "groupName",
 			key: "groupName",
-			width: 100,
+			width: 120,
 			render: (val: string | null) => val || "未分组",
 		},
 		{
@@ -295,12 +295,12 @@ function ConfigPage() {
 			dataIndex: "description",
 			key: "description",
 			ellipsis: true,
+			width: 180,
 			render: (desc: string | null) => desc || "—",
 		},
 		{
 			title: "操作",
 			key: "actions",
-			width: 160,
 			render: (_: unknown, record: ConfigRecord) => {
 				// 确保 clientVisible 为真时才显示翻译入口
 				const showTranslation = record.clientVisible === true;
@@ -346,74 +346,82 @@ function ConfigPage() {
 
 	return (
 		<AdminPageContent title="系统配置">
-			<Row gutter={20}>
-				<Col span={6}>
-					<Card size="small" title="配置分组" styles={{ body: { padding: 0 } }}>
-						<Table
-							dataSource={groupDataSource}
-							columns={groupColumns}
-							rowKey="key"
-							size="small"
-							showHeader={false}
-							pagination={false}
-							locale={{ emptyText: "暂无分组" }}
-							onRow={(record) => ({
-								onClick: () =>
-									setSelectedGroup(record.key === "全部" ? null : record.key),
-								style: { cursor: "pointer" },
-							})}
-							rowClassName={(record) =>
-								(selectedGroup ?? "全部") === record.key
-									? "bg-blue-50/80 dark:bg-blue-950/40"
-									: ""
-							}
-						/>
-					</Card>
-				</Col>
-				<Col span={18}>
-					<Card
+			<Flex gap={20}>
+				<Card
+					size="small"
+					title="配置分组"
+					classNames={{
+						root: "flex-[0_0_240px]",
+					}}
+					styles={{ body: { padding: 0 } }}
+				>
+					<Table
+						dataSource={groupDataSource}
+						columns={groupColumns}
+						rowKey="key"
 						size="small"
-						title={
-							<span className="text-sm">
-								<span className="font-medium">{activeGroupName}</span>
-								<span className="text-muted-foreground ml-2">
-									· 配置项 ({filteredConfigs.length})
-								</span>
+						showHeader={false}
+						pagination={false}
+						locale={{ emptyText: "暂无分组" }}
+						onRow={(record) => ({
+							onClick: () =>
+								setSelectedGroup(record.key === "全部" ? null : record.key),
+							style: { cursor: "pointer" },
+						})}
+						rowClassName={(record) =>
+							(selectedGroup ?? "全部") === record.key
+								? "bg-blue-50/80 dark:bg-blue-950/40"
+								: ""
+						}
+					/>
+				</Card>
+
+				<Card
+					size="small"
+					title={
+						<span className="text-sm">
+							<span className="font-medium">{activeGroupName}</span>
+							<span className="text-muted-foreground ml-2">
+								· 配置项 ({filteredConfigs.length})
 							</span>
-						}
-						extra={
-							<Space>
-								<Input.Search
-									placeholder="搜索配置键或值"
-									allowClear
-									size="small"
-									style={{ width: 200 }}
-									value={searchText}
-									onChange={(e) => setSearchText(e.target.value)}
-								/>
-								<Button
-									type="primary"
-									size="small"
-									icon={<PlusOutlined />}
-									onClick={() => openModal()}
-								>
-									新建配置
-								</Button>
-							</Space>
-						}
-						styles={{ body: { padding: 0 } }}
-					>
-						<Table
-							dataSource={filteredConfigs}
-							columns={configColumns}
-							rowKey="id"
-							size="small"
-							pagination={false}
-							locale={{ emptyText: "暂无配置" }}
-						/>
-					</Card>
-				</Col>
-			</Row>
+						</span>
+					}
+					extra={
+						<Space>
+							<Input.Search
+								placeholder="搜索配置键或值"
+								allowClear
+								size="small"
+								style={{ width: 200 }}
+								value={searchText}
+								onChange={(e) => setSearchText(e.target.value)}
+							/>
+							<Button
+								type="primary"
+								size="small"
+								icon={<PlusOutlined />}
+								onClick={() => openModal()}
+							>
+								新建配置
+							</Button>
+						</Space>
+					}
+					classNames={{
+						root: "flex-1",
+					}}
+					styles={{ body: { padding: 0 } }}
+				>
+					<Table
+						dataSource={filteredConfigs}
+						columns={configColumns}
+						rowKey="id"
+						size="small"
+						bordered
+						pagination={false}
+						locale={{ emptyText: "暂无配置" }}
+					/>
+				</Card>
+			</Flex>
 
 			<Modal
 				title={editing ? "编辑配置" : "新建配置"}
