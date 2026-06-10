@@ -241,7 +241,7 @@ function ConfigPage() {
 			title: "配置键",
 			dataIndex: "key",
 			key: "key",
-			width: 180,
+			width: 240,
 			render: (key: string) => (
 				<code className="text-xs text-blue-600 dark:text-blue-400">{key}</code>
 			),
