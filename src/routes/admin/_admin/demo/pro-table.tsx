@@ -74,14 +74,14 @@ function ProTableDemoPage() {
 				title: "创建时间",
 				dataIndex: "createdAt",
 				key: "createdAt",
-				width: 180,
+				width: 185,
 				valueType: "dateTime",
 			},
 			{
 				title: "更新时间",
 				dataIndex: "updatedAt",
 				key: "updatedAt",
-				width: 180,
+				width: 185,
 				valueType: "dateTime",
 			},
 			{

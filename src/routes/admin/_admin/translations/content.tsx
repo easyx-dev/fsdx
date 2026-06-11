@@ -245,14 +245,14 @@ function ContentTranslationPage() {
 			title: "创建时间",
 			dataIndex: "createdAt",
 			key: "createdAt",
-			width: 170,
+			width: 185,
 			valueType: "dateTime",
 		},
 		{
 			title: "更新时间",
 			dataIndex: "updatedAt",
 			key: "updatedAt",
-			width: 170,
+			width: 185,
 			valueType: "dateTime",
 		},
 		{

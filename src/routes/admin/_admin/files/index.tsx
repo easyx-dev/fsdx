@@ -237,7 +237,7 @@ function FilesPage() {
 			title: "上传时间",
 			dataIndex: "createdAt",
 			key: "createdAt",
-			width: 180,
+			width: 185,
 			sorter: true,
 			valueType: "dateTime",
 		},
@@ -245,7 +245,7 @@ function FilesPage() {
 			title: "更新时间",
 			dataIndex: "updatedAt",
 			key: "updatedAt",
-			width: 170,
+			width: 185,
 			valueType: "dateTime",
 		},
 		{
