@@ -109,7 +109,7 @@ export const NAV_GROUPS: NavGroup[] = [
 		label: "埋点分析",
 		items: [
 			{
-				key: "/admin/events",
+				key: "/admin/events/query",
 				label: "事件查询",
 				icon: <BarChartOutlined />,
 			},

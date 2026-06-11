@@ -28,7 +28,7 @@ import type { EventQueryResult, EventRecord } from "#/server/event/event.types";
 
 const { RangePicker } = DatePicker;
 
-export const Route = createFileRoute("/admin/_admin/events/")({
+export const Route = createFileRoute("/admin/_admin/events/query")({
 	component: EventListPage,
 	loader: async () => {
 		const [eventNames, result] = await Promise.all([

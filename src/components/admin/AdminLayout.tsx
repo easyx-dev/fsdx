@@ -55,7 +55,7 @@ export function useAdminTheme(): AdminThemeContextType {
 /** 判断当前路径是否匹配菜单项 */
 function isActive(itemKey: string, currentPath: string): boolean {
 	if (itemKey === "/admin") return currentPath === "/admin";
-	return currentPath.startsWith(itemKey);
+	return currentPath === itemKey || currentPath.startsWith(`${itemKey}/`);
 }
 
 /** 主题模式循环顺序 */

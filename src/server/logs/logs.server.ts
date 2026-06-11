@@ -49,18 +49,21 @@ function pinoLevelToString(level: unknown): string {
  * 将原始日志条目转换为 SF 安全类型
  */
 function toSerializable(entry: RawLogEntry): LogEntry {
+	const raw = entry as Record<string, unknown>;
+	// 提取 pino 标准字段，其余字段原样保留（如 err、stack、req 等）
+	const rest = Object.fromEntries(
+		Object.entries(raw).filter(
+			([key]) =>
+				!["time", "level", "msg", "timestamp", "message"].includes(key),
+		),
+	);
 	return {
-		time: (entry as Record<string, unknown>).time as
-			| string
-			| number
-			| undefined,
-		// pino 日志级别为数字（30/40/50），需转为字符串
-		level: pinoLevelToString((entry as Record<string, unknown>).level),
-		msg: (entry as Record<string, unknown>).msg as string | undefined,
-		timestamp: (entry as Record<string, unknown>).timestamp as
-			| string
-			| undefined,
-		message: (entry as Record<string, unknown>).message as string | undefined,
+		time: raw.time as string | number | undefined,
+		level: pinoLevelToString(raw.level),
+		msg: raw.msg as string | undefined,
+		timestamp: raw.timestamp as string | undefined,
+		message: raw.message as string | undefined,
+		...rest,
 	};
 }
 
