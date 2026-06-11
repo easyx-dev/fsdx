@@ -4,7 +4,14 @@ import { definePlugin } from "nitro";
 import { logger } from "#/lib/logger/logger";
 import { ensurePresetConfigs } from "#/server/config/config.server";
 import { ensurePresetDicts } from "#/server/dict/dict.server";
+import {
+	ensurePresetEvents,
+	ensurePresetProperties,
+	flushTrackEvents,
+	loadPresetCache,
+} from "#/server/event/event.server";
 import { ensurePresetTranslations } from "#/server/i18n/i18n-seed";
+import { flushOperationLogs } from "#/server/operation-log/operation-log.server";
 import { registerAllTasks } from "#/server/tasks/tasks.server";
 
 export default definePlugin(() => {
@@ -27,6 +34,20 @@ export default definePlugin(() => {
 	// 服务进程启动时同步等待，确保预置数据写入完成后才开始接收请求
 	ensurePresetDicts();
 	ensurePresetConfigs();
+	ensurePresetEvents();
+	ensurePresetProperties();
 	ensurePresetTranslations();
+	loadPresetCache().catch(() => {});
 	registerAllTasks();
+
+	// 进程退出时刷新缓冲，避免事件和操作日志丢失
+	const gracefulShutdown = async () => {
+		await Promise.all([flushTrackEvents(), flushOperationLogs()]);
+	};
+	process.on("SIGTERM", () => {
+		gracefulShutdown().finally(() => process.exit(0));
+	});
+	process.on("SIGINT", () => {
+		gracefulShutdown().finally(() => process.exit(0));
+	});
 });

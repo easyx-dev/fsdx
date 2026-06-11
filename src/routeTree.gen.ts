@@ -25,6 +25,7 @@ import { Route as AdminAdminOperationLogsIndexRouteImport } from './routes/admin
 import { Route as AdminAdminNewsIndexRouteImport } from './routes/admin/_admin/news/index'
 import { Route as AdminAdminLogsIndexRouteImport } from './routes/admin/_admin/logs/index'
 import { Route as AdminAdminFilesIndexRouteImport } from './routes/admin/_admin/files/index'
+import { Route as AdminAdminEventsIndexRouteImport } from './routes/admin/_admin/events/index'
 import { Route as AdminAdminDictsIndexRouteImport } from './routes/admin/_admin/dicts/index'
 import { Route as AdminAdminConfigIndexRouteImport } from './routes/admin/_admin/config/index'
 import { Route as ApiDownloadLogIdRouteImport } from './routes/api/download/log.$id'
@@ -32,10 +33,13 @@ import { Route as ApiDownloadFileIdRouteImport } from './routes/api/download/fil
 import { Route as AdminAdminTranslationsUiRouteImport } from './routes/admin/_admin/translations/ui'
 import { Route as AdminAdminTranslationsContentRouteImport } from './routes/admin/_admin/translations/content'
 import { Route as AdminAdminNewsCreateRouteImport } from './routes/admin/_admin/news/create'
+import { Route as AdminAdminEventsAnalyticsRouteImport } from './routes/admin/_admin/events/analytics'
 import { Route as AdminAdminDemoEditorRouteImport } from './routes/admin/_admin/demo/editor'
 import { Route as AdminAdminDemoAiRouteImport } from './routes/admin/_admin/demo/ai'
 import { Route as AdminAdminUsersClientsIndexRouteImport } from './routes/admin/_admin/users/clients/index'
 import { Route as AdminAdminUsersAdminsIndexRouteImport } from './routes/admin/_admin/users/admins/index'
+import { Route as AdminAdminEventsPresetPropertiesIndexRouteImport } from './routes/admin/_admin/events/preset-properties/index'
+import { Route as AdminAdminEventsPresetEventsIndexRouteImport } from './routes/admin/_admin/events/preset-events/index'
 import { Route as AdminAdminNewsIdEditRouteImport } from './routes/admin/_admin/news/$id/edit'
 
 const RegisterRoute = RegisterRouteImport.update({
@@ -118,6 +122,11 @@ const AdminAdminFilesIndexRoute = AdminAdminFilesIndexRouteImport.update({
   path: '/files/',
   getParentRoute: () => AdminAdminRoute,
 } as any)
+const AdminAdminEventsIndexRoute = AdminAdminEventsIndexRouteImport.update({
+  id: '/events/',
+  path: '/events/',
+  getParentRoute: () => AdminAdminRoute,
+} as any)
 const AdminAdminDictsIndexRoute = AdminAdminDictsIndexRouteImport.update({
   id: '/dicts/',
   path: '/dicts/',
@@ -155,6 +164,12 @@ const AdminAdminNewsCreateRoute = AdminAdminNewsCreateRouteImport.update({
   path: '/news/create',
   getParentRoute: () => AdminAdminRoute,
 } as any)
+const AdminAdminEventsAnalyticsRoute =
+  AdminAdminEventsAnalyticsRouteImport.update({
+    id: '/events/analytics',
+    path: '/events/analytics',
+    getParentRoute: () => AdminAdminRoute,
+  } as any)
 const AdminAdminDemoEditorRoute = AdminAdminDemoEditorRouteImport.update({
   id: '/demo/editor',
   path: '/demo/editor',
@@ -177,6 +192,18 @@ const AdminAdminUsersAdminsIndexRoute =
     path: '/users/admins/',
     getParentRoute: () => AdminAdminRoute,
   } as any)
+const AdminAdminEventsPresetPropertiesIndexRoute =
+  AdminAdminEventsPresetPropertiesIndexRouteImport.update({
+    id: '/events/preset-properties/',
+    path: '/events/preset-properties/',
+    getParentRoute: () => AdminAdminRoute,
+  } as any)
+const AdminAdminEventsPresetEventsIndexRoute =
+  AdminAdminEventsPresetEventsIndexRouteImport.update({
+    id: '/events/preset-events/',
+    path: '/events/preset-events/',
+    getParentRoute: () => AdminAdminRoute,
+  } as any)
 const AdminAdminNewsIdEditRoute = AdminAdminNewsIdEditRouteImport.update({
   id: '/news/$id/edit',
   path: '/news/$id/edit',
@@ -196,6 +223,7 @@ export interface FileRoutesByFullPath {
   '/admin/': typeof AdminAdminIndexRoute
   '/admin/demo/ai': typeof AdminAdminDemoAiRoute
   '/admin/demo/editor': typeof AdminAdminDemoEditorRoute
+  '/admin/events/analytics': typeof AdminAdminEventsAnalyticsRoute
   '/admin/news/create': typeof AdminAdminNewsCreateRoute
   '/admin/translations/content': typeof AdminAdminTranslationsContentRoute
   '/admin/translations/ui': typeof AdminAdminTranslationsUiRoute
@@ -203,12 +231,15 @@ export interface FileRoutesByFullPath {
   '/api/download/log/$id': typeof ApiDownloadLogIdRoute
   '/admin/config/': typeof AdminAdminConfigIndexRoute
   '/admin/dicts/': typeof AdminAdminDictsIndexRoute
+  '/admin/events/': typeof AdminAdminEventsIndexRoute
   '/admin/files/': typeof AdminAdminFilesIndexRoute
   '/admin/logs/': typeof AdminAdminLogsIndexRoute
   '/admin/news/': typeof AdminAdminNewsIndexRoute
   '/admin/operation-logs/': typeof AdminAdminOperationLogsIndexRoute
   '/admin/roles/': typeof AdminAdminRolesIndexRoute
   '/admin/news/$id/edit': typeof AdminAdminNewsIdEditRoute
+  '/admin/events/preset-events/': typeof AdminAdminEventsPresetEventsIndexRoute
+  '/admin/events/preset-properties/': typeof AdminAdminEventsPresetPropertiesIndexRoute
   '/admin/users/admins/': typeof AdminAdminUsersAdminsIndexRoute
   '/admin/users/clients/': typeof AdminAdminUsersClientsIndexRoute
 }
@@ -224,6 +255,7 @@ export interface FileRoutesByTo {
   '/news': typeof NewsIndexRoute
   '/admin/demo/ai': typeof AdminAdminDemoAiRoute
   '/admin/demo/editor': typeof AdminAdminDemoEditorRoute
+  '/admin/events/analytics': typeof AdminAdminEventsAnalyticsRoute
   '/admin/news/create': typeof AdminAdminNewsCreateRoute
   '/admin/translations/content': typeof AdminAdminTranslationsContentRoute
   '/admin/translations/ui': typeof AdminAdminTranslationsUiRoute
@@ -231,12 +263,15 @@ export interface FileRoutesByTo {
   '/api/download/log/$id': typeof ApiDownloadLogIdRoute
   '/admin/config': typeof AdminAdminConfigIndexRoute
   '/admin/dicts': typeof AdminAdminDictsIndexRoute
+  '/admin/events': typeof AdminAdminEventsIndexRoute
   '/admin/files': typeof AdminAdminFilesIndexRoute
   '/admin/logs': typeof AdminAdminLogsIndexRoute
   '/admin/news': typeof AdminAdminNewsIndexRoute
   '/admin/operation-logs': typeof AdminAdminOperationLogsIndexRoute
   '/admin/roles': typeof AdminAdminRolesIndexRoute
   '/admin/news/$id/edit': typeof AdminAdminNewsIdEditRoute
+  '/admin/events/preset-events': typeof AdminAdminEventsPresetEventsIndexRoute
+  '/admin/events/preset-properties': typeof AdminAdminEventsPresetPropertiesIndexRoute
   '/admin/users/admins': typeof AdminAdminUsersAdminsIndexRoute
   '/admin/users/clients': typeof AdminAdminUsersClientsIndexRoute
 }
@@ -255,6 +290,7 @@ export interface FileRoutesById {
   '/admin/_admin/': typeof AdminAdminIndexRoute
   '/admin/_admin/demo/ai': typeof AdminAdminDemoAiRoute
   '/admin/_admin/demo/editor': typeof AdminAdminDemoEditorRoute
+  '/admin/_admin/events/analytics': typeof AdminAdminEventsAnalyticsRoute
   '/admin/_admin/news/create': typeof AdminAdminNewsCreateRoute
   '/admin/_admin/translations/content': typeof AdminAdminTranslationsContentRoute
   '/admin/_admin/translations/ui': typeof AdminAdminTranslationsUiRoute
@@ -262,12 +298,15 @@ export interface FileRoutesById {
   '/api/download/log/$id': typeof ApiDownloadLogIdRoute
   '/admin/_admin/config/': typeof AdminAdminConfigIndexRoute
   '/admin/_admin/dicts/': typeof AdminAdminDictsIndexRoute
+  '/admin/_admin/events/': typeof AdminAdminEventsIndexRoute
   '/admin/_admin/files/': typeof AdminAdminFilesIndexRoute
   '/admin/_admin/logs/': typeof AdminAdminLogsIndexRoute
   '/admin/_admin/news/': typeof AdminAdminNewsIndexRoute
   '/admin/_admin/operation-logs/': typeof AdminAdminOperationLogsIndexRoute
   '/admin/_admin/roles/': typeof AdminAdminRolesIndexRoute
   '/admin/_admin/news/$id/edit': typeof AdminAdminNewsIdEditRoute
+  '/admin/_admin/events/preset-events/': typeof AdminAdminEventsPresetEventsIndexRoute
+  '/admin/_admin/events/preset-properties/': typeof AdminAdminEventsPresetPropertiesIndexRoute
   '/admin/_admin/users/admins/': typeof AdminAdminUsersAdminsIndexRoute
   '/admin/_admin/users/clients/': typeof AdminAdminUsersClientsIndexRoute
 }
@@ -286,6 +325,7 @@ export interface FileRouteTypes {
     | '/admin/'
     | '/admin/demo/ai'
     | '/admin/demo/editor'
+    | '/admin/events/analytics'
     | '/admin/news/create'
     | '/admin/translations/content'
     | '/admin/translations/ui'
@@ -293,12 +333,15 @@ export interface FileRouteTypes {
     | '/api/download/log/$id'
     | '/admin/config/'
     | '/admin/dicts/'
+    | '/admin/events/'
     | '/admin/files/'
     | '/admin/logs/'
     | '/admin/news/'
     | '/admin/operation-logs/'
     | '/admin/roles/'
     | '/admin/news/$id/edit'
+    | '/admin/events/preset-events/'
+    | '/admin/events/preset-properties/'
     | '/admin/users/admins/'
     | '/admin/users/clients/'
   fileRoutesByTo: FileRoutesByTo
@@ -314,6 +357,7 @@ export interface FileRouteTypes {
     | '/news'
     | '/admin/demo/ai'
     | '/admin/demo/editor'
+    | '/admin/events/analytics'
     | '/admin/news/create'
     | '/admin/translations/content'
     | '/admin/translations/ui'
@@ -321,12 +365,15 @@ export interface FileRouteTypes {
     | '/api/download/log/$id'
     | '/admin/config'
     | '/admin/dicts'
+    | '/admin/events'
     | '/admin/files'
     | '/admin/logs'
     | '/admin/news'
     | '/admin/operation-logs'
     | '/admin/roles'
     | '/admin/news/$id/edit'
+    | '/admin/events/preset-events'
+    | '/admin/events/preset-properties'
     | '/admin/users/admins'
     | '/admin/users/clients'
   id:
@@ -344,6 +391,7 @@ export interface FileRouteTypes {
     | '/admin/_admin/'
     | '/admin/_admin/demo/ai'
     | '/admin/_admin/demo/editor'
+    | '/admin/_admin/events/analytics'
     | '/admin/_admin/news/create'
     | '/admin/_admin/translations/content'
     | '/admin/_admin/translations/ui'
@@ -351,12 +399,15 @@ export interface FileRouteTypes {
     | '/api/download/log/$id'
     | '/admin/_admin/config/'
     | '/admin/_admin/dicts/'
+    | '/admin/_admin/events/'
     | '/admin/_admin/files/'
     | '/admin/_admin/logs/'
     | '/admin/_admin/news/'
     | '/admin/_admin/operation-logs/'
     | '/admin/_admin/roles/'
     | '/admin/_admin/news/$id/edit'
+    | '/admin/_admin/events/preset-events/'
+    | '/admin/_admin/events/preset-properties/'
     | '/admin/_admin/users/admins/'
     | '/admin/_admin/users/clients/'
   fileRoutesById: FileRoutesById
@@ -487,6 +538,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminAdminFilesIndexRouteImport
       parentRoute: typeof AdminAdminRoute
     }
+    '/admin/_admin/events/': {
+      id: '/admin/_admin/events/'
+      path: '/events'
+      fullPath: '/admin/events/'
+      preLoaderRoute: typeof AdminAdminEventsIndexRouteImport
+      parentRoute: typeof AdminAdminRoute
+    }
     '/admin/_admin/dicts/': {
       id: '/admin/_admin/dicts/'
       path: '/dicts'
@@ -536,6 +594,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminAdminNewsCreateRouteImport
       parentRoute: typeof AdminAdminRoute
     }
+    '/admin/_admin/events/analytics': {
+      id: '/admin/_admin/events/analytics'
+      path: '/events/analytics'
+      fullPath: '/admin/events/analytics'
+      preLoaderRoute: typeof AdminAdminEventsAnalyticsRouteImport
+      parentRoute: typeof AdminAdminRoute
+    }
     '/admin/_admin/demo/editor': {
       id: '/admin/_admin/demo/editor'
       path: '/demo/editor'
@@ -564,6 +629,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminAdminUsersAdminsIndexRouteImport
       parentRoute: typeof AdminAdminRoute
     }
+    '/admin/_admin/events/preset-properties/': {
+      id: '/admin/_admin/events/preset-properties/'
+      path: '/events/preset-properties'
+      fullPath: '/admin/events/preset-properties/'
+      preLoaderRoute: typeof AdminAdminEventsPresetPropertiesIndexRouteImport
+      parentRoute: typeof AdminAdminRoute
+    }
+    '/admin/_admin/events/preset-events/': {
+      id: '/admin/_admin/events/preset-events/'
+      path: '/events/preset-events'
+      fullPath: '/admin/events/preset-events/'
+      preLoaderRoute: typeof AdminAdminEventsPresetEventsIndexRouteImport
+      parentRoute: typeof AdminAdminRoute
+    }
     '/admin/_admin/news/$id/edit': {
       id: '/admin/_admin/news/$id/edit'
       path: '/news/$id/edit'
@@ -578,17 +657,21 @@ interface AdminAdminRouteChildren {
   AdminAdminIndexRoute: typeof AdminAdminIndexRoute
   AdminAdminDemoAiRoute: typeof AdminAdminDemoAiRoute
   AdminAdminDemoEditorRoute: typeof AdminAdminDemoEditorRoute
+  AdminAdminEventsAnalyticsRoute: typeof AdminAdminEventsAnalyticsRoute
   AdminAdminNewsCreateRoute: typeof AdminAdminNewsCreateRoute
   AdminAdminTranslationsContentRoute: typeof AdminAdminTranslationsContentRoute
   AdminAdminTranslationsUiRoute: typeof AdminAdminTranslationsUiRoute
   AdminAdminConfigIndexRoute: typeof AdminAdminConfigIndexRoute
   AdminAdminDictsIndexRoute: typeof AdminAdminDictsIndexRoute
+  AdminAdminEventsIndexRoute: typeof AdminAdminEventsIndexRoute
   AdminAdminFilesIndexRoute: typeof AdminAdminFilesIndexRoute
   AdminAdminLogsIndexRoute: typeof AdminAdminLogsIndexRoute
   AdminAdminNewsIndexRoute: typeof AdminAdminNewsIndexRoute
   AdminAdminOperationLogsIndexRoute: typeof AdminAdminOperationLogsIndexRoute
   AdminAdminRolesIndexRoute: typeof AdminAdminRolesIndexRoute
   AdminAdminNewsIdEditRoute: typeof AdminAdminNewsIdEditRoute
+  AdminAdminEventsPresetEventsIndexRoute: typeof AdminAdminEventsPresetEventsIndexRoute
+  AdminAdminEventsPresetPropertiesIndexRoute: typeof AdminAdminEventsPresetPropertiesIndexRoute
   AdminAdminUsersAdminsIndexRoute: typeof AdminAdminUsersAdminsIndexRoute
   AdminAdminUsersClientsIndexRoute: typeof AdminAdminUsersClientsIndexRoute
 }
@@ -597,17 +680,23 @@ const AdminAdminRouteChildren: AdminAdminRouteChildren = {
   AdminAdminIndexRoute: AdminAdminIndexRoute,
   AdminAdminDemoAiRoute: AdminAdminDemoAiRoute,
   AdminAdminDemoEditorRoute: AdminAdminDemoEditorRoute,
+  AdminAdminEventsAnalyticsRoute: AdminAdminEventsAnalyticsRoute,
   AdminAdminNewsCreateRoute: AdminAdminNewsCreateRoute,
   AdminAdminTranslationsContentRoute: AdminAdminTranslationsContentRoute,
   AdminAdminTranslationsUiRoute: AdminAdminTranslationsUiRoute,
   AdminAdminConfigIndexRoute: AdminAdminConfigIndexRoute,
   AdminAdminDictsIndexRoute: AdminAdminDictsIndexRoute,
+  AdminAdminEventsIndexRoute: AdminAdminEventsIndexRoute,
   AdminAdminFilesIndexRoute: AdminAdminFilesIndexRoute,
   AdminAdminLogsIndexRoute: AdminAdminLogsIndexRoute,
   AdminAdminNewsIndexRoute: AdminAdminNewsIndexRoute,
   AdminAdminOperationLogsIndexRoute: AdminAdminOperationLogsIndexRoute,
   AdminAdminRolesIndexRoute: AdminAdminRolesIndexRoute,
   AdminAdminNewsIdEditRoute: AdminAdminNewsIdEditRoute,
+  AdminAdminEventsPresetEventsIndexRoute:
+    AdminAdminEventsPresetEventsIndexRoute,
+  AdminAdminEventsPresetPropertiesIndexRoute:
+    AdminAdminEventsPresetPropertiesIndexRoute,
   AdminAdminUsersAdminsIndexRoute: AdminAdminUsersAdminsIndexRoute,
   AdminAdminUsersClientsIndexRoute: AdminAdminUsersClientsIndexRoute,
 }

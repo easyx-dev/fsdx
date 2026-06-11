@@ -3,9 +3,15 @@
  */
 
 import { ClientOnly, HeadContent, Scripts } from "@tanstack/react-router";
+import { useEffect } from "react";
 import Footer from "#/components/client/Footer";
 import Header from "#/components/client/Header";
 import { useGlobalStore } from "#/lib/global-store/global-store";
+import {
+	startRouteTracking,
+	stopRouteTracking,
+	init as trackInit,
+} from "#/lib/track/track";
 import adminGlobalCss from "#/styles/admin.global.css?url";
 import ssrGlobalCss from "#/styles/ssr.global.css?url";
 import { AdminProvider } from "./admin/AdminProvider";
@@ -19,6 +25,16 @@ interface SSRRootDocumentProps {
 /** 前台路由：SSR 渲染 + 国际化 Provider */
 export function SSRRootDocument({ children }: SSRRootDocumentProps) {
 	const { locale } = useGlobalStore();
+
+	// 客户端埋点追踪 SDK 初始化
+	useEffect(() => {
+		trackInit({ autoPageView: true });
+		startRouteTracking();
+		return () => {
+			stopRouteTracking();
+		};
+	}, []);
+
 	return (
 		<html lang={locale} suppressHydrationWarning>
 			<head>

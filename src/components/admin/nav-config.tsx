@@ -3,6 +3,7 @@
  */
 import {
 	AppstoreOutlined,
+	BarChartOutlined,
 	BookOutlined,
 	DashboardOutlined,
 	ExperimentOutlined,
@@ -10,10 +11,13 @@ import {
 	FolderOpenOutlined,
 	GlobalOutlined,
 	HistoryOutlined,
+	LineChartOutlined,
 	ReadOutlined,
 	RobotOutlined,
 	SafetyOutlined,
 	SettingOutlined,
+	StockOutlined,
+	TableOutlined,
 	TeamOutlined,
 } from "@ant-design/icons";
 import type { ReactNode } from "react";
@@ -98,6 +102,31 @@ export const NAV_GROUPS: NavGroup[] = [
 				key: "/admin/translations/content",
 				label: "实体翻译",
 				icon: <GlobalOutlined />,
+			},
+		],
+	},
+	{
+		label: "埋点分析",
+		items: [
+			{
+				key: "/admin/events",
+				label: "事件查询",
+				icon: <BarChartOutlined />,
+			},
+			{
+				key: "/admin/events/analytics",
+				label: "事件分析",
+				icon: <LineChartOutlined />,
+			},
+			{
+				key: "/admin/events/preset-events",
+				label: "预设事件",
+				icon: <TableOutlined />,
+			},
+			{
+				key: "/admin/events/preset-properties",
+				label: "预设属性",
+				icon: <StockOutlined />,
 			},
 		],
 	},

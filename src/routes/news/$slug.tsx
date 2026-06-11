@@ -3,7 +3,7 @@
  */
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
-import DOMPurify from "dompurify";
+import DOMPurify from "isomorphic-dompurify";
 import { ArrowLeft, ChevronRight, Home } from "lucide-react";
 import { z } from "zod";
 import { Button } from "#/components/ui/button";
