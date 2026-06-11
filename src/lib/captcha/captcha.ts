@@ -1,5 +1,5 @@
 /**
- * 图片验证码生成器（移植自 svg-captcha-fixed）
+ * 图片验证码生成器
  * 基于 opentype.js 将字体字形转为 SVG path，实现路径级随机扭曲
  */
 
@@ -44,15 +44,11 @@ export interface MathExprOptions extends CaptchaOptions {
 	mathOperator?: "+" | "-" | "+-";
 }
 
-// ---- 重导出 ----
-
 export { options };
-
-export { captchaText as randomText };
 
 // ---- 内部工具 ----
 
-/** 生成贝塞尔曲线干扰路径（参考 svg-captcha-fixed 的 getLineNoise） */
+/** 生成贝塞尔曲线干扰路径 */
 function getLineNoise(
 	width: number,
 	height: number,
@@ -80,7 +76,7 @@ function getLineNoise(
 	return noiseLines;
 }
 
-/** 将文本转为多个 SVG path（参考 svg-captcha-fixed 的 getText） */
+/** 将文本转为多个 SVG path */
 function getText(
 	text: string,
 	width: number,
@@ -114,8 +110,7 @@ function getText(
 // ---- 核心 API ----
 
 /**
- * 为指定文本生成验证码 SVG（参考 svg-captcha-fixed 的 createCaptcha 默认导出）
- *
+ * 为指定文本生成验证码 SVG
  * @param text - 要渲染的验证码文本，不传则随机生成
  * @param userOptions - 生成选项
  * @returns SVG 字符串
@@ -136,20 +131,14 @@ function createCaptcha(text?: string, userOptions?: CaptchaOptions): string {
 	return `<svg xmlns="http://www.w3.org/2000/svg" width="${opts.width}" height="${opts.height}" viewBox="0,0,${opts.width},${opts.height}">${bgRect}${paths.join("")}</svg>`;
 }
 
-/**
- * 生成图片验证码（随机文本 + SVG）
- * 参考 svg-captcha-fixed 的 create
- */
+/** 生成图片验证码（随机文本 + SVG） */
 export function create(userOptions?: CaptchaOptions): CaptchaResult {
 	const text = captchaText(userOptions);
 	const data = createCaptcha(text, userOptions);
 	return { text, data };
 }
 
-/**
- * 生成数学表达式验证码
- * 参考 svg-captcha-fixed 的 createMathExpr
- */
+/** 生成数学表达式验证码 */
 export function createMathExpr(userOptions?: MathExprOptions): CaptchaResult {
 	const expr = mathExpr(
 		userOptions?.mathMin,
@@ -159,6 +148,3 @@ export function createMathExpr(userOptions?: MathExprOptions): CaptchaResult {
 	const data = createCaptcha(expr.equation, userOptions);
 	return { text: expr.text, data };
 }
-
-// 默认导出：兼容 svg-captcha 的 createCaptcha(text, options) 用法
-export default createCaptcha;

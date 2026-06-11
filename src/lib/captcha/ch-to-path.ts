@@ -1,5 +1,5 @@
 /**
- * 字符 → SVG path data 转换 + 路径扭曲（对应 svg-captcha-fixed 的 ch-to-path.js）
+ * 字符 → SVG path data 转换 + 路径扭曲
  */
 import { font, options } from "./option-manager";
 
@@ -81,7 +81,6 @@ function float(min: number, max: number): number {
 
 /**
  * 随机化路径节点：在连续直线间插入断点，拆分贝塞尔曲线
- * 参考 svg-captcha-fixed 的 randomizePathNodes
  */
 function randomizePathNodes(
 	commands: PathCmd[],
@@ -166,7 +165,6 @@ function randomizePathNodes(
 
 /**
  * 将单个字符转为 SVG path data 字符串
- * 参考 svg-captcha-fixed 的 ch-to-path 主导出函数
  */
 export default function chToPath(text: string, opts: ChToPathOptions): string {
 	const ch = text[0];

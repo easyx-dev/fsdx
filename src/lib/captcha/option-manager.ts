@@ -1,5 +1,5 @@
 /**
- * 选项管理 + 字体加载（对应 svg-captcha-fixed 的 option-manager.js）
+ * 选项管理 + 字体加载
  */
 import { createRequire } from "node:module";
 import type { Font } from "opentype.js";

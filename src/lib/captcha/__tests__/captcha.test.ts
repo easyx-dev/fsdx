@@ -3,7 +3,8 @@
  */
 
 import { describe, expect, it } from "vitest";
-import { create, createMathExpr, randomText } from "#/lib/captcha/captcha";
+import { create, createMathExpr } from "#/lib/captcha/captcha";
+import { captchaText } from "#/lib/captcha/random";
 
 describe("create", () => {
 	it("返回 data 和 text", () => {
@@ -120,13 +121,13 @@ describe("createMathExpr", () => {
 	});
 });
 
-describe("randomText", () => {
+describe("captchaText", () => {
 	it("返回指定长度的字符串", () => {
-		expect(randomText(6)).toHaveLength(6);
+		expect(captchaText(6)).toHaveLength(6);
 	});
 
 	it("支持 options 对象", () => {
-		const text = randomText({ size: 3, charPreset: "A" });
+		const text = captchaText({ size: 3, charPreset: "A" });
 		expect(text).toBe("AAA");
 	});
 });

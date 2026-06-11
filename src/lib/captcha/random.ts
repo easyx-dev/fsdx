@@ -1,5 +1,5 @@
 /**
- * 随机生成工具（对应 svg-captcha-fixed 的 random.js）
+ * 随机生成工具
  */
 import { options } from "./option-manager";
 
@@ -48,7 +48,6 @@ function hue2rgb(p: number, q: number, t: number): number {
 
 /**
  * 生成随机 HSL 颜色，根据背景亮度自动调整对比度
- * 参考 svg-captcha-fixed 的 color()
  */
 export function color(bgColor?: string): string {
 	const hue = int(0, 24) / 24;
@@ -90,7 +89,6 @@ export interface CaptchaTextOptions {
 
 /**
  * 生成随机验证码文本
- * 参考 svg-captcha-fixed 的 captchaText()
  */
 export function captchaText(userOptions?: number | CaptchaTextOptions): string {
 	let opts: CaptchaTextOptions;
@@ -124,7 +122,6 @@ export interface MathExprResult {
 
 /**
  * 生成随机数学表达式
- * 参考 svg-captcha-fixed 的 mathExpr()
  */
 export function mathExpr(
 	min?: number,
