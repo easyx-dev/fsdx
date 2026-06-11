@@ -2,11 +2,21 @@
  * 文件管理：服务端辅助函数（上传逻辑、存储、清理、列表、删除）
  */
 import { createHash } from "node:crypto";
-import { and, asc, desc, eq, ilike, isNull, lt, type SQL } from "drizzle-orm";
+import { and, eq, ilike, lt } from "drizzle-orm";
 import { db } from "#/db/index";
 import { file } from "#/db/schema";
 import { logger } from "#/lib/logger/logger";
+import type {
+	PaginatedResult,
+	PaginatedSortParams,
+} from "#/lib/query/query-utils";
 import { storage } from "#/lib/storage/storage";
+import {
+	buildSortClause,
+	executePaginatedQuery,
+	notDeleted,
+	paginationOffset,
+} from "#/server/query/query-utils.server";
 
 export type FileRecord = typeof file.$inferSelect;
 
@@ -20,7 +30,7 @@ export function sha256(buf: Buffer): string {
 /** 读取文件内容（供下载路由使用） */
 export async function readFileContent(id: string) {
 	const record = await db.query.file.findFirst({
-		where: and(eq(file.id, id), isNull(file.deletedAt)),
+		where: and(eq(file.id, id), notDeleted(file.deletedAt)),
 	});
 	if (!record) return null;
 	const buffer = await storage.read(record.path);
@@ -36,7 +46,7 @@ export async function cleanExpiredFiles(): Promise<number> {
 			and(
 				eq(file.status, "temp"),
 				lt(file.expiredAt, new Date()),
-				isNull(file.deletedAt),
+				notDeleted(file.deletedAt),
 			),
 		);
 
@@ -49,7 +59,7 @@ export async function cleanExpiredFiles(): Promise<number> {
 			and(
 				eq(file.status, "temp"),
 				lt(file.expiredAt, new Date()),
-				isNull(file.deletedAt),
+				notDeleted(file.deletedAt),
 			),
 		);
 
@@ -66,33 +76,55 @@ export async function cleanExpiredFiles(): Promise<number> {
 	return expiredFiles.length;
 }
 
-/** 获取文件列表（支持筛选、关键词搜索、排序） */
-export async function getFileList(params?: {
-	status?: string;
-	keyword?: string;
-	sortField?: string;
-	sortOrder?: string;
-}) {
-	const { status, keyword, sortField, sortOrder = "descend" } = params ?? {};
-	const conditions: SQL[] = [isNull(file.deletedAt)];
+/** 获取文件列表（支持分页、筛选、关键词搜索、排序） */
+export async function getFileList(
+	params?: PaginatedSortParams & { status?: string; keyword?: string },
+): Promise<PaginatedResult<FileRecord>> {
+	const {
+		status,
+		keyword,
+		sortField,
+		sortOrder = "descend",
+		page = 1,
+		pageSize = 20,
+	} = params ?? {};
+	const cappedPageSize = Math.min(pageSize, 100);
+	const conditions = [notDeleted(file.deletedAt)];
 	if (status) conditions.push(eq(file.status, status));
 	if (keyword) conditions.push(ilike(file.originalName, `%${keyword}%`));
 
-	const sortColumn = sortField === "size" ? file.size : file.createdAt;
-	const direction = sortOrder === "ascend" ? asc(sortColumn) : desc(sortColumn);
+	const sortOrderClause = buildSortClause(
+		{ size: file.size, createdAt: file.createdAt },
+		sortField,
+		sortOrder,
+		"createdAt",
+	);
 
-	return db
-		.select()
-		.from(file)
-		.where(and(...conditions))
-		.orderBy(direction)
-		.limit(100);
+	const offset = paginationOffset(page, cappedPageSize);
+
+	return executePaginatedQuery(
+		db
+			.select()
+			.from(file)
+			.where(and(...conditions))
+			.orderBy(sortOrderClause)
+			.limit(cappedPageSize)
+			.offset(offset),
+		db.$count(
+			db
+				.select()
+				.from(file)
+				.where(and(...conditions)),
+		),
+		page,
+		cappedPageSize,
+	);
 }
 
 /** 删除文件（软删除） */
 export async function deleteFile(id: string): Promise<boolean> {
 	const existing = await db.query.file.findFirst({
-		where: and(eq(file.id, id), isNull(file.deletedAt)),
+		where: and(eq(file.id, id), notDeleted(file.deletedAt)),
 	});
 	if (!existing) return false;
 

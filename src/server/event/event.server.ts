@@ -2,11 +2,16 @@
  * 埋点事件服务层：预设缓存校验 + 属性值类型和安全校验 + 内存缓冲批量写入 + 分页查询 + 聚合分析 + 预设管理
  * trackEvent 校验事件/属性名和值类型后入缓冲，5 秒或满 100 条时批量 INSERT
  */
-import { and, desc, eq, gte, ilike, lt, or, sql } from "drizzle-orm";
+import { and, eq, gte, ilike, lt, or, sql } from "drizzle-orm";
 import { db } from "#/db/index";
 import { event, presetEvent, presetProperty } from "#/db/schema";
 import { presetEventCache, presetPropertyCache } from "#/lib/cache/cache";
 import { logger } from "#/lib/logger/logger";
+import {
+	buildSortClause,
+	executePaginatedQuery,
+	paginationOffset,
+} from "#/server/query/query-utils.server";
 import type {
 	AnalyticsQuery,
 	AnalyticsResult,
@@ -336,6 +341,8 @@ export async function searchEvents(
 		endDate,
 		page = 1,
 		pageSize = 20,
+		sortField,
+		sortOrder,
 	} = query;
 
 	const conditions = [];
@@ -368,32 +375,32 @@ export async function searchEvents(
 
 	const whereCondition = conditions.length > 0 ? and(...conditions) : undefined;
 
-	const offset = (page - 1) * pageSize;
+	const offset = paginationOffset(page, pageSize);
 
-	const [entries, countResult] = await Promise.all([
+	const sortFieldMap = { time: event.time };
+	const direction = buildSortClause(sortFieldMap, sortField, sortOrder, "time");
+
+	const result = await executePaginatedQuery(
 		db
 			.select()
 			.from(event)
 			.where(whereCondition)
-			.orderBy(desc(event.time))
+			.orderBy(direction)
 			.limit(pageSize)
 			.offset(offset),
-		db
-			.select({ count: sql<number>`count(*)::int` })
-			.from(event)
-			.where(whereCondition),
-	]);
-
-	const total = countResult[0]?.count ?? 0;
+		db.$count(db.select().from(event).where(whereCondition)),
+		page,
+		pageSize,
+	);
 
 	return {
-		entries: entries.map((e) => ({
+		records: result.records.map((e) => ({
 			...e,
 			properties: e.properties as Record<string, any>,
 		})),
-		total,
-		page,
-		pageSize,
+		total: result.total,
+		page: result.page,
+		pageSize: result.pageSize,
 	};
 }
 

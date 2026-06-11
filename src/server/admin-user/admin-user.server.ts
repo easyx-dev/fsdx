@@ -2,9 +2,16 @@
  * 管理员用户管理：CRUD 操作
  */
 import bcrypt from "bcryptjs";
-import { and, eq, ilike, isNull, or } from "drizzle-orm";
+import { and, eq, ilike, or } from "drizzle-orm";
 import { db } from "#/db/index";
 import { adminUser, role } from "#/db/schema";
+import type { PaginatedSortParams } from "#/lib/query/query-utils";
+import {
+	buildSortClause,
+	executePaginatedQuery,
+	notDeleted,
+	paginationOffset,
+} from "#/server/query/query-utils.server";
 
 export type AdminUserRecord = typeof adminUser.$inferSelect;
 
@@ -27,13 +34,21 @@ export interface UpdateAdminUserInput {
 	status?: string;
 }
 
-/** 获取管理员列表（含角色名称，支持关键词搜索） */
-export async function getAdminUserList(
-	page = 1,
-	pageSize = 20,
-	keyword?: string,
-) {
-	const conditions = [isNull(adminUser.deletedAt)];
+/** 管理员列表查询参数 */
+export interface AdminUserListParams extends PaginatedSortParams {
+	keyword?: string;
+}
+
+/** 获取管理员列表（含角色名称，支持关键词搜索和排序） */
+export async function getAdminUserList(params?: AdminUserListParams) {
+	const {
+		keyword,
+		page = 1,
+		pageSize = 20,
+		sortField,
+		sortOrder,
+	} = params ?? {};
+	const conditions = [notDeleted(adminUser.deletedAt)];
 	if (keyword) {
 		conditions.push(
 			or(
@@ -43,43 +58,60 @@ export async function getAdminUserList(
 		);
 	}
 
-	const offset = (page - 1) * pageSize;
-	const rows = await db
-		.select({
-			id: adminUser.id,
-			username: adminUser.username,
-			email: adminUser.email,
-			avatar: adminUser.avatar,
-			roleId: adminUser.roleId,
-			isRoot: adminUser.isRoot,
-			status: adminUser.status,
-			lastLoginAt: adminUser.lastLoginAt,
-			createdAt: adminUser.createdAt,
-			updatedAt: adminUser.updatedAt,
-			deletedAt: adminUser.deletedAt,
-			passwordHash: adminUser.passwordHash,
-			roleName: role.name,
-		})
-		.from(adminUser)
-		.leftJoin(role, eq(adminUser.roleId, role.id))
-		.where(and(...conditions))
-		.orderBy(adminUser.createdAt)
-		.limit(pageSize)
-		.offset(offset);
+	const offset = paginationOffset(page, pageSize);
 
-	const [countResult] = await db
-		.select({ count: db.$count(adminUser) })
-		.from(adminUser)
-		.where(and(...conditions));
-	const total = Number(countResult?.count ?? 0);
+	const sortFieldMap = {
+		createdAt: adminUser.createdAt,
+		updatedAt: adminUser.updatedAt,
+		username: adminUser.username,
+		email: adminUser.email,
+		lastLoginAt: adminUser.lastLoginAt,
+	};
+	const direction = buildSortClause(
+		sortFieldMap,
+		sortField,
+		sortOrder,
+		"createdAt",
+	);
 
-	return { rows, total, page, pageSize };
+	return executePaginatedQuery(
+		db
+			.select({
+				id: adminUser.id,
+				username: adminUser.username,
+				email: adminUser.email,
+				avatar: adminUser.avatar,
+				roleId: adminUser.roleId,
+				isRoot: adminUser.isRoot,
+				status: adminUser.status,
+				lastLoginAt: adminUser.lastLoginAt,
+				createdAt: adminUser.createdAt,
+				updatedAt: adminUser.updatedAt,
+				deletedAt: adminUser.deletedAt,
+				passwordHash: adminUser.passwordHash,
+				roleName: role.name,
+			})
+			.from(adminUser)
+			.leftJoin(role, eq(adminUser.roleId, role.id))
+			.where(and(...conditions))
+			.orderBy(direction)
+			.limit(pageSize)
+			.offset(offset),
+		db.$count(
+			db
+				.select()
+				.from(adminUser)
+				.where(and(...conditions)),
+		),
+		page,
+		pageSize,
+	);
 }
 
 /** 获取单个管理员 */
 export async function getAdminUser(id: string) {
 	return db.query.adminUser.findFirst({
-		where: and(eq(adminUser.id, id), isNull(adminUser.deletedAt)),
+		where: and(eq(adminUser.id, id), notDeleted(adminUser.deletedAt)),
 	});
 }
 
@@ -117,7 +149,7 @@ export async function updateAdminUser(id: string, input: UpdateAdminUserInput) {
 	const [record] = await db
 		.update(adminUser)
 		.set(setData)
-		.where(and(eq(adminUser.id, id), isNull(adminUser.deletedAt)))
+		.where(and(eq(adminUser.id, id), notDeleted(adminUser.deletedAt)))
 		.returning();
 	if (record) {
 	}
@@ -150,7 +182,7 @@ export async function resetAdminPassword(
 	const [record] = await db
 		.update(adminUser)
 		.set({ passwordHash, updatedAt: new Date() })
-		.where(and(eq(adminUser.id, id), isNull(adminUser.deletedAt)))
+		.where(and(eq(adminUser.id, id), notDeleted(adminUser.deletedAt)))
 		.returning();
 	if (record) {
 	}

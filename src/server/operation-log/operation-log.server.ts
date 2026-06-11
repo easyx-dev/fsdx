@@ -2,10 +2,16 @@
  * 操作日志服务层：内存缓冲批量写入 + 分页查询
  * logOperation 为 fire-and-forget 调用，5 秒或满 100 条时批量 INSERT
  */
-import { and, desc, eq, ilike, or, sql } from "drizzle-orm";
+import { and, eq, gte, ilike, lt, or } from "drizzle-orm";
 import { db } from "#/db/index";
 import { operationLog } from "#/db/schema";
 import { logger } from "#/lib/logger/logger";
+import type { PaginatedSortParams } from "#/lib/query/query-utils";
+import {
+	buildSortClause,
+	executePaginatedQuery,
+	paginationOffset,
+} from "#/server/query/query-utils.server";
 
 /** 操作日志输入参数 */
 export interface OperationLogInput {
@@ -20,19 +26,17 @@ export interface OperationLogInput {
 }
 
 /** 操作日志查询参数 */
-export interface OperationLogQuery {
+export interface OperationLogQuery extends PaginatedSortParams {
 	module?: string;
 	action?: string;
 	keyword?: string;
 	startDate?: string;
 	endDate?: string;
-	page?: number;
-	pageSize?: number;
 }
 
 /** 操作日志查询结果 */
 export interface OperationLogQueryResult {
-	entries: (typeof operationLog.$inferSelect)[];
+	records: (typeof operationLog.$inferSelect)[];
 	total: number;
 	page: number;
 	pageSize: number;
@@ -129,6 +133,8 @@ export async function searchOperationLogs(
 		endDate,
 		page = 1,
 		pageSize = 20,
+		sortField,
+		sortOrder,
 	} = query ?? {};
 
 	const conditions = [];
@@ -149,38 +155,41 @@ export async function searchOperationLogs(
 		);
 	}
 	if (startDate) {
-		conditions.push(
-			sql`${operationLog.createdAt} >= ${new Date(startDate).toISOString()}`,
-		);
+		conditions.push(gte(operationLog.createdAt, new Date(startDate)));
 	}
 	if (endDate) {
 		// endDate 应包含当天全天，设为次日 00:00
 		const end = new Date(endDate);
 		end.setDate(end.getDate() + 1);
-		conditions.push(sql`${operationLog.createdAt} < ${end.toISOString()}`);
+		conditions.push(lt(operationLog.createdAt, end));
 	}
 
 	const whereCondition = conditions.length > 0 ? and(...conditions) : undefined;
 
-	const offset = (page - 1) * pageSize;
+	const offset = paginationOffset(page, pageSize);
 
-	const [entries, countResult] = await Promise.all([
+	const sortFieldMap = {
+		createdAt: operationLog.createdAt,
+	};
+	const direction = buildSortClause(
+		sortFieldMap,
+		sortField,
+		sortOrder,
+		"createdAt",
+	);
+
+	return executePaginatedQuery(
 		db
 			.select()
 			.from(operationLog)
 			.where(whereCondition)
-			.orderBy(desc(operationLog.createdAt))
+			.orderBy(direction)
 			.limit(pageSize)
 			.offset(offset),
-		db
-			.select({ count: sql<number>`count(*)::int` })
-			.from(operationLog)
-			.where(whereCondition),
-	]);
-
-	const total = countResult[0]?.count ?? 0;
-
-	return { entries, total, page, pageSize };
+		db.$count(db.select().from(operationLog).where(whereCondition)),
+		page,
+		pageSize,
+	);
 }
 
 /** 获取已有的操作模块列表（供筛选下拉） */

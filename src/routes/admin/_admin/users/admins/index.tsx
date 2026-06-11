@@ -28,9 +28,11 @@ import { DictSelect } from "#/components/admin/DictSelect";
 import { DictTag } from "#/components/admin/DictTag";
 import { ProTable } from "#/components/admin/ProTable";
 import { PERMISSIONS } from "#/lib/permissions/permissions";
+import type { SortOrder } from "#/lib/query/query-utils";
 import { adminPermGuard } from "#/middleware/admin-auth";
 import {
 	type AdminUserListItem,
+	type AdminUserListParams,
 	type CreateAdminUserInput,
 	createAdminUser,
 	deleteAdminUser,
@@ -49,6 +51,8 @@ const listSchema = z.object({
 	page: z.number().optional(),
 	pageSize: z.number().optional(),
 	keyword: z.string().optional(),
+	sortField: z.string().optional(),
+	sortOrder: z.enum(["ascend", "descend"]).optional(),
 });
 
 const getRolesForSelect = createServerFn({ method: "GET" })
@@ -76,9 +80,7 @@ const resetPwdSchema = z.object({
 const getListFn = createServerFn({ method: "GET" })
 	.middleware([adminPermGuard(PERMISSIONS.ADMIN_VIEW)])
 	.inputValidator(listSchema)
-	.handler(async ({ data }) =>
-		getAdminUserList(data.page, data.pageSize, data.keyword),
-	);
+	.handler(async ({ data }) => getAdminUserList(data as AdminUserListParams));
 
 const createFn = createServerFn({ method: "POST" })
 	.middleware([adminPermGuard(PERMISSIONS.ADMIN_CREATE)])
@@ -169,6 +171,8 @@ function AdminsPage() {
 	const [roles] = useState<RoleRecord[]>(initial.roles);
 	const [keyword, setKeyword] = useState("");
 	const [page, setPage] = useState(1);
+	const [sortField, setSortField] = useState<string | undefined>();
+	const [sortOrder, setSortOrder] = useState<SortOrder | undefined>();
 	const [modalOpen, setModalOpen] = useState(false);
 	const [pwdModalOpen, setPwdModalOpen] = useState(false);
 	const [editingUser, setEditingUser] = useState<AdminUserListItem | null>(
@@ -180,13 +184,30 @@ function AdminsPage() {
 
 	const refresh = async (p = page) => {
 		const result = await getListFn({
-			data: { page: p, pageSize: 20, keyword: keyword || undefined },
+			data: {
+				page: p,
+				pageSize: 20,
+				keyword: keyword || undefined,
+				sortField,
+				sortOrder,
+			},
 		});
 		setData(result);
 		setPage(p);
 	};
 
 	const handleSearch = () => refresh(1);
+
+	const handleTableChange = async (
+		_pagination: unknown,
+		_filters: unknown,
+		sorter: unknown,
+	) => {
+		const s = sorter as { field?: string; order?: string };
+		setSortField(s.field);
+		setSortOrder(s.order as SortOrder);
+		await refresh(1);
+	};
 
 	const handleCreate = () => {
 		setEditingUser(null);
@@ -259,13 +280,20 @@ function AdminsPage() {
 	};
 
 	const columns = [
-		{ title: "用户名", dataIndex: "username", key: "username", width: 140 },
+		{
+			title: "用户名",
+			dataIndex: "username",
+			key: "username",
+			width: 140,
+			sorter: true,
+		},
 		{
 			title: "邮箱",
 			dataIndex: "email",
 			key: "email",
 			width: 200,
 			ellipsis: true,
+			sorter: true,
 		},
 		{
 			title: "角色",
@@ -295,6 +323,7 @@ function AdminsPage() {
 			key: "lastLoginAt",
 			width: 185,
 			valueType: "dateTime",
+			sorter: true,
 		},
 		{
 			title: "创建时间",
@@ -302,6 +331,7 @@ function AdminsPage() {
 			key: "createdAt",
 			width: 185,
 			valueType: "dateTime",
+			sorter: true,
 		},
 		{
 			title: "更新时间",
@@ -309,6 +339,7 @@ function AdminsPage() {
 			key: "updatedAt",
 			width: 185,
 			valueType: "dateTime",
+			sorter: true,
 		},
 		{
 			title: "操作",
@@ -373,7 +404,7 @@ function AdminsPage() {
 			</div>
 
 			<ProTable
-				dataSource={data.rows}
+				dataSource={data.records}
 				columns={columns}
 				rowKey="id"
 				locale={{ emptyText: "暂无管理员" }}
@@ -385,6 +416,7 @@ function AdminsPage() {
 					showTotal: (total) => `共 ${total} 条`,
 					onChange: (p) => refresh(p),
 				}}
+				onChange={handleTableChange}
 			/>
 
 			{/* 创建/编辑弹窗 */}

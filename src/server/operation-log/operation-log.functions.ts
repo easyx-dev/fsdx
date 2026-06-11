@@ -18,6 +18,8 @@ const searchOperationLogsSchema = z.object({
 	endDate: z.string().optional(),
 	page: z.number().optional(),
 	pageSize: z.number().optional(),
+	sortField: z.string().optional(),
+	sortOrder: z.enum(["ascend", "descend"]).optional(),
 });
 
 /** JSON 可序列化的递归值类型 */
@@ -45,7 +47,7 @@ export interface OperationLogEntry {
 
 /** SF 可序列化的操作日志查询结果 */
 export interface OperationLogQueryResult {
-	entries: OperationLogEntry[];
+	records: OperationLogEntry[];
 	total: number;
 	page: number;
 	pageSize: number;
@@ -61,7 +63,7 @@ export const searchOperationLogsFn = createServerFn({ method: "GET" })
 			total: result.total,
 			page: result.page,
 			pageSize: result.pageSize,
-			entries: result.entries.map((e) => ({
+			records: result.records.map((e) => ({
 				id: e.id,
 				operatorId: e.operatorId,
 				operatorName: e.operatorName,

@@ -1,7 +1,9 @@
 /**
  * 埋点事件类型定义
  */
+
 import type { presetEvent, presetProperty } from "#/db/schema";
+import type { PaginatedSortParams } from "#/lib/query/query-utils";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type JsonProperties = Record<string, any>;
@@ -17,20 +19,18 @@ export interface TrackEventInput {
 }
 
 /** 事件查询条件 */
-export interface EventQuery {
+export interface EventQuery extends PaginatedSortParams {
 	event?: string;
 	userId?: string;
 	sessionId?: string;
 	keyword?: string;
 	startDate?: string;
 	endDate?: string;
-	page?: number;
-	pageSize?: number;
 }
 
 /** 事件查询结果 */
 export interface EventQueryResult {
-	entries: EventRecord[];
+	records: EventRecord[];
 	total: number;
 	page: number;
 	pageSize: number;

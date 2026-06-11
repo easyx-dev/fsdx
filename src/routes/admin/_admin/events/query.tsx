@@ -20,6 +20,7 @@ import {
 import dayjs from "dayjs";
 import { useState } from "react";
 import { AdminPageContent } from "#/components/admin/AdminPageContent";
+import type { SortOrder } from "#/lib/query/query-utils";
 import {
 	getEventNamesFn,
 	searchEventsFn,
@@ -54,11 +55,20 @@ function EventListPage() {
 		[dayjs.Dayjs, dayjs.Dayjs] | null
 	>(null);
 	const pageSize = 20;
+	const [sortField, setSortField] = useState<string | undefined>();
+	const [sortOrder, setSortOrder] = useState<SortOrder | undefined>();
 
 	/** 核心查询方法：接受明确的 page/pageSize，消除闭包过期问题 */
-	const searchWith = async (p: number, ps: number) => {
+	const searchWith = async (
+		p: number,
+		ps: number,
+		sf?: string,
+		so?: SortOrder,
+	) => {
 		setLoading(true);
 		try {
+			const field = sf !== undefined ? sf : sortField;
+			const order = so !== undefined ? so : sortOrder;
 			const result = await searchEventsFn({
 				data: {
 					event: filterEvent,
@@ -67,6 +77,8 @@ function EventListPage() {
 					endDate: filterDateRange?.[1]?.endOf("day").toISOString(),
 					page: p,
 					pageSize: ps,
+					sortField: field,
+					sortOrder: order,
 				},
 			});
 			setData(result);
@@ -75,6 +87,18 @@ function EventListPage() {
 		} finally {
 			setLoading(false);
 		}
+	};
+
+	/** 表格排序变更 */
+	const handleTableChange = (
+		_pagination: unknown,
+		_filters: unknown,
+		sorter: unknown,
+	) => {
+		const s = sorter as { field?: string; order?: string };
+		setSortField(s.field);
+		setSortOrder(s.order as SortOrder | undefined);
+		searchWith(data.page, pageSize, s.field, s.order as SortOrder | undefined);
 	};
 
 	/** 搜索按钮：重置到第 1 页 */
@@ -96,7 +120,7 @@ function EventListPage() {
 			"触发时间",
 			"接收时间",
 		];
-		const rows = data.entries.map((e: EventRecord) => [
+		const rows = data.records.map((e: EventRecord) => [
 			e.event,
 			e.userId ?? "-",
 			e.sessionId,
@@ -159,6 +183,8 @@ function EventListPage() {
 			dataIndex: "time",
 			key: "time",
 			width: 180,
+			sorter: true,
+			sortOrder: sortField === "time" ? sortOrder : undefined,
 			render: (v: string) => (v ? dayjs(v).format("YYYY-MM-DD HH:mm:ss") : "-"),
 		},
 		{
@@ -179,7 +205,7 @@ function EventListPage() {
 					<Button
 						icon={<DownloadOutlined />}
 						onClick={handleExport}
-						disabled={data.entries.length === 0}
+						disabled={data.records.length === 0}
 					>
 						导出 CSV
 					</Button>
@@ -225,10 +251,11 @@ function EventListPage() {
 
 			<Table
 				columns={columns}
-				dataSource={data.entries}
+				dataSource={data.records}
 				rowKey="id"
 				loading={loading}
 				scroll={{ x: 1100 }}
+				onChange={handleTableChange}
 				locale={{ emptyText: "暂无事件数据" }}
 				pagination={{
 					current: data.page,

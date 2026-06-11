@@ -3,11 +3,18 @@
  * wangEditor 直接存储 HTML，无需服务端渲染转换
  * 国际化数据通过 translateNewsRecord / translateNewsRecords 按需组合获取
  */
-import { and, asc, desc, eq, isNull, ne } from "drizzle-orm";
+import { and, desc, eq, ne } from "drizzle-orm";
 import { db } from "#/db/index";
 import { news } from "#/db/schema";
 import { DEFAULT_LOCALE, type Locale } from "#/lib/i18n/i18n.types";
+import type { PaginatedSortParams } from "#/lib/query/query-utils";
 import { getContentTranslations } from "#/server/i18n/i18n.server";
+import {
+	buildSortClause,
+	executePaginatedQuery,
+	notDeleted,
+	paginationOffset,
+} from "#/server/query/query-utils.server";
 
 export type NewsRecord = typeof news.$inferSelect;
 
@@ -43,7 +50,7 @@ async function ensureUniqueSlug(
 	const MAX_ATTEMPTS = 100;
 
 	while (counter <= MAX_ATTEMPTS) {
-		const conditions = [eq(news.slug, uniqueSlug), isNull(news.deletedAt)];
+		const conditions = [eq(news.slug, uniqueSlug), notDeleted(news.deletedAt)];
 		if (excludeId) conditions.push(ne(news.id, excludeId));
 
 		const existing = await db.query.news.findFirst({
@@ -86,13 +93,11 @@ export async function translateNewsRecord(
 }
 
 /** 获取新闻列表（支持排序） */
-export async function getNewsList(params?: {
-	status?: string;
-	page?: number;
-	pageSize?: number;
-	sortField?: string;
-	sortOrder?: string;
-}) {
+export async function getNewsList(
+	params?: PaginatedSortParams & {
+		status?: string;
+	},
+) {
 	const {
 		status,
 		page = 1,
@@ -100,9 +105,9 @@ export async function getNewsList(params?: {
 		sortField,
 		sortOrder,
 	} = params ?? {};
-	const offset = (page - 1) * pageSize;
+	const offset = paginationOffset(page, pageSize);
 
-	const conditions = [isNull(news.deletedAt)];
+	const conditions = [notDeleted(news.deletedAt)];
 	if (status) conditions.push(eq(news.status, status));
 
 	const whereCondition = and(...conditions);
@@ -114,16 +119,14 @@ export async function getNewsList(params?: {
 		updatedAt: news.updatedAt,
 		sort: news.sort,
 	};
-	const sortCol =
-		sortFieldMap[sortField as keyof typeof sortFieldMap] ?? news.sort;
-	const direction = sortOrder === "ascend" ? asc(sortCol) : desc(sortCol);
+	const direction = buildSortClause(sortFieldMap, sortField, sortOrder, "sort");
 
 	// 默认：置顶优先 → sort DESC → 创建时间 DESC；用户排序时：置顶优先 → 用户选择
 	const orderBy = sortField
 		? [desc(news.isPinned), direction]
 		: [desc(news.isPinned), desc(news.sort), desc(news.createdAt)];
 
-	const [records, total] = await Promise.all([
+	return executePaginatedQuery(
 		db
 			.select()
 			.from(news)
@@ -132,9 +135,9 @@ export async function getNewsList(params?: {
 			.limit(pageSize)
 			.offset(offset),
 		db.$count(db.select().from(news).where(whereCondition)),
-	]);
-
-	return { records, total, page, pageSize };
+		page,
+		pageSize,
+	);
 }
 
 /**
@@ -146,7 +149,7 @@ export async function getNewsBySlug(slug: string): Promise<NewsDetail | null> {
 		where: and(
 			eq(news.slug, slug),
 			eq(news.status, "published"),
-			isNull(news.deletedAt),
+			notDeleted(news.deletedAt),
 		),
 	});
 	if (!record) return null;
@@ -157,7 +160,7 @@ export async function getNewsBySlug(slug: string): Promise<NewsDetail | null> {
 /** 根据 id 获取单条新闻（管理端用） */
 export async function getNewsById(id: string): Promise<NewsRecord | null> {
 	const record = await db.query.news.findFirst({
-		where: and(eq(news.id, id), isNull(news.deletedAt)),
+		where: and(eq(news.id, id), notDeleted(news.deletedAt)),
 	});
 	return record ?? null;
 }
@@ -312,7 +315,7 @@ export async function getAllNewsForExport(): Promise<NewsRecord[]> {
 	return db
 		.select()
 		.from(news)
-		.where(isNull(news.deletedAt))
+		.where(notDeleted(news.deletedAt))
 		.orderBy(desc(news.sort), desc(news.createdAt));
 }
 

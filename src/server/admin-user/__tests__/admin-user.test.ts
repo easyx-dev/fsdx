@@ -8,54 +8,52 @@ vi.mock("#/lib/logger/logger", () => ({
 	logger: { error: vi.fn(), info: vi.fn(), warn: vi.fn() },
 }));
 
-const { mockBcryptHash, mockDb, mockListRows, mockListCount } = vi.hoisted(
-	() => {
-		const mockListRowsFn = vi.fn().mockResolvedValue([]);
-		const mockListCountFn = vi.fn().mockResolvedValue([{ count: "0" }]);
-		const q = () => ({ findFirst: vi.fn() });
+const { mockBcryptHash, mockDb, mockListRows } = vi.hoisted(() => {
+	const mockListRowsFn = vi.fn().mockResolvedValue([]);
+	const mockListCountFn = vi.fn().mockResolvedValue([{ count: "0" }]);
+	const q = () => ({ findFirst: vi.fn() });
 
-		return {
-			mockBcryptHash: vi.fn().mockResolvedValue("$2a$12$hashedpassword"),
-			mockDb: {
-				query: {
-					adminUser: q(),
-					role: q(),
-					clientUser: q(),
-					systemConfig: q(),
-					news: q(),
-					dict: q(),
-					dictItem: q(),
-					file: q(),
-					captchaCode: q(),
-				},
-				$count: vi.fn(),
-				select: vi.fn(() => ({
-					from: vi.fn(() => ({
-						leftJoin: vi.fn(() => ({
-							where: vi.fn(() => ({
-								orderBy: vi.fn(() => ({
-									limit: vi.fn(() => ({
-										offset: mockListRowsFn,
-									})),
+	return {
+		mockBcryptHash: vi.fn().mockResolvedValue("$2a$12$hashedpassword"),
+		mockDb: {
+			query: {
+				adminUser: q(),
+				role: q(),
+				clientUser: q(),
+				systemConfig: q(),
+				news: q(),
+				dict: q(),
+				dictItem: q(),
+				file: q(),
+				captchaCode: q(),
+			},
+			$count: vi.fn(),
+			select: vi.fn(() => ({
+				from: vi.fn(() => ({
+					leftJoin: vi.fn(() => ({
+						where: vi.fn(() => ({
+							orderBy: vi.fn(() => ({
+								limit: vi.fn(() => ({
+									offset: mockListRowsFn,
 								})),
 							})),
 						})),
-						where: mockListCountFn,
 					})),
+					where: mockListCountFn,
 				})),
-				insert: vi.fn(() => ({
-					values: vi.fn(() => ({ returning: vi.fn() })),
-				})),
-				update: vi.fn(() => ({
-					set: vi.fn(() => ({ where: vi.fn(() => ({ returning: vi.fn() })) })),
-				})),
-				delete: vi.fn(() => ({ where: vi.fn() })),
-			},
-			mockListRows: mockListRowsFn,
-			mockListCount: mockListCountFn,
-		};
-	},
-);
+			})),
+			insert: vi.fn(() => ({
+				values: vi.fn(() => ({ returning: vi.fn() })),
+			})),
+			update: vi.fn(() => ({
+				set: vi.fn(() => ({ where: vi.fn(() => ({ returning: vi.fn() })) })),
+			})),
+			delete: vi.fn(() => ({ where: vi.fn() })),
+		},
+		mockListRows: mockListRowsFn,
+		mockListCount: mockListCountFn,
+	};
+});
 
 vi.mock("bcryptjs", () => ({
 	default: { hash: mockBcryptHash },
@@ -93,11 +91,11 @@ describe("getAdminUserList", () => {
 			},
 		];
 		mockListRows.mockResolvedValue(mockUsers);
-		mockListCount.mockResolvedValue([{ count: "5" }]);
+		mockDb.$count.mockResolvedValue(5);
 
 		const result = await getAdminUserList();
 
-		expect(result.rows).toEqual(mockUsers);
+		expect(result.records).toEqual(mockUsers);
 		expect(result.total).toBe(5);
 		expect(result.page).toBe(1);
 		expect(result.pageSize).toBe(20);
@@ -105,9 +103,9 @@ describe("getAdminUserList", () => {
 
 	it("分页参数正确传递", async () => {
 		mockListRows.mockResolvedValue([]);
-		mockListCount.mockResolvedValue([{ count: "0" }]);
+		mockDb.$count.mockResolvedValue(0);
 
-		const result = await getAdminUserList(3, 10);
+		const result = await getAdminUserList({ page: 3, pageSize: 10 });
 
 		expect(result.page).toBe(3);
 		expect(result.pageSize).toBe(10);
@@ -115,11 +113,15 @@ describe("getAdminUserList", () => {
 
 	it("支持关键词搜索", async () => {
 		mockListRows.mockResolvedValue([]);
-		mockListCount.mockResolvedValue([{ count: "0" }]);
+		mockDb.$count.mockResolvedValue(0);
 
-		const result = await getAdminUserList(1, 20, "admin");
+		const result = await getAdminUserList({
+			page: 1,
+			pageSize: 20,
+			keyword: "admin",
+		});
 
-		expect(result.rows).toEqual([]);
+		expect(result.records).toEqual([]);
 		expect(mockDb.select).toHaveBeenCalled();
 	});
 });

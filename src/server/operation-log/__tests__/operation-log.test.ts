@@ -95,28 +95,11 @@ describe("searchOperationLogs", () => {
 				})),
 			})),
 		} as unknown as ReturnType<typeof mockDb.select>);
-
-		const mockCount = [{ count: 0 }];
-		vi.mocked(mockDb.select).mockReturnValueOnce({
-			from: vi.fn(() => ({
-				where: vi.fn(() => ({
-					orderBy: vi.fn(() => ({
-						limit: vi.fn(() => ({
-							offset: vi.fn().mockResolvedValue([]),
-						})),
-					})),
-				})),
-			})),
-		} as unknown as ReturnType<typeof mockDb.select>);
-		vi.mocked(mockDb.select).mockReturnValueOnce({
-			from: vi.fn(() => ({
-				where: vi.fn().mockResolvedValue(mockCount),
-			})),
-		} as unknown as ReturnType<typeof mockDb.select>);
+		vi.mocked(mockDb.$count).mockResolvedValue(0);
 
 		const result = await searchOperationLogs({});
 		expect(result).toEqual({
-			entries: [],
+			records: [],
 			total: 0,
 			page: 1,
 			pageSize: 20,
@@ -137,7 +120,7 @@ describe("searchOperationLogs", () => {
 			createdAt: new Date(),
 		};
 
-		const mockSelect = vi.fn().mockReturnValue({
+		vi.mocked(mockDb.select).mockReturnValue({
 			from: vi.fn(() => ({
 				where: vi.fn(() => ({
 					orderBy: vi.fn(() => ({
@@ -147,23 +130,8 @@ describe("searchOperationLogs", () => {
 					})),
 				})),
 			})),
-		});
-
-		vi.mocked(mockDb.select).mockImplementation(
-			mockSelect as unknown as typeof mockDb.select,
-		);
-		// Override for count query
-		vi.mocked(mockDb.select).mockImplementationOnce(
-			mockSelect as unknown as typeof mockDb.select,
-		);
-		vi.mocked(mockDb.select).mockImplementationOnce(
-			() =>
-				({
-					from: vi.fn(() => ({
-						where: vi.fn().mockResolvedValue([{ count: 1 }]),
-					})),
-				}) as unknown as ReturnType<typeof mockDb.select>,
-		);
+		} as unknown as ReturnType<typeof mockDb.select>);
+		vi.mocked(mockDb.$count).mockResolvedValue(1);
 
 		const result = await searchOperationLogs({
 			module: "news",
@@ -172,9 +140,9 @@ describe("searchOperationLogs", () => {
 			pageSize: 10,
 		});
 
-		expect(result.entries).toHaveLength(1);
-		expect(result.entries[0].module).toBe("news");
-		expect(result.entries[0].action).toBe("create");
+		expect(result.records).toHaveLength(1);
+		expect(result.records[0].module).toBe("news");
+		expect(result.records[0].action).toBe("create");
 	});
 });
 

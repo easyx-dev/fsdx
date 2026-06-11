@@ -34,6 +34,8 @@ const newsSlugSchema = z.object({
 const newsListSchema = z.object({
 	status: z.string().optional(),
 	page: z.number().optional(),
+	sortField: z.string().optional(),
+	sortOrder: z.enum(["ascend", "descend"]).optional(),
 });
 
 const newsIdSchema = z.object({
@@ -82,6 +84,11 @@ const configCreateSchema = z.object({
 
 const fileListSchema = z.object({
 	status: z.string().optional(),
+	keyword: z.string().optional(),
+	sortField: z.string().optional(),
+	sortOrder: z.enum(["ascend", "descend"]).optional(),
+	page: z.number().optional(),
+	pageSize: z.number().optional(),
 });
 
 // ── 系统初始化 ──

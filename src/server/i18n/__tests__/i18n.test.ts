@@ -32,7 +32,11 @@ const { mockDb } = vi.hoisted(() => {
 	const q = () => ({ findFirst: vi.fn(), findMany: vi.fn() });
 	const selectObj = {
 		from: vi.fn(() => ({
-			where: vi.fn(() => ({ limit: vi.fn(() => ({ offset: vi.fn() })) })),
+			where: vi.fn(() => ({
+				orderBy: vi.fn(() => ({
+					limit: vi.fn(() => ({ offset: vi.fn() })),
+				})),
+			})),
 		})),
 	};
 	return {
@@ -97,8 +101,10 @@ describe("listUITranslations", () => {
 		mockDb.select.mockReturnValue({
 			from: vi.fn(() => ({
 				where: vi.fn(() => ({
-					limit: vi.fn(() => ({
-						offset: vi.fn().mockResolvedValue([uiRecord]),
+					orderBy: vi.fn(() => ({
+						limit: vi.fn(() => ({
+							offset: vi.fn().mockResolvedValue([uiRecord]),
+						})),
 					})),
 				})),
 			})),
@@ -165,8 +171,10 @@ describe("listContentTranslations", () => {
 		mockDb.select.mockReturnValue({
 			from: vi.fn(() => ({
 				where: vi.fn(() => ({
-					limit: vi.fn(() => ({
-						offset: vi.fn().mockResolvedValue([ctRecord]),
+					orderBy: vi.fn(() => ({
+						limit: vi.fn(() => ({
+							offset: vi.fn().mockResolvedValue([ctRecord]),
+						})),
 					})),
 				})),
 			})),

@@ -30,6 +30,7 @@ import { ProTable } from "#/components/admin/ProTable";
 import { downloadFile } from "#/lib/export/export.utils";
 import { SUPPORTED_LOCALES } from "#/lib/i18n/i18n.types";
 import { PERMISSIONS } from "#/lib/permissions/permissions";
+import type { SortOrder } from "#/lib/query/query-utils";
 import { adminPermGuard } from "#/middleware/admin-auth";
 import {
 	exportContentTranslationsFn,
@@ -60,6 +61,8 @@ const getList = createServerFn({ method: "GET" })
 			locale: z.string().optional(),
 			keyword: z.string().optional(),
 			page: z.number().optional(),
+			sortField: z.string().optional(),
+			sortOrder: z.enum(["ascend", "descend"]).optional(),
 		}),
 	)
 	.handler(async ({ data }) =>
@@ -118,6 +121,8 @@ function ContentTranslationPage() {
 	const [filterKeyword, setFilterKeyword] = useState<string>("");
 	// 防抖后的搜索关键字
 	const [debouncedKeyword, setDebouncedKeyword] = useState<string>("");
+	const [sortField, setSortField] = useState<string | undefined>();
+	const [sortOrder, setSortOrder] = useState<SortOrder | undefined>();
 	const [form] = Form.useForm();
 
 	// 搜索关键字输入防抖（300ms）
@@ -135,12 +140,14 @@ function ContentTranslationPage() {
 					locale: filterLocale,
 					keyword: debouncedKeyword,
 					page: 1,
+					sortField,
+					sortOrder,
 				},
 			});
 			setData(result);
 		}
 		doRefresh();
-	}, [filterEntityType, filterLocale, debouncedKeyword]);
+	}, [filterEntityType, filterLocale, debouncedKeyword, sortField, sortOrder]);
 
 	async function refresh() {
 		const result = await getList({
@@ -149,10 +156,35 @@ function ContentTranslationPage() {
 				locale: filterLocale,
 				keyword: debouncedKeyword,
 				page: data.page,
+				sortField,
+				sortOrder,
 			},
 		});
 		setData(result);
 	}
+
+	/** 表格排序变更 */
+	const handleTableChange = async (
+		_pagination: unknown,
+		_filters: unknown,
+		sorter: unknown,
+	) => {
+		const s = sorter as { field?: string; order?: string };
+		const field = s.field as string | undefined;
+		const order = s.order as SortOrder | undefined;
+		setSortField(field);
+		setSortOrder(order);
+		const result = await getList({
+			data: {
+				entityType: filterEntityType,
+				locale: filterLocale,
+				keyword: debouncedKeyword,
+				sortField: field,
+				sortOrder: order,
+			},
+		});
+		setData(result);
+	};
 
 	async function handleSubmit(values: Record<string, unknown>) {
 		try {
@@ -215,7 +247,8 @@ function ContentTranslationPage() {
 			title: "实体类型",
 			dataIndex: "entityType",
 			key: "entityType",
-			width: 100,
+			width: 120,
+			sorter: true,
 			render: (v: string) => <Tag color="blue">{v}</Tag>,
 		},
 		{
@@ -226,12 +259,19 @@ function ContentTranslationPage() {
 			ellipsis: true,
 			copyable: true,
 		},
-		{ title: "字段名", dataIndex: "fieldName", key: "fieldName", width: 100 },
+		{
+			title: "字段名",
+			dataIndex: "fieldName",
+			key: "fieldName",
+			width: 100,
+			sorter: true,
+		},
 		{
 			title: "语言",
 			dataIndex: "locale",
 			key: "locale",
-			width: 70,
+			width: 90,
+			sorter: true,
 			render: (v: string) => <Tag>{v.toUpperCase()}</Tag>,
 		},
 		{
@@ -254,6 +294,7 @@ function ContentTranslationPage() {
 			key: "updatedAt",
 			width: 185,
 			valueType: "dateTime",
+			sorter: true,
 		},
 		{
 			title: "操作",
@@ -350,6 +391,7 @@ function ContentTranslationPage() {
 				dataSource={data.records}
 				columns={columns}
 				rowKey="id"
+				onChange={handleTableChange}
 				pagination={{
 					total: data.total,
 					pageSize: data.pageSize,
@@ -361,6 +403,8 @@ function ContentTranslationPage() {
 								locale: filterLocale,
 								keyword: debouncedKeyword,
 								page,
+								sortField,
+								sortOrder,
 							},
 						});
 						setData(r);

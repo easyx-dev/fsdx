@@ -44,7 +44,9 @@ const fileListSchema = z.object({
 	status: z.string().optional(),
 	keyword: z.string().optional(),
 	sortField: z.string().optional(),
-	sortOrder: z.string().optional(),
+	sortOrder: z.enum(["ascend", "descend"]).optional(),
+	page: z.number().optional(),
+	pageSize: z.number().optional(),
 });
 const idSchema = z.object({ id: z.string().min(1) });
 
@@ -101,13 +103,15 @@ export const Route = createFileRoute("/admin/_admin/files/")({
 
 function FilesPage() {
 	const router = useRouter();
-	const initialFiles = Route.useLoaderData();
-	const [files, setFiles] = useState(initialFiles);
+	const initialData = Route.useLoaderData();
+	const [data, setData] = useState(initialData);
 	const [filter, setFilter] = useState("");
 	const [uploading, setUploading] = useState(false);
 	const [keyword, setKeyword] = useState("");
 	const [sortField, setSortField] = useState<string | undefined>();
-	const [sortOrder, setSortOrder] = useState<string | undefined>();
+	const [sortOrder, setSortOrder] = useState<
+		"ascend" | "descend" | undefined
+	>();
 	const [previewFile, setPreviewFile] = useState<FileRecord | null>(null);
 
 	/** 按当前条件刷新文件列表 */
@@ -115,17 +119,19 @@ function FilesPage() {
 		status?: string;
 		keyword?: string;
 		sortField?: string;
-		sortOrder?: string;
+		sortOrder?: "ascend" | "descend";
+		page?: number;
 	}) => {
-		const data = await getFileList({
+		const result = await getFileList({
 			data: {
 				status: (params?.status ?? filter) || undefined,
 				keyword: (params?.keyword ?? keyword) || undefined,
 				sortField: params?.sortField ?? sortField,
 				sortOrder: params?.sortOrder ?? sortOrder,
+				page: params?.page,
 			},
 		});
-		setFiles(data);
+		setData(result);
 	};
 
 	/** 切换筛选状态并刷新列表 */
@@ -148,7 +154,7 @@ function FilesPage() {
 	) => {
 		const s = sorter as { field?: string; order?: string };
 		const field = s.field as string | undefined;
-		const order = s.order as string | undefined;
+		const order = s.order as "ascend" | "descend" | undefined;
 		setSortField(field);
 		setSortOrder(order);
 		await refreshFiles({ sortField: field, sortOrder: order });
@@ -364,11 +370,19 @@ function FilesPage() {
 			</div>
 
 			<ProTable
-				dataSource={files}
+				dataSource={data.records}
 				columns={columns}
 				rowKey="id"
 				locale={{ emptyText: "暂无文件" }}
 				onChange={handleTableChange}
+				pagination={{
+					total: data.total,
+					pageSize: data.pageSize,
+					current: data.page,
+					onChange: async (page) => {
+						await refreshFiles({ page });
+					},
+				}}
 			/>
 
 			{/* 图片预览 Modal */}

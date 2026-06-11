@@ -31,6 +31,7 @@ import { ProTable } from "#/components/admin/ProTable";
 import { downloadFile } from "#/lib/export/export.utils";
 import { SUPPORTED_LOCALES } from "#/lib/i18n/i18n.types";
 import { PERMISSIONS } from "#/lib/permissions/permissions";
+import type { SortOrder } from "#/lib/query/query-utils";
 import { adminPermGuard } from "#/middleware/admin-auth";
 import {
 	exportUITranslationsFn,
@@ -60,6 +61,8 @@ const getList = createServerFn({ method: "GET" })
 			locale: z.string().optional(),
 			keyword: z.string().optional(),
 			page: z.number().optional(),
+			sortField: z.string().optional(),
+			sortOrder: z.enum(["ascend", "descend"]).optional(),
 		}),
 	)
 	.handler(async ({ data }) =>
@@ -113,6 +116,8 @@ function UITranslationPage() {
 	const [filterKeyword, setFilterKeyword] = useState<string>("");
 	// 防抖后的搜索关键字，用于触发 API 请求
 	const [debouncedKeyword, setDebouncedKeyword] = useState<string>("");
+	const [sortField, setSortField] = useState<string | undefined>();
+	const [sortOrder, setSortOrder] = useState<SortOrder | undefined>();
 	const [form] = Form.useForm();
 
 	// 搜索关键字输入防抖（300ms）
@@ -124,12 +129,34 @@ function UITranslationPage() {
 	const refresh = useCallback(
 		async (locale?: string, keyword?: string) => {
 			const result = await getList({
-				data: { locale, keyword, page: data.page },
+				data: { locale, keyword, page: data.page, sortField, sortOrder },
 			});
 			setData(result);
 		},
-		[data.page],
+		[data.page, sortField, sortOrder],
 	);
+
+	/** 表格排序变更 */
+	const handleTableChange = async (
+		_pagination: unknown,
+		_filters: unknown,
+		sorter: unknown,
+	) => {
+		const s = sorter as { field?: string; order?: string };
+		const field = s.field as string | undefined;
+		const order = s.order as SortOrder | undefined;
+		setSortField(field);
+		setSortOrder(order);
+		const result = await getList({
+			data: {
+				locale: filterLocale,
+				keyword: debouncedKeyword,
+				sortField: field,
+				sortOrder: order,
+			},
+		});
+		setData(result);
+	};
 
 	async function handleSubmit(values: Record<string, unknown>) {
 		try {
@@ -193,9 +220,17 @@ function UITranslationPage() {
 			dataIndex: "locale",
 			key: "locale",
 			width: 80,
+			sorter: true,
 			render: (v: string) => <Tag>{v.toUpperCase()}</Tag>,
 		},
-		{ title: "Key", dataIndex: "key", key: "key", width: 200, ellipsis: true },
+		{
+			title: "Key",
+			dataIndex: "key",
+			key: "key",
+			width: 200,
+			ellipsis: true,
+			sorter: true,
+		},
 		{
 			title: "翻译值",
 			dataIndex: "value",
@@ -223,6 +258,7 @@ function UITranslationPage() {
 			key: "updatedAt",
 			width: 185,
 			valueType: "dateTime",
+			sorter: true,
 		},
 		{
 			title: "操作",
@@ -305,13 +341,20 @@ function UITranslationPage() {
 				dataSource={data.records}
 				columns={columns}
 				rowKey="id"
+				onChange={handleTableChange}
 				pagination={{
 					total: data.total,
 					pageSize: data.pageSize,
 					current: data.page,
 					onChange: async (page) => {
 						const r = await getList({
-							data: { locale: filterLocale, keyword: debouncedKeyword, page },
+							data: {
+								locale: filterLocale,
+								keyword: debouncedKeyword,
+								page,
+								sortField,
+								sortOrder,
+							},
 						});
 						setData(r);
 					},

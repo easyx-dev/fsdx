@@ -2,10 +2,17 @@
  * 客户端用户管理：CRUD 操作
  */
 import bcrypt from "bcryptjs";
-import { and, eq, ilike, isNull, or } from "drizzle-orm";
+import { and, eq, ilike, or } from "drizzle-orm";
 import { db } from "#/db/index";
 import { clientUser } from "#/db/schema";
 import { clientUserCache } from "#/lib/cache/cache";
+import type { PaginatedSortParams } from "#/lib/query/query-utils";
+import {
+	buildSortClause,
+	executePaginatedQuery,
+	notDeleted,
+	paginationOffset,
+} from "#/server/query/query-utils.server";
 
 export type ClientUserRecord = typeof clientUser.$inferSelect;
 
@@ -22,13 +29,21 @@ export interface UpdateClientUserInput {
 	emailVerified?: boolean;
 }
 
-/** 获取客户端用户列表（支持关键词搜索） */
-export async function getClientUserList(
-	page = 1,
-	pageSize = 20,
-	keyword?: string,
-) {
-	const conditions = [isNull(clientUser.deletedAt)];
+/** 客户端用户列表查询参数 */
+export interface ClientUserListParams extends PaginatedSortParams {
+	keyword?: string;
+}
+
+/** 获取客户端用户列表（支持关键词搜索和排序） */
+export async function getClientUserList(params?: ClientUserListParams) {
+	const {
+		keyword,
+		page = 1,
+		pageSize = 20,
+		sortField,
+		sortOrder,
+	} = params ?? {};
+	const conditions = [notDeleted(clientUser.deletedAt)];
 	if (keyword) {
 		conditions.push(
 			or(
@@ -38,28 +53,44 @@ export async function getClientUserList(
 		);
 	}
 
-	const offset = (page - 1) * pageSize;
-	const rows = await db
-		.select()
-		.from(clientUser)
-		.where(and(...conditions))
-		.orderBy(clientUser.createdAt)
-		.limit(pageSize)
-		.offset(offset);
+	const offset = paginationOffset(page, pageSize);
 
-	const [countResult] = await db
-		.select({ count: db.$count(clientUser) })
-		.from(clientUser)
-		.where(and(...conditions));
-	const total = Number(countResult?.count ?? 0);
+	const sortFieldMap = {
+		createdAt: clientUser.createdAt,
+		updatedAt: clientUser.updatedAt,
+		username: clientUser.username,
+		email: clientUser.email,
+	};
+	const direction = buildSortClause(
+		sortFieldMap,
+		sortField,
+		sortOrder,
+		"createdAt",
+	);
 
-	return { rows, total, page, pageSize };
+	return executePaginatedQuery(
+		db
+			.select()
+			.from(clientUser)
+			.where(and(...conditions))
+			.orderBy(direction)
+			.limit(pageSize)
+			.offset(offset),
+		db.$count(
+			db
+				.select()
+				.from(clientUser)
+				.where(and(...conditions)),
+		),
+		page,
+		pageSize,
+	);
 }
 
 /** 获取单个客户端用户 */
 export async function getClientUser(id: string) {
 	return db.query.clientUser.findFirst({
-		where: and(eq(clientUser.id, id), isNull(clientUser.deletedAt)),
+		where: and(eq(clientUser.id, id), notDeleted(clientUser.deletedAt)),
 	});
 }
 
@@ -93,7 +124,7 @@ export async function updateClientUser(
 	const [record] = await db
 		.update(clientUser)
 		.set(setData)
-		.where(and(eq(clientUser.id, id), isNull(clientUser.deletedAt)))
+		.where(and(eq(clientUser.id, id), notDeleted(clientUser.deletedAt)))
 		.returning();
 	if (record) {
 		// 状态变更时清除缓存，避免返回已禁用的用户
@@ -126,7 +157,7 @@ export async function resetClientPassword(
 	const [record] = await db
 		.update(clientUser)
 		.set({ passwordHash, updatedAt: new Date() })
-		.where(and(eq(clientUser.id, id), isNull(clientUser.deletedAt)))
+		.where(and(eq(clientUser.id, id), notDeleted(clientUser.deletedAt)))
 		.returning();
 	if (record) {
 	}

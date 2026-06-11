@@ -46,7 +46,7 @@ const listSchema = z.object({
 	status: z.string().optional(),
 	page: z.number().optional(),
 	sortField: z.string().optional(),
-	sortOrder: z.string().optional(),
+	sortOrder: z.enum(["ascend", "descend"]).optional(),
 });
 const idSchema = z.object({ id: z.string().min(1) });
 const statusSchema = z.object({
@@ -113,7 +113,9 @@ function NewsListPage() {
 	const [data, setData] = useState(newsData);
 	const [filter, setFilter] = useState<string>("");
 	const [sortField, setSortField] = useState<string | undefined>();
-	const [sortOrder, setSortOrder] = useState<string | undefined>();
+	const [sortOrder, setSortOrder] = useState<
+		"ascend" | "descend" | undefined
+	>();
 
 	/** 抽屉编辑状态 */
 	const [drawerOpen, setDrawerOpen] = useState(false);
@@ -134,7 +136,11 @@ function NewsListPage() {
 		const field = sf !== undefined ? sf : sortField;
 		const order = so !== undefined ? so : sortOrder;
 		const result = await getNewsListFn({
-			data: { status: status || undefined, sortField: field, sortOrder: order },
+			data: {
+				status: status || undefined,
+				sortField: field,
+				sortOrder: order as "ascend" | "descend" | undefined,
+			},
 		});
 		setData(result);
 	}
@@ -147,7 +153,7 @@ function NewsListPage() {
 	) => {
 		const s = sorter as { field?: string; order?: string };
 		setSortField(s.field);
-		setSortOrder(s.order);
+		setSortOrder(s.order as "ascend" | "descend" | undefined);
 		await refresh(undefined, s.field, s.order);
 	};
 

@@ -63,6 +63,8 @@ const eventQuerySchema = z.object({
 	endDate: z.string().optional(),
 	page: z.number().int().min(1).optional(),
 	pageSize: z.number().int().min(1).max(100).optional(),
+	sortField: z.string().optional(),
+	sortOrder: z.enum(["ascend", "descend"]).optional(),
 });
 
 /** 分页查询埋点事件 */

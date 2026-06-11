@@ -10,7 +10,13 @@ import { EDITOR_TYPES, type EditorType } from "#/lib/editor-types/editor-types";
 import type { Locale } from "#/lib/i18n/i18n.types";
 import { DEFAULT_LOCALE } from "#/lib/i18n/i18n.types";
 import { logger } from "#/lib/logger/logger";
+import type { PaginatedSortParams } from "#/lib/query/query-utils";
 import { refreshConfigTranslationCache } from "#/server/config/config.server";
+import {
+	buildSortClause,
+	executePaginatedQuery,
+	paginationOffset,
+} from "#/server/query/query-utils.server";
 
 // ═══════════════════════════════════════════════════
 // UI 翻译查询
@@ -66,17 +72,22 @@ export async function refreshUITranslationCache(
 // ═══════════════════════════════════════════════════
 
 /** UI 翻译列表查询参数 */
-export interface ListUITranslationsParams {
+export interface ListUITranslationsParams extends PaginatedSortParams {
 	locale?: Locale;
 	keyword?: string;
-	page?: number;
-	pageSize?: number;
 }
 
 /** UI 翻译列表 */
 export async function listUITranslations(params?: ListUITranslationsParams) {
-	const { locale, keyword, page = 1, pageSize = 20 } = params ?? {};
-	const offset = (page - 1) * pageSize;
+	const {
+		locale,
+		keyword,
+		page = 1,
+		pageSize = 20,
+		sortField,
+		sortOrder,
+	} = params ?? {};
+	const offset = paginationOffset(page, pageSize);
 
 	const conditions = [];
 	if (locale) conditions.push(eq(uiTranslation.locale, locale));
@@ -91,17 +102,25 @@ export async function listUITranslations(params?: ListUITranslationsParams) {
 
 	const whereCondition = conditions.length > 0 ? and(...conditions) : undefined;
 
-	const [records, total] = await Promise.all([
+	const sortFieldMap = {
+		key: uiTranslation.key,
+		locale: uiTranslation.locale,
+		updatedAt: uiTranslation.updatedAt,
+	};
+	const direction = buildSortClause(sortFieldMap, sortField, sortOrder, "key");
+
+	return executePaginatedQuery(
 		db
 			.select()
 			.from(uiTranslation)
 			.where(whereCondition)
+			.orderBy(direction)
 			.limit(pageSize)
 			.offset(offset),
 		db.$count(db.select().from(uiTranslation).where(whereCondition)),
-	]);
-
-	return { records, total, page, pageSize };
+		page,
+		pageSize,
+	);
 }
 
 /** UI 翻译创建或更新（基于 locale + key 唯一约束） */
@@ -425,20 +444,26 @@ export async function getFieldTranslations(
 // ═══════════════════════════════════════════════════
 
 /** 实体翻译列表查询参数 */
-export interface ListContentTranslationsParams {
+export interface ListContentTranslationsParams extends PaginatedSortParams {
 	entityType?: string;
 	locale?: Locale;
 	keyword?: string;
-	page?: number;
-	pageSize?: number;
 }
 
 /** 实体翻译列表 */
 export async function listContentTranslations(
 	params?: ListContentTranslationsParams,
 ) {
-	const { entityType, locale, keyword, page = 1, pageSize = 20 } = params ?? {};
-	const offset = (page - 1) * pageSize;
+	const {
+		entityType,
+		locale,
+		keyword,
+		page = 1,
+		pageSize = 20,
+		sortField,
+		sortOrder,
+	} = params ?? {};
+	const offset = paginationOffset(page, pageSize);
 
 	const conditions = [];
 	if (entityType)
@@ -455,17 +480,31 @@ export async function listContentTranslations(
 
 	const whereCondition = conditions.length > 0 ? and(...conditions) : undefined;
 
-	const [records, total] = await Promise.all([
+	const sortFieldMap = {
+		fieldName: contentTranslation.fieldName,
+		locale: contentTranslation.locale,
+		entityType: contentTranslation.entityType,
+		updatedAt: contentTranslation.updatedAt,
+	};
+	const direction = buildSortClause(
+		sortFieldMap,
+		sortField,
+		sortOrder,
+		"fieldName",
+	);
+
+	return executePaginatedQuery(
 		db
 			.select()
 			.from(contentTranslation)
 			.where(whereCondition)
+			.orderBy(direction)
 			.limit(pageSize)
 			.offset(offset),
 		db.$count(db.select().from(contentTranslation).where(whereCondition)),
-	]);
-
-	return { records, total, page, pageSize };
+		page,
+		pageSize,
+	);
 }
 
 /** 实体翻译创建或更新（基于 entityType + entityId + fieldName + locale 唯一约束） */

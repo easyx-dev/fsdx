@@ -1,0 +1,52 @@
+/**
+ * 通用查询工具函数：软删除条件、排序构建、分页执行
+ */
+import { asc, desc, isNull, type SQL } from "drizzle-orm";
+import type { PaginatedResult, SortOrder } from "#/lib/query/query-utils";
+
+/** 默认分页值 */
+export const DEFAULT_PAGE = 1;
+export const DEFAULT_PAGE_SIZE = 20;
+
+/** 构建软删除条件：`isNull(table.deletedAt)` */
+export function notDeleted(deletedAtColumn: unknown): SQL {
+	return isNull(deletedAtColumn as Parameters<typeof isNull>[0]);
+}
+
+/** 计算分页偏移量 */
+export function paginationOffset(page: number, pageSize: number): number {
+	return (page - 1) * pageSize;
+}
+
+/**
+ * 安全构建排序子句：通过字段映射表校验 sortField，防止非法字段注入
+ * @param fieldMap 排序字段映射表（key → 列对象）
+ * @param sortField 前端传入的排序字段名
+ * @param sortOrder 排序方向 ("ascend" | "descend")
+ * @param defaultField 无有效排序参数时的默认字段
+ */
+export function buildSortClause<T extends Record<string, unknown>>(
+	fieldMap: T,
+	sortField: string | undefined,
+	sortOrder: SortOrder | undefined,
+	defaultField: keyof T,
+): ReturnType<typeof desc> | ReturnType<typeof asc> {
+	const col =
+		sortField && fieldMap[sortField]
+			? (fieldMap[sortField] as Parameters<typeof desc>[0])
+			: (fieldMap[defaultField] as Parameters<typeof desc>[0]);
+	return sortOrder === "ascend" ? asc(col) : desc(col);
+}
+
+/**
+ * 执行分页查询：并行执行数据查询和计数查询，返回标准分页结构
+ */
+export async function executePaginatedQuery<T>(
+	dataQuery: Promise<T[]>,
+	countQuery: Promise<number>,
+	page: number,
+	pageSize: number,
+): Promise<PaginatedResult<T>> {
+	const [records, total] = await Promise.all([dataQuery, countQuery]);
+	return { records, total, page, pageSize };
+}

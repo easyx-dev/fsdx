@@ -153,18 +153,25 @@ describe("cleanExpiredFiles", () => {
 describe("getFileList", () => {
 	beforeEach(() => vi.clearAllMocks());
 
-	it("返回文件列表（空）", async () => {
+	it("返回分页文件列表（空）", async () => {
 		mockDb.select.mockReturnValue({
 			from: vi.fn(() => ({
 				where: vi.fn(() => ({
-					orderBy: vi.fn(() => ({ limit: vi.fn().mockResolvedValue([]) })),
+					orderBy: vi.fn(() => ({
+						limit: vi.fn(() => ({
+							offset: vi.fn().mockResolvedValue([]),
+						})),
+					})),
 				})),
 			})),
 		});
+		mockDb.$count.mockResolvedValue(0);
 
 		const result = await getFileList();
-		expect(Array.isArray(result)).toBe(true);
-		expect(result).toHaveLength(0);
+		expect(result.records).toHaveLength(0);
+		expect(result.total).toBe(0);
+		expect(result.page).toBe(1);
+		expect(result.pageSize).toBe(20);
 	});
 
 	it("按状态筛选文件列表", async () => {
@@ -172,15 +179,19 @@ describe("getFileList", () => {
 			from: vi.fn(() => ({
 				where: vi.fn(() => ({
 					orderBy: vi.fn(() => ({
-						limit: vi.fn().mockResolvedValue([fileRecord]),
+						limit: vi.fn(() => ({
+							offset: vi.fn().mockResolvedValue([fileRecord]),
+						})),
 					})),
 				})),
 			})),
 		});
+		mockDb.$count.mockResolvedValue(1);
 
 		const result = await getFileList({ status: "permanent" });
-		expect(result).toHaveLength(1);
-		expect(result[0].status).toBe("temp");
+		expect(result.records).toHaveLength(1);
+		expect(result.records[0].status).toBe("temp");
+		expect(result.total).toBe(1);
 	});
 });
 

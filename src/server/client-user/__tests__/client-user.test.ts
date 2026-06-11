@@ -79,54 +79,48 @@ describe("getClientUserList", () => {
 	];
 
 	it("返回用户列表和总数", async () => {
-		mockDb.select
-			.mockReturnValueOnce({
-				from: vi.fn(() => ({
-					where: vi.fn(() => ({
-						orderBy: vi.fn(() => ({
-							limit: vi.fn(() => ({
-								offset: vi.fn().mockResolvedValue(mockRows),
-							})),
+		mockDb.select.mockReturnValueOnce({
+			from: vi.fn(() => ({
+				where: vi.fn(() => ({
+					orderBy: vi.fn(() => ({
+						limit: vi.fn(() => ({
+							offset: vi.fn().mockResolvedValue(mockRows),
 						})),
 					})),
 				})),
-			})
-			.mockReturnValueOnce({
-				from: vi.fn(() => ({
-					where: vi.fn().mockResolvedValue([{ count: 2 }]),
-				})),
-			});
+			})),
+		});
+		mockDb.$count.mockResolvedValue(2);
 
-		const result = await getClientUserList(1, 20);
+		const result = await getClientUserList({ page: 1, pageSize: 20 });
 
-		expect(result.rows).toEqual(mockRows);
+		expect(result.records).toEqual(mockRows);
 		expect(result.total).toBe(2);
 		expect(result.page).toBe(1);
 		expect(result.pageSize).toBe(20);
 	});
 
 	it("关键词搜索按 username 和 email 过滤", async () => {
-		mockDb.select
-			.mockReturnValueOnce({
-				from: vi.fn(() => ({
-					where: vi.fn(() => ({
-						orderBy: vi.fn(() => ({
-							limit: vi.fn(() => ({
-								offset: vi.fn().mockResolvedValue([mockRows[0]]),
-							})),
+		mockDb.select.mockReturnValueOnce({
+			from: vi.fn(() => ({
+				where: vi.fn(() => ({
+					orderBy: vi.fn(() => ({
+						limit: vi.fn(() => ({
+							offset: vi.fn().mockResolvedValue([mockRows[0]]),
 						})),
 					})),
 				})),
-			})
-			.mockReturnValueOnce({
-				from: vi.fn(() => ({
-					where: vi.fn().mockResolvedValue([{ count: 1 }]),
-				})),
-			});
+			})),
+		});
+		mockDb.$count.mockResolvedValue(1);
 
-		const result = await getClientUserList(1, 20, "user1");
+		const result = await getClientUserList({
+			page: 1,
+			pageSize: 20,
+			keyword: "user1",
+		});
 
-		expect(result.rows).toHaveLength(1);
+		expect(result.records).toHaveLength(1);
 		expect(result.total).toBe(1);
 	});
 });

@@ -12,6 +12,7 @@ import type { Dayjs } from "dayjs";
 import { useState } from "react";
 import { AdminPageContent } from "#/components/admin/AdminPageContent";
 import { ProTable } from "#/components/admin/ProTable";
+import type { SortOrder } from "#/lib/query/query-utils";
 import { formatDateTime } from "#/lib/utils/format-date";
 import type { OperationLogEntry } from "#/server/operation-log/operation-log.functions";
 import {
@@ -87,9 +88,14 @@ function OperationLogsPage() {
 	const [page, setPage] = useState(1);
 	const [pageSize] = useState(20);
 	const [form] = Form.useForm();
+	const [sortField, setSortField] = useState<string | undefined>();
+	const [sortOrder, setSortOrder] = useState<SortOrder | undefined>();
 
 	/** 执行搜索 */
-	const doSearch = async (p = 1) => {
+	const doSearch = async (p?: number, sf?: string, so?: SortOrder) => {
+		const targetPage = p ?? page;
+		const field = sf !== undefined ? sf : sortField;
+		const order = so !== undefined ? so : sortOrder;
 		const values = form.getFieldsValue();
 		const dateRange: [Dayjs, Dayjs] | undefined = values.dateRange;
 		const startDate = dateRange?.[0]
@@ -107,15 +113,29 @@ function OperationLogsPage() {
 					keyword: values.keyword || undefined,
 					startDate,
 					endDate,
-					page: p,
+					page: targetPage,
 					pageSize,
+					sortField: field,
+					sortOrder: order,
 				},
 			});
 			setResult(data);
-			setPage(p);
+			setPage(targetPage);
 		} catch {
 			message.error("查询失败，请稍后重试");
 		}
+	};
+
+	/** 表格排序变更 */
+	const handleTableChange = (
+		_pagination: unknown,
+		_filters: unknown,
+		sorter: unknown,
+	) => {
+		const s = sorter as { field?: string; order?: string };
+		setSortField(s.field);
+		setSortOrder(s.order as SortOrder | undefined);
+		doSearch(undefined, s.field, s.order as SortOrder | undefined);
 	};
 
 	/** 重置筛选条件 */
@@ -124,7 +144,7 @@ function OperationLogsPage() {
 		doSearch();
 	};
 
-	const dataSource = result.entries.map(
+	const dataSource = result.records.map(
 		(entry: OperationLogEntry, idx: number) => ({
 			...entry,
 			_rowKey: `${result.page}-${idx}`,
@@ -151,6 +171,8 @@ function OperationLogsPage() {
 			dataIndex: "createdAt",
 			key: "createdAt",
 			width: 180,
+			sorter: true,
+			sortOrder: sortField === "createdAt" ? sortOrder : undefined,
 			render: (_: unknown, record: Record<string, unknown>) =>
 				formatDateTime(record.createdAt as Date, "zh-CN"),
 		},
@@ -241,6 +263,7 @@ function OperationLogsPage() {
 				dataSource={dataSource}
 				columns={columns}
 				rowKey="_rowKey"
+				onChange={handleTableChange}
 				expandable={{
 					expandedRowRender: (record: Record<string, unknown>) => (
 						<pre
