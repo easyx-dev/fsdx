@@ -29,7 +29,7 @@ import { ProTable } from "#/components/admin/ProTable";
 import { downloadFile } from "#/lib/export/export.utils";
 import { useAdminDictStore } from "#/lib/global-store/admin-dict-store";
 import { PERMISSIONS } from "#/lib/permissions/permissions";
-import { formatDate, formatDateTime } from "#/lib/utils/format-date";
+import { formatDateTime } from "#/lib/utils/format-date";
 import { adminPermGuard } from "#/middleware/admin-auth";
 import { exportNewsFn } from "#/server/news/news.functions";
 import type { NewsRecord } from "#/server/news/news.server";

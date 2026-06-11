@@ -143,6 +143,11 @@ export const NAV_GROUPS: NavGroup[] = [
 				label: "AI 测试",
 				icon: <RobotOutlined />,
 			},
+			{
+				key: "/admin/demo/pro-table",
+				label: "ProTable 演示",
+				icon: <TableOutlined />,
+			},
 		],
 	},
 ];

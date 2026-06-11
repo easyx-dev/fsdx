@@ -26,7 +26,7 @@ import { z } from "zod";
 import { AdminPageContent } from "#/components/admin/AdminPageContent";
 import { EditorTypeSelect } from "#/components/admin/EditorTypeSelect";
 import { JsonImportButton } from "#/components/admin/JsonImportButton";
-import { type ProColumnType, ProTable } from "#/components/admin/ProTable";
+import { ProTable } from "#/components/admin/ProTable";
 import { downloadFile } from "#/lib/export/export.utils";
 import { SUPPORTED_LOCALES } from "#/lib/i18n/i18n.types";
 import { PERMISSIONS } from "#/lib/permissions/permissions";

@@ -34,6 +34,7 @@ import { Route as AdminAdminTranslationsContentRouteImport } from './routes/admi
 import { Route as AdminAdminNewsCreateRouteImport } from './routes/admin/_admin/news/create'
 import { Route as AdminAdminEventsQueryRouteImport } from './routes/admin/_admin/events/query'
 import { Route as AdminAdminEventsAnalyticsRouteImport } from './routes/admin/_admin/events/analytics'
+import { Route as AdminAdminDemoProTableRouteImport } from './routes/admin/_admin/demo/pro-table'
 import { Route as AdminAdminDemoEditorRouteImport } from './routes/admin/_admin/demo/editor'
 import { Route as AdminAdminDemoAiRouteImport } from './routes/admin/_admin/demo/ai'
 import { Route as AdminAdminUsersClientsIndexRouteImport } from './routes/admin/_admin/users/clients/index'
@@ -170,6 +171,11 @@ const AdminAdminEventsAnalyticsRoute =
     path: '/events/analytics',
     getParentRoute: () => AdminAdminRoute,
   } as any)
+const AdminAdminDemoProTableRoute = AdminAdminDemoProTableRouteImport.update({
+  id: '/demo/pro-table',
+  path: '/demo/pro-table',
+  getParentRoute: () => AdminAdminRoute,
+} as any)
 const AdminAdminDemoEditorRoute = AdminAdminDemoEditorRouteImport.update({
   id: '/demo/editor',
   path: '/demo/editor',
@@ -223,6 +229,7 @@ export interface FileRoutesByFullPath {
   '/admin/': typeof AdminAdminIndexRoute
   '/admin/demo/ai': typeof AdminAdminDemoAiRoute
   '/admin/demo/editor': typeof AdminAdminDemoEditorRoute
+  '/admin/demo/pro-table': typeof AdminAdminDemoProTableRoute
   '/admin/events/analytics': typeof AdminAdminEventsAnalyticsRoute
   '/admin/events/query': typeof AdminAdminEventsQueryRoute
   '/admin/news/create': typeof AdminAdminNewsCreateRoute
@@ -255,6 +262,7 @@ export interface FileRoutesByTo {
   '/news': typeof NewsIndexRoute
   '/admin/demo/ai': typeof AdminAdminDemoAiRoute
   '/admin/demo/editor': typeof AdminAdminDemoEditorRoute
+  '/admin/demo/pro-table': typeof AdminAdminDemoProTableRoute
   '/admin/events/analytics': typeof AdminAdminEventsAnalyticsRoute
   '/admin/events/query': typeof AdminAdminEventsQueryRoute
   '/admin/news/create': typeof AdminAdminNewsCreateRoute
@@ -290,6 +298,7 @@ export interface FileRoutesById {
   '/admin/_admin/': typeof AdminAdminIndexRoute
   '/admin/_admin/demo/ai': typeof AdminAdminDemoAiRoute
   '/admin/_admin/demo/editor': typeof AdminAdminDemoEditorRoute
+  '/admin/_admin/demo/pro-table': typeof AdminAdminDemoProTableRoute
   '/admin/_admin/events/analytics': typeof AdminAdminEventsAnalyticsRoute
   '/admin/_admin/events/query': typeof AdminAdminEventsQueryRoute
   '/admin/_admin/news/create': typeof AdminAdminNewsCreateRoute
@@ -325,6 +334,7 @@ export interface FileRouteTypes {
     | '/admin/'
     | '/admin/demo/ai'
     | '/admin/demo/editor'
+    | '/admin/demo/pro-table'
     | '/admin/events/analytics'
     | '/admin/events/query'
     | '/admin/news/create'
@@ -357,6 +367,7 @@ export interface FileRouteTypes {
     | '/news'
     | '/admin/demo/ai'
     | '/admin/demo/editor'
+    | '/admin/demo/pro-table'
     | '/admin/events/analytics'
     | '/admin/events/query'
     | '/admin/news/create'
@@ -391,6 +402,7 @@ export interface FileRouteTypes {
     | '/admin/_admin/'
     | '/admin/_admin/demo/ai'
     | '/admin/_admin/demo/editor'
+    | '/admin/_admin/demo/pro-table'
     | '/admin/_admin/events/analytics'
     | '/admin/_admin/events/query'
     | '/admin/_admin/news/create'
@@ -601,6 +613,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminAdminEventsAnalyticsRouteImport
       parentRoute: typeof AdminAdminRoute
     }
+    '/admin/_admin/demo/pro-table': {
+      id: '/admin/_admin/demo/pro-table'
+      path: '/demo/pro-table'
+      fullPath: '/admin/demo/pro-table'
+      preLoaderRoute: typeof AdminAdminDemoProTableRouteImport
+      parentRoute: typeof AdminAdminRoute
+    }
     '/admin/_admin/demo/editor': {
       id: '/admin/_admin/demo/editor'
       path: '/demo/editor'
@@ -657,6 +676,7 @@ interface AdminAdminRouteChildren {
   AdminAdminIndexRoute: typeof AdminAdminIndexRoute
   AdminAdminDemoAiRoute: typeof AdminAdminDemoAiRoute
   AdminAdminDemoEditorRoute: typeof AdminAdminDemoEditorRoute
+  AdminAdminDemoProTableRoute: typeof AdminAdminDemoProTableRoute
   AdminAdminEventsAnalyticsRoute: typeof AdminAdminEventsAnalyticsRoute
   AdminAdminEventsQueryRoute: typeof AdminAdminEventsQueryRoute
   AdminAdminNewsCreateRoute: typeof AdminAdminNewsCreateRoute
@@ -680,6 +700,7 @@ const AdminAdminRouteChildren: AdminAdminRouteChildren = {
   AdminAdminIndexRoute: AdminAdminIndexRoute,
   AdminAdminDemoAiRoute: AdminAdminDemoAiRoute,
   AdminAdminDemoEditorRoute: AdminAdminDemoEditorRoute,
+  AdminAdminDemoProTableRoute: AdminAdminDemoProTableRoute,
   AdminAdminEventsAnalyticsRoute: AdminAdminEventsAnalyticsRoute,
   AdminAdminEventsQueryRoute: AdminAdminEventsQueryRoute,
   AdminAdminNewsCreateRoute: AdminAdminNewsCreateRoute,
