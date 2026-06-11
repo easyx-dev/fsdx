@@ -41,6 +41,7 @@ import {
 	listUITranslations,
 	upsertUITranslation,
 } from "#/server/i18n/i18n.server";
+import { logOperation } from "#/server/operation-log/operation-log.server";
 
 // ── 表单 schema ──
 const formSchema = z.object({
@@ -68,15 +69,33 @@ const getList = createServerFn({ method: "GET" })
 const saveFn = createServerFn({ method: "POST" })
 	.middleware([adminPermGuard(PERMISSIONS.TRANSLATION_MANAGE)])
 	.inputValidator(formSchema)
-	.handler(async ({ data }) =>
-		upsertUITranslation(data as Parameters<typeof upsertUITranslation>[0]),
-	);
+	.handler(async ({ data, context }) => {
+		const result = await upsertUITranslation(
+			data as Parameters<typeof upsertUITranslation>[0],
+		);
+		logOperation({
+			operatorId: context.user.id,
+			operatorName: context.user.username,
+			module: "translation",
+			action: "update",
+			targetType: "ui_translation",
+		});
+		return result;
+	});
 
 const deleteFn = createServerFn({ method: "POST" })
 	.middleware([adminPermGuard(PERMISSIONS.TRANSLATION_MANAGE)])
 	.inputValidator(z.object({ id: z.string().min(1) }))
-	.handler(async ({ data }) => {
+	.handler(async ({ data, context }) => {
 		await deleteUITranslation(data.id);
+		logOperation({
+			operatorId: context.user.id,
+			operatorName: context.user.username,
+			module: "translation",
+			action: "delete",
+			targetType: "ui_translation",
+			targetId: data.id,
+		});
 		return { success: true };
 	});
 

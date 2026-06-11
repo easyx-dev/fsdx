@@ -49,6 +49,7 @@ import {
 	getConfigList as getConfigListService,
 	updateConfig,
 } from "#/server/config/config.server";
+import { logOperation } from "#/server/operation-log/operation-log.server";
 
 const UNGROUPED_KEY = "__ungrouped__";
 
@@ -84,25 +85,50 @@ const getConfigList = createServerFn({ method: "GET" })
 const createConfigFn = createServerFn({ method: "POST" })
 	.middleware([adminPermGuard(PERMISSIONS.CONFIG_CREATE)])
 	.inputValidator(createConfigSchema)
-	.handler(async ({ data }) => {
-		await createConfig(data);
+	.handler(async ({ data, context }) => {
+		const result = await createConfig(data);
+		logOperation({
+			operatorId: context.user.id,
+			operatorName: context.user.username,
+			module: "config",
+			action: "create",
+			targetType: "config",
+			targetId: result.id,
+			targetName: result.key,
+		});
 		return { success: true };
 	});
 
 const updateConfigFn = createServerFn({ method: "POST" })
 	.middleware([adminPermGuard(PERMISSIONS.CONFIG_EDIT)])
 	.inputValidator(updateConfigSchema)
-	.handler(async ({ data }) => {
+	.handler(async ({ data, context }) => {
 		const { id, ...rest } = data;
 		await updateConfig(id, rest);
+		logOperation({
+			operatorId: context.user.id,
+			operatorName: context.user.username,
+			module: "config",
+			action: "update",
+			targetType: "config",
+			targetId: data.id,
+		});
 		return { success: true };
 	});
 
 const deleteConfigFn = createServerFn({ method: "POST" })
 	.middleware([adminPermGuard(PERMISSIONS.CONFIG_DELETE)])
 	.inputValidator(deleteConfigSchema)
-	.handler(async ({ data }) => {
+	.handler(async ({ data, context }) => {
 		await deleteConfig(data.id);
+		logOperation({
+			operatorId: context.user.id,
+			operatorName: context.user.username,
+			module: "config",
+			action: "delete",
+			targetType: "config",
+			targetId: data.id,
+		});
 		return { success: true };
 	});
 

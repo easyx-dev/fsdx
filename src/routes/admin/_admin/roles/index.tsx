@@ -31,6 +31,7 @@ import {
 	type PermissionCode,
 } from "#/lib/permissions/permissions";
 import { adminPermGuard } from "#/middleware/admin-auth";
+import { logOperation } from "#/server/operation-log/operation-log.server";
 import {
 	type CreateRoleInput,
 	createRole,
@@ -67,17 +68,52 @@ const getRolesFn = createServerFn({ method: "GET" })
 const createRoleFn = createServerFn({ method: "POST" })
 	.middleware([adminPermGuard(PERMISSIONS.ROLE_CREATE)])
 	.inputValidator(roleCreateSchema)
-	.handler(async ({ data }) => createRole(data as CreateRoleInput));
+	.handler(async ({ data, context }) => {
+		const result = await createRole(data as CreateRoleInput);
+		logOperation({
+			operatorId: context.user.id,
+			operatorName: context.user.username,
+			module: "role",
+			action: "create",
+			targetType: "role",
+			targetId: result.id,
+			targetName: result.name,
+		});
+		return result;
+	});
 
 const updateRoleFn = createServerFn({ method: "POST" })
 	.middleware([adminPermGuard(PERMISSIONS.ROLE_EDIT)])
 	.inputValidator(roleUpdateSchema)
-	.handler(async ({ data }) => updateRole(data.id, data as UpdateRoleInput));
+	.handler(async ({ data, context }) => {
+		const result = await updateRole(data.id, data as UpdateRoleInput);
+		logOperation({
+			operatorId: context.user.id,
+			operatorName: context.user.username,
+			module: "role",
+			action: "update",
+			targetType: "role",
+			targetId: data.id,
+			targetName: result?.name,
+		});
+		return result;
+	});
 
 const deleteRoleFn = createServerFn({ method: "POST" })
 	.middleware([adminPermGuard(PERMISSIONS.ROLE_DELETE)])
 	.inputValidator(idSchema)
-	.handler(async ({ data }) => deleteRole(data.id));
+	.handler(async ({ data, context }) => {
+		const result = await deleteRole(data.id);
+		logOperation({
+			operatorId: context.user.id,
+			operatorName: context.user.username,
+			module: "role",
+			action: "delete",
+			targetType: "role",
+			targetId: data.id,
+		});
+		return result;
+	});
 
 // ─── Route & Component ──────────────────────────────────────────────
 

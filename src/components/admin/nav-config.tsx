@@ -9,6 +9,7 @@ import {
 	FileTextOutlined,
 	FolderOpenOutlined,
 	GlobalOutlined,
+	HistoryOutlined,
 	ReadOutlined,
 	RobotOutlined,
 	SafetyOutlined,
@@ -77,6 +78,11 @@ export const NAV_GROUPS: NavGroup[] = [
 				key: "/admin/files",
 				label: "文件管理",
 				icon: <FolderOpenOutlined />,
+			},
+			{
+				key: "/admin/operation-logs",
+				label: "操作日志",
+				icon: <HistoryOutlined />,
 			},
 			{
 				key: "/admin/logs",

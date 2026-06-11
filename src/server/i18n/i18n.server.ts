@@ -10,8 +10,8 @@ import { EDITOR_TYPES, type EditorType } from "#/lib/editor-types/editor-types";
 import type { Locale } from "#/lib/i18n/i18n.types";
 import { DEFAULT_LOCALE } from "#/lib/i18n/i18n.types";
 import { logger } from "#/lib/logger/logger";
-
 import { refreshConfigTranslationCache } from "#/server/config/config.server";
+
 // ═══════════════════════════════════════════════════
 // UI 翻译查询
 // ═══════════════════════════════════════════════════
@@ -151,7 +151,6 @@ export async function upsertUITranslation(params: {
 
 	// 刷新缓存
 	await refreshUITranslationCache(params.locale);
-	logger.info({ locale: params.locale, key: params.key }, "UI 翻译已更新");
 
 	return { success: true };
 }
@@ -165,7 +164,6 @@ export async function deleteUITranslation(id: string): Promise<boolean> {
 
 	await db.delete(uiTranslation).where(eq(uiTranslation.id, id));
 	await refreshUITranslationCache(existing.locale as Locale);
-	logger.info({ id, key: existing.key }, "UI 翻译已删除");
 
 	return true;
 }
@@ -255,7 +253,6 @@ export async function importUiTranslations(
 		await refreshUITranslationCache(locale as Locale);
 	}
 
-	logger.info({ created, updated }, "UI 翻译导入完成");
 	return { created, updated };
 }
 
@@ -344,7 +341,6 @@ export async function importContentTranslations(
 		}
 	});
 
-	logger.info({ created, updated }, "实体翻译导入完成");
 	return { created, updated };
 }
 
@@ -483,7 +479,6 @@ export async function upsertContentTranslation(params: {
 	valueType?: EditorType;
 }) {
 	const valueType: EditorType = params.valueType ?? "text";
-
 	if (params.id) {
 		await db
 			.update(contentTranslation)
@@ -523,16 +518,6 @@ export async function upsertContentTranslation(params: {
 		}
 	}
 
-	logger.info(
-		{
-			entityType: params.entityType,
-			entityId: params.entityId,
-			fieldName: params.fieldName,
-			locale: params.locale,
-		},
-		"实体翻译已更新",
-	);
-
 	// 系统配置翻译变更时刷新对应缓存
 	if (params.entityType === "system_config") {
 		await refreshConfigTranslationCache(params.locale);
@@ -549,10 +534,6 @@ export async function deleteContentTranslation(id: string): Promise<boolean> {
 	if (!existing) return false;
 
 	await db.delete(contentTranslation).where(eq(contentTranslation.id, id));
-	logger.info(
-		{ id, entityType: existing.entityType, fieldName: existing.fieldName },
-		"实体翻译已删除",
-	);
 
 	// 系统配置翻译删除时刷新对应缓存
 	if (existing.entityType === "system_config" && existing.locale) {

@@ -125,7 +125,6 @@ export async function createDict(params: {
 }) {
 	const [record] = await db.insert(dict).values(params).returning();
 	dictCache.set(record.slug, {});
-	logger.info({ slug: record.slug }, "字典类型已创建");
 	return record;
 }
 
@@ -155,10 +154,6 @@ export async function updateDict(
 		if (updated) {
 			invalidateCache();
 			await loadDictCache();
-			logger.info(
-				{ slug: updated.slug, oldSlug: existing.slug },
-				"字典 slug 已更新",
-			);
 		}
 		return updated ?? null;
 	}
@@ -194,7 +189,6 @@ export async function deleteDict(id: string) {
 	});
 	invalidateCache();
 	await loadDictCache();
-	logger.info({ slug: existing.slug }, "字典类型已删除");
 	return true;
 }
 
@@ -443,7 +437,6 @@ export async function importDicts(
 		}
 	});
 
-	logger.info(result, "字典导入完成");
 	await loadDictCache();
 	return result;
 }

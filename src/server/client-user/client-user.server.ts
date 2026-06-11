@@ -6,7 +6,6 @@ import { and, eq, ilike, isNull, or } from "drizzle-orm";
 import { db } from "#/db/index";
 import { clientUser } from "#/db/schema";
 import { clientUserCache } from "#/lib/cache/cache";
-import { logger } from "#/lib/logger/logger";
 
 export type ClientUserRecord = typeof clientUser.$inferSelect;
 
@@ -76,7 +75,6 @@ export async function createClientUser(input: CreateClientUserInput) {
 			status: "active",
 		})
 		.returning();
-	logger.info({ id: record.id, username: record.username }, "客户端用户已创建");
 	return record;
 }
 
@@ -98,7 +96,6 @@ export async function updateClientUser(
 		.where(and(eq(clientUser.id, id), isNull(clientUser.deletedAt)))
 		.returning();
 	if (record) {
-		logger.info({ id, username: record.username }, "客户端用户信息已更新");
 		// 状态变更时清除缓存，避免返回已禁用的用户
 		if (input.status !== undefined) {
 			clientUserCache.delete(id);
@@ -116,7 +113,6 @@ export async function deleteClientUser(id: string): Promise<boolean> {
 		.update(clientUser)
 		.set({ deletedAt: new Date() })
 		.where(eq(clientUser.id, id));
-	logger.info({ id, username: existing.username }, "客户端用户已删除");
 	clientUserCache.delete(id);
 	return true;
 }
@@ -133,7 +129,6 @@ export async function resetClientPassword(
 		.where(and(eq(clientUser.id, id), isNull(clientUser.deletedAt)))
 		.returning();
 	if (record) {
-		logger.info({ id, username: record.username }, "客户端用户密码已重置");
 	}
 	return !!record;
 }

@@ -4,7 +4,6 @@
 import { and, eq, ilike, isNull, or } from "drizzle-orm";
 import { db } from "#/db/index";
 import { role } from "#/db/schema";
-import { logger } from "#/lib/logger/logger";
 
 export type RoleRecord = typeof role.$inferSelect;
 
@@ -55,7 +54,6 @@ export async function createRole(input: CreateRoleInput) {
 			description: input.description ?? null,
 		})
 		.returning();
-	logger.info({ id: record.id, name: record.name }, "角色已创建");
 	return record;
 }
 
@@ -77,7 +75,6 @@ export async function updateRole(id: string, input: UpdateRoleInput) {
 		.where(and(eq(role.id, id), isNull(role.deletedAt)))
 		.returning();
 	if (record) {
-		logger.info({ id, name: record.name }, "角色已更新");
 	}
 	return record;
 }
@@ -87,6 +84,5 @@ export async function deleteRole(id: string): Promise<boolean> {
 	const existing = await getRole(id);
 	if (!existing) return false;
 	await db.update(role).set({ deletedAt: new Date() }).where(eq(role.id, id));
-	logger.info({ id, name: existing.name }, "角色已删除");
 	return true;
 }

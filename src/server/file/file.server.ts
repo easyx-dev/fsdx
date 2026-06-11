@@ -98,7 +98,6 @@ export async function deleteFile(id: string): Promise<boolean> {
 
 	await db.update(file).set({ deletedAt: new Date() }).where(eq(file.id, id));
 
-	logger.info({ id, name: existing.originalName }, "文件已删除");
 	return true;
 }
 

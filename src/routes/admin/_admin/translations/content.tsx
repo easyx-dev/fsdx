@@ -40,6 +40,7 @@ import {
 	listContentTranslations,
 	upsertContentTranslation,
 } from "#/server/i18n/i18n.server";
+import { logOperation } from "#/server/operation-log/operation-log.server";
 
 const formSchema = z.object({
 	id: z.string().optional(),
@@ -70,17 +71,33 @@ const getList = createServerFn({ method: "GET" })
 const saveFn = createServerFn({ method: "POST" })
 	.middleware([adminPermGuard(PERMISSIONS.TRANSLATION_MANAGE)])
 	.inputValidator(formSchema)
-	.handler(async ({ data }) =>
-		upsertContentTranslation(
+	.handler(async ({ data, context }) => {
+		const result = await upsertContentTranslation(
 			data as Parameters<typeof upsertContentTranslation>[0],
-		),
-	);
+		);
+		logOperation({
+			operatorId: context.user.id,
+			operatorName: context.user.username,
+			module: "translation",
+			action: "update",
+			targetType: "content_translation",
+		});
+		return result;
+	});
 
 const deleteFn = createServerFn({ method: "POST" })
 	.middleware([adminPermGuard(PERMISSIONS.TRANSLATION_MANAGE)])
 	.inputValidator(z.object({ id: z.string().min(1) }))
-	.handler(async ({ data }) => {
+	.handler(async ({ data, context }) => {
 		await deleteContentTranslation(data.id);
+		logOperation({
+			operatorId: context.user.id,
+			operatorName: context.user.username,
+			module: "translation",
+			action: "delete",
+			targetType: "content_translation",
+			targetId: data.id,
+		});
 		return { success: true };
 	});
 

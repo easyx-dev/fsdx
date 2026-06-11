@@ -4,8 +4,7 @@
 
 import { describe, expect, it } from "vitest";
 
-import type { AdminAuthContext } from "#/middleware/admin-auth";
-import { AdminAuthError } from "#/middleware/admin-auth";
+import { type AdminAuthContext, AdminAuthError } from "#/middleware/admin-auth";
 
 describe("AdminAuthError", () => {
 	it("包含 statusCode 属性", () => {

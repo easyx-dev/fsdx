@@ -5,7 +5,6 @@ import bcrypt from "bcryptjs";
 import { and, eq, ilike, isNull, or } from "drizzle-orm";
 import { db } from "#/db/index";
 import { adminUser, role } from "#/db/schema";
-import { logger } from "#/lib/logger/logger";
 
 export type AdminUserRecord = typeof adminUser.$inferSelect;
 
@@ -97,7 +96,6 @@ export async function createAdminUser(input: CreateAdminUserInput) {
 			status: "active",
 		})
 		.returning();
-	logger.info({ id: record.id, username: record.username }, "管理员已创建");
 	return record;
 }
 
@@ -122,7 +120,6 @@ export async function updateAdminUser(id: string, input: UpdateAdminUserInput) {
 		.where(and(eq(adminUser.id, id), isNull(adminUser.deletedAt)))
 		.returning();
 	if (record) {
-		logger.info({ id, username: record.username }, "管理员信息已更新");
 	}
 	return record;
 }
@@ -141,7 +138,6 @@ export async function deleteAdminUser(
 		.update(adminUser)
 		.set({ deletedAt: new Date() })
 		.where(eq(adminUser.id, id));
-	logger.info({ id, username: existing.username }, "管理员已删除");
 	return true;
 }
 
@@ -157,7 +153,6 @@ export async function resetAdminPassword(
 		.where(and(eq(adminUser.id, id), isNull(adminUser.deletedAt)))
 		.returning();
 	if (record) {
-		logger.info({ id, username: record.username }, "管理员密码已重置");
 	}
 	return !!record;
 }

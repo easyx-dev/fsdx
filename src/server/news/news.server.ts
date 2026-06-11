@@ -7,7 +7,6 @@ import { and, asc, desc, eq, isNull, ne } from "drizzle-orm";
 import { db } from "#/db/index";
 import { news } from "#/db/schema";
 import { DEFAULT_LOCALE, type Locale } from "#/lib/i18n/i18n.types";
-import { logger } from "#/lib/logger/logger";
 import { getContentTranslations } from "#/server/i18n/i18n.server";
 
 export type NewsRecord = typeof news.$inferSelect;
@@ -193,7 +192,6 @@ export async function createNews(params: {
 		})
 		.returning();
 
-	logger.info({ title: record.title, slug: record.slug }, "新闻已创建");
 	return record;
 }
 
@@ -278,6 +276,7 @@ export async function changeNewsStatus(
 		if (existing && !existing.publishedAt) updateData.publishedAt = new Date();
 	}
 	await db.update(news).set(updateData).where(eq(news.id, id));
+
 	return { success: true };
 }
 
@@ -288,7 +287,6 @@ export async function deleteNews(id: string): Promise<boolean> {
 
 	await db.update(news).set({ deletedAt: new Date() }).where(eq(news.id, id));
 
-	logger.info({ id, title: existing.title }, "新闻已删除");
 	return true;
 }
 

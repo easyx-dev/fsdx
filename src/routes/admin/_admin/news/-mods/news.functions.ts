@@ -7,6 +7,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { PERMISSIONS } from "#/lib/permissions/permissions";
 import { adminPermGuard } from "#/middleware/admin-auth";
 import { createNews, getNewsById, updateNews } from "#/server/news/news.server";
+import { logOperation } from "#/server/operation-log/operation-log.server";
 import {
 	createNewsSchema,
 	getNewsSchema,
@@ -21,27 +22,47 @@ export const getNewsByIdFn = createServerFn({ method: "GET" })
 		return getNewsById(id);
 	});
 
+/** 新建新闻 */
+export const createNewsFn = createServerFn({ method: "POST" })
+	.middleware([adminPermGuard(PERMISSIONS.NEWS_CREATE)])
+	.inputValidator(createNewsSchema)
+	.handler(async ({ data, context }) => {
+		const record = await createNews({
+			...data,
+			publishedAt: data.publishedAt || undefined,
+			sort: data.sort,
+		});
+		logOperation({
+			operatorId: context.user.id,
+			operatorName: context.user.username,
+			module: "news",
+			action: "create",
+			targetType: "news",
+			targetId: record.id,
+			targetName: record.title,
+		});
+		return record;
+	});
+
 /** 更新新闻 */
 export const updateNewsFn = createServerFn({ method: "POST" })
 	.middleware([adminPermGuard(PERMISSIONS.NEWS_EDIT)])
 	.inputValidator(updateNewsSchema)
-	.handler(async ({ data }) => {
-		return updateNews(data.id, {
+	.handler(async ({ data, context }) => {
+		const record = await updateNews(data.id, {
 			...data,
 			publishedAt:
 				data.publishedAt === null ? null : data.publishedAt || undefined,
 			sort: data.sort,
 		});
-	});
-
-/** 新建新闻 */
-export const createNewsFn = createServerFn({ method: "POST" })
-	.middleware([adminPermGuard(PERMISSIONS.NEWS_CREATE)])
-	.inputValidator(createNewsSchema)
-	.handler(async ({ data }) => {
-		return createNews({
-			...data,
-			publishedAt: data.publishedAt || undefined,
-			sort: data.sort,
+		logOperation({
+			operatorId: context.user.id,
+			operatorName: context.user.username,
+			module: "news",
+			action: "update",
+			targetType: "news",
+			targetId: data.id,
+			targetName: data.title,
 		});
+		return record;
 	});

@@ -48,7 +48,6 @@ export async function createConfig(params: {
 }) {
 	const [record] = await db.insert(systemConfig).values(params).returning();
 	await loadConfigCache();
-	logger.info({ key: record.key }, "系统配置已创建");
 	return record;
 }
 
@@ -112,7 +111,6 @@ export async function updateConfig(
 		.returning();
 	if (updated) {
 		await loadConfigCache();
-		logger.info({ key: updated.key }, "系统配置已更新");
 	}
 	return updated ?? null;
 }
@@ -127,7 +125,6 @@ export async function deleteConfig(id: string) {
 		.set({ deletedAt: new Date() })
 		.where(eq(systemConfig.id, id));
 	await loadConfigCache();
-	logger.info({ key: existing.key }, "系统配置已删除");
 	return true;
 }
 
@@ -427,6 +424,5 @@ export async function importConfigs(
 	}
 
 	await loadConfigCache();
-	logger.info(result, "系统配置导入完成");
 	return result;
 }

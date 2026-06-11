@@ -11,6 +11,7 @@ import { logger } from "#/lib/logger/logger";
 import { PERMISSIONS } from "#/lib/permissions/permissions";
 import { storage } from "#/lib/storage/storage";
 import { adminPermGuard } from "#/middleware/admin-auth";
+import { logOperation } from "#/server/operation-log/operation-log.server";
 import { sha256, TEMP_EXPIRE_HOURS } from "./file.server";
 
 /** 上传文件（支持 SHA256 秒传） */
@@ -22,7 +23,7 @@ export const uploadFile = createServerFn({ method: "POST" })
 		if (!f || !(f instanceof File)) throw new Error("未选择文件");
 		return f;
 	})
-	.handler(async ({ data: fileField }) => {
+	.handler(async ({ data: fileField, context }) => {
 		const buffer = Buffer.from(await fileField.arrayBuffer());
 		const hash = sha256(buffer);
 		const originalName = fileField.name;
@@ -37,6 +38,18 @@ export const uploadFile = createServerFn({ method: "POST" })
 		});
 
 		if (existing) {
+			// 秒传：记录操作日志
+			logOperation({
+				operatorId: context.user.id,
+				operatorName: context.user.username,
+				module: "file",
+				action: "upload",
+				targetType: "file",
+				targetId: existing.id,
+				targetName: existing.originalName,
+				detail: { isDuplicated: true },
+			});
+
 			return {
 				success: true,
 				data: {
@@ -73,6 +86,17 @@ export const uploadFile = createServerFn({ method: "POST" })
 			.returning();
 
 		logger.info({ id: record.id, name: originalName }, "文件上传成功");
+
+		logOperation({
+			operatorId: context.user.id,
+			operatorName: context.user.username,
+			module: "file",
+			action: "upload",
+			targetType: "file",
+			targetId: record.id,
+			targetName: originalName,
+		});
+
 		return {
 			success: true,
 			data: {

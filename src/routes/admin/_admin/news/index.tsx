@@ -36,8 +36,10 @@ import type { NewsRecord } from "#/server/news/news.server";
 import {
 	changeNewsStatus,
 	deleteNews,
+	getNewsById,
 	getNewsList,
 } from "#/server/news/news.server";
+import { logOperation } from "#/server/operation-log/operation-log.server";
 import { NewsForm } from "./-mods/NewsForm";
 
 const listSchema = z.object({
@@ -62,16 +64,37 @@ const getNewsListFn = createServerFn({ method: "GET" })
 const deleteNewsFn = createServerFn({ method: "POST" })
 	.middleware([adminPermGuard(PERMISSIONS.NEWS_DELETE)])
 	.inputValidator(idSchema)
-	.handler(async ({ data: { id } }) => {
+	.handler(async ({ data: { id }, context }) => {
+		const newsRecord = await getNewsById(id);
 		await deleteNews(id);
+		logOperation({
+			operatorId: context.user.id,
+			operatorName: context.user.username,
+			module: "news",
+			action: "delete",
+			targetType: "news",
+			targetId: id,
+			targetName: newsRecord?.title ?? id,
+		});
 		return { success: true };
 	});
 
 const changeStatusFn = createServerFn({ method: "POST" })
 	.middleware([adminPermGuard(PERMISSIONS.NEWS_PUBLISH)])
 	.inputValidator(statusSchema)
-	.handler(async ({ data: { id, status } }) => {
-		return changeNewsStatus(id, status);
+	.handler(async ({ data: { id, status }, context }) => {
+		const newsRecord = await getNewsById(id);
+		const result = await changeNewsStatus(id, status);
+		logOperation({
+			operatorId: context.user.id,
+			operatorName: context.user.username,
+			module: "news",
+			action: "change_status",
+			targetType: "news",
+			targetId: id,
+			targetName: newsRecord?.title || id,
+		});
+		return result;
 	});
 
 export const Route = createFileRoute("/admin/_admin/news/")({

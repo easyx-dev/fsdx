@@ -15,6 +15,7 @@ import {
 	getDictOptions,
 	importDicts,
 } from "#/server/dict/dict.server";
+import { logOperation } from "#/server/operation-log/operation-log.server";
 
 /** 树形结构中的条目 schema（不含 dictSlug，由父级继承） */
 const treeDictItemSchema = z.object({
@@ -60,14 +61,29 @@ export const exportDictsFn = createServerFn({ method: "GET" })
 export const importDictsFn = createServerFn({ method: "POST" })
 	.middleware([adminPermGuard(PERMISSIONS.DICT_IMPORT)])
 	.inputValidator(z.object({ data: dictImportSchema }))
-	.handler(async ({ data: { data } }): Promise<DictImportResult> => {
+	.handler(async ({ data: { data }, context }): Promise<DictImportResult> => {
 		const flat: DictImportData = {
 			dicts: data.dicts.map(({ children: _, ...rest }) => rest),
 			dictItems: data.dicts.flatMap((d) =>
 				(d.children ?? []).map((item) => ({ ...item, dictSlug: d.slug })),
 			),
 		};
-		return importDicts(flat);
+		const result = await importDicts(flat);
+		logOperation({
+			operatorId: context.user.id,
+			operatorName: context.user.username,
+			module: "dict",
+			action: "import",
+			targetType: "dict",
+			detail: {
+				dictsCreated: result.dictsCreated,
+				dictsUpdated: result.dictsUpdated,
+				itemsCreated: result.itemsCreated,
+				itemsUpdated: result.itemsUpdated,
+				itemsSkipped: result.itemsSkipped,
+			},
+		});
+		return result;
 	});
 
 /** 获取字典选项（供各页面 Select/Segmented/Tag 使用） */

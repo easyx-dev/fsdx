@@ -21,6 +21,7 @@ import { Route as AdminInitRouteImport } from './routes/admin/init'
 import { Route as AdminAdminRouteImport } from './routes/admin/_admin'
 import { Route as AdminAdminIndexRouteImport } from './routes/admin/_admin/index'
 import { Route as AdminAdminRolesIndexRouteImport } from './routes/admin/_admin/roles/index'
+import { Route as AdminAdminOperationLogsIndexRouteImport } from './routes/admin/_admin/operation-logs/index'
 import { Route as AdminAdminNewsIndexRouteImport } from './routes/admin/_admin/news/index'
 import { Route as AdminAdminLogsIndexRouteImport } from './routes/admin/_admin/logs/index'
 import { Route as AdminAdminFilesIndexRouteImport } from './routes/admin/_admin/files/index'
@@ -96,6 +97,12 @@ const AdminAdminRolesIndexRoute = AdminAdminRolesIndexRouteImport.update({
   path: '/roles/',
   getParentRoute: () => AdminAdminRoute,
 } as any)
+const AdminAdminOperationLogsIndexRoute =
+  AdminAdminOperationLogsIndexRouteImport.update({
+    id: '/operation-logs/',
+    path: '/operation-logs/',
+    getParentRoute: () => AdminAdminRoute,
+  } as any)
 const AdminAdminNewsIndexRoute = AdminAdminNewsIndexRouteImport.update({
   id: '/news/',
   path: '/news/',
@@ -199,6 +206,7 @@ export interface FileRoutesByFullPath {
   '/admin/files/': typeof AdminAdminFilesIndexRoute
   '/admin/logs/': typeof AdminAdminLogsIndexRoute
   '/admin/news/': typeof AdminAdminNewsIndexRoute
+  '/admin/operation-logs/': typeof AdminAdminOperationLogsIndexRoute
   '/admin/roles/': typeof AdminAdminRolesIndexRoute
   '/admin/news/$id/edit': typeof AdminAdminNewsIdEditRoute
   '/admin/users/admins/': typeof AdminAdminUsersAdminsIndexRoute
@@ -226,6 +234,7 @@ export interface FileRoutesByTo {
   '/admin/files': typeof AdminAdminFilesIndexRoute
   '/admin/logs': typeof AdminAdminLogsIndexRoute
   '/admin/news': typeof AdminAdminNewsIndexRoute
+  '/admin/operation-logs': typeof AdminAdminOperationLogsIndexRoute
   '/admin/roles': typeof AdminAdminRolesIndexRoute
   '/admin/news/$id/edit': typeof AdminAdminNewsIdEditRoute
   '/admin/users/admins': typeof AdminAdminUsersAdminsIndexRoute
@@ -256,6 +265,7 @@ export interface FileRoutesById {
   '/admin/_admin/files/': typeof AdminAdminFilesIndexRoute
   '/admin/_admin/logs/': typeof AdminAdminLogsIndexRoute
   '/admin/_admin/news/': typeof AdminAdminNewsIndexRoute
+  '/admin/_admin/operation-logs/': typeof AdminAdminOperationLogsIndexRoute
   '/admin/_admin/roles/': typeof AdminAdminRolesIndexRoute
   '/admin/_admin/news/$id/edit': typeof AdminAdminNewsIdEditRoute
   '/admin/_admin/users/admins/': typeof AdminAdminUsersAdminsIndexRoute
@@ -286,6 +296,7 @@ export interface FileRouteTypes {
     | '/admin/files/'
     | '/admin/logs/'
     | '/admin/news/'
+    | '/admin/operation-logs/'
     | '/admin/roles/'
     | '/admin/news/$id/edit'
     | '/admin/users/admins/'
@@ -313,6 +324,7 @@ export interface FileRouteTypes {
     | '/admin/files'
     | '/admin/logs'
     | '/admin/news'
+    | '/admin/operation-logs'
     | '/admin/roles'
     | '/admin/news/$id/edit'
     | '/admin/users/admins'
@@ -342,6 +354,7 @@ export interface FileRouteTypes {
     | '/admin/_admin/files/'
     | '/admin/_admin/logs/'
     | '/admin/_admin/news/'
+    | '/admin/_admin/operation-logs/'
     | '/admin/_admin/roles/'
     | '/admin/_admin/news/$id/edit'
     | '/admin/_admin/users/admins/'
@@ -444,6 +457,13 @@ declare module '@tanstack/react-router' {
       path: '/roles'
       fullPath: '/admin/roles/'
       preLoaderRoute: typeof AdminAdminRolesIndexRouteImport
+      parentRoute: typeof AdminAdminRoute
+    }
+    '/admin/_admin/operation-logs/': {
+      id: '/admin/_admin/operation-logs/'
+      path: '/operation-logs'
+      fullPath: '/admin/operation-logs/'
+      preLoaderRoute: typeof AdminAdminOperationLogsIndexRouteImport
       parentRoute: typeof AdminAdminRoute
     }
     '/admin/_admin/news/': {
@@ -566,6 +586,7 @@ interface AdminAdminRouteChildren {
   AdminAdminFilesIndexRoute: typeof AdminAdminFilesIndexRoute
   AdminAdminLogsIndexRoute: typeof AdminAdminLogsIndexRoute
   AdminAdminNewsIndexRoute: typeof AdminAdminNewsIndexRoute
+  AdminAdminOperationLogsIndexRoute: typeof AdminAdminOperationLogsIndexRoute
   AdminAdminRolesIndexRoute: typeof AdminAdminRolesIndexRoute
   AdminAdminNewsIdEditRoute: typeof AdminAdminNewsIdEditRoute
   AdminAdminUsersAdminsIndexRoute: typeof AdminAdminUsersAdminsIndexRoute
@@ -584,6 +605,7 @@ const AdminAdminRouteChildren: AdminAdminRouteChildren = {
   AdminAdminFilesIndexRoute: AdminAdminFilesIndexRoute,
   AdminAdminLogsIndexRoute: AdminAdminLogsIndexRoute,
   AdminAdminNewsIndexRoute: AdminAdminNewsIndexRoute,
+  AdminAdminOperationLogsIndexRoute: AdminAdminOperationLogsIndexRoute,
   AdminAdminRolesIndexRoute: AdminAdminRolesIndexRoute,
   AdminAdminNewsIdEditRoute: AdminAdminNewsIdEditRoute,
   AdminAdminUsersAdminsIndexRoute: AdminAdminUsersAdminsIndexRoute,

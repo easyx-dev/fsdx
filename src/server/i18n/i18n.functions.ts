@@ -30,6 +30,7 @@ import {
 	upsertContentTranslation,
 	upsertUITranslation,
 } from "#/server/i18n/i18n.server";
+import { logOperation } from "#/server/operation-log/operation-log.server";
 
 const localeSchema = z.enum(SUPPORTED_LOCALES).default(DEFAULT_LOCALE);
 
@@ -92,18 +93,34 @@ export const saveUITranslationFn = createServerFn({ method: "POST" })
 			valueType: z.string().optional(),
 		}),
 	)
-	.handler(async ({ data }) => {
-		return upsertUITranslation(
+	.handler(async ({ data, context }) => {
+		const result = await upsertUITranslation(
 			data as Parameters<typeof upsertUITranslation>[0],
 		);
+		logOperation({
+			operatorId: context.user.id,
+			operatorName: context.user.username,
+			module: "translation",
+			action: "update",
+			targetType: "ui_translation",
+		});
+		return result;
 	});
 
 /** UI 翻译删除 */
 export const deleteUITranslationFn = createServerFn({ method: "POST" })
 	.middleware([adminPermGuard(PERMISSIONS.TRANSLATION_MANAGE)])
 	.inputValidator(z.object({ id: z.string().min(1) }))
-	.handler(async ({ data: { id } }) => {
+	.handler(async ({ data: { id }, context }) => {
 		await deleteUITranslation(id);
+		logOperation({
+			operatorId: context.user.id,
+			operatorName: context.user.username,
+			module: "translation",
+			action: "delete",
+			targetType: "ui_translation",
+			targetId: id,
+		});
 		return { success: true };
 	});
 
@@ -134,9 +151,22 @@ export const importUITranslationsFn = createServerFn({ method: "POST" })
 			}),
 		}),
 	)
-	.handler(async ({ data: { data } }): Promise<TranslationImportResult> => {
-		return importUiTranslations(data as UiTranslationExportData);
-	});
+	.handler(
+		async ({ data: { data }, context }): Promise<TranslationImportResult> => {
+			const result = await importUiTranslations(
+				data as UiTranslationExportData,
+			);
+			logOperation({
+				operatorId: context.user.id,
+				operatorName: context.user.username,
+				module: "translation",
+				action: "import",
+				targetType: "ui_translation",
+				detail: { created: result.created, updated: result.updated },
+			});
+			return result;
+		},
+	);
 
 // ══════════════════ 实体翻译维护 ══════════════════
 
@@ -184,18 +214,34 @@ export const saveContentTranslationFn = createServerFn({ method: "POST" })
 			valueType: z.string().optional(),
 		}),
 	)
-	.handler(async ({ data }) => {
-		return upsertContentTranslation(
+	.handler(async ({ data, context }) => {
+		const result = await upsertContentTranslation(
 			data as Parameters<typeof upsertContentTranslation>[0],
 		);
+		logOperation({
+			operatorId: context.user.id,
+			operatorName: context.user.username,
+			module: "translation",
+			action: "update",
+			targetType: "content_translation",
+		});
+		return result;
 	});
 
 /** 实体翻译删除 */
 export const deleteContentTranslationFn = createServerFn({ method: "POST" })
 	.middleware([adminPermGuard(PERMISSIONS.TRANSLATION_MANAGE)])
 	.inputValidator(z.object({ id: z.string().min(1) }))
-	.handler(async ({ data: { id } }) => {
+	.handler(async ({ data: { id }, context }) => {
 		await deleteContentTranslation(id);
+		logOperation({
+			operatorId: context.user.id,
+			operatorName: context.user.username,
+			module: "translation",
+			action: "delete",
+			targetType: "content_translation",
+			targetId: id,
+		});
 		return { success: true };
 	});
 
@@ -228,9 +274,22 @@ export const importContentTranslationsFn = createServerFn({ method: "POST" })
 			}),
 		}),
 	)
-	.handler(async ({ data: { data } }): Promise<TranslationImportResult> => {
-		return importContentTranslations(data as ContentTranslationExportData);
-	});
+	.handler(
+		async ({ data: { data }, context }): Promise<TranslationImportResult> => {
+			const result = await importContentTranslations(
+				data as ContentTranslationExportData,
+			);
+			logOperation({
+				operatorId: context.user.id,
+				operatorName: context.user.username,
+				module: "translation",
+				action: "import",
+				targetType: "content_translation",
+				detail: { created: result.created, updated: result.updated },
+			});
+			return result;
+		},
+	);
 
 // ══════════════════ AI 翻译 ══════════════════
 

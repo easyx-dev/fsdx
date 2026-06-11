@@ -35,11 +35,13 @@ import {
 	type CreateClientUserInput,
 	createClientUser,
 	deleteClientUser,
+	getClientUser,
 	getClientUserList,
 	resetClientPassword,
 	type UpdateClientUserInput,
 	updateClientUser,
 } from "#/server/client-user/client-user.server";
+import { logOperation } from "#/server/operation-log/operation-log.server";
 
 // ─── Server Functions ──────────────────────────────────────────────
 
@@ -76,24 +78,75 @@ const getListFn = createServerFn({ method: "GET" })
 const createFn = createServerFn({ method: "POST" })
 	.middleware([adminPermGuard(PERMISSIONS.CLIENT_CREATE)])
 	.inputValidator(createSchema)
-	.handler(async ({ data }) => createClientUser(data as CreateClientUserInput));
+	.handler(async ({ data, context }) => {
+		const record = await createClientUser(data as CreateClientUserInput);
+		logOperation({
+			operatorId: context.user.id,
+			operatorName: context.user.username,
+			module: "client",
+			action: "create",
+			targetType: "client_user",
+			targetId: record.id,
+			targetName: record.username,
+		});
+		return record;
+	});
 
 const updateFn = createServerFn({ method: "POST" })
 	.middleware([adminPermGuard(PERMISSIONS.CLIENT_EDIT)])
 	.inputValidator(updateSchema)
-	.handler(async ({ data }) =>
-		updateClientUser(data.id, data as UpdateClientUserInput),
-	);
+	.handler(async ({ data, context }) => {
+		const result = await updateClientUser(
+			data.id,
+			data as UpdateClientUserInput,
+		);
+		logOperation({
+			operatorId: context.user.id,
+			operatorName: context.user.username,
+			module: "client",
+			action: "update",
+			targetType: "client_user",
+			targetId: data.id,
+			targetName: result?.username || data.id,
+		});
+		return result;
+	});
 
 const deleteFn = createServerFn({ method: "POST" })
 	.middleware([adminPermGuard(PERMISSIONS.CLIENT_DELETE)])
 	.inputValidator(idSchema)
-	.handler(async ({ data }) => deleteClientUser(data.id));
+	.handler(async ({ data, context }) => {
+		const existing = await getClientUser(data.id);
+		const result = await deleteClientUser(data.id);
+		logOperation({
+			operatorId: context.user.id,
+			operatorName: context.user.username,
+			module: "client",
+			action: "delete",
+			targetType: "client_user",
+			targetId: data.id,
+			targetName: existing?.username || data.id,
+		});
+		return result;
+	});
 
 const resetPwdFn = createServerFn({ method: "POST" })
 	.middleware([adminPermGuard(PERMISSIONS.CLIENT_EDIT)])
 	.inputValidator(resetPwdSchema)
-	.handler(async ({ data }) => resetClientPassword(data.id, data.password));
+	.handler(async ({ data, context }) => {
+		const existing = await getClientUser(data.id);
+		const result = await resetClientPassword(data.id, data.password);
+		logOperation({
+			operatorId: context.user.id,
+			operatorName: context.user.username,
+			module: "client",
+			action: "reset_pwd",
+			targetType: "client_user",
+			targetId: data.id,
+			targetName: existing?.username || data.id,
+		});
+		return result;
+	});
 
 // ─── Route & Component ──────────────────────────────────────────────
 

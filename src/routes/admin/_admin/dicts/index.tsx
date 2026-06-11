@@ -56,6 +56,7 @@ import {
 	updateDict,
 	updateDictItem,
 } from "#/server/dict/dict.server";
+import { logOperation } from "#/server/operation-log/operation-log.server";
 
 const dictSlugSchema = z.object({ dictSlug: z.string().min(1) });
 const idSchema = z.object({ id: z.string().min(1) });
@@ -106,50 +107,100 @@ const getDictItems = createServerFn({ method: "GET" })
 const createDictFn = createServerFn({ method: "POST" })
 	.middleware([adminPermGuard(PERMISSIONS.DICT_CREATE)])
 	.inputValidator(createDictSchema)
-	.handler(async ({ data }) => {
-		await createDict(data);
+	.handler(async ({ data, context }) => {
+		const result = await createDict(data);
+		logOperation({
+			operatorId: context.user.id,
+			operatorName: context.user.username,
+			module: "dict",
+			action: "create",
+			targetType: "dict",
+			targetId: result.id,
+			targetName: result.name,
+		});
 		return { success: true };
 	});
 
 const updateDictFn = createServerFn({ method: "POST" })
 	.middleware([adminPermGuard(PERMISSIONS.DICT_EDIT)])
 	.inputValidator(updateDictSchema)
-	.handler(async ({ data }) => {
+	.handler(async ({ data, context }) => {
 		const { id, ...rest } = data;
 		await updateDict(id, rest);
+		logOperation({
+			operatorId: context.user.id,
+			operatorName: context.user.username,
+			module: "dict",
+			action: "update",
+			targetType: "dict",
+			targetId: data.id,
+		});
 		return { success: true };
 	});
 
 const deleteDictFn = createServerFn({ method: "POST" })
 	.middleware([adminPermGuard(PERMISSIONS.DICT_DELETE)])
 	.inputValidator(idSchema)
-	.handler(async ({ data: { id } }) => {
+	.handler(async ({ data: { id }, context }) => {
 		await deleteDict(id);
+		logOperation({
+			operatorId: context.user.id,
+			operatorName: context.user.username,
+			module: "dict",
+			action: "delete",
+			targetType: "dict",
+			targetId: id,
+		});
 		return { success: true };
 	});
 
 const createDictItemFn = createServerFn({ method: "POST" })
 	.middleware([adminPermGuard(PERMISSIONS.DICT_CREATE_ITEM)])
 	.inputValidator(createItemSchema)
-	.handler(async ({ data }) => {
-		await createDictItem(data);
+	.handler(async ({ data, context }) => {
+		const result = await createDictItem(data);
+		logOperation({
+			operatorId: context.user.id,
+			operatorName: context.user.username,
+			module: "dict",
+			action: "create",
+			targetType: "dict_item",
+			targetId: result.id,
+			targetName: `${data.dictSlug}:${data.label}`,
+		});
 		return { success: true };
 	});
 
 const updateDictItemFn = createServerFn({ method: "POST" })
 	.middleware([adminPermGuard(PERMISSIONS.DICT_EDIT_ITEM)])
 	.inputValidator(updateItemSchema)
-	.handler(async ({ data }) => {
+	.handler(async ({ data, context }) => {
 		const { id, ...rest } = data;
 		await updateDictItem(id, rest);
+		logOperation({
+			operatorId: context.user.id,
+			operatorName: context.user.username,
+			module: "dict",
+			action: "update",
+			targetType: "dict_item",
+			targetId: data.id,
+		});
 		return { success: true };
 	});
 
 const deleteDictItemFn = createServerFn({ method: "POST" })
 	.middleware([adminPermGuard(PERMISSIONS.DICT_DELETE_ITEM)])
 	.inputValidator(idSchema)
-	.handler(async ({ data: { id } }) => {
+	.handler(async ({ data: { id }, context }) => {
 		await deleteDictItem(id);
+		logOperation({
+			operatorId: context.user.id,
+			operatorName: context.user.username,
+			module: "dict",
+			action: "delete",
+			targetType: "dict_item",
+			targetId: id,
+		});
 		return { success: true };
 	});
 

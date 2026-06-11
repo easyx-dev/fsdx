@@ -35,11 +35,13 @@ import {
 	type CreateAdminUserInput,
 	createAdminUser,
 	deleteAdminUser,
+	getAdminUser,
 	getAdminUserList,
 	resetAdminPassword,
 	type UpdateAdminUserInput,
 	updateAdminUser,
 } from "#/server/admin-user/admin-user.server";
+import { logOperation } from "#/server/operation-log/operation-log.server";
 import { getRoleList as getRoleListService } from "#/server/role/role.server";
 
 // ─── Server Functions ──────────────────────────────────────────────
@@ -82,27 +84,72 @@ const getListFn = createServerFn({ method: "GET" })
 const createFn = createServerFn({ method: "POST" })
 	.middleware([adminPermGuard(PERMISSIONS.ADMIN_CREATE)])
 	.inputValidator(createSchema)
-	.handler(async ({ data }) => createAdminUser(data as CreateAdminUserInput));
+	.handler(async ({ data, context }) => {
+		const record = await createAdminUser(data as CreateAdminUserInput);
+		logOperation({
+			operatorId: context.user.id,
+			operatorName: context.user.username,
+			module: "admin",
+			action: "create",
+			targetType: "admin_user",
+			targetId: record.id,
+			targetName: record.username,
+		});
+		return record;
+	});
 
 const updateFn = createServerFn({ method: "POST" })
 	.middleware([adminPermGuard(PERMISSIONS.ADMIN_EDIT)])
 	.inputValidator(updateSchema)
-	.handler(async ({ data }) =>
-		updateAdminUser(data.id, data as UpdateAdminUserInput),
-	);
+	.handler(async ({ data, context }) => {
+		const result = await updateAdminUser(data.id, data as UpdateAdminUserInput);
+		logOperation({
+			operatorId: context.user.id,
+			operatorName: context.user.username,
+			module: "admin",
+			action: "update",
+			targetType: "admin_user",
+			targetId: data.id,
+			targetName: result?.username || data.id,
+		});
+		return result;
+	});
 
 const deleteFn = createServerFn({ method: "POST" })
 	.middleware([adminPermGuard(PERMISSIONS.ADMIN_DELETE)])
 	.inputValidator(idSchema)
 	.handler(async ({ data, context }) => {
-		const ctx = context as { user?: { id: string } } | undefined;
-		return deleteAdminUser(data.id, ctx?.user?.id ?? "");
+		const existing = await getAdminUser(data.id);
+		const result = await deleteAdminUser(data.id, context.user.id);
+		logOperation({
+			operatorId: context.user.id,
+			operatorName: context.user.username,
+			module: "admin",
+			action: "delete",
+			targetType: "admin_user",
+			targetId: data.id,
+			targetName: existing?.username || data.id,
+		});
+		return result;
 	});
 
 const resetPwdFn = createServerFn({ method: "POST" })
 	.middleware([adminPermGuard(PERMISSIONS.ADMIN_EDIT)])
 	.inputValidator(resetPwdSchema)
-	.handler(async ({ data }) => resetAdminPassword(data.id, data.password));
+	.handler(async ({ data, context }) => {
+		const existing = await getAdminUser(data.id);
+		const result = await resetAdminPassword(data.id, data.password);
+		logOperation({
+			operatorId: context.user.id,
+			operatorName: context.user.username,
+			module: "admin",
+			action: "reset_pwd",
+			targetType: "admin_user",
+			targetId: data.id,
+			targetName: existing?.username || data.id,
+		});
+		return result;
+	});
 
 // ─── Route & Component ──────────────────────────────────────────────
 

@@ -39,6 +39,7 @@ import {
 	getFileList as getFileListService,
 	makePermanent,
 } from "#/server/file/file.server";
+import { logOperation } from "#/server/operation-log/operation-log.server";
 
 const fileListSchema = z.object({
 	status: z.string().optional(),
@@ -58,16 +59,32 @@ const getFileList = createServerFn({ method: "GET" })
 const deleteFileFn = createServerFn({ method: "POST" })
 	.middleware([adminPermGuard(PERMISSIONS.FILE_DELETE)])
 	.inputValidator(idSchema)
-	.handler(async ({ data }) => {
+	.handler(async ({ data, context }) => {
 		await deleteFile(data.id);
+		logOperation({
+			operatorId: context.user.id,
+			operatorName: context.user.username,
+			module: "file",
+			action: "delete",
+			targetType: "file",
+			targetId: data.id,
+		});
 		return { success: true };
 	});
 
 const makePermanentFn = createServerFn({ method: "POST" })
 	.middleware([adminPermGuard(PERMISSIONS.FILE_EDIT)])
 	.inputValidator(idSchema)
-	.handler(async ({ data }) => {
+	.handler(async ({ data, context }) => {
 		await makePermanent(data.id);
+		logOperation({
+			operatorId: context.user.id,
+			operatorName: context.user.username,
+			module: "file",
+			action: "make_permanent",
+			targetType: "file",
+			targetId: data.id,
+		});
 		return { success: true };
 	});
 

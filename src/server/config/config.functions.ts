@@ -14,6 +14,7 @@ import {
 	getVisibleConfigRows,
 	importConfigs,
 } from "#/server/config/config.server";
+import { logOperation } from "#/server/operation-log/operation-log.server";
 
 /** 获取客户端可见的系统配置（按当前 locale 解析值，无权限守卫） */
 export const getVisibleConfigsFn = createServerFn({ method: "GET" }).handler(
@@ -54,6 +55,18 @@ export const exportConfigsFn = createServerFn({ method: "GET" })
 export const importConfigsFn = createServerFn({ method: "POST" })
 	.middleware([adminPermGuard(PERMISSIONS.CONFIG_IMPORT)])
 	.inputValidator(z.object({ data: configImportSchema }))
-	.handler(async ({ data: { data } }): Promise<ConfigImportResult> => {
-		return importConfigs(data);
+	.handler(async ({ data: { data }, context }): Promise<ConfigImportResult> => {
+		const result = await importConfigs(data);
+		logOperation({
+			operatorId: context.user.id,
+			operatorName: context.user.username,
+			module: "config",
+			action: "import",
+			targetType: "config",
+			detail: {
+				created: result.created,
+				updated: result.updated,
+			},
+		});
+		return result;
 	});
