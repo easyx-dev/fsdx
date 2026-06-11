@@ -4,10 +4,12 @@
 
 import { ClientOnly, HeadContent, Scripts } from "@tanstack/react-router";
 import { useEffect } from "react";
+import { useClientAuth } from "#/components/client/ClientAuthProvider";
 import Footer from "#/components/client/Footer";
 import Header from "#/components/client/Header";
 import { useGlobalStore } from "#/lib/global-store/global-store";
 import {
+	setUserId,
 	startRouteTracking,
 	stopRouteTracking,
 	init as trackInit,
@@ -25,6 +27,7 @@ interface SSRRootDocumentProps {
 /** 前台路由：SSR 渲染 + 国际化 Provider */
 export function SSRRootDocument({ children }: SSRRootDocumentProps) {
 	const { locale } = useGlobalStore();
+	const { user } = useClientAuth();
 
 	// 客户端埋点追踪 SDK 初始化
 	useEffect(() => {
@@ -34,6 +37,11 @@ export function SSRRootDocument({ children }: SSRRootDocumentProps) {
 			stopRouteTracking();
 		};
 	}, []);
+
+	// 登录状态同步到追踪 SDK
+	useEffect(() => {
+		setUserId(user?.id);
+	}, [user?.id]);
 
 	return (
 		<html lang={locale} suppressHydrationWarning>
