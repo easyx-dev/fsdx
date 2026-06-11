@@ -211,6 +211,20 @@ function UITranslationPage() {
 			render: (v: string) => <EditorTypePreview valueType={v} />,
 		},
 		{
+			title: "创建时间",
+			dataIndex: "createdAt",
+			key: "createdAt",
+			width: 170,
+			valueType: "dateTime",
+		},
+		{
+			title: "更新时间",
+			dataIndex: "updatedAt",
+			key: "updatedAt",
+			width: 170,
+			valueType: "dateTime",
+		},
+		{
 			title: "操作",
 			key: "actions",
 			render: (_: unknown, record: Record<string, unknown>) => (

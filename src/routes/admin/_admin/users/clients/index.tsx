@@ -28,7 +28,6 @@ import { DictSelect } from "#/components/admin/DictSelect";
 import { DictTag } from "#/components/admin/DictTag";
 import { ProTable } from "#/components/admin/ProTable";
 import { PERMISSIONS } from "#/lib/permissions/permissions";
-import { formatDateTime } from "#/lib/utils/format-date";
 import { adminPermGuard } from "#/middleware/admin-auth";
 import {
 	type ClientUserRecord,
@@ -278,7 +277,21 @@ function ClientsPage() {
 			dataIndex: "lastLoginAt",
 			key: "lastLoginAt",
 			width: 170,
-			render: (v: string | null) => (v ? formatDateTime(v, "zh-CN") : "—"),
+			valueType: "dateTime",
+		},
+		{
+			title: "创建时间",
+			dataIndex: "createdAt",
+			key: "createdAt",
+			width: 170,
+			valueType: "dateTime",
+		},
+		{
+			title: "更新时间",
+			dataIndex: "updatedAt",
+			key: "updatedAt",
+			width: 170,
+			valueType: "dateTime",
 		},
 		{
 			title: "操作",

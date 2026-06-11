@@ -30,7 +30,6 @@ import { z } from "zod";
 import { AdminPageContent } from "#/components/admin/AdminPageContent";
 import { ProTable } from "#/components/admin/ProTable";
 import { PERMISSIONS } from "#/lib/permissions/permissions";
-import { formatDateTime } from "#/lib/utils/format-date";
 import { adminPermGuard } from "#/middleware/admin-auth";
 import { uploadFile } from "#/server/file/file.functions";
 import type { FileRecord } from "#/server/file/file.server";
@@ -240,8 +239,14 @@ function FilesPage() {
 			key: "createdAt",
 			width: 180,
 			sorter: true,
-			render: (_: unknown, record: FileRecord) =>
-				formatDateTime(record.createdAt, "zh-CN"),
+			valueType: "dateTime",
+		},
+		{
+			title: "更新时间",
+			dataIndex: "updatedAt",
+			key: "updatedAt",
+			width: 170,
+			valueType: "dateTime",
 		},
 		{
 			title: "操作",

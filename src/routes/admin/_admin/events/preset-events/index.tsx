@@ -11,11 +11,11 @@ import {
 	message,
 	Popconfirm,
 	Space,
-	Table,
 	Tag,
 } from "antd";
 import { useState } from "react";
 import { AdminPageContent } from "#/components/admin/AdminPageContent";
+import { ProTable } from "#/components/admin/ProTable";
 import {
 	createPresetEventFn,
 	deletePresetEventFn,
@@ -134,6 +134,20 @@ function PresetEventsPage() {
 				v ? <Tag color="blue">系统预置</Tag> : <Tag color="green">自定义</Tag>,
 		},
 		{
+			title: "创建时间",
+			dataIndex: "createdAt",
+			key: "createdAt",
+			width: 170,
+			valueType: "dateTime",
+		},
+		{
+			title: "更新时间",
+			dataIndex: "updatedAt",
+			key: "updatedAt",
+			width: 170,
+			valueType: "dateTime",
+		},
+		{
 			title: "操作",
 			key: "actions",
 			width: 160,
@@ -172,7 +186,7 @@ function PresetEventsPage() {
 				</Button>
 			}
 		>
-			<Table
+			<ProTable
 				columns={columns}
 				dataSource={events}
 				rowKey="name"
