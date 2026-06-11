@@ -1,0 +1,171 @@
+/**
+ * 新闻管理路由自包含表单组件
+ * 传入 id 即编辑（自动拉取数据），不传即新建，内部管理表单状态与提交逻辑
+ */
+
+import { Button, Form, Input, Spin, Switch } from "antd";
+import { useEffect, useState } from "react";
+import { DictSelect } from "#/components/admin/DictSelect";
+import { RichEditor } from "#/components/admin/RichEditor";
+import { createNewsFn, getNewsByIdFn, updateNewsFn } from "./news.functions";
+
+export interface NewsFormValues {
+	title: string;
+	slug?: string;
+	summary?: string;
+	content?: string;
+	status: "draft" | "published" | "archived";
+	isPinned: boolean;
+}
+
+interface NewsFormProps {
+	/** 编辑时传入新闻 id，不传为新建模式 */
+	id?: string;
+	/** 保存成功回调，传入记录 id */
+	onSuccess?: (recordId: string) => void;
+	/** 保存失败或记录不存在时回调 */
+	onError?: (error: Error) => void;
+	/** 取消回调 */
+	onCancel?: () => void;
+}
+
+export function NewsForm({ id, onSuccess, onError, onCancel }: NewsFormProps) {
+	const [form] = Form.useForm();
+	const [loading, setLoading] = useState(!!id);
+	const [submitting, setSubmitting] = useState(false);
+	const isEdit = !!id;
+
+	// 编辑模式：拉取数据回填表单
+	useEffect(() => {
+		if (!id) return;
+		let cancelled = false;
+		(async () => {
+			setLoading(true);
+			try {
+				const record = await getNewsByIdFn({ data: { id } });
+				if (cancelled) return;
+				if (record) {
+					form.setFieldsValue({
+						title: record.title,
+						slug: record.slug,
+						summary: record.summary,
+						content: record.content || "",
+						status: record.status,
+						isPinned: record.isPinned,
+					});
+				} else {
+					onError?.(new Error("新闻不存在"));
+				}
+			} catch (err) {
+				if (!cancelled)
+					onError?.(err instanceof Error ? err : new Error("加载失败"));
+			} finally {
+				if (!cancelled) setLoading(false);
+			}
+		})();
+		return () => {
+			cancelled = true;
+		};
+	}, [id, form, onError]);
+
+	const handleSubmit = async (values: NewsFormValues) => {
+		setSubmitting(true);
+		try {
+			if (id) {
+				await updateNewsFn({
+					data: {
+						id,
+						title: values.title,
+						slug: values.slug || undefined,
+						summary: values.summary || undefined,
+						content: values.content || undefined,
+						status: values.status as "draft" | "published" | "archived",
+						isPinned: values.isPinned || false,
+					},
+				});
+				onSuccess?.(id);
+			} else {
+				const record = await createNewsFn({
+					data: {
+						title: values.title,
+						slug: values.slug || undefined,
+						summary: values.summary || undefined,
+						content: values.content || undefined,
+						status: values.status as "draft" | "published",
+						isPinned: values.isPinned || false,
+					},
+				});
+				onSuccess?.(record.id);
+			}
+		} catch (err) {
+			onError?.(err instanceof Error ? err : new Error("保存失败"));
+		} finally {
+			setSubmitting(false);
+		}
+	};
+
+	if (loading) {
+		return (
+			<div className="flex justify-center py-20">
+				<Spin />
+			</div>
+		);
+	}
+
+	return (
+		<Form
+			form={form}
+			layout="vertical"
+			onFinish={handleSubmit}
+			initialValues={
+				!isEdit ? { status: "draft", isPinned: false, content: "" } : undefined
+			}
+		>
+			<Form.Item
+				name="title"
+				label="标题"
+				rules={[{ required: true, message: "请输入标题" }]}
+			>
+				<Input placeholder="新闻标题" />
+			</Form.Item>
+
+			<Form.Item
+				name="slug"
+				label="Slug"
+				extra={!isEdit ? "留空自动生成" : undefined}
+			>
+				<Input placeholder="自动生成" style={{ fontFamily: "monospace" }} />
+			</Form.Item>
+
+			<Form.Item name="summary" label="摘要">
+				<Input.TextArea rows={2} placeholder="新闻摘要（可选）" />
+			</Form.Item>
+
+			<Form.Item name="content" label="正文">
+				<RichEditor />
+			</Form.Item>
+
+			<div className="flex gap-8">
+				<Form.Item name="status" label="状态" className="min-w-28">
+					<DictSelect
+						dictSlug="news_status"
+						excludeValues={!isEdit ? ["archived"] : undefined}
+					/>
+				</Form.Item>
+
+				<Form.Item name="isPinned" label="置顶" valuePropName="checked">
+					<Switch />
+				</Form.Item>
+			</div>
+
+			<Form.Item>
+				<div className="flex gap-2">
+					<Button type="primary" htmlType="submit" loading={submitting}>
+						保存
+					</Button>
+					{onCancel && <Button onClick={onCancel}>取消</Button>}
+				</div>
+			</Form.Item>
+		</Form>
+	);
+}

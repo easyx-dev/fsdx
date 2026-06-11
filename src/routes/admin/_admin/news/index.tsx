@@ -10,7 +10,15 @@ import {
 } from "@ant-design/icons";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
-import { Button, message, Popconfirm, Segmented, Space, Tag } from "antd";
+import {
+	Button,
+	Drawer,
+	message,
+	Popconfirm,
+	Segmented,
+	Space,
+	Tag,
+} from "antd";
 import { useMemo, useState } from "react";
 import { z } from "zod";
 import { AdminPageContent } from "#/components/admin/AdminPageContent";
@@ -29,6 +37,7 @@ import {
 	deleteNews,
 	getNewsList,
 } from "#/server/news/news.server";
+import { NewsForm } from "./-mods/NewsForm";
 
 const listSchema = z.object({
 	status: z.string().optional(),
@@ -78,6 +87,10 @@ function NewsListPage() {
 	const [data, setData] = useState(newsData);
 	const [filter, setFilter] = useState<string>("");
 
+	/** 抽屉编辑状态 */
+	const [drawerOpen, setDrawerOpen] = useState(false);
+	const [editingRecordId, setEditingRecordId] = useState<string | null>(null);
+
 	const newsStatusOptions = useAdminDictStore((s) => s.dicts.news_status ?? []);
 
 	const segmentedOptions = useMemo(
@@ -94,6 +107,12 @@ function NewsListPage() {
 			data: { status: status || undefined },
 		});
 		setData(result);
+	}
+
+	/** 打开抽屉编辑 */
+	function handleQuickEdit(record: NewsRecord) {
+		setEditingRecordId(record.id);
+		setDrawerOpen(true);
 	}
 
 	/** 导出新闻数据 */
@@ -125,7 +144,7 @@ function NewsListPage() {
 			title: "状态",
 			dataIndex: "status",
 			key: "status",
-			width: 100,
+			width: 140,
 			render: (_: string, record: NewsRecord) => {
 				return (
 					<Space size={4}>
@@ -139,6 +158,21 @@ function NewsListPage() {
 			title: "发布时间",
 			dataIndex: "publishedAt",
 			key: "publishedAt",
+			width: 130,
+			render: (val: string | null) => (val ? formatDate(val, "zh-CN") : "—"),
+		},
+		{
+			title: "创建时间",
+			dataIndex: "createdAt",
+			key: "createdAt",
+			width: 130,
+			type: "dateTime",
+			render: (val: string | null) => (val ? formatDate(val, "zh-CN") : "—"),
+		},
+		{
+			title: "更新时间",
+			dataIndex: "updatedAt",
+			key: "updatedAt",
 			width: 130,
 			render: (val: string | null) => (val ? formatDate(val, "zh-CN") : "—"),
 		},
@@ -191,6 +225,13 @@ function NewsListPage() {
 							编辑
 						</Button>
 					</Link>
+					<Button
+						type="link"
+						size="small"
+						onClick={() => handleQuickEdit(record)}
+					>
+						快速编辑
+					</Button>
 					<Popconfirm
 						title="确定删除这条新闻？"
 						onConfirm={async () => {
@@ -258,6 +299,27 @@ function NewsListPage() {
 					},
 				}}
 			/>
+
+			<Drawer
+				title="快速编辑新闻"
+				open={drawerOpen}
+				onClose={() => setDrawerOpen(false)}
+				width={720}
+				destroyOnClose
+			>
+				{editingRecordId && (
+					<NewsForm
+						id={editingRecordId}
+						onSuccess={() => {
+							message.success("新闻已更新");
+							setDrawerOpen(false);
+							refresh();
+						}}
+						onError={(err) => message.error(err.message)}
+						onCancel={() => setDrawerOpen(false)}
+					/>
+				)}
+			</Drawer>
 		</AdminPageContent>
 	);
 }
