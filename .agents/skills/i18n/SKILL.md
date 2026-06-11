@@ -62,7 +62,7 @@ export const LOCALE_COOKIE = "lang";
 | `src/middleware/locale-middleware.ts` | 请求级语言检测中间件 |
 | `src/server/i18n/i18n.server.ts` | 翻译查询与维护的核心逻辑 |
 | `src/server/i18n/i18n.functions.ts` | Server Function 包装器（含权限守卫） |
-| `src/server/i18n/i18n-seed.ts` | 预设英文 UI 翻译种子数据 |
+| `src/server/i18n/i18n-seed.ts` | 预设英文 UI 翻译种子数据（每次启动增量写入） |
 | `src/db/schema/translation.ts` | 数据库表定义 |
 | `src/components/admin/FieldTranslationDrawer.tsx` | 实体字段翻译编辑抽屉 |
 
@@ -71,7 +71,7 @@ export const LOCALE_COOKIE = "lang";
 每次请求按以下顺序确定语言：
 
 1. **`localeMiddleware`**（`src/start.ts` 注册为全局 `requestMiddleware`）：从 `lang` Cookie 读取 locale，无 Cookie 时回退到 `zh`
-2. **`__root.tsx` beforeLoad**：根据 `context.locale` 调用 `getI18nBundle` 加载全量 UI 翻译
+2. **`__root.tsx` beforeLoad**：根据 `context.locale` 调用 `getLocaleBundle` 加载全量 UI 翻译
 3. **`GlobalStoreProvider`**：将 `locale` 和 `translations` 注入组件树
 4. **`I18nProvider`**（在 GlobalStoreProvider 内部）：创建 i18next 实例，locale 变化时自动重建
 
@@ -83,7 +83,7 @@ export const startInstance = createStart(() => ({
 
 // src/routes/__root.tsx — beforeLoad 加载翻译
 async beforeLoad({ context }) {
-  const translations = await getI18nBundle({ data: { locale: context.locale } });
+  const { translations } = await getLocaleBundle();
   return { locale: context.locale, translations };
 }
 ```
@@ -174,7 +174,7 @@ const { t } = useTranslation();
 { locale: "en", key: "提交", value: "Submit" },
 ```
 
-种子数据仅在 `ui_translation` 表为空时写入（首次部署），已有数据时跳过。
+种子数据每次启动时写入，基于 `(locale, key)` 唯一约束做 `onConflictDoNothing`，新条目增量追加，已有条目不受影响。
 
 ### Step 3：验证
 
@@ -322,7 +322,7 @@ export const uiTranslationCache = new MemoryCache<Record<string, string>>({
 
 ### 缓存行为
 
-- **载入**：`getUITranslations(locale)` 优先读缓存，未命中时查库并写入缓存
+- **载入**：`getUITranslations(locale)` 优先读缓存，未命中时查库并写入缓存（种子数据已在启动阶段通过 `onConflictDoNothing` 预先写入数据库）
 - **刷新**：管理端保存/删除 UI 翻译时，调用 `refreshUITranslationCache(locale)` 清除并重新加载
 - **范围**：按 locale 独立缓存，`en` 和 `zh` 各一份
 - **生命周期**：进程级内存缓存，服务重启后从库重新加载
@@ -330,6 +330,13 @@ export const uiTranslationCache = new MemoryCache<Record<string, string>>({
 ### 实体翻译无缓存
 
 `content_translation` 按需查询，不缓存。原因是实体翻译数量随业务增长，且查询模式通常按 `(entityType, entityId, locale)` 精确命中，性能可接受。
+
+### 系统配置翻译缓存
+`content_translation` 中 `entityType === "system_config"` 的翻译使用 `configTranslationCache` 独立缓存：
+- **载入**：`getConfig()` 解析客户端可见配置当前语言的值时，优先读 `configTranslationCache`
+- **刷新**：实体翻译保存/删除时，若 `entityType === "system_config"`，自动调用 `refreshConfigTranslationCache(locale)` 刷新
+- **范围**：按 locale 独立缓存，key 为 `entityId`
+- **生命周期**：进程级内存缓存，服务重启后从库重新加载
 
 ## 添加新语言
 
@@ -351,5 +358,7 @@ export const uiTranslationCache = new MemoryCache<Record<string, string>>({
 | 刷新 UI 翻译缓存 | 管理端保存翻译时自动刷新；手动调用 `refreshUITranslationCache(locale)` |
 | 切换语言 | 修改 `lang` Cookie → `window.location.reload()` |
 | 添加新支持语言 | 修改 `SUPPORTED_LOCALES` → 添加种子数据 → 更新语言标签 |
+| AI 自动翻译字段 | `FieldTranslationDrawer` 中点击 AI 翻译按钮 → 调用 `aiTranslateFieldFn` 使用 fast 模型翻译 |
+| 导出/导入翻译 | 访问翻译管理页面 → 使用导出/导入按钮（需 `translation:export` / `translation:import` 权限） |
 | 查看/编辑 UI 翻译 | 访问 `/admin/translations/ui`（需 `translation:view` 权限） |
 | 查看/编辑实体翻译 | 访问 `/admin/translations/content`（需 `translation:view` 权限） |

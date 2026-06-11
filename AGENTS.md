@@ -21,7 +21,13 @@ src/
 │   ├── index.ts              # Drizzle 客户端实例化
 │   └── schema/               # 数据库表定义（按模块拆分）
 ├── lib/                      # 基础库（无业务逻辑）
-│   ├── cache/                # 内存缓存（字典、系统配置）
+│   ├── cache/                # 内存缓存（字典、系统配置、UI 翻译、客户端用户）
+│   ├── ai/                   # AI 调用（翻译、聊天等）
+│   ├── captcha/              # 验证码生成工具（字体、路径、选项管理）
+│   ├── constants/            # 管理端常量
+│   ├── export/               # 导出工具
+│   ├── global-store/         # 全局状态（locale、翻译、系统配置）
+│   ├── i18n/                 # 国际化客户端（i18next 实例、Context Provider、hooks）
 │   ├── editor-types/         # 编辑器类型常量（类型、标签映射）
 │   ├── jwt/                  # JWT 签发与校验（jose）
 │   ├── logger/               # pino 日志 + 管理端日志文件查询
@@ -31,29 +37,42 @@ src/
 │   ├── storage/              # 文件存储抽象层（本地实现）
 │   └── utils/                # 通用工具函数（cn、分页等）
 ├── middleware/
-│   └── server-fn-auth.ts     # Server Function 鉴权与权限中间件（createMiddleware）
+│   ├── admin-auth.ts         # 管理端 Server Function 鉴权与权限中间件
+│   ├── api-auth.ts           # API 路由鉴权（verifyAdminAuth / verifyAdminPerm）
+│   ├── locale-middleware.ts  # 请求级语言检测中间件
+│   └── __tests__/
+│       └── admin-auth.test.ts
 ├── server/                   # 服务端业务逻辑
-│   ├── auth/
-│   │   ├── auth.server.ts        # 认证核心逻辑（登录、注册、当前用户查询）
-│   │   └── auth.types.ts         # 认证模块共享类型（AuthUser 等）
+│   ├── admin-auth/           # 管理端认证（登录、当前用户查询）
+│   ├── admin-user/           # 管理员用户 CRUD
 │   ├── captcha/              # 验证码生成、发送、校验
+│   ├── client-auth/          # 客户端认证（登录、注册、当前用户查询，含缓存）
+│   ├── client-user/          # 客户端用户 CRUD
 │   ├── config/               # 系统配置管理 + 缓存（SMTP 从系统配置表读取）
 │   ├── dict/                 # 字典管理 + 缓存
 │   ├── file/
 │   │   ├── file.server.ts        # 文件管理辅助函数（上传逻辑、清理、列表、删除）
 │   │   └── file.functions.ts     # 文件管理 Server Function 包装器
-│   ├── admin-user/           # 管理员用户 CRUD
-│   ├── client-user/          # 客户端用户 CRUD
+│   ├── i18n/                 # 国际化服务端（翻译查询、维护、种子数据、导出导入）
 │   ├── init/                 # 系统初始化
+│   ├── logs/                 # 日志查询
 │   ├── news/                 # 新闻 CRUD
 │   ├── role/                 # 角色管理
 │   ├── stats/                # 仪表盘统计
-│   ├── logs/                 # 日志查询
 │   └── tasks/                # 定时任务注册
 ├── routes/
 │   ├── __root.tsx            # 根布局（HTML shell）
 │   ├── index.tsx             # 前台首页（新闻列表 SSR）
-│   ├── news/$slug.tsx        # 新闻详情（SSR）
+│   ├── about.tsx             # 关于页面
+│   ├── login.tsx             # 客户端登录
+│   ├── register.tsx          # 客户端注册
+│   ├── news/
+│   │   ├── index.tsx         # 新闻列表
+│   │   └── $slug.tsx         # 新闻详情（SSR）
+│   ├── api/download/         # 文件下载路由
+│   │   ├── file.$id.tsx
+│   │   └── log.$id.tsx
+│   ├── admin.tsx             # 管理端入口
 │   └── admin/                # 管理端页面
 │       ├── init.tsx          # 系统初始化页面（首次部署）
 │       ├── login.tsx         # 管理员登录
@@ -72,6 +91,7 @@ src/
 | 构建 | Vite | 8 |
 | 语言 | TypeScript（strict） | 6 |
 | 样式 | Tailwind CSS + shadcn/ui (new-york) | 4 |
+| 国际化 | i18next + react-i18next | - |
 | 管理端 UI | Ant Design | 6 |
 | 数据库 | PostgreSQL + Drizzle ORM | - |
 | 校验 | Zod | - |
@@ -80,7 +100,7 @@ src/
 | 包管理 | pnpm | - |
 | 日志 | pino（multistream，按天写入文件） | - |
 | 认证 | JWT（jose）+ bcryptjs | - |
-| 编辑器 | TipTap（富文本） | 3.24 |
+| 编辑器 | WangEditor（@wangeditor/editor） | 5.x |
 | 定时任务 | cron | - |
 | 邮件 | nodemailer（SMTP 配置由初始化流程写入系统配置表） | - |
 
@@ -112,14 +132,13 @@ src/
 
 ### 鉴权中间件
 
-- 所有管理端 Server Function 使用 `src/middleware/server-fn-auth.ts` 的 `permGuard` 中间件
-- `permGuard(permission)` 组合 `authGuard` 先验证登录，再校验指定权限
-- `authGuard` 基于 TanStack Start `createMiddleware` 实现，从 Cookie 读取 JWT 并注入 `context.user` 和 `context.rolePermissions`
+- 所有管理端 Server Function 使用 `src/middleware/admin-auth.ts` 的 `adminPermGuard` 中间件
+- `adminPermGuard(permission)` 组合 `adminAuthGuard` 先验证登录，再校验指定权限
+- `adminAuthGuard` 基于 TanStack Start `createMiddleware` 实现，从 Cookie 读取 JWT 并注入 `context.user` 和 `context.rolePermissions`
 - Root 管理员自动拥有 `**` 权限，无需查询角色表
-- 路由 `beforeLoad` 中通过 Server Function 调用 `getCurrentUser` 获取当前用户信息
+- 路由 `beforeLoad` 中通过 Server Function 调用 `getCurrentAdminFn` 获取当前用户信息
 
 ### CSRF 保护
-
 - `src/start.ts` 通过 `createCsrfMiddleware` 显式注册 CSRF 中间件
 - 过滤条件 `ctx.handlerType === 'serverFn'`，仅对 Server Function 请求生效
 - 默认校验 `Origin` / `Referer` / `Sec-Fetch-Site` 头，拒绝跨站请求
@@ -128,7 +147,7 @@ src/
 
 - 构建时启用 TanStack Start import protection（默认配置）
 - 默认规则：客户端构建禁止导入 `*.server.*` 文件；服务端构建禁止导入 `*.client.*` 文件
-- `vite.config.ts` 额外配置：客户端禁止导入 `bcryptjs` 和 `drizzle-orm`（防止服务端包泄漏）
+- `vite.config.ts` 额外配置：客户端禁止导入 `bcryptjs`、`drizzle-orm` 和 `openai`（防止服务端包泄漏）
 - type-only import（`import type` / `export type`）不触发保护，因为运行时被擦除
 
 ### 环境变量
@@ -159,6 +178,7 @@ src/
 - 支持删除的表统一使用 `deleted_at` 软删除
 - 表名使用单数（如 `admin_user`、`file`）
 - Schema 文件按模块拆分在 `src/db/schema/`，通过 `index.ts` 统一导出
+- 包含 `uiTranslation`（UI 固定文案翻译）和 `contentTranslation`（实体字段翻译）两张翻译表
 - `admin_user` 表包含 `is_root` 布尔字段 + 数据库部分唯一索引，保证仅一个 root 用户
 
 ## 测试约定
@@ -270,8 +290,11 @@ import { getConfig } from "#/server/config/config.server";
 | `pnpm format` | Biome 代码格式化 |
 | `pnpm lint` | Biome 代码检查并自动修复 |
 | `pnpm test` | 运行 Vitest 测试 |
+| `pnpm db:generate` | 生成数据库迁移文件 |
+| `pnpm db:migrate` | 运行数据库迁移 |
 | `pnpm db:push` | 推送 Schema 到数据库 |
 | `pnpm db:studio` | 启动 Drizzle Studio |
+| `pnpm db:pull` | 从数据库拉取 Schema |
 
 ## 开发边界
 
