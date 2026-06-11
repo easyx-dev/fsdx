@@ -3,7 +3,7 @@
  */
 
 import { ClientOnly, HeadContent, Scripts } from "@tanstack/react-router";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useClientAuth } from "#/components/client/ClientAuthProvider";
 import Footer from "#/components/client/Footer";
 import Header from "#/components/client/Header";
@@ -27,21 +27,28 @@ interface SSRRootDocumentProps {
 /** 前台路由：SSR 渲染 + 国际化 Provider */
 export function SSRRootDocument({ children }: SSRRootDocumentProps) {
 	const { locale } = useGlobalStore();
-	const { user } = useClientAuth();
+	const { user, isLoading } = useClientAuth();
+	const trackInitialized = useRef(false);
 
-	// 客户端埋点追踪 SDK 初始化
+	// 登录状态就绪后初始化追踪 SDK（仅一次），确保首次 PageView 携带正确的 userId
 	useEffect(() => {
+		if (isLoading || trackInitialized.current) return;
+		trackInitialized.current = true;
+
+		setUserId(user?.id);
 		trackInit({ autoPageView: true });
 		startRouteTracking();
+
 		return () => {
 			stopRouteTracking();
 		};
-	}, []);
+	}, [isLoading, user?.id]);
 
-	// 登录状态同步到追踪 SDK
+	// 登录/退出时同步 userId 到追踪 SDK
 	useEffect(() => {
+		if (isLoading) return;
 		setUserId(user?.id);
-	}, [user?.id]);
+	}, [isLoading, user?.id]);
 
 	return (
 		<html lang={locale} suppressHydrationWarning>
