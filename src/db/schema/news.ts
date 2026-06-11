@@ -4,6 +4,7 @@
 import {
 	boolean,
 	index,
+	integer,
 	pgTable,
 	text,
 	timestamp,
@@ -24,6 +25,7 @@ export const news = pgTable(
 		coverImageId: uuid("cover_image_id").references(() => file.id),
 		status: varchar({ length: 20 }).default("draft").notNull(), // draft | published | archived
 		isPinned: boolean("is_pinned").default(false).notNull(),
+		sort: integer("sort").default(0).notNull(),
 		publishedAt: timestamp("published_at"),
 		createdBy: uuid("created_by").references(() => adminUser.id),
 		updatedBy: uuid("updated_by").references(() => adminUser.id),

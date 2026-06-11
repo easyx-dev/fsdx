@@ -26,7 +26,12 @@ export const updateNewsFn = createServerFn({ method: "POST" })
 	.middleware([adminPermGuard(PERMISSIONS.NEWS_EDIT)])
 	.inputValidator(updateNewsSchema)
 	.handler(async ({ data }) => {
-		return updateNews(data.id, data);
+		return updateNews(data.id, {
+			...data,
+			publishedAt:
+				data.publishedAt === null ? null : data.publishedAt || undefined,
+			sort: data.sort,
+		});
 	});
 
 /** 新建新闻 */
@@ -34,5 +39,9 @@ export const createNewsFn = createServerFn({ method: "POST" })
 	.middleware([adminPermGuard(PERMISSIONS.NEWS_CREATE)])
 	.inputValidator(createNewsSchema)
 	.handler(async ({ data }) => {
-		return createNews(data);
+		return createNews({
+			...data,
+			publishedAt: data.publishedAt || undefined,
+			sort: data.sort,
+		});
 	});

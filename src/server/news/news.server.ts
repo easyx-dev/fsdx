@@ -3,7 +3,7 @@
  * wangEditor 直接存储 HTML，无需服务端渲染转换
  * 国际化数据通过 translateNewsRecord / translateNewsRecords 按需组合获取
  */
-import { and, desc, eq, isNull, ne } from "drizzle-orm";
+import { and, asc, desc, eq, isNull, ne } from "drizzle-orm";
 import { db } from "#/db/index";
 import { news } from "#/db/schema";
 import { DEFAULT_LOCALE, type Locale } from "#/lib/i18n/i18n.types";
@@ -78,13 +78,21 @@ export async function translateNewsRecord(
 	return result;
 }
 
-/** 获取新闻列表 */
+/** 获取新闻列表（支持排序） */
 export async function getNewsList(params?: {
 	status?: string;
 	page?: number;
 	pageSize?: number;
+	sortField?: string;
+	sortOrder?: string;
 }) {
-	const { status, page = 1, pageSize = 20 } = params ?? {};
+	const {
+		status,
+		page = 1,
+		pageSize = 20,
+		sortField,
+		sortOrder,
+	} = params ?? {};
 	const offset = (page - 1) * pageSize;
 
 	const conditions = [isNull(news.deletedAt)];
@@ -92,12 +100,28 @@ export async function getNewsList(params?: {
 
 	const whereCondition = and(...conditions);
 
+	// 排序字段安全映射，仅允许已知列
+	const sortFieldMap = {
+		publishedAt: news.publishedAt,
+		createdAt: news.createdAt,
+		updatedAt: news.updatedAt,
+		sort: news.sort,
+	};
+	const sortCol =
+		sortFieldMap[sortField as keyof typeof sortFieldMap] ?? news.sort;
+	const direction = sortOrder === "ascend" ? asc(sortCol) : desc(sortCol);
+
+	// 默认：置顶优先 → sort DESC → 创建时间 DESC；用户排序时：置顶优先 → 用户选择
+	const orderBy = sortField
+		? [desc(news.isPinned), direction]
+		: [desc(news.isPinned), desc(news.sort), desc(news.createdAt)];
+
 	const [records, total] = await Promise.all([
 		db
 			.select()
 			.from(news)
 			.where(whereCondition)
-			.orderBy(desc(news.isPinned), desc(news.createdAt))
+			.orderBy(...orderBy)
 			.limit(pageSize)
 			.offset(offset),
 		db.$count(db.select().from(news).where(whereCondition)),
@@ -140,11 +164,17 @@ export async function createNews(params: {
 	coverImageId?: string;
 	status?: string;
 	isPinned?: boolean;
-	publishedAt?: Date;
+	sort?: number;
+	publishedAt?: Date | string;
 	createdBy?: string;
 }): Promise<NewsRecord> {
 	let slug = params.slug?.trim() || generateSlug(params.title);
 	slug = await ensureUniqueSlug(slug);
+
+	// 将 publishedAt 字符串转为 Date（前端 DatePicker 传出 ISO 字符串）
+	const publishedAtValue = params.publishedAt
+		? new Date(params.publishedAt)
+		: null;
 
 	const [record] = await db
 		.insert(news)
@@ -156,8 +186,9 @@ export async function createNews(params: {
 			coverImageId: params.coverImageId,
 			status: params.status || "draft",
 			isPinned: params.isPinned ?? false,
+			sort: params.sort ?? 0,
 			publishedAt:
-				params.status === "published" ? params.publishedAt || new Date() : null,
+				params.status === "published" ? publishedAtValue || new Date() : null,
 			createdBy: params.createdBy,
 		})
 		.returning();
@@ -177,7 +208,8 @@ export async function updateNews(
 		coverImageId?: string | null;
 		status?: string;
 		isPinned?: boolean;
-		publishedAt?: Date | null;
+		sort?: number;
+		publishedAt?: Date | string | null;
 		updatedBy?: string;
 	},
 ): Promise<NewsRecord | null> {
@@ -189,15 +221,36 @@ export async function updateNews(
 		slug = await ensureUniqueSlug(params.slug, id);
 	}
 
+	// 将 publishedAt 字符串转为 Date（前端 DatePicker 传出 ISO 字符串）
+	const publishedAtValue =
+		params.publishedAt !== undefined
+			? params.publishedAt
+				? new Date(params.publishedAt)
+				: null
+			: undefined;
+
 	const updateData: Record<string, unknown> = {
-		...params,
+		title: params.title,
+		summary: params.summary,
+		content: params.content,
+		coverImageId: params.coverImageId,
+		status: params.status,
+		isPinned: params.isPinned,
+		sort: params.sort,
 		slug,
 		updatedAt: new Date(),
 	};
 
+	// 清除 undefined 字段避免覆盖数据库值
+	for (const key of Object.keys(updateData)) {
+		if (updateData[key] === undefined) delete updateData[key];
+	}
+
 	// 发布时设置发布时间
-	if (params.status === "published" && !existing.publishedAt) {
-		updateData.publishedAt = params.publishedAt || new Date();
+	if (publishedAtValue !== undefined) {
+		updateData.publishedAt = publishedAtValue;
+	} else if (params.status === "published" && !existing.publishedAt) {
+		updateData.publishedAt = new Date();
 	}
 
 	const [updated] = await db
@@ -254,7 +307,7 @@ export async function getAllNewsForExport(): Promise<NewsRecord[]> {
 		.select()
 		.from(news)
 		.where(isNull(news.deletedAt))
-		.orderBy(desc(news.createdAt));
+		.orderBy(desc(news.sort), desc(news.createdAt));
 }
 
 /** 新闻导出 CSV 列定义 */

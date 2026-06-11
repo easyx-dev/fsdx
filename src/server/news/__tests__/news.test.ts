@@ -64,6 +64,7 @@ const newsRecord = {
 	content: "{}",
 	summary: "",
 	isPinned: false,
+	sort: 0,
 	publishedAt: null,
 	createdAt: new Date(),
 	updatedAt: new Date(),
@@ -111,6 +112,25 @@ describe("getNewsList", () => {
 			pageSize: 10,
 		});
 		expect(result.total).toBe(0);
+	});
+	it("支持排序参数", async () => {
+		mockDb.select.mockReturnValue({
+			from: vi.fn(() => ({
+				where: vi.fn(() => ({
+					orderBy: vi.fn(() => ({
+						limit: vi.fn(() => ({
+							offset: vi.fn().mockResolvedValue([newsRecord]),
+						})),
+					})),
+				})),
+			})),
+		});
+		mockDb.$count.mockResolvedValue(1);
+		const result = await getNewsList({
+			sortField: "createdAt",
+			sortOrder: "ascend",
+		});
+		expect(result.records).toHaveLength(1);
 	});
 });
 describe("getNewsBySlug", () => {

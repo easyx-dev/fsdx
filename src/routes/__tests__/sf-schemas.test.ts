@@ -52,6 +52,8 @@ const newsCreateSchema = z.object({
 	content: z.string().optional(),
 	status: z.enum(["draft", "published"]).default("draft"),
 	isPinned: z.boolean().default(false),
+	publishedAt: z.string().optional(),
+	sort: z.number().int().optional(),
 });
 
 const newsUpdateSchema = z.object({
@@ -62,6 +64,8 @@ const newsUpdateSchema = z.object({
 	content: z.string().optional(),
 	status: z.enum(["draft", "published", "archived"]),
 	isPinned: z.boolean(),
+	publishedAt: z.string().optional().nullable(),
+	sort: z.number().int().optional(),
 });
 
 const dictCreateSchema = z.object({
@@ -264,6 +268,31 @@ describe("newsUpdateSchema", () => {
 	it("缺少必填字段失败", () => {
 		expect(newsUpdateSchema.safeParse({ id: "n-1" }).success).toBe(false);
 	});
+
+	it("可选字段 publishedAt 和 sort 通过", () => {
+		expect(
+			newsUpdateSchema.safeParse({
+				id: "n-1",
+				title: "更新标题",
+				isPinned: true,
+				status: "published",
+				publishedAt: "2026-01-01T00:00:00.000Z",
+				sort: 10,
+			}).success,
+		).toBe(true);
+	});
+
+	it("publishedAt 为 null 通过", () => {
+		expect(
+			newsUpdateSchema.safeParse({
+				id: "n-1",
+				title: "更新标题",
+				isPinned: true,
+				status: "published",
+				publishedAt: null,
+			}).success,
+		).toBe(true);
+	});
 });
 
 describe("registerSchema", () => {
@@ -356,6 +385,15 @@ describe("newsCreateSchema", () => {
 		expect(
 			newsCreateSchema.safeParse({ title: "x", status: "deleted" }).success,
 		).toBe(false);
+	});
+
+	it("可选字段 publishedAt 和 sort 通过", () => {
+		const result = newsCreateSchema.safeParse({
+			title: "新闻标题",
+			publishedAt: "2026-01-01T00:00:00.000Z",
+			sort: 10,
+		});
+		expect(result.success).toBe(true);
 	});
 });
 

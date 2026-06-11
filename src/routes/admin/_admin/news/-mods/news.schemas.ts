@@ -16,6 +16,8 @@ export const createNewsSchema = z.object({
 	content: z.string().optional(),
 	status: z.enum(["draft", "published"]).default("draft"),
 	isPinned: z.boolean().default(false),
+	publishedAt: z.string().optional(),
+	sort: z.number().int().optional(),
 });
 
 /** 更新新闻 */
@@ -27,4 +29,6 @@ export const updateNewsSchema = z.object({
 	content: z.string().optional(),
 	status: z.enum(["draft", "published", "archived"]),
 	isPinned: z.boolean(),
+	publishedAt: z.string().optional().nullable(),
+	sort: z.number().int().optional(),
 });

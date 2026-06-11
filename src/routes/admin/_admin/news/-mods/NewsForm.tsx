@@ -3,7 +3,16 @@
  * 传入 id 即编辑（自动拉取数据），不传即新建，内部管理表单状态与提交逻辑
  */
 
-import { Button, Form, Input, Spin, Switch } from "antd";
+import {
+	Button,
+	DatePicker,
+	Form,
+	Input,
+	InputNumber,
+	Spin,
+	Switch,
+} from "antd";
+import dayjs from "dayjs";
 import { useEffect, useState } from "react";
 import { DictSelect } from "#/components/admin/DictSelect";
 import { RichEditor } from "#/components/admin/RichEditor";
@@ -16,6 +25,8 @@ export interface NewsFormValues {
 	content?: string;
 	status: "draft" | "published" | "archived";
 	isPinned: boolean;
+	publishedAt?: string;
+	sort?: number;
 }
 
 interface NewsFormProps {
@@ -52,6 +63,10 @@ export function NewsForm({ id, onSuccess, onError, onCancel }: NewsFormProps) {
 						content: record.content || "",
 						status: record.status,
 						isPinned: record.isPinned,
+						publishedAt: record.publishedAt
+							? dayjs(record.publishedAt)
+							: undefined,
+						sort: record.sort ?? 0,
 					});
 				} else {
 					onError?.(new Error("新闻不存在"));
@@ -81,6 +96,8 @@ export function NewsForm({ id, onSuccess, onError, onCancel }: NewsFormProps) {
 						content: values.content || undefined,
 						status: values.status as "draft" | "published" | "archived",
 						isPinned: values.isPinned || false,
+						publishedAt: values.publishedAt || undefined,
+						sort: values.sort ?? 0,
 					},
 				});
 				onSuccess?.(id);
@@ -155,6 +172,22 @@ export function NewsForm({ id, onSuccess, onError, onCancel }: NewsFormProps) {
 
 				<Form.Item name="isPinned" label="置顶" valuePropName="checked">
 					<Switch />
+				</Form.Item>
+
+				<Form.Item name="sort" label="排序" extra="数字越大越靠前">
+					<InputNumber min={0} style={{ width: 120 }} />
+				</Form.Item>
+
+				<Form.Item
+					name="publishedAt"
+					label="发布时间"
+					extra="留空则在发布时自动设为当前时间"
+				>
+					<DatePicker
+						showTime
+						format="YYYY-MM-DD HH:mm"
+						style={{ width: 220 }}
+					/>
 				</Form.Item>
 			</div>
 

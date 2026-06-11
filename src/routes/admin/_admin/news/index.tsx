@@ -19,6 +19,7 @@ import {
 	Space,
 	Tag,
 } from "antd";
+import dayjs from "dayjs";
 import { useMemo, useState } from "react";
 import { z } from "zod";
 import { AdminPageContent } from "#/components/admin/AdminPageContent";
@@ -28,7 +29,7 @@ import { ProTable } from "#/components/admin/ProTable";
 import { downloadFile } from "#/lib/export/export.utils";
 import { useAdminDictStore } from "#/lib/global-store/admin-dict-store";
 import { PERMISSIONS } from "#/lib/permissions/permissions";
-import { formatDate } from "#/lib/utils/format-date";
+import { formatDate, formatDateTime } from "#/lib/utils/format-date";
 import { adminPermGuard } from "#/middleware/admin-auth";
 import { exportNewsFn } from "#/server/news/news.functions";
 import type { NewsRecord } from "#/server/news/news.server";
@@ -42,6 +43,8 @@ import { NewsForm } from "./-mods/NewsForm";
 const listSchema = z.object({
 	status: z.string().optional(),
 	page: z.number().optional(),
+	sortField: z.string().optional(),
+	sortOrder: z.string().optional(),
 });
 const idSchema = z.object({ id: z.string().min(1) });
 const statusSchema = z.object({
@@ -52,8 +55,8 @@ const statusSchema = z.object({
 const getNewsListFn = createServerFn({ method: "GET" })
 	.middleware([adminPermGuard(PERMISSIONS.NEWS_VIEW)])
 	.inputValidator(listSchema)
-	.handler(async ({ data: { status, page = 1 } }) => {
-		return getNewsList({ status, page, pageSize: 20 });
+	.handler(async ({ data: { status, page = 1, sortField, sortOrder } }) => {
+		return getNewsList({ status, page, pageSize: 20, sortField, sortOrder });
 	});
 
 const deleteNewsFn = createServerFn({ method: "POST" })
@@ -86,6 +89,8 @@ function NewsListPage() {
 	const newsData = Route.useLoaderData();
 	const [data, setData] = useState(newsData);
 	const [filter, setFilter] = useState<string>("");
+	const [sortField, setSortField] = useState<string | undefined>();
+	const [sortOrder, setSortOrder] = useState<string | undefined>();
 
 	/** 抽屉编辑状态 */
 	const [drawerOpen, setDrawerOpen] = useState(false);
@@ -101,13 +106,27 @@ function NewsListPage() {
 		[newsStatusOptions],
 	);
 
-	async function refresh(s?: string) {
+	async function refresh(s?: string, sf?: string, so?: string) {
 		const status = s !== undefined ? s : filter;
+		const field = sf !== undefined ? sf : sortField;
+		const order = so !== undefined ? so : sortOrder;
 		const result = await getNewsListFn({
-			data: { status: status || undefined },
+			data: { status: status || undefined, sortField: field, sortOrder: order },
 		});
 		setData(result);
 	}
+
+	/** 表格排序变更 */
+	const handleTableChange = async (
+		_pagination: unknown,
+		_filters: unknown,
+		sorter: unknown,
+	) => {
+		const s = sorter as { field?: string; order?: string };
+		setSortField(s.field);
+		setSortOrder(s.order);
+		await refresh(undefined, s.field, s.order);
+	};
 
 	/** 打开抽屉编辑 */
 	function handleQuickEdit(record: NewsRecord) {
@@ -118,7 +137,7 @@ function NewsListPage() {
 	/** 导出新闻数据 */
 	async function handleExport(format: "csv" | "json") {
 		const result = await exportNewsFn({ data: { format } });
-		const timestamp = new Date().toISOString().slice(0, 10);
+		const timestamp = dayjs().format("YYYY-MM-DD");
 		const ext = format === "csv" ? "csv" : "json";
 		const mime =
 			format === "csv" ? "text/csv;charset=utf-8" : "application/json";
@@ -155,26 +174,37 @@ function NewsListPage() {
 			},
 		},
 		{
+			title: "排序",
+			dataIndex: "sort",
+			key: "sort",
+			width: 90,
+			sorter: true,
+		},
+		{
 			title: "发布时间",
 			dataIndex: "publishedAt",
 			key: "publishedAt",
 			width: 130,
+			sorter: true,
 			render: (val: string | null) => (val ? formatDate(val, "zh-CN") : "—"),
 		},
 		{
 			title: "创建时间",
 			dataIndex: "createdAt",
 			key: "createdAt",
-			width: 130,
-			type: "dateTime",
-			render: (val: string | null) => (val ? formatDate(val, "zh-CN") : "—"),
+			width: 160,
+			sorter: true,
+			render: (val: string | null) =>
+				val ? formatDateTime(val, "zh-CN") : "—",
 		},
 		{
 			title: "更新时间",
 			dataIndex: "updatedAt",
 			key: "updatedAt",
-			width: 130,
-			render: (val: string | null) => (val ? formatDate(val, "zh-CN") : "—"),
+			width: 160,
+			sorter: true,
+			render: (val: string | null) =>
+				val ? formatDateTime(val, "zh-CN") : "—",
 		},
 		{
 			title: "操作",
@@ -287,13 +317,14 @@ function NewsListPage() {
 				dataSource={data.records}
 				columns={columns}
 				rowKey="id"
+				onChange={handleTableChange}
 				pagination={{
 					total: data.total,
 					pageSize: data.pageSize,
 					current: data.page,
 					onChange: async (page) => {
 						const result = await getNewsListFn({
-							data: { status: filter || undefined, page },
+							data: { status: filter || undefined, page, sortField, sortOrder },
 						});
 						setData(result);
 					},
