@@ -21,6 +21,7 @@ import {
 	Space,
 	Switch,
 } from "antd";
+import dayjs from "dayjs";
 import { useMemo, useState } from "react";
 import { z } from "zod";
 import { AdminPageContent } from "#/components/admin/AdminPageContent";
@@ -230,7 +231,7 @@ function ConfigPage() {
 	/** 导出系统配置数据（JSON） */
 	const handleExportConfigs = async () => {
 		const json = await exportConfigsFn();
-		const timestamp = new Date().toISOString().slice(0, 10);
+		const timestamp = dayjs().format("YYYY-MM-DD");
 		downloadFile(json, `configs_export_${timestamp}.json`, "application/json");
 		message.success("导出完成");
 	};

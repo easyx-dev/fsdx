@@ -86,11 +86,7 @@ function NewsListPage() {
 								<CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
 									<time className="text-xs text-muted-foreground">
 										{item.publishedAt
-											? formatDate(item.publishedAt, locale, {
-													year: "numeric",
-													month: "long",
-													day: "numeric",
-												})
+											? formatDate(item.publishedAt, locale)
 											: ""}
 									</time>
 								</CardContent>

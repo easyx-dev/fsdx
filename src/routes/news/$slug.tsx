@@ -91,13 +91,7 @@ function NewsDetailPage() {
 					</h1>
 					<div className="mt-3 flex flex-wrap items-center gap-3 text-sm text-muted-foreground sm:mt-4 sm:gap-4">
 						{data.publishedAt && (
-							<time>
-								{formatDate(data.publishedAt, locale, {
-									year: "numeric",
-									month: "long",
-									day: "numeric",
-								})}
-							</time>
+							<time>{formatDate(data.publishedAt, locale)}</time>
 						)}
 					</div>
 				</header>

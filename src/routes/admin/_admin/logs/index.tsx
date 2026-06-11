@@ -21,6 +21,7 @@ import {
 	Tag,
 	Tooltip,
 } from "antd";
+import type { Dayjs } from "dayjs";
 import { useState } from "react";
 import { z } from "zod";
 import { AdminPageContent } from "#/components/admin/AdminPageContent";
@@ -91,14 +92,9 @@ function LogsPage() {
 	/** 执行日志搜索 */
 	const doSearch = async (p = 1) => {
 		const values = form.getFieldsValue();
-		// DatePicker.RangePicker 的值为 dayjs 对象数组，需转为字符串
-		const dateRange: [unknown, unknown] | undefined = values.dateRange;
-		const startDate = dateRange?.[0]
-			? (dateRange[0] as { format: (f: string) => string }).format("YYYY-MM-DD")
-			: "";
-		const endDate = dateRange?.[1]
-			? (dateRange[1] as { format: (f: string) => string }).format("YYYY-MM-DD")
-			: "";
+		const dateRange: [Dayjs, Dayjs] | undefined = values.dateRange;
+		const startDate = dateRange?.[0] ? dateRange[0].format("YYYY-MM-DD") : "";
+		const endDate = dateRange?.[1] ? dateRange[1].format("YYYY-MM-DD") : "";
 
 		try {
 			const data = await searchLogsFn({
@@ -126,7 +122,6 @@ function LogsPage() {
 
 	/** 点击日期标签快速搜索 */
 	const handleDateClick = (date: string) => {
-		// 绕过 dayjs 对象，直接发起搜索
 		searchLogsFn({
 			data: { startDate: date, endDate: date, page: 1, pageSize },
 		})

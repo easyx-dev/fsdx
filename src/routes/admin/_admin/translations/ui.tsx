@@ -20,6 +20,7 @@ import {
 	Space,
 	Tag,
 } from "antd";
+import dayjs from "dayjs";
 import { useCallback, useEffect, useState } from "react";
 import { z } from "zod";
 import { AdminPageContent } from "#/components/admin/AdminPageContent";
@@ -152,7 +153,7 @@ function UITranslationPage() {
 	async function handleExport() {
 		try {
 			const json = await exportUITranslationsFn();
-			const timestamp = new Date().toISOString().slice(0, 10);
+			const timestamp = dayjs().format("YYYY-MM-DD");
 			downloadFile(
 				json,
 				`ui_translations_export_${timestamp}.json`,

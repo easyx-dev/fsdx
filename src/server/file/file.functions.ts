@@ -3,6 +3,7 @@
  */
 import { randomUUID } from "node:crypto";
 import { createServerFn } from "@tanstack/react-start";
+import dayjs from "dayjs";
 import { and, eq, isNull } from "drizzle-orm";
 import { db } from "#/db/index";
 import { file } from "#/db/schema";
@@ -50,7 +51,7 @@ export const uploadFile = createServerFn({ method: "POST" })
 		const ext = originalName.includes(".")
 			? originalName.slice(originalName.lastIndexOf("."))
 			: "";
-		const date = new Date().toISOString().slice(0, 10);
+		const date = dayjs().format("YYYY-MM-DD");
 		const storedName = `${randomUUID()}${ext}`;
 		const path = `${date}/${storedName}`;
 

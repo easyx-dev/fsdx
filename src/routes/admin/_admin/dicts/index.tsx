@@ -30,6 +30,7 @@ import {
 	Switch,
 	Tag,
 } from "antd";
+import dayjs from "dayjs";
 import { useState } from "react";
 import { z } from "zod";
 import { AdminPageContent } from "#/components/admin/AdminPageContent";
@@ -334,7 +335,7 @@ function DictsPage() {
 	/** 导出字典数据（JSON） */
 	const handleExportDicts = async () => {
 		const json = await exportDictsFn();
-		const timestamp = new Date().toISOString().slice(0, 10);
+		const timestamp = dayjs().format("YYYY-MM-DD");
 		downloadFile(json, `dicts_export_${timestamp}.json`, "application/json");
 		message.success("导出完成");
 	};
