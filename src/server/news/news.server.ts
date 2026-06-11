@@ -40,8 +40,9 @@ async function ensureUniqueSlug(
 ): Promise<string> {
 	let uniqueSlug = slug;
 	let counter = 1;
+	const MAX_ATTEMPTS = 100;
 
-	while (true) {
+	while (counter <= MAX_ATTEMPTS) {
 		const conditions = [eq(news.slug, uniqueSlug), isNull(news.deletedAt)];
 		if (excludeId) conditions.push(ne(news.id, excludeId));
 
@@ -52,6 +53,13 @@ async function ensureUniqueSlug(
 		if (!existing) break;
 		uniqueSlug = `${slug}-${counter}`;
 		counter++;
+	}
+
+	// 超过最大尝试次数仍未找到唯一 slug
+	if (counter > MAX_ATTEMPTS) {
+		throw new Error(
+			`无法为 slug "${slug}" 生成唯一标识（已尝试 ${MAX_ATTEMPTS} 次）`,
+		);
 	}
 
 	return uniqueSlug;
