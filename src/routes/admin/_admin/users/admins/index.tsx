@@ -300,7 +300,6 @@ function AdminsPage() {
 		{
 			title: "操作",
 			key: "actions",
-			width: 200,
 			render: (_: unknown, record: AdminUserListItem) => (
 				<Space size={4}>
 					<Button

@@ -283,7 +283,6 @@ function ClientsPage() {
 		{
 			title: "操作",
 			key: "actions",
-			width: 200,
 			render: (_: unknown, record: ClientUserRecord) => (
 				<Space size={4}>
 					<Button

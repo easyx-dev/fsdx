@@ -201,12 +201,7 @@ function UITranslationPage() {
 			dataIndex: "value",
 			key: "value",
 			ellipsis: true,
-			render: (v: string) => (
-				<span className="text-sm">
-					{v.slice(0, 100)}
-					{v.length > 100 ? "…" : ""}
-				</span>
-			),
+			width: 450,
 		},
 		{
 			title: "编辑器类型",
@@ -218,7 +213,6 @@ function UITranslationPage() {
 		{
 			title: "操作",
 			key: "actions",
-			width: 140,
 			render: (_: unknown, record: Record<string, unknown>) => (
 				<Space size={4}>
 					<Button

@@ -212,12 +212,13 @@ function FilesPage() {
 			dataIndex: "originalName",
 			key: "originalName",
 			ellipsis: true,
+			width: 200,
 		},
 		{
 			title: "大小",
 			dataIndex: "size",
 			key: "size",
-			width: 100,
+			width: 120,
 			sorter: true,
 			render: (_: unknown, record: FileRecord) => formatSize(record.size),
 		},
@@ -245,7 +246,6 @@ function FilesPage() {
 		{
 			title: "操作",
 			key: "actions",
-			width: 200,
 			render: (_: unknown, record: FileRecord) => (
 				<Space size={4}>
 					{isImage(record.mimeType) && (

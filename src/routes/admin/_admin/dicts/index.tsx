@@ -392,11 +392,12 @@ function DictsPage() {
 	};
 	/** 字典条目表格列定义 */
 	const itemColumns = [
-		{ title: "标签", dataIndex: "label", key: "label" },
+		{ title: "标签", dataIndex: "label", key: "label", width: 120 },
 		{
 			title: "值",
 			dataIndex: "value",
 			key: "value",
+			width: 220,
 			render: (val: string) => <code className="text-xs">{val}</code>,
 		},
 		{
@@ -463,7 +464,6 @@ function DictsPage() {
 		{
 			title: "操作",
 			key: "actions",
-			width: 100,
 			render: (_: unknown, record: DictItemRecord) => (
 				<Space size={4}>
 					<Button

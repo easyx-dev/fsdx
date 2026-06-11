@@ -3,16 +3,14 @@
  * 基于 dayjs 实现，管理端 YYYY-MM-DD HH:mm，前台本地化格式
  */
 import dayjs from "dayjs";
-import "dayjs/locale/zh-cn";
-import "dayjs/locale/en";
 
 /** 格式化日期为本地化字符串（前台用，如 2026年6月11日 / June 11, 2026） */
 export function formatDate(
 	date: string | number | Date,
 	locale: string,
 ): string {
-	const localeKey = locale.startsWith("zh") ? "zh-cn" : "en";
-	return dayjs(date).locale(localeKey).format("LL");
+	const fmt = locale.startsWith("zh") ? "YYYY年M月D日" : "MMMM D, YYYY";
+	return dayjs(date).format(fmt);
 }
 
 /** 格式化日期时间为 YYYY-MM-DD HH:mm（管理端用） */

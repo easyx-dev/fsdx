@@ -207,9 +207,10 @@ function NewsListPage() {
 			title: "发布时间",
 			dataIndex: "publishedAt",
 			key: "publishedAt",
-			width: 130,
+			width: 160,
 			sorter: true,
-			render: (val: string | null) => (val ? formatDate(val, "zh-CN") : "—"),
+			render: (val: string | null) =>
+				val ? dayjs(val).format("YYYY-MM-DD HH:mm") : "—",
 		},
 		{
 			title: "创建时间",

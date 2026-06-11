@@ -25,7 +25,7 @@ export interface NewsFormValues {
 	content?: string;
 	status: "draft" | "published" | "archived";
 	isPinned: boolean;
-	publishedAt?: string;
+	publishedAt?: dayjs.Dayjs;
 	sort?: number;
 }
 
@@ -96,7 +96,9 @@ export function NewsForm({ id, onSuccess, onError, onCancel }: NewsFormProps) {
 						content: values.content || undefined,
 						status: values.status as "draft" | "published" | "archived",
 						isPinned: values.isPinned || false,
-						publishedAt: values.publishedAt || undefined,
+						publishedAt: values.publishedAt
+							? values.publishedAt.toISOString()
+							: undefined,
 						sort: values.sort ?? 0,
 					},
 				});

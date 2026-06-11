@@ -26,7 +26,7 @@ import { z } from "zod";
 import { AdminPageContent } from "#/components/admin/AdminPageContent";
 import { EditorTypeSelect } from "#/components/admin/EditorTypeSelect";
 import { JsonImportButton } from "#/components/admin/JsonImportButton";
-import { ProTable } from "#/components/admin/ProTable";
+import { type ProColumnType, ProTable } from "#/components/admin/ProTable";
 import { downloadFile } from "#/lib/export/export.utils";
 import { SUPPORTED_LOCALES } from "#/lib/i18n/i18n.types";
 import { PERMISSIONS } from "#/lib/permissions/permissions";
@@ -224,6 +224,7 @@ function ContentTranslationPage() {
 			key: "entityId",
 			width: 120,
 			ellipsis: true,
+			copyable: true,
 		},
 		{ title: "字段名", dataIndex: "fieldName", key: "fieldName", width: 100 },
 		{
@@ -238,17 +239,11 @@ function ContentTranslationPage() {
 			dataIndex: "value",
 			key: "value",
 			ellipsis: true,
-			render: (v: string) => (
-				<span className="text-sm">
-					{v.slice(0, 80)}
-					{v.length > 80 ? "…" : ""}
-				</span>
-			),
+			width: 450,
 		},
 		{
 			title: "操作",
 			key: "actions",
-			width: 140,
 			render: (_: unknown, record: Record<string, unknown>) => (
 				<Space size={4}>
 					<Button
