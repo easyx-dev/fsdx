@@ -36,6 +36,7 @@ import { z } from "zod";
 import { AdminPageContent } from "#/components/admin/AdminPageContent";
 import { EditorTypePreview } from "#/components/admin/EditorTypePreview";
 import { EditorTypeSelect } from "#/components/admin/EditorTypeSelect";
+import { FieldTranslationDrawer } from "#/components/admin/FieldTranslationDrawer";
 import { JsonImportButton } from "#/components/admin/JsonImportButton";
 import { ProTable } from "#/components/admin/ProTable";
 import { TypeAwareEditor } from "#/components/admin/TypeAwareEditor";
@@ -58,6 +59,10 @@ import {
 } from "#/server/dict/dict.server";
 import { logOperation } from "#/server/operation-log/operation-log.server";
 
+/** 字典条目可翻译字段定义 */
+const DICT_ITEM_TRANSLATABLE_FIELDS = [
+	{ name: "label", label: "标签", valueType: "input" as const },
+];
 const dictSlugSchema = z.object({ dictSlug: z.string().min(1) });
 const idSchema = z.object({ id: z.string().min(1) });
 const createDictSchema = z.object({
@@ -486,6 +491,12 @@ function DictsPage() {
 						size="small"
 						icon={<EditOutlined />}
 						onClick={() => openItemModal(record)}
+					/>
+					<FieldTranslationDrawer
+						entityType="dict_item"
+						entityId={record.id}
+						fields={DICT_ITEM_TRANSLATABLE_FIELDS}
+						originalValues={{ label: record.label ?? "" }}
 					/>
 					{!isPresetDict(record.dictSlug) && (
 						<Popconfirm
