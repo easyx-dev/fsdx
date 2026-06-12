@@ -31,7 +31,7 @@ import { useAdminDictStore } from "#/lib/global-store/admin-dict-store";
 import { PERMISSIONS } from "#/lib/permissions/permissions";
 import { formatDateTime } from "#/lib/utils/format-date";
 import { adminPermGuard } from "#/middleware/admin-auth";
-import { exportNewsFn } from "#/server/news/news.functions";
+import { exportNewsSFn } from "#/server/news/news.functions";
 import type { NewsRecord } from "#/server/news/news.server";
 import {
 	changeNewsStatus,
@@ -54,14 +54,14 @@ const statusSchema = z.object({
 	status: z.enum(["draft", "published", "archived"]),
 });
 
-const getNewsListFn = createServerFn({ method: "GET" })
+const getNewsListSFn = createServerFn({ method: "GET" })
 	.middleware([adminPermGuard(PERMISSIONS.NEWS_VIEW)])
 	.inputValidator(listSchema)
 	.handler(async ({ data: { status, page = 1, sortField, sortOrder } }) => {
 		return getNewsList({ status, page, pageSize: 20, sortField, sortOrder });
 	});
 
-const deleteNewsFn = createServerFn({ method: "POST" })
+const deleteNewsSFn = createServerFn({ method: "POST" })
 	.middleware([adminPermGuard(PERMISSIONS.NEWS_DELETE)])
 	.inputValidator(idSchema)
 	.handler(async ({ data: { id }, context }) => {
@@ -79,7 +79,7 @@ const deleteNewsFn = createServerFn({ method: "POST" })
 		return { success: true };
 	});
 
-const changeStatusFn = createServerFn({ method: "POST" })
+const changeStatusSFn = createServerFn({ method: "POST" })
 	.middleware([adminPermGuard(PERMISSIONS.NEWS_PUBLISH)])
 	.inputValidator(statusSchema)
 	.handler(async ({ data: { id, status }, context }) => {
@@ -99,7 +99,7 @@ const changeStatusFn = createServerFn({ method: "POST" })
 
 export const Route = createFileRoute("/admin/_admin/news/")({
 	component: NewsListPage,
-	loader: async () => getNewsListFn({ data: {} }),
+	loader: async () => getNewsListSFn({ data: {} }),
 });
 
 const NEWS_TRANSLATABLE_FIELDS = [
@@ -136,7 +136,7 @@ function NewsListPage() {
 			const status = s !== undefined ? s : filter;
 			const field = sf !== undefined ? sf : sortField;
 			const order = so !== undefined ? so : sortOrder;
-			const result = await getNewsListFn({
+			const result = await getNewsListSFn({
 				data: {
 					status: status || undefined,
 					sortField: field,
@@ -170,7 +170,7 @@ function NewsListPage() {
 	/** 导出新闻数据 */
 	async function handleExport(format: "csv" | "json") {
 		try {
-			const result = await exportNewsFn({ data: { format } });
+			const result = await exportNewsSFn({ data: { format } });
 			const timestamp = dayjs().format("YYYY-MM-DD");
 			const ext = format === "csv" ? "csv" : "json";
 			const mime =
@@ -266,7 +266,7 @@ function NewsListPage() {
 							size="small"
 							onClick={async () => {
 								try {
-									await changeStatusFn({
+									await changeStatusSFn({
 										data: { id: record.id, status: "published" },
 									});
 									await refresh();
@@ -286,7 +286,7 @@ function NewsListPage() {
 							size="small"
 							onClick={async () => {
 								try {
-									await changeStatusFn({
+									await changeStatusSFn({
 										data: { id: record.id, status: "archived" },
 									});
 									await refresh();
@@ -316,7 +316,7 @@ function NewsListPage() {
 						title="确定删除这条新闻？"
 						onConfirm={async () => {
 							try {
-								await deleteNewsFn({ data: { id: record.id } });
+								await deleteNewsSFn({ data: { id: record.id } });
 								message.success("已删除");
 								await refresh();
 							} catch (err) {
@@ -378,7 +378,7 @@ function NewsListPage() {
 					current: data.page,
 					onChange: async (page) => {
 						try {
-							const result = await getNewsListFn({
+							const result = await getNewsListSFn({
 								data: {
 									status: filter || undefined,
 									page,

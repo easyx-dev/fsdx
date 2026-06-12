@@ -15,7 +15,7 @@ import {
 } from "./news.schemas";
 
 /** 根据 id 获取单条新闻 */
-export const getNewsByIdFn = createServerFn({ method: "GET" })
+export const getNewsByIdSFn = createServerFn({ method: "GET" })
 	.middleware([adminPermGuard(PERMISSIONS.NEWS_VIEW)])
 	.inputValidator(getNewsSchema)
 	.handler(async ({ data: { id } }) => {
@@ -23,7 +23,7 @@ export const getNewsByIdFn = createServerFn({ method: "GET" })
 	});
 
 /** 新建新闻 */
-export const createNewsFn = createServerFn({ method: "POST" })
+export const createNewsSFn = createServerFn({ method: "POST" })
 	.middleware([adminPermGuard(PERMISSIONS.NEWS_CREATE)])
 	.inputValidator(createNewsSchema)
 	.handler(async ({ data, context }) => {
@@ -45,7 +45,7 @@ export const createNewsFn = createServerFn({ method: "POST" })
 	});
 
 /** 更新新闻 */
-export const updateNewsFn = createServerFn({ method: "POST" })
+export const updateNewsSFn = createServerFn({ method: "POST" })
 	.middleware([adminPermGuard(PERMISSIONS.NEWS_EDIT)])
 	.inputValidator(updateNewsSchema)
 	.handler(async ({ data, context }) => {

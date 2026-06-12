@@ -72,12 +72,12 @@ const resetPwdSchema = z.object({
 	password: z.string().min(6).max(100),
 });
 
-const getListFn = createServerFn({ method: "GET" })
+const getListSFn = createServerFn({ method: "GET" })
 	.middleware([adminPermGuard(PERMISSIONS.CLIENT_VIEW)])
 	.inputValidator(listSchema)
 	.handler(async ({ data }) => getClientUserList(data as ClientUserListParams));
 
-const createFn = createServerFn({ method: "POST" })
+const createSFn = createServerFn({ method: "POST" })
 	.middleware([adminPermGuard(PERMISSIONS.CLIENT_CREATE)])
 	.inputValidator(createSchema)
 	.handler(async ({ data, context }) => {
@@ -94,7 +94,7 @@ const createFn = createServerFn({ method: "POST" })
 		return record;
 	});
 
-const updateFn = createServerFn({ method: "POST" })
+const updateSFn = createServerFn({ method: "POST" })
 	.middleware([adminPermGuard(PERMISSIONS.CLIENT_EDIT)])
 	.inputValidator(updateSchema)
 	.handler(async ({ data, context }) => {
@@ -114,7 +114,7 @@ const updateFn = createServerFn({ method: "POST" })
 		return result;
 	});
 
-const deleteFn = createServerFn({ method: "POST" })
+const deleteSFn = createServerFn({ method: "POST" })
 	.middleware([adminPermGuard(PERMISSIONS.CLIENT_DELETE)])
 	.inputValidator(idSchema)
 	.handler(async ({ data, context }) => {
@@ -132,7 +132,7 @@ const deleteFn = createServerFn({ method: "POST" })
 		return result;
 	});
 
-const resetPwdFn = createServerFn({ method: "POST" })
+const resetPwdSFn = createServerFn({ method: "POST" })
 	.middleware([adminPermGuard(PERMISSIONS.CLIENT_EDIT)])
 	.inputValidator(resetPwdSchema)
 	.handler(async ({ data, context }) => {
@@ -154,7 +154,7 @@ const resetPwdFn = createServerFn({ method: "POST" })
 
 export const Route = createFileRoute("/admin/_admin/users/clients/")({
 	component: ClientsPage,
-	loader: async () => getListFn({ data: { page: 1, pageSize: 20 } }),
+	loader: async () => getListSFn({ data: { page: 1, pageSize: 20 } }),
 });
 
 function ClientsPage() {
@@ -172,7 +172,7 @@ function ClientsPage() {
 	const [pwdForm] = Form.useForm();
 
 	const refresh = async (p = page) => {
-		const result = await getListFn({
+		const result = await getListSFn({
 			data: {
 				page: p,
 				pageSize: 20,
@@ -220,12 +220,12 @@ function ClientsPage() {
 			const values = await form.validateFields();
 			setSaving(true);
 			if (editingUser) {
-				await updateFn({
+				await updateSFn({
 					data: { id: editingUser.id, ...values },
 				});
 				message.success("用户信息已更新");
 			} else {
-				await createFn({ data: values });
+				await createSFn({ data: values });
 				message.success("用户已创建");
 			}
 			setModalOpen(false);
@@ -241,7 +241,7 @@ function ClientsPage() {
 
 	const handleDelete = async (id: string) => {
 		try {
-			await deleteFn({ data: { id } });
+			await deleteSFn({ data: { id } });
 			message.success("用户已删除");
 			await refresh();
 		} catch (err) {
@@ -258,7 +258,7 @@ function ClientsPage() {
 	const handlePwdSubmit = async () => {
 		try {
 			const values = await pwdForm.validateFields();
-			await resetPwdFn({
+			await resetPwdSFn({
 				data: { id: editingUser!.id, password: values.password },
 			});
 			message.success("密码已重置");

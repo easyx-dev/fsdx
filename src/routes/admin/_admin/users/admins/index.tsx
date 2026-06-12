@@ -56,7 +56,7 @@ const listSchema = z.object({
 	sortOrder: z.enum(["ascend", "descend"]).optional(),
 });
 
-const getRolesForSelect = createServerFn({ method: "GET" })
+const getRolesForSelectSFn = createServerFn({ method: "GET" })
 	.middleware([adminPermGuard(PERMISSIONS.ADMIN_VIEW)])
 	.handler(async () => getRoleListService());
 const createSchema = z.object({
@@ -78,12 +78,12 @@ const resetPwdSchema = z.object({
 	password: z.string().min(6).max(100),
 });
 
-const getListFn = createServerFn({ method: "GET" })
+const getListSFn = createServerFn({ method: "GET" })
 	.middleware([adminPermGuard(PERMISSIONS.ADMIN_VIEW)])
 	.inputValidator(listSchema)
 	.handler(async ({ data }) => getAdminUserList(data as AdminUserListParams));
 
-const createFn = createServerFn({ method: "POST" })
+const createSFn = createServerFn({ method: "POST" })
 	.middleware([adminPermGuard(PERMISSIONS.ADMIN_CREATE)])
 	.inputValidator(createSchema)
 	.handler(async ({ data, context }) => {
@@ -100,7 +100,7 @@ const createFn = createServerFn({ method: "POST" })
 		return record;
 	});
 
-const updateFn = createServerFn({ method: "POST" })
+const updateSFn = createServerFn({ method: "POST" })
 	.middleware([adminPermGuard(PERMISSIONS.ADMIN_EDIT)])
 	.inputValidator(updateSchema)
 	.handler(async ({ data, context }) => {
@@ -117,7 +117,7 @@ const updateFn = createServerFn({ method: "POST" })
 		return result;
 	});
 
-const deleteFn = createServerFn({ method: "POST" })
+const deleteSFn = createServerFn({ method: "POST" })
 	.middleware([adminPermGuard(PERMISSIONS.ADMIN_DELETE)])
 	.inputValidator(idSchema)
 	.handler(async ({ data, context }) => {
@@ -135,7 +135,7 @@ const deleteFn = createServerFn({ method: "POST" })
 		return result;
 	});
 
-const resetPwdFn = createServerFn({ method: "POST" })
+const resetPwdSFn = createServerFn({ method: "POST" })
 	.middleware([adminPermGuard(PERMISSIONS.ADMIN_EDIT)])
 	.inputValidator(resetPwdSchema)
 	.handler(async ({ data, context }) => {
@@ -159,8 +159,8 @@ export const Route = createFileRoute("/admin/_admin/users/admins/")({
 	component: AdminsPage,
 	loader: async () => {
 		const [result, roles] = await Promise.all([
-			getListFn({ data: { page: 1, pageSize: 20 } }),
-			getRolesForSelect(),
+			getListSFn({ data: { page: 1, pageSize: 20 } }),
+			getRolesForSelectSFn(),
 		]);
 		return { result, roles };
 	},
@@ -184,7 +184,7 @@ function AdminsPage() {
 	const [pwdForm] = Form.useForm();
 
 	const refresh = async (p = page) => {
-		const result = await getListFn({
+		const result = await getListSFn({
 			data: {
 				page: p,
 				pageSize: 20,
@@ -232,10 +232,10 @@ function AdminsPage() {
 			const values = await form.validateFields();
 			setSaving(true);
 			if (editingUser) {
-				await updateFn({ data: { id: editingUser.id, ...values } });
+				await updateSFn({ data: { id: editingUser.id, ...values } });
 				message.success("管理员信息已更新");
 			} else {
-				await createFn({ data: values });
+				await createSFn({ data: values });
 				message.success("管理员已创建");
 			}
 			setModalOpen(false);
@@ -251,7 +251,7 @@ function AdminsPage() {
 
 	const handleDelete = async (id: string) => {
 		try {
-			await deleteFn({ data: { id } });
+			await deleteSFn({ data: { id } });
 			message.success("管理员已删除");
 			await refresh();
 		} catch (err) {
@@ -268,7 +268,7 @@ function AdminsPage() {
 	const handlePwdSubmit = async () => {
 		try {
 			const values = await pwdForm.validateFields();
-			await resetPwdFn({
+			await resetPwdSFn({
 				data: { id: editingUser!.id, password: values.password },
 			});
 			message.success("密码已重置");

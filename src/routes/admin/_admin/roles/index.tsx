@@ -60,12 +60,12 @@ const roleUpdateSchema = z.object({
 });
 const idSchema = z.object({ id: z.string().min(1) });
 
-const getRolesFn = createServerFn({ method: "GET" })
+const getRolesSFn = createServerFn({ method: "GET" })
 	.middleware([adminPermGuard(PERMISSIONS.ROLE_VIEW)])
 	.inputValidator(roleListSchema)
 	.handler(async ({ data }) => getRoleList(data.keyword));
 
-const createRoleFn = createServerFn({ method: "POST" })
+const createRoleSFn = createServerFn({ method: "POST" })
 	.middleware([adminPermGuard(PERMISSIONS.ROLE_CREATE)])
 	.inputValidator(roleCreateSchema)
 	.handler(async ({ data, context }) => {
@@ -82,7 +82,7 @@ const createRoleFn = createServerFn({ method: "POST" })
 		return result;
 	});
 
-const updateRoleFn = createServerFn({ method: "POST" })
+const updateRoleSFn = createServerFn({ method: "POST" })
 	.middleware([adminPermGuard(PERMISSIONS.ROLE_EDIT)])
 	.inputValidator(roleUpdateSchema)
 	.handler(async ({ data, context }) => {
@@ -99,7 +99,7 @@ const updateRoleFn = createServerFn({ method: "POST" })
 		return result;
 	});
 
-const deleteRoleFn = createServerFn({ method: "POST" })
+const deleteRoleSFn = createServerFn({ method: "POST" })
 	.middleware([adminPermGuard(PERMISSIONS.ROLE_DELETE)])
 	.inputValidator(idSchema)
 	.handler(async ({ data, context }) => {
@@ -119,7 +119,7 @@ const deleteRoleFn = createServerFn({ method: "POST" })
 
 export const Route = createFileRoute("/admin/_admin/roles/")({
 	component: RolesPage,
-	loader: async () => getRolesFn({ data: {} }),
+	loader: async () => getRolesSFn({ data: {} }),
 });
 
 function RolesPage() {
@@ -133,7 +133,7 @@ function RolesPage() {
 
 	/** 刷新列表 */
 	const refresh = async () => {
-		const data = await getRolesFn({ data: { keyword: keyword || undefined } });
+		const data = await getRolesSFn({ data: { keyword: keyword || undefined } });
 		setRoles(data);
 	};
 
@@ -168,12 +168,12 @@ function RolesPage() {
 			const values = await form.validateFields();
 			setSaving(true);
 			if (editingRole) {
-				await updateRoleFn({
+				await updateRoleSFn({
 					data: { id: editingRole.id, ...values },
 				});
 				message.success("角色已更新");
 			} else {
-				await createRoleFn({ data: values });
+				await createRoleSFn({ data: values });
 				message.success("角色已创建");
 			}
 			setModalOpen(false);
@@ -190,7 +190,7 @@ function RolesPage() {
 	/** 删除角色 */
 	const handleDelete = async (id: string) => {
 		try {
-			await deleteRoleFn({ data: { id } });
+			await deleteRoleSFn({ data: { id } });
 			message.success("角色已删除");
 			await refresh();
 		} catch (err) {

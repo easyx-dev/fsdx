@@ -24,7 +24,7 @@ import { formatDate } from "#/lib/utils/format-date";
 import type { NewsRecord } from "#/server/news/news.server";
 import { getNewsList, translateNewsRecords } from "#/server/news/news.server";
 
-const getLatestNews = createServerFn({ method: "GET" }).handler(async () => {
+const getLatestNewsSFn = createServerFn({ method: "GET" }).handler(async () => {
 	const cookieLocale = getCookie(LOCALE_COOKIE);
 	const locale: Locale = (SUPPORTED_LOCALES as readonly string[]).includes(
 		cookieLocale ?? "",
@@ -40,7 +40,7 @@ const getLatestNews = createServerFn({ method: "GET" }).handler(async () => {
 
 export const Route = createFileRoute("/")({
 	component: HomePage,
-	loader: async () => await getLatestNews(),
+	loader: async () => await getLatestNewsSFn(),
 	errorComponent: HomeError,
 });
 

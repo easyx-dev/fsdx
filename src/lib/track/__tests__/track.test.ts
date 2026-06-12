@@ -4,13 +4,13 @@
 
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const { mockTrackEventFn } = vi.hoisted(() => ({
-	mockTrackEventFn: vi.fn().mockResolvedValue({ success: true }),
+const { mockTrackEventSFn } = vi.hoisted(() => ({
+	mockTrackEventSFn: vi.fn().mockResolvedValue({ success: true }),
 }));
 
 // mock Server Function
 vi.mock("#/server/event/event.functions", () => ({
-	trackEventFn: mockTrackEventFn,
+	trackEventSFn: mockTrackEventSFn,
 }));
 
 import {
@@ -41,7 +41,7 @@ describe("track SDK", () => {
 			// 恢复
 			globalThis.window = origWindow;
 
-			expect(mockTrackEventFn).not.toHaveBeenCalled();
+			expect(mockTrackEventSFn).not.toHaveBeenCalled();
 		});
 	});
 
@@ -73,7 +73,7 @@ describe("track SDK", () => {
 			globalThis.window = origWindow;
 			globalThis.document = origDocument;
 
-			expect(mockTrackEventFn).not.toHaveBeenCalled();
+			expect(mockTrackEventSFn).not.toHaveBeenCalled();
 		});
 	});
 

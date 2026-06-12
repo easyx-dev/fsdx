@@ -17,7 +17,7 @@ import { formatDate } from "#/lib/utils/format-date";
 import type { NewsRecord } from "#/server/news/news.server";
 import { getNewsList, translateNewsRecords } from "#/server/news/news.server";
 
-const getPublishedNews = createServerFn({ method: "GET" })
+const getPublishedNewsSFn = createServerFn({ method: "GET" })
 	.inputValidator(
 		z.object({
 			page: z.number().int().min(1).optional().default(1),
@@ -37,7 +37,7 @@ const getPublishedNews = createServerFn({ method: "GET" })
 
 export const Route = createFileRoute("/news/")({
 	component: NewsListPage,
-	loader: async () => await getPublishedNews({ data: { page: 1 } }),
+	loader: async () => await getPublishedNewsSFn({ data: { page: 1 } }),
 	errorComponent: NewsListError,
 });
 

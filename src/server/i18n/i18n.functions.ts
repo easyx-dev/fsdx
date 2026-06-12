@@ -16,19 +16,13 @@ import type {
 	UiTranslationExportData,
 } from "#/server/i18n/i18n.server";
 import {
-	deleteContentTranslation,
-	deleteUITranslation,
 	getAllContentTranslationsForExport,
 	getAllUITranslationsForExport,
-	getContentTranslations,
 	getFieldTranslations,
 	getUITranslations,
 	importContentTranslations,
 	importUiTranslations,
-	listContentTranslations,
-	listUITranslations,
 	upsertContentTranslation,
-	upsertUITranslation,
 } from "#/server/i18n/i18n.server";
 import { logOperation } from "#/server/operation-log/operation-log.server";
 
@@ -36,98 +30,18 @@ const localeSchema = z.enum(SUPPORTED_LOCALES).default(DEFAULT_LOCALE);
 
 // ══════════════════ 查询 ══════════════════
 
-/** 获取指定语言的 UI 翻译数据 */
-export const getI18nBundle = createServerFn({ method: "GET" })
-	.inputValidator(z.object({ locale: localeSchema }))
-	.handler(async ({ data: { locale } }) => {
-		return getUITranslations(locale);
-	});
-
 /** 获取当前请求的 locale 及对应翻译（从 requestMiddleware context 读取 Cookie locale） */
-export const getLocaleBundle = createServerFn({ method: "GET" }).handler(
+export const getLocaleBundleSFn = createServerFn({ method: "GET" }).handler(
 	async ({ context }) => {
 		const locale: Locale = (context.locale as Locale) || DEFAULT_LOCALE;
 		const translations = await getUITranslations(locale);
 		return { locale, translations };
 	},
 );
-/** 获取某实体的字段翻译 */
-export const getEntityTranslations = createServerFn({ method: "GET" })
-	.inputValidator(
-		z.object({
-			entityType: z.string(),
-			entityId: z.string(),
-			locale: localeSchema,
-		}),
-	)
-	.handler(async ({ data: { entityType, entityId, locale } }) => {
-		return getContentTranslations(entityType, entityId, locale);
-	});
-
-// ══════════════════ UI 翻译维护 ══════════════════
-
-/** UI 翻译列表 */
-export const listUITranslationsFn = createServerFn({ method: "GET" })
-	.middleware([adminPermGuard(PERMISSIONS.TRANSLATION_VIEW)])
-	.inputValidator(
-		z.object({
-			locale: localeSchema.optional(),
-			keyword: z.string().optional(),
-			page: z.number().optional(),
-			pageSize: z.number().optional(),
-		}),
-	)
-	.handler(async ({ data }) => {
-		return listUITranslations(data);
-	});
-
-/** UI 翻译创建/更新 */
-export const saveUITranslationFn = createServerFn({ method: "POST" })
-	.middleware([adminPermGuard(PERMISSIONS.TRANSLATION_MANAGE)])
-	.inputValidator(
-		z.object({
-			id: z.string().optional(),
-			locale: localeSchema,
-			key: z.string().min(1).max(300),
-			value: z.string().min(1),
-			valueType: z.string().optional(),
-		}),
-	)
-	.handler(async ({ data, context }) => {
-		const result = await upsertUITranslation(
-			data as Parameters<typeof upsertUITranslation>[0],
-		);
-		logOperation({
-			operatorId: context.user.id,
-			operatorName: context.user.username,
-			module: "translation",
-			action: "update",
-			targetType: "ui_translation",
-		});
-		return result;
-	});
-
-/** UI 翻译删除 */
-export const deleteUITranslationFn = createServerFn({ method: "POST" })
-	.middleware([adminPermGuard(PERMISSIONS.TRANSLATION_MANAGE)])
-	.inputValidator(z.object({ id: z.string().min(1) }))
-	.handler(async ({ data: { id }, context }) => {
-		await deleteUITranslation(id);
-		logOperation({
-			operatorId: context.user.id,
-			operatorName: context.user.username,
-			module: "translation",
-			action: "delete",
-			targetType: "ui_translation",
-			targetId: id,
-		});
-		return { success: true };
-	});
-
 // ══════════════════ UI 翻译导出 / 导入 ══════════════════
 
 /** 导出 UI 翻译数据（JSON） */
-export const exportUITranslationsFn = createServerFn({ method: "GET" })
+export const exportUITranslationsSFn = createServerFn({ method: "GET" })
 	.middleware([adminPermGuard(PERMISSIONS.TRANSLATION_EXPORT)])
 	.handler(async () => {
 		const translations = await getAllUITranslationsForExport();
@@ -135,7 +49,7 @@ export const exportUITranslationsFn = createServerFn({ method: "GET" })
 	});
 
 /** 导入 UI 翻译数据（JSON） */
-export const importUITranslationsFn = createServerFn({ method: "POST" })
+export const importUITranslationsSFn = createServerFn({ method: "POST" })
 	.middleware([adminPermGuard(PERMISSIONS.TRANSLATION_IMPORT)])
 	.inputValidator(
 		z.object({
@@ -170,24 +84,8 @@ export const importUITranslationsFn = createServerFn({ method: "POST" })
 
 // ══════════════════ 实体翻译维护 ══════════════════
 
-/** 实体翻译列表 */
-export const listContentTranslationsFn = createServerFn({ method: "GET" })
-	.middleware([adminPermGuard(PERMISSIONS.TRANSLATION_VIEW)])
-	.inputValidator(
-		z.object({
-			entityType: z.string().optional(),
-			locale: localeSchema.optional(),
-			keyword: z.string().optional(),
-			page: z.number().optional(),
-			pageSize: z.number().optional(),
-		}),
-	)
-	.handler(async ({ data }) => {
-		return listContentTranslations(data);
-	});
-
 /** 获取某实体某字段的所有语言翻译（抽屉用） */
-export const getFieldTranslationsFn = createServerFn({ method: "GET" })
+export const getFieldTranslationsSFn = createServerFn({ method: "GET" })
 	.middleware([adminPermGuard(PERMISSIONS.TRANSLATION_VIEW)])
 	.inputValidator(
 		z.object({
@@ -201,7 +99,7 @@ export const getFieldTranslationsFn = createServerFn({ method: "GET" })
 	});
 
 /** 实体翻译创建/更新 */
-export const saveContentTranslationFn = createServerFn({ method: "POST" })
+export const saveContentTranslationSFn = createServerFn({ method: "POST" })
 	.middleware([adminPermGuard(PERMISSIONS.TRANSLATION_MANAGE)])
 	.inputValidator(
 		z.object({
@@ -228,27 +126,10 @@ export const saveContentTranslationFn = createServerFn({ method: "POST" })
 		return result;
 	});
 
-/** 实体翻译删除 */
-export const deleteContentTranslationFn = createServerFn({ method: "POST" })
-	.middleware([adminPermGuard(PERMISSIONS.TRANSLATION_MANAGE)])
-	.inputValidator(z.object({ id: z.string().min(1) }))
-	.handler(async ({ data: { id }, context }) => {
-		await deleteContentTranslation(id);
-		logOperation({
-			operatorId: context.user.id,
-			operatorName: context.user.username,
-			module: "translation",
-			action: "delete",
-			targetType: "content_translation",
-			targetId: id,
-		});
-		return { success: true };
-	});
-
 // ══════════════════ 实体翻译导出 / 导入 ══════════════════
 
 /** 导出实体翻译数据（JSON） */
-export const exportContentTranslationsFn = createServerFn({ method: "GET" })
+export const exportContentTranslationsSFn = createServerFn({ method: "GET" })
 	.middleware([adminPermGuard(PERMISSIONS.TRANSLATION_EXPORT)])
 	.handler(async () => {
 		const translations = await getAllContentTranslationsForExport();
@@ -256,7 +137,7 @@ export const exportContentTranslationsFn = createServerFn({ method: "GET" })
 	});
 
 /** 导入实体翻译数据（JSON） */
-export const importContentTranslationsFn = createServerFn({ method: "POST" })
+export const importContentTranslationsSFn = createServerFn({ method: "POST" })
 	.middleware([adminPermGuard(PERMISSIONS.TRANSLATION_IMPORT)])
 	.inputValidator(
 		z.object({
@@ -294,7 +175,7 @@ export const importContentTranslationsFn = createServerFn({ method: "POST" })
 // ══════════════════ AI 翻译 ══════════════════
 
 /** AI 翻译字段内容（使用 fast 模型） */
-export const aiTranslateFieldFn = createServerFn({ method: "POST" })
+export const aiTranslateFieldSFn = createServerFn({ method: "POST" })
 	.middleware([adminPermGuard(PERMISSIONS.TRANSLATION_MANAGE)])
 	.inputValidator(
 		z.object({

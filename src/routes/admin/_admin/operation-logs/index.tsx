@@ -16,8 +16,8 @@ import type { SortOrder } from "#/lib/query/query-utils";
 import { formatDateTime } from "#/lib/utils/format-date";
 import type { OperationLogEntry } from "#/server/operation-log/operation-log.functions";
 import {
-	getOperationLogModulesFn,
-	searchOperationLogsFn,
+	getOperationLogModulesSFn,
+	searchOperationLogsSFn,
 } from "#/server/operation-log/operation-log.functions";
 
 /** 模块对应 Tag 颜色 */
@@ -74,8 +74,8 @@ export const Route = createFileRoute("/admin/_admin/operation-logs/")({
 	component: OperationLogsPage,
 	loader: async () => {
 		const [modules, result] = await Promise.all([
-			getOperationLogModulesFn(),
-			searchOperationLogsFn({ data: { page: 1, pageSize: 20 } }),
+			getOperationLogModulesSFn(),
+			searchOperationLogsSFn({ data: { page: 1, pageSize: 20 } }),
 		]);
 		return { modules, result };
 	},
@@ -106,7 +106,7 @@ function OperationLogsPage() {
 			: undefined;
 
 		try {
-			const data = await searchOperationLogsFn({
+			const data = await searchOperationLogsSFn({
 				data: {
 					module: values.module || undefined,
 					action: values.action || undefined,

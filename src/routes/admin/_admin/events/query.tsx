@@ -22,8 +22,8 @@ import { useState } from "react";
 import { AdminPageContent } from "#/components/admin/AdminPageContent";
 import type { SortOrder } from "#/lib/query/query-utils";
 import {
-	getEventNamesFn,
-	searchEventsFn,
+	getEventNamesSFn,
+	searchEventsSFn,
 } from "#/server/event/event.functions";
 import type { EventQueryResult, EventRecord } from "#/server/event/event.types";
 
@@ -33,8 +33,8 @@ export const Route = createFileRoute("/admin/_admin/events/query")({
 	component: EventListPage,
 	loader: async () => {
 		const [eventNames, result] = await Promise.all([
-			getEventNamesFn(),
-			searchEventsFn({ data: {} }),
+			getEventNamesSFn(),
+			searchEventsSFn({ data: {} }),
 		]);
 		return { eventNames, result };
 	},
@@ -69,7 +69,7 @@ function EventListPage() {
 		try {
 			const field = sf !== undefined ? sf : sortField;
 			const order = so !== undefined ? so : sortOrder;
-			const result = await searchEventsFn({
+			const result = await searchEventsSFn({
 				data: {
 					event: filterEvent,
 					keyword: filterKeyword || undefined,

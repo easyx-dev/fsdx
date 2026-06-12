@@ -45,7 +45,7 @@ const trackEventSchema = z.object({
  * 接收客户端埋点事件（公开接口，无需鉴权）
  * 事件进入内存缓冲队列，异步批量写入数据库
  */
-export const trackEventFn = createServerFn({ method: "POST" })
+export const trackEventSFn = createServerFn({ method: "POST" })
 	.inputValidator(trackEventSchema)
 	.handler(async ({ data }) => {
 		trackEvent(data);
@@ -68,13 +68,13 @@ const eventQuerySchema = z.object({
 });
 
 /** 分页查询埋点事件 */
-export const searchEventsFn = createServerFn({ method: "GET" })
+export const searchEventsSFn = createServerFn({ method: "GET" })
 	.middleware([adminPermGuard(PERMISSIONS.EVENT_QUERY)])
 	.inputValidator(eventQuerySchema)
 	.handler(async ({ data }) => searchEvents(data));
 
 /** 获取已有的事件名称列表 */
-export const getEventNamesFn = createServerFn({ method: "GET" })
+export const getEventNamesSFn = createServerFn({ method: "GET" })
 	.middleware([adminPermGuard(PERMISSIONS.EVENT_QUERY)])
 	.handler(async () => getEventNames());
 
@@ -87,7 +87,7 @@ const analyticsQuerySchema = z.object({
 });
 
 /** 获取事件分析数据 */
-export const getEventAnalyticsFn = createServerFn({ method: "GET" })
+export const getEventAnalyticsSFn = createServerFn({ method: "GET" })
 	.middleware([adminPermGuard(PERMISSIONS.EVENT_QUERY)])
 	.inputValidator(analyticsQuerySchema)
 	.handler(async ({ data }) => getEventAnalytics(data));
@@ -95,7 +95,7 @@ export const getEventAnalyticsFn = createServerFn({ method: "GET" })
 // ─── 预设事件管理 ───
 
 /** 获取预设事件列表 */
-export const getPresetEventsFn = createServerFn({ method: "GET" })
+export const getPresetEventsSFn = createServerFn({ method: "GET" })
 	.middleware([adminPermGuard(PERMISSIONS.EVENT_VIEW)])
 	.handler(async () => getPresetEventList());
 
@@ -118,7 +118,7 @@ const presetEventDeleteSchema = z.object({
 });
 
 /** 创建预设事件 */
-export const createPresetEventFn = createServerFn({ method: "POST" })
+export const createPresetEventSFn = createServerFn({ method: "POST" })
 	.middleware([adminPermGuard(PERMISSIONS.EVENT_MANAGE)])
 	.inputValidator(presetEventCreateSchema)
 	.handler(async ({ data }) => {
@@ -127,7 +127,7 @@ export const createPresetEventFn = createServerFn({ method: "POST" })
 	});
 
 /** 更新预设事件 */
-export const updatePresetEventFn = createServerFn({ method: "POST" })
+export const updatePresetEventSFn = createServerFn({ method: "POST" })
 	.middleware([adminPermGuard(PERMISSIONS.EVENT_MANAGE)])
 	.inputValidator(presetEventUpdateSchema)
 	.handler(async ({ data }) => {
@@ -136,7 +136,7 @@ export const updatePresetEventFn = createServerFn({ method: "POST" })
 	});
 
 /** 删除预设事件 */
-export const deletePresetEventFn = createServerFn({ method: "POST" })
+export const deletePresetEventSFn = createServerFn({ method: "POST" })
 	.middleware([adminPermGuard(PERMISSIONS.EVENT_MANAGE)])
 	.inputValidator(presetEventDeleteSchema)
 	.handler(async ({ data }) => deletePresetEvent(data.name));
@@ -144,7 +144,7 @@ export const deletePresetEventFn = createServerFn({ method: "POST" })
 // ─── 预设属性管理 ───
 
 /** 获取预设属性列表 */
-export const getPresetPropertiesFn = createServerFn({ method: "GET" })
+export const getPresetPropertiesSFn = createServerFn({ method: "GET" })
 	.middleware([adminPermGuard(PERMISSIONS.EVENT_VIEW)])
 	.handler(async () => getPresetPropertyList());
 
@@ -167,7 +167,7 @@ const presetPropertyDeleteSchema = z.object({
 });
 
 /** 创建预设属性 */
-export const createPresetPropertyFn = createServerFn({ method: "POST" })
+export const createPresetPropertySFn = createServerFn({ method: "POST" })
 	.middleware([adminPermGuard(PERMISSIONS.EVENT_MANAGE)])
 	.inputValidator(presetPropertyCreateSchema)
 	.handler(async ({ data }) => {
@@ -176,7 +176,7 @@ export const createPresetPropertyFn = createServerFn({ method: "POST" })
 	});
 
 /** 更新预设属性 */
-export const updatePresetPropertyFn = createServerFn({ method: "POST" })
+export const updatePresetPropertySFn = createServerFn({ method: "POST" })
 	.middleware([adminPermGuard(PERMISSIONS.EVENT_MANAGE)])
 	.inputValidator(presetPropertyUpdateSchema)
 	.handler(async ({ data }) => {
@@ -185,7 +185,7 @@ export const updatePresetPropertyFn = createServerFn({ method: "POST" })
 	});
 
 /** 删除预设属性 */
-export const deletePresetPropertyFn = createServerFn({ method: "POST" })
+export const deletePresetPropertySFn = createServerFn({ method: "POST" })
 	.middleware([adminPermGuard(PERMISSIONS.EVENT_MANAGE)])
 	.inputValidator(presetPropertyDeleteSchema)
 	.handler(async ({ data }) => deletePresetProperty(data.key));

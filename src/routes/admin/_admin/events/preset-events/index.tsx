@@ -17,16 +17,16 @@ import { useState } from "react";
 import { AdminPageContent } from "#/components/admin/AdminPageContent";
 import { ProTable } from "#/components/admin/ProTable";
 import {
-	createPresetEventFn,
-	deletePresetEventFn,
-	getPresetEventsFn,
-	updatePresetEventFn,
+	createPresetEventSFn,
+	deletePresetEventSFn,
+	getPresetEventsSFn,
+	updatePresetEventSFn,
 } from "#/server/event/event.functions";
 import type { PresetEventRecord } from "#/server/event/event.types";
 
 export const Route = createFileRoute("/admin/_admin/events/preset-events/")({
 	component: PresetEventsPage,
-	loader: async () => getPresetEventsFn(),
+	loader: async () => getPresetEventsSFn(),
 });
 
 function PresetEventsPage() {
@@ -40,7 +40,7 @@ function PresetEventsPage() {
 	const [form] = Form.useForm();
 
 	const refresh = async () => {
-		const data = await getPresetEventsFn();
+		const data = await getPresetEventsSFn();
 		setEvents(data);
 	};
 
@@ -65,12 +65,12 @@ function PresetEventsPage() {
 			const values = await form.validateFields();
 			setSaving(true);
 			if (editingEvent) {
-				await updatePresetEventFn({
+				await updatePresetEventSFn({
 					data: { name: editingEvent.name, ...values },
 				});
 				message.success("预设事件已更新");
 			} else {
-				await createPresetEventFn({ data: values });
+				await createPresetEventSFn({ data: values });
 				message.success("预设事件已创建");
 			}
 			setModalOpen(false);
@@ -86,7 +86,7 @@ function PresetEventsPage() {
 
 	const handleDelete = async (name: string) => {
 		try {
-			const result = await deletePresetEventFn({ data: { name } });
+			const result = await deletePresetEventSFn({ data: { name } });
 			if (result) {
 				message.success("预设事件已删除");
 				await refresh();

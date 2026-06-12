@@ -11,8 +11,8 @@ import {
 	useState,
 } from "react";
 import {
-	clientLogout,
-	getCurrentClientFn,
+	clientLogoutSFn,
+	getCurrentClientSFn,
 } from "#/server/client-auth/client-auth.functions";
 import type { ClientUser } from "#/server/client-auth/client-auth.types";
 
@@ -36,7 +36,7 @@ export function ClientAuthProvider({ children }: { children: ReactNode }) {
 	const [isLoading, setIsLoading] = useState(true);
 
 	const loadUser = useCallback(async () => {
-		const u = await getCurrentClientFn();
+		const u = await getCurrentClientSFn();
 		setUser(u);
 	}, []);
 
@@ -57,7 +57,7 @@ export function ClientAuthProvider({ children }: { children: ReactNode }) {
 	}, [loadUser]);
 
 	const logout = useCallback(async () => {
-		await clientLogout();
+		await clientLogoutSFn();
 		setUser(null);
 	}, []);
 

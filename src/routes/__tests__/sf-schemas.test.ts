@@ -279,7 +279,7 @@ const contentTranslationSaveSchema = z.object({
 // ═══════════════════════════════════════════════════════════
 // 验证测试
 // ═══════════════════════════════════════════════════════════
-describe("loginSchema（clientLoginFn / adminLoginFn 共用）", () => {
+describe("loginSchema（clientLoginSFn / adminLoginSFn 共用）", () => {
 	it("合法输入校验通过", () => {
 		expect(
 			loginSchema.safeParse({ username: "admin", password: "pw" }).success,

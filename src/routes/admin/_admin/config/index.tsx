@@ -39,8 +39,8 @@ import { downloadFile } from "#/lib/export/export.utils";
 import { PERMISSIONS } from "#/lib/permissions/permissions";
 import { adminPermGuard } from "#/middleware/admin-auth";
 import {
-	exportConfigsFn,
-	importConfigsFn,
+	exportConfigsSFn,
+	importConfigsSFn,
 } from "#/server/config/config.functions";
 import {
 	type ConfigRecord,
@@ -76,13 +76,13 @@ const updateConfigSchema = z.object({
 });
 const deleteConfigSchema = z.object({ id: z.string().min(1) });
 
-const getConfigList = createServerFn({ method: "GET" })
+const getConfigListSFn = createServerFn({ method: "GET" })
 	.middleware([adminPermGuard(PERMISSIONS.CONFIG_VIEW)])
 	.handler(async () => {
 		return getConfigListService();
 	});
 
-const createConfigFn = createServerFn({ method: "POST" })
+const createConfigSFn = createServerFn({ method: "POST" })
 	.middleware([adminPermGuard(PERMISSIONS.CONFIG_CREATE)])
 	.inputValidator(createConfigSchema)
 	.handler(async ({ data, context }) => {
@@ -99,7 +99,7 @@ const createConfigFn = createServerFn({ method: "POST" })
 		return { success: true };
 	});
 
-const updateConfigFn = createServerFn({ method: "POST" })
+const updateConfigSFn = createServerFn({ method: "POST" })
 	.middleware([adminPermGuard(PERMISSIONS.CONFIG_EDIT)])
 	.inputValidator(updateConfigSchema)
 	.handler(async ({ data, context }) => {
@@ -116,7 +116,7 @@ const updateConfigFn = createServerFn({ method: "POST" })
 		return { success: true };
 	});
 
-const deleteConfigFn = createServerFn({ method: "POST" })
+const deleteConfigSFn = createServerFn({ method: "POST" })
 	.middleware([adminPermGuard(PERMISSIONS.CONFIG_DELETE)])
 	.inputValidator(deleteConfigSchema)
 	.handler(async ({ data, context }) => {
@@ -134,7 +134,7 @@ const deleteConfigFn = createServerFn({ method: "POST" })
 
 export const Route = createFileRoute("/admin/_admin/config/")({
 	component: ConfigPage,
-	loader: async () => await getConfigList(),
+	loader: async () => await getConfigListSFn(),
 });
 
 /** 系统配置管理页面组件 */
@@ -232,10 +232,10 @@ function ConfigPage() {
 		try {
 			const values = await form.validateFields();
 			if (editing) {
-				await updateConfigFn({ data: { id: editing.id, ...values } });
+				await updateConfigSFn({ data: { id: editing.id, ...values } });
 				message.success("配置更新成功");
 			} else {
-				await createConfigFn({ data: values });
+				await createConfigSFn({ data: values });
 				message.success("配置创建成功");
 			}
 			closeModal();
@@ -249,14 +249,14 @@ function ConfigPage() {
 
 	/** 删除配置 */
 	const handleDelete = async (id: string) => {
-		await deleteConfigFn({ data: { id } });
+		await deleteConfigSFn({ data: { id } });
 		message.success("已删除");
 		router.invalidate();
 	};
 
 	/** 导出系统配置数据（JSON） */
 	const handleExportConfigs = async () => {
-		const json = await exportConfigsFn();
+		const json = await exportConfigsSFn();
 		const timestamp = dayjs().format("YYYY-MM-DD");
 		downloadFile(json, `configs_export_${timestamp}.json`, "application/json");
 		message.success("导出完成");
@@ -384,7 +384,7 @@ function ConfigPage() {
 						successMessage="导入完成"
 						onImport={async (jsonString) => {
 							const data = JSON.parse(jsonString);
-							const result = await importConfigsFn({ data: { data } });
+							const result = await importConfigsSFn({ data: { data } });
 							message.success(
 								`导入完成：新增 ${result.created} / 更新 ${result.updated}`,
 							);

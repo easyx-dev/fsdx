@@ -36,7 +36,7 @@ const aiTestSchema = z.object({
 
 type AiTestInput = z.infer<typeof aiTestSchema>;
 
-const aiTestFn = createServerFn({ method: "POST" })
+const aiTestSFn = createServerFn({ method: "POST" })
 	.middleware([adminPermGuard(PERMISSIONS.AI_TEST)])
 	.inputValidator(aiTestSchema)
 	.handler(async ({ data }) => {
@@ -77,7 +77,7 @@ function AiDemoPage() {
 		setLoading(true);
 		setResult(null);
 		try {
-			const res = await aiTestFn({ data: values });
+			const res = await aiTestSFn({ data: values });
 			setResult(res);
 		} catch (err) {
 			message.error(err instanceof Error ? err.message : "AI 调用失败");

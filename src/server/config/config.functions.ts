@@ -17,7 +17,7 @@ import {
 import { logOperation } from "#/server/operation-log/operation-log.server";
 
 /** 获取客户端可见的系统配置（按当前 locale 解析值，无权限守卫） */
-export const getVisibleConfigsFn = createServerFn({ method: "GET" }).handler(
+export const getVisibleConfigsSFn = createServerFn({ method: "GET" }).handler(
 	async ({ context }) => {
 		const locale: Locale = (context.locale as Locale) || DEFAULT_LOCALE;
 		const rows = await getVisibleConfigRows();
@@ -44,7 +44,7 @@ const configImportSchema = z.object({
 });
 
 /** 导出系统配置数据（JSON） */
-export const exportConfigsFn = createServerFn({ method: "GET" })
+export const exportConfigsSFn = createServerFn({ method: "GET" })
 	.middleware([adminPermGuard(PERMISSIONS.CONFIG_EXPORT)])
 	.handler(async () => {
 		const configs = await getConfigListService();
@@ -52,7 +52,7 @@ export const exportConfigsFn = createServerFn({ method: "GET" })
 	});
 
 /** 导入系统配置数据（JSON） */
-export const importConfigsFn = createServerFn({ method: "POST" })
+export const importConfigsSFn = createServerFn({ method: "POST" })
 	.middleware([adminPermGuard(PERMISSIONS.CONFIG_IMPORT)])
 	.inputValidator(z.object({ data: configImportSchema }))
 	.handler(async ({ data: { data }, context }): Promise<ConfigImportResult> => {

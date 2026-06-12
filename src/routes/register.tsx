@@ -18,7 +18,7 @@ import { Button } from "#/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "#/components/ui/card";
 import { Input } from "#/components/ui/input";
 import { useTranslation } from "#/lib/i18n/i18n-context";
-import { getCurrentClientFn } from "#/server/client-auth/client-auth.functions";
+import { getCurrentClientSFn } from "#/server/client-auth/client-auth.functions";
 import { clientRegister } from "#/server/client-auth/client-auth.server";
 
 const registerSchema = z.object({
@@ -28,7 +28,7 @@ const registerSchema = z.object({
 	captcha: z.string().length(6, "验证码为 6 位"),
 });
 
-const clientRegisterFn = createServerFn({ method: "POST" })
+const clientRegisterSFn = createServerFn({ method: "POST" })
 	.inputValidator(registerSchema)
 	.handler(async ({ data: { username, email, password, captcha } }) => {
 		return clientRegister(username, email, password, captcha);
@@ -46,7 +46,7 @@ function RegisterError({ error }: { error: unknown }) {
 
 export const Route = createFileRoute("/register")({
 	beforeLoad: async () => {
-		const user = await getCurrentClientFn();
+		const user = await getCurrentClientSFn();
 		if (user) {
 			throw redirect({ to: "/" });
 		}
@@ -67,7 +67,7 @@ function ClientRegisterPage() {
 			captcha: "",
 		},
 		onSubmit: async ({ value }) => {
-			const result = await clientRegisterFn({
+			const result = await clientRegisterSFn({
 				data: {
 					username: value.username,
 					email: value.email,

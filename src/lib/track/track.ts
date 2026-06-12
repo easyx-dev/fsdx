@@ -1,7 +1,7 @@
 /**
  * 客户端埋点追踪 SDK：自动采集页面信息，通过 Server Function 上报事件到服务端
  */
-import { trackEventFn } from "#/server/event/event.functions";
+import { trackEventSFn } from "#/server/event/event.functions";
 
 interface TrackConfig {
 	/** 是否自动采集 PageView 事件 */
@@ -83,7 +83,7 @@ export async function track(
 	};
 
 	// 异步上报，不阻塞页面
-	trackEventFn({ data: payload }).catch((err) => {
+	trackEventSFn({ data: payload }).catch((err) => {
 		// 埋点失败不影响业务流程
 		console.error("[track]", (err as Error).message);
 	});

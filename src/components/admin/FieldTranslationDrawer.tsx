@@ -12,9 +12,9 @@ import {
 	SUPPORTED_LOCALES,
 } from "#/lib/i18n/i18n.types";
 import {
-	aiTranslateFieldFn,
-	getFieldTranslationsFn,
-	saveContentTranslationFn,
+	aiTranslateFieldSFn,
+	getFieldTranslationsSFn,
+	saveContentTranslationSFn,
 } from "#/server/i18n/i18n.functions";
 
 /** 可翻译字段定义 */
@@ -63,7 +63,7 @@ export function FieldTranslationDrawer({
 	const loadTranslations = useCallback(
 		async (fieldName: string) => {
 			try {
-				const result = await getFieldTranslationsFn({
+				const result = await getFieldTranslationsSFn({
 					data: { entityType, entityId, fieldName },
 				});
 				const vals: Record<string, string> = {};
@@ -94,7 +94,7 @@ export function FieldTranslationDrawer({
 		const key = `${fieldName}:${locale}`;
 		setSaving(key);
 		try {
-			await saveContentTranslationFn({
+			await saveContentTranslationSFn({
 				data: {
 					entityType,
 					entityId,
@@ -126,7 +126,7 @@ export function FieldTranslationDrawer({
 		const key = `${fieldName}:${targetLocale}`;
 		setAiTranslating(key);
 		try {
-			const translated = await aiTranslateFieldFn({
+			const translated = await aiTranslateFieldSFn({
 				data: {
 					sourceText,
 					targetLang: LOCALE_LABELS[targetLocale] ?? targetLocale,

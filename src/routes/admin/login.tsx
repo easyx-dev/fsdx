@@ -19,7 +19,7 @@ import { COOKIE_NAMES } from "#/lib/jwt/jwt";
 import { adminLogin } from "#/server/admin-auth/admin-auth.server";
 import { checkInitStatus } from "#/server/init/init.server";
 
-const checkInitStatusFn = createServerFn({ method: "GET" }).handler(
+const checkInitStatusSFn = createServerFn({ method: "GET" }).handler(
 	async () => {
 		return checkInitStatus();
 	},
@@ -30,7 +30,7 @@ const loginSchema = z.object({
 	password: z.string().min(1, "密码不能为空").max(100),
 });
 
-const adminLoginFn = createServerFn({ method: "POST" })
+const adminLoginSFn = createServerFn({ method: "POST" })
 	.inputValidator(loginSchema)
 	.handler(async ({ data: { username, password } }) => {
 		const result = await adminLogin(username, password);
@@ -48,7 +48,7 @@ const adminLoginFn = createServerFn({ method: "POST" })
 
 export const Route = createFileRoute("/admin/login")({
 	beforeLoad: async () => {
-		const initialized = await checkInitStatusFn();
+		const initialized = await checkInitStatusSFn();
 		if (!initialized) {
 			throw redirect({ to: "/admin/init" });
 		}
@@ -81,7 +81,7 @@ function AdminLoginPage() {
 	}) => {
 		setLoading(true);
 		try {
-			const result = await adminLoginFn({ data: values });
+			const result = await adminLoginSFn({ data: values });
 			if (!result.success) {
 				message.error(result.message || "登录失败");
 				return;

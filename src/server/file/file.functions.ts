@@ -15,7 +15,7 @@ import { logOperation } from "#/server/operation-log/operation-log.server";
 import { sha256, TEMP_EXPIRE_HOURS } from "./file.server";
 
 /** 上传文件（支持 SHA256 秒传） */
-export const uploadFile = createServerFn({ method: "POST" })
+export const uploadFileSFn = createServerFn({ method: "POST" })
 	.middleware([adminPermGuard(PERMISSIONS.FILE_UPLOAD)])
 	.inputValidator((data: unknown) => {
 		if (!(data instanceof FormData)) throw new Error("Expected FormData");

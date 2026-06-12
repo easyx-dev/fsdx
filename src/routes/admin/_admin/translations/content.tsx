@@ -33,8 +33,8 @@ import { PERMISSIONS } from "#/lib/permissions/permissions";
 import type { SortOrder } from "#/lib/query/query-utils";
 import { adminPermGuard } from "#/middleware/admin-auth";
 import {
-	exportContentTranslationsFn,
-	importContentTranslationsFn,
+	exportContentTranslationsSFn,
+	importContentTranslationsSFn,
 } from "#/server/i18n/i18n.functions";
 import {
 	deleteContentTranslation,
@@ -53,7 +53,7 @@ const formSchema = z.object({
 	valueType: z.string().optional(),
 });
 
-const getList = createServerFn({ method: "GET" })
+const getListSFn = createServerFn({ method: "GET" })
 	.middleware([adminPermGuard(PERMISSIONS.TRANSLATION_VIEW)])
 	.inputValidator(
 		z.object({
@@ -71,7 +71,7 @@ const getList = createServerFn({ method: "GET" })
 		),
 	);
 
-const saveFn = createServerFn({ method: "POST" })
+const saveSFn = createServerFn({ method: "POST" })
 	.middleware([adminPermGuard(PERMISSIONS.TRANSLATION_MANAGE)])
 	.inputValidator(formSchema)
 	.handler(async ({ data, context }) => {
@@ -88,7 +88,7 @@ const saveFn = createServerFn({ method: "POST" })
 		return result;
 	});
 
-const deleteFn = createServerFn({ method: "POST" })
+const deleteSFn = createServerFn({ method: "POST" })
 	.middleware([adminPermGuard(PERMISSIONS.TRANSLATION_MANAGE)])
 	.inputValidator(z.object({ id: z.string().min(1) }))
 	.handler(async ({ data, context }) => {
@@ -106,7 +106,7 @@ const deleteFn = createServerFn({ method: "POST" })
 
 export const Route = createFileRoute("/admin/_admin/translations/content")({
 	component: ContentTranslationPage,
-	loader: async () => await getList({ data: {} }),
+	loader: async () => await getListSFn({ data: {} }),
 });
 
 function ContentTranslationPage() {
@@ -134,7 +134,7 @@ function ContentTranslationPage() {
 	// 筛选条件变更时重置到第一页并刷新
 	useEffect(() => {
 		async function doRefresh() {
-			const result = await getList({
+			const result = await getListSFn({
 				data: {
 					entityType: filterEntityType,
 					locale: filterLocale,
@@ -150,7 +150,7 @@ function ContentTranslationPage() {
 	}, [filterEntityType, filterLocale, debouncedKeyword, sortField, sortOrder]);
 
 	async function refresh() {
-		const result = await getList({
+		const result = await getListSFn({
 			data: {
 				entityType: filterEntityType,
 				locale: filterLocale,
@@ -174,7 +174,7 @@ function ContentTranslationPage() {
 		const order = s.order as SortOrder | undefined;
 		setSortField(field);
 		setSortOrder(order);
-		const result = await getList({
+		const result = await getListSFn({
 			data: {
 				entityType: filterEntityType,
 				locale: filterLocale,
@@ -189,7 +189,7 @@ function ContentTranslationPage() {
 	async function handleSubmit(values: Record<string, unknown>) {
 		try {
 			const parsed = formSchema.parse({ ...values, id: editing?.id });
-			await saveFn({ data: parsed });
+			await saveSFn({ data: parsed });
 			message.success(editing ? "翻译已更新" : "翻译已创建");
 			setModalOpen(false);
 			setEditing(null);
@@ -219,7 +219,7 @@ function ContentTranslationPage() {
 
 	async function handleDelete(id: string) {
 		try {
-			await deleteFn({ data: { id } });
+			await deleteSFn({ data: { id } });
 			message.success("翻译已删除");
 			await refresh();
 		} catch (err: unknown) {
@@ -230,7 +230,7 @@ function ContentTranslationPage() {
 	/** 导出实体翻译数据（JSON） */
 	async function handleExport() {
 		try {
-			const json = await exportContentTranslationsFn();
+			const json = await exportContentTranslationsSFn();
 			const timestamp = dayjs().format("YYYY-MM-DD");
 			downloadFile(
 				json,
@@ -330,7 +330,7 @@ function ContentTranslationPage() {
 					<JsonImportButton
 						onImport={async (jsonString) => {
 							const data = JSON.parse(jsonString);
-							const result = await importContentTranslationsFn({
+							const result = await importContentTranslationsSFn({
 								data: { data },
 							});
 							message.success(
@@ -397,7 +397,7 @@ function ContentTranslationPage() {
 					pageSize: data.pageSize,
 					current: data.page,
 					onChange: async (page) => {
-						const r = await getList({
+						const r = await getListSFn({
 							data: {
 								entityType: filterEntityType,
 								locale: filterLocale,

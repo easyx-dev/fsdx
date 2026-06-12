@@ -1,6 +1,6 @@
 /**
  * 根路由：根据路径前缀分离 Admin（客户端渲染）与前台（SSR）
- * locale 由 localeMiddleware 注入 request context，通过 getLocaleBundle 读取
+ * locale 由 localeMiddleware 注入 request context，通过 getLocaleBundleSFn 读取
  */
 
 import { TanStackDevtools } from "@tanstack/react-devtools";
@@ -14,8 +14,8 @@ import { ClientAuthProvider } from "#/components/client/ClientAuthProvider";
 import { AdminRootDocument, SSRRootDocument } from "#/components/Document";
 import { GlobalStoreProvider } from "#/lib/global-store/global-store";
 import type { Locale, Translations } from "#/lib/i18n/i18n.types";
-import { getVisibleConfigsFn } from "#/server/config/config.functions";
-import { getLocaleBundle } from "#/server/i18n/i18n.functions";
+import { getVisibleConfigsSFn } from "#/server/config/config.functions";
+import { getLocaleBundleSFn } from "#/server/i18n/i18n.functions";
 
 export const Route = createRootRouteWithContext<{
 	locale: Locale;
@@ -34,8 +34,8 @@ export const Route = createRootRouteWithContext<{
 	async beforeLoad({ context }) {
 		void context.locale;
 		const [bundle, systemConfig] = await Promise.all([
-			getLocaleBundle(),
-			getVisibleConfigsFn(),
+			getLocaleBundleSFn(),
+			getVisibleConfigsSFn(),
 		]);
 		return { ...bundle, systemConfig };
 	},

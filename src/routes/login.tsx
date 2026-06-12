@@ -18,7 +18,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "#/components/ui/card";
 import { Input } from "#/components/ui/input";
 import { useTranslation } from "#/lib/i18n/i18n-context";
 import { COOKIE_NAMES } from "#/lib/jwt/jwt";
-import { getCurrentClientFn } from "#/server/client-auth/client-auth.functions";
+import { getCurrentClientSFn } from "#/server/client-auth/client-auth.functions";
 import { clientLogin } from "#/server/client-auth/client-auth.server";
 
 const loginSchema = z.object({
@@ -26,7 +26,7 @@ const loginSchema = z.object({
 	password: z.string().min(1, "密码不能为空").max(100),
 });
 
-const clientLoginFn = createServerFn({ method: "POST" })
+const clientLoginSFn = createServerFn({ method: "POST" })
 	.inputValidator(loginSchema)
 	.handler(async ({ data: { username, password } }) => {
 		const result = await clientLogin(username, password);
@@ -54,7 +54,7 @@ function LoginError({ error }: { error: unknown }) {
 
 export const Route = createFileRoute("/login")({
 	beforeLoad: async () => {
-		const user = await getCurrentClientFn();
+		const user = await getCurrentClientSFn();
 		if (user) {
 			throw redirect({ to: "/" });
 		}
@@ -73,7 +73,7 @@ function ClientLoginPage() {
 			password: "",
 		},
 		onSubmit: async ({ value }) => {
-			const result = await clientLoginFn({ data: value });
+			const result = await clientLoginSFn({ data: value });
 			if (!result.success) {
 				toast.error(result.message || t("登录失败"));
 				return;

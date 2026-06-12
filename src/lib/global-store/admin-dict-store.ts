@@ -3,7 +3,7 @@
  * 进入 admin 时一次性加载全部字典，所有 DictSelect/DictTag 组件同步读取
  */
 import { create } from "zustand";
-import { getAllDictOptionsFn } from "#/server/dict/dict.functions";
+import { getAllDictOptionsSFn } from "#/server/dict/dict.functions";
 
 /** 字典选项 */
 export interface DictOption {
@@ -31,12 +31,12 @@ export const useAdminDictStore = create<AdminDictState>((set, get) => ({
 	loading: false,
 	loadAll: async () => {
 		if (get().loaded) return;
-		const dicts = await getAllDictOptionsFn();
+		const dicts = await getAllDictOptionsSFn();
 		set({ dicts, loaded: true });
 	},
 	refresh: async () => {
 		set({ loading: true });
-		const dicts = await getAllDictOptionsFn();
+		const dicts = await getAllDictOptionsSFn();
 		set({ dicts, loading: false });
 	},
 }));

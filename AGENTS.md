@@ -1,4 +1,3 @@
-
 # AGENTS.md
 
 ## 项目概况
@@ -112,6 +111,14 @@ src/
 - 格式：`createServerFn({ method: "GET" | "POST" }).inputValidator(schema).handler(async ({ data }) => { ... })`
 - 调用方通过 `{ data: ... }` 传参
 
+### 服务端函数命名规范
+
+所有 `createServerFn` 定义的函数**必须**以 `SFn` 为后缀，例如 `exportNewsSFn`、`getCurrentAdminSFn`。无论是 `src/server/` 下 `.functions.ts` 中的导出函数，还是路由文件中页面局部的非导出函数，一律遵循此约定。
+
+**`.server.ts` 辅助函数不在此列**：`.server.ts` 中的函数是普通异步函数（DB 查询、内部逻辑），不含 `createServerFn`，**禁止**使用 `SFn` 后缀。如遇同名（路由文件中的 `createServerFn` 与 `.server.ts` 辅助函数同名），批量重命名时需精确区分，仅对 `createServerFn` 变量名做替换。
+
+**死代码清理**：`.functions.ts` 中未被任何文件 import 的 `createServerFn` 包装器视为死代码，应在确认无引用后删除，同时清理对应的 import 语句。如果路由文件直接包装了 `.server.ts` 的同功能函数（绕过了 `.functions.ts`），`.functions.ts` 中的包装器即构成死代码。
+
 ### 文件命名约定
 
 遵循 TanStack Start 推荐的 `.server.ts` / `.functions.ts` / `.ts` 三层分离：
@@ -136,7 +143,7 @@ src/
 - `adminPermGuard(permission)` 组合 `adminAuthGuard` 先验证登录，再校验指定权限
 - `adminAuthGuard` 基于 TanStack Start `createMiddleware` 实现，从 Cookie 读取 JWT 并注入 `context.user` 和 `context.rolePermissions`
 - Root 管理员自动拥有 `**` 权限，无需查询角色表
-- 路由 `beforeLoad` 中通过 Server Function 调用 `getCurrentAdminFn` 获取当前用户信息
+- 路由 `beforeLoad` 中通过 Server Function 调用 `getCurrentAdminSFn` 获取当前用户信息
 
 ### CSRF 保护
 - `src/start.ts` 通过 `createCsrfMiddleware` 显式注册 CSRF 中间件
@@ -374,7 +381,7 @@ import { getConfig } from "#/server/config/config.server";
 ### 技术选型原则
 
 1. 最小依赖：能用平台原生能力实现的不引入第三方库，简单项目优先无框架方案
-3. 性能内建：从架构层面考虑性能（渲染策略、代码分割、资源优化），不事后补救
+2. 性能内建：从架构层面考虑性能（渲染策略、代码分割、资源优化），不事后补救
 
 ### 质量下限
 

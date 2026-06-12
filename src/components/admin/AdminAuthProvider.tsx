@@ -10,7 +10,7 @@ import {
 	useEffect,
 	useState,
 } from "react";
-import { getCurrentAdminFn } from "#/routes/admin/_admin";
+import { getCurrentAdminSFn } from "#/routes/admin/_admin";
 import type { AdminUser } from "#/server/admin-auth/admin-auth.types";
 
 interface AdminAuthContextType {
@@ -31,7 +31,7 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
 	const [isLoading, setIsLoading] = useState(true);
 
 	const loadUser = useCallback(async () => {
-		const u = await getCurrentAdminFn();
+		const u = await getCurrentAdminSFn();
 		setUser(u);
 	}, []);
 

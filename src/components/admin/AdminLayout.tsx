@@ -32,7 +32,7 @@ import { useAdminAuth } from "#/components/admin/AdminAuthProvider";
 import { NAV_GROUPS } from "#/components/admin/nav-config";
 import type { ThemeMode } from "#/hooks/use-theme-mode";
 import { useAdminDictStore } from "#/lib/global-store/admin-dict-store";
-import { logout } from "#/routes/admin/_admin";
+import { logoutSFn } from "#/routes/admin/_admin";
 
 /** Admin 主题 Context */
 interface AdminThemeContextType {
@@ -69,7 +69,7 @@ export function AdminLayout({ children }: { children: ReactNode }) {
 	const currentPath = location.pathname;
 
 	const handleLogout = async () => {
-		await logout();
+		await logoutSFn();
 		window.location.href = "/admin/login";
 	};
 

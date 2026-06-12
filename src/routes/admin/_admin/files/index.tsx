@@ -31,7 +31,7 @@ import { AdminPageContent } from "#/components/admin/AdminPageContent";
 import { ProTable } from "#/components/admin/ProTable";
 import { PERMISSIONS } from "#/lib/permissions/permissions";
 import { adminPermGuard } from "#/middleware/admin-auth";
-import { uploadFile } from "#/server/file/file.functions";
+import { uploadFileSFn } from "#/server/file/file.functions";
 import type { FileRecord } from "#/server/file/file.server";
 import {
 	deleteFile,
@@ -50,14 +50,14 @@ const fileListSchema = z.object({
 });
 const idSchema = z.object({ id: z.string().min(1) });
 
-const getFileList = createServerFn({ method: "GET" })
+const getFileListSFn = createServerFn({ method: "GET" })
 	.middleware([adminPermGuard(PERMISSIONS.FILE_VIEW)])
 	.inputValidator(fileListSchema)
 	.handler(async ({ data }) => {
 		return getFileListService(data);
 	});
 
-const deleteFileFn = createServerFn({ method: "POST" })
+const deleteFileSFn = createServerFn({ method: "POST" })
 	.middleware([adminPermGuard(PERMISSIONS.FILE_DELETE)])
 	.inputValidator(idSchema)
 	.handler(async ({ data, context }) => {
@@ -73,7 +73,7 @@ const deleteFileFn = createServerFn({ method: "POST" })
 		return { success: true };
 	});
 
-const makePermanentFn = createServerFn({ method: "POST" })
+const makePermanentSFn = createServerFn({ method: "POST" })
 	.middleware([adminPermGuard(PERMISSIONS.FILE_EDIT)])
 	.inputValidator(idSchema)
 	.handler(async ({ data, context }) => {
@@ -98,7 +98,7 @@ function formatSize(bytes: number): string {
 
 export const Route = createFileRoute("/admin/_admin/files/")({
 	component: FilesPage,
-	loader: async () => await getFileList({ data: {} }),
+	loader: async () => await getFileListSFn({ data: {} }),
 });
 
 function FilesPage() {
@@ -123,7 +123,7 @@ function FilesPage() {
 		page?: number;
 	}) => {
 		try {
-			const result = await getFileList({
+			const result = await getFileListSFn({
 				data: {
 					status: (params?.status ?? filter) || undefined,
 					keyword: (params?.keyword ?? keyword) || undefined,
@@ -175,11 +175,11 @@ function FilesPage() {
 		try {
 			const fd = new FormData();
 			fd.append("file", file);
-			const result = await uploadFile({ data: fd });
+			const result = await uploadFileSFn({ data: fd });
 			if (result.success) {
 				// 永久文件上传后立即转为永久
 				if (makePermanentAfter && !result.data.isDuplicated) {
-					await makePermanentFn({ data: { id: result.data.id } });
+					await makePermanentSFn({ data: { id: result.data.id } });
 				}
 				onSuccess?.(result.data);
 				message.success(
@@ -290,7 +290,7 @@ function FilesPage() {
 							icon={<CheckOutlined />}
 							onClick={async () => {
 								try {
-									await makePermanentFn({ data: { id: record.id } });
+									await makePermanentSFn({ data: { id: record.id } });
 									message.success("已转为永久");
 									await refreshFiles();
 								} catch (err) {
@@ -307,7 +307,7 @@ function FilesPage() {
 						title="确定删除？"
 						onConfirm={async () => {
 							try {
-								await deleteFileFn({ data: { id: record.id } });
+								await deleteFileSFn({ data: { id: record.id } });
 								message.success("已删除");
 								await refreshFiles();
 							} catch (err) {

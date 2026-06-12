@@ -18,18 +18,18 @@ import { useState } from "react";
 import { AdminPageContent } from "#/components/admin/AdminPageContent";
 import { ProTable } from "#/components/admin/ProTable";
 import {
-	createPresetPropertyFn,
-	deletePresetPropertyFn,
-	getPresetPropertiesFn,
+	createPresetPropertySFn,
+	deletePresetPropertySFn,
+	getPresetPropertiesSFn,
 	PROPERTY_DATA_TYPES,
-	updatePresetPropertyFn,
+	updatePresetPropertySFn,
 } from "#/server/event/event.functions";
 import type { PresetPropertyRecord } from "#/server/event/event.types";
 
 export const Route = createFileRoute("/admin/_admin/events/preset-properties/")(
 	{
 		component: PresetPropertiesPage,
-		loader: async () => getPresetPropertiesFn(),
+		loader: async () => getPresetPropertiesSFn(),
 	},
 );
 
@@ -45,7 +45,7 @@ function PresetPropertiesPage() {
 	const [form] = Form.useForm();
 
 	const refresh = async () => {
-		const data = await getPresetPropertiesFn();
+		const data = await getPresetPropertiesSFn();
 		setProperties(data);
 	};
 
@@ -71,12 +71,12 @@ function PresetPropertiesPage() {
 			const values = await form.validateFields();
 			setSaving(true);
 			if (editingProp) {
-				await updatePresetPropertyFn({
+				await updatePresetPropertySFn({
 					data: { key: editingProp.key, ...values },
 				});
 				message.success("预设属性已更新");
 			} else {
-				await createPresetPropertyFn({ data: values });
+				await createPresetPropertySFn({ data: values });
 				message.success("预设属性已创建");
 			}
 			setModalOpen(false);
@@ -92,7 +92,7 @@ function PresetPropertiesPage() {
 
 	const handleDelete = async (key: string) => {
 		try {
-			const result = await deletePresetPropertyFn({ data: { key } });
+			const result = await deletePresetPropertySFn({ data: { key } });
 			if (result) {
 				message.success("预设属性已删除");
 				await refresh();

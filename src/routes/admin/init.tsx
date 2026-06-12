@@ -34,7 +34,7 @@ import {
 	initSystem,
 } from "#/server/init/init.server";
 
-const checkInitStatusFn = createServerFn({ method: "GET" }).handler(
+const checkInitStatusSFn = createServerFn({ method: "GET" }).handler(
 	async () => {
 		return checkInitStatusService();
 	},
@@ -63,7 +63,7 @@ const initSchema = z
 		path: ["confirmPassword"],
 	});
 
-const init = createServerFn({ method: "POST" })
+const initSFn = createServerFn({ method: "POST" })
 	.inputValidator(initSchema)
 	.handler(async ({ data }) => {
 		const smtpProvided = !!(
@@ -113,7 +113,7 @@ const init = createServerFn({ method: "POST" })
 
 export const Route = createFileRoute("/admin/init")({
 	beforeLoad: async () => {
-		const initialized = await checkInitStatusFn();
+		const initialized = await checkInitStatusSFn();
 		if (initialized) {
 			throw redirect({ to: "/admin/login" });
 		}
@@ -143,7 +143,7 @@ function AdminInitPage() {
 	const handleSubmit = async (values: z.infer<typeof initSchema>) => {
 		setLoading(true);
 		try {
-			const result = await init({ data: values });
+			const result = await initSFn({ data: values });
 			if (!result.success) {
 				message.error(result.message || "初始化失败");
 				return;

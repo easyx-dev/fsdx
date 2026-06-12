@@ -54,7 +54,7 @@ export interface OperationLogQueryResult {
 }
 
 /** 分页查询操作日志 */
-export const searchOperationLogsFn = createServerFn({ method: "GET" })
+export const searchOperationLogsSFn = createServerFn({ method: "GET" })
 	.middleware([adminPermGuard(PERMISSIONS.LOG_VIEW)])
 	.inputValidator(searchOperationLogsSchema)
 	.handler(async ({ data }) => {
@@ -82,7 +82,7 @@ export const searchOperationLogsFn = createServerFn({ method: "GET" })
 	});
 
 /** 获取操作模块列表 */
-export const getOperationLogModulesFn = createServerFn({ method: "GET" })
+export const getOperationLogModulesSFn = createServerFn({ method: "GET" })
 	.middleware([adminPermGuard(PERMISSIONS.LOG_VIEW)])
 	.handler(async () => {
 		return getOperationLogModules();

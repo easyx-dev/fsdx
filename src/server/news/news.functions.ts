@@ -16,7 +16,7 @@ const exportSchema = z.object({
 });
 
 /** 导出新闻数据（CSV 或 JSON） */
-export const exportNewsFn = createServerFn({ method: "GET" })
+export const exportNewsSFn = createServerFn({ method: "GET" })
 	.middleware([adminPermGuard(PERMISSIONS.NEWS_EXPORT)])
 	.inputValidator(exportSchema)
 	.handler(async ({ data: { format } }) => {

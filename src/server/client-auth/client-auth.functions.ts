@@ -12,7 +12,7 @@ import { getCurrentClient } from "#/server/client-auth/client-auth.server";
  * 从请求 Cookie 中读取 CLIENT_TOKEN，解析 JWT 后查数据库（带内存缓存）返回用户信息
  * 返回 null 表示未登录或 token 无效
  */
-export const getCurrentClientFn = createServerFn({ method: "GET" }).handler(
+export const getCurrentClientSFn = createServerFn({ method: "GET" }).handler(
 	async () => {
 		const token = getCookie(COOKIE_NAMES.CLIENT_TOKEN);
 		return getCurrentClient(token);
@@ -20,7 +20,7 @@ export const getCurrentClientFn = createServerFn({ method: "GET" }).handler(
 );
 
 /** 客户端退出登录：清除 CLIENT_TOKEN Cookie */
-export const clientLogout = createServerFn({ method: "POST" }).handler(
+export const clientLogoutSFn = createServerFn({ method: "POST" }).handler(
 	async () => {
 		deleteCookie(COOKIE_NAMES.CLIENT_TOKEN, { path: "/" });
 		return { success: true };

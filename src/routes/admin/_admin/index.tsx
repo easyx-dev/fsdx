@@ -15,7 +15,7 @@ import { PERMISSIONS } from "#/lib/permissions/permissions";
 import { adminPermGuard } from "#/middleware/admin-auth";
 import { getStats } from "#/server/stats/stats.server";
 
-const getStatsFn = createServerFn({ method: "GET" })
+const getStatsSFn = createServerFn({ method: "GET" })
 	.middleware([adminPermGuard(PERMISSIONS.DASHBOARD_VIEW)])
 	.handler(async () => {
 		return getStats();
@@ -25,7 +25,7 @@ export const Route = createFileRoute("/admin/_admin/")({
 	component: Dashboard,
 	loader: async () => {
 		try {
-			return await getStatsFn();
+			return await getStatsSFn();
 		} catch (err) {
 			console.error("[dashboard]", (err as Error).message);
 			return {

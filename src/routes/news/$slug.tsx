@@ -11,7 +11,7 @@ import { useTranslation } from "#/lib/i18n/i18n-context";
 import { formatDate } from "#/lib/utils/format-date";
 import { getNewsBySlug, translateNewsRecord } from "#/server/news/news.server";
 
-const getNewsDetail = createServerFn({ method: "GET" })
+const getNewsDetailSFn = createServerFn({ method: "GET" })
 	.inputValidator(z.object({ slug: z.string().min(1) }))
 	.handler(async ({ data: { slug }, context }) => {
 		const record = await getNewsBySlug(slug);
@@ -25,9 +25,9 @@ export const Route = createFileRoute("/news/$slug")({
 	component: NewsDetailPage,
 	errorComponent: NewsDetailError,
 	loader: async ({ params }) =>
-		await getNewsDetail({ data: { slug: params.slug } }),
+		await getNewsDetailSFn({ data: { slug: params.slug } }),
 	head: ({ loaderData }) => {
-		const detail = loaderData as Awaited<ReturnType<typeof getNewsDetail>>;
+		const detail = loaderData as Awaited<ReturnType<typeof getNewsDetailSFn>>;
 		if (!detail) {
 			return {
 				title: "新闻不存在",

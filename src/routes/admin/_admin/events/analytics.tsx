@@ -20,7 +20,7 @@ import {
 import dayjs from "dayjs";
 import { useEffect, useRef, useState } from "react";
 import { AdminPageContent } from "#/components/admin/AdminPageContent";
-import { getEventAnalyticsFn } from "#/server/event/event.functions";
+import { getEventAnalyticsSFn } from "#/server/event/event.functions";
 import type { AnalyticsResult } from "#/server/event/event.types";
 
 const { RangePicker } = DatePicker;
@@ -42,7 +42,7 @@ function EventAnalyticsPage() {
 	const fetchAnalytics = async () => {
 		setLoading(true);
 		try {
-			const result = await getEventAnalyticsFn({
+			const result = await getEventAnalyticsSFn({
 				data: {
 					startDate: dateRange[0].toISOString(),
 					endDate: dateRange[1].toISOString(),

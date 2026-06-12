@@ -16,7 +16,7 @@ import dayjs from "dayjs";
 import { useEffect, useState } from "react";
 import { DictSelect } from "#/components/admin/DictSelect";
 import { RichEditor } from "#/components/admin/RichEditor";
-import { createNewsFn, getNewsByIdFn, updateNewsFn } from "./news.functions";
+import { createNewsSFn, getNewsByIdSFn, updateNewsSFn } from "./news.functions";
 
 export interface NewsFormValues {
 	title: string;
@@ -53,7 +53,7 @@ export function NewsForm({ id, onSuccess, onError, onCancel }: NewsFormProps) {
 		(async () => {
 			setLoading(true);
 			try {
-				const record = await getNewsByIdFn({ data: { id } });
+				const record = await getNewsByIdSFn({ data: { id } });
 				if (cancelled) return;
 				if (record) {
 					form.setFieldsValue({
@@ -87,7 +87,7 @@ export function NewsForm({ id, onSuccess, onError, onCancel }: NewsFormProps) {
 		setSubmitting(true);
 		try {
 			if (id) {
-				await updateNewsFn({
+				await updateNewsSFn({
 					data: {
 						id,
 						title: values.title,
@@ -104,7 +104,7 @@ export function NewsForm({ id, onSuccess, onError, onCancel }: NewsFormProps) {
 				});
 				onSuccess?.(id);
 			} else {
-				const record = await createNewsFn({
+				const record = await createNewsSFn({
 					data: {
 						title: values.title,
 						slug: values.slug || undefined,

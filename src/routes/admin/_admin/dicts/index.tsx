@@ -44,7 +44,7 @@ import type { EditorType } from "#/lib/editor-types/editor-types";
 import { downloadFile } from "#/lib/export/export.utils";
 import { PERMISSIONS } from "#/lib/permissions/permissions";
 import { adminPermGuard } from "#/middleware/admin-auth";
-import { exportDictsFn, importDictsFn } from "#/server/dict/dict.functions";
+import { exportDictsSFn, importDictsSFn } from "#/server/dict/dict.functions";
 import type { DictItemRecord, DictRecord } from "#/server/dict/dict.server";
 import {
 	createDict,
@@ -91,20 +91,20 @@ const updateItemSchema = z.object({
 	color: z.string().optional(),
 });
 
-const getDictList = createServerFn({ method: "GET" })
+const getDictListSFn = createServerFn({ method: "GET" })
 	.middleware([adminPermGuard(PERMISSIONS.DICT_VIEW)])
 	.handler(async () => {
 		return getDictListService();
 	});
 
-const getDictItems = createServerFn({ method: "GET" })
+const getDictItemsSFn = createServerFn({ method: "GET" })
 	.middleware([adminPermGuard(PERMISSIONS.DICT_VIEW)])
 	.inputValidator(dictSlugSchema)
 	.handler(async ({ data: { dictSlug } }) => {
 		return getDictItemList(dictSlug);
 	});
 
-const createDictFn = createServerFn({ method: "POST" })
+const createDictSFn = createServerFn({ method: "POST" })
 	.middleware([adminPermGuard(PERMISSIONS.DICT_CREATE)])
 	.inputValidator(createDictSchema)
 	.handler(async ({ data, context }) => {
@@ -121,7 +121,7 @@ const createDictFn = createServerFn({ method: "POST" })
 		return { success: true };
 	});
 
-const updateDictFn = createServerFn({ method: "POST" })
+const updateDictSFn = createServerFn({ method: "POST" })
 	.middleware([adminPermGuard(PERMISSIONS.DICT_EDIT)])
 	.inputValidator(updateDictSchema)
 	.handler(async ({ data, context }) => {
@@ -138,7 +138,7 @@ const updateDictFn = createServerFn({ method: "POST" })
 		return { success: true };
 	});
 
-const deleteDictFn = createServerFn({ method: "POST" })
+const deleteDictSFn = createServerFn({ method: "POST" })
 	.middleware([adminPermGuard(PERMISSIONS.DICT_DELETE)])
 	.inputValidator(idSchema)
 	.handler(async ({ data: { id }, context }) => {
@@ -154,7 +154,7 @@ const deleteDictFn = createServerFn({ method: "POST" })
 		return { success: true };
 	});
 
-const createDictItemFn = createServerFn({ method: "POST" })
+const createDictItemSFn = createServerFn({ method: "POST" })
 	.middleware([adminPermGuard(PERMISSIONS.DICT_CREATE_ITEM)])
 	.inputValidator(createItemSchema)
 	.handler(async ({ data, context }) => {
@@ -171,7 +171,7 @@ const createDictItemFn = createServerFn({ method: "POST" })
 		return { success: true };
 	});
 
-const updateDictItemFn = createServerFn({ method: "POST" })
+const updateDictItemSFn = createServerFn({ method: "POST" })
 	.middleware([adminPermGuard(PERMISSIONS.DICT_EDIT_ITEM)])
 	.inputValidator(updateItemSchema)
 	.handler(async ({ data, context }) => {
@@ -188,7 +188,7 @@ const updateDictItemFn = createServerFn({ method: "POST" })
 		return { success: true };
 	});
 
-const deleteDictItemFn = createServerFn({ method: "POST" })
+const deleteDictItemSFn = createServerFn({ method: "POST" })
 	.middleware([adminPermGuard(PERMISSIONS.DICT_DELETE_ITEM)])
 	.inputValidator(idSchema)
 	.handler(async ({ data: { id }, context }) => {
@@ -206,7 +206,7 @@ const deleteDictItemFn = createServerFn({ method: "POST" })
 
 export const Route = createFileRoute("/admin/_admin/dicts/")({
 	component: DictsPage,
-	loader: async () => await getDictList(),
+	loader: async () => await getDictListSFn(),
 });
 
 /** 字典管理页面组件 */
@@ -227,7 +227,7 @@ function DictsPage() {
 		| undefined;
 
 	const refreshItems = async (dictSlug: string) => {
-		const data = await getDictItems({ data: { dictSlug } });
+		const data = await getDictItemsSFn({ data: { dictSlug } });
 		setItems(data);
 	};
 
@@ -261,7 +261,7 @@ function DictsPage() {
 	const handleDictSubmit = async (values: Record<string, unknown>) => {
 		try {
 			if (editingDict) {
-				await updateDictFn({
+				await updateDictSFn({
 					data: {
 						id: editingDict.id,
 						slug: (values.slug as string) || undefined,
@@ -271,7 +271,7 @@ function DictsPage() {
 				});
 				message.success("字典更新成功");
 			} else {
-				await createDictFn({
+				await createDictSFn({
 					data: {
 						name: values.name as string,
 						slug: values.slug as string,
@@ -321,7 +321,7 @@ function DictsPage() {
 		if (!selectedDictSlug) return;
 		try {
 			if (editingItem) {
-				await updateDictItemFn({
+				await updateDictItemSFn({
 					data: {
 						id: editingItem.id,
 						label: values.label as string,
@@ -334,7 +334,7 @@ function DictsPage() {
 				});
 				message.success("条目更新成功");
 			} else {
-				await createDictItemFn({
+				await createDictItemSFn({
 					data: {
 						dictSlug: selectedDictSlug,
 						label: values.label as string,
@@ -355,7 +355,7 @@ function DictsPage() {
 	};
 
 	const handleDeleteDict = async (id: string) => {
-		await deleteDictFn({ data: { id } });
+		await deleteDictSFn({ data: { id } });
 		message.success("字典已删除");
 		if (selectedDict?.id === id) {
 			setSelectedDictSlug(null);
@@ -365,7 +365,7 @@ function DictsPage() {
 	};
 
 	const handleDeleteItem = async (id: string) => {
-		await deleteDictItemFn({ data: { id } });
+		await deleteDictItemSFn({ data: { id } });
 		message.success("条目已删除");
 		if (selectedDictSlug) refreshItems(selectedDictSlug);
 	};
@@ -376,7 +376,7 @@ function DictsPage() {
 		params: { sortOrder?: number; status?: string },
 	) => {
 		try {
-			await updateDictItemFn({ data: { id, ...params } });
+			await updateDictItemSFn({ data: { id, ...params } });
 			if (selectedDictSlug) refreshItems(selectedDictSlug);
 		} catch (err) {
 			message.error(err instanceof Error ? err.message : "操作失败");
@@ -385,7 +385,7 @@ function DictsPage() {
 
 	/** 导出字典数据（JSON） */
 	const handleExportDicts = async () => {
-		const json = await exportDictsFn();
+		const json = await exportDictsSFn();
 		const timestamp = dayjs().format("YYYY-MM-DD");
 		downloadFile(json, `dicts_export_${timestamp}.json`, "application/json");
 		message.success("导出完成");
@@ -521,7 +521,7 @@ function DictsPage() {
 					<JsonImportButton
 						onImport={async (jsonString) => {
 							const data = JSON.parse(jsonString);
-							const result = await importDictsFn({ data: { data } });
+							const result = await importDictsSFn({ data: { data } });
 							message.success(
 								`导入完成：字典类型 新增 ${result.dictsCreated} / 更新 ${result.dictsUpdated}，` +
 									`条目 新增 ${result.itemsCreated} / 更新 ${result.itemsUpdated}` +

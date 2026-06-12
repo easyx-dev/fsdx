@@ -12,7 +12,7 @@ import type {
 } from "@wangeditor/editor";
 import { Editor, Toolbar } from "@wangeditor/editor-for-react";
 import { useEffect, useMemo, useState } from "react";
-import { uploadFile } from "#/server/file/file.functions";
+import { uploadFileSFn } from "#/server/file/file.functions";
 
 interface Props {
 	value?: string;
@@ -40,7 +40,7 @@ export function RichEditor({ value = "", onChange }: Props) {
 						try {
 							const fd = new FormData();
 							fd.append("file", file);
-							const result = await uploadFile({ data: fd });
+							const result = await uploadFileSFn({ data: fd });
 							if (result?.data?.id) {
 								insertFn(`/api/download/file/${result.data.id}`);
 							}

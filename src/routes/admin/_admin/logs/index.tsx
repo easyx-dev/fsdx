@@ -46,14 +46,14 @@ const searchLogsSchema = z.object({
 	pageSize: z.number().optional(),
 });
 
-const searchLogsFn = createServerFn({ method: "GET" })
+const searchLogsSFn = createServerFn({ method: "GET" })
 	.middleware([adminPermGuard(PERMISSIONS.LOG_VIEW)])
 	.inputValidator(searchLogsSchema)
 	.handler(async ({ data }) => {
 		return searchLogsService(data);
 	});
 
-const getDatesFn = createServerFn({ method: "GET" })
+const getDatesSFn = createServerFn({ method: "GET" })
 	.middleware([adminPermGuard(PERMISSIONS.LOG_VIEW)])
 	.handler(async () => {
 		return getLogDatesService();
@@ -74,8 +74,8 @@ export const Route = createFileRoute("/admin/_admin/logs/")({
 	component: LogsPage,
 	loader: async () => {
 		const [result, dates] = await Promise.all([
-			searchLogsFn({ data: { page: 1, pageSize: 20 } }),
-			getDatesFn(),
+			searchLogsSFn({ data: { page: 1, pageSize: 20 } }),
+			getDatesSFn(),
 		]);
 		return { result, availableDates: dates };
 	},
@@ -97,7 +97,7 @@ function LogsPage() {
 		const endDate = dateRange?.[1] ? dateRange[1].format("YYYY-MM-DD") : "";
 
 		try {
-			const data = await searchLogsFn({
+			const data = await searchLogsSFn({
 				data: {
 					keyword: values.keyword || undefined,
 					level: values.level || undefined,
@@ -122,7 +122,7 @@ function LogsPage() {
 
 	/** 点击日期标签快速搜索 */
 	const handleDateClick = (date: string) => {
-		searchLogsFn({
+		searchLogsSFn({
 			data: { startDate: date, endDate: date, page: 1, pageSize },
 		})
 			.then((data) => {

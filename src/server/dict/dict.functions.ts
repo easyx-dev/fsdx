@@ -12,7 +12,6 @@ import {
 	getAllDictItemsForExport,
 	getAllDictOptions,
 	getAllDictsForExport,
-	getDictOptions,
 	importDicts,
 } from "#/server/dict/dict.server";
 import { logOperation } from "#/server/operation-log/operation-log.server";
@@ -41,7 +40,7 @@ const dictImportSchema = z.object({
 });
 
 /** 导出字典数据（树形 JSON，dicts → children → items） */
-export const exportDictsFn = createServerFn({ method: "GET" })
+export const exportDictsSFn = createServerFn({ method: "GET" })
 	.middleware([adminPermGuard(PERMISSIONS.DICT_EXPORT)])
 	.handler(async () => {
 		const [dicts, dictItems] = await Promise.all([
@@ -58,7 +57,7 @@ export const exportDictsFn = createServerFn({ method: "GET" })
 	});
 
 /** 导入字典数据（树形 JSON，自动展平为内部格式） */
-export const importDictsFn = createServerFn({ method: "POST" })
+export const importDictsSFn = createServerFn({ method: "POST" })
 	.middleware([adminPermGuard(PERMISSIONS.DICT_IMPORT)])
 	.inputValidator(z.object({ data: dictImportSchema }))
 	.handler(async ({ data: { data }, context }): Promise<DictImportResult> => {
@@ -86,15 +85,8 @@ export const importDictsFn = createServerFn({ method: "POST" })
 		return result;
 	});
 
-/** 获取字典选项（供各页面 Select/Segmented/Tag 使用） */
-export const getDictOptionsFn = createServerFn({ method: "GET" })
-	.inputValidator(z.object({ slug: z.string().min(1) }))
-	.handler(async ({ data: { slug } }) => {
-		return getDictOptions(slug);
-	});
-
 /** 获取全部字典选项（按 slug 分组，供 zustand store 一次性加载） */
-export const getAllDictOptionsFn = createServerFn({ method: "GET" }).handler(
+export const getAllDictOptionsSFn = createServerFn({ method: "GET" }).handler(
 	async () => {
 		return getAllDictOptions();
 	},

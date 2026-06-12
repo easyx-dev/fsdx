@@ -15,11 +15,13 @@ import {
 	verifyImageCaptcha,
 } from "#/server/captcha/captcha.server";
 
-const getImageCaptcha = createServerFn({ method: "GET" }).handler(async () => {
-	return generateImageCaptcha();
-});
+const getImageCaptchaSFn = createServerFn({ method: "GET" }).handler(
+	async () => {
+		return generateImageCaptcha();
+	},
+);
 
-const sendCaptchaWithImageVerification = createServerFn({ method: "POST" })
+const sendCaptchaWithImageVerificationSFn = createServerFn({ method: "POST" })
 	.inputValidator(
 		z.object({
 			email: z.string().email("邮箱格式不正确"),
@@ -68,7 +70,7 @@ export function CaptchaInput({
 	const refresh = useCallback(() => {
 		setIsLoadingSvg(true);
 		setModalError("");
-		getImageCaptcha()
+		getImageCaptchaSFn()
 			.then((result) => {
 				setSvg(result.svg);
 				setImageToken(result.token);
@@ -139,7 +141,7 @@ export function CaptchaInput({
 		setIsSending(true);
 		onMessage("验证中...");
 		try {
-			const result = await sendCaptchaWithImageVerification({
+			const result = await sendCaptchaWithImageVerificationSFn({
 				data: { email, imageToken, imageCode },
 			});
 			if (result.success) {
