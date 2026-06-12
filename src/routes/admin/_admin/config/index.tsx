@@ -1,12 +1,7 @@
 /**
  * 系统配置管理页面：键值对 CRUD（antd Table + Form + Modal）
  */
-import {
-	DeleteOutlined,
-	DownloadOutlined,
-	EditOutlined,
-	PlusOutlined,
-} from "@ant-design/icons";
+import { DownloadOutlined, PlusOutlined } from "@ant-design/icons";
 import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
 import {
@@ -17,7 +12,6 @@ import {
 	Input,
 	Modal,
 	message,
-	Popconfirm,
 	Space,
 	Switch,
 } from "antd";
@@ -33,6 +27,7 @@ import {
 } from "#/components/admin/FieldTranslationDrawer";
 import { JsonImportButton } from "#/components/admin/JsonImportButton";
 import { ProTable } from "#/components/admin/ProTable";
+import { TableOperate } from "#/components/admin/TableOperate";
 import { TypeAwareEditor } from "#/components/admin/TypeAwareEditor";
 import type { EditorType } from "#/lib/editor-types/editor-types";
 import { downloadFile } from "#/lib/export/export.utils";
@@ -330,36 +325,25 @@ function ConfigPage() {
 			key: "actions",
 			fixed: "right" as const,
 			render: (_: unknown, record: ConfigRecord) => {
-				// 确保 clientVisible 为真时才显示翻译入口
 				const showTranslation = record.clientVisible === true;
 				return (
-					<Space size={4}>
-						<Button
-							type="link"
-							size="small"
-							icon={<EditOutlined />}
-							onClick={() => openModal(record)}
-						/>
-						<Popconfirm
-							title="确定删除该配置？"
+					<TableOperate>
+						<TableOperate.Edit onClick={() => openModal(record)} />
+						<TableOperate.Delete
+							recordName="该配置"
 							onConfirm={() => handleDelete(record.id)}
-						>
-							<Button
-								type="link"
-								size="small"
-								danger
-								icon={<DeleteOutlined />}
-							/>
-						</Popconfirm>
+						/>
 						{showTranslation && (
-							<FieldTranslationDrawer
-								entityType="system_config"
-								entityId={record.id}
-								fields={CONFIG_TRANSLATABLE_FIELDS}
-								originalValues={{ value: record.value }}
-							/>
+							<TableOperate.Custom>
+								<FieldTranslationDrawer
+									entityType="system_config"
+									entityId={record.id}
+									fields={CONFIG_TRANSLATABLE_FIELDS}
+									originalValues={{ value: record.value }}
+								/>
+							</TableOperate.Custom>
 						)}
-					</Space>
+					</TableOperate>
 				);
 			},
 		},
@@ -491,7 +475,7 @@ function ConfigPage() {
 					<ProTable
 						dataSource={filteredConfigs}
 						columns={configColumns}
-						scroll={{ x: 1430 }}
+						scroll={{ x: 1500 }}
 						rowKey="id"
 						size="small"
 						pagination={false}

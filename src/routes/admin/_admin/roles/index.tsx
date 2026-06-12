@@ -1,30 +1,16 @@
 /**
  * 角色管理页面：CRUD + 权限分配
  */
-import {
-	DeleteOutlined,
-	EditOutlined,
-	PlusOutlined,
-	SearchOutlined,
-} from "@ant-design/icons";
+import { PlusOutlined, SearchOutlined } from "@ant-design/icons";
 import { createFileRoute } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
-import {
-	Button,
-	Form,
-	Input,
-	Modal,
-	message,
-	Popconfirm,
-	Popover,
-	Space,
-	Tag,
-} from "antd";
+import { Button, Form, Input, Modal, message, Popover, Tag } from "antd";
 import { useState } from "react";
 import { z } from "zod";
 import { AdminPageContent } from "#/components/admin/AdminPageContent";
 import { PermissionSelector } from "#/components/admin/PermissionSelector";
 import { ProTable } from "#/components/admin/ProTable";
+import { TableOperate } from "#/components/admin/TableOperate";
 import {
 	PERMISSION_META,
 	PERMISSIONS,
@@ -301,24 +287,13 @@ function RolesPage() {
 			key: "actions",
 			fixed: "right" as const,
 			render: (_: unknown, record: RoleRecord) => (
-				<Space size={4}>
-					<Button
-						type="link"
-						size="small"
-						icon={<EditOutlined />}
-						onClick={() => handleEdit(record)}
-					>
-						编辑
-					</Button>
-					<Popconfirm
-						title="确定删除此角色？"
+				<TableOperate>
+					<TableOperate.Edit onClick={() => handleEdit(record)} />
+					<TableOperate.Delete
+						recordName="此角色"
 						onConfirm={() => handleDelete(record.id)}
-					>
-						<Button type="link" size="small" danger icon={<DeleteOutlined />}>
-							删除
-						</Button>
-					</Popconfirm>
-				</Space>
+					/>
+				</TableOperate>
 			),
 		},
 	];
@@ -350,7 +325,7 @@ function RolesPage() {
 			<ProTable
 				dataSource={roles}
 				columns={columns}
-				scroll={{ x: 1250 }}
+				scroll={{ x: 1280 }}
 				rowKey="id"
 				locale={{ emptyText: "暂无角色" }}
 			/>

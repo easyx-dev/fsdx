@@ -544,18 +544,17 @@ export function ProductForm({
  * <实体中文名>列表页
  */
 import {
-  DeleteOutlined,
-  EditOutlined,
   PlusOutlined,
 } from "@ant-design/icons";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
-import { Button, Drawer, message, Popconfirm, Space, Tag } from "antd";
+import { Button, Drawer, message, Tag } from "antd";
 import dayjs from "dayjs";
 import { useState } from "react";
 import { z } from "zod";
 import { AdminPageContent } from "#/components/admin/AdminPageContent";
 import { ProTable } from "#/components/admin/ProTable";
+import { TableOperate } from "#/components/admin/TableOperate";
 import { PERMISSIONS } from "#/lib/permissions/permissions";
 import { adminPermGuard } from "#/middleware/admin-auth";
 import type { ProductRecord } from "#/server/product/product.server";
@@ -662,24 +661,22 @@ function ProductListPage() {
       title: "操作",
       key: "actions",
       render: (_: unknown, record: ProductRecord) => (
-        <Space size={4}>
-          <Link to="/admin/product/$id/edit" params={{ id: record.id }}>
-            <Button type="link" size="small" icon={<EditOutlined />}>
-              编辑
+        <TableOperate>
+          <TableOperate.Link to="/admin/product/$id/edit" params={{ id: record.id }} />
+          <TableOperate.Custom>
+            <Button
+              type="link"
+              size="small"
+              onClick={() => {
+                setEditingId(record.id);
+                setDrawerOpen(true);
+              }}
+            >
+              快速编辑
             </Button>
-          </Link>
-          <Button
-            type="link"
-            size="small"
-            onClick={() => {
-              setEditingId(record.id);
-              setDrawerOpen(true);
-            }}
-          >
-            快速编辑
-          </Button>
-          <Popconfirm
-            title="确定删除？"
+          </TableOperate.Custom>
+          <TableOperate.Delete
+            recordName="该产品"
             onConfirm={async () => {
               try {
                 await deleteProductSFn({ data: { id: record.id } });
@@ -691,10 +688,8 @@ function ProductListPage() {
                 );
               }
             }}
-          >
-            <Button type="link" size="small" danger icon={<DeleteOutlined />} />
-          </Popconfirm>
-        </Space>
+          />
+        </TableOperate>
       ),
     },
   ];
@@ -762,6 +757,7 @@ function ProductListPage() {
 - 内联 SFn 定义（list / delete）放在文件顶部，路由 `loader` 自动调用 list SFn
 - `Route.useLoaderData()` 获取初始数据，`useState` 维护本地状态以支持客户端刷新
 - 使用 `ProTable` 代替原生 `Table`（增强的 antd Table）
+- 操作列使用 `TableOperate` 容器组件统一渲染（`Edit` / `Delete` / `Link` / `Custom`）
 - `Drawer` + `destroyOnClose` 实现抽屉内快速编辑
 - 分页的 `onChange` 重新调用 SFn 并更新本地状态
 
@@ -914,3 +910,28 @@ admin-crud
 ├── test-writing       —— Step 10：单元测试
 └── i18n               —— Step 9：实体翻译（可选）
 ```
+
+在列表页操作列中通过 `TableOperate.Custom` 包裹 `FieldTranslationDrawer`：
+
+```tsx
+import { FieldTranslationDrawer } from "#/components/admin/FieldTranslationDrawer";
+
+// 在 Table columns 的 actions render 中
+<TableOperate>
+  <TableOperate.Custom>
+    <FieldTranslationDrawer
+      entityType="product"
+      entityId={record.id}
+      fields={PRODUCT_TRANSLATABLE_FIELDS}
+      originalValues={{
+        name: record.name ?? "",
+        description: record.description ?? "",
+      }}
+    />
+  </TableOperate.Custom>
+  <TableOperate.Edit ... />
+  <TableOperate.Delete ... />
+</TableOperate>
+```
+
+`FieldTranslationDrawer` 固定使用图标触发模式（`TranslationOutlined`，蓝紫渐变，Tooltip "国际化"），无需传递 `trigger` 参数。

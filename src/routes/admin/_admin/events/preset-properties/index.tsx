@@ -1,22 +1,13 @@
 /**
  * 预设属性管理页面：CRUD 预设属性定义
  */
-import { DeleteOutlined, EditOutlined, PlusOutlined } from "@ant-design/icons";
+import { PlusOutlined } from "@ant-design/icons";
 import { createFileRoute } from "@tanstack/react-router";
-import {
-	Button,
-	Form,
-	Input,
-	Modal,
-	message,
-	Popconfirm,
-	Select,
-	Space,
-	Tag,
-} from "antd";
+import { Button, Form, Input, Modal, message, Select, Tag } from "antd";
 import { useState } from "react";
 import { AdminPageContent } from "#/components/admin/AdminPageContent";
 import { ProTable } from "#/components/admin/ProTable";
+import { TableOperate } from "#/components/admin/TableOperate";
 import {
 	createPresetPropertySFn,
 	deletePresetPropertySFn,
@@ -157,28 +148,16 @@ function PresetPropertiesPage() {
 			title: "操作",
 			key: "actions",
 			fixed: "right" as const,
-			width: 160,
 			render: (_: unknown, record: PresetPropertyRecord) => (
-				<Space size={4}>
-					<Button
-						type="link"
-						size="small"
-						icon={<EditOutlined />}
-						onClick={() => handleEdit(record)}
-					>
-						编辑
-					</Button>
+				<TableOperate>
+					<TableOperate.Edit onClick={() => handleEdit(record)} />
 					{!record.isPreset && (
-						<Popconfirm
-							title="确定删除此预设属性？"
+						<TableOperate.Delete
+							recordName="此预设属性"
 							onConfirm={() => handleDelete(record.key)}
-						>
-							<Button type="link" size="small" danger icon={<DeleteOutlined />}>
-								删除
-							</Button>
-						</Popconfirm>
+						/>
 					)}
-				</Space>
+				</TableOperate>
 			),
 		},
 	];

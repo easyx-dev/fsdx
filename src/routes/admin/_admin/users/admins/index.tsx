@@ -1,26 +1,10 @@
 /**
  * 管理员管理页面：CRUD + 角色分配 + 密码重置
  */
-import {
-	DeleteOutlined,
-	EditOutlined,
-	KeyOutlined,
-	PlusOutlined,
-	SearchOutlined,
-} from "@ant-design/icons";
+import { KeyOutlined, PlusOutlined, SearchOutlined } from "@ant-design/icons";
 import { createFileRoute } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
-import {
-	Button,
-	Form,
-	Input,
-	Modal,
-	message,
-	Popconfirm,
-	Select,
-	Space,
-	Tag,
-} from "antd";
+import { Button, Form, Input, Modal, message, Select, Tag } from "antd";
 import { useState } from "react";
 import { z } from "zod";
 import { AutofillBlocker } from "#/components/AutofillBlocker";
@@ -28,6 +12,7 @@ import { AdminPageContent } from "#/components/admin/AdminPageContent";
 import { DictSelect } from "#/components/admin/DictSelect";
 import { DictTag } from "#/components/admin/DictTag";
 import { ProTable } from "#/components/admin/ProTable";
+import { TableOperate } from "#/components/admin/TableOperate";
 import { PERMISSIONS } from "#/lib/permissions/permissions";
 import type { SortOrder } from "#/lib/query/query-utils";
 import { adminPermGuard } from "#/middleware/admin-auth";
@@ -347,37 +332,25 @@ function AdminsPage() {
 			key: "actions",
 			fixed: "right" as const,
 			render: (_: unknown, record: AdminUserListItem) => (
-				<Space size={4}>
-					<Button
-						type="link"
-						size="small"
-						icon={<EditOutlined />}
-						onClick={() => handleEdit(record)}
-					>
-						编辑
-					</Button>
-					<Button
-						type="link"
-						size="small"
-						icon={<KeyOutlined />}
-						onClick={() => handleResetPwd(record)}
-					>
-						重置密码
-					</Button>
-					{!record.isRoot && (
-						<Popconfirm
-							title="确定删除此管理员？"
-							onConfirm={() => handleDelete(record.id)}
+				<TableOperate>
+					<TableOperate.Edit onClick={() => handleEdit(record)} />
+					<TableOperate.Custom>
+						<Button
+							type="link"
+							size="small"
+							icon={<KeyOutlined />}
+							onClick={() => handleResetPwd(record)}
 						>
-							<Button
-								type="link"
-								size="small"
-								danger
-								icon={<DeleteOutlined />}
-							/>
-						</Popconfirm>
+							重置密码
+						</Button>
+					</TableOperate.Custom>
+					{!record.isRoot && (
+						<TableOperate.Delete
+							recordName="此管理员"
+							onConfirm={() => handleDelete(record.id)}
+						/>
 					)}
-				</Space>
+				</TableOperate>
 			),
 		},
 	];
@@ -410,7 +383,7 @@ function AdminsPage() {
 				columns={columns}
 				rowKey="id"
 				locale={{ emptyText: "暂无管理员" }}
-				scroll={{ x: 1350 }}
+				scroll={{ x: 1400 }}
 				pagination={{
 					total: data.total,
 					current: page,

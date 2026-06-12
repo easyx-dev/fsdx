@@ -267,26 +267,27 @@ const getLatestNews = createServerFn({ method: "GET" }).handler(async () => {
 ```tsx
 import { FieldTranslationDrawer } from "#/components/admin/FieldTranslationDrawer";
 
-// 在 Table columns 的 actions render 中
-<FieldTranslationDrawer
-  entityType="news"
-  entityId={record.id}
-  fields={NEWS_TRANSLATABLE_FIELDS}
-  trigger="button"
-  originalValues={{
-    title: record.title ?? "",
-    summary: record.summary ?? "",
-    content: record.content ?? "",
-  }}
-/>
+// 通过 TableOperate.Custom 包裹，固定使用图标触发模式
+<TableOperate.Custom>
+  <FieldTranslationDrawer
+    entityType="news"
+    entityId={record.id}
+    fields={NEWS_TRANSLATABLE_FIELDS}
+    originalValues={{
+      title: record.title ?? "",
+      summary: record.summary ?? "",
+      content: record.content ?? "",
+    }}
+  />
+</TableOperate.Custom>
 ```
 
 参数说明：
 - `entityType`：实体类型标识，与 `content_translation.entity_type` 对应
 - `entityId`：实体主键
 - `fields`：可翻译字段列表
-- `trigger`：`"icon"`（图标按钮）或 `"button"`（文字按钮）
 - `originalValues`：默认语言的原值（展示用，标记为"从主表读取"）
+- 触发方式固定为图标模式（`TranslationOutlined`，蓝紫渐变，Tooltip "国际化"），不再支持 `trigger` 参数
 
 ## 管理端翻译管理
 

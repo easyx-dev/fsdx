@@ -2,12 +2,11 @@
  * 文件管理页面：上传、列表、下载、删除、秒传
  */
 import {
-	CheckOutlined,
 	ClockCircleOutlined,
 	CloudUploadOutlined,
-	DeleteOutlined,
 	DownloadOutlined,
 	EyeOutlined,
+	SwapOutlined,
 } from "@ant-design/icons";
 import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
@@ -18,17 +17,18 @@ import {
 	Input,
 	Modal,
 	message,
-	Popconfirm,
 	Row,
 	Segmented,
 	Space,
 	Tag,
+	Tooltip,
 	Upload,
 } from "antd";
 import { useState } from "react";
 import { z } from "zod";
 import { AdminPageContent } from "#/components/admin/AdminPageContent";
 import { ProTable } from "#/components/admin/ProTable";
+import { TableOperate } from "#/components/admin/TableOperate";
 import { PERMISSIONS } from "#/lib/permissions/permissions";
 import { adminPermGuard } from "#/middleware/admin-auth";
 import { getFileListSFn, uploadFileSFn } from "#/server/file/file.functions";
@@ -214,12 +214,36 @@ function FilesPage() {
 			dataIndex: "status",
 			key: "status",
 			width: 100,
-			render: (_: unknown, record: FileRecord) =>
-				record.status === "permanent" ? (
-					<Tag color="green">永久</Tag>
-				) : (
-					<Tag color="gold">临时</Tag>
-				),
+			render: (_: unknown, record: FileRecord) => (
+				<Space size={4}>
+					{record.status === "permanent" ? (
+						<Tag color="green">永久</Tag>
+					) : (
+						<>
+							<Tag color="gold">临时</Tag>
+							<Tooltip title="转为永久">
+								<Button
+									type="text"
+									size="small"
+									icon={<SwapOutlined style={{ color: "#52c41a" }} />}
+									style={{ paddingInline: 4, color: "#52c41a" }}
+									onClick={async () => {
+										try {
+											await makePermanentSFn({ data: { id: record.id } });
+											message.success("已转为永久");
+											await refreshFiles();
+										} catch (err) {
+											message.error(
+												err instanceof Error ? err.message : "操作失败",
+											);
+										}
+									}}
+								/>
+							</Tooltip>
+						</>
+					)}
+				</Space>
+			),
 		},
 		{
 			title: "上传时间",
@@ -241,49 +265,31 @@ function FilesPage() {
 			key: "actions",
 			fixed: "right" as const,
 			render: (_: unknown, record: FileRecord) => (
-				<Space size={4}>
+				<TableOperate>
 					{isImage(record.mimeType) && (
-						<Button
-							type="link"
-							size="small"
-							icon={<EyeOutlined />}
-							onClick={() => setPreviewFile(record)}
-						>
-							预览
-						</Button>
+						<TableOperate.Custom>
+							<Button
+								type="link"
+								size="small"
+								icon={<EyeOutlined />}
+								onClick={() => setPreviewFile(record)}
+							>
+								预览
+							</Button>
+						</TableOperate.Custom>
 					)}
-					<a
-						href={`/api/download/file/${record.id}`}
-						target="_blank"
-						rel="noreferrer"
-					>
-						<Button type="link" size="small" icon={<DownloadOutlined />}>
-							下载
-						</Button>
-					</a>
-
-					{record.status === "temp" && (
-						<Button
-							type="link"
-							size="small"
-							icon={<CheckOutlined />}
-							onClick={async () => {
-								try {
-									await makePermanentSFn({ data: { id: record.id } });
-									message.success("已转为永久");
-									await refreshFiles();
-								} catch (err) {
-									message.error(
-										err instanceof Error ? err.message : "操作失败",
-									);
-								}
-							}}
+					<TableOperate.Custom>
+						<a
+							href={`/api/download/file/${record.id}`}
+							target="_blank"
+							rel="noreferrer"
 						>
-							转为永久
-						</Button>
-					)}
-					<Popconfirm
-						title="确定删除？"
+							<Button type="link" size="small" icon={<DownloadOutlined />}>
+								下载
+							</Button>
+						</a>
+					</TableOperate.Custom>
+					<TableOperate.Delete
 						onConfirm={async () => {
 							try {
 								await deleteFileSFn({ data: { id: record.id } });
@@ -293,10 +299,8 @@ function FilesPage() {
 								message.error(err instanceof Error ? err.message : "删除失败");
 							}
 						}}
-					>
-						<Button type="link" size="small" danger icon={<DeleteOutlined />} />
-					</Popconfirm>
-				</Space>
+					/>
+				</TableOperate>
 			),
 		},
 	];
@@ -367,7 +371,7 @@ function FilesPage() {
 				columns={columns}
 				rowKey="id"
 				locale={{ emptyText: "暂无文件" }}
-				scroll={{ x: 950 }}
+				scroll={{ x: 1050 }}
 				onChange={handleTableChange}
 				pagination={{
 					total: data.total,

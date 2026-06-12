@@ -136,14 +136,18 @@ export function SelectFileModal({
 			width: 80,
 			render: (_: unknown, r: FileRecord) =>
 				r.mimeType.startsWith("image/") ? (
-					<Button
-						type="link"
-						size="small"
-						icon={<EyeOutlined />}
-						onClick={() => setPreviewFile(r)}
-					>
-						预览
-					</Button>
+					<TableOperate>
+						<TableOperate.Custom>
+							<Button
+								type="link"
+								size="small"
+								icon={<EyeOutlined />}
+								onClick={() => setPreviewFile(r)}
+							>
+								预览
+							</Button>
+						</TableOperate.Custom>
+					</TableOperate>
 				) : null,
 		},
 	];
@@ -268,3 +272,5 @@ export function SelectFileModal({
 		</Modal>
 	);
 }
+
+import { TableOperate } from "./TableOperate";

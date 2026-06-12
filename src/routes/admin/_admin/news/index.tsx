@@ -2,23 +2,13 @@
  * 新闻列表页（antd Table）
  */
 import {
-	DeleteOutlined,
 	DownloadOutlined,
-	EditOutlined,
 	FileTextOutlined,
 	PlusOutlined,
 } from "@ant-design/icons";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
-import {
-	Button,
-	Drawer,
-	message,
-	Popconfirm,
-	Segmented,
-	Space,
-	Tag,
-} from "antd";
+import { Button, Drawer, message, Segmented, Space, Tag } from "antd";
 import dayjs from "dayjs";
 import { useMemo, useState } from "react";
 import { z } from "zod";
@@ -26,6 +16,7 @@ import { AdminPageContent } from "#/components/admin/AdminPageContent";
 import { DictTag } from "#/components/admin/DictTag";
 import { FieldTranslationDrawer } from "#/components/admin/FieldTranslationDrawer";
 import { ProTable } from "#/components/admin/ProTable";
+import { TableOperate } from "#/components/admin/TableOperate";
 import { downloadFile } from "#/lib/export/export.utils";
 import { useAdminDictStore } from "#/lib/global-store/admin-dict-store";
 import { PERMISSIONS } from "#/lib/permissions/permissions";
@@ -249,72 +240,66 @@ function NewsListPage() {
 			key: "actions",
 			fixed: "right" as const,
 			render: (_: unknown, record: NewsRecord) => (
-				<Space size={4}>
-					<FieldTranslationDrawer
-						entityType="news"
-						entityId={record.id}
-						fields={NEWS_TRANSLATABLE_FIELDS}
-						trigger="button"
-						originalValues={{
-							title: record.title ?? "",
-							description: record.description ?? "",
-							content: record.content ?? "",
-						}}
-					/>
+				<TableOperate>
 					{record.status === "draft" && (
-						<Button
-							type="link"
-							size="small"
-							onClick={async () => {
-								try {
-									await changeStatusSFn({
-										data: { id: record.id, status: "published" },
-									});
-									await refresh();
-								} catch (err) {
-									message.error(
-										err instanceof Error ? err.message : "发布失败",
-									);
-								}
-							}}
-						>
-							发布
-						</Button>
+						<TableOperate.Custom>
+							<Button
+								type="link"
+								size="small"
+								onClick={async () => {
+									try {
+										await changeStatusSFn({
+											data: { id: record.id, status: "published" },
+										});
+										await refresh();
+									} catch (err) {
+										message.error(
+											err instanceof Error ? err.message : "发布失败",
+										);
+									}
+								}}
+							>
+								发布
+							</Button>
+						</TableOperate.Custom>
 					)}
 					{record.status === "published" && (
+						<TableOperate.Custom>
+							<Button
+								type="link"
+								size="small"
+								onClick={async () => {
+									try {
+										await changeStatusSFn({
+											data: { id: record.id, status: "archived" },
+										});
+										await refresh();
+									} catch (err) {
+										message.error(
+											err instanceof Error ? err.message : "归档失败",
+										);
+									}
+								}}
+							>
+								归档
+							</Button>
+						</TableOperate.Custom>
+					)}
+					<TableOperate.Link
+						to="/admin/news/$id/edit"
+						params={{ id: record.id }}
+					/>
+					<TableOperate.Custom>
 						<Button
 							type="link"
 							size="small"
-							onClick={async () => {
-								try {
-									await changeStatusSFn({
-										data: { id: record.id, status: "archived" },
-									});
-									await refresh();
-								} catch (err) {
-									message.error(
-										err instanceof Error ? err.message : "归档失败",
-									);
-								}
-							}}
+							onClick={() => handleQuickEdit(record)}
 						>
-							归档
+							快速编辑
 						</Button>
-					)}
-					<Link to="/admin/news/$id/edit" params={{ id: record.id }}>
-						<Button type="link" size="small" icon={<EditOutlined />}>
-							编辑
-						</Button>
-					</Link>
-					<Button
-						type="link"
-						size="small"
-						onClick={() => handleQuickEdit(record)}
-					>
-						快速编辑
-					</Button>
-					<Popconfirm
-						title="确定删除这条新闻？"
+					</TableOperate.Custom>
+					<TableOperate.Delete
+						recordName="这条新闻"
 						onConfirm={async () => {
 							try {
 								await deleteNewsSFn({ data: { id: record.id } });
@@ -324,10 +309,20 @@ function NewsListPage() {
 								message.error(err instanceof Error ? err.message : "删除失败");
 							}
 						}}
-					>
-						<Button type="link" size="small" danger icon={<DeleteOutlined />} />
-					</Popconfirm>
-				</Space>
+					/>
+					<TableOperate.Custom>
+						<FieldTranslationDrawer
+							entityType="news"
+							entityId={record.id}
+							fields={NEWS_TRANSLATABLE_FIELDS}
+							originalValues={{
+								title: record.title ?? "",
+								description: record.description ?? "",
+								content: record.content ?? "",
+							}}
+						/>
+					</TableOperate.Custom>
+				</TableOperate>
 			),
 		},
 	];
@@ -373,7 +368,7 @@ function NewsListPage() {
 				columns={columns}
 				rowKey="id"
 				onChange={handleTableChange}
-				scroll={{ x: 1450 }}
+				scroll={{ x: 1480 }}
 				pagination={{
 					total: data.total,
 					pageSize: data.pageSize,

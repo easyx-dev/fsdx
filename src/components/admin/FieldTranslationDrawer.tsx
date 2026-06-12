@@ -1,9 +1,9 @@
 /**
  * 字段翻译抽屉组件：在实体表格中为字段提供国际化翻译编辑入口
  */
-import { GlobalOutlined, RobotOutlined } from "@ant-design/icons";
+import { RobotOutlined, TranslationOutlined } from "@ant-design/icons";
 import { Button, Card, Drawer, message, Tabs, Tooltip } from "antd";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useId, useState } from "react";
 import { TypeAwareEditor } from "#/components/admin/TypeAwareEditor";
 import type { EditorType } from "#/lib/editor-types/editor-types";
 import {
@@ -31,8 +31,6 @@ interface Props {
 	activeField?: string;
 	/** 各字段在原表中的当前值（默认语言展示用） */
 	originalValues?: Record<string, string>;
-	/** 触发方式：图标按钮或文字按钮 */
-	trigger?: "icon" | "button";
 }
 
 /** 语言对应中文标签 */
@@ -48,7 +46,6 @@ export function FieldTranslationDrawer({
 	fields,
 	activeField,
 	originalValues,
-	trigger = "icon",
 }: Props) {
 	const [open, setOpen] = useState(false);
 	const [activeTab, setActiveTab] = useState(
@@ -153,30 +150,42 @@ export function FieldTranslationDrawer({
 	}
 
 	// 根据触发方式渲染触发器
-	const triggerEl =
-		trigger === "icon" ? (
-			<Tooltip title="国际化">
-				<GlobalOutlined
-					className="cursor-pointer text-muted-foreground hover:text-primary ml-1"
-					onClick={(e) => {
-						e.stopPropagation();
-						setOpen(true);
-					}}
-				/>
-			</Tooltip>
-		) : (
+	const gradientId = `i18n-grad-${useId().replace(/[^a-zA-Z0-9]/g, "")}`;
+
+	const triggerEl = (
+		<Tooltip title="国际化">
 			<Button
 				type="link"
 				size="small"
-				icon={<GlobalOutlined />}
-				onClick={() => setOpen(true)}
-			>
-				翻译
-			</Button>
-		);
+				icon={
+					<TranslationOutlined
+						style={{ cursor: "pointer" }}
+						className={`hover:opacity-80 ml-1 ${gradientId}`}
+						onClick={(e) => {
+							e.stopPropagation();
+							setOpen(true);
+						}}
+					/>
+				}
+			></Button>
+		</Tooltip>
+	);
 
 	return (
 		<>
+			<svg width="0" height="0" aria-hidden="true">
+				<defs>
+					<linearGradient id={gradientId} x1="0%" y1="0%" x2="100%" y2="100%">
+						<stop offset="0%" stopColor="#667eea" />
+						<stop offset="100%" stopColor="#764ba2" />
+					</linearGradient>
+				</defs>
+			</svg>
+			<style>{`
+				.${gradientId}.anticon svg {
+					fill: url(#${gradientId});
+				}
+			`}</style>
 			{triggerEl}
 			<Drawer
 				title={`字段翻译 — ${entityType}`}

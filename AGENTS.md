@@ -12,6 +12,7 @@ env/                          # 环境变量配置（.env、.env.local、.env.ex
 src/
 ├── components/
 │   ├── admin/                # 管理端专用组件
+│   │   └── TableOperate.tsx  # 表格操作列统一容器
 │   ├── client/               # 客户端前台专用组件（Header、Footer、CaptchaInput 等）
 │   ├── ui/                   # shadcn/ui 基础组件
 │   ├── Document.tsx          # 根布局（AdminRootDocument / SSRRootDocument）
@@ -225,8 +226,15 @@ src/server/config/
   - 同一页面不要混用两套组件库的同类组件（如 Button、Dialog），保持风格统一
 - 公共组件（`src/components/` 顶层或 `client/` 子目录）根据使用场景判断：
   - 仅管理端使用 → antd
-  - 仅前台使用 → shadcn/ui
-  - 两端共用 → 偏向前台（shadcn/ui），管理端适配时可用 antd 包裹
+- 仅前台使用 → shadcn/ui
+- 两端共用 → 偏向前台（shadcn/ui），管理端适配时可用 antd 包裹
+
+### 表格操作列
+
+- 所有管理端表格的操作列**必须**使用 `TableOperate` 容器组件包裹
+- 标准操作使用子组件：`TableOperate.Edit`（编辑）、`TableOperate.Delete`（删除）、`TableOperate.Link`（路由跳转）、`TableOperate.Custom`（自定义扩展）
+- 全部操作按钮统一 **图标 + 文字** 风格
+- `TableOperate.Delete` 内置 `Popconfirm` + 错误处理，确认文案模式 `"确定删除{recordName}？"`
 
 ## 日志约定
 

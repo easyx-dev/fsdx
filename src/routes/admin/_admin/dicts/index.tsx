@@ -485,33 +485,23 @@ function DictsPage() {
 			key: "actions",
 			fixed: "right" as const,
 			render: (_: unknown, record: DictItemRecord) => (
-				<Space size={4}>
-					<Button
-						type="link"
-						size="small"
-						icon={<EditOutlined />}
-						onClick={() => openItemModal(record)}
-					/>
-					<FieldTranslationDrawer
-						entityType="dict_item"
-						entityId={record.id}
-						fields={DICT_ITEM_TRANSLATABLE_FIELDS}
-						originalValues={{ label: record.label ?? "" }}
-					/>
+				<TableOperate>
+					<TableOperate.Edit onClick={() => openItemModal(record)} />
+					<TableOperate.Custom>
+						<FieldTranslationDrawer
+							entityType="dict_item"
+							entityId={record.id}
+							fields={DICT_ITEM_TRANSLATABLE_FIELDS}
+							originalValues={{ label: record.label ?? "" }}
+						/>
+					</TableOperate.Custom>
 					{!isPresetDict(record.dictSlug) && (
-						<Popconfirm
-							title="确定删除该条目？"
+						<TableOperate.Delete
+							recordName="该条目"
 							onConfirm={() => handleDeleteItem(record.id)}
-						>
-							<Button
-								type="link"
-								size="small"
-								danger
-								icon={<DeleteOutlined />}
-							/>
-						</Popconfirm>
+						/>
 					)}
-				</Space>
+				</TableOperate>
 			),
 		},
 	];
@@ -834,3 +824,5 @@ function DictsPage() {
 		</AdminPageContent>
 	);
 }
+
+import { TableOperate } from "#/components/admin/TableOperate";

@@ -10,7 +10,6 @@ import {
 	ExperimentOutlined,
 	FileTextOutlined,
 	FolderOpenOutlined,
-	GlobalOutlined,
 	HistoryOutlined,
 	LineChartOutlined,
 	ReadOutlined,
@@ -20,6 +19,7 @@ import {
 	StockOutlined,
 	TableOutlined,
 	TeamOutlined,
+	TranslationOutlined,
 } from "@ant-design/icons";
 import type { ReactNode } from "react";
 
@@ -97,12 +97,12 @@ export const NAV_GROUPS: NavGroup[] = [
 			{
 				key: "/admin/translations/ui",
 				label: "UI 翻译",
-				icon: <GlobalOutlined />,
+				icon: <TranslationOutlined />,
 			},
 			{
 				key: "/admin/translations/content",
 				label: "实体翻译",
-				icon: <GlobalOutlined />,
+				icon: <TranslationOutlined />,
 			},
 		],
 	},

@@ -1,25 +1,10 @@
 /**
  * UI 翻译管理页：维护 ui_translation 表
  */
-import {
-	DeleteOutlined,
-	DownloadOutlined,
-	EditOutlined,
-	PlusOutlined,
-} from "@ant-design/icons";
+import { DownloadOutlined, PlusOutlined } from "@ant-design/icons";
 import { createFileRoute } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
-import {
-	Button,
-	Form,
-	Input,
-	Modal,
-	message,
-	Popconfirm,
-	Select,
-	Space,
-	Tag,
-} from "antd";
+import { Button, Form, Input, Modal, message, Select, Space, Tag } from "antd";
 import dayjs from "dayjs";
 import { useCallback, useEffect, useState } from "react";
 import { z } from "zod";
@@ -28,6 +13,7 @@ import { EditorTypePreview } from "#/components/admin/EditorTypePreview";
 import { EditorTypeSelect } from "#/components/admin/EditorTypeSelect";
 import { JsonImportButton } from "#/components/admin/JsonImportButton";
 import { ProTable } from "#/components/admin/ProTable";
+import { TableOperate } from "#/components/admin/TableOperate";
 import { downloadFile } from "#/lib/export/export.utils";
 import { SUPPORTED_LOCALES } from "#/lib/i18n/i18n.types";
 import { PERMISSIONS } from "#/lib/permissions/permissions";
@@ -265,20 +251,12 @@ function UITranslationPage() {
 			key: "actions",
 			fixed: "right" as const,
 			render: (_: unknown, record: Record<string, unknown>) => (
-				<Space size={4}>
-					<Button
-						type="link"
-						size="small"
-						icon={<EditOutlined />}
-						onClick={() => openEdit(record)}
-					/>
-					<Popconfirm
-						title="确定删除？"
+				<TableOperate>
+					<TableOperate.Edit onClick={() => openEdit(record)} />
+					<TableOperate.Delete
 						onConfirm={() => handleDelete(record.id as string)}
-					>
-						<Button type="link" size="small" danger icon={<DeleteOutlined />} />
-					</Popconfirm>
-				</Space>
+					/>
+				</TableOperate>
 			),
 		},
 	];
@@ -343,7 +321,7 @@ function UITranslationPage() {
 				columns={columns}
 				rowKey="id"
 				onChange={handleTableChange}
-				scroll={{ x: 1300 }}
+				scroll={{ x: 1400 }}
 				pagination={{
 					total: data.total,
 					pageSize: data.pageSize,

@@ -1,21 +1,13 @@
 /**
  * 预设事件管理页面：CRUD 预设事件定义
  */
-import { DeleteOutlined, EditOutlined, PlusOutlined } from "@ant-design/icons";
+import { PlusOutlined } from "@ant-design/icons";
 import { createFileRoute } from "@tanstack/react-router";
-import {
-	Button,
-	Form,
-	Input,
-	Modal,
-	message,
-	Popconfirm,
-	Space,
-	Tag,
-} from "antd";
+import { Button, Form, Input, Modal, message, Tag } from "antd";
 import { useState } from "react";
 import { AdminPageContent } from "#/components/admin/AdminPageContent";
 import { ProTable } from "#/components/admin/ProTable";
+import { TableOperate } from "#/components/admin/TableOperate";
 import {
 	createPresetEventSFn,
 	deletePresetEventSFn,
@@ -151,28 +143,16 @@ function PresetEventsPage() {
 			title: "操作",
 			key: "actions",
 			fixed: "right" as const,
-			width: 160,
 			render: (_: unknown, record: PresetEventRecord) => (
-				<Space size={4}>
-					<Button
-						type="link"
-						size="small"
-						icon={<EditOutlined />}
-						onClick={() => handleEdit(record)}
-					>
-						编辑
-					</Button>
+				<TableOperate>
+					<TableOperate.Edit onClick={() => handleEdit(record)} />
 					{!record.isPreset && (
-						<Popconfirm
-							title="确定删除此预设事件？"
+						<TableOperate.Delete
+							recordName="此预设事件"
 							onConfirm={() => handleDelete(record.name)}
-						>
-							<Button type="link" size="small" danger icon={<DeleteOutlined />}>
-								删除
-							</Button>
-						</Popconfirm>
+						/>
 					)}
-				</Space>
+				</TableOperate>
 			),
 		},
 	];
