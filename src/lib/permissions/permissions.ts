@@ -230,6 +230,12 @@ export const PERMISSIONS = {
 		"导入翻译",
 		"允许从 JSON 文件导入翻译数据",
 	),
+	// AI 功能
+	AI_TEST: definePermission(
+		"ai:test",
+		"AI 测试",
+		"允许使用 AI 模型测试页面进行模型调用测试",
+	),
 } as const;
 
 // ─── 对外类型 ───

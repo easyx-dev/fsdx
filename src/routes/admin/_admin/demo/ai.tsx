@@ -20,6 +20,8 @@ import { useState } from "react";
 import { z } from "zod";
 import { AdminPageContent } from "#/components/admin/AdminPageContent";
 import { type ChatMessage, deepChat, fastChat } from "#/lib/ai/ai";
+import { PERMISSIONS } from "#/lib/permissions/permissions";
+import { adminPermGuard } from "#/middleware/admin-auth";
 
 const { Text, Paragraph } = Typography;
 
@@ -34,6 +36,7 @@ const aiTestSchema = z.object({
 type AiTestInput = z.infer<typeof aiTestSchema>;
 
 const aiTestFn = createServerFn({ method: "POST" })
+	.middleware([adminPermGuard(PERMISSIONS.AI_TEST)])
 	.inputValidator(aiTestSchema)
 	.handler(async ({ data }) => {
 		const messages: ChatMessage[] = [];
