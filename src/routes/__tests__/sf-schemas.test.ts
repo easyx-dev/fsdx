@@ -50,24 +50,24 @@ const newsStatusSchema = z.object({
 const newsCreateSchema = z.object({
 	title: z.string().min(1).max(500),
 	slug: z.string().max(500).optional(),
-	summary: z.string().optional(),
+	description: z.string().optional(),
 	content: z.string().optional(),
 	status: z.enum(["draft", "published"]).default("draft"),
 	isPinned: z.boolean().default(false),
 	publishedAt: z.string().optional(),
-	sort: z.number().int().optional(),
+	sortOrder: z.number().int().optional(),
 });
 
 const newsUpdateSchema = z.object({
 	id: z.string().min(1),
 	title: z.string().min(1).max(500),
 	slug: z.string().max(500).optional(),
-	summary: z.string().optional(),
+	description: z.string().optional(),
 	content: z.string().optional(),
 	status: z.enum(["draft", "published", "archived"]),
 	isPinned: z.boolean(),
 	publishedAt: z.string().optional().nullable(),
-	sort: z.number().int().optional(),
+	sortOrder: z.number().int().optional(),
 });
 
 const dictCreateSchema = z.object({
@@ -276,7 +276,7 @@ describe("newsUpdateSchema", () => {
 		expect(newsUpdateSchema.safeParse({ id: "n-1" }).success).toBe(false);
 	});
 
-	it("可选字段 publishedAt 和 sort 通过", () => {
+	it("可选字段 publishedAt 和 sortOrder 通过", () => {
 		expect(
 			newsUpdateSchema.safeParse({
 				id: "n-1",
@@ -284,7 +284,7 @@ describe("newsUpdateSchema", () => {
 				isPinned: true,
 				status: "published",
 				publishedAt: "2026-01-01T00:00:00.000Z",
-				sort: 10,
+				sortOrder: 10,
 			}).success,
 		).toBe(true);
 	});
@@ -394,11 +394,11 @@ describe("newsCreateSchema", () => {
 		).toBe(false);
 	});
 
-	it("可选字段 publishedAt 和 sort 通过", () => {
+	it("可选字段 publishedAt 和 sortOrder 通过", () => {
 		const result = newsCreateSchema.safeParse({
 			title: "新闻标题",
 			publishedAt: "2026-01-01T00:00:00.000Z",
-			sort: 10,
+			sortOrder: 10,
 		});
 		expect(result.success).toBe(true);
 	});

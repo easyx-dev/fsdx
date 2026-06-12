@@ -21,12 +21,12 @@ import { createNewsFn, getNewsByIdFn, updateNewsFn } from "./news.functions";
 export interface NewsFormValues {
 	title: string;
 	slug?: string;
-	summary?: string;
+	description?: string;
 	content?: string;
 	status: "draft" | "published" | "archived";
 	isPinned: boolean;
 	publishedAt?: dayjs.Dayjs;
-	sort?: number;
+	sortOrder?: number;
 }
 
 interface NewsFormProps {
@@ -59,14 +59,14 @@ export function NewsForm({ id, onSuccess, onError, onCancel }: NewsFormProps) {
 					form.setFieldsValue({
 						title: record.title,
 						slug: record.slug,
-						summary: record.summary,
+						description: record.description,
 						content: record.content || "",
 						status: record.status,
 						isPinned: record.isPinned,
 						publishedAt: record.publishedAt
 							? dayjs(record.publishedAt)
 							: undefined,
-						sort: record.sort ?? 0,
+						sortOrder: record.sortOrder ?? 0,
 					});
 				} else {
 					onError?.(new Error("新闻不存在"));
@@ -92,14 +92,14 @@ export function NewsForm({ id, onSuccess, onError, onCancel }: NewsFormProps) {
 						id,
 						title: values.title,
 						slug: values.slug || undefined,
-						summary: values.summary || undefined,
+						description: values.description || undefined,
 						content: values.content || undefined,
 						status: values.status as "draft" | "published" | "archived",
 						isPinned: values.isPinned || false,
+						sortOrder: values.sortOrder ?? 0,
 						publishedAt: values.publishedAt
 							? values.publishedAt.toISOString()
 							: undefined,
-						sort: values.sort ?? 0,
 					},
 				});
 				onSuccess?.(id);
@@ -108,10 +108,14 @@ export function NewsForm({ id, onSuccess, onError, onCancel }: NewsFormProps) {
 					data: {
 						title: values.title,
 						slug: values.slug || undefined,
-						summary: values.summary || undefined,
+						description: values.description || undefined,
 						content: values.content || undefined,
 						status: values.status as "draft" | "published",
 						isPinned: values.isPinned || false,
+						sortOrder: values.sortOrder ?? 0,
+						publishedAt: values.publishedAt
+							? values.publishedAt.toISOString()
+							: undefined,
 					},
 				});
 				onSuccess?.(record.id);
@@ -156,7 +160,7 @@ export function NewsForm({ id, onSuccess, onError, onCancel }: NewsFormProps) {
 				<Input placeholder="自动生成" style={{ fontFamily: "monospace" }} />
 			</Form.Item>
 
-			<Form.Item name="summary" label="摘要">
+			<Form.Item name="description" label="摘要">
 				<Input.TextArea rows={2} placeholder="新闻摘要（可选）" />
 			</Form.Item>
 
@@ -176,7 +180,7 @@ export function NewsForm({ id, onSuccess, onError, onCancel }: NewsFormProps) {
 					<Switch />
 				</Form.Item>
 
-				<Form.Item name="sort" label="排序" extra="数字越大越靠前">
+				<Form.Item name="sortOrder" label="排序" extra="数字越大越靠前">
 					<InputNumber min={0} style={{ width: 120 }} />
 				</Form.Item>
 

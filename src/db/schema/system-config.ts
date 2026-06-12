@@ -21,9 +21,13 @@ export const systemConfig = pgTable(
 		valueType: varchar("value_type", { length: 20 }),
 		groupName: varchar("group_name", { length: 50 }),
 		description: text(),
-		createdAt: timestamp("created_at").defaultNow().notNull(),
-		updatedAt: timestamp("updated_at").defaultNow().notNull(),
-		deletedAt: timestamp("deleted_at"),
+		createdAt: timestamp("created_at", { withTimezone: true })
+			.defaultNow()
+			.notNull(),
+		updatedAt: timestamp("updated_at", { withTimezone: true })
+			.defaultNow()
+			.notNull(),
+		deletedAt: timestamp("deleted_at", { withTimezone: true }),
 	},
 	(table) => [index("idx_system_config_group").on(table.groupName)],
 );

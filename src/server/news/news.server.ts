@@ -117,14 +117,19 @@ export async function getNewsList(
 		publishedAt: news.publishedAt,
 		createdAt: news.createdAt,
 		updatedAt: news.updatedAt,
-		sort: news.sort,
+		sortOrder: news.sortOrder,
 	};
-	const direction = buildSortClause(sortFieldMap, sortField, sortOrder, "sort");
+	const direction = buildSortClause(
+		sortFieldMap,
+		sortField,
+		sortOrder,
+		"sortOrder",
+	);
 
 	// 默认：置顶优先 → sort DESC → 创建时间 DESC；用户排序时：置顶优先 → 用户选择
 	const orderBy = sortField
 		? [desc(news.isPinned), direction]
-		: [desc(news.isPinned), desc(news.sort), desc(news.createdAt)];
+		: [desc(news.isPinned), desc(news.sortOrder), desc(news.createdAt)];
 
 	return executePaginatedQuery(
 		db
@@ -169,14 +174,14 @@ export async function getNewsById(id: string): Promise<NewsRecord | null> {
 export async function createNews(params: {
 	title: string;
 	slug?: string;
-	summary?: string;
+	description?: string;
 	content?: string;
 	coverImageId?: string;
 	status?: string;
 	isPinned?: boolean;
-	sort?: number;
+	sortOrder?: number;
 	publishedAt?: Date | string;
-	createdBy?: string;
+	createdById?: string;
 }): Promise<NewsRecord> {
 	let slug = params.slug?.trim() || generateSlug(params.title);
 	slug = await ensureUniqueSlug(slug);
@@ -191,15 +196,15 @@ export async function createNews(params: {
 		.values({
 			title: params.title,
 			slug,
-			summary: params.summary,
+			description: params.description,
 			content: params.content,
 			coverImageId: params.coverImageId,
 			status: params.status || "draft",
 			isPinned: params.isPinned ?? false,
-			sort: params.sort ?? 0,
+			sortOrder: params.sortOrder ?? 0,
 			publishedAt:
 				params.status === "published" ? publishedAtValue || new Date() : null,
-			createdBy: params.createdBy,
+			createdById: params.createdById,
 		})
 		.returning();
 
@@ -212,14 +217,14 @@ export async function updateNews(
 	params: {
 		title?: string;
 		slug?: string;
-		summary?: string;
+		description?: string;
 		content?: string;
 		coverImageId?: string | null;
 		status?: string;
 		isPinned?: boolean;
-		sort?: number;
+		sortOrder?: number;
 		publishedAt?: Date | string | null;
-		updatedBy?: string;
+		updatedById?: string;
 	},
 ): Promise<NewsRecord | null> {
 	const existing = await getNewsById(id);
@@ -240,12 +245,12 @@ export async function updateNews(
 
 	const updateData: Record<string, unknown> = {
 		title: params.title,
-		summary: params.summary,
+		description: params.description,
 		content: params.content,
 		coverImageId: params.coverImageId,
 		status: params.status,
 		isPinned: params.isPinned,
-		sort: params.sort,
+		sortOrder: params.sortOrder,
 		slug,
 		updatedAt: new Date(),
 	};
@@ -316,7 +321,7 @@ export async function getAllNewsForExport(): Promise<NewsRecord[]> {
 		.select()
 		.from(news)
 		.where(notDeleted(news.deletedAt))
-		.orderBy(desc(news.sort), desc(news.createdAt));
+		.orderBy(desc(news.sortOrder), desc(news.createdAt));
 }
 
 /** 新闻导出 CSV 列定义 */
@@ -324,7 +329,7 @@ export const NEWS_EXPORT_COLUMNS: { key: string; title: string }[] = [
 	{ key: "id", title: "ID" },
 	{ key: "title", title: "标题" },
 	{ key: "slug", title: "Slug" },
-	{ key: "summary", title: "摘要" },
+	{ key: "description", title: "摘要" },
 	{ key: "content", title: "正文" },
 	{ key: "status", title: "状态" },
 	{ key: "isPinned", title: "是否置顶" },

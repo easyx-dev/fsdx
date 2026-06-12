@@ -77,9 +77,9 @@ function NewsListPage() {
 											</Badge>
 										)}
 									</div>
-									{item.summary && (
+									{item.description && (
 										<CardDescription className="line-clamp-3 text-xs sm:text-sm">
-											{item.summary}
+											{item.description}
 										</CardDescription>
 									)}
 								</CardHeader>

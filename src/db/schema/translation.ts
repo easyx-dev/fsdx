@@ -26,8 +26,12 @@ export const uiTranslation = pgTable(
 		value: text().notNull(),
 		/** 复用 EditorType: input | text | number | json | rich | code */
 		valueType: varchar("value_type", { length: 20 }).default("input").notNull(),
-		createdAt: timestamp("created_at").defaultNow().notNull(),
-		updatedAt: timestamp("updated_at").defaultNow().notNull(),
+		createdAt: timestamp("created_at", { withTimezone: true })
+			.defaultNow()
+			.notNull(),
+		updatedAt: timestamp("updated_at", { withTimezone: true })
+			.defaultNow()
+			.notNull(),
 	},
 	(table) => [unique("uq_ui_trans_locale_key").on(table.locale, table.key)],
 );
@@ -44,8 +48,12 @@ export const contentTranslation = pgTable(
 		value: text().notNull(),
 		/** 复用 EditorType: input | text | rich 等 */
 		valueType: varchar("value_type", { length: 20 }).default("text").notNull(),
-		createdAt: timestamp("created_at").defaultNow().notNull(),
-		updatedAt: timestamp("updated_at").defaultNow().notNull(),
+		createdAt: timestamp("created_at", { withTimezone: true })
+			.defaultNow()
+			.notNull(),
+		updatedAt: timestamp("updated_at", { withTimezone: true })
+			.defaultNow()
+			.notNull(),
 	},
 	(table) => [
 		unique("uq_ct_entity_field_locale").on(

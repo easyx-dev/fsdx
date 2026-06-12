@@ -21,12 +21,16 @@ export const file = pgTable(
 		size: bigint({ mode: "number" }).notNull(),
 		path: varchar({ length: 1000 }).notNull(),
 		status: varchar({ length: 20 }).default("temp").notNull(),
-		expiredAt: timestamp("expired_at"),
+		expiredAt: timestamp("expired_at", { withTimezone: true }),
 		createdByType: varchar("created_by_type", { length: 20 }),
 		createdById: uuid("created_by_id"),
-		createdAt: timestamp("created_at").defaultNow().notNull(),
-		updatedAt: timestamp("updated_at").defaultNow().notNull(),
-		deletedAt: timestamp("deleted_at"),
+		createdAt: timestamp("created_at", { withTimezone: true })
+			.defaultNow()
+			.notNull(),
+		updatedAt: timestamp("updated_at", { withTimezone: true })
+			.defaultNow()
+			.notNull(),
+		deletedAt: timestamp("deleted_at", { withTimezone: true }),
 	},
 	(table) => [index("idx_file_sha256").on(table.sha256)],
 );

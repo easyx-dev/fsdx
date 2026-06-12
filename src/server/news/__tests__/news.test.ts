@@ -62,16 +62,16 @@ const newsRecord = {
 	slug: "test-news",
 	status: "draft",
 	content: "{}",
-	summary: "",
+	description: "",
 	isPinned: false,
-	sort: 0,
+	sortOrder: 0,
 	publishedAt: null,
 	createdAt: new Date(),
 	updatedAt: new Date(),
 	deletedAt: null,
 	coverImageId: null,
-	createdBy: null,
-	updatedBy: null,
+	createdById: null,
+	updatedById: null,
 };
 
 describe("getNewsList", () => {
@@ -214,16 +214,16 @@ describe("translateNewsRecord", () => {
 	it("非默认语言时查询并覆盖字段", async () => {
 		mockGetContentTranslations.mockResolvedValue({
 			title: { fieldName: "title", value: "Test News", valueType: "text" },
-			summary: {
-				fieldName: "summary",
-				value: "English summary",
+			description: {
+				fieldName: "description",
+				value: "English description",
 				valueType: "text",
 			},
 		});
 
 		const result = await translateNewsRecord(newsRecord, "en");
 		expect(result.title).toBe("Test News");
-		expect(result.summary).toBe("English summary");
+		expect(result.description).toBe("English description");
 		expect(mockGetContentTranslations).toHaveBeenCalledWith(
 			"news",
 			"n-1",

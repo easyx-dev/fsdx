@@ -17,8 +17,12 @@ export const clientUser = pgTable("client_user", {
 	avatar: varchar({ length: 500 }),
 	status: varchar({ length: 20 }).default("active").notNull(),
 	emailVerified: boolean("email_verified").default(false).notNull(),
-	lastLoginAt: timestamp("last_login_at"),
-	createdAt: timestamp("created_at").defaultNow().notNull(),
-	updatedAt: timestamp("updated_at").defaultNow().notNull(),
-	deletedAt: timestamp("deleted_at"),
+	lastLoginAt: timestamp("last_login_at", { withTimezone: true }),
+	createdAt: timestamp("created_at", { withTimezone: true })
+		.defaultNow()
+		.notNull(),
+	updatedAt: timestamp("updated_at", { withTimezone: true })
+		.defaultNow()
+		.notNull(),
+	deletedAt: timestamp("deleted_at", { withTimezone: true }),
 });

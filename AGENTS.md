@@ -181,6 +181,42 @@ src/
 - 包含 `uiTranslation`（UI 固定文案翻译）和 `contentTranslation`（实体字段翻译）两张翻译表
 - `admin_user` 表包含 `is_root` 布尔字段 + 数据库部分唯一索引，保证仅一个 root 用户
 
+### 数据库列命名约定
+
+所有数据库列遵循统一的命名规则，新增列时必须对照已有表确认命名一致性。
+
+**通用列**：
+
+| 概念 | 列名 | 类型 | 说明 |
+|------|------|------|------|
+| 主键 | `id` | `uuid().defaultRandom().primaryKey()` | 所有表统一 |
+| 创建时间 | `created_at` | `timestamptz` | 统一使用 `timestamp("created_at", { withTimezone: true })` |
+| 更新时间 | `updated_at` | `timestamptz` | 同上 |
+| 软删除 | `deleted_at` | `timestamptz` | 可恢复的数据统一使用 |
+| 描述 | `description` | `text` | 不区分"摘要"/"描述"，统一用 `description` |
+| 排序 | `sort_order` | `integer` | 统一用 `sortOrder` → `sort_order`，禁用 `sort` |
+
+**外键命名**：
+
+| 概念 | 列名 | 说明 |
+|------|------|------|
+| 引用其他表 ID | `xxx_id` | 如 `created_by_id`、`updated_by_id`、`role_id` |
+| 引用类型（多态） | `xxx_type` | 如 `created_by_type` |
+
+外键列 JS 属性名**必须**以 `Id` 结尾（如 `createdById` → `created_by_id`），禁用省略后缀的形式（如 `createdBy` → `created_by`）。
+
+**Drizzle 列定义规范**：
+
+- 所有列**必须**显式指定数据库列名（如 `varchar("column_name")`、`timestamp("created_at", { withTimezone: true })`），不依赖 Drizzle 的自动命名推断
+- 所有 timestamp 列**必须**加 `{ withTimezone: true }`，统一使用 `timestamptz`
+- 列定义链式调用过长时遵循 Biome 格式化规则自动换行
+
+**Schema 修改流程**：
+
+- 开发阶段使用 `pnpm db:push` 同步 schema，不用 `db:generate` + `db:migrate`
+- 重命名已有列时，`db:push` 的交互提示中选择 **rename column**（而非 create column），避免数据丢失
+- 重命名完成后必须执行 `pnpm check` + `pnpm test -- --run` 确保通过
+
 ## 测试约定
 
 ### 目录结构

@@ -20,18 +20,22 @@ export const news = pgTable(
 		id: uuid().defaultRandom().primaryKey(),
 		title: varchar({ length: 500 }).notNull(),
 		slug: varchar({ length: 500 }).unique().notNull(),
-		summary: text(),
+		description: text("description"),
 		content: text(), // TipTap JSON
 		coverImageId: uuid("cover_image_id").references(() => file.id),
 		status: varchar({ length: 20 }).default("draft").notNull(), // draft | published | archived
 		isPinned: boolean("is_pinned").default(false).notNull(),
-		sort: integer("sort").default(0).notNull(),
-		publishedAt: timestamp("published_at"),
-		createdBy: uuid("created_by").references(() => adminUser.id),
-		updatedBy: uuid("updated_by").references(() => adminUser.id),
-		createdAt: timestamp("created_at").defaultNow().notNull(),
-		updatedAt: timestamp("updated_at").defaultNow().notNull(),
-		deletedAt: timestamp("deleted_at"),
+		sortOrder: integer("sort_order").default(0).notNull(),
+		publishedAt: timestamp("published_at", { withTimezone: true }),
+		createdById: uuid("created_by_id").references(() => adminUser.id),
+		updatedById: uuid("updated_by_id").references(() => adminUser.id),
+		createdAt: timestamp("created_at", { withTimezone: true })
+			.defaultNow()
+			.notNull(),
+		updatedAt: timestamp("updated_at", { withTimezone: true })
+			.defaultNow()
+			.notNull(),
+		deletedAt: timestamp("deleted_at", { withTimezone: true }),
 	},
 	(table) => [index("idx_news_created_at").on(table.createdAt)],
 );

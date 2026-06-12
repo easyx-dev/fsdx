@@ -30,7 +30,7 @@ export const createNewsFn = createServerFn({ method: "POST" })
 		const record = await createNews({
 			...data,
 			publishedAt: data.publishedAt || undefined,
-			sort: data.sort,
+			sortOrder: data.sortOrder,
 		});
 		logOperation({
 			operatorId: context.user.id,
@@ -53,7 +53,7 @@ export const updateNewsFn = createServerFn({ method: "POST" })
 			...data,
 			publishedAt:
 				data.publishedAt === null ? null : data.publishedAt || undefined,
-			sort: data.sort,
+			sortOrder: data.sortOrder,
 		});
 		logOperation({
 			operatorId: context.user.id,

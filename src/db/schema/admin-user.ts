@@ -26,10 +26,14 @@ export const adminUser = pgTable(
 			.notNull(),
 		isRoot: boolean("is_root").default(false).notNull(),
 		status: varchar({ length: 20 }).default("active").notNull(),
-		lastLoginAt: timestamp("last_login_at"),
-		createdAt: timestamp("created_at").defaultNow().notNull(),
-		updatedAt: timestamp("updated_at").defaultNow().notNull(),
-		deletedAt: timestamp("deleted_at"),
+		lastLoginAt: timestamp("last_login_at", { withTimezone: true }),
+		createdAt: timestamp("created_at", { withTimezone: true })
+			.defaultNow()
+			.notNull(),
+		updatedAt: timestamp("updated_at", { withTimezone: true })
+			.defaultNow()
+			.notNull(),
+		deletedAt: timestamp("deleted_at", { withTimezone: true }),
 	},
 	(table) => [
 		// 数据库层面保证只有一个 root 用户

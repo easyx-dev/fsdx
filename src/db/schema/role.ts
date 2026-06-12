@@ -16,7 +16,11 @@ export const role = pgTable("role", {
 	slug: varchar({ length: 50 }).unique().notNull(),
 	permissions: jsonb().$type<string[]>().default([]).notNull(),
 	description: text(),
-	createdAt: timestamp("created_at").defaultNow().notNull(),
-	updatedAt: timestamp("updated_at").defaultNow().notNull(),
-	deletedAt: timestamp("deleted_at"),
+	createdAt: timestamp("created_at", { withTimezone: true })
+		.defaultNow()
+		.notNull(),
+	updatedAt: timestamp("updated_at", { withTimezone: true })
+		.defaultNow()
+		.notNull(),
+	deletedAt: timestamp("deleted_at", { withTimezone: true }),
 });

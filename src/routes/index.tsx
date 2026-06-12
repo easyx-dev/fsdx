@@ -138,9 +138,9 @@ function HomePage() {
 										<CardTitle className="line-clamp-2 text-base sm:text-lg">
 											{item.title}
 										</CardTitle>
-										{item.summary && (
+										{item.description && (
 											<CardDescription className="line-clamp-2 text-xs sm:text-sm">
-												{item.summary}
+												{item.description}
 											</CardDescription>
 										)}
 									</CardHeader>

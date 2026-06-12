@@ -104,7 +104,7 @@ export const Route = createFileRoute("/admin/_admin/news/")({
 
 const NEWS_TRANSLATABLE_FIELDS = [
 	{ name: "title", label: "新闻标题", valueType: "input" as const },
-	{ name: "summary", label: "新闻摘要", valueType: "text" as const },
+	{ name: "description", label: "新闻摘要", valueType: "text" as const },
 	{ name: "content", label: "新闻内容", valueType: "rich" as const },
 ];
 
@@ -183,8 +183,8 @@ function NewsListPage() {
 		},
 		{
 			title: "摘要",
-			dataIndex: "summary",
-			key: "summary",
+			dataIndex: "description",
+			key: "description",
 			width: 200,
 			ellipsis: true,
 		},
@@ -204,8 +204,8 @@ function NewsListPage() {
 		},
 		{
 			title: "排序",
-			dataIndex: "sort",
-			key: "sort",
+			dataIndex: "sortOrder",
+			key: "sortOrder",
 			width: 90,
 			sorter: true,
 		},
@@ -248,7 +248,7 @@ function NewsListPage() {
 						trigger="button"
 						originalValues={{
 							title: record.title ?? "",
-							summary: record.summary ?? "",
+							description: record.description ?? "",
 							content: record.content ?? "",
 						}}
 					/>

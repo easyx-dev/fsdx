@@ -36,9 +36,12 @@ export const Route = createFileRoute("/news/$slug")({
 		return {
 			title: `${detail.title} - 新闻资讯`,
 			meta: [
-				{ name: "description", content: detail.summary || detail.title },
+				{ name: "description", content: detail.description || detail.title },
 				{ property: "og:title", content: detail.title },
-				{ property: "og:description", content: detail.summary || detail.title },
+				{
+					property: "og:description",
+					content: detail.description || detail.title,
+				},
 				{ property: "og:type", content: "article" },
 			],
 		};
@@ -96,9 +99,9 @@ function NewsDetailPage() {
 					</div>
 				</header>
 
-				{data.summary && (
+				{data.description && (
 					<p className="mb-6 border-l-2 border-border pl-4 text-base leading-relaxed text-muted-foreground sm:mb-8 sm:text-lg">
-						{data.summary}
+						{data.description}
 					</p>
 				)}
 

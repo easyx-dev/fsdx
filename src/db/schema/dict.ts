@@ -17,9 +17,13 @@ export const dict = pgTable("dict", {
 	name: varchar({ length: 100 }).notNull(),
 	slug: varchar({ length: 50 }).unique().notNull(),
 	description: text(),
-	createdAt: timestamp("created_at").defaultNow().notNull(),
-	updatedAt: timestamp("updated_at").defaultNow().notNull(),
-	deletedAt: timestamp("deleted_at"),
+	createdAt: timestamp("created_at", { withTimezone: true })
+		.defaultNow()
+		.notNull(),
+	updatedAt: timestamp("updated_at", { withTimezone: true })
+		.defaultNow()
+		.notNull(),
+	deletedAt: timestamp("deleted_at", { withTimezone: true }),
 });
 
 /** 字典条目 */
@@ -37,9 +41,13 @@ export const dictItem = pgTable(
 		extraType: varchar("extra_type", { length: 20 }),
 		extra: text("extra"),
 		color: varchar("color", { length: 20 }),
-		createdAt: timestamp("created_at").defaultNow().notNull(),
-		updatedAt: timestamp("updated_at").defaultNow().notNull(),
-		deletedAt: timestamp("deleted_at"),
+		createdAt: timestamp("created_at", { withTimezone: true })
+			.defaultNow()
+			.notNull(),
+		updatedAt: timestamp("updated_at", { withTimezone: true })
+			.defaultNow()
+			.notNull(),
+		deletedAt: timestamp("deleted_at", { withTimezone: true }),
 	},
 	(table) => [
 		uniqueIndex("uq_dict_item_dict_slug_value").on(table.dictSlug, table.value),
