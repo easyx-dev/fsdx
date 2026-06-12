@@ -113,29 +113,9 @@ src/
 
 ### 服务端函数命名规范
 
-所有 `createServerFn` 定义的函数**必须**以 `SFn` 为后缀，例如 `exportNewsSFn`、`getCurrentAdminSFn`。无论是 `src/server/` 下 `.functions.ts` 中的导出函数，还是路由文件中页面局部的非导出函数，一律遵循此约定。
+所有 `createServerFn` 定义的函数**必须**以 `SFn` 为后缀。`.server.ts` 中的辅助函数**禁止**使用 `SFn` 后缀。`.functions.ts` 中未被引用的 `createServerFn` 包装器视为死代码，需删除。
 
-**`.server.ts` 辅助函数不在此列**：`.server.ts` 中的函数是普通异步函数（DB 查询、内部逻辑），不含 `createServerFn`，**禁止**使用 `SFn` 后缀。如遇同名（路由文件中的 `createServerFn` 与 `.server.ts` 辅助函数同名），批量重命名时需精确区分，仅对 `createServerFn` 变量名做替换。
-
-**死代码清理**：`.functions.ts` 中未被任何文件 import 的 `createServerFn` 包装器视为死代码，应在确认无引用后删除，同时清理对应的 import 语句。如果路由文件直接包装了 `.server.ts` 的同功能函数（绕过了 `.functions.ts`），`.functions.ts` 中的包装器即构成死代码。
-
-### 文件命名约定
-
-遵循 TanStack Start 推荐的 `.server.ts` / `.functions.ts` / `.ts` 三层分离：
-
-| 后缀 | 用途 | 可导入位置 |
-|------|------|------------|
-| `.server.ts` | 服务端辅助函数（DB 查询、内部逻辑），不含 `createServerFn` | 仅 `.functions.ts` 和 `.server.ts`，禁止路由/组件直接导入 |
-| `.functions.ts` | `createServerFn` 包装器，对外暴露可调用的 RPC 接口 | 任何位置（路由 loader、组件、hook），构建时替换为 RPC stub |
-| `.ts`（无后缀） | 客户端安全代码（类型、常量、schema） | 任何位置 |
-| `.types.ts` | 纯类型定义，不含运行时值 | 任何位置（支持 type-only import） |
-
-规则：
-- `.server.ts` 之间的交叉引用使用完整路径（如 `#/server/config/config.server`）
-- 路由文件中 `createServerFn` 的 handler 内部引用 `.server.ts` 的函数是安全的——编译器会在客户端构建时移除整个 handler
-- 禁止在路由文件顶层直接调用或导出 `.server.ts` 中的函数（超出 handler 边界）
-- 混合 barrel（同时导出类型和运行时值）应拆分：类型走 `.types.ts`，运行时值走 `.server.ts` 或 `.functions.ts`
-- `src/lib/` 和 `src/server/` 下禁止直接放置文件，所有模块必须组织到独立子目录中（例如 `lib/permissions/permissions.ts` 而非 `lib/permissions.ts`）；子目录内文件名与目录名对应（如 `permissions/permissions.ts`）
+> 详细规范、三层分离决策、调用方模式、违规自查 → 见 [server-function](.agents/skills/server-function/SKILL.md) skill。
 
 ### 鉴权中间件
 
@@ -190,39 +170,9 @@ src/
 
 ### 数据库列命名约定
 
-所有数据库列遵循统一的命名规则，新增列时必须对照已有表确认命名一致性。
+所有列统一遵循命名规则：主键 `id`、时间列 `created_at`/`updated_at`（timestamptz）、软删除 `deleted_at`、描述 `description`、排序 `sort_order`。外键列名 `xxx_id`，JS 属性以 `Id` 结尾。所有列必须显式指定数据库列名，timestamp 必须加 `{ withTimezone: true }`。Schema 修改使用 `pnpm db:push`，重命名列时选择 rename column。
 
-**通用列**：
-
-| 概念 | 列名 | 类型 | 说明 |
-|------|------|------|------|
-| 主键 | `id` | `uuid().defaultRandom().primaryKey()` | 所有表统一 |
-| 创建时间 | `created_at` | `timestamptz` | 统一使用 `timestamp("created_at", { withTimezone: true })` |
-| 更新时间 | `updated_at` | `timestamptz` | 同上 |
-| 软删除 | `deleted_at` | `timestamptz` | 可恢复的数据统一使用 |
-| 描述 | `description` | `text` | 不区分"摘要"/"描述"，统一用 `description` |
-| 排序 | `sort_order` | `integer` | 统一用 `sortOrder` → `sort_order`，禁用 `sort` |
-
-**外键命名**：
-
-| 概念 | 列名 | 说明 |
-|------|------|------|
-| 引用其他表 ID | `xxx_id` | 如 `created_by_id`、`updated_by_id`、`role_id` |
-| 引用类型（多态） | `xxx_type` | 如 `created_by_type` |
-
-外键列 JS 属性名**必须**以 `Id` 结尾（如 `createdById` → `created_by_id`），禁用省略后缀的形式（如 `createdBy` → `created_by`）。
-
-**Drizzle 列定义规范**：
-
-- 所有列**必须**显式指定数据库列名（如 `varchar("column_name")`、`timestamp("created_at", { withTimezone: true })`），不依赖 Drizzle 的自动命名推断
-- 所有 timestamp 列**必须**加 `{ withTimezone: true }`，统一使用 `timestamptz`
-- 列定义链式调用过长时遵循 Biome 格式化规则自动换行
-
-**Schema 修改流程**：
-
-- 开发阶段使用 `pnpm db:push` 同步 schema，不用 `db:generate` + `db:migrate`
-- 重命名已有列时，`db:push` 的交互提示中选择 **rename column**（而非 create column），避免数据丢失
-- 重命名完成后必须执行 `pnpm check` + `pnpm test -- --run` 确保通过
+> 完整列命名决策表、表定义模板、常见陷阱 → 见 [db-schema](.agents/skills/db-schema/SKILL.md) skill。
 
 ## 测试约定
 
@@ -246,46 +196,9 @@ src/server/config/
 
 ### Mock 模式
 
-测试使用 Vitest 的 `vi.hoisted()` + `vi.mock()` 模式，**严格遵循三段式结构**：
+测试使用 Vitest 的 `vi.hoisted()` + `vi.mock()` 三段式结构：静态 mock → `vi.hoisted()` 创建 mock 对象 → 使用 hoisted 值 mock DB → 最后 import 被测模块。`mockDb` 必须包含所有表的 `query` 方法，`beforeEach` 中调用 `vi.clearAllMocks()`。
 
-1. **顶部 `vi.mock`（静态路径）**：mock 无运行时依赖的模块（如 logger）
-2. **`vi.hoisted()` 块**：创建 mock 对象（mockDb、mockStorage 等），定义在 `vi.mock` 之前可被后者引用
-3. **`vi.mock`（依赖 hoisted 值）**：使用 hoisted 值 mock 数据库、外部服务等模块
-4. **源模块导入**：所有 mock 之后的 `import` 语句，模块导入时 mock 已生效
-
-示例：
-
-```ts
-// 1. 静态 mock
-vi.mock("#/lib/logger/logger", () => ({
-	logger: { error: vi.fn(), info: vi.fn(), warn: vi.fn() },
-}));
-
-// 2. hoisted 创建 mock 对象
-const { mockDb } = vi.hoisted(() => {
-	const q = () => ({ findFirst: vi.fn(), findMany: vi.fn() });
-	return {
-		mockDb: {
-			query: { adminUser: q(), clientUser: q(), /* 所有表 */ },
-			select: vi.fn(() => ({ from: vi.fn(() => ({ where: vi.fn() })) })),
-			insert: vi.fn(() => ({ values: vi.fn(() => ({ returning: vi.fn() })) })),
-			update: vi.fn(() => ({ set: vi.fn(() => ({ where: vi.fn() })) })),
-		},
-	};
-});
-
-// 3. 使用 hoisted 值 mock 模块
-vi.mock("#/db", () => ({ db: mockDb }));
-
-// 4. 所有 mock 之后导入被测模块
-import { getConfig } from "#/server/config/config.server";
-```
-
-规则：
-- 源模块导入**必须**在所有 `vi.mock` 之后，确保 mock 先生效
-- `mockDb` 必须包含所有表对应的 `query` 方法（即使当前模块不查询），避免其他模块交叉引用时报 undefined
-- `vi.clearAllMocks()` 在 `beforeEach` 中调用，保证测试隔离
-- 纯类型/常量模块（无服务端依赖）的测试无需 mock，直接从源模块导入（如 `src/lib/permissions/__tests__/permissions.test.ts`）
+> 完整三段式模板、链式调用 Setup 速查、常见 Mock 错误 → 见 [test-writing](.agents/skills/test-writing/SKILL.md) skill。
 
 ### 命名与覆盖
 
@@ -410,118 +323,23 @@ import { getConfig } from "#/server/config/config.server";
 
 ### 错误通知分层
 
-项目包含两种运行时环境，错误通知方式不同，新增页面时遵循以下分层：
+管理端（`/admin/*`）使用 antd `message.error/success`，前台 SSR 使用 sonner `toast.error/success`。loader/beforeLoad 失败走 `errorComponent`，不调用 DOM API。
 
-| 环境 | 路由 | 通知方式 |
-|------|------|----------|
-| 管理端（客户端渲染） | `/admin/*` | antd `message.error/success` |
-| 前台 SSR | 非 `/admin/*` | sonner `toast.error/success` |
-
-**管理端**：所有 Server Function 调用和用户操作必须在 try/catch 中处理，统一模式：
-
-```ts
-try { await serverFn(...); message.success("操作成功"); }
-catch (err) { message.error(err instanceof Error ? err.message : "操作失败"); }
-```
-
-**前台 SSR**：
-- loader / beforeLoad 失败 → `errorComponent` 内联展示错误文案（服务端渲染安全）
-- 表单提交失败 → sonner `toast.error()`（客户端交互）
-- 字段级校验错误 → 保留内联 `<p className="text-xs text-destructive">`（不变）
-
-sonner 的 `<Toaster>` 挂载在 `SSRRootDocument` 中，配置 `position="top-center" richColors`。`richColors` 自动为 error 类型着红色。
+> SFn 调用方完整模式、前台 vs 管理端代码示例 → 见 [server-function](.agents/skills/server-function/SKILL.md) skill。
 
 ### 常见违规模式
 
-新增或修改代码时，重点检查以下模式：
+新增或修改代码时，重点自查以下 7 类违规：
 
-#### 1 空 catch 块
+1. **空 catch 块** — 至少记录日志或向上抛出
+2. **吞掉错误返回 null/false** — 调用方无法区分异常和正常值
+3. **缓冲 splice 在 insert 之前** — 数据丢失风险
+4. **缓冲无容量上限** — 内存泄漏风险
+5. **SF handler 静默返回 null** — 前端 catch 不触发
+6. **route loader 调用 DOM API** — SSR 环境报错
+7. **重复的错误日志** — 同一错误多次记录
 
-```ts
-// ❌ 错误完全不可见
-try { ... } catch {}
-// ❌ 同上
-.catch(() => {})
-
-// ✅ 最少记录日志
-try { ... } catch (err) { logger.error({ error: (err as Error).message }, "操作失败"); }
-// ✅ 或向上抛
-try { ... } catch (err) { logger.error(...); throw err; }
-```
-
-#### 2 吞掉错误返回 null/false
-
-```ts
-// ❌ 调用方无法区分"正常的 null"和"异常导致的 null"
-catch (err) { return null; }
-
-// ✅ 向上抛出，让调用方处理
-catch (err) { logger.error(...); throw err; }
-```
-
-#### 3 缓冲写入 splice 在 insert 之前
-
-```ts
-// ❌ insert 失败时数据已从内存移除，永久丢失
-const batch = buffer.splice(0, buffer.length);
-try { await db.insert(...); }
-
-// ✅ 先复制，成功后移除
-const batch = [...buffer];
-try { await db.insert(...); buffer.splice(0, batch.length); }
-```
-
-#### 4 缓冲无容量上限
-
-```ts
-// ❌ flush 持续失败时无限增长，内存泄漏
-buffer.push(item);
-
-// ✅ 设置上限，超限丢弃最旧 + warn
-if (buffer.length >= MAX_BUFFER_SIZE) { buffer.shift(); logger.warn(...); }
-buffer.push(item);
-```
-
-#### 5 Server Function handler 中静默返回 null
-
-```ts
-// ❌ 前端 catch 不触发，UI 显示空状态而非错误
-.handler(async ({ data }) => {
-  try { return await doStuff(); }
-  catch { return null; }
-})
-
-// ✅ 抛出错误，前端 catch 触发 message.error/toast.error
-catch (err) { logger.error(...); throw err; }
-```
-
-#### 6 route loader 中调用 DOM API
-
-```ts
-// ❌ SSR 阶段 antd message 操作 DOM，报错或无效果
-loader: async () => {
-  try { return await getData(); }
-  catch (err) { message.error(err.message); return defaultValue; }
-}
-
-// ✅ SSR loader：静默返回降级值 + errorComponent
-loader: async () => {
-  try { return await getData(); }
-  catch (err) { console.error(err); return defaultValue; }
-},
-errorComponent: ({ error }) => <ErrorDisplay error={error} />
-```
-
-#### 7 重复的错误日志
-
-```ts
-// ❌ 内部已 catch + log，外部又 catch + log 同一错误
-async function flush() { try { ... } catch (err) { logger.error(...); } }
-flush().catch((err) => { logger.error(...); });  // 死代码
-
-// ✅ 内部负责日志，外部只调用
-flush("timer");
-```
+> 每种违规的代码示例和修复方案 → 见 [server-function](.agents/skills/server-function/SKILL.md) skill。
 
 ### 静默失败防护原则
 

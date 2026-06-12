@@ -1,0 +1,214 @@
+---
+name: db-schema
+description: >
+  数据库 Schema 开发指南。当需要新增/修改数据库表、调整 Drizzle Schema、
+  添加列或外键、或执行 db:push 时触发。
+---
+
+# 数据库 Schema 开发
+
+## 快速索引
+
+| 需求 | 跳转 |
+|------|------|
+| 新增一张表 | → [完整表定义模板](#完整表定义模板) |
+| 新增普通列 | → [列命名决策表](#列命名决策表) |
+| 新增外键列 | → [外键列命名规则](#外键列命名规则) |
+| 修改已有列 | → [Schema 修改流程](#schema-修改流程) |
+| 不确定列名 | → [列命名决策表](#列命名决策表) |
+
+## 通用列模板
+
+每个表**必须**包含以下列：
+
+```ts
+// 主键 —— 所有表统一
+id: uuid().defaultRandom().primaryKey(),
+
+// 创建时间 —— defaultNow + notNull
+createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+
+// 更新时间 —— defaultNow + notNull，每次更新需手动设为 new Date()
+updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+```
+
+**可选通用列**（按需添加）：
+
+```ts
+// 软删除 —— 需要可恢复删除的表
+deletedAt: timestamp("deleted_at", { withTimezone: true }),
+
+// 排序 —— 需要手动拖拽排序的表
+sortOrder: integer("sort_order").default(0).notNull(),
+
+// 描述 —— 任何描述性文本，统一用 description，禁用 summary
+description: text("description"),
+
+// 状态 —— 状态机字段，通常配合 DictSelect
+status: varchar({ length: 20 }).default("active").notNull(),
+
+// 创建者 / 更新者 —— 审计追踪
+createdById: uuid("created_by_id").references(() => adminUser.id),
+updatedById: uuid("updated_by_id").references(() => adminUser.id),
+```
+
+## 列命名决策表
+
+| 业务概念 | 列名 | JS 属性名 | Drizzle 类型 | 说明 |
+|----------|------|-----------|-------------|------|
+| 主键 | `id` | `id` | `uuid().defaultRandom().primaryKey()` | 所有表统一 |
+| 创建时间 | `created_at` | `createdAt` | `timestamp(..., { withTimezone: true })` | `defaultNow().notNull()` |
+| 更新时间 | `updated_at` | `updatedAt` | `timestamp(..., { withTimezone: true })` | `defaultNow().notNull()` |
+| 软删除 | `deleted_at` | `deletedAt` | `timestamp(..., { withTimezone: true })` | 可恢复的数据用 |
+| 描述/摘要/简介 | `description` | `description` | `text(...)` | **统一用此**，禁用 `summary` |
+| 排序 | `sort_order` | `sortOrder` | `integer(...)` | **统一用此**，禁用 `sort` |
+| 状态 | `status` | `status` | `varchar({ length: 20 })` | 状态机字段 |
+| 发布标识 | `is_published` / `is_pinned` | `isPublished` / `isPinned` | `boolean(...)` | 布尔开关用 `is_` 前缀 |
+| 标题 | `title` | `title` | `varchar({ length: N })` | 需要长度限制 |
+| 名称 | `name` | `name` | `varchar({ length: N })` | 需要长度限制 |
+| 邮箱 | `email` | `email` | `varchar({ length: N })` | |
+| 密码哈希 | `password_hash` | `passwordHash` | `varchar({ length: 255 })` | |
+| Slug / URL 标识 | `slug` | `slug` | `varchar({ length: 500 })` | 通常加 `.unique()` |
+| 封面图引用 | `cover_image_id` | `coverImageId` | `uuid(...).references(...)` | FK 引用 `file` 表 |
+| 创建者引用 | `created_by_id` | `createdById` | `uuid(...).references(...)` | FK 引用 `admin_user` |
+| 多态引用类型 | `xxx_type` | `xxxType` | `varchar({ length: N })` | 如 `created_by_type`，配合 `xxx_id` 使用 |
+| 更新者引用 | `updated_by_id` | `updatedById` | `uuid(...).references(...)` | FK 引用 `admin_user` |
+| 角色引用 | `role_id` | `roleId` | `uuid(...).references(...)` | FK 引用 `role` |
+
+## 外键列命名规则
+
+1. 数据库列名：`<概念>_id`，如 `created_by_id`、`role_id`
+2. JS 属性名：`<概念>Id`，如 `createdById`、`roleId`
+3. **禁止**省略 `Id` 后缀，例如 `createdBy` → `created_by` 是错误的
+
+```ts
+// ✅ 正确
+createdById: uuid("created_by_id").references(() => adminUser.id),
+roleId: uuid("role_id").references(() => role.id).notNull(),
+
+// ❌ 错误
+createdBy: uuid("created_by").references(() => adminUser.id),  // JS 属性缺少 Id
+updatedBy: uuid("updated_by").references(() => adminUser.id),  // JS 属性缺少 Id
+```
+
+## Drizzle 列定义规范
+
+1. **显式指定数据库列名**：所有列的第一个参数必须是字符串列名，不依赖 Drizzle 自动推断
+2. **timestamp 必须加 `{ withTimezone: true }`**：无例外
+3. **链式调用过长时让 Biome 自动换行**：不要手动折行
+
+```ts
+// ✅ 正确
+createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+title: varchar({ length: 500 }).notNull(),
+description: text("description"),
+
+// ❌ 错误
+createdAt: timestamp().defaultNow().notNull(),          // 缺少列名 + withTimezone
+title: varchar().notNull(),                              // 未指定列名 + 长度
+description: text(),                                    // 未指定列名
+```
+
+## 完整表定义模板
+
+以下模板可直接复制，替换占位符即可。示例以"产品"为例：
+
+```ts
+/**
+ * 产品表
+ */
+import {
+  boolean,
+  index,
+  integer,
+  pgTable,
+  text,
+  timestamp,
+  uuid,
+  varchar,
+} from "drizzle-orm/pg-core";
+import { adminUser } from "./admin-user";
+
+export const product = pgTable(
+  "product",  // 表名：单数
+  {
+    // ═══ 主键 ═══
+    id: uuid().defaultRandom().primaryKey(),
+
+    // ═══ 业务列 ═══
+    name: varchar({ length: 200 }).notNull(),
+    description: text("description"),
+    status: varchar({ length: 20 }).default("active").notNull(),
+    isPublished: boolean("is_published").default(false).notNull(),
+    sortOrder: integer("sort_order").default(0).notNull(),
+    coverImageId: uuid("cover_image_id").references(() => file.id),
+
+    // ═══ 审计列 ═══
+    createdById: uuid("created_by_id").references(() => adminUser.id),
+    updatedById: uuid("updated_by_id").references(() => adminUser.id),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+
+    // ═══ 软删除（按需） ═══
+    deletedAt: timestamp("deleted_at", { withTimezone: true }),
+  },
+  (table) => [
+    // 按需添加索引
+    index("idx_product_created_at").on(table.createdAt),
+  ],
+);
+```
+
+## 占位符替换说明
+
+| 占位符 | 说明 | 示例 |
+|--------|------|------|
+| `product` | 表名，单数，snake_case（全小写下划线） | `customer_feedback` |
+| `Product` | 实体名 | `CustomerFeedback` |
+| `name` / `description` / `status` | 按 [列命名决策表](#列命名决策表) 选择正确的列名 | |
+
+## 新增表流程
+
+1. **创建 Schema 文件**：`src/db/schema/<table-name>.ts`（使用上面的完整模板）
+2. **注册导出**：在 `src/db/schema/index.ts` 追加一行 `export { product } from "./product";`
+3. **同步到数据库**：`pnpm db:push`
+4. **验证**：`pnpm check && pnpm test -- --run`
+
+## Schema 修改流程
+
+### 重命名已有列
+
+> ⚠️ 重命名列时 `db:push` 会弹出交互提示，**必须选择 rename column**，否则 Drizzle 会删除旧列 + 创建新列，导致数据丢失。
+
+1. 修改 Drizzle Schema 中的列名
+2. `pnpm db:push`
+3. 在交互提示中选择 **rename column**（输入 `r` 或对应的选项）
+4. `pnpm check && pnpm test -- --run`
+
+### 新增列
+
+1. 在 Schema 文件中追加列定义
+2. `pnpm db:push`（不会弹出交互提示，直接新增）
+3. `pnpm check && pnpm test -- --run`
+
+## 常见陷阱
+
+| 错误 | 正确 | 后果 |
+|------|------|------|
+| 用 `sort` 代替 `sort_order` | `sortOrder → sort_order` | 列名不一致，需要 rename column |
+| 用 `summary` 代替 `description` | `description` | 同上 |
+| JS 属性忘加 `Id` 后缀 | `createdById → created_by_id` | 同上 |
+| FK 属性和列名不一致 | `createdBy → created_by` | Drizzle 推断列名错误 |
+| timestamp 忘加 `withTimezone` | `timestamp("created_at", { withTimezone: true })` | 时区问题 |
+| Drizzle 列第一个参数写错 | `varchar("name")` 不是 `varchar({ length: 100 })` | 列名推断错误 |
+
+## 相关 Skill
+
+- 创建完整 CRUD 模块 → [admin-crud](../admin-crud/SKILL.md)
+- 为新模块添加权限 → [permission](../permission/SKILL.md)
+- 编写 SFn → [server-function](../server-function/SKILL.md)
+- 编写测试 → [test-writing](../test-writing/SKILL.md)
