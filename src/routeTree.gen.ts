@@ -34,6 +34,7 @@ import { Route as AdminAdminTranslationsContentRouteImport } from './routes/admi
 import { Route as AdminAdminNewsCreateRouteImport } from './routes/admin/_admin/news/create'
 import { Route as AdminAdminEventsQueryRouteImport } from './routes/admin/_admin/events/query'
 import { Route as AdminAdminEventsAnalyticsRouteImport } from './routes/admin/_admin/events/analytics'
+import { Route as AdminAdminDemoUploadRouteImport } from './routes/admin/_admin/demo/upload'
 import { Route as AdminAdminDemoProTableRouteImport } from './routes/admin/_admin/demo/pro-table'
 import { Route as AdminAdminDemoEditorRouteImport } from './routes/admin/_admin/demo/editor'
 import { Route as AdminAdminDemoAiRouteImport } from './routes/admin/_admin/demo/ai'
@@ -171,6 +172,11 @@ const AdminAdminEventsAnalyticsRoute =
     path: '/events/analytics',
     getParentRoute: () => AdminAdminRoute,
   } as any)
+const AdminAdminDemoUploadRoute = AdminAdminDemoUploadRouteImport.update({
+  id: '/demo/upload',
+  path: '/demo/upload',
+  getParentRoute: () => AdminAdminRoute,
+} as any)
 const AdminAdminDemoProTableRoute = AdminAdminDemoProTableRouteImport.update({
   id: '/demo/pro-table',
   path: '/demo/pro-table',
@@ -230,6 +236,7 @@ export interface FileRoutesByFullPath {
   '/admin/demo/ai': typeof AdminAdminDemoAiRoute
   '/admin/demo/editor': typeof AdminAdminDemoEditorRoute
   '/admin/demo/pro-table': typeof AdminAdminDemoProTableRoute
+  '/admin/demo/upload': typeof AdminAdminDemoUploadRoute
   '/admin/events/analytics': typeof AdminAdminEventsAnalyticsRoute
   '/admin/events/query': typeof AdminAdminEventsQueryRoute
   '/admin/news/create': typeof AdminAdminNewsCreateRoute
@@ -263,6 +270,7 @@ export interface FileRoutesByTo {
   '/admin/demo/ai': typeof AdminAdminDemoAiRoute
   '/admin/demo/editor': typeof AdminAdminDemoEditorRoute
   '/admin/demo/pro-table': typeof AdminAdminDemoProTableRoute
+  '/admin/demo/upload': typeof AdminAdminDemoUploadRoute
   '/admin/events/analytics': typeof AdminAdminEventsAnalyticsRoute
   '/admin/events/query': typeof AdminAdminEventsQueryRoute
   '/admin/news/create': typeof AdminAdminNewsCreateRoute
@@ -299,6 +307,7 @@ export interface FileRoutesById {
   '/admin/_admin/demo/ai': typeof AdminAdminDemoAiRoute
   '/admin/_admin/demo/editor': typeof AdminAdminDemoEditorRoute
   '/admin/_admin/demo/pro-table': typeof AdminAdminDemoProTableRoute
+  '/admin/_admin/demo/upload': typeof AdminAdminDemoUploadRoute
   '/admin/_admin/events/analytics': typeof AdminAdminEventsAnalyticsRoute
   '/admin/_admin/events/query': typeof AdminAdminEventsQueryRoute
   '/admin/_admin/news/create': typeof AdminAdminNewsCreateRoute
@@ -335,6 +344,7 @@ export interface FileRouteTypes {
     | '/admin/demo/ai'
     | '/admin/demo/editor'
     | '/admin/demo/pro-table'
+    | '/admin/demo/upload'
     | '/admin/events/analytics'
     | '/admin/events/query'
     | '/admin/news/create'
@@ -368,6 +378,7 @@ export interface FileRouteTypes {
     | '/admin/demo/ai'
     | '/admin/demo/editor'
     | '/admin/demo/pro-table'
+    | '/admin/demo/upload'
     | '/admin/events/analytics'
     | '/admin/events/query'
     | '/admin/news/create'
@@ -403,6 +414,7 @@ export interface FileRouteTypes {
     | '/admin/_admin/demo/ai'
     | '/admin/_admin/demo/editor'
     | '/admin/_admin/demo/pro-table'
+    | '/admin/_admin/demo/upload'
     | '/admin/_admin/events/analytics'
     | '/admin/_admin/events/query'
     | '/admin/_admin/news/create'
@@ -613,6 +625,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminAdminEventsAnalyticsRouteImport
       parentRoute: typeof AdminAdminRoute
     }
+    '/admin/_admin/demo/upload': {
+      id: '/admin/_admin/demo/upload'
+      path: '/demo/upload'
+      fullPath: '/admin/demo/upload'
+      preLoaderRoute: typeof AdminAdminDemoUploadRouteImport
+      parentRoute: typeof AdminAdminRoute
+    }
     '/admin/_admin/demo/pro-table': {
       id: '/admin/_admin/demo/pro-table'
       path: '/demo/pro-table'
@@ -677,6 +696,7 @@ interface AdminAdminRouteChildren {
   AdminAdminDemoAiRoute: typeof AdminAdminDemoAiRoute
   AdminAdminDemoEditorRoute: typeof AdminAdminDemoEditorRoute
   AdminAdminDemoProTableRoute: typeof AdminAdminDemoProTableRoute
+  AdminAdminDemoUploadRoute: typeof AdminAdminDemoUploadRoute
   AdminAdminEventsAnalyticsRoute: typeof AdminAdminEventsAnalyticsRoute
   AdminAdminEventsQueryRoute: typeof AdminAdminEventsQueryRoute
   AdminAdminNewsCreateRoute: typeof AdminAdminNewsCreateRoute
@@ -701,6 +721,7 @@ const AdminAdminRouteChildren: AdminAdminRouteChildren = {
   AdminAdminDemoAiRoute: AdminAdminDemoAiRoute,
   AdminAdminDemoEditorRoute: AdminAdminDemoEditorRoute,
   AdminAdminDemoProTableRoute: AdminAdminDemoProTableRoute,
+  AdminAdminDemoUploadRoute: AdminAdminDemoUploadRoute,
   AdminAdminEventsAnalyticsRoute: AdminAdminEventsAnalyticsRoute,
   AdminAdminEventsQueryRoute: AdminAdminEventsQueryRoute,
   AdminAdminNewsCreateRoute: AdminAdminNewsCreateRoute,

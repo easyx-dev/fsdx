@@ -31,31 +31,12 @@ import { AdminPageContent } from "#/components/admin/AdminPageContent";
 import { ProTable } from "#/components/admin/ProTable";
 import { PERMISSIONS } from "#/lib/permissions/permissions";
 import { adminPermGuard } from "#/middleware/admin-auth";
-import { uploadFileSFn } from "#/server/file/file.functions";
+import { getFileListSFn, uploadFileSFn } from "#/server/file/file.functions";
 import type { FileRecord } from "#/server/file/file.server";
-import {
-	deleteFile,
-	getFileList as getFileListService,
-	makePermanent,
-} from "#/server/file/file.server";
+import { deleteFile, makePermanent } from "#/server/file/file.server";
 import { logOperation } from "#/server/operation-log/operation-log.server";
 
-const fileListSchema = z.object({
-	status: z.string().optional(),
-	keyword: z.string().optional(),
-	sortField: z.string().optional(),
-	sortOrder: z.enum(["ascend", "descend"]).optional(),
-	page: z.number().optional(),
-	pageSize: z.number().optional(),
-});
 const idSchema = z.object({ id: z.string().min(1) });
-
-const getFileListSFn = createServerFn({ method: "GET" })
-	.middleware([adminPermGuard(PERMISSIONS.FILE_VIEW)])
-	.inputValidator(fileListSchema)
-	.handler(async ({ data }) => {
-		return getFileListService(data);
-	});
 
 const deleteFileSFn = createServerFn({ method: "POST" })
 	.middleware([adminPermGuard(PERMISSIONS.FILE_DELETE)])
@@ -169,18 +150,15 @@ function FilesPage() {
 		file: File,
 		onSuccess: (body: unknown) => void,
 		onError: (err: Error) => void,
-		makePermanentAfter?: boolean,
+		permanent: boolean,
 	) => {
 		setUploading(true);
 		try {
 			const fd = new FormData();
 			fd.append("file", file);
+			fd.append("permanent", permanent ? "true" : "false");
 			const result = await uploadFileSFn({ data: fd });
 			if (result.success) {
-				// 永久文件上传后立即转为永久
-				if (makePermanentAfter && !result.data.isDuplicated) {
-					await makePermanentSFn({ data: { id: result.data.id } });
-				}
 				onSuccess?.(result.data);
 				message.success(
 					result.data.isDuplicated ? "秒传成功（文件已存在）" : "上传成功",
@@ -203,7 +181,7 @@ function FilesPage() {
 	/** 临时文件上传 */
 	const tempRequest: UploadProps["customRequest"] = async (options) => {
 		const { file, onSuccess, onError } = options;
-		await doUpload(file as File, onSuccess!, onError!);
+		await doUpload(file as File, onSuccess!, onError!, false);
 	};
 
 	/** 永久文件上传 */
@@ -348,7 +326,7 @@ function FilesPage() {
 					>
 						<p className="ant-upload-text">
 							<ClockCircleOutlined style={{ marginRight: 6 }} />
-							临时文件上传（24 小时后过期）
+							临时文件上传（7 天后过期）
 						</p>
 					</Upload.Dragger>
 				</Col>

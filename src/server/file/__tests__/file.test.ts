@@ -223,7 +223,7 @@ describe("makePermanent", () => {
 });
 
 describe("TEMP_EXPIRE_HOURS", () => {
-	it("默认值为 24 小时", () => {
-		expect(TEMP_EXPIRE_HOURS).toBe(24);
+	it("默认值为 168 小时（7 天）", () => {
+		expect(TEMP_EXPIRE_HOURS).toBe(168);
 	});
 });

@@ -20,7 +20,7 @@ import {
 
 export type FileRecord = typeof file.$inferSelect;
 
-export const TEMP_EXPIRE_HOURS = 24;
+export const TEMP_EXPIRE_HOURS = 168;
 
 /** 计算 SHA256 哈希（供上传秒传检测使用） */
 export function sha256(buf: Buffer): string {
@@ -78,11 +78,16 @@ export async function cleanExpiredFiles(): Promise<number> {
 
 /** 获取文件列表（支持分页、筛选、关键词搜索、排序） */
 export async function getFileList(
-	params?: PaginatedSortParams & { status?: string; keyword?: string },
+	params?: PaginatedSortParams & {
+		status?: string;
+		keyword?: string;
+		mimePrefix?: string;
+	},
 ): Promise<PaginatedResult<FileRecord>> {
 	const {
 		status,
 		keyword,
+		mimePrefix,
 		sortField,
 		sortOrder = "descend",
 		page = 1,
@@ -92,6 +97,8 @@ export async function getFileList(
 	const conditions = [notDeleted(file.deletedAt)];
 	if (status) conditions.push(eq(file.status, status));
 	if (keyword) conditions.push(ilike(file.originalName, `%${keyword}%`));
+
+	if (mimePrefix) conditions.push(ilike(file.mimeType, `${mimePrefix}%`));
 
 	const sortOrderClause = buildSortClause(
 		{ size: file.size, createdAt: file.createdAt },

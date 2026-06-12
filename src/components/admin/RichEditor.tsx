@@ -40,6 +40,7 @@ export function RichEditor({ value = "", onChange }: Props) {
 						try {
 							const fd = new FormData();
 							fd.append("file", file);
+							fd.append("permanent", "true");
 							const result = await uploadFileSFn({ data: fd });
 							if (result?.data?.id) {
 								insertFn(`/api/download/file/${result.data.id}`);
