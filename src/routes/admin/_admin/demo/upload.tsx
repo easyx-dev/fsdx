@@ -5,8 +5,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { Button, Card, Divider, Form, message, Space } from "antd";
 import { useState } from "react";
 import { AdminPageContent } from "#/components/admin/AdminPageContent";
-import { FileUpload } from "#/components/admin/FileUpload";
-import { ImageUpload } from "#/components/admin/ImageUpload";
+import { FileUpload, ImageUpload } from "#/components/admin/upload";
 
 export const Route = createFileRoute("/admin/_admin/demo/upload")({
 	component: UploadDemoPage,

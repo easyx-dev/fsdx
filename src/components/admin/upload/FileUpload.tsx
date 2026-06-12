@@ -3,7 +3,6 @@
  * value / onChange 兼容 antd Form.Item 直接注入
  */
 import {
-	DeleteOutlined,
 	FolderOpenOutlined,
 	InboxOutlined,
 	UploadOutlined,
@@ -12,7 +11,8 @@ import type { UploadFile, UploadProps } from "antd";
 import { Button, Input, message, Space, Upload } from "antd";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { uploadFileSFn } from "#/server/file/file.functions";
-import { SelectFileModal } from "./SelectFileModal";
+import { SelectFileModal } from "../SelectFileModal";
+import { renderUploadItem } from "./FileUploadRender";
 
 interface FileUploadProps {
 	/** 文件 ID（单文件）或文件 ID 数组（多文件），兼容 Form.Item 注入 */
@@ -199,44 +199,13 @@ export function FileUpload({
 		actions,
 	) => {
 		const index = fileList.findIndex((f) => f.uid === file.uid);
-
-		return (
-			<div
-				draggable={maxCount > 1 && fileList.length > 1}
-				style={{
-					display: "flex",
-					alignItems: "center",
-					gap: 8,
-					cursor: maxCount > 1 ? "move" : "default",
-				}}
-				onDragStart={(e) => {
-					e.dataTransfer.setData("text/plain", String(index));
-					e.dataTransfer.effectAllowed = "move";
-				}}
-				onDragOver={(e) => {
-					e.preventDefault();
-					e.dataTransfer.dropEffect = "move";
-				}}
-				onDrop={(e) => {
-					e.preventDefault();
-					const fromIndex = Number(e.dataTransfer.getData("text/plain"));
-					if (fromIndex !== index && !Number.isNaN(fromIndex)) {
-						handleDragSort(fromIndex, index);
-					}
-				}}
-			>
-				<div style={{ flex: 1, minWidth: 0 }}>{originNode}</div>
-				<Button
-					type="text"
-					size="small"
-					danger
-					icon={<DeleteOutlined />}
-					onClick={(e) => {
-						e.stopPropagation();
-						actions.remove();
-					}}
-				/>
-			</div>
+		const canSort = maxCount > 1 && fileList.length > 1;
+		return renderUploadItem(
+			originNode,
+			index,
+			actions,
+			canSort,
+			handleDragSort,
 		);
 	};
 

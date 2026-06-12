@@ -2,15 +2,11 @@
  * 图片上传组件（照片墙）：支持单/多图上传、拖拽排序、从文件库选择、画廊预览
  * value / onChange 兼容 antd Form.Item 直接注入
  */
-import {
-	DeleteOutlined,
-	FolderOpenOutlined,
-	PlusOutlined,
-} from "@ant-design/icons";
-import { Button, Image, message, Spin } from "antd";
+import { message } from "antd";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { uploadFileSFn } from "#/server/file/file.functions";
-import { SelectFileModal } from "./SelectFileModal";
+import { SelectFileModal } from "../SelectFileModal";
+import { PhotoWall } from "./PhotoWall";
 
 interface ImageUploadProps {
 	/** 文件 ID（单文件）或文件 ID 数组（多文件），兼容 Form.Item 注入 */
@@ -27,7 +23,7 @@ interface ImageUploadProps {
 	permanent?: boolean;
 }
 
-interface ImageItem {
+export interface ImageItem {
 	uid: string;
 	name: string;
 	url: string;
@@ -296,237 +292,31 @@ export function ImageUpload({
 					isHoveredRef.current = false;
 				}}
 			>
-				{/* 照片墙网格 */}
-				<div
-					style={{
-						display: "flex",
-						flexWrap: "wrap",
-						gap: 8,
-						alignItems: "flex-start",
+				<PhotoWall
+					fileList={fileList}
+					canAdd={canAdd}
+					canSort={canSort}
+					disabled={disabled}
+					dragIndex={dragIndex}
+					hoverIndex={hoverIndex}
+					hoveredCard={hoveredCard}
+					dragOver={dragOver}
+					sortKey={sortKey}
+					inputRef={inputRef}
+					onHoverCard={setHoveredCard}
+					onDragStart={setDragIndex}
+					onDragEnd={() => {
+						setDragIndex(null);
+						setHoverIndex(null);
 					}}
-				>
-					<Image.PreviewGroup key={sortKey}>
-						{fileList.map((item, index) => (
-							<div
-								key={item.uid}
-								onMouseEnter={() => setHoveredCard(index)}
-								onMouseLeave={() => setHoveredCard(null)}
-								draggable={canSort}
-								onDragStart={
-									canSort
-										? (e) => {
-												setDragIndex(index);
-												e.dataTransfer.setData("text/plain", String(index));
-												e.dataTransfer.effectAllowed = "move";
-											}
-										: undefined
-								}
-								onDragEnd={() => {
-									setDragIndex(null);
-									setHoverIndex(null);
-								}}
-								onDragEnter={canSort ? () => setHoverIndex(index) : undefined}
-								onDragLeave={canSort ? () => setHoverIndex(null) : undefined}
-								onDragOver={
-									canSort
-										? (e) => {
-												e.preventDefault();
-												e.dataTransfer.dropEffect = "move";
-											}
-										: undefined
-								}
-								onDrop={
-									canSort
-										? (e) => {
-												e.preventDefault();
-												const from = Number(
-													e.dataTransfer.getData("text/plain"),
-												);
-												if (from !== index && !Number.isNaN(from)) {
-													handleDragSort(from, index);
-												}
-											}
-										: undefined
-								}
-								style={{
-									width: 104,
-									height: 104,
-									border: "1px solid #d9d9d9",
-									borderRadius: 8,
-									overflow: "hidden",
-									position: "relative",
-									cursor: canSort ? "move" : "default",
-									opacity: dragIndex === index ? 0.4 : 1,
-									borderColor:
-										canSort && hoverIndex === index ? "#1677ff" : "#d9d9d9",
-									borderWidth: canSort && hoverIndex === index ? 2 : 1,
-									transition: "opacity 0.15s, border-color 0.15s",
-								}}
-							>
-								<Image
-									src={item.url}
-									width={104}
-									height={104}
-									style={{ objectFit: "cover" }}
-									preview={{
-										mask: (
-											<div
-												style={{
-													display: "flex",
-													alignItems: "center",
-													justifyContent: "center",
-													height: "100%",
-													fontSize: 12,
-													color: "#fff",
-												}}
-											>
-												预览
-											</div>
-										),
-									}}
-								/>
-								{item.status === "uploading" && (
-									<div
-										style={{
-											position: "absolute",
-											inset: 0,
-											background: "rgba(255,255,255,0.7)",
-											display: "flex",
-											alignItems: "center",
-											justifyContent: "center",
-										}}
-									>
-										<Spin size="small" />
-									</div>
-								)}
-								{/* 删除按钮（hover 显示） */}
-								<div
-									className="image-upload-item-actions"
-									style={{
-										position: "absolute",
-										top: 2,
-										right: 2,
-										opacity: hoveredCard === index ? 1 : 0,
-										transition: "opacity 0.15s",
-									}}
-									onClick={(e) => {
-										e.stopPropagation();
-										e.preventDefault();
-									}}
-								>
-									<Button
-										type="text"
-										size="small"
-										danger
-										icon={<DeleteOutlined />}
-										style={{
-											color: "#fff",
-											background: "rgba(255,77,79,0.7)",
-											borderRadius: 4,
-										}}
-										onClick={(e) => {
-											e.stopPropagation();
-											handleRemove(index);
-										}}
-									/>
-								</div>
-							</div>
-						))}
-					</Image.PreviewGroup>
-
-					{/* 上传 + 文件库选择 合并卡片 */}
-					{canAdd && !disabled && (
-						<div
-							onDragOver={(e) => {
-								e.preventDefault();
-								e.dataTransfer.dropEffect = "copy";
-							}}
-							onDragEnter={(e) => {
-								e.preventDefault();
-								setDragOver(true);
-							}}
-							onDragLeave={(e) => {
-								e.preventDefault();
-								setDragOver(false);
-							}}
-							onDrop={handleDrop}
-							style={{
-								width: 104,
-								height: 104,
-								border: "1px dashed #d9d9d9",
-								borderRadius: 8,
-								display: "flex",
-								flexDirection: "column",
-								overflow: "hidden",
-								borderColor: dragOver ? "#1677ff" : "#d9d9d9",
-								background: dragOver ? "#e6f4ff" : "#fafafa",
-								transition: "border-color 0.15s, background 0.15s",
-							}}
-						>
-							{/* 上传图片区域 */}
-							<div
-								onClick={() => inputRef.current?.click()}
-								style={{
-									flex: 1,
-									display: "flex",
-									flexDirection: "column",
-									alignItems: "center",
-									justifyContent: "center",
-									cursor: "pointer",
-									color: "#999",
-								}}
-								onMouseEnter={(e) => {
-									const el = e.currentTarget as HTMLElement;
-									el.style.color = "#1677ff";
-									const parent = el.parentElement;
-									if (parent) parent.style.borderColor = "#1677ff";
-								}}
-								onMouseLeave={(e) => {
-									const el = e.currentTarget as HTMLElement;
-									el.style.color = "#999";
-									const parent = el.parentElement;
-									if (parent) parent.style.borderColor = "#d9d9d9";
-								}}
-							>
-								<PlusOutlined style={{ fontSize: 20 }} />
-								<div style={{ fontSize: 12, marginTop: 4 }}>上传图片</div>
-							</div>
-							{/* 从文件库选择区域 */}
-							<div
-								onClick={(e) => {
-									e.stopPropagation();
-									setSelectModalOpen(true);
-								}}
-								style={{
-									height: 28,
-									borderTop: "1px dashed #d9d9d9",
-									display: "flex",
-									alignItems: "center",
-									justifyContent: "center",
-									cursor: "pointer",
-									fontSize: 12,
-									color: "#999",
-									background: "#f5f5f5",
-								}}
-								onMouseEnter={(e) => {
-									const el = e.currentTarget as HTMLElement;
-									el.style.color = "#fff";
-									el.style.background = "#1677ff";
-									el.style.borderTopColor = "#1677ff";
-								}}
-								onMouseLeave={(e) => {
-									const el = e.currentTarget as HTMLElement;
-									el.style.color = "#999";
-									el.style.background = "#f5f5f5";
-									el.style.borderTopColor = "#d9d9d9";
-								}}
-							>
-								<FolderOpenOutlined style={{ fontSize: 12, marginRight: 4 }} />
-								从文件库选择
-							</div>
-						</div>
-					)}
-				</div>
+					onDragEnter={setHoverIndex}
+					onDragLeave={() => setHoverIndex(null)}
+					onDragSort={handleDragSort}
+					onRemove={handleRemove}
+					onDrop={handleDrop}
+					onDragOverToggle={setDragOver}
+					onLibraryClick={() => setSelectModalOpen(true)}
+				/>
 			</div>
 
 			<SelectFileModal
