@@ -156,6 +156,7 @@ function PresetPropertiesPage() {
 		{
 			title: "操作",
 			key: "actions",
+			fixed: "right" as const,
 			width: 160,
 			render: (_: unknown, record: PresetPropertyRecord) => (
 				<Space size={4}>
@@ -196,7 +197,7 @@ function PresetPropertiesPage() {
 				columns={columns}
 				dataSource={properties}
 				rowKey="key"
-				scroll={{ x: 900 }}
+				scroll={{ x: 1100 }}
 				locale={{ emptyText: "暂无预设属性" }}
 			/>
 

@@ -150,6 +150,7 @@ function PresetEventsPage() {
 		{
 			title: "操作",
 			key: "actions",
+			fixed: "right" as const,
 			width: 160,
 			render: (_: unknown, record: PresetEventRecord) => (
 				<Space size={4}>
@@ -190,7 +191,7 @@ function PresetEventsPage() {
 				columns={columns}
 				dataSource={events}
 				rowKey="name"
-				scroll={{ x: 900 }}
+				scroll={{ x: 1100 }}
 				locale={{ emptyText: "暂无预设事件" }}
 			/>
 

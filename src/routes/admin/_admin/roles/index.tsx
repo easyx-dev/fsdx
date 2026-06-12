@@ -299,6 +299,7 @@ function RolesPage() {
 		{
 			title: "操作",
 			key: "actions",
+			fixed: "right" as const,
 			render: (_: unknown, record: RoleRecord) => (
 				<Space size={4}>
 					<Button
@@ -349,7 +350,7 @@ function RolesPage() {
 			<ProTable
 				dataSource={roles}
 				columns={columns}
-				scroll={{ x: 900 }}
+				scroll={{ x: 1250 }}
 				rowKey="id"
 				locale={{ emptyText: "暂无角色" }}
 			/>

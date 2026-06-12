@@ -299,6 +299,7 @@ function ContentTranslationPage() {
 		{
 			title: "操作",
 			key: "actions",
+			fixed: "right" as const,
 			render: (_: unknown, record: Record<string, unknown>) => (
 				<Space size={4}>
 					<Button
@@ -392,6 +393,7 @@ function ContentTranslationPage() {
 				columns={columns}
 				rowKey="id"
 				onChange={handleTableChange}
+				scroll={{ x: 1350 }}
 				pagination={{
 					total: data.total,
 					pageSize: data.pageSize,

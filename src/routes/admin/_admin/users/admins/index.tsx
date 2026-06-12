@@ -345,6 +345,7 @@ function AdminsPage() {
 		{
 			title: "操作",
 			key: "actions",
+			fixed: "right" as const,
 			render: (_: unknown, record: AdminUserListItem) => (
 				<Space size={4}>
 					<Button
@@ -409,6 +410,7 @@ function AdminsPage() {
 				columns={columns}
 				rowKey="id"
 				locale={{ emptyText: "暂无管理员" }}
+				scroll={{ x: 1350 }}
 				pagination={{
 					total: data.total,
 					current: page,

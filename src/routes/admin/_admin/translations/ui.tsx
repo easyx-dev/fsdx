@@ -263,6 +263,7 @@ function UITranslationPage() {
 		{
 			title: "操作",
 			key: "actions",
+			fixed: "right" as const,
 			render: (_: unknown, record: Record<string, unknown>) => (
 				<Space size={4}>
 					<Button
@@ -342,6 +343,7 @@ function UITranslationPage() {
 				columns={columns}
 				rowKey="id"
 				onChange={handleTableChange}
+				scroll={{ x: 1300 }}
 				pagination={{
 					total: data.total,
 					pageSize: data.pageSize,

@@ -397,7 +397,7 @@ function DictsPage() {
 			title: "值",
 			dataIndex: "value",
 			key: "value",
-			width: 220,
+			width: 180,
 			render: (val: string) => <code className="text-xs">{val}</code>,
 		},
 		{
@@ -478,6 +478,7 @@ function DictsPage() {
 		{
 			title: "操作",
 			key: "actions",
+			fixed: "right" as const,
 			render: (_: unknown, record: DictItemRecord) => (
 				<Space size={4}>
 					<Button
@@ -542,7 +543,7 @@ function DictsPage() {
 				<Card
 					size="small"
 					classNames={{
-						root: "flex-[0_0_240px]",
+						root: "flex-[0_0_200px]",
 					}}
 					title="字典类型"
 					extra={
@@ -630,7 +631,7 @@ function DictsPage() {
 				<Card
 					size="small"
 					classNames={{
-						root: "flex-1",
+						root: "flex-1 min-w-0",
 					}}
 					title={
 						selectedDictSlug ? (
@@ -663,6 +664,7 @@ function DictsPage() {
 							dataSource={items}
 							columns={itemColumns}
 							rowKey="id"
+							scroll={{ x: 1300 }}
 							size="small"
 							pagination={false}
 							locale={{ emptyText: "暂无条目" }}

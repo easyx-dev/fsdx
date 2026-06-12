@@ -239,6 +239,7 @@ function FilesPage() {
 		{
 			title: "操作",
 			key: "actions",
+			fixed: "right" as const,
 			render: (_: unknown, record: FileRecord) => (
 				<Space size={4}>
 					{isImage(record.mimeType) && (
@@ -366,6 +367,7 @@ function FilesPage() {
 				columns={columns}
 				rowKey="id"
 				locale={{ emptyText: "暂无文件" }}
+				scroll={{ x: 950 }}
 				onChange={handleTableChange}
 				pagination={{
 					total: data.total,

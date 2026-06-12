@@ -328,6 +328,7 @@ function ConfigPage() {
 		{
 			title: "操作",
 			key: "actions",
+			fixed: "right" as const,
 			render: (_: unknown, record: ConfigRecord) => {
 				// 确保 clientVisible 为真时才显示翻译入口
 				const showTranslation = record.clientVisible === true;
@@ -409,7 +410,7 @@ function ConfigPage() {
 					size="small"
 					title="配置分组"
 					classNames={{
-						root: "flex-[0_0_240px]",
+						root: "flex-[0_0_150px]",
 					}}
 					styles={{ body: { padding: 0 } }}
 				>
@@ -483,14 +484,14 @@ function ConfigPage() {
 						</Space>
 					}
 					classNames={{
-						root: "flex-1",
+						root: "flex-1 min-w-0",
 					}}
 					styles={{ body: { padding: 0 } }}
 				>
 					<ProTable
 						dataSource={filteredConfigs}
 						columns={configColumns}
-						scroll={{ x: 1100 }}
+						scroll={{ x: 1430 }}
 						rowKey="id"
 						size="small"
 						pagination={false}

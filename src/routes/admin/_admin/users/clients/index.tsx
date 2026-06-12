@@ -327,6 +327,7 @@ function ClientsPage() {
 		{
 			title: "操作",
 			key: "actions",
+			fixed: "right" as const,
 			render: (_: unknown, record: ClientUserRecord) => (
 				<Space size={4}>
 					<Button
@@ -384,6 +385,7 @@ function ClientsPage() {
 				columns={columns}
 				rowKey="id"
 				locale={{ emptyText: "暂无用户" }}
+				scroll={{ x: 1350 }}
 				pagination={{
 					total: data.total,
 					current: page,

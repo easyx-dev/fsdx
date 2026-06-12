@@ -247,6 +247,7 @@ function NewsListPage() {
 		{
 			title: "操作",
 			key: "actions",
+			fixed: "right" as const,
 			render: (_: unknown, record: NewsRecord) => (
 				<Space size={4}>
 					<FieldTranslationDrawer
@@ -372,6 +373,7 @@ function NewsListPage() {
 				columns={columns}
 				rowKey="id"
 				onChange={handleTableChange}
+				scroll={{ x: 1450 }}
 				pagination={{
 					total: data.total,
 					pageSize: data.pageSize,
