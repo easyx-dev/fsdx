@@ -26,6 +26,7 @@ import {
 } from "antd";
 import { useEffect, useState } from "react";
 import { z } from "zod";
+import { AutofillBlocker } from "#/components/AutofillBlocker";
 import { JsonImportButton } from "#/components/admin/JsonImportButton";
 import {
 	checkInitStatus as checkInitStatusService,
@@ -231,6 +232,7 @@ function AdminInitPage() {
 								smtpSecure: false,
 							}}
 						>
+							<AutofillBlocker />
 							<Divider>管理员账号</Divider>
 
 							<Form.Item
@@ -240,7 +242,6 @@ function AdminInitPage() {
 								<Input
 									prefix={<UserOutlined />}
 									placeholder="超级管理员用户名"
-									autoComplete="off"
 								/>
 							</Form.Item>
 
@@ -251,7 +252,6 @@ function AdminInitPage() {
 								<Input
 									prefix={<MailOutlined />}
 									placeholder="admin@example.com"
-									autoComplete="off"
 								/>
 							</Form.Item>
 
@@ -262,7 +262,6 @@ function AdminInitPage() {
 								<Input.Password
 									prefix={<LockOutlined />}
 									placeholder="密码（至少 6 位）"
-									autoComplete="off"
 								/>
 							</Form.Item>
 
@@ -339,7 +338,7 @@ function AdminInitPage() {
 									className="mb-2 p-0"
 								>
 									AI 接入配置（可选）
-									{smtpExpanded ? <UpOutlined /> : <DownOutlined />}
+									{aiExpanded ? <UpOutlined /> : <DownOutlined />}
 								</Button>
 							</Divider>
 

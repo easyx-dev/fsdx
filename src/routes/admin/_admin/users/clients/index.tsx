@@ -23,6 +23,7 @@ import {
 } from "antd";
 import { useState } from "react";
 import { z } from "zod";
+import { AutofillBlocker } from "#/components/AutofillBlocker";
 import { AdminPageContent } from "#/components/admin/AdminPageContent";
 import { DictSelect } from "#/components/admin/DictSelect";
 import { DictTag } from "#/components/admin/DictTag";
@@ -405,6 +406,7 @@ function ClientsPage() {
 				destroyOnHidden
 			>
 				<Form form={form} layout="vertical" className="mt-4">
+					<AutofillBlocker />
 					<Form.Item
 						name="username"
 						label="用户名"
@@ -461,6 +463,7 @@ function ClientsPage() {
 				destroyOnHidden
 			>
 				<Form form={pwdForm} layout="vertical" className="mt-4">
+					<AutofillBlocker />
 					<Form.Item
 						name="password"
 						label="新密码"
