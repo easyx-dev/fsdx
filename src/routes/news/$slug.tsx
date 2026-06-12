@@ -23,6 +23,7 @@ const getNewsDetail = createServerFn({ method: "GET" })
 
 export const Route = createFileRoute("/news/$slug")({
 	component: NewsDetailPage,
+	errorComponent: NewsDetailError,
 	loader: async ({ params }) =>
 		await getNewsDetail({ data: { slug: params.slug } }),
 	head: ({ loaderData }) => {
@@ -47,6 +48,15 @@ export const Route = createFileRoute("/news/$slug")({
 		};
 	},
 });
+
+function NewsDetailError({ error }: { error: unknown }) {
+	const msg = error instanceof Error ? error.message : "加载失败，请稍后重试";
+	return (
+		<main className="mx-auto max-w-3xl px-4 py-12 text-center sm:py-20">
+			<p className="text-sm text-destructive">{msg}</p>
+		</main>
+	);
+}
 
 function NewsDetailPage() {
 	const data = Route.useLoaderData();

@@ -80,7 +80,12 @@ export function stopTask(name: string): void {
 		// cron v4 stop() 可能返回 Promise，忽略异步
 		const result = job.stop();
 		if (result && typeof result.then === "function") {
-			result.catch(() => {});
+			result.catch((err) => {
+				logger.warn(
+					{ name, error: (err as Error).message },
+					"定时任务停止失败",
+				);
+			});
 		}
 		tasks.delete(name);
 		logger.info({ name }, "定时任务已停止");
@@ -94,7 +99,12 @@ export function stopAllTasks(): void {
 	for (const [name, job] of tasks) {
 		const result = job.stop();
 		if (result && typeof result.then === "function") {
-			result.catch(() => {});
+			result.catch((err) => {
+				logger.warn(
+					{ name, error: (err as Error).message },
+					"定时任务停止失败",
+				);
+			});
 		}
 		logger.info({ name }, "定时任务已停止");
 	}

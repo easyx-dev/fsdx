@@ -110,11 +110,11 @@ describe("fastChat", () => {
 });
 
 describe("AI 调用异常处理", () => {
-	it("API 调用失败返回 null（不抛异常）", async () => {
+	it("API 调用失败抛出异常", async () => {
 		mockCreate.mockRejectedValueOnce(new Error("API 连接超时"));
 
-		const result = await deepChat([{ role: "user", content: "测试" }]);
-
-		expect(result).toBeNull();
+		await expect(deepChat([{ role: "user", content: "测试" }])).rejects.toThrow(
+			"API 连接超时",
+		);
 	});
 });

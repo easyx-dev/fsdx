@@ -122,16 +122,20 @@ function FilesPage() {
 		sortOrder?: "ascend" | "descend";
 		page?: number;
 	}) => {
-		const result = await getFileList({
-			data: {
-				status: (params?.status ?? filter) || undefined,
-				keyword: (params?.keyword ?? keyword) || undefined,
-				sortField: params?.sortField ?? sortField,
-				sortOrder: params?.sortOrder ?? sortOrder,
-				page: params?.page,
-			},
-		});
-		setData(result);
+		try {
+			const result = await getFileList({
+				data: {
+					status: (params?.status ?? filter) || undefined,
+					keyword: (params?.keyword ?? keyword) || undefined,
+					sortField: params?.sortField ?? sortField,
+					sortOrder: params?.sortOrder ?? sortOrder,
+					page: params?.page,
+				},
+			});
+			setData(result);
+		} catch (err) {
+			message.error(err instanceof Error ? err.message : "加载文件列表失败");
+		}
 	};
 
 	/** 切换筛选状态并刷新列表 */
@@ -285,9 +289,15 @@ function FilesPage() {
 							size="small"
 							icon={<CheckOutlined />}
 							onClick={async () => {
-								await makePermanentFn({ data: { id: record.id } });
-								message.success("已转为永久");
-								await refreshFiles();
+								try {
+									await makePermanentFn({ data: { id: record.id } });
+									message.success("已转为永久");
+									await refreshFiles();
+								} catch (err) {
+									message.error(
+										err instanceof Error ? err.message : "操作失败",
+									);
+								}
 							}}
 						>
 							转为永久
@@ -296,9 +306,13 @@ function FilesPage() {
 					<Popconfirm
 						title="确定删除？"
 						onConfirm={async () => {
-							await deleteFileFn({ data: { id: record.id } });
-							message.success("已删除");
-							await refreshFiles();
+							try {
+								await deleteFileFn({ data: { id: record.id } });
+								message.success("已删除");
+								await refreshFiles();
+							} catch (err) {
+								message.error(err instanceof Error ? err.message : "删除失败");
+							}
 						}}
 					>
 						<Button type="link" size="small" danger icon={<DeleteOutlined />} />

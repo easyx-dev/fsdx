@@ -101,23 +101,23 @@ function buildMessages(
 
 /**
  * 调用深度思考模型进行对话
- * @returns 聊天结果，配置未就绪时返回 null
+ * @returns 聊天结果
  */
 export async function deepChat(
 	messages: ChatMessage[],
 	options?: ChatOptions,
-): Promise<ChatResult | null> {
+): Promise<ChatResult> {
 	return chat("deep", messages, options);
 }
 
 /**
  * 调用快速模型进行对话
- * @returns 聊天结果，配置未就绪时返回 null
+ * @returns 聊天结果
  */
 export async function fastChat(
 	messages: ChatMessage[],
 	options?: ChatOptions,
-): Promise<ChatResult | null> {
+): Promise<ChatResult> {
 	return chat("fast", messages, options);
 }
 
@@ -128,17 +128,15 @@ async function chat(
 	type: AiModelType,
 	messages: ChatMessage[],
 	options?: ChatOptions,
-): Promise<ChatResult | null> {
+): Promise<ChatResult> {
 	const client = getClient();
 	if (!client) {
-		logger.warn("AI 客户端未配置，跳过调用");
-		return null;
+		throw new Error("AI 客户端未配置，请检查 ai_base_url 和 ai_api_key");
 	}
 
 	const model = getModelName(type);
 	if (!model) {
-		logger.warn({ type }, "AI 模型名称未配置");
-		return null;
+		throw new Error(`AI 模型名称未配置，请检查 ai_${type}_model`);
 	}
 
 	try {
@@ -179,6 +177,6 @@ async function chat(
 	} catch (err) {
 		const message = err instanceof Error ? err.message : String(err);
 		logger.error({ model, type, error: message }, "AI 调用失败");
-		return null;
+		throw err;
 	}
 }

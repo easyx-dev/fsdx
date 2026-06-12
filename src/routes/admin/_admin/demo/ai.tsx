@@ -10,6 +10,7 @@ import {
 	Form,
 	Input,
 	InputNumber,
+	message,
 	Select,
 	Slider,
 	Space,
@@ -78,6 +79,8 @@ function AiDemoPage() {
 		try {
 			const res = await aiTestFn({ data: values });
 			setResult(res);
+		} catch (err) {
+			message.error(err instanceof Error ? err.message : "AI 调用失败");
 		} finally {
 			setLoading(false);
 		}

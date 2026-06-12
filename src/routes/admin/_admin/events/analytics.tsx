@@ -10,6 +10,7 @@ import {
 	Card,
 	Col,
 	DatePicker,
+	message,
 	Row,
 	Select,
 	Space,
@@ -37,11 +38,9 @@ function EventAnalyticsPage() {
 	const [granularity, setGranularity] = useState<"hour" | "day">("day");
 	const [loading, setLoading] = useState(false);
 	const [data, setData] = useState<AnalyticsResult | null>(null);
-	const [error, setError] = useState<string | null>(null);
 
 	const fetchAnalytics = async () => {
 		setLoading(true);
-		setError(null);
 		try {
 			const result = await getEventAnalyticsFn({
 				data: {
@@ -52,7 +51,7 @@ function EventAnalyticsPage() {
 			});
 			setData(result);
 		} catch (err) {
-			setError(err instanceof Error ? err.message : "加载分析数据失败");
+			message.error(err instanceof Error ? err.message : "加载分析数据失败");
 		} finally {
 			setLoading(false);
 		}
@@ -142,10 +141,6 @@ function EventAnalyticsPage() {
 				</Space>
 			}
 		>
-			{error && (
-				<div className="mb-4 p-3 bg-red-50 text-red-600 rounded">{error}</div>
-			)}
-
 			<Spin spinning={loading}>
 				{data && (
 					<>
@@ -201,7 +196,7 @@ function EventAnalyticsPage() {
 						</Row>
 					</>
 				)}
-				{!data && !loading && !error && (
+				{!data && !loading && (
 					<div className="flex items-center justify-center h-[400px] text-gray-400">
 						请选择时间范围后点击查询
 					</div>

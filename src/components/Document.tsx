@@ -4,6 +4,7 @@
 
 import { ClientOnly, HeadContent, Scripts } from "@tanstack/react-router";
 import { useEffect, useRef } from "react";
+import { Toaster } from "sonner";
 import { useClientAuth } from "#/components/client/ClientAuthProvider";
 import Footer from "#/components/client/Footer";
 import Header from "#/components/client/Header";
@@ -61,6 +62,7 @@ export function SSRRootDocument({ children }: SSRRootDocumentProps) {
 			<body className="font-sans antialiased flex min-h-screen flex-col">
 				<Header />
 				<div className="flex-1">{children}</div>
+				<Toaster position="top-center" richColors />
 				<Footer />
 				<Scripts />
 			</body>

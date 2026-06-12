@@ -40,7 +40,23 @@ export const Route = createRootRouteWithContext<{
 		return { ...bundle, systemConfig };
 	},
 	shellComponent: RootDocument,
+	errorComponent: RootError,
 });
+
+function RootError({ error }: { error: unknown }) {
+	const msg =
+		error instanceof Error ? error.message : "页面加载失败，请刷新重试";
+	return (
+		<html lang="zh-CN">
+			<body className="font-sans antialiased flex min-h-screen flex-col items-center justify-center bg-background">
+				<div className="text-center space-y-3 px-4">
+					<p className="text-lg font-semibold text-foreground">页面加载失败</p>
+					<p className="text-sm text-muted-foreground">{msg}</p>
+				</div>
+			</body>
+		</html>
+	);
+}
 
 function RootDocument({ children }: { children: React.ReactNode }) {
 	const pathname = useLocation().pathname;

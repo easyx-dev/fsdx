@@ -184,37 +184,41 @@ function AdminInitPage() {
 							block
 							successMessage="JSON 配置已导入，请核对信息后提交"
 							onImport={(jsonString) => {
-								const json: Record<string, unknown> = JSON.parse(jsonString);
-								const values: Record<string, unknown> = {};
-								if (json.admin && typeof json.admin === "object") {
-									const a = json.admin as Record<string, unknown>;
-									if (a.username) values.username = a.username;
-									if (a.password) {
-										values.password = a.password;
-										values.confirmPassword = a.password;
+								try {
+									const json: Record<string, unknown> = JSON.parse(jsonString);
+									const values: Record<string, unknown> = {};
+									if (json.admin && typeof json.admin === "object") {
+										const a = json.admin as Record<string, unknown>;
+										if (a.username) values.username = a.username;
+										if (a.password) {
+											values.password = a.password;
+											values.confirmPassword = a.password;
+										}
+										if (a.email) values.email = a.email;
 									}
-									if (a.email) values.email = a.email;
+									if (json.siteName) values.siteName = json.siteName;
+									if (json.smtp && typeof json.smtp === "object") {
+										setSmtpExpanded(true);
+										const s = json.smtp as Record<string, unknown>;
+										if (s.host) values.smtpHost = s.host;
+										if (s.port !== undefined) values.smtpPort = s.port;
+										if (s.secure !== undefined) values.smtpSecure = s.secure;
+										if (s.user) values.smtpUser = s.user;
+										if (s.pass) values.smtpPass = s.pass;
+										if (s.from) values.smtpFrom = s.from;
+									}
+									if (json.ai && typeof json.ai === "object") {
+										setAiExpanded(true);
+										const ai = json.ai as Record<string, unknown>;
+										if (ai.baseUrl) values.aiBaseUrl = ai.baseUrl;
+										if (ai.apiKey) values.aiApiKey = ai.apiKey;
+										if (ai.deepModel) values.aiDeepModel = ai.deepModel;
+										if (ai.fastModel) values.aiFastModel = ai.fastModel;
+									}
+									form.setFieldsValue(values);
+								} catch {
+									message.error("JSON 格式无效，请检查文件内容");
 								}
-								if (json.siteName) values.siteName = json.siteName;
-								if (json.smtp && typeof json.smtp === "object") {
-									setSmtpExpanded(true);
-									const s = json.smtp as Record<string, unknown>;
-									if (s.host) values.smtpHost = s.host;
-									if (s.port !== undefined) values.smtpPort = s.port;
-									if (s.secure !== undefined) values.smtpSecure = s.secure;
-									if (s.user) values.smtpUser = s.user;
-									if (s.pass) values.smtpPass = s.pass;
-									if (s.from) values.smtpFrom = s.from;
-								}
-								if (json.ai && typeof json.ai === "object") {
-									setAiExpanded(true);
-									const ai = json.ai as Record<string, unknown>;
-									if (ai.baseUrl) values.aiBaseUrl = ai.baseUrl;
-									if (ai.apiKey) values.aiApiKey = ai.apiKey;
-									if (ai.deepModel) values.aiDeepModel = ai.deepModel;
-									if (ai.fastModel) values.aiFastModel = ai.fastModel;
-								}
-								form.setFieldsValue(values);
 							}}
 						>
 							导入 JSON 配置快速填写

@@ -23,7 +23,20 @@ const getStatsFn = createServerFn({ method: "GET" })
 
 export const Route = createFileRoute("/admin/_admin/")({
 	component: Dashboard,
-	loader: async () => await getStatsFn(),
+	loader: async () => {
+		try {
+			return await getStatsFn();
+		} catch (err) {
+			console.error("[dashboard]", (err as Error).message);
+			return {
+				newsTotal: 0,
+				publishedNews: 0,
+				adminTotal: 0,
+				clientTotal: 0,
+				storageTotal: 0,
+			};
+		}
+	},
 });
 
 function formatStorage(bytes: number): string {

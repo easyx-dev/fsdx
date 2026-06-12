@@ -90,6 +90,7 @@ function parseLogLine(line: string): LogEntry | null {
 	try {
 		return JSON.parse(line) as LogEntry;
 	} catch {
+		// 非 JSON 行（如 pino 写入不完整），跳过
 		return null;
 	}
 }
@@ -109,8 +110,14 @@ export async function queryLogs(query: LogQuery = {}): Promise<LogQueryResult> {
 	for (const file of logFiles) {
 		const lines = await readLogLines(resolve(getLogDir(), file));
 		for (const line of lines) {
-			const entry = parseLogLine(line);
-			if (!entry) continue;
+			let entry = parseLogLine(line);
+			if (!entry) {
+				entry = {
+					level: "error",
+					timestamp: "解析失败",
+					message: line,
+				} as LogEntry;
+			}
 			if (level && entry.level !== level) continue;
 			if (
 				keyword &&
@@ -145,7 +152,8 @@ export async function readLogFileContent(date: string): Promise<string | null> {
 	try {
 		const lines = await readLogLines(logPath);
 		return lines.join("\n");
-	} catch {
+	} catch (err) {
+		console.error("[log-reader]", date, (err as Error).message);
 		return null;
 	}
 }

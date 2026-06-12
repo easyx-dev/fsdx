@@ -83,8 +83,9 @@ export async function track(
 	};
 
 	// 异步上报，不阻塞页面
-	trackEventFn({ data: payload }).catch(() => {
-		// 埋点失败不影响业务流程，静默处理
+	trackEventFn({ data: payload }).catch((err) => {
+		// 埋点失败不影响业务流程
+		console.error("[track]", (err as Error).message);
 	});
 }
 

@@ -318,7 +318,7 @@ export const aiTranslateFieldFn = createServerFn({ method: "POST" })
 		const result = await fastChat([{ role: "user", content: prompt }], {
 			temperature: 0.3,
 		});
-		if (!result || !result.content) {
+		if (!result.content) {
 			throw new Error("AI 翻译服务不可用，请检查 AI 配置");
 		}
 		return result.content;

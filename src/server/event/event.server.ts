@@ -179,6 +179,7 @@ function isValidPlainObject(value: unknown, depth: number): boolean {
 
 const FLUSH_INTERVAL = 5000;
 const BATCH_SIZE = 100;
+const MAX_BUFFER_SIZE = 1000;
 
 interface EventBufferItem {
 	time: Date;
@@ -193,11 +194,11 @@ let eventFlushTimer: ReturnType<typeof setInterval> | null = null;
 let eventFlushing = false;
 
 /** 批量写入数据库 */
-async function flushEventBuffer(): Promise<void> {
+async function flushEventBuffer(source: string): Promise<void> {
 	if (eventBuffer.length === 0 || eventFlushing) return;
 	eventFlushing = true;
 
-	const batch = eventBuffer.splice(0, eventBuffer.length);
+	const batch = [...eventBuffer];
 	try {
 		await db.insert(event).values(
 			batch.map((item) => ({
@@ -208,10 +209,11 @@ async function flushEventBuffer(): Promise<void> {
 				properties: item.properties,
 			})),
 		);
+		eventBuffer.splice(0, batch.length);
 	} catch (err) {
 		logger.error(
 			{ error: (err as Error).message, count: batch.length },
-			"埋点事件批量写入失败",
+			`埋点事件批量写入失败 (${source})`,
 		);
 	} finally {
 		eventFlushing = false;
@@ -222,9 +224,7 @@ async function flushEventBuffer(): Promise<void> {
 function ensureEventFlushTimer(): void {
 	if (eventFlushTimer) return;
 	eventFlushTimer = setInterval(() => {
-		flushEventBuffer().catch((err) => {
-			logger.error({ error: (err as Error).message }, "埋点事件刷新失败");
-		});
+		flushEventBuffer("timer");
 	}, FLUSH_INTERVAL);
 
 	if (
@@ -243,7 +243,9 @@ function ensureEventFlushTimer(): void {
 export function trackEvent(input: TrackEventInput): void {
 	// 缓存未就绪时不校验，允许写入（启动阶段兜底）
 	if (!presetCacheLoaded) {
-		ensurePresetCache().catch(() => {});
+		ensurePresetCache().catch((err) => {
+			logger.error({ error: (err as Error).message }, "预设缓存加载失败");
+		});
 		pushToBuffer(input);
 		return;
 	}
@@ -303,6 +305,10 @@ export function trackEvent(input: TrackEventInput): void {
 
 function pushToBuffer(input: TrackEventInput): void {
 	ensureEventFlushTimer();
+	if (eventBuffer.length >= MAX_BUFFER_SIZE) {
+		eventBuffer.shift();
+		logger.warn("埋点事件缓冲已满，丢弃最旧条目");
+	}
 	eventBuffer.push({
 		time: new Date(input.time),
 		userId: input.userId ?? null,
@@ -311,7 +317,7 @@ function pushToBuffer(input: TrackEventInput): void {
 		properties: input.properties,
 	});
 	if (eventBuffer.length >= BATCH_SIZE) {
-		flushEventBuffer().catch(() => {});
+		flushEventBuffer("batch");
 	}
 }
 
@@ -321,7 +327,7 @@ export async function flushTrackEvents(): Promise<void> {
 		clearInterval(eventFlushTimer);
 		eventFlushTimer = null;
 	}
-	await flushEventBuffer();
+	await flushEventBuffer("shutdown");
 }
 
 // ═══════════════════════════════════════════════════

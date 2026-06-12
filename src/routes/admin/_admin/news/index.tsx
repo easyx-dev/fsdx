@@ -132,17 +132,21 @@ function NewsListPage() {
 	);
 
 	async function refresh(s?: string, sf?: string, so?: string) {
-		const status = s !== undefined ? s : filter;
-		const field = sf !== undefined ? sf : sortField;
-		const order = so !== undefined ? so : sortOrder;
-		const result = await getNewsListFn({
-			data: {
-				status: status || undefined,
-				sortField: field,
-				sortOrder: order as "ascend" | "descend" | undefined,
-			},
-		});
-		setData(result);
+		try {
+			const status = s !== undefined ? s : filter;
+			const field = sf !== undefined ? sf : sortField;
+			const order = so !== undefined ? so : sortOrder;
+			const result = await getNewsListFn({
+				data: {
+					status: status || undefined,
+					sortField: field,
+					sortOrder: order as "ascend" | "descend" | undefined,
+				},
+			});
+			setData(result);
+		} catch (err) {
+			message.error(err instanceof Error ? err.message : "加载新闻列表失败");
+		}
 	}
 
 	/** 表格排序变更 */
@@ -165,13 +169,17 @@ function NewsListPage() {
 
 	/** 导出新闻数据 */
 	async function handleExport(format: "csv" | "json") {
-		const result = await exportNewsFn({ data: { format } });
-		const timestamp = dayjs().format("YYYY-MM-DD");
-		const ext = format === "csv" ? "csv" : "json";
-		const mime =
-			format === "csv" ? "text/csv;charset=utf-8" : "application/json";
-		downloadFile(result.content, `news_export_${timestamp}.${ext}`, mime);
-		message.success("导出完成");
+		try {
+			const result = await exportNewsFn({ data: { format } });
+			const timestamp = dayjs().format("YYYY-MM-DD");
+			const ext = format === "csv" ? "csv" : "json";
+			const mime =
+				format === "csv" ? "text/csv;charset=utf-8" : "application/json";
+			downloadFile(result.content, `news_export_${timestamp}.${ext}`, mime);
+			message.success("导出完成");
+		} catch (err) {
+			message.error(err instanceof Error ? err.message : "导出失败");
+		}
 	}
 
 	const columns = [
@@ -257,10 +265,16 @@ function NewsListPage() {
 							type="link"
 							size="small"
 							onClick={async () => {
-								await changeStatusFn({
-									data: { id: record.id, status: "published" },
-								});
-								await refresh();
+								try {
+									await changeStatusFn({
+										data: { id: record.id, status: "published" },
+									});
+									await refresh();
+								} catch (err) {
+									message.error(
+										err instanceof Error ? err.message : "发布失败",
+									);
+								}
 							}}
 						>
 							发布
@@ -271,10 +285,16 @@ function NewsListPage() {
 							type="link"
 							size="small"
 							onClick={async () => {
-								await changeStatusFn({
-									data: { id: record.id, status: "archived" },
-								});
-								await refresh();
+								try {
+									await changeStatusFn({
+										data: { id: record.id, status: "archived" },
+									});
+									await refresh();
+								} catch (err) {
+									message.error(
+										err instanceof Error ? err.message : "归档失败",
+									);
+								}
 							}}
 						>
 							归档
@@ -295,9 +315,13 @@ function NewsListPage() {
 					<Popconfirm
 						title="确定删除这条新闻？"
 						onConfirm={async () => {
-							await deleteNewsFn({ data: { id: record.id } });
-							message.success("已删除");
-							await refresh();
+							try {
+								await deleteNewsFn({ data: { id: record.id } });
+								message.success("已删除");
+								await refresh();
+							} catch (err) {
+								message.error(err instanceof Error ? err.message : "删除失败");
+							}
 						}}
 					>
 						<Button type="link" size="small" danger icon={<DeleteOutlined />} />
@@ -353,10 +377,21 @@ function NewsListPage() {
 					pageSize: data.pageSize,
 					current: data.page,
 					onChange: async (page) => {
-						const result = await getNewsListFn({
-							data: { status: filter || undefined, page, sortField, sortOrder },
-						});
-						setData(result);
+						try {
+							const result = await getNewsListFn({
+								data: {
+									status: filter || undefined,
+									page,
+									sortField,
+									sortOrder,
+								},
+							});
+							setData(result);
+						} catch (err) {
+							message.error(
+								err instanceof Error ? err.message : "加载新闻列表失败",
+							);
+						}
 					},
 				}}
 			/>

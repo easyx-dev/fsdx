@@ -48,17 +48,18 @@ export interface OperationLogQueryResult {
 
 const FLUSH_INTERVAL = 5000;
 const BATCH_SIZE = 100;
+const MAX_BUFFER_SIZE = 1000;
 
 const buffer: OperationLogInput[] = [];
 let flushTimer: ReturnType<typeof setInterval> | null = null;
 let flushing = false;
 
 /** 批量写入数据库 */
-async function flushBuffer(): Promise<void> {
+async function flushBuffer(source: string): Promise<void> {
 	if (buffer.length === 0 || flushing) return;
 	flushing = true;
 
-	const batch = buffer.splice(0, buffer.length);
+	const batch = [...buffer];
 	try {
 		await db.insert(operationLog).values(
 			batch.map((item) => ({
@@ -72,10 +73,11 @@ async function flushBuffer(): Promise<void> {
 				detail: item.detail ?? null,
 			})),
 		);
+		buffer.splice(0, batch.length);
 	} catch (err) {
 		logger.error(
 			{ error: (err as Error).message, count: batch.length },
-			"操作日志批量写入失败",
+			`操作日志批量写入失败 (${source})`,
 		);
 	} finally {
 		flushing = false;
@@ -86,9 +88,7 @@ async function flushBuffer(): Promise<void> {
 function ensureTimer(): void {
 	if (flushTimer) return;
 	flushTimer = setInterval(() => {
-		flushBuffer().catch((err) => {
-			logger.error({ error: (err as Error).message }, "操作日志刷新失败");
-		});
+		flushBuffer("timer");
 	}, FLUSH_INTERVAL);
 
 	// 确保刷新计时器不会阻止进程退出
@@ -100,11 +100,13 @@ function ensureTimer(): void {
 /** 追加操作日志到缓冲队列（同步返回，不阻塞业务） */
 export function logOperation(params: OperationLogInput): void {
 	ensureTimer();
+	if (buffer.length >= MAX_BUFFER_SIZE) {
+		buffer.shift();
+		logger.warn("操作日志缓冲已满，丢弃最旧条目");
+	}
 	buffer.push(params);
 	if (buffer.length >= BATCH_SIZE) {
-		flushBuffer().catch((err) => {
-			logger.error({ error: (err as Error).message }, "操作日志刷新失败");
-		});
+		flushBuffer("batch");
 	}
 }
 
@@ -114,7 +116,7 @@ export async function flushOperationLogs(): Promise<void> {
 		clearInterval(flushTimer);
 		flushTimer = null;
 	}
-	await flushBuffer();
+	await flushBuffer("shutdown");
 }
 
 // ═══════════════════════════════════════════════════

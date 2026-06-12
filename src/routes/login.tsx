@@ -11,6 +11,7 @@ import {
 } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
 import { setCookie } from "@tanstack/react-start/server";
+import { toast } from "sonner";
 import { z } from "zod";
 import { Button } from "#/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "#/components/ui/card";
@@ -41,6 +42,16 @@ const clientLoginFn = createServerFn({ method: "POST" })
 		return result;
 	});
 
+function LoginError({ error }: { error: unknown }) {
+	return (
+		<main className="flex flex-1 items-center justify-center bg-background px-4 py-8">
+			<p className="text-sm text-destructive">
+				{error instanceof Error ? error.message : "加载失败，请稍后重试"}
+			</p>
+		</main>
+	);
+}
+
 export const Route = createFileRoute("/login")({
 	beforeLoad: async () => {
 		const user = await getCurrentClientFn();
@@ -49,6 +60,7 @@ export const Route = createFileRoute("/login")({
 		}
 	},
 	component: ClientLoginPage,
+	errorComponent: LoginError,
 });
 
 function ClientLoginPage() {
@@ -63,8 +75,10 @@ function ClientLoginPage() {
 		onSubmit: async ({ value }) => {
 			const result = await clientLoginFn({ data: value });
 			if (!result.success) {
-				throw new Error(result.message || t("登录失败"));
+				toast.error(result.message || t("登录失败"));
+				return;
 			}
+			toast.success(t("登录成功"));
 			navigate({ to: "/" });
 		},
 	});
@@ -147,17 +161,6 @@ function ClientLoginPage() {
 									</div>
 								)}
 							</form.Field>
-
-							{/* 服务端错误展示 */}
-							<form.Subscribe selector={(state) => state.errorMap}>
-								{(errorMap) =>
-									errorMap.onSubmit ? (
-										<div className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
-											{errorMap.onSubmit}
-										</div>
-									) : null
-								}
-							</form.Subscribe>
 
 							<form.Subscribe
 								selector={(state) => [state.canSubmit, state.isSubmitting]}

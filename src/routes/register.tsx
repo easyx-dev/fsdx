@@ -11,6 +11,7 @@ import {
 	useNavigate,
 } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
+import { toast } from "sonner";
 import { z } from "zod";
 import { CaptchaInput } from "#/components/client/CaptchaInput";
 import { Button } from "#/components/ui/button";
@@ -33,6 +34,16 @@ const clientRegisterFn = createServerFn({ method: "POST" })
 		return clientRegister(username, email, password, captcha);
 	});
 
+function RegisterError({ error }: { error: unknown }) {
+	return (
+		<main className="flex flex-1 items-center justify-center bg-background px-4 py-8">
+			<p className="text-sm text-destructive">
+				{error instanceof Error ? error.message : "加载失败，请稍后重试"}
+			</p>
+		</main>
+	);
+}
+
 export const Route = createFileRoute("/register")({
 	beforeLoad: async () => {
 		const user = await getCurrentClientFn();
@@ -41,6 +52,7 @@ export const Route = createFileRoute("/register")({
 		}
 	},
 	component: ClientRegisterPage,
+	errorComponent: RegisterError,
 });
 
 function ClientRegisterPage() {
@@ -53,7 +65,6 @@ function ClientRegisterPage() {
 			email: "",
 			password: "",
 			captcha: "",
-			captchaMsg: "",
 		},
 		onSubmit: async ({ value }) => {
 			const result = await clientRegisterFn({
@@ -65,8 +76,10 @@ function ClientRegisterPage() {
 				},
 			});
 			if (!result.success) {
-				throw new Error(result.message);
+				toast.error(result.message || t("注册失败"));
+				return;
 			}
+			toast.success(t("注册成功"));
 			navigate({ to: "/login" });
 		},
 	});
@@ -180,7 +193,7 @@ function ClientRegisterPage() {
 													value={field.state.value}
 													onChange={field.handleChange}
 													onMessage={(msg) => {
-														form.setFieldValue("captchaMsg", msg);
+														toast.success(msg);
 													}}
 												/>
 											)}
@@ -194,17 +207,6 @@ function ClientRegisterPage() {
 									</div>
 								)}
 							</form.Field>
-
-							{/* 验证码发送状态消息 */}
-							<form.Subscribe selector={(state) => state.values.captchaMsg}>
-								{(captchaMsg) =>
-									captchaMsg ? (
-										<p className="text-xs text-muted-foreground">
-											{captchaMsg}
-										</p>
-									) : null
-								}
-							</form.Subscribe>
 
 							<form.Field
 								name="password"
@@ -239,17 +241,6 @@ function ClientRegisterPage() {
 									</div>
 								)}
 							</form.Field>
-
-							{/* 服务端错误展示 */}
-							<form.Subscribe selector={(state) => state.errorMap}>
-								{(errorMap) =>
-									errorMap.onSubmit ? (
-										<div className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
-											{errorMap.onSubmit}
-										</div>
-									) : null
-								}
-							</form.Subscribe>
 
 							<form.Subscribe
 								selector={(state) => [state.canSubmit, state.isSubmitting]}

@@ -41,6 +41,7 @@ const getLatestNews = createServerFn({ method: "GET" }).handler(async () => {
 export const Route = createFileRoute("/")({
 	component: HomePage,
 	loader: async () => await getLatestNews(),
+	errorComponent: HomeError,
 });
 
 const features = [
@@ -66,6 +67,64 @@ const features = [
 		desc: "高效构建现代 UI，统一设计令牌，响应式开箱即用。",
 	},
 ];
+
+function HomeError({ error }: { error: unknown }) {
+	const msg = error instanceof Error ? error.message : "加载失败，请稍后重试";
+	return (
+		<main className="mx-auto max-w-5xl px-4 py-8 sm:py-16">
+			<section className="mb-12 text-center sm:mb-20">
+				<h1 className="text-3xl font-bold tracking-tight text-foreground sm:text-5xl">
+					CMS 内容管理系统
+				</h1>
+			</section>
+			<section className="mb-12 grid gap-4 sm:mb-20 sm:grid-cols-2 sm:gap-6 lg:grid-cols-3">
+				{[
+					{
+						label: "类型安全路由",
+						desc: "TanStack Router 提供编译期路由校验，链接与参数始终同步。",
+					},
+					{
+						label: "Server Functions",
+						desc: "直接在组件中调用服务端逻辑，无需手动创建 API 层。",
+					},
+					{
+						label: "SSR 流式渲染",
+						desc: "渐进式页面加载，首屏速度更快，SEO 友好。",
+					},
+					{
+						label: "强大的管理后台",
+						desc: "基于 antd 的后台管理，支持新闻、字典、配置、文件管理。",
+					},
+					{
+						label: "RBAC 权限控制",
+						desc: "细粒度角色权限，管理员与客户端用户双通道。",
+					},
+					{
+						label: "Tailwind CSS",
+						desc: "高效构建现代 UI，统一设计令牌，响应式开箱即用。",
+					},
+				].map((item) => (
+					<div
+						key={item.label}
+						className="rounded-lg border bg-card text-card-foreground shadow-sm"
+					>
+						<div className="flex flex-col space-y-1.5 p-6">
+							<h3 className="text-lg font-semibold leading-none tracking-tight">
+								{item.label}
+							</h3>
+							<p className="text-sm text-muted-foreground">{item.desc}</p>
+						</div>
+					</div>
+				))}
+			</section>
+			<section>
+				<div className="rounded-lg border py-12 text-center">
+					<p className="text-sm text-destructive">{msg}</p>
+				</div>
+			</section>
+		</main>
+	);
+}
 
 function HomePage() {
 	const data = Route.useLoaderData();
