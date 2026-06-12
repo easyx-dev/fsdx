@@ -25,6 +25,8 @@ const registerSchema = z.object({
 
 const sendCaptchaSchema = z.object({
 	email: z.string().email(),
+	imageToken: z.string().min(1),
+	imageCode: z.string().min(1),
 });
 
 const newsSlugSchema = z.object({
@@ -79,6 +81,9 @@ const dictCreateSchema = z.object({
 const configCreateSchema = z.object({
 	key: z.string().min(1).max(100),
 	value: z.string().min(1),
+	clientVisible: z.boolean().optional(),
+	valueType: z.string().optional(),
+	groupName: z.string().optional(),
 	description: z.string().optional(),
 });
 
@@ -123,7 +128,7 @@ const updateDictSchema = z.object({
 	description: z.string().optional(),
 });
 const dictItemCreateSchema = z.object({
-	dictId: z.string().min(1),
+	dictSlug: z.string().min(1),
 	label: z.string().min(1).max(100),
 	value: z.string().min(1).max(100),
 	sortOrder: z.number().default(0),
@@ -146,6 +151,9 @@ const dictItemUpdateSchema = z.object({
 const updateConfigSchema = z.object({
 	id: z.string().min(1),
 	value: z.string().optional(),
+	clientVisible: z.boolean().optional(),
+	valueType: z.string().optional(),
+	groupName: z.string().optional(),
 	description: z.string().optional(),
 });
 
@@ -212,6 +220,60 @@ const searchLogsSchema = z.object({
 const publishedNewsSchema = z.object({
 	page: z.number().int().min(1).optional().default(1),
 	pageSize: z.number().int().min(1).max(50).optional().default(12),
+});
+// ── 管理员用户列表 ──
+const adminUserListSchema = z.object({
+	page: z.number().optional(),
+	pageSize: z.number().optional(),
+	keyword: z.string().optional(),
+	sortField: z.string().optional(),
+	sortOrder: z.enum(["ascend", "descend"]).optional(),
+});
+
+// ── 客户端用户列表 ──
+const clientUserListSchema = z.object({
+	page: z.number().optional(),
+	pageSize: z.number().optional(),
+	keyword: z.string().optional(),
+	sortField: z.string().optional(),
+	sortOrder: z.enum(["ascend", "descend"]).optional(),
+});
+
+// ── UI 翻译管理 ──
+const uiTranslationListSchema = z.object({
+	locale: z.string().optional(),
+	keyword: z.string().optional(),
+	page: z.number().optional(),
+	sortField: z.string().optional(),
+	sortOrder: z.enum(["ascend", "descend"]).optional(),
+});
+
+const uiTranslationSaveSchema = z.object({
+	id: z.string().optional(),
+	locale: z.enum(["zh", "en"]),
+	key: z.string().min(1).max(300),
+	value: z.string().min(1),
+	valueType: z.string().optional(),
+});
+
+// ── 内容翻译管理 ──
+const contentTranslationListSchema = z.object({
+	entityType: z.string().optional(),
+	locale: z.string().optional(),
+	keyword: z.string().optional(),
+	page: z.number().optional(),
+	sortField: z.string().optional(),
+	sortOrder: z.enum(["ascend", "descend"]).optional(),
+});
+
+const contentTranslationSaveSchema = z.object({
+	id: z.string().optional(),
+	entityType: z.string().min(1),
+	entityId: z.string().min(1),
+	fieldName: z.string().min(1),
+	locale: z.enum(["zh", "en"]),
+	value: z.string().min(1),
+	valueType: z.string().optional(),
 });
 
 // ═══════════════════════════════════════════════════════════
@@ -349,16 +411,42 @@ describe("registerSchema", () => {
 });
 
 describe("sendCaptchaSchema", () => {
-	it("合法邮箱校验通过", () => {
-		expect(sendCaptchaSchema.safeParse({ email: "u@t.com" }).success).toBe(
-			true,
-		);
+	it("合法输入通过", () => {
+		expect(
+			sendCaptchaSchema.safeParse({
+				email: "u@t.com",
+				imageToken: "token-123",
+				imageCode: "ABCD",
+			}).success,
+		).toBe(true);
 	});
 
-	it("非法邮箱校验失败", () => {
-		expect(sendCaptchaSchema.safeParse({ email: "not-email" }).success).toBe(
-			false,
-		);
+	it("非法邮箱失败", () => {
+		expect(
+			sendCaptchaSchema.safeParse({
+				email: "not-email",
+				imageToken: "token-123",
+				imageCode: "ABCD",
+			}).success,
+		).toBe(false);
+	});
+
+	it("缺少 imageToken 失败", () => {
+		expect(
+			sendCaptchaSchema.safeParse({
+				email: "u@t.com",
+				imageCode: "ABCD",
+			}).success,
+		).toBe(false);
+	});
+
+	it("缺少 imageCode 失败", () => {
+		expect(
+			sendCaptchaSchema.safeParse({
+				email: "u@t.com",
+				imageToken: "token-123",
+			}).success,
+		).toBe(false);
 	});
 });
 
@@ -446,6 +534,18 @@ describe("configCreateSchema", () => {
 		expect(configCreateSchema.safeParse({ key: "k", value: "" }).success).toBe(
 			false,
 		);
+	});
+
+	it("可选字段 clientVisible / valueType / groupName 通过", () => {
+		expect(
+			configCreateSchema.safeParse({
+				key: "site_name",
+				value: "My CMS",
+				clientVisible: true,
+				valueType: "text",
+				groupName: "basic",
+			}).success,
+		).toBe(true);
 	});
 });
 
@@ -565,7 +665,7 @@ describe("updateDictSchema", () => {
 describe("dictItemCreateSchema", () => {
 	it("最小字段创建通过", () => {
 		const result = dictItemCreateSchema.safeParse({
-			dictId: "d-1",
+			dictSlug: "d-1",
 			label: "标签",
 			value: "val",
 		});
@@ -576,8 +676,17 @@ describe("dictItemCreateSchema", () => {
 	it("label 为空失败", () => {
 		expect(
 			dictItemCreateSchema.safeParse({
-				dictId: "d-1",
+				dictSlug: "d-1",
 				label: "",
+				value: "val",
+			}).success,
+		).toBe(false);
+	});
+
+	it("缺少 dictSlug 失败", () => {
+		expect(
+			dictItemCreateSchema.safeParse({
+				label: "标签",
 				value: "val",
 			}).success,
 		).toBe(false);
@@ -622,6 +731,17 @@ describe("updateConfigSchema", () => {
 
 	it("缺少 id 失败", () => {
 		expect(updateConfigSchema.safeParse({ value: "v" }).success).toBe(false);
+	});
+
+	it("可选字段 clientVisible / valueType / groupName 通过", () => {
+		expect(
+			updateConfigSchema.safeParse({
+				id: "c-1",
+				clientVisible: false,
+				valueType: "richtext",
+				groupName: "email",
+			}).success,
+		).toBe(true);
 	});
 });
 
@@ -841,5 +961,164 @@ describe("publishedNewsSchema（前台新闻列表分页）", () => {
 			expect(result.data.page).toBe(2);
 			expect(result.data.pageSize).toBe(6);
 		}
+	});
+});
+
+describe("adminUserListSchema（管理员用户列表）", () => {
+	it("无参数通过", () => {
+		expect(adminUserListSchema.safeParse({}).success).toBe(true);
+	});
+
+	it("全部参数通过", () => {
+		expect(
+			adminUserListSchema.safeParse({
+				page: 1,
+				pageSize: 10,
+				keyword: "admin",
+				sortField: "createdAt",
+				sortOrder: "descend",
+			}).success,
+		).toBe(true);
+	});
+});
+
+describe("clientUserListSchema（客户端用户列表）", () => {
+	it("无参数通过", () => {
+		expect(clientUserListSchema.safeParse({}).success).toBe(true);
+	});
+
+	it("全部参数通过", () => {
+		expect(
+			clientUserListSchema.safeParse({
+				page: 1,
+				pageSize: 10,
+				keyword: "test",
+				sortField: "createdAt",
+				sortOrder: "ascend",
+			}).success,
+		).toBe(true);
+	});
+});
+
+describe("uiTranslationListSchema（UI 翻译列表）", () => {
+	it("无参数通过", () => {
+		expect(uiTranslationListSchema.safeParse({}).success).toBe(true);
+	});
+
+	it("带 locale 筛选通过", () => {
+		expect(uiTranslationListSchema.safeParse({ locale: "en" }).success).toBe(
+			true,
+		);
+	});
+});
+
+describe("uiTranslationSaveSchema（UI 翻译保存）", () => {
+	it("合法新建输入通过", () => {
+		expect(
+			uiTranslationSaveSchema.safeParse({
+				locale: "en",
+				key: "home.title",
+				value: "Welcome",
+			}).success,
+		).toBe(true);
+	});
+
+	it("带 id 编辑输入通过", () => {
+		expect(
+			uiTranslationSaveSchema.safeParse({
+				id: "t-1",
+				locale: "en",
+				key: "home.title",
+				value: "Welcome",
+				valueType: "text",
+			}).success,
+		).toBe(true);
+	});
+
+	it("非法 locale 失败", () => {
+		expect(
+			uiTranslationSaveSchema.safeParse({
+				locale: "fr",
+				key: "home.title",
+				value: "Bienvenue",
+			}).success,
+		).toBe(false);
+	});
+
+	it("key 为空失败", () => {
+		expect(
+			uiTranslationSaveSchema.safeParse({
+				locale: "en",
+				key: "",
+				value: "V",
+			}).success,
+		).toBe(false);
+	});
+});
+
+describe("contentTranslationListSchema（内容翻译列表）", () => {
+	it("无参数通过", () => {
+		expect(contentTranslationListSchema.safeParse({}).success).toBe(true);
+	});
+
+	it("全部参数通过", () => {
+		expect(
+			contentTranslationListSchema.safeParse({
+				entityType: "news",
+				locale: "en",
+				keyword: "title",
+				page: 1,
+				sortField: "createdAt",
+				sortOrder: "descend",
+			}).success,
+		).toBe(true);
+	});
+});
+
+describe("contentTranslationSaveSchema（内容翻译保存）", () => {
+	it("合法输入通过", () => {
+		expect(
+			contentTranslationSaveSchema.safeParse({
+				entityType: "news",
+				entityId: "n-1",
+				fieldName: "title",
+				locale: "en",
+				value: "Hello World",
+			}).success,
+		).toBe(true);
+	});
+
+	it("缺少 entityType 失败", () => {
+		expect(
+			contentTranslationSaveSchema.safeParse({
+				entityId: "n-1",
+				fieldName: "title",
+				locale: "en",
+				value: "Hello World",
+			}).success,
+		).toBe(false);
+	});
+
+	it("缺少 entityId 失败", () => {
+		expect(
+			contentTranslationSaveSchema.safeParse({
+				entityType: "news",
+				fieldName: "title",
+				locale: "en",
+				value: "Hello World",
+			}).success,
+		).toBe(false);
+	});
+
+	it("非法 locale 失败", () => {
+		expect(
+			contentTranslationSaveSchema.safeParse({
+				entityType: "news",
+				entityId: "n-1",
+				fieldName: "title",
+				locale: "fr",
+				value: "Bonjour",
+			}).success,
+		).toBe(false);
 	});
 });
