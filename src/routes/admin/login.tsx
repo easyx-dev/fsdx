@@ -5,14 +5,7 @@ import { LockOutlined, UserOutlined } from "@ant-design/icons";
 import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
 import { setCookie } from "@tanstack/react-start/server";
-import {
-	theme as antdTheme,
-	Button,
-	ConfigProvider,
-	Form,
-	Input,
-	message,
-} from "antd";
+import { Button, Form, Input, message } from "antd";
 import { useEffect, useState } from "react";
 import { z } from "zod";
 import { COOKIE_NAMES } from "#/lib/jwt/jwt";
@@ -61,15 +54,6 @@ function AdminLoginPage() {
 	const [form] = Form.useForm();
 	const [loading, setLoading] = useState(false);
 
-	const [isDark, setIsDark] = useState(false);
-	useEffect(() => {
-		const mq = window.matchMedia("(prefers-color-scheme: dark)");
-		setIsDark(mq.matches);
-		const handler = (e: MediaQueryListEvent) => setIsDark(e.matches);
-		mq.addEventListener("change", handler);
-		return () => mq.removeEventListener("change", handler);
-	}, []);
-
 	// 设置 message 默认 duration 为 5s
 	useEffect(() => {
 		message.config({ duration: 5 });
@@ -97,51 +81,36 @@ function AdminLoginPage() {
 	};
 
 	return (
-		<ConfigProvider
-			theme={{
-				algorithm: isDark
-					? antdTheme.darkAlgorithm
-					: antdTheme.defaultAlgorithm,
-			}}
-		>
-			<div className="flex min-h-screen items-center justify-center bg-zinc-50 dark:bg-zinc-900">
-				<div className="w-full max-w-sm">
-					<div className="rounded-lg border border-border bg-card p-8 shadow-sm">
-						<h1 className="mb-6 text-center text-2xl font-bold">
-							管理后台登录
-						</h1>
-						<Form
-							form={form}
-							onFinish={handleSubmit}
-							size="large"
-							autoComplete="off"
+		<div className="flex min-h-screen items-center justify-center bg-zinc-50 dark:bg-zinc-900">
+			<div className="w-full max-w-sm">
+				<div className="rounded-lg border border-border bg-card p-8 shadow-sm">
+					<h1 className="mb-6 text-center text-2xl font-bold">管理后台登录</h1>
+					<Form
+						form={form}
+						onFinish={handleSubmit}
+						size="large"
+						autoComplete="off"
+					>
+						<Form.Item
+							name="username"
+							rules={[{ required: true, message: "请输入用户名" }]}
 						>
-							<Form.Item
-								name="username"
-								rules={[{ required: true, message: "请输入用户名" }]}
-							>
-								<Input prefix={<UserOutlined />} placeholder="用户名" />
-							</Form.Item>
-							<Form.Item
-								name="password"
-								rules={[{ required: true, message: "请输入密码" }]}
-							>
-								<Input.Password prefix={<LockOutlined />} placeholder="密码" />
-							</Form.Item>
-							<Form.Item>
-								<Button
-									type="primary"
-									htmlType="submit"
-									loading={loading}
-									block
-								>
-									登录
-								</Button>
-							</Form.Item>
-						</Form>
-					</div>
+							<Input prefix={<UserOutlined />} placeholder="用户名" />
+						</Form.Item>
+						<Form.Item
+							name="password"
+							rules={[{ required: true, message: "请输入密码" }]}
+						>
+							<Input.Password prefix={<LockOutlined />} placeholder="密码" />
+						</Form.Item>
+						<Form.Item>
+							<Button type="primary" htmlType="submit" loading={loading} block>
+								登录
+							</Button>
+						</Form.Item>
+					</Form>
 				</div>
 			</div>
-		</ConfigProvider>
+		</div>
 	);
 }

@@ -18,17 +18,21 @@ import "monaco-editor/esm/vs/editor/browser/widget/codeEditor/editor.css";
 import "monaco-editor/esm/vs/editor/standalone/browser/standalone-tokens.css";
 
 // 在 monaco 动态导入前配置 worker 环境，支持多种语言
-self.MonacoEnvironment = {
-	getWorker(_workerId: string, label: string) {
-		if (label === "json") return new JsonWorker();
-		if (label === "css" || label === "scss" || label === "less")
-			return new CssWorker();
-		if (label === "html" || label === "handlebars" || label === "razor")
-			return new HtmlWorker();
-		if (label === "typescript" || label === "javascript") return new TsWorker();
-		return new EditorWorker();
-	},
-};
+// SSR 环境下 globalThis 可能无 self，此处仅浏览器需要 worker 配置
+if (typeof self !== "undefined") {
+	self.MonacoEnvironment = {
+		getWorker(_workerId: string, label: string) {
+			if (label === "json") return new JsonWorker();
+			if (label === "css" || label === "scss" || label === "less")
+				return new CssWorker();
+			if (label === "html" || label === "handlebars" || label === "razor")
+				return new HtmlWorker();
+			if (label === "typescript" || label === "javascript")
+				return new TsWorker();
+			return new EditorWorker();
+		},
+	};
+}
 
 export interface CodeEditorProps {
 	/** 自定义类名 */

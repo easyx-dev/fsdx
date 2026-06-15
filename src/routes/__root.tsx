@@ -84,17 +84,15 @@ function RootDocument({ children }: { children: React.ReactNode }) {
 					</ClientAuthProvider>
 				</GlobalStoreProvider>
 			)}
-			{process.env.NODE_ENV === "development" && (
-				<TanStackDevtools
-					config={{ position: "bottom-right" }}
-					plugins={[
-						{
-							name: "Tanstack Router",
-							render: <TanStackRouterDevtoolsPanel />,
-						},
-					]}
-				/>
-			)}
+			<TanStackDevtools
+				config={{ position: "bottom-right" }}
+				plugins={[
+					{
+						name: "Tanstack Router",
+						render: <TanStackRouterDevtoolsPanel />,
+					},
+				]}
+			/>
 		</Fragment>
 	);
 }

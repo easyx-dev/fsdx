@@ -13,9 +13,7 @@ import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
 import {
 	Alert,
-	theme as antdTheme,
 	Button,
-	ConfigProvider,
 	Divider,
 	Form,
 	Input,
@@ -127,15 +125,6 @@ function AdminInitPage() {
 	const [smtpExpanded, setSmtpExpanded] = useState(false);
 	const [aiExpanded, setAiExpanded] = useState(false);
 
-	const [isDark, setIsDark] = useState(false);
-	useEffect(() => {
-		const mq = window.matchMedia("(prefers-color-scheme: dark)");
-		setIsDark(mq.matches);
-		const handler = (e: MediaQueryListEvent) => setIsDark(e.matches);
-		mq.addEventListener("change", handler);
-		return () => mq.removeEventListener("change", handler);
-	}, []);
-
 	// 设置 message 默认 duration 为 5s
 	useEffect(() => {
 		message.config({ duration: 5 });
@@ -160,230 +149,219 @@ function AdminInitPage() {
 	};
 
 	return (
-		<ConfigProvider
-			theme={{
-				algorithm: isDark
-					? antdTheme.darkAlgorithm
-					: antdTheme.defaultAlgorithm,
-			}}
-		>
-			<div className="flex min-h-screen items-center justify-center bg-zinc-50 dark:bg-zinc-900">
-				<div className="w-full max-w-lg">
-					<div className="rounded-lg border border-border bg-card p-8 shadow-sm">
-						<h1 className="mb-4 text-center text-2xl font-bold">系统初始化</h1>
-						<Alert
-							title="检测到系统尚未初始化，请创建超级管理员账号并完成基础配置"
-							type="warning"
-							showIcon
-							className="mb-4"
-						/>
-						<br />
-						<JsonImportButton
-							title="导入 JSON 配置快速填写"
-							className="mb-4"
-							block
-							successMessage="JSON 配置已导入，请核对信息后提交"
-							onImport={(jsonString) => {
-								try {
-									const json: Record<string, unknown> = JSON.parse(jsonString);
-									const values: Record<string, unknown> = {};
-									if (json.admin && typeof json.admin === "object") {
-										const a = json.admin as Record<string, unknown>;
-										if (a.username) values.username = a.username;
-										if (a.password) {
-											values.password = a.password;
-											values.confirmPassword = a.password;
-										}
-										if (a.email) values.email = a.email;
+		<div className="flex min-h-screen items-center justify-center bg-zinc-50 dark:bg-zinc-900">
+			<div className="w-full max-w-lg">
+				<div className="rounded-lg border border-border bg-card p-8 shadow-sm">
+					<h1 className="mb-4 text-center text-2xl font-bold">系统初始化</h1>
+					<Alert
+						title="检测到系统尚未初始化，请创建超级管理员账号并完成基础配置"
+						type="warning"
+						showIcon
+						className="mb-4"
+					/>
+					<br />
+					<JsonImportButton
+						title="导入 JSON 配置快速填写"
+						className="mb-4"
+						block
+						successMessage="JSON 配置已导入，请核对信息后提交"
+						onImport={(jsonString) => {
+							try {
+								const json: Record<string, unknown> = JSON.parse(jsonString);
+								const values: Record<string, unknown> = {};
+								if (json.admin && typeof json.admin === "object") {
+									const a = json.admin as Record<string, unknown>;
+									if (a.username) values.username = a.username;
+									if (a.password) {
+										values.password = a.password;
+										values.confirmPassword = a.password;
 									}
-									if (json.siteName) values.siteName = json.siteName;
-									if (json.smtp && typeof json.smtp === "object") {
-										setSmtpExpanded(true);
-										const s = json.smtp as Record<string, unknown>;
-										if (s.host) values.smtpHost = s.host;
-										if (s.port !== undefined) values.smtpPort = s.port;
-										if (s.secure !== undefined) values.smtpSecure = s.secure;
-										if (s.user) values.smtpUser = s.user;
-										if (s.pass) values.smtpPass = s.pass;
-										if (s.from) values.smtpFrom = s.from;
-									}
-									if (json.ai && typeof json.ai === "object") {
-										setAiExpanded(true);
-										const ai = json.ai as Record<string, unknown>;
-										if (ai.baseUrl) values.aiBaseUrl = ai.baseUrl;
-										if (ai.apiKey) values.aiApiKey = ai.apiKey;
-										if (ai.deepModel) values.aiDeepModel = ai.deepModel;
-										if (ai.fastModel) values.aiFastModel = ai.fastModel;
-									}
-									form.setFieldsValue(values);
-								} catch {
-									message.error("JSON 格式无效，请检查文件内容");
+									if (a.email) values.email = a.email;
 								}
-							}}
+								if (json.siteName) values.siteName = json.siteName;
+								if (json.smtp && typeof json.smtp === "object") {
+									setSmtpExpanded(true);
+									const s = json.smtp as Record<string, unknown>;
+									if (s.host) values.smtpHost = s.host;
+									if (s.port !== undefined) values.smtpPort = s.port;
+									if (s.secure !== undefined) values.smtpSecure = s.secure;
+									if (s.user) values.smtpUser = s.user;
+									if (s.pass) values.smtpPass = s.pass;
+									if (s.from) values.smtpFrom = s.from;
+								}
+								if (json.ai && typeof json.ai === "object") {
+									setAiExpanded(true);
+									const ai = json.ai as Record<string, unknown>;
+									if (ai.baseUrl) values.aiBaseUrl = ai.baseUrl;
+									if (ai.apiKey) values.aiApiKey = ai.apiKey;
+									if (ai.deepModel) values.aiDeepModel = ai.deepModel;
+									if (ai.fastModel) values.aiFastModel = ai.fastModel;
+								}
+								form.setFieldsValue(values);
+							} catch {
+								message.error("JSON 格式无效，请检查文件内容");
+							}
+						}}
+					>
+						导入 JSON 配置快速填写
+					</JsonImportButton>
+
+					<Form
+						form={form}
+						layout="vertical"
+						onFinish={handleSubmit}
+						size="large"
+						autoComplete="off"
+						initialValues={{
+							siteName: "FSDX CMS",
+							smtpPort: 587,
+							smtpSecure: false,
+						}}
+					>
+						<AutofillBlocker />
+						<Divider>管理员账号</Divider>
+
+						<Form.Item
+							name="username"
+							rules={[{ required: true, message: "请输入超级管理员用户名" }]}
 						>
-							导入 JSON 配置快速填写
-						</JsonImportButton>
+							<Input prefix={<UserOutlined />} placeholder="超级管理员用户名" />
+						</Form.Item>
 
-						<Form
-							form={form}
-							layout="vertical"
-							onFinish={handleSubmit}
-							size="large"
-							autoComplete="off"
-							initialValues={{
-								siteName: "FSDX CMS",
-								smtpPort: 587,
-								smtpSecure: false,
-							}}
+						<Form.Item
+							name="email"
+							rules={[{ required: true, message: "请输入邮箱" }]}
 						>
-							<AutofillBlocker />
-							<Divider>管理员账号</Divider>
+							<Input
+								prefix={<MailOutlined />}
+								placeholder="admin@example.com"
+							/>
+						</Form.Item>
 
-							<Form.Item
-								name="username"
-								rules={[{ required: true, message: "请输入超级管理员用户名" }]}
+						<Form.Item
+							name="password"
+							rules={[{ required: true, message: "请输入密码" }]}
+						>
+							<Input.Password
+								prefix={<LockOutlined />}
+								placeholder="密码（至少 6 位）"
+							/>
+						</Form.Item>
+
+						<Form.Item
+							name="confirmPassword"
+							rules={[{ required: true, message: "请确认密码" }]}
+						>
+							<Input.Password
+								prefix={<LockOutlined />}
+								placeholder="再次输入密码"
+							/>
+						</Form.Item>
+
+						<Divider>站点设置</Divider>
+
+						<Form.Item name="siteName">
+							<Input placeholder="站点名称" />
+						</Form.Item>
+
+						<Divider>
+							<Button
+								type="link"
+								onClick={() => setSmtpExpanded(!smtpExpanded)}
+								className="mb-2 p-0"
 							>
-								<Input
-									prefix={<UserOutlined />}
-									placeholder="超级管理员用户名"
-								/>
-							</Form.Item>
+								SMTP 邮件配置（可选，推荐填写）
+								{smtpExpanded ? <UpOutlined /> : <DownOutlined />}
+							</Button>
+						</Divider>
 
-							<Form.Item
-								name="email"
-								rules={[{ required: true, message: "请输入邮箱" }]}
-							>
-								<Input
-									prefix={<MailOutlined />}
-									placeholder="admin@example.com"
-								/>
-							</Form.Item>
-
-							<Form.Item
-								name="password"
-								rules={[{ required: true, message: "请输入密码" }]}
-							>
-								<Input.Password
-									prefix={<LockOutlined />}
-									placeholder="密码（至少 6 位）"
-								/>
-							</Form.Item>
-
-							<Form.Item
-								name="confirmPassword"
-								rules={[{ required: true, message: "请确认密码" }]}
-							>
-								<Input.Password
-									prefix={<LockOutlined />}
-									placeholder="再次输入密码"
-								/>
-							</Form.Item>
-
-							<Divider>站点设置</Divider>
-
-							<Form.Item name="siteName">
-								<Input placeholder="站点名称" />
-							</Form.Item>
-
-							<Divider>
-								<Button
-									type="link"
-									onClick={() => setSmtpExpanded(!smtpExpanded)}
-									className="mb-2 p-0"
-								>
-									SMTP 邮件配置（可选，推荐填写）
-									{smtpExpanded ? <UpOutlined /> : <DownOutlined />}
-								</Button>
-							</Divider>
-
-							{smtpExpanded && (
-								<>
-									<Form.Item name="smtpHost">
-										<Input placeholder="SMTP 服务器地址，如 smtp.example.com" />
-									</Form.Item>
-									<Space.Compact block>
-										<Form.Item name="smtpPort" className="w-36">
-											<InputNumber
-												min={1}
-												max={65535}
-												placeholder="端口"
-												className="w-full"
-											/>
-										</Form.Item>
-										<Form.Item
-											name="smtpSecure"
-											className="flex-1"
-											valuePropName="checked"
-										>
-											<Space align="center" className="h-full px-3">
-												<Switch />
-												<span className="text-sm text-muted-foreground">
-													SSL/TLS
-												</span>
-											</Space>
-										</Form.Item>
-									</Space.Compact>
-									<Form.Item name="smtpUser">
-										<Input placeholder="SMTP 认证用户名" />
-									</Form.Item>
-									<Form.Item name="smtpPass">
-										<Input.Password placeholder="SMTP 认证密码" />
-									</Form.Item>
-									<Form.Item name="smtpFrom">
-										<Input placeholder="发件人邮箱，如 noreply@example.com" />
-									</Form.Item>
-								</>
-							)}
-
-							<Divider>
-								<Button
-									type="link"
-									onClick={() => setAiExpanded(!aiExpanded)}
-									className="mb-2 p-0"
-								>
-									AI 接入配置（可选）
-									{aiExpanded ? <UpOutlined /> : <DownOutlined />}
-								</Button>
-							</Divider>
-
-							{aiExpanded && (
-								<>
-									<Form.Item name="aiBaseUrl">
-										<Input
-											prefix={<RobotOutlined />}
-											placeholder="API 基础地址，如 https://api.openai.com/v1"
+						{smtpExpanded && (
+							<>
+								<Form.Item name="smtpHost">
+									<Input placeholder="SMTP 服务器地址，如 smtp.example.com" />
+								</Form.Item>
+								<Space.Compact block>
+									<Form.Item name="smtpPort" className="w-36">
+										<InputNumber
+											min={1}
+											max={65535}
+											placeholder="端口"
+											className="w-full"
 										/>
 									</Form.Item>
-									<Form.Item name="aiApiKey">
-										<Input.Password
-											prefix={<RobotOutlined />}
-											placeholder="API 密钥"
-										/>
+									<Form.Item
+										name="smtpSecure"
+										className="flex-1"
+										valuePropName="checked"
+									>
+										<Space align="center" className="h-full px-3">
+											<Switch />
+											<span className="text-sm text-muted-foreground">
+												SSL/TLS
+											</span>
+										</Space>
 									</Form.Item>
-									<Form.Item name="aiDeepModel">
-										<Input placeholder="深度思考模型，如 gpt-4o" />
-									</Form.Item>
-									<Form.Item name="aiFastModel">
-										<Input placeholder="快速模型，如 gpt-4o-mini" />
-									</Form.Item>
-								</>
-							)}
+								</Space.Compact>
+								<Form.Item name="smtpUser">
+									<Input placeholder="SMTP 认证用户名" />
+								</Form.Item>
+								<Form.Item name="smtpPass">
+									<Input.Password placeholder="SMTP 认证密码" />
+								</Form.Item>
+								<Form.Item name="smtpFrom">
+									<Input placeholder="发件人邮箱，如 noreply@example.com" />
+								</Form.Item>
+							</>
+						)}
 
-							<Form.Item className="mt-4 mb-0">
-								<Button
-									type="primary"
-									htmlType="submit"
-									loading={loading}
-									block
-									size="large"
-								>
-									开始初始化
-								</Button>
-							</Form.Item>
-						</Form>
-					</div>
+						<Divider>
+							<Button
+								type="link"
+								onClick={() => setAiExpanded(!aiExpanded)}
+								className="mb-2 p-0"
+							>
+								AI 接入配置（可选）
+								{aiExpanded ? <UpOutlined /> : <DownOutlined />}
+							</Button>
+						</Divider>
+
+						{aiExpanded && (
+							<>
+								<Form.Item name="aiBaseUrl">
+									<Input
+										prefix={<RobotOutlined />}
+										placeholder="API 基础地址，如 https://api.openai.com/v1"
+									/>
+								</Form.Item>
+								<Form.Item name="aiApiKey">
+									<Input.Password
+										prefix={<RobotOutlined />}
+										placeholder="API 密钥"
+									/>
+								</Form.Item>
+								<Form.Item name="aiDeepModel">
+									<Input placeholder="深度思考模型，如 gpt-4o" />
+								</Form.Item>
+								<Form.Item name="aiFastModel">
+									<Input placeholder="快速模型，如 gpt-4o-mini" />
+								</Form.Item>
+							</>
+						)}
+
+						<Form.Item className="mt-4 mb-0">
+							<Button
+								type="primary"
+								htmlType="submit"
+								loading={loading}
+								block
+								size="large"
+							>
+								开始初始化
+							</Button>
+						</Form.Item>
+					</Form>
 				</div>
 			</div>
-		</ConfigProvider>
+		</div>
 	);
 }
