@@ -23,10 +23,8 @@ const config = defineConfig({
 			},
 		}),
 		viteReact(),
-		// 注册服务启动前初始化插件，确保预置数据就绪后再开始接收请求
-		nitro({
-			plugins: ["./src/startup.ts"],
-		}),
+		// Nitro 仅负责打包，server.ts 由 Nitro 自动检测作为 server entry
+		nitro(),
 		// 修复：Vite dev server 在 Sec-Fetch-Dest: image 时会将路由当作静态资源拦截，
 		// 导致 <img> 标签加载图片返回 404。此插件在 Vite 内部中间件之前移除该请求头
 		secFetchDestImageFix(),
