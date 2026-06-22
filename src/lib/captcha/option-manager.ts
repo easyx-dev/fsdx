@@ -6,7 +6,9 @@ import * as opentypeNs from "opentype.js";
 import { FONT_BASE64 } from "./font-data";
 
 // opentype.js v2 CJS/ESM 入口导出格式不一致，CJS 下 default 为模块对象，ESM 下需直接用命名空间
-const opentype = (opentypeNs as typeof opentypeNs & { default?: typeof opentypeNs }).default ?? opentypeNs;
+const opentype =
+	(opentypeNs as typeof opentypeNs & { default?: typeof opentypeNs }).default ??
+	opentypeNs;
 
 const fontBuffer = Buffer.from(FONT_BASE64, "base64").buffer as ArrayBuffer;
 const font = opentype.parse(fontBuffer) as Font;

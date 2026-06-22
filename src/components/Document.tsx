@@ -27,7 +27,8 @@ interface SSRRootDocumentProps {
 
 /** 前台路由：SSR 渲染 + 国际化 Provider */
 export function SSRRootDocument({ children }: SSRRootDocumentProps) {
-	const { locale } = useGlobalStore();
+	const { locale, systemConfig } = useGlobalStore();
+	const siteName = systemConfig?.site_name || "FSDX";
 	const { user, isLoading } = useClientAuth();
 	const trackInitialized = useRef(false);
 
@@ -56,7 +57,14 @@ export function SSRRootDocument({ children }: SSRRootDocumentProps) {
 			<head>
 				<script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
 				<link rel="stylesheet" href={ssrGlobalCss} />
-				<title>SSR</title>
+				<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+				<title>{siteName}</title>
+				{systemConfig?.description && (
+					<meta name="description" content={systemConfig.description} />
+				)}
+				{systemConfig?.keywords && (
+					<meta name="keywords" content={systemConfig.keywords} />
+				)}
 				<HeadContent />
 			</head>
 			<body className="font-sans antialiased flex min-h-screen flex-col">
@@ -75,9 +83,10 @@ export function AdminRootDocument({ children }: { children: React.ReactNode }) {
 	return (
 		<html lang="zh-CN" suppressHydrationWarning>
 			<head>
-				<title>FSDX Admin</title>
+				<title>FSDX 管理后台</title>
 				<HeadContent />
 				<link rel="stylesheet" href={adminGlobalCss} />
+				<link rel="icon" type="image/svg+xml" href="/favicon-admin.svg" />
 			</head>
 			<body className="font-sans antialiased">
 				<ClientOnly>

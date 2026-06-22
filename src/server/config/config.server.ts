@@ -153,7 +153,7 @@ const PRESET_CONFIGS: {
 		description: "SEO head 关键词",
 		clientVisible: true,
 		valueType: "text",
-		groupName: "SEO设置",
+		groupName: "站点设置",
 	},
 	{
 		key: "description",
@@ -161,7 +161,7 @@ const PRESET_CONFIGS: {
 		description: "SEO head 站点描述",
 		clientVisible: true,
 		valueType: "text",
-		groupName: "SEO设置",
+		groupName: "站点设置",
 	},
 	{
 		key: "company_address",
@@ -169,7 +169,7 @@ const PRESET_CONFIGS: {
 		description: "公司地址",
 		clientVisible: true,
 		valueType: "text",
-		groupName: "公司信息",
+		groupName: "站点设置",
 	},
 	{
 		key: "company_tell",
@@ -177,7 +177,7 @@ const PRESET_CONFIGS: {
 		description: "公司电话",
 		clientVisible: true,
 		valueType: "input",
-		groupName: "公司信息",
+		groupName: "站点设置",
 	},
 	{
 		key: "company_email",
@@ -185,7 +185,7 @@ const PRESET_CONFIGS: {
 		description: "公司邮箱",
 		clientVisible: true,
 		valueType: "input",
-		groupName: "公司信息",
+		groupName: "站点设置",
 	},
 	{
 		key: "smtp_host",

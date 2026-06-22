@@ -30,7 +30,9 @@ import {
 } from "react";
 import { useAdminAuth } from "#/components/admin/AdminAuthProvider";
 import { NAV_GROUPS } from "#/components/admin/nav-config";
+import { Logo } from "#/components/Logo";
 import type { ThemeMode } from "#/hooks/use-theme-mode";
+import { useAdminConfigStore } from "#/lib/global-store/admin-config-store";
 import { useAdminDictStore } from "#/lib/global-store/admin-dict-store";
 import { logoutSFn } from "#/routes/admin/_admin";
 
@@ -90,6 +92,18 @@ export function AdminLayout({ children }: { children: ReactNode }) {
 		useAdminDictStore.getState().loadAll();
 	}, []);
 
+	// 加载客户端可见系统配置到 zustand store
+	useEffect(() => {
+		useAdminConfigStore.getState().loadAll();
+	}, []);
+
+	const siteName = useAdminConfigStore((s) => s.config.site_name) || "FSDX";
+
+	// 更新管理端页面标题
+	useEffect(() => {
+		document.title = `${siteName} 管理后台`;
+	}, [siteName]);
+
 	return (
 		<div className="flex h-screen overflow-hidden bg-background">
 			{/* 侧边栏 */}
@@ -99,10 +113,13 @@ export function AdminLayout({ children }: { children: ReactNode }) {
 				}`}
 			>
 				{/* Logo 区域 */}
-				<div className="flex h-14 shrink-0 items-center justify-center border-b border-border px-3">
-					<span className="text-base font-bold text-sidebar-primary transition-opacity">
-						{collapsed ? "CMS" : "CMS 管理后台"}
-					</span>
+				<div className="flex h-14 shrink-0 items-center border-b border-border px-3 overflow-hidden">
+					<Logo type="admin" height={36} />
+					{!collapsed && (
+						<span className="ml-2 text-sm font-semibold text-sidebar-primary whitespace-nowrap">
+							{siteName}
+						</span>
+					)}
 				</div>
 
 				{/* 导航菜单 */}

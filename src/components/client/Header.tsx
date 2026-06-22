@@ -7,7 +7,9 @@ import { ClientOnly, Link } from "@tanstack/react-router";
 import { LogOut, Menu, User, X } from "lucide-react";
 import { useState } from "react";
 import { useClientAuth } from "#/components/client/ClientAuthProvider";
+import { Logo } from "#/components/Logo";
 import { Button } from "#/components/ui/button";
+import { useGlobalStore } from "#/lib/global-store/global-store";
 import { useTranslation } from "#/lib/i18n/i18n-context";
 import ThemeToggle from "./ThemeToggle";
 
@@ -15,6 +17,8 @@ export default function Header() {
 	const [mobileOpen, setMobileOpen] = useState(false);
 	const { t, locale } = useTranslation();
 	const { user, logout } = useClientAuth();
+	const { systemConfig } = useGlobalStore();
+	const siteName = systemConfig?.site_name || "FSDX";
 
 	const NAV_LINKS = [
 		{ to: "/", label: t("首页") },
@@ -31,14 +35,11 @@ export default function Header() {
 		<header className="sticky top-0 z-50 border-b border-border bg-background/80 px-4 backdrop-blur-lg">
 			<nav className="mx-auto flex max-w-5xl items-center justify-between py-3">
 				{/* Logo */}
-				<Link
-					to="/"
-					className="flex shrink-0 items-center gap-2 text-base font-semibold text-foreground no-underline"
-				>
-					<span className="flex h-6 w-6 items-center justify-center rounded bg-primary text-xs font-bold text-primary-foreground">
-						C
+				<Link to="/" className="flex shrink-0 items-center gap-2 no-underline">
+					<Logo type="ssr" height={32} />
+					<span className="text-base font-semibold text-foreground">
+						{siteName}
 					</span>
-					<span className="hidden sm:inline">CMS</span>
 				</Link>
 
 				{/* 桌面端导航 */}

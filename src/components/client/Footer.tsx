@@ -3,21 +3,23 @@
  * 导航链接通过 useTranslation 国际化
  */
 import { Link } from "@tanstack/react-router";
+import { Logo } from "#/components/Logo";
+import { useGlobalStore } from "#/lib/global-store/global-store";
 import { useTranslation } from "#/lib/i18n/i18n-context";
 
 export default function Footer() {
 	const year = new Date().getFullYear();
 	const { t } = useTranslation();
+	const { systemConfig } = useGlobalStore();
+	const siteName = systemConfig?.site_name || "FSDX";
 
 	return (
 		<footer className="border-t border-border px-4 py-8 sm:py-10">
 			<div className="mx-auto max-w-5xl">
 				<div className="flex flex-col items-center gap-3 sm:flex-row sm:justify-between sm:gap-4">
 					<div className="flex items-center gap-2 text-sm font-medium text-foreground">
-						<span className="flex h-5 w-5 items-center justify-center rounded bg-primary text-xs font-bold text-primary-foreground">
-							C
-						</span>
-						CMS
+						<Logo type="ssr" height={28} />
+						{siteName}
 					</div>
 					<nav className="flex flex-wrap items-center justify-center gap-3 text-sm text-muted-foreground sm:gap-4">
 						<Link to="/" className="hover:text-foreground">
@@ -31,7 +33,7 @@ export default function Footer() {
 						</Link>
 					</nav>
 					<p className="text-xs text-muted-foreground sm:text-sm">
-						&copy; {year} CMS. All rights reserved.
+						&copy; {year} {siteName}. All rights reserved.
 					</p>
 				</div>
 			</div>
