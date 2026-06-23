@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as RegisterRouteImport } from './routes/register'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as IndexRouteImport } from './routes/index'
@@ -18,6 +19,7 @@ import { Route as NewsIndexRouteImport } from './routes/news/index'
 import { Route as NewsSlugRouteImport } from './routes/news/$slug'
 import { Route as AdminLoginRouteImport } from './routes/admin/login'
 import { Route as AdminInitRouteImport } from './routes/admin/init'
+import { Route as AdminForgotPasswordRouteImport } from './routes/admin/forgot-password'
 import { Route as AdminAdminRouteImport } from './routes/admin/_admin'
 import { Route as AdminAdminIndexRouteImport } from './routes/admin/_admin/index'
 import { Route as AdminAdminRolesIndexRouteImport } from './routes/admin/_admin/roles/index'
@@ -54,6 +56,11 @@ const LoginRoute = LoginRouteImport.update({
   path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ForgotPasswordRoute = ForgotPasswordRouteImport.update({
+  id: '/forgot-password',
+  path: '/forgot-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AdminRoute = AdminRouteImport.update({
   id: '/admin',
   path: '/admin',
@@ -87,6 +94,11 @@ const AdminLoginRoute = AdminLoginRouteImport.update({
 const AdminInitRoute = AdminInitRouteImport.update({
   id: '/init',
   path: '/init',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminForgotPasswordRoute = AdminForgotPasswordRouteImport.update({
+  id: '/forgot-password',
+  path: '/forgot-password',
   getParentRoute: () => AdminRoute,
 } as any)
 const AdminAdminRoute = AdminAdminRouteImport.update({
@@ -226,8 +238,10 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/admin': typeof AdminRouteWithChildren
+  '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
   '/register': typeof RegisterRoute
+  '/admin/forgot-password': typeof AdminForgotPasswordRoute
   '/admin/init': typeof AdminInitRoute
   '/admin/login': typeof AdminLoginRoute
   '/news/$slug': typeof NewsSlugRoute
@@ -261,8 +275,10 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/admin': typeof AdminAdminIndexRoute
+  '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
   '/register': typeof RegisterRoute
+  '/admin/forgot-password': typeof AdminForgotPasswordRoute
   '/admin/init': typeof AdminInitRoute
   '/admin/login': typeof AdminLoginRoute
   '/news/$slug': typeof NewsSlugRoute
@@ -296,9 +312,11 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/admin': typeof AdminRouteWithChildren
+  '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
   '/register': typeof RegisterRoute
   '/admin/_admin': typeof AdminAdminRouteWithChildren
+  '/admin/forgot-password': typeof AdminForgotPasswordRoute
   '/admin/init': typeof AdminInitRoute
   '/admin/login': typeof AdminLoginRoute
   '/news/$slug': typeof NewsSlugRoute
@@ -334,8 +352,10 @@ export interface FileRouteTypes {
     | '/'
     | '/about'
     | '/admin'
+    | '/forgot-password'
     | '/login'
     | '/register'
+    | '/admin/forgot-password'
     | '/admin/init'
     | '/admin/login'
     | '/news/$slug'
@@ -369,8 +389,10 @@ export interface FileRouteTypes {
     | '/'
     | '/about'
     | '/admin'
+    | '/forgot-password'
     | '/login'
     | '/register'
+    | '/admin/forgot-password'
     | '/admin/init'
     | '/admin/login'
     | '/news/$slug'
@@ -403,9 +425,11 @@ export interface FileRouteTypes {
     | '/'
     | '/about'
     | '/admin'
+    | '/forgot-password'
     | '/login'
     | '/register'
     | '/admin/_admin'
+    | '/admin/forgot-password'
     | '/admin/init'
     | '/admin/login'
     | '/news/$slug'
@@ -440,6 +464,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AboutRoute: typeof AboutRoute
   AdminRoute: typeof AdminRouteWithChildren
+  ForgotPasswordRoute: typeof ForgotPasswordRoute
   LoginRoute: typeof LoginRoute
   RegisterRoute: typeof RegisterRoute
   NewsSlugRoute: typeof NewsSlugRoute
@@ -462,6 +487,13 @@ declare module '@tanstack/react-router' {
       path: '/login'
       fullPath: '/login'
       preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/forgot-password': {
+      id: '/forgot-password'
+      path: '/forgot-password'
+      fullPath: '/forgot-password'
+      preLoaderRoute: typeof ForgotPasswordRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin': {
@@ -511,6 +543,13 @@ declare module '@tanstack/react-router' {
       path: '/init'
       fullPath: '/admin/init'
       preLoaderRoute: typeof AdminInitRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/forgot-password': {
+      id: '/admin/forgot-password'
+      path: '/forgot-password'
+      fullPath: '/admin/forgot-password'
+      preLoaderRoute: typeof AdminForgotPasswordRouteImport
       parentRoute: typeof AdminRoute
     }
     '/admin/_admin': {
@@ -749,12 +788,14 @@ const AdminAdminRouteWithChildren = AdminAdminRoute._addFileChildren(
 
 interface AdminRouteChildren {
   AdminAdminRoute: typeof AdminAdminRouteWithChildren
+  AdminForgotPasswordRoute: typeof AdminForgotPasswordRoute
   AdminInitRoute: typeof AdminInitRoute
   AdminLoginRoute: typeof AdminLoginRoute
 }
 
 const AdminRouteChildren: AdminRouteChildren = {
   AdminAdminRoute: AdminAdminRouteWithChildren,
+  AdminForgotPasswordRoute: AdminForgotPasswordRoute,
   AdminInitRoute: AdminInitRoute,
   AdminLoginRoute: AdminLoginRoute,
 }
@@ -765,6 +806,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AboutRoute: AboutRoute,
   AdminRoute: AdminRouteWithChildren,
+  ForgotPasswordRoute: ForgotPasswordRoute,
   LoginRoute: LoginRoute,
   RegisterRoute: RegisterRoute,
   NewsSlugRoute: NewsSlugRoute,

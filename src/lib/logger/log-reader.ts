@@ -4,6 +4,7 @@
 import { createReadStream, existsSync, readdirSync } from "node:fs";
 import { resolve } from "node:path";
 import { createInterface } from "node:readline";
+import { logger } from "#/lib/logger/logger";
 
 /** 日志目录路径 */
 function getLogDir(): string {
@@ -153,7 +154,7 @@ export async function readLogFileContent(date: string): Promise<string | null> {
 		const lines = await readLogLines(logPath);
 		return lines.join("\n");
 	} catch (err) {
-		console.error("[log-reader]", date, (err as Error).message);
+		logger.error({ err, date }, "[log-reader] 读取日志文件失败");
 		return null;
 	}
 }

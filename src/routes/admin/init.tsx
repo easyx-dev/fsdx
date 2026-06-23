@@ -5,6 +5,7 @@ import {
 	DownOutlined,
 	LockOutlined,
 	MailOutlined,
+	MessageOutlined,
 	RobotOutlined,
 	UpOutlined,
 	UserOutlined,
@@ -55,6 +56,11 @@ const initSchema = z
 		aiApiKey: z.string().optional(),
 		aiDeepModel: z.string().optional(),
 		aiFastModel: z.string().optional(),
+		smsProvider: z.string().optional(),
+		smsAccessKeyId: z.string().optional(),
+		smsAccessKeySecret: z.string().optional(),
+		smsSignName: z.string().optional(),
+		smsTemplateCode: z.string().optional(),
 	})
 	.refine((d) => d.password === d.confirmPassword, {
 		message: "两次输入的密码不一致",
@@ -77,6 +83,14 @@ const initSFn = createServerFn({ method: "POST" })
 			data.aiApiKey ||
 			data.aiDeepModel ||
 			data.aiFastModel
+		);
+
+		const smsProvided = !!(
+			data.smsProvider ||
+			data.smsAccessKeyId ||
+			data.smsAccessKeySecret ||
+			data.smsSignName ||
+			data.smsTemplateCode
 		);
 
 		const payload: InitData = {
@@ -104,6 +118,15 @@ const initSFn = createServerFn({ method: "POST" })
 						fastModel: data.aiFastModel,
 					}
 				: undefined,
+			sms: smsProvided
+				? {
+						provider: data.smsProvider,
+						accessKeyId: data.smsAccessKeyId,
+						accessKeySecret: data.smsAccessKeySecret,
+						signName: data.smsSignName,
+						templateCode: data.smsTemplateCode,
+					}
+				: undefined,
 		};
 
 		return initSystem(payload);
@@ -124,6 +147,7 @@ function AdminInitPage() {
 	const [loading, setLoading] = useState(false);
 	const [smtpExpanded, setSmtpExpanded] = useState(false);
 	const [aiExpanded, setAiExpanded] = useState(false);
+	const [smsExpanded, setSmsExpanded] = useState(false);
 
 	// 设置 message 默认 duration 为 5s
 	useEffect(() => {
@@ -196,6 +220,16 @@ function AdminInitPage() {
 									if (ai.apiKey) values.aiApiKey = ai.apiKey;
 									if (ai.deepModel) values.aiDeepModel = ai.deepModel;
 									if (ai.fastModel) values.aiFastModel = ai.fastModel;
+								}
+								if (json.sms && typeof json.sms === "object") {
+									setSmsExpanded(true);
+									const s = json.sms as Record<string, unknown>;
+									if (s.provider) values.smsProvider = s.provider;
+									if (s.accessKeyId) values.smsAccessKeyId = s.accessKeyId;
+									if (s.accessKeySecret)
+										values.smsAccessKeySecret = s.accessKeySecret;
+									if (s.signName) values.smsSignName = s.signName;
+									if (s.templateCode) values.smsTemplateCode = s.templateCode;
 								}
 								form.setFieldsValue(values);
 							} catch {
@@ -344,6 +378,40 @@ function AdminInitPage() {
 								</Form.Item>
 								<Form.Item name="aiFastModel">
 									<Input placeholder="快速模型，如 gpt-4o-mini" />
+								</Form.Item>
+							</>
+						)}
+
+						<Divider>
+							<Button
+								type="link"
+								onClick={() => setSmsExpanded(!smsExpanded)}
+								className="mb-2 p-0"
+							>
+								短信配置（可选，用于发送验证码）
+								{smsExpanded ? <UpOutlined /> : <DownOutlined />}
+							</Button>
+						</Divider>
+
+						{smsExpanded && (
+							<>
+								<Form.Item name="smsProvider">
+									<Input
+										prefix={<MessageOutlined />}
+										placeholder="服务商标识，当前仅支持 aliyun"
+									/>
+								</Form.Item>
+								<Form.Item name="smsAccessKeyId">
+									<Input placeholder="阿里云 AccessKey ID" />
+								</Form.Item>
+								<Form.Item name="smsAccessKeySecret">
+									<Input.Password placeholder="阿里云 AccessKey Secret" />
+								</Form.Item>
+								<Form.Item name="smsSignName">
+									<Input placeholder="短信签名（需在阿里云审核通过）" />
+								</Form.Item>
+								<Form.Item name="smsTemplateCode">
+									<Input placeholder="短信模板码，如 SMS_123456789" />
 								</Form.Item>
 							</>
 						)}

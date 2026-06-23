@@ -277,6 +277,46 @@ const PRESET_CONFIGS: {
 		valueType: "text",
 		groupName: "AI设置",
 	},
+	{
+		key: "sms_provider",
+		value: "",
+		description: "短信服务商（aliyun = 阿里云，留空禁用）",
+		clientVisible: false,
+		valueType: "input",
+		groupName: "短信设置",
+	},
+	{
+		key: "sms_aliyun_access_key_id",
+		value: "",
+		description: "阿里云 AccessKey ID",
+		clientVisible: false,
+		valueType: "input",
+		groupName: "短信设置",
+	},
+	{
+		key: "sms_aliyun_access_key_secret",
+		value: "",
+		description: "阿里云 AccessKey Secret",
+		clientVisible: false,
+		valueType: "input",
+		groupName: "短信设置",
+	},
+	{
+		key: "sms_aliyun_sign_name",
+		value: "",
+		description: "阿里云短信签名",
+		clientVisible: false,
+		valueType: "input",
+		groupName: "短信设置",
+	},
+	{
+		key: "sms_aliyun_template_code",
+		value: "",
+		description: "阿里云短信模板码",
+		clientVisible: false,
+		valueType: "input",
+		groupName: "短信设置",
+	},
 ];
 
 /** 运行时校验预置系统配置（幂等安全，恢复软删除的预设项） */

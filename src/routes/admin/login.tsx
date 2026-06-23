@@ -85,6 +85,14 @@ function AdminLoginPage() {
 			<div className="w-full max-w-sm">
 				<div className="rounded-lg border border-border bg-card p-8 shadow-sm">
 					<h1 className="mb-6 text-center text-2xl font-bold">管理后台登录</h1>
+					<div className="mb-3 text-center">
+						<a
+							href="/admin/forgot-password"
+							className="text-sm text-muted-foreground underline underline-offset-4 hover:text-foreground"
+						>
+							忘记密码？
+						</a>
+					</div>
 					<Form
 						form={form}
 						onFinish={handleSubmit}

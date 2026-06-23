@@ -8,6 +8,7 @@ import { captchaCode } from "#/db/schema";
 import { create } from "#/lib/captcha/captcha";
 import { logger } from "#/lib/logger/logger";
 import { sendCaptchaMail } from "#/lib/mail/mail";
+import { sendSms } from "#/lib/sms/sms";
 
 /** 验证码有效期（5 分钟） */
 const CAPTCHA_EXPIRE_MINUTES = 5;
@@ -83,8 +84,13 @@ export async function sendCaptcha(
 			return { success: false, message: "邮件发送失败" };
 		}
 	} else {
-		// TODO: SMS 发送预留
-		logger.info({ target, code }, "SMS 验证码（待实现）");
+		try {
+			await sendSms(target, code);
+		} catch (err) {
+			const message = err instanceof Error ? err.message : "短信发送失败";
+			logger.error({ target, error: message }, "短信发送失败");
+			return { success: false, message };
+		}
 	}
 
 	logger.info({ type, target }, "验证码发送成功");

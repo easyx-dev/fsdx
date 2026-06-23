@@ -12,6 +12,7 @@ import type {
 	AdminLoginResult,
 	AdminUser,
 } from "#/server/admin-auth/admin-auth.types";
+import { verifyCaptcha } from "#/server/captcha/captcha.server";
 
 /**
  * 管理员登录逻辑：验证用户名密码，签发 JWT
@@ -88,4 +89,39 @@ export async function getCurrentAdmin(
 		roleName,
 		userType: "admin",
 	};
+}
+
+/**
+ * 通过邮箱验证码重置管理员密码
+ */
+export async function resetAdminPasswordByEmail(
+	email: string,
+	captcha: string,
+	newPassword: string,
+): Promise<{ success: boolean; message: string }> {
+	const captchaValid = await verifyCaptcha("email", email, captcha);
+	if (!captchaValid) {
+		return { success: false, message: "验证码错误或已过期" };
+	}
+
+	const user = await db.query.adminUser.findFirst({
+		where: (t, { eq }) => eq(t.email, email),
+	});
+
+	if (!user || user.deletedAt) {
+		return { success: false, message: "该邮箱未注册管理员账号" };
+	}
+
+	if (user.status !== "active") {
+		return { success: false, message: "该账号已被禁用，请联系超级管理员" };
+	}
+
+	const passwordHash = await bcrypt.hash(newPassword, 10);
+	await db
+		.update(adminUser)
+		.set({ passwordHash, updatedAt: new Date() })
+		.where(eq(adminUser.id, user.id));
+
+	logger.info({ userId: user.id }, "管理员密码已重置");
+	return { success: true, message: "密码重置成功，请使用新密码登录" };
 }

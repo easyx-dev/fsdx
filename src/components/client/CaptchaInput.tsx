@@ -3,39 +3,14 @@
  * 点击获取验证码时弹出模态框展示图片验证码，错误信息在模态框内显示
  */
 
-import { createServerFn } from "@tanstack/react-start";
 import { RefreshCw } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { z } from "zod";
 import { Button } from "#/components/ui/button";
 import { Input } from "#/components/ui/input";
 import {
-	generateImageCaptcha,
-	sendCaptcha,
-	verifyImageCaptcha,
-} from "#/server/captcha/captcha.server";
-
-const getImageCaptchaSFn = createServerFn({ method: "GET" }).handler(
-	async () => {
-		return generateImageCaptcha();
-	},
-);
-
-const sendCaptchaWithImageVerificationSFn = createServerFn({ method: "POST" })
-	.inputValidator(
-		z.object({
-			email: z.string().email("邮箱格式不正确"),
-			imageToken: z.string().min(1, "图片验证码标识缺失"),
-			imageCode: z.string().min(1, "请输入图片验证码"),
-		}),
-	)
-	.handler(async ({ data: { email, imageToken, imageCode } }) => {
-		const imageValid = await verifyImageCaptcha(imageToken, imageCode);
-		if (!imageValid) {
-			return { success: false, message: "图片验证码错误或已过期" };
-		}
-		return sendCaptcha("email", email);
-	});
+	getImageCaptchaSFn,
+	sendCaptchaWithImageVerificationSFn,
+} from "#/server/captcha/captcha.functions";
 
 interface CaptchaInputProps {
 	/** 邮箱地址 */

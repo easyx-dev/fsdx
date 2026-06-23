@@ -13,7 +13,9 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
 	const location = useLocation();
 	const pathname = location.pathname;
 	const isStandalone =
-		pathname === "/admin/login" || pathname === "/admin/init";
+		pathname === "/admin/login" ||
+		pathname === "/admin/init" ||
+		pathname === "/admin/forgot-password";
 	const isAdmin = pathname.startsWith("/admin");
 
 	const { mode, setMode, isDark } = useThemeMode("admin-theme");

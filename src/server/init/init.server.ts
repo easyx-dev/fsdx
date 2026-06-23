@@ -30,6 +30,13 @@ export interface InitData {
 		deepModel?: string;
 		fastModel?: string;
 	};
+	sms?: {
+		provider?: string;
+		accessKeyId?: string;
+		accessKeySecret?: string;
+		signName?: string;
+		templateCode?: string;
+	};
 }
 
 /**
@@ -51,7 +58,7 @@ export async function initSystem(data: InitData): Promise<{
 	success: boolean;
 	message: string;
 }> {
-	const { admin, siteName, smtp, ai } = data;
+	const { admin, siteName, smtp, ai, sms } = data;
 
 	// 使用事务包裹，避免并发初始化
 	return db.transaction(async (tx) => {
@@ -194,7 +201,52 @@ export async function initSystem(data: InitData): Promise<{
 				);
 		}
 
-		// 6. 重新加载配置缓存，确保 getConfig 能读取到最新值
+		// 6. 写入短信配置（用户可选填写）
+		if (sms) {
+			if (sms.provider) {
+				await upsertConfig(
+					"sms_provider",
+					sms.provider,
+					"短信服务商（aliyun = 阿里云）",
+					"input",
+					"短信设置",
+				);
+			}
+			if (sms.accessKeyId)
+				await upsertConfig(
+					"sms_aliyun_access_key_id",
+					sms.accessKeyId,
+					"阿里云 AccessKey ID",
+					"input",
+					"短信设置",
+				);
+			if (sms.accessKeySecret)
+				await upsertConfig(
+					"sms_aliyun_access_key_secret",
+					sms.accessKeySecret,
+					"阿里云 AccessKey Secret",
+					"input",
+					"短信设置",
+				);
+			if (sms.signName)
+				await upsertConfig(
+					"sms_aliyun_sign_name",
+					sms.signName,
+					"阿里云短信签名",
+					"input",
+					"短信设置",
+				);
+			if (sms.templateCode)
+				await upsertConfig(
+					"sms_aliyun_template_code",
+					sms.templateCode,
+					"阿里云短信模板码",
+					"input",
+					"短信设置",
+				);
+		}
+
+		// 7. 重新加载配置缓存，确保 getConfig 能读取到最新值
 		await loadConfigCache();
 
 		logger.info("系统初始化完成");

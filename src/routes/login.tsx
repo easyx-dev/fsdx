@@ -177,7 +177,16 @@ function ClientLoginPage() {
 							</form.Subscribe>
 						</form>
 
-						<p className="mt-3 text-center text-sm text-muted-foreground sm:mt-4">
+						<p className="text-center text-sm text-muted-foreground">
+							<Link
+								to="/forgot-password"
+								className="underline underline-offset-4 hover:text-foreground"
+							>
+								{t("忘记密码？")}
+							</Link>
+						</p>
+
+						<p className="mt-1 text-center text-sm text-muted-foreground">
 							{t("还没有账号？")}{" "}
 							<Link
 								to="/register"

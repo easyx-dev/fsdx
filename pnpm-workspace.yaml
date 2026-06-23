@@ -1,3 +1,4 @@
 allowBuilds:
+  '@alicloud/openapi-core': set this to true or false
   es5-ext: true
   esbuild: true
