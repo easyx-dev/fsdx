@@ -18,7 +18,7 @@ import { flushOperationLogs } from "#/server/operation-log/operation-log.server"
 import { registerAllTasks } from "#/server/tasks/tasks.server";
 
 export function bootstrap() {
-	console.log("=======INIT START========");
+	logger.info("服务启动初始化开始");
 	// 从 env/ 目录加载环境变量（优先级：.env.local > .env）
 	config({ path: resolve(process.cwd(), "env", ".env") });
 	config({ path: resolve(process.cwd(), "env", ".env.local"), override: true });
@@ -40,7 +40,9 @@ export function bootstrap() {
 	ensurePresetEvents();
 	ensurePresetProperties();
 	ensurePresetTranslations();
-	loadPresetCache().catch(() => {});
+	loadPresetCache().catch((err) => {
+		logger.error({ err }, "预设缓存加载失败");
+	});
 	registerAllTasks();
 
 	// 进程退出时刷新缓冲，避免事件和操作日志丢失

@@ -2,84 +2,91 @@
 
 ## 项目概况
 
-基于 TanStack Start 构建的全栈内容管理系统（CMS），支持管理端（/admin）和客户端前台（/）。
-涵盖新闻管理、用户认证（双用户表 + RBAC）、字典管理、系统配置、文件管理、日志查询等模块。
+基于 TanStack Start 构建的全栈 Web 应用框架，涵盖管理端（/admin）和客户端前台（/），开箱内置 CMS 示例。
+提供双用户认证 + RBAC、Server Function 三层分离、内存缓存、事件埋点、操作审计、国际化、文件存储、日志运维等基础设施，可快速扩展为任意业务系统。
 
 ## 工程结构
 
 ```
-env/                          # 环境变量配置（.env、.env.local、.env.example）
+env/                                # 环境变量配置（.env、.env.local、.env.example）
 src/
+├── bootstrap.ts                    # 服务启动初始化（env 加载、预置数据、定时任务、优雅关闭）
+├── hono-app.ts                     # Hono 应用工厂（/health 路由）
+├── server.ts                       # TanStack Start 服务端入口
 ├── components/
-│   ├── admin/                # 管理端专用组件
-│   │   └── TableOperate.tsx  # 表格操作列统一容器
-│   ├── client/               # 客户端前台专用组件（Header、Footer、CaptchaInput 等）
-│   ├── ui/                   # shadcn/ui 基础组件
-│   ├── Document.tsx          # 根布局（AdminRootDocument / SSRRootDocument）
-│   └── ErrorFallback.tsx     # 全局错误处理
+│   ├── admin/                      # 管理端专用组件（AdminLayout、ProTable、TableOperate、RichEditor 等）
+│   ├── client/                     # 客户端前台专用组件（Header、Footer、CaptchaInput、ClientAuthProvider、ThemeToggle）
+│   ├── ui/                         # shadcn/ui 基础组件（button、input、textarea、badge、card）
+│   ├── Document.tsx                # 根布局（AdminRootDocument / SSRRootDocument）
+│   ├── ErrorFallback.tsx           # 全局错误处理
+│   └── Logo.tsx                    # Logo 组件
 ├── db/
-│   ├── index.ts              # Drizzle 客户端实例化
-│   └── schema/               # 数据库表定义（按模块拆分）
-├── lib/                      # 基础库（无业务逻辑）
-│   ├── cache/                # 内存缓存（字典、系统配置、UI 翻译、客户端用户）
-│   ├── ai/                   # AI 调用（翻译、聊天等）
-│   ├── captcha/              # 验证码生成工具（字体、路径、选项管理）
-│   ├── constants/            # 管理端常量
-│   ├── export/               # 导出工具
-│   ├── global-store/         # 全局状态（locale、翻译、系统配置）
-│   ├── i18n/                 # 国际化客户端（i18next 实例、Context Provider、hooks）
-│   ├── editor-types/         # 编辑器类型常量（类型、标签映射）
-│   ├── jwt/                  # JWT 签发与校验（jose）
-│   ├── logger/               # pino 日志 + 管理端日志文件查询
-│   ├── mail/                 # 邮件发送
-│   ├── permissions/          # 权限码常量
-│   ├── scheduler/            # 定时任务调度（cron）
-│   ├── storage/              # 文件存储抽象层（本地实现）
-│   └── utils/                # 通用工具函数（cn、分页等）
+│   ├── index.ts                    # Drizzle 客户端实例化
+│   └── schema/                     # 数据库表定义（按模块拆分，共 15 张表）
+├── hooks/
+│   └── use-theme-mode.ts           # 主题模式 hook
+├── lib/                            # 基础库（无业务逻辑）
+│   ├── cache/                      # 内存缓存（字典、系统配置、UI 翻译、客户端用户、预设事件）
+│   ├── ai/                         # AI 调用（翻译、聊天等）
+│   ├── captcha/                    # 验证码生成工具（字体、路径、选项管理）
+│   ├── constants/                  # 管理端常量
+│   ├── editor-types/               # 编辑器类型常量（类型、标签映射）
+│   ├── export/                     # 导出工具
+│   ├── global-store/               # 全局状态（locale、翻译、系统配置）
+│   ├── i18n/                       # 国际化客户端（i18next 实例、Context Provider、hooks）
+│   ├── jwt/                        # JWT 签发与校验（jose）
+│   ├── logger/                     # pino 日志 + 管理端日志文件查询
+│   ├── mail/                       # 邮件发送
+│   ├── permissions/                # 权限码常量
+│   ├── query/                      # 查询工具（排序、分页辅助）
+│   ├── scheduler/                  # 定时任务调度（cron）
+│   ├── storage/                    # 文件存储抽象层（本地实现）
+│   ├── track/                      # 客户端埋点追踪 SDK
+│   └── utils/                      # 通用工具函数（cn、日期格式化等）
 ├── middleware/
-│   ├── admin-auth.ts         # 管理端 Server Function 鉴权与权限中间件
-│   ├── api-auth.ts           # API 路由鉴权（verifyAdminAuth / verifyAdminPerm）
-│   ├── locale-middleware.ts  # 请求级语言检测中间件
+│   ├── admin-auth.ts               # 管理端 Server Function 鉴权与权限中间件
+│   ├── api-auth.ts                 # API 路由鉴权（verifyAdminAuth / verifyAdminPerm）
+│   ├── locale-middleware.ts        # 请求级语言检测中间件
+│   ├── sf-error-logger.ts          # SF 全局错误日志中间件（自动覆盖所有 SF）
 │   └── __tests__/
 │       └── admin-auth.test.ts
-├── server/                   # 服务端业务逻辑
-│   ├── admin-auth/           # 管理端认证（登录、当前用户查询）
-│   ├── admin-user/           # 管理员用户 CRUD
-│   ├── captcha/              # 验证码生成、发送、校验
-│   ├── client-auth/          # 客户端认证（登录、注册、当前用户查询，含缓存）
-│   ├── client-user/          # 客户端用户 CRUD
-│   ├── config/               # 系统配置管理 + 缓存（SMTP 从系统配置表读取）
-│   ├── dict/                 # 字典管理 + 缓存
-│   ├── file/
-│   │   ├── file.server.ts        # 文件管理辅助函数（上传逻辑、清理、列表、删除）
-│   │   └── file.functions.ts     # 文件管理 Server Function 包装器
-│   ├── i18n/                 # 国际化服务端（翻译查询、维护、种子数据、导出导入）
-│   ├── init/                 # 系统初始化
-│   ├── logs/                 # 日志查询
-│   ├── news/                 # 新闻 CRUD
-│   ├── role/                 # 角色管理
-│   ├── stats/                # 仪表盘统计
-│   └── tasks/                # 定时任务注册
+├── server/                         # 服务端业务逻辑
+│   ├── admin-auth/                 # 管理端认证（登录、当前用户查询）
+│   ├── admin-user/                 # 管理员用户 CRUD
+│   ├── captcha/                    # 验证码生成、发送、校验
+│   ├── client-auth/                # 客户端认证（登录、注册、当前用户查询，含缓存）
+│   ├── client-user/                # 客户端用户 CRUD
+│   ├── config/                     # 系统配置管理 + 缓存（SMTP 从系统配置表读取）
+│   ├── dict/                       # 字典管理 + 缓存
+│   ├── event/                      # 埋点事件（缓冲写入、预设管理、查询分析）
+│   ├── file/                       # 文件管理（上传逻辑、清理、列表、删除）
+│   ├── i18n/                       # 国际化服务端（翻译查询、维护、种子数据、导出导入）
+│   ├── init/                       # 系统初始化
+│   ├── logs/                       # 日志查询
+│   ├── news/                       # 新闻 CRUD
+│   ├── operation-log/              # 操作日志（缓冲写入、分页查询）
+│   ├── query/                      # 服务端查询工具（分页、排序、防注入）
+│   ├── role/                       # 角色管理
+│   ├── stats/                      # 仪表盘统计
+│   └── tasks/                      # 定时任务注册
 ├── routes/
-│   ├── __root.tsx            # 根布局（HTML shell）
-│   ├── index.tsx             # 前台首页（新闻列表 SSR）
-│   ├── about.tsx             # 关于页面
-│   ├── login.tsx             # 客户端登录
-│   ├── register.tsx          # 客户端注册
-│   ├── news/
-│   │   ├── index.tsx         # 新闻列表
-│   │   └── $slug.tsx         # 新闻详情（SSR）
-│   ├── api/download/         # 文件下载路由
-│   │   ├── file.$id.tsx
-│   │   └── log.$id.tsx
-│   ├── admin.tsx             # 管理端入口
-│   └── admin/                # 管理端页面
-│       ├── init.tsx          # 系统初始化页面（首次部署）
-│       ├── login.tsx         # 管理员登录
-│       └── _admin/           # 受保护管理端页面
-├── router.tsx                # TanStack Router 实例
-├── start.ts                  # TanStack Start 入口配置（CSRF 中间件）
-└── styles.css                # 全局样式 + Tailwind
+│   ├── __root.tsx                  # 根布局（HTML shell）
+│   ├── index.tsx                   # 前台首页（Hero + 最新新闻 SSR）
+│   ├── about.tsx                   # 关于页面
+│   ├── login.tsx                   # 客户端登录
+│   ├── register.tsx                # 客户端注册
+│   ├── news/                       # 新闻列表 + 详情（SSR）
+│   ├── api/download/               # 文件/日志下载路由
+│   ├── admin.tsx                   # 管理端入口
+│   └── admin/                      # 管理端页面
+│       ├── init.tsx                # 系统初始化页面（首次部署）
+│       ├── login.tsx               # 管理员登录
+│       └── _admin/                 # 受保护管理端页面（仪表盘、用户、角色、字典、配置、文件、日志、操作日志、翻译、埋点、演示）
+├── router.tsx                      # TanStack Router 实例
+├── start.ts                        # TanStack Start 入口配置（locale + CSRF + SF 错误日志中间件）
+├── styles/                         # 全局样式（index.css、admin.global.css、ssr.global.css）
+├── test-utils/                     # 测试工具（db-mock 等）
+└── types/                          # 全局类型定义（预留）
 ```
 
 ## 技术栈
@@ -93,6 +100,7 @@ src/
 | 样式 | Tailwind CSS + shadcn/ui (new-york) | 4 |
 | 国际化 | i18next + react-i18next | - |
 | 管理端 UI | Ant Design | 6 |
+| API 层 | Hono | - |
 | 数据库 | PostgreSQL + Drizzle ORM | - |
 | 校验 | Zod | - |
 | Lint/Format | Biome | 2.4 |
@@ -131,6 +139,30 @@ src/
 - 过滤条件 `ctx.handlerType === 'serverFn'`，仅对 Server Function 请求生效
 - 默认校验 `Origin` / `Referer` / `Sec-Fetch-Site` 头，拒绝跨站请求
 
+### SF 错误日志中间件
+
+- `src/middleware/sf-error-logger.ts` 注册在 `start.ts` 的 `functionMiddleware` 中，自动覆盖所有 SF
+- 鉴权失败（`AdminAuthError` / `ApiAuthError`）记录 warn 级别日志，系统异常记录 error 级别日志
+- 开发环境额外记录 SF 执行耗时
+- 错误通过 `sanitizeError()` 脱敏后写入日志，保持原始错误传播不变
+
+### 事件埋点系统
+
+- 客户端 SDK（`src/lib/track/track.ts`）自动采集 PageView，通过 `trackEventSFn` 上报
+- 服务端（`src/server/event/event.server.ts`）校验事件名/属性名/值类型后入内存缓冲
+- 缓冲策略：5 秒定时或满 100 条批量 INSERT，上限 1000 条
+- 预置 8 个事件类型（PageView、Click、FormSubmit 等）和 11 个属性定义
+- 管理端支持事件查询、时间序列分析、事件分布、Top 页面统计
+- 预设事件/属性可在管理端 `/admin/events/` 页面管理
+
+### 操作日志审计
+
+- `src/server/operation-log/operation-log.server.ts` 提供 `logOperation()` fire-and-forget 接口
+- 与事件埋点共享相同的缓冲写入策略（5 秒 / 100 条 / 上限 1000 条）
+- 记录操作人、模块、动作、目标类型/ID/名称、详情 JSON
+- 管理端 `/admin/operation-logs` 页面支持按模块/动作/关键词/日期范围查询
+- 进程退出时自动刷新缓冲（SIGTERM / SIGINT）
+
 ### Import Protection
 
 - 构建时启用 TanStack Start import protection（默认配置）
@@ -168,6 +200,8 @@ src/
 - Schema 文件按模块拆分在 `src/db/schema/`，通过 `index.ts` 统一导出
 - 包含 `uiTranslation`（UI 固定文案翻译）和 `contentTranslation`（实体字段翻译）两张翻译表
 - `admin_user` 表包含 `is_root` 布尔字段 + 数据库部分唯一索引，保证仅一个 root 用户
+- 包含 `event`（埋点事件）、`presetEvent`（预设事件）、`presetProperty`（预设属性）三张埋点相关表
+- 包含 `operationLog`（操作日志）表，用于管理端操作审计
 
 ### 数据库列命名约定
 
