@@ -67,5 +67,4 @@ export function bootstrap() {
 	process.on("SIGINT", () => {
 		gracefulShutdown().finally(() => process.exit(0));
 	});
-
 }
