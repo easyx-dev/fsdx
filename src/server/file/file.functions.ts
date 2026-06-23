@@ -13,6 +13,7 @@ import { PERMISSIONS } from "#/lib/permissions/permissions";
 import { storage } from "#/lib/storage/storage";
 import { adminPermGuard } from "#/middleware/admin-auth";
 import { logOperation } from "#/server/operation-log/operation-log.server";
+import { notDeleted } from "#/server/query/query-utils.server";
 import { getFileList, sha256, TEMP_EXPIRE_HOURS } from "./file.server";
 
 /** 文件列表查询参数 schema */
@@ -130,4 +131,16 @@ export const uploadFileSFn = createServerFn({ method: "POST" })
 				isDuplicated: false,
 			},
 		};
+	});
+
+/** 根据文件 ID 查询原始文件名（供预览组件使用） */
+export const getFileInfoSFn = createServerFn({ method: "GET" })
+	.middleware([adminPermGuard(PERMISSIONS.FILE_VIEW)])
+	.inputValidator(z.object({ id: z.string() }))
+	.handler(async ({ data }) => {
+		const result = await db.query.file.findFirst({
+			where: and(eq(file.id, data.id), notDeleted(file.deletedAt)),
+			columns: { originalName: true },
+		});
+		return result?.originalName ?? null;
 	});

@@ -6,13 +6,26 @@
  * value / onChange 兼容 antd Form.Item 注入
  */
 import { Input, InputNumber } from "antd";
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 import { RichEditor } from "#/components/admin/RichEditor";
+import { getFileInfoSFn } from "#/server/file/file.functions";
 
 // 按需懒加载 CodeEditor，避免 SSR 报错和初始包体积
 const CodeEditor = lazy(() =>
 	import("#/components/admin/CodeEditor").then((mod) => ({
 		default: mod.CodeEditor,
+	})),
+);
+
+const ImageUpload = lazy(() =>
+	import("#/components/admin/upload/ImageUpload").then((mod) => ({
+		default: mod.ImageUpload,
+	})),
+);
+
+const FileUpload = lazy(() =>
+	import("#/components/admin/upload/FileUpload").then((mod) => ({
+		default: mod.FileUpload,
 	})),
 );
 
@@ -64,6 +77,51 @@ function formatJsonValue(raw: string): string {
 	}
 }
 
+/** 文件预览组件：异步获取文件名后展示下载链接 */
+function FilePreview({ fileId }: { fileId: string }) {
+	const [fileName, setFileName] = useState<string | null>(null);
+	const [loading, setLoading] = useState(true);
+
+	useEffect(() => {
+		let cancelled = false;
+		if (!fileId) {
+			setLoading(false);
+			return;
+		}
+		getFileInfoSFn({ data: { id: fileId } })
+			.then((name) => {
+				if (!cancelled) {
+					setFileName(name);
+					setLoading(false);
+				}
+			})
+			.catch(() => {
+				if (!cancelled) setLoading(false);
+			});
+		return () => {
+			cancelled = true;
+		};
+	}, [fileId]);
+
+	const href = `/api/download/file/${fileId}`;
+	return (
+		<div className="rounded-md border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 px-3 py-2 text-sm min-h-[40px] flex items-center">
+			{loading ? (
+				<span className="text-zinc-400">加载中...</span>
+			) : (
+				<a
+					href={href}
+					target="_blank"
+					rel="noopener noreferrer"
+					className="text-blue-600 dark:text-blue-400 underline truncate"
+				>
+					{fileName || fileId}
+				</a>
+			)}
+		</div>
+	);
+}
+
 /** 预览模式组件 */
 function PreviewContent({
 	type,
@@ -106,6 +164,24 @@ function PreviewContent({
 					{value || <span className="text-zinc-400">—</span>}
 				</pre>
 			);
+		case "image": {
+			const src = value ? `/api/download/file/${value}` : "";
+			return (
+				<div className="rounded-md border border-zinc-200 dark:border-zinc-700 p-2 min-h-[80px] flex items-center justify-center bg-zinc-50 dark:bg-zinc-800">
+					{value ? (
+						<img
+							src={src}
+							alt="预览图片"
+							className="max-h-[200px] max-w-full object-contain rounded"
+						/>
+					) : (
+						<span className="text-zinc-400 text-sm">—</span>
+					)}
+				</div>
+			);
+		}
+		case "file":
+			return <FilePreview fileId={value} />;
 		default:
 			return (
 				<div className="rounded-md border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 px-3 py-2 text-sm min-h-[40px]">
@@ -208,6 +284,42 @@ export function TypeAwareEditor({
 					value={value as string}
 					onChange={(html) => onChange?.(html)}
 				/>
+			);
+
+		case "image":
+			return (
+				<Suspense
+					fallback={
+						<div className="flex items-center justify-center h-[120px] rounded-md border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 text-zinc-400 text-sm">
+							上传组件加载中...
+						</div>
+					}
+				>
+					<ImageUpload
+						value={value as string}
+						onChange={(v) => onChange?.(v as string)}
+						maxCount={1}
+						disabled={disabled}
+					/>
+				</Suspense>
+			);
+
+		case "file":
+			return (
+				<Suspense
+					fallback={
+						<div className="flex items-center justify-center h-[120px] rounded-md border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 text-zinc-400 text-sm">
+							上传组件加载中...
+						</div>
+					}
+				>
+					<FileUpload
+						value={value as string}
+						onChange={(v) => onChange?.(v as string)}
+						maxCount={1}
+						disabled={disabled}
+					/>
+				</Suspense>
 			);
 
 		default:

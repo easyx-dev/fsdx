@@ -10,15 +10,15 @@ import {
 } from "#/lib/editor-types/editor-types";
 
 describe("EDITOR_TYPES", () => {
-	it("包含全部 6 种编辑器类型", () => {
-		expect(EDITOR_TYPES).toHaveLength(6);
+	it("包含全部 8 种编辑器类型", () => {
+		expect(EDITOR_TYPES).toHaveLength(8);
 	});
 
 	it("所有元素均为唯一值", () => {
 		expect(new Set(EDITOR_TYPES).size).toBe(EDITOR_TYPES.length);
 	});
 
-	it("按预期顺序排列（input → text → number → json → rich → code）", () => {
+	it("按预期顺序排列（input → text → number → json → rich → code → image → file）", () => {
 		expect(EDITOR_TYPES).toEqual([
 			"input",
 			"text",
@@ -26,6 +26,8 @@ describe("EDITOR_TYPES", () => {
 			"json",
 			"rich",
 			"code",
+			"image",
+			"file",
 		]);
 	});
 });

@@ -1,6 +1,6 @@
 /**
  * TypeAwareEditor 组件演示页面
- * 展示六种编辑器类型在编辑和预览模式下的效果
+ * 展示各编辑器类型在编辑和预览模式下的效果
  */
 import { createFileRoute } from "@tanstack/react-router";
 import { Card, Space, Switch, Typography } from "antd";
@@ -27,6 +27,8 @@ const DEMO_VALUES: Record<EditorType, string | number> = {
 	),
 	code: 'function hello(name: string) {\n  console.log("Hello, " + name + "!");\n}\n\nhello("CMS");',
 	rich: "<h2>富文本演示</h2><p>这是一段<strong>富文本</strong>内容，支持各种排版样式。</p><ul><li>列表项一</li><li>列表项二</li></ul>",
+	image: "",
+	file: "",
 };
 
 export const Route = createFileRoute("/admin/_admin/demo/editor")({
@@ -40,7 +42,7 @@ function DemoPage() {
 	return (
 		<AdminPageContent
 			title="编辑器组件演示"
-			description="演示 TypeAwareEditor 六种编辑器类型在编辑和预览模式下的表现"
+			description="演示 TypeAwareEditor 各编辑器类型在编辑和预览模式下的表现"
 			extra={
 				<Space>
 					<Text>编辑</Text>

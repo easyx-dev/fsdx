@@ -4,7 +4,15 @@
  */
 
 /** 支持的编辑器类型 */
-export type EditorType = "input" | "text" | "number" | "json" | "rich" | "code";
+export type EditorType =
+	| "input"
+	| "text"
+	| "number"
+	| "json"
+	| "rich"
+	| "code"
+	| "image"
+	| "file";
 
 /** 所有编辑器类型的数组，便于迭代渲染 */
 export const EDITOR_TYPES: EditorType[] = [
@@ -14,6 +22,8 @@ export const EDITOR_TYPES: EditorType[] = [
 	"json",
 	"rich",
 	"code",
+	"image",
+	"file",
 ];
 
 /** 编辑器类型对应的中文标签 */
@@ -24,4 +34,6 @@ export const EDITOR_TYPE_LABELS: Record<EditorType, string> = {
 	json: "JSON 编辑器",
 	code: "Code 代码编辑器",
 	rich: "Rich 富文本编辑器",
+	image: "Image 图片上传",
+	file: "File 文件上传",
 };
