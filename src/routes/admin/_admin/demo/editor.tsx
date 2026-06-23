@@ -1,16 +1,16 @@
 /**
- * TypeAwareEditor 组件演示页面
+ * 编辑器类型组件演示页面
  * 展示各编辑器类型在编辑和预览模式下的效果
  */
 import { createFileRoute } from "@tanstack/react-router";
 import { Card, Space, Switch, Typography } from "antd";
 import { useState } from "react";
 import { AdminPageContent } from "#/components/admin/AdminPageContent";
-import { TypeAwareEditor } from "#/components/admin/TypeAwareEditor";
-import type { EditorType } from "#/lib/editor-types/editor-types";
+import { EditorTypes } from "#/components/admin/editor-type";
 import {
 	EDITOR_TYPE_LABELS,
 	EDITOR_TYPES,
+	type EditorType,
 } from "#/lib/editor-types/editor-types";
 
 const { Text } = Typography;
@@ -42,7 +42,7 @@ function DemoPage() {
 	return (
 		<AdminPageContent
 			title="编辑器组件演示"
-			description="演示 TypeAwareEditor 各编辑器类型在编辑和预览模式下的表现"
+			description="演示 EditorType.Editor 各编辑器类型在编辑和预览模式下的表现"
 			extra={
 				<Space>
 					<Text>编辑</Text>
@@ -59,7 +59,7 @@ function DemoPage() {
 						size="small"
 						styles={{ body: { padding: 16 } }}
 					>
-						<TypeAwareEditor
+						<EditorTypes.Editor
 							type={type}
 							value={editValues[type]}
 							onChange={(v) =>

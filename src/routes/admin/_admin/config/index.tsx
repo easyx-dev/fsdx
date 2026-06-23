@@ -19,8 +19,7 @@ import dayjs from "dayjs";
 import { useMemo, useState } from "react";
 import { z } from "zod";
 import { AdminPageContent } from "#/components/admin/AdminPageContent";
-import { EditorTypePreview } from "#/components/admin/EditorTypePreview";
-import { EditorTypeSelect } from "#/components/admin/EditorTypeSelect";
+import { EditorTypes } from "#/components/admin/editor-type";
 import {
 	FieldTranslationDrawer,
 	type TranslatableField,
@@ -28,7 +27,7 @@ import {
 import { JsonImportButton } from "#/components/admin/JsonImportButton";
 import { ProTable } from "#/components/admin/ProTable";
 import { TableOperate } from "#/components/admin/TableOperate";
-import { TypeAwareEditor } from "#/components/admin/TypeAwareEditor";
+
 import type { EditorType } from "#/lib/editor-types/editor-types";
 import { downloadFile } from "#/lib/export/export.utils";
 import { PERMISSIONS } from "#/lib/permissions/permissions";
@@ -281,7 +280,7 @@ function ConfigPage() {
 			key: "valueType",
 			width: 130,
 			render: (val: string | null) => (
-				<EditorTypePreview valueType={val} fallback="Text" />
+				<EditorTypes.Preview valueType={val} fallback="Text" />
 			),
 		},
 		{
@@ -512,7 +511,7 @@ function ConfigPage() {
 						/>
 					</Form.Item>
 					<Form.Item name="valueType" label="值类型">
-						<EditorTypeSelect allowClear placeholder="默认文本" />
+						<EditorTypes.Select allowClear placeholder="默认文本" />
 					</Form.Item>
 					{watchedValueType ? (
 						<Form.Item
@@ -520,7 +519,10 @@ function ConfigPage() {
 							label="配置值"
 							rules={[{ required: true, message: "请输入配置值" }]}
 						>
-							<TypeAwareEditor type={watchedValueType} placeholder="配置值" />
+							<EditorTypes.Editor
+								type={watchedValueType}
+								placeholder="配置值"
+							/>
 						</Form.Item>
 					) : (
 						<Form.Item

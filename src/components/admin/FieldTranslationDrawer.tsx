@@ -4,7 +4,7 @@
 import { RobotOutlined, TranslationOutlined } from "@ant-design/icons";
 import { Button, Card, Drawer, message, Tabs, Tooltip } from "antd";
 import { useCallback, useEffect, useId, useState } from "react";
-import { TypeAwareEditor } from "#/components/admin/TypeAwareEditor";
+import { EditorTypes } from "#/components/admin/editor-type";
 import type { EditorType } from "#/lib/editor-types/editor-types";
 import {
 	DEFAULT_LOCALE,
@@ -270,7 +270,7 @@ export function FieldTranslationDrawer({
 												)
 											}
 										>
-											<TypeAwareEditor
+											<EditorTypes.Editor
 												value={value}
 												onChange={(val) =>
 													updateValue(field.name, locale, String(val ?? ""))

@@ -34,12 +34,11 @@ import dayjs from "dayjs";
 import { useState } from "react";
 import { z } from "zod";
 import { AdminPageContent } from "#/components/admin/AdminPageContent";
-import { EditorTypePreview } from "#/components/admin/EditorTypePreview";
-import { EditorTypeSelect } from "#/components/admin/EditorTypeSelect";
+import { EditorTypes } from "#/components/admin/editor-type";
 import { FieldTranslationDrawer } from "#/components/admin/FieldTranslationDrawer";
 import { JsonImportButton } from "#/components/admin/JsonImportButton";
 import { ProTable } from "#/components/admin/ProTable";
-import { TypeAwareEditor } from "#/components/admin/TypeAwareEditor";
+
 import { PRESET_DICTS } from "#/lib/constants/admin-constants";
 import type { EditorType } from "#/lib/editor-types/editor-types";
 import { downloadFile } from "#/lib/export/export.utils";
@@ -448,7 +447,7 @@ function DictsPage() {
 			dataIndex: "extraType",
 			key: "extraType",
 			width: 110,
-			render: (val: string | null) => <EditorTypePreview valueType={val} />,
+			render: (val: string | null) => <EditorTypes.Preview valueType={val} />,
 		},
 		{
 			title: "额外值",
@@ -792,11 +791,11 @@ function DictsPage() {
 								</Col>
 							</Row>
 							<Form.Item name="extraType" label="额外类型">
-								<EditorTypeSelect allowClear />
+								<EditorTypes.Select allowClear />
 							</Form.Item>
 							{watchedExtraType ? (
 								<Form.Item name="extra" label="额外值">
-									<TypeAwareEditor
+									<EditorTypes.Editor
 										type={watchedExtraType}
 										placeholder="额外扩展值"
 									/>

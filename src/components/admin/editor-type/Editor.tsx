@@ -1,7 +1,5 @@
 /**
- * 类型感知编辑器组件
- * 根据 type 切换不同编辑器：input / text / number / json / rich / code
- * json 和 code 类型使用 CodeEditor（monaco-editor），rich 类型复用 RichEditor
+ * 根据编辑器类型动态切换编辑控件：input / text / number / json / rich / code / image / file
  * 支持预览模式（preview），以只读形式展示内容
  * value / onChange 兼容 antd Form.Item 注入
  */
@@ -10,7 +8,6 @@ import { lazy, Suspense, useEffect, useState } from "react";
 import { RichEditor } from "#/components/admin/RichEditor";
 import { getFileInfoSFn } from "#/server/file/file.functions";
 
-// 按需懒加载 CodeEditor，避免 SSR 报错和初始包体积
 const CodeEditor = lazy(() =>
 	import("#/components/admin/CodeEditor").then((mod) => ({
 		default: mod.CodeEditor,
@@ -30,9 +27,8 @@ const FileUpload = lazy(() =>
 );
 
 import type { EditorType } from "#/lib/editor-types/editor-types";
-export type { EditorType };
 
-export interface TypeAwareEditorProps {
+export interface EditorProps {
 	/** 编辑器类型，决定使用何种编辑控件 */
 	type: EditorType;
 	/** 当前值（兼容 antd Form.Item 注入） */
@@ -191,7 +187,7 @@ function PreviewContent({
 	}
 }
 
-export function TypeAwareEditor({
+export function Editor({
 	type,
 	value,
 	onChange,
@@ -204,8 +200,7 @@ export function TypeAwareEditor({
 	placeholder,
 	disabled = false,
 	id,
-}: TypeAwareEditorProps) {
-	// 预览模式
+}: EditorProps) {
 	if (preview) {
 		return (
 			<PreviewContent
@@ -216,7 +211,6 @@ export function TypeAwareEditor({
 		);
 	}
 
-	// 编辑模式：根据类型渲染不同编辑器
 	switch (type) {
 		case "input":
 			return (

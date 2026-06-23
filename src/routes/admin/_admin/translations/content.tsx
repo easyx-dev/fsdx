@@ -9,7 +9,7 @@ import dayjs from "dayjs";
 import { useEffect, useState } from "react";
 import { z } from "zod";
 import { AdminPageContent } from "#/components/admin/AdminPageContent";
-import { EditorTypeSelect } from "#/components/admin/EditorTypeSelect";
+import { EditorTypes } from "#/components/admin/editor-type";
 import { JsonImportButton } from "#/components/admin/JsonImportButton";
 import { ProTable } from "#/components/admin/ProTable";
 import { TableOperate } from "#/components/admin/TableOperate";
@@ -436,7 +436,7 @@ function ContentTranslationPage() {
 						<Input.TextArea rows={3} />
 					</Form.Item>
 					<Form.Item name="valueType" label="编辑器类型">
-						<EditorTypeSelect />
+						<EditorTypes.Select />
 					</Form.Item>
 				</Form>
 			</Modal>

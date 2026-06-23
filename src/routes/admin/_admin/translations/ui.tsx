@@ -9,8 +9,7 @@ import dayjs from "dayjs";
 import { useCallback, useEffect, useState } from "react";
 import { z } from "zod";
 import { AdminPageContent } from "#/components/admin/AdminPageContent";
-import { EditorTypePreview } from "#/components/admin/EditorTypePreview";
-import { EditorTypeSelect } from "#/components/admin/EditorTypeSelect";
+import { EditorTypes } from "#/components/admin/editor-type";
 import { JsonImportButton } from "#/components/admin/JsonImportButton";
 import { ProTable } from "#/components/admin/ProTable";
 import { TableOperate } from "#/components/admin/TableOperate";
@@ -229,7 +228,7 @@ function UITranslationPage() {
 			dataIndex: "valueType",
 			key: "valueType",
 			width: 120,
-			render: (v: string) => <EditorTypePreview valueType={v} />,
+			render: (v: string) => <EditorTypes.Preview valueType={v} />,
 		},
 		{
 			title: "创建时间",
@@ -367,7 +366,7 @@ function UITranslationPage() {
 						<Input.TextArea rows={3} />
 					</Form.Item>
 					<Form.Item name="valueType" label="编辑器类型">
-						<EditorTypeSelect />
+						<EditorTypes.Select />
 					</Form.Item>
 				</Form>
 			</Modal>
