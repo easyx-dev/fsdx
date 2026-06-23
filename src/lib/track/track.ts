@@ -59,6 +59,83 @@ export function getSessionId(): string {
 	return state.sessionId;
 }
 
+/**
+ * 解析 User Agent 获取浏览器名称+版本
+ * 不依赖第三方库，纯字符串匹配
+ */
+function parseBrowser(ua: string): string {
+	if (/Edg\//.test(ua)) {
+		const m = ua.match(/Edg\/(\d+)/);
+		return m ? `Edge ${m[1]}` : "Edge";
+	}
+	if (/Chrome\//.test(ua) && !/OPR\//.test(ua)) {
+		const m = ua.match(/Chrome\/(\d+)/);
+		return m ? `Chrome ${m[1]}` : "Chrome";
+	}
+	if (/Safari\//.test(ua) && !/Chrome\//.test(ua)) {
+		const m = ua.match(/Version\/(\d+)/);
+		return m ? `Safari ${m[1]}` : "Safari";
+	}
+	if (/Firefox\//.test(ua)) {
+		const m = ua.match(/Firefox\/(\d+)/);
+		return m ? `Firefox ${m[1]}` : "Firefox";
+	}
+	if (/OPR\//.test(ua)) {
+		const m = ua.match(/OPR\/(\d+)/);
+		return m ? `Opera ${m[1]}` : "Opera";
+	}
+	return "Unknown";
+}
+
+/** 解析 User Agent 获取操作系统名称 */
+function parseOS(ua: string): string {
+	if (/Windows NT 10/.test(ua)) return "Windows 10/11";
+	if (/Windows NT 6\.3/.test(ua)) return "Windows 8.1";
+	if (/Windows NT 6\.1/.test(ua)) return "Windows 7";
+	if (/Windows/.test(ua)) return "Windows";
+	if (/iPhone|iPad|iPod/.test(ua)) {
+		const m = ua.match(/OS (\d+_\d+)/);
+		return m ? `iOS ${m[1].replace("_", ".")}` : "iOS";
+	}
+	if (/Android/.test(ua)) {
+		const m = ua.match(/Android (\d+[._]\d*)/);
+		return m ? `Android ${m[1]}` : "Android";
+	}
+	if (/Mac OS X/.test(ua)) {
+		const m = ua.match(/Mac OS X (\d+[._]\d+)/);
+		return m ? `macOS ${m[1].replace("_", ".")}` : "macOS";
+	}
+	if (/Linux/.test(ua)) return "Linux";
+	return "Unknown";
+}
+
+/** 解析 User Agent 获取设备类型 */
+function parseDeviceType(ua: string): string {
+	if (
+		/iPad|Tablet|PlayBook/.test(ua) ||
+		(/Android/.test(ua) && !/Mobi/.test(ua))
+	) {
+		return "Tablet";
+	}
+	if (/Mobi|Android|iPhone|iPod/.test(ua)) {
+		return "Mobile";
+	}
+	return "Desktop";
+}
+
+/** 获取浏览器端系统属性（UA 解析 + 屏幕信息） */
+function collectSystemProps(): Record<string, unknown> {
+	const ua = navigator.userAgent;
+	return {
+		$user_agent: ua,
+		$browser: parseBrowser(ua),
+		$os: parseOS(ua),
+		$device_type: parseDeviceType(ua),
+		$screen_size: `${window.screen.width}x${window.screen.height}`,
+		$language: navigator.language,
+	};
+}
+
 /** 手动上报事件 */
 export async function track(
 	eventName: string,
@@ -66,12 +143,11 @@ export async function track(
 ): Promise<void> {
 	if (typeof window === "undefined") return;
 
-	// 自动采集通用属性
 	const autoProps: Record<string, unknown> = {
 		url: window.location.href,
 		referer: document.referrer || undefined,
 		page_name: document.title,
-		$screen_size: `${window.screen.width}x${window.screen.height}`,
+		...collectSystemProps(),
 	};
 
 	const payload = {

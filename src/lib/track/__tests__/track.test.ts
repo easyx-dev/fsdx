@@ -1,8 +1,8 @@
 /**
- * 客户端埋点 SDK 测试：会话管理、事件上报、路由追踪
+ * 客户端埋点 SDK 测试：会话管理、事件上报、路由追踪、系统属性自动采集
  */
 
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const { mockTrackEventSFn } = vi.hoisted(() => ({
 	mockTrackEventSFn: vi.fn().mockResolvedValue({ success: true }),
@@ -22,23 +22,45 @@ import {
 	track,
 } from "../track";
 
+/** 设置浏览器环境 mock */
+function mockBrowserEnv() {
+	vi.stubGlobal("window", {
+		location: { href: "https://example.com/page" },
+		screen: { width: 1920, height: 1080 },
+	});
+	vi.stubGlobal("navigator", {
+		userAgent:
+			"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+		language: "zh-CN",
+	});
+	vi.stubGlobal("document", {
+		title: "测试页面",
+		referrer: "https://google.com",
+	});
+	vi.stubGlobal("sessionStorage", {
+		getItem: vi.fn().mockReturnValue(null),
+		setItem: vi.fn(),
+	});
+}
+
 describe("track SDK", () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
-		// 重置模块内部状态：先停止路由追踪，再重新导入
 		stopRouteTracking();
+	});
+
+	afterEach(() => {
+		vi.unstubAllGlobals();
 	});
 
 	describe("init", () => {
 		it("SSR 环境下不执行任何操作", () => {
-			// 模拟 window 不存在
 			const origWindow = globalThis.window;
 			// @ts-expect-error 模拟 SSR
 			delete globalThis.window;
 
 			init();
 
-			// 恢复
 			globalThis.window = origWindow;
 
 			expect(mockTrackEventSFn).not.toHaveBeenCalled();
@@ -75,6 +97,93 @@ describe("track SDK", () => {
 
 			expect(mockTrackEventSFn).not.toHaveBeenCalled();
 		});
+
+		it("浏览器环境下上报事件，自动采集基础页面属性", async () => {
+			mockBrowserEnv();
+
+			await track("Click", { button: "submit" });
+
+			expect(mockTrackEventSFn).toHaveBeenCalledTimes(1);
+			const callArgs = mockTrackEventSFn.mock.calls[0][0];
+			expect(callArgs.data.event).toBe("Click");
+			expect(callArgs.data.properties.url).toBe("https://example.com/page");
+			expect(callArgs.data.properties.referer).toBe("https://google.com");
+			expect(callArgs.data.properties.page_name).toBe("测试页面");
+		});
+
+		it("自动采集系统属性：$browser、$os、$device_type、$user_agent、$screen_size、$language", async () => {
+			mockBrowserEnv();
+
+			await track("PageView", {});
+
+			expect(mockTrackEventSFn).toHaveBeenCalledTimes(1);
+			const props = mockTrackEventSFn.mock.calls[0][0].data.properties;
+			expect(props.$browser).toBeDefined();
+			expect(props.$os).toBeDefined();
+			expect(props.$device_type).toBeDefined();
+			expect(props.$user_agent).toBeDefined();
+			expect(props.$screen_size).toBe("1920x1080");
+			expect(props.$language).toBe("zh-CN");
+		});
+
+		it("UA 解析：Chrome on macOS 识别正确", async () => {
+			vi.stubGlobal("window", {
+				location: { href: "https://example.com" },
+				screen: { width: 1920, height: 1080 },
+			});
+			vi.stubGlobal("navigator", {
+				userAgent:
+					"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+				language: "en-US",
+			});
+			vi.stubGlobal("document", { title: "Test", referrer: "" });
+			vi.stubGlobal("sessionStorage", {
+				getItem: vi.fn().mockReturnValue(null),
+				setItem: vi.fn(),
+			});
+
+			await track("PageView", {});
+
+			const props = mockTrackEventSFn.mock.calls[0][0].data.properties;
+			expect(props.$browser).toBe("Chrome 120");
+			expect(props.$os).toContain("macOS");
+			expect(props.$device_type).toBe("Desktop");
+		});
+
+		it("UA 解析：Mobile Safari on iPhone 识别正确", async () => {
+			vi.stubGlobal("window", {
+				location: { href: "https://m.example.com" },
+				screen: { width: 390, height: 844 },
+			});
+			vi.stubGlobal("navigator", {
+				userAgent:
+					"Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1",
+				language: "zh-Hans",
+			});
+			vi.stubGlobal("document", { title: "Mobile", referrer: "" });
+			vi.stubGlobal("sessionStorage", {
+				getItem: vi.fn().mockReturnValue(null),
+				setItem: vi.fn(),
+			});
+
+			await track("PageView", {});
+
+			const props = mockTrackEventSFn.mock.calls[0][0].data.properties;
+			expect(props.$browser).toContain("Safari");
+			expect(props.$os).toContain("iOS");
+			expect(props.$device_type).toBe("Mobile");
+		});
+
+		it("自定义属性与自动采集属性合并，自定义属性优先", async () => {
+			mockBrowserEnv();
+
+			await track("FormSubmit", { form_name: "clientLogin" });
+
+			const props = mockTrackEventSFn.mock.calls[0][0].data.properties;
+			expect(props.form_name).toBe("clientLogin");
+			expect(props.url).toBe("https://example.com/page");
+			expect(props.page_name).toBe("测试页面");
+		});
 	});
 
 	describe("startRouteTracking / stopRouteTracking", () => {
@@ -88,7 +197,6 @@ describe("track SDK", () => {
 
 			globalThis.window = origWindow;
 
-			// 不报错即为通过
 			expect(true).toBe(true);
 		});
 

@@ -18,7 +18,10 @@
 - 操作日志审计（`/admin/operation-logs`）含缓冲批量写入
 - 日志查询（`/admin/logs`）按关键词/级别/日期搜索
 - 翻译管理（`/admin/translations`）含 UI 翻译 + 内容翻译
-- 事件埋点分析（`/admin/events`）含预设事件/属性管理 + 查询分析
+- 事件埋点分析（`/admin/events`）含 9 个预设事件 + 15 个预设属性管理 + 查询分析
+  - 客户端自动采集系统属性（$browser、$os、$device_type、$user_agent、$language、$screen_size）
+  - 服务端自动注入 $ip（x-forwarded-for）和 $user_agent（请求头）
+  - 登录/注册/退出埋点已接入（Login、Register、FormSubmit、Logout 事件）
 - 仪表盘统计（`/admin`）新闻/用户/文件概览
 - 组件演示（`/admin/demo`）编辑器 + AI 聊天
 - 系统初始化（`/admin/init`）首次部署自动引导
@@ -45,7 +48,7 @@
 
 - PostgreSQL + Drizzle ORM（15 张表，uuid 主键，软删除，timestamptz）
 - pino 日志（按天文件流 + 控制台美化）
-- Vitest 测试（40 个测试文件，468 条测试）
+- Vitest 测试（40 个测试文件，502 条测试）
 - Biome lint/format + TypeScript strict
 - Vite 8 构建 + Tailwind CSS 4 + shadcn/ui
 - Ant Design 6（管理端）+ shadcn/ui（前台）

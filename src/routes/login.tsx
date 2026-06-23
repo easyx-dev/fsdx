@@ -18,6 +18,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "#/components/ui/card";
 import { Input } from "#/components/ui/input";
 import { useTranslation } from "#/lib/i18n/i18n-context";
 import { COOKIE_NAMES } from "#/lib/jwt/jwt";
+import { track } from "#/lib/track/track";
 import { getCurrentClientSFn } from "#/server/client-auth/client-auth.functions";
 import { clientLogin } from "#/server/client-auth/client-auth.server";
 
@@ -79,6 +80,8 @@ function ClientLoginPage() {
 				return;
 			}
 			toast.success(t("登录成功"));
+			track("Login", { form_name: "clientLogin" });
+			track("FormSubmit", { form_name: "clientLogin" });
 			navigate({ to: "/" });
 		},
 	});

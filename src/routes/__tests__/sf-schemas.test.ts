@@ -276,6 +276,70 @@ const contentTranslationSaveSchema = z.object({
 	valueType: z.string().optional(),
 });
 
+// ── 埋点事件 ──
+const trackEventSchema = z.object({
+	time: z.number(),
+	userId: z.string().optional(),
+	sessionId: z.string().min(1),
+	event: z.string().min(1).max(100),
+	properties: z.record(z.string(), z.unknown()).default({}),
+});
+
+const eventQuerySchema = z.object({
+	event: z.string().optional(),
+	userId: z.string().optional(),
+	sessionId: z.string().optional(),
+	keyword: z.string().optional(),
+	startDate: z.string().optional(),
+	endDate: z.string().optional(),
+	page: z.number().int().min(1).optional(),
+	pageSize: z.number().int().min(1).max(100).optional(),
+	sortField: z.string().optional(),
+	sortOrder: z.enum(["ascend", "descend"]).optional(),
+});
+
+const analyticsQuerySchema = z.object({
+	startDate: z.string().min(1),
+	endDate: z.string().min(1),
+	granularity: z.enum(["hour", "day"]).optional(),
+});
+
+const presetEventCreateSchema = z.object({
+	name: z.string().min(1).max(100),
+	label: z.string().min(1).max(100),
+	category: z.string().min(1).max(50),
+	description: z.string().optional(),
+});
+
+const presetEventUpdateSchema = z.object({
+	name: z.string().min(1).max(100),
+	label: z.string().min(1).max(100).optional(),
+	category: z.string().min(1).max(50).optional(),
+	description: z.string().optional(),
+});
+
+const presetEventDeleteSchema = z.object({
+	name: z.string().min(1).max(100),
+});
+
+const presetPropertyCreateSchema = z.object({
+	key: z.string().min(1).max(100),
+	label: z.string().min(1).max(100),
+	dataType: z.string().optional(),
+	description: z.string().optional(),
+});
+
+const presetPropertyUpdateSchema = z.object({
+	key: z.string().min(1).max(100),
+	label: z.string().min(1).max(100).optional(),
+	dataType: z.string().optional(),
+	description: z.string().optional(),
+});
+
+const presetPropertyDeleteSchema = z.object({
+	key: z.string().min(1).max(100),
+});
+
 // ═══════════════════════════════════════════════════════════
 // 验证测试
 // ═══════════════════════════════════════════════════════════
@@ -1120,5 +1184,270 @@ describe("contentTranslationSaveSchema（内容翻译保存）", () => {
 				value: "Bonjour",
 			}).success,
 		).toBe(false);
+	});
+});
+
+describe("trackEventSchema（埋点事件上报）", () => {
+	it("最小合法输入通过", () => {
+		expect(
+			trackEventSchema.safeParse({
+				time: Date.now(),
+				sessionId: "s-abc",
+				event: "PageView",
+			}).success,
+		).toBe(true);
+	});
+
+	it("包含可选 userId 和 properties 通过", () => {
+		expect(
+			trackEventSchema.safeParse({
+				time: Date.now(),
+				sessionId: "s-abc",
+				event: "Click",
+				userId: "u-1",
+				properties: { element_id: "btn-1", element_text: "提交" },
+			}).success,
+		).toBe(true);
+	});
+
+	it("sessionId 为空失败", () => {
+		expect(
+			trackEventSchema.safeParse({
+				time: Date.now(),
+				sessionId: "",
+				event: "PageView",
+			}).success,
+		).toBe(false);
+	});
+
+	it("event 为空失败", () => {
+		expect(
+			trackEventSchema.safeParse({
+				time: Date.now(),
+				sessionId: "s-abc",
+				event: "",
+			}).success,
+		).toBe(false);
+	});
+
+	it("event 超过 100 字符失败", () => {
+		expect(
+			trackEventSchema.safeParse({
+				time: Date.now(),
+				sessionId: "s-abc",
+				event: "a".repeat(101),
+			}).success,
+		).toBe(false);
+	});
+
+	it("properties 默认为空对象", () => {
+		const result = trackEventSchema.safeParse({
+			time: Date.now(),
+			sessionId: "s-abc",
+			event: "PageView",
+		});
+		expect(result.success).toBe(true);
+		if (result.success) {
+			expect(result.data.properties).toEqual({});
+		}
+	});
+});
+
+describe("eventQuerySchema（埋点事件查询）", () => {
+	it("无参数通过", () => {
+		expect(eventQuerySchema.safeParse({}).success).toBe(true);
+	});
+
+	it("全部参数通过", () => {
+		expect(
+			eventQuerySchema.safeParse({
+				event: "PageView",
+				userId: "u-1",
+				sessionId: "s-abc",
+				keyword: "test",
+				startDate: "2026-01-01",
+				endDate: "2026-01-31",
+				page: 1,
+				pageSize: 20,
+				sortField: "time",
+				sortOrder: "descend",
+			}).success,
+		).toBe(true);
+	});
+
+	it("pageSize 超过 100 失败", () => {
+		expect(eventQuerySchema.safeParse({ pageSize: 200 }).success).toBe(false);
+	});
+
+	it("非法 sortOrder 失败", () => {
+		expect(eventQuerySchema.safeParse({ sortOrder: "invalid" }).success).toBe(
+			false,
+		);
+	});
+});
+
+describe("analyticsQuerySchema（事件分析查询）", () => {
+	it("合法输入通过", () => {
+		expect(
+			analyticsQuerySchema.safeParse({
+				startDate: "2026-01-01",
+				endDate: "2026-01-31",
+			}).success,
+		).toBe(true);
+	});
+
+	it("带 granularity 通过", () => {
+		expect(
+			analyticsQuerySchema.safeParse({
+				startDate: "2026-01-01",
+				endDate: "2026-01-31",
+				granularity: "hour",
+			}).success,
+		).toBe(true);
+	});
+
+	it("缺少 startDate 失败", () => {
+		expect(
+			analyticsQuerySchema.safeParse({ endDate: "2026-01-31" }).success,
+		).toBe(false);
+	});
+
+	it("非法 granularity 失败", () => {
+		expect(
+			analyticsQuerySchema.safeParse({
+				startDate: "2026-01-01",
+				endDate: "2026-01-31",
+				granularity: "week",
+			}).success,
+		).toBe(false);
+	});
+});
+
+describe("presetEventCreateSchema（预设事件创建）", () => {
+	it("合法输入通过", () => {
+		expect(
+			presetEventCreateSchema.safeParse({
+				name: "Download",
+				label: "文件下载",
+				category: "内容互动",
+			}).success,
+		).toBe(true);
+	});
+
+	it("缺少 label 失败", () => {
+		expect(
+			presetEventCreateSchema.safeParse({
+				name: "Download",
+				category: "内容互动",
+			}).success,
+		).toBe(false);
+	});
+
+	it("缺少 category 失败", () => {
+		expect(
+			presetEventCreateSchema.safeParse({
+				name: "Download",
+				label: "文件下载",
+			}).success,
+		).toBe(false);
+	});
+
+	it("name 超过 100 字符失败", () => {
+		expect(
+			presetEventCreateSchema.safeParse({
+				name: "a".repeat(101),
+				label: "标签",
+				category: "用户行为",
+			}).success,
+		).toBe(false);
+	});
+});
+
+describe("presetEventUpdateSchema（预设事件更新）", () => {
+	it("部分字段更新通过", () => {
+		expect(
+			presetEventUpdateSchema.safeParse({
+				name: "Download",
+				label: "文件下载",
+			}).success,
+		).toBe(true);
+	});
+
+	it("缺少 name 失败", () => {
+		expect(presetEventUpdateSchema.safeParse({ label: "新标签" }).success).toBe(
+			false,
+		);
+	});
+});
+
+describe("presetEventDeleteSchema（预设事件删除）", () => {
+	it("合法输入通过", () => {
+		expect(
+			presetEventDeleteSchema.safeParse({ name: "CustomEvent" }).success,
+		).toBe(true);
+	});
+
+	it("name 为空失败", () => {
+		expect(presetEventDeleteSchema.safeParse({ name: "" }).success).toBe(false);
+	});
+});
+
+describe("presetPropertyCreateSchema（预设属性创建）", () => {
+	it("合法输入通过", () => {
+		expect(
+			presetPropertyCreateSchema.safeParse({
+				key: "download_url",
+				label: "下载地址",
+			}).success,
+		).toBe(true);
+	});
+
+	it("带 dataType 通过", () => {
+		expect(
+			presetPropertyCreateSchema.safeParse({
+				key: "file_size",
+				label: "文件大小",
+				dataType: "number",
+			}).success,
+		).toBe(true);
+	});
+
+	it("缺少 key 失败", () => {
+		expect(
+			presetPropertyCreateSchema.safeParse({
+				label: "仅标签",
+			}).success,
+		).toBe(false);
+	});
+});
+
+describe("presetPropertyUpdateSchema（预设属性更新）", () => {
+	it("部分字段更新通过", () => {
+		expect(
+			presetPropertyUpdateSchema.safeParse({
+				key: "download_url",
+				label: "新标签",
+			}).success,
+		).toBe(true);
+	});
+
+	it("缺少 key 失败", () => {
+		expect(
+			presetPropertyUpdateSchema.safeParse({ label: "新标签" }).success,
+		).toBe(false);
+	});
+});
+
+describe("presetPropertyDeleteSchema（预设属性删除）", () => {
+	it("合法输入通过", () => {
+		expect(
+			presetPropertyDeleteSchema.safeParse({ key: "custom_prop" }).success,
+		).toBe(true);
+	});
+
+	it("key 为空失败", () => {
+		expect(presetPropertyDeleteSchema.safeParse({ key: "" }).success).toBe(
+			false,
+		);
 	});
 });

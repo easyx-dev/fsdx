@@ -18,6 +18,7 @@ import { Button } from "#/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "#/components/ui/card";
 import { Input } from "#/components/ui/input";
 import { useTranslation } from "#/lib/i18n/i18n-context";
+import { track } from "#/lib/track/track";
 import { getCurrentClientSFn } from "#/server/client-auth/client-auth.functions";
 import { clientRegister } from "#/server/client-auth/client-auth.server";
 
@@ -80,6 +81,8 @@ function ClientRegisterPage() {
 				return;
 			}
 			toast.success(t("注册成功"));
+			track("Register", { form_name: "clientRegister" });
+			track("FormSubmit", { form_name: "clientRegister" });
 			navigate({ to: "/login" });
 		},
 	});

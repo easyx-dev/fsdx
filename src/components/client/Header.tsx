@@ -11,6 +11,7 @@ import { Logo } from "#/components/Logo";
 import { Button } from "#/components/ui/button";
 import { useGlobalStore } from "#/lib/global-store/global-store";
 import { useTranslation } from "#/lib/i18n/i18n-context";
+import { track } from "#/lib/track/track";
 import ThemeToggle from "./ThemeToggle";
 
 export default function Header() {
@@ -27,6 +28,7 @@ export default function Header() {
 	] as const;
 
 	const handleLogout = async () => {
+		track("Logout", {});
 		await logout();
 		setMobileOpen(false);
 	};

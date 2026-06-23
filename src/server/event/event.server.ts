@@ -727,6 +727,12 @@ const PRESET_EVENTS: {
 		category: "页面交互",
 		description: "用户滚动页面达一定深度时触发",
 	},
+	{
+		name: "Logout",
+		label: "用户退出",
+		category: "用户行为",
+		description: "用户主动退出登录时触发",
+	},
 ];
 
 /** 预置属性定义 */
@@ -791,6 +797,12 @@ const PRESET_PROPERTIES: {
 		description: "用户屏幕分辨率",
 	},
 	{
+		key: "$language",
+		label: "浏览器语言",
+		dataType: "string",
+		description: "浏览器首选语言（navigator.language）",
+	},
+	{
 		key: "element_id",
 		label: "元素 ID",
 		dataType: "string",
@@ -801,6 +813,30 @@ const PRESET_PROPERTIES: {
 		label: "元素文本",
 		dataType: "string",
 		description: "被点击元素的文本内容",
+	},
+	{
+		key: "scroll_depth",
+		label: "滚动深度",
+		dataType: "number",
+		description: "页面滚动深度百分比（25/50/75/100）",
+	},
+	{
+		key: "form_name",
+		label: "表单名称",
+		dataType: "string",
+		description: "被提交的表单名称（如 clientLogin、clientRegister）",
+	},
+	{
+		key: "search_query",
+		label: "搜索关键词",
+		dataType: "string",
+		description: "用户执行的搜索关键词",
+	},
+	{
+		key: "share_platform",
+		label: "分享平台",
+		dataType: "string",
+		description: "内容分享的目标平台",
 	},
 ];
 
