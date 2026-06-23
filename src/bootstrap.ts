@@ -1,6 +1,5 @@
 /**
  * 服务启动初始化：环境变量加载、错误处理、预置数据、定时任务、优雅关闭
- * 从 src/startup.ts 提取，去除 Nitro definePlugin 依赖
  */
 import { resolve } from "node:path";
 import { config } from "dotenv";
@@ -19,34 +18,47 @@ import { registerAllTasks } from "#/server/tasks/tasks.server";
 
 export function bootstrap() {
 	logger.info("服务启动初始化开始");
-	// 从 env/ 目录加载环境变量（优先级：.env.local > .env）
+
+	// 加载环境变量（优先级：.env.local > .env）
 	config({ path: resolve(process.cwd(), "env", ".env") });
 	config({ path: resolve(process.cwd(), "env", ".env.local"), override: true });
 
-	// 进程级未捕获异常处理器：记录完整日志后退出，避免状态不一致
+	// 独立预置数据（fire-and-forget，不阻塞服务启动，无交叉依赖）
+	void ensurePresetDicts().catch((err) => {
+		logger.error({ err }, "预置字典初始化失败");
+	});
+	void ensurePresetConfigs().catch((err) => {
+		logger.error({ err }, "预置系统配置初始化失败");
+	});
+	void ensurePresetTranslations().catch((err) => {
+		logger.error({ err }, "预置翻译初始化失败");
+	});
+
+	// 事件预设 → 缓存加载有依赖链：先写 presetEvent/presetProperty，再加载缓存
+	void Promise.all([ensurePresetEvents(), ensurePresetProperties()])
+		.then(() => loadPresetCache())
+		.catch((err) => {
+			logger.error({ err }, "预设事件/属性或缓存加载失败");
+		});
+
+	// 注册定时任务
+	registerAllTasks();
+
+	// 注册进程级异常处理器
 	process.on("uncaughtException", (err, origin) => {
 		logger.fatal({ err, origin }, "未捕获的异常，进程即将退出");
 		process.exit(1);
 	});
-
-	// 进程级未处理的 Promise 拒绝：记录完整日志
 	process.on("unhandledRejection", (reason) => {
 		logger.fatal({ err: reason }, "未处理的 Promise 拒绝");
 	});
 
-	// 服务进程启动时同步等待，确保预置数据写入完成后才开始接收请求
-	ensurePresetDicts();
-	ensurePresetConfigs();
-	ensurePresetEvents();
-	ensurePresetProperties();
-	ensurePresetTranslations();
-	loadPresetCache().catch((err) => {
-		logger.error({ err }, "预设缓存加载失败");
-	});
-	registerAllTasks();
-
-	// 进程退出时刷新缓冲，避免事件和操作日志丢失
+	// 注册优雅关闭处理器
+	let shuttingDown = false;
 	const gracefulShutdown = async () => {
+		if (shuttingDown) return;
+		shuttingDown = true;
+		logger.info("收到退出信号，开始优雅关闭...");
 		await Promise.all([flushTrackEvents(), flushOperationLogs()]);
 	};
 	process.on("SIGTERM", () => {
@@ -55,4 +67,5 @@ export function bootstrap() {
 	process.on("SIGINT", () => {
 		gracefulShutdown().finally(() => process.exit(0));
 	});
+
 }
