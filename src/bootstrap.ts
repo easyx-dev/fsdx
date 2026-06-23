@@ -16,6 +16,9 @@ import { ensurePresetTranslations } from "#/server/i18n/i18n-seed";
 import { flushOperationLogs } from "#/server/operation-log/operation-log.server";
 import { registerAllTasks } from "#/server/tasks/tasks.server";
 
+/** 优雅关闭超时时间（毫秒），防止缓冲刷入挂起导致进程无法退出 */
+const GRACEFUL_SHUTDOWN_TIMEOUT = 10_000;
+
 export function bootstrap() {
 	logger.info("服务启动初始化开始");
 
@@ -50,21 +53,34 @@ export function bootstrap() {
 		process.exit(1);
 	});
 	process.on("unhandledRejection", (reason) => {
-		logger.fatal({ err: reason }, "未处理的 Promise 拒绝");
+		logger.fatal({ err: reason }, "未处理的 Promise 拒绝，进程即将退出");
+		process.exit(1);
 	});
 
-	// 注册优雅关闭处理器
+	// 注册优雅关闭处理器（含超时保护）
 	let shuttingDown = false;
 	const gracefulShutdown = async () => {
 		if (shuttingDown) return;
 		shuttingDown = true;
 		logger.info("收到退出信号，开始优雅关闭...");
-		await Promise.all([flushTrackEvents(), flushOperationLogs()]);
+		try {
+			await Promise.race([
+				Promise.all([flushTrackEvents(), flushOperationLogs()]),
+				new Promise<void>((_, reject) =>
+					setTimeout(
+						() => reject(new Error("缓冲刷入超时，强制退出")),
+						GRACEFUL_SHUTDOWN_TIMEOUT,
+					),
+				),
+			]);
+			process.exit(0);
+		} catch (err) {
+			logger.error({ err }, "缓冲刷入失败");
+			process.exit(1);
+		}
 	};
-	process.on("SIGTERM", () => {
-		gracefulShutdown().finally(() => process.exit(0));
-	});
-	process.on("SIGINT", () => {
-		gracefulShutdown().finally(() => process.exit(0));
-	});
+
+	process.on("SIGTERM", gracefulShutdown);
+	process.on("SIGINT", gracefulShutdown);
+	process.on("SIGQUIT", gracefulShutdown);
 }

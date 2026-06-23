@@ -13,8 +13,12 @@ vi.mock("#/lib/logger/logger", () => ({
 	logger: { error: vi.fn(), info: vi.fn(), warn: vi.fn() },
 }));
 
-vi.mock("#/server/file", () => ({
+vi.mock("#/server/file/file.server", () => ({
 	cleanExpiredFiles: vi.fn().mockResolvedValue(0),
+}));
+
+vi.mock("#/server/logs/logs-cleanup.server", () => ({
+	cleanExpiredLogs: vi.fn().mockResolvedValue(0),
 }));
 
 import { registerAllTasks } from "#/server/tasks/tasks.server";
