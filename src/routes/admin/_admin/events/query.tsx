@@ -16,37 +16,72 @@ import {
 	Space,
 	Table,
 	Tag,
+	Tooltip,
 } from "antd";
 import dayjs from "dayjs";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { AdminPageContent } from "#/components/admin/AdminPageContent";
 import type { SortOrder } from "#/lib/query/query-utils";
 import {
 	getEventNamesSFn,
+	getPresetEventsSFn,
+	getPresetPropertiesSFn,
 	searchEventsSFn,
 } from "#/server/event/event.functions";
-import type { EventQueryResult, EventRecord } from "#/server/event/event.types";
+import type {
+	EventQueryResult,
+	EventRecord,
+	PresetPropertyRecord,
+} from "#/server/event/event.types";
 
 const { RangePicker } = DatePicker;
 
 export const Route = createFileRoute("/admin/_admin/events/query")({
 	component: EventListPage,
 	loader: async () => {
-		const [eventNames, result] = await Promise.all([
-			getEventNamesSFn(),
-			searchEventsSFn({ data: {} }),
-		]);
-		return { eventNames, result };
+		const [eventNames, presetEvents, presetProperties, result] =
+			await Promise.all([
+				getEventNamesSFn(),
+				getPresetEventsSFn().catch(() => []),
+				getPresetPropertiesSFn().catch(() => []),
+				searchEventsSFn({ data: {} }),
+			]);
+		return { eventNames, presetEvents, presetProperties, result };
 	},
 });
 
 function EventListPage() {
-	const { eventNames: initialEventNames, result: initialResult } =
-		Route.useLoaderData();
+	const {
+		eventNames: initialEventNames,
+		presetEvents,
+		presetProperties,
+		result: initialResult,
+	} = Route.useLoaderData();
 
 	const [data, setData] = useState<EventQueryResult>(initialResult);
 	const [eventNames] = useState<string[]>(initialEventNames);
 	const [loading, setLoading] = useState(false);
+
+	/** 事件名 → 显示名称映射 */
+	const eventLabelMap = useMemo(() => {
+		const map: Record<string, string> = {};
+		for (const e of presetEvents) {
+			map[e.name] = e.label;
+		}
+		return map;
+	}, [presetEvents]);
+
+	/** 属性键 → 显示名称映射 */
+	const propertyLabelMap = useMemo(() => {
+		const map: Record<
+			string,
+			Pick<PresetPropertyRecord, "label" | "dataType">
+		> = {};
+		for (const p of presetProperties) {
+			map[p.key] = { label: p.label, dataType: p.dataType };
+		}
+		return map;
+	}, [presetProperties]);
 
 	// 筛选条件
 	const [filterEvent, setFilterEvent] = useState<string | undefined>();
@@ -146,13 +181,31 @@ function EventListPage() {
 		message.success("导出成功");
 	};
 
+	const formatValue = (value: unknown): string => {
+		if (value === null || value === undefined) return "-";
+		if (typeof value === "object") return JSON.stringify(value, null, 2);
+		return String(value);
+	};
+
 	const columns = [
 		{
 			title: "事件名称",
 			dataIndex: "event",
 			key: "event",
-			width: 120,
-			render: (v: string) => <Tag color="blue">{v}</Tag>,
+			width: 140,
+			render: (v: string) => {
+				const label = eventLabelMap[v];
+				return (
+					<span className="flex items-center gap-1.5">
+						<span className="text-sm font-medium">{label ?? v}</span>
+						{label && (
+							<Tag className="m-0 text-xs leading-none" color="blue">
+								{v}
+							</Tag>
+						)}
+					</span>
+				);
+			},
 		},
 		{
 			title: "用户 ID",
@@ -225,7 +278,10 @@ function EventListPage() {
 					}}
 					allowClear
 					style={{ width: 160 }}
-					options={eventNames.map((n) => ({ label: n, value: n }))}
+					options={eventNames.map((n) => ({
+						label: eventLabelMap[n] ?? n,
+						value: n,
+					}))}
 				/>
 				<Input
 					placeholder="关键词搜索（事件/属性）"
@@ -257,6 +313,46 @@ function EventListPage() {
 				scroll={{ x: 1100 }}
 				onChange={handleTableChange}
 				locale={{ emptyText: "暂无事件数据" }}
+				expandable={{
+					rowExpandable: (record) => Object.keys(record.properties).length > 0,
+					expandedRowRender: (record) => {
+						const entries = Object.entries(record.properties);
+						return (
+							<div className="grid grid-cols-1 gap-2 py-2 pl-12 pr-4 sm:grid-cols-2 xl:grid-cols-3">
+								{entries.map(([key, value]) => {
+									const meta = propertyLabelMap[key];
+									const displayLabel = meta?.label ?? key;
+									const valueStr = formatValue(value);
+									return (
+										<div
+											key={key}
+											className="rounded-lg border border-gray-100 bg-gray-50 px-3 py-2"
+										>
+											<div className="mb-1 flex items-center gap-1.5">
+												<span className="text-sm font-medium text-gray-800">
+													{displayLabel}
+												</span>
+												{meta && (
+													<Tag
+														className="m-0 text-xs leading-none"
+														color="default"
+													>
+														{key}
+													</Tag>
+												)}
+											</div>
+											<Tooltip title={valueStr} mouseEnterDelay={0.5}>
+												<div className="max-h-16 overflow-hidden text-xs text-gray-600 break-all font-mono">
+													{valueStr}
+												</div>
+											</Tooltip>
+										</div>
+									);
+								})}
+							</div>
+						);
+					},
+				}}
 				pagination={{
 					current: data.page,
 					pageSize: data.pageSize,
