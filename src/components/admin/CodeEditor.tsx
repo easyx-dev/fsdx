@@ -31,7 +31,7 @@ export function CodeEditor({
 
 	return (
 		<div
-			className={`h-[300px] rounded-md border border-zinc-200 dark:border-zinc-700 ${className}`}
+			className={`h-[300px] rounded-md border border-zinc-200 dark:border-zinc-700 overflow-hidden ${className}`}
 		>
 			<Editor
 				height="100%"
