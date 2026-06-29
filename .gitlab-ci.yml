@@ -5,13 +5,22 @@ build-and-push:
       command:
         - --insecure-registry=g.ucas.com.cn:8088
   variables:
-    DOCKER_TLS_CERTDIR: ""
-    DOCKER_HOST: "tcp://docker:2375"
+    DOCKER_TLS_CERTDIR: "/certs"
+    DOCKER_HOST: "tcp://docker:2376"
+    DOCKER_DRIVER: overlay2
     NPM_REGISTRY: "https://registry.npmmirror.com"
   before_script:
     - mkdir -p $HOME/.docker
     - echo "{\"auths\":{\"$CI_REGISTRY\":{\"auth\":\"$(echo -n $CI_REGISTRY_USER:$CI_REGISTRY_PASSWORD | base64 -w 0)\"}}}" > $HOME/.docker/config.json
-    - until docker info > /dev/null 2>&1; do echo "等待 Docker daemon 就绪..."; sleep 1; done
+    - |
+      for i in $(seq 1 30); do
+        if docker info > /dev/null 2>&1; then
+          echo "Docker daemon 已就绪"
+          break
+        fi
+        echo "等待 Docker daemon 就绪... ($i/30)"
+        sleep 2
+      done
   script:
     - |
       docker build \
