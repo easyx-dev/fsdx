@@ -5,37 +5,8 @@ build-and-push:
   variables:
     NPM_REGISTRY: "https://registry.npmmirror.com"
   before_script:
-    - apk add --no-cache curl
     - mkdir -p /kaniko/.docker
-    - echo "=== 私有 Registry 变量调试 ==="
-    - echo "PRIVATE_REGISTRY=${PRIVATE_REGISTRY:-未设置}"
-    - echo "PRIVATE_REGISTRY_USER=${PRIVATE_REGISTRY_USER:-未设置}"
-    - echo "PRIVATE_REGISTRY_PASSWORD 长度=${#PRIVATE_REGISTRY_PASSWORD}"
-    - echo "=========================="
     - echo "{\"auths\":{\"$PRIVATE_REGISTRY\":{\"auth\":\"$(echo -n $PRIVATE_REGISTRY_USER:$PRIVATE_REGISTRY_PASSWORD | base64)\"}}}" > /kaniko/.docker/config.json
-    - |
-      echo "=== 确保 Harbor 项目存在 ==="
-      HARBOR_API="https://$PRIVATE_REGISTRY/api/v2.0"
-      HTTP_CODE=$(curl -sk -o /dev/null -w "%{http_code}" -u "$PRIVATE_REGISTRY_USER:$PRIVATE_REGISTRY_PASSWORD" "$HARBOR_API/projects?name=fsdx-web")
-      echo "查询项目 fsdx-web HTTP 状态码: $HTTP_CODE"
-      if [ "$HTTP_CODE" = "200" ]; then
-        PROJECT_EXISTS=$(curl -sk -u "$PRIVATE_REGISTRY_USER:$PRIVATE_REGISTRY_PASSWORD" "$HARBOR_API/projects?name=fsdx-web" | grep -o '"project_id":[0-9]*' | head -1 | cut -d: -f2)
-      fi
-      if [ -z "$PROJECT_EXISTS" ]; then
-        echo "项目 fsdx-web 不存在，正在创建..."
-        curl -sk -u "$PRIVATE_REGISTRY_USER:$PRIVATE_REGISTRY_PASSWORD" \
-          -X POST "$HARBOR_API/projects" \
-          -H "Content-Type: application/json" \
-          -d '{"project_name":"fsdx-web","public":true,"metadata":{"public":"true"}}'
-        echo ""
-        echo "项目创建完成"
-      else
-        echo "项目 fsdx-web 已存在 (ID: $PROJECT_EXISTS)"
-      fi
-    - echo "=== 网络连通性诊断 ==="
-    - curl -sk -o /dev/null -w "HTTP %{http_code}" "https://$PRIVATE_REGISTRY/v2/" || true
-    - echo ""
-    - echo "=========================="
   script:
     - |
       DESTINATIONS="--destination $PRIVATE_REGISTRY/fsdx-web:latest"
