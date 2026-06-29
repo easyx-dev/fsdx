@@ -7,7 +7,7 @@ WORKDIR /app
 ENV npm_config_registry=$NPM_REGISTRY
 ENV PNPM_HOME=/tmp/pnpm-home
 
-RUN npm install -g pnpm@10
+RUN npm install -g pnpm@11
 
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 
