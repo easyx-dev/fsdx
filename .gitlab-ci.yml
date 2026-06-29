@@ -4,6 +4,8 @@ build-and-push:
     entrypoint: [""]
   variables:
     NPM_REGISTRY: "https://registry.npmmirror.com"
+    # Docker Hub 国内镜像，按实际可用地址调整
+    REGISTRY_MIRROR: "https://dockerproxy.com"
   before_script:
     - mkdir -p /kaniko/.docker
     - echo "{\"auths\":{\"$PRIVATE_REGISTRY\":{\"auth\":\"$(echo -n $PRIVATE_REGISTRY_USER:$PRIVATE_REGISTRY_PASSWORD | base64)\"}}}" > /kaniko/.docker/config.json
@@ -21,6 +23,7 @@ build-and-push:
         --context $CI_PROJECT_DIR \
         --dockerfile $CI_PROJECT_DIR/Dockerfile \
         --build-arg NPM_REGISTRY=$NPM_REGISTRY \
+        --registry-mirror=$REGISTRY_MIRROR \
         --skip-tls-verify \
         --skip-tls-verify-pull \
         --cache=true \
