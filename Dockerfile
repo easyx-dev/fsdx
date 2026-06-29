@@ -6,9 +6,7 @@ WORKDIR /app
 
 RUN corepack enable && corepack prepare pnpm@latest --activate
 
-RUN if [ -n "$NPM_REGISTRY" ]; then \
-    pnpm config set registry "$NPM_REGISTRY"; \
-    fi
+ENV npm_config_registry=$NPM_REGISTRY
 
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 
