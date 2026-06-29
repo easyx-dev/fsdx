@@ -7,11 +7,11 @@ WORKDIR /app
 RUN corepack enable && corepack prepare pnpm@latest --activate
 
 ENV npm_config_registry=$NPM_REGISTRY
-ENV PNPM_STORE_DIR=/tmp/pnpm-store
+ENV PNPM_HOME=/tmp/pnpm-home
 
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 
-RUN pnpm install --frozen-lockfile
+RUN pnpm install --frozen-lockfile --store-dir /tmp/pnpm-store
 
 COPY . .
 
