@@ -9,11 +9,9 @@ ENV PNPM_HOME=/tmp/pnpm-home
 
 RUN npm install -g pnpm@11
 
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY . .
 
 RUN pnpm install --frozen-lockfile --store-dir /tmp/pnpm-store --config.package-import-method=copy
-
-COPY . .
 
 RUN pnpm build
 
