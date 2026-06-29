@@ -11,7 +11,7 @@ RUN npm install -g pnpm@10
 
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 
-RUN pnpm install --frozen-lockfile --store-dir /tmp/pnpm-store
+RUN pnpm install --frozen-lockfile --store-dir /tmp/pnpm-store --config.package-import-method=copy
 
 COPY . .
 
