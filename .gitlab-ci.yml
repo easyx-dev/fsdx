@@ -5,6 +5,7 @@ build-and-push:
   variables:
     NPM_REGISTRY: "https://registry.npmmirror.com"
   before_script:
+    - apk add --no-cache curl
     - mkdir -p /kaniko/.docker
     - echo "=== 私有 Registry 变量调试 ==="
     - echo "PRIVATE_REGISTRY=${PRIVATE_REGISTRY:-未设置}"
