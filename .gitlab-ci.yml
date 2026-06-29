@@ -11,6 +11,7 @@ build-and-push:
   before_script:
     - mkdir -p $HOME/.docker
     - echo "{\"auths\":{\"$CI_REGISTRY\":{\"auth\":\"$(echo -n $CI_REGISTRY_USER:$CI_REGISTRY_PASSWORD | base64 -w 0)\"}}}" > $HOME/.docker/config.json
+    - until docker info > /dev/null 2>&1; do echo "等待 Docker daemon 就绪..."; sleep 1; done
   script:
     - |
       docker build \
