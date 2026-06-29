@@ -1,5 +1,5 @@
 build-and-push:
-  image: gcr.io/kaniko-project/executor:debug
+  image: vyx7n6jknmproy-gcr.xuanyuan.run/kaniko-project/executor:debug
   variables:
     NPM_REGISTRY: "https://registry.npmmirror.com"
   before_script:
