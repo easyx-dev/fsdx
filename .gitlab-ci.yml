@@ -31,10 +31,10 @@ stages:
 
 构建通知:
   stage: notify
-  image: curlimages/curl:latest
+  image: alpine:latest
   when: always
   before_script:
-    - apk add --no-cache jq
+    - apk add --no-cache curl jq
     - |
       if [ "$CI_JOB_STATUS" = "success" ]; then
         STATUS="<font color=\"info\">成功</font>"
