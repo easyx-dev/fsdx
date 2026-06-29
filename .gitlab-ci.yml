@@ -1,9 +1,12 @@
 build-and-push:
   image: docker:27-cli
   services:
-    - docker:27-dind
+    - name: docker:27-dind
+      command:
+        - --insecure-registry=g.ucas.com.cn:8088
   variables:
-    DOCKER_TLS_CERTDIR: "/certs"
+    DOCKER_TLS_CERTDIR: ""
+    DOCKER_HOST: "tcp://docker:2375"
     NPM_REGISTRY: "https://registry.npmmirror.com"
   before_script:
     - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
