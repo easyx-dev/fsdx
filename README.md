@@ -1,4 +1,4 @@
-# fsdx-cms
+# fsdx-web
 
 基于 TanStack Start 构建的全栈 Web 应用框架。开箱内置 CMS 示例、RBAC 认证、事件埋点、国际化等基础设施，支持管理端和客户端前台，可快速扩展为任意业务系统。
 

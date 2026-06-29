@@ -103,7 +103,7 @@ const initSchema = z
 		password: z.string().min(6).max(100),
 		confirmPassword: z.string().min(1),
 		email: z.string().email(),
-		siteName: z.string().default("FSDX CMS"),
+		siteName: z.string().default("FSDX WEB"),
 		smtpHost: z.string().optional(),
 		smtpPort: z.number().int().optional(),
 		smtpSecure: z.boolean().optional(),
@@ -633,7 +633,7 @@ describe("initSchema（系统初始化）", () => {
 		});
 		expect(result.success).toBe(true);
 		if (result.success) {
-			expect(result.data.siteName).toBe("FSDX CMS");
+			expect(result.data.siteName).toBe("FSDX WEB");
 		}
 	});
 

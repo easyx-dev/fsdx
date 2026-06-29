@@ -45,7 +45,7 @@ const initSchema = z
 		password: z.string().min(6, "密码至少 6 位").max(100),
 		confirmPassword: z.string().min(1, "请确认密码"),
 		email: z.string().email("请输入有效的邮箱地址"),
-		siteName: z.string().default("FSDX CMS"),
+		siteName: z.string().default("FSDX WEB"),
 		smtpHost: z.string().optional(),
 		smtpPort: z.number().int().optional(),
 		smtpSecure: z.boolean().optional(),

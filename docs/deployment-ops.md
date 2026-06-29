@@ -194,6 +194,135 @@ pnpm start      # node .output/server/index.mjs
 
 ---
 
+## Docker 部署
+
+默认使用 Docker 镜像部署，推荐搭配 `docker compose` 一键启动。
+
+### 镜像构建
+
+```bash
+# 默认官方源构建
+docker build -t fsdx-cms .
+
+# 使用国内 npm 镜像源加速构建
+docker build --build-arg NPM_REGISTRY=https://registry.npmmirror.com -t fsdx-cms .
+```
+
+### Dockerfile 结构
+
+```
+多阶段构建
+    │
+    ├── builder 阶段 (node:24-alpine)
+    │   ├── ARG NPM_REGISTRY           # 可选，自定义 npm 镜像源
+    │   ├── corepack enable → 启用 pnpm
+    │   ├── pnpm install --frozen-lockfile
+    │   └── pnpm build → .output/
+    │
+    └── runner 阶段 (node:24-alpine)
+        ├── 非 root 用户 (nodejs:nodejs)
+        ├── HEALTHCHECK → GET /health（每 30s）
+        ├── VOLUME /app/.tmp（日志 + 上传文件）
+        ├── EXPOSE 3000
+        └── CMD node .output/server/index.mjs
+```
+
+### docker compose 部署
+
+项目根目录提供 `docker-compose.yml`，包含 PostgreSQL + App 两个服务：
+
+```bash
+# 1. 创建根目录 .env 文件，填写必填变量
+cat > .env << EOF
+DB_PASSWORD=your_db_password
+JWT_SECRET=your-jwt-secret-at-least-32-characters
+LOG_LEVEL=info
+PORT=3000
+EOF
+
+# 2. 启动所有服务
+docker compose up -d
+
+# 3. 查看日志
+docker compose logs -f app
+
+# 4. 停止服务
+docker compose down
+```
+
+服务拓扑：
+
+```
+┌──────────────────────────────────────┐
+│  docker compose                      │
+│                                      │
+│  ┌──────────┐     ┌──────────────┐   │
+│  │   app    │────▶│     db       │   │
+│  │  :3000   │     │ postgres:16  │   │
+│  │          │     │  :5432       │   │
+│  │ .tmp ◀──┼──┐  │ pgdata ◀─────┼───│── 卷持久化
+│  └──────────┘  │  └──────────────┘  │ │
+│                │                     │
+│  app-data ◀────┘  pgdata ◀──────────┘ │
+└──────────────────────────────────────┘
+```
+
+> **注意**：首次部署后需访问 `/admin` 完成系统初始化（创建 root 管理员），详见[首次部署 — 系统初始化](#首次部署--系统初始化)。
+
+### 环境变量映射
+
+docker compose 中 App 容器的环境变量自动拼接：
+
+| 变量 | 容器内值 | 来源 |
+|------|----------|------|
+| `DATABASE_URL` | `postgresql://postgres:${DB_PASSWORD}@db:5432/fsdx_cms_tan` | 自动拼接 |
+| `JWT_SECRET` | `${JWT_SECRET}` | 宿主机 `.env` |
+| `LOG_LEVEL` | `${LOG_LEVEL:-info}` | 宿主机 `.env` |
+| `STORAGE_DIR` | `/app/.tmp` | 硬编码 |
+
+---
+
+## CI/CD 自动构建
+
+### GitHub Actions（`.github/workflows/deploy.yml`）
+
+触发条件：推送到 `main` 分支 / 打 `v*` 标签。
+
+```yaml
+流程:
+  检出代码 → 登录 GHCR → 生成镜像标签 → docker build & push
+```
+
+推送到 **GitHub Container Registry**（`ghcr.io/<owner>/<repo>`）：
+
+| 触发事件 | 镜像标签 |
+|----------|----------|
+| push `main` 分支 | `latest`、`main` |
+| push `v1.0.0` 标签 | `1.0.0`、`v1.0.0` |
+| 其他分支 | 分支名 |
+
+使用官方 npm 源构建，无需额外配置。镜像推送到 `ghcr.io`，默认使用 `GITHUB_TOKEN` 认证。
+
+### GitLab CI（`.gitlab-ci.yml`）
+
+触发条件：推送到 `main` 分支 / 打任意标签。
+
+```yaml
+流程:
+  登录 GitLab Registry → docker build（国内镜像源）→ docker push
+```
+
+推送到 **GitLab Container Registry**（`$CI_REGISTRY_IMAGE`）：
+
+| 触发事件 | 镜像标签 |
+|----------|----------|
+| push `main` 分支 | `latest` |
+| push 标签 | `latest` + 标签名 |
+
+构建时通过 `--build-arg NPM_REGISTRY=https://registry.npmmirror.com` 使用国内 npm 镜像源加速依赖安装。
+
+---
+
 ## 健康检查
 
 ```bash
@@ -220,3 +349,8 @@ GET /health → { "status": "ok", "uptime": 123.456 }
 | `src/server/init/init.server.ts` | 系统初始化逻辑 |
 | `src/server/logs/logs.server.ts` | 日志文件查询 |
 | `env/.env.example` | 环境变量模板 |
+| `Dockerfile` | Docker 多阶段构建 |
+| `.dockerignore` | Docker 构建排除规则 |
+| `docker-compose.yml` | Docker Compose 编排（PostgreSQL + App） |
+| `.github/workflows/deploy.yml` | GitHub Actions CI/CD（构建 → GHCR） |
+| `.gitlab-ci.yml` | GitLab CI/CD（构建 → GitLab Registry） |
