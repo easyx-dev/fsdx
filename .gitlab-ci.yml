@@ -1,7 +1,10 @@
 build-and-push:
   image: docker:latest
   services:
-    - docker:dind
+    - name: docker:dind
+      command: ["--tls=false"]
+  variables:
+    DOCKER_HOST: tcp://docker:2375
   before_script:
     - |
       until docker info > /dev/null 2>&1; do
