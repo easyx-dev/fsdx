@@ -1,16 +1,8 @@
 build-and-push:
   image: docker:latest
-  services:
-    - docker:dind
   variables:
-    DOCKER_HOST: tcp://docker:2375
-    DOCKER_TLS_CERTDIR: ""
+    DOCKER_HOST: unix:///var/run/docker.sock
   before_script:
-    - |
-      until docker info > /dev/null 2>&1; do
-        echo "等待 Docker daemon 就绪..."
-        sleep 2
-      done
     - docker login -u $PRIVATE_REGISTRY_USER -p $PRIVATE_REGISTRY_PASSWORD $PRIVATE_REGISTRY
   script:
     - |
