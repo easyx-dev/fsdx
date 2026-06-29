@@ -21,6 +21,7 @@ build-and-push:
         echo "等待 Docker daemon 就绪... ($i/30)"
         sleep 2
       done
+    - docker info > /dev/null 2>&1 || { echo "错误: Docker daemon 在 60s 内未就绪，请确认 GitLab Runner 支持 dind 服务"; exit 1; }
   script:
     - |
       docker build \
