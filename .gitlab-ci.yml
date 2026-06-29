@@ -26,7 +26,8 @@ build-and-push:
         --context $CI_PROJECT_DIR \
         --dockerfile $CI_PROJECT_DIR/Dockerfile \
         --build-arg NPM_REGISTRY=$NPM_REGISTRY \
-        --insecure-registry=$PRIVATE_REGISTRY \
+        --skip-tls-verify \
+        --skip-tls-verify-pull \
         --cache=true \
         --cleanup \
         $DESTINATIONS
