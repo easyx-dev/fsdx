@@ -1,44 +1,28 @@
 build-and-push:
-  image: docker:27-cli
-  services:
-    - name: docker:27-dind
-      command:
-        - --insecure-registry=g.ucas.com.cn:8088
+  image: gcr.io/kaniko-project/executor:debug
   variables:
-    DOCKER_TLS_CERTDIR: "/certs"
-    DOCKER_HOST: "tcp://docker:2376"
-    DOCKER_DRIVER: overlay2
     NPM_REGISTRY: "https://registry.npmmirror.com"
   before_script:
-    - mkdir -p $HOME/.docker
-    - echo "{\"auths\":{\"$CI_REGISTRY\":{\"auth\":\"$(echo -n $CI_REGISTRY_USER:$CI_REGISTRY_PASSWORD | base64 -w 0)\"}}}" > $HOME/.docker/config.json
-    - |
-      for i in $(seq 1 30); do
-        if docker info > /dev/null 2>&1; then
-          echo "Docker daemon 已就绪"
-          break
-        fi
-        echo "等待 Docker daemon 就绪... ($i/30)"
-        sleep 2
-      done
-    - docker info > /dev/null 2>&1 || { echo "错误: Docker daemon 在 60s 内未就绪，请确认 GitLab Runner 支持 dind 服务"; exit 1; }
+    - mkdir -p /kaniko/.docker
+    - echo "{\"auths\":{\"$CI_REGISTRY\":{\"auth\":\"$(echo -n $CI_REGISTRY_USER:$CI_REGISTRY_PASSWORD | base64 -w 0)\"}}}" > /kaniko/.docker/config.json
   script:
     - |
-      docker build \
-        --build-arg NPM_REGISTRY=$NPM_REGISTRY \
-        -t $CI_REGISTRY_IMAGE:latest \
-        .
-    - docker push $CI_REGISTRY_IMAGE:latest
-    - |
+      DESTINATIONS="--destination $CI_REGISTRY_IMAGE:latest"
       if [ -n "$CI_COMMIT_SHORT_SHA" ]; then
-        docker tag $CI_REGISTRY_IMAGE:latest $CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA
-        docker push $CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA
+        DESTINATIONS="$DESTINATIONS --destination $CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA"
+      fi
+      if [ -n "$CI_COMMIT_TAG" ]; then
+        DESTINATIONS="$DESTINATIONS --destination $CI_REGISTRY_IMAGE:$CI_COMMIT_TAG"
       fi
     - |
-      if [ -n "$CI_COMMIT_TAG" ]; then
-        docker tag $CI_REGISTRY_IMAGE:latest $CI_REGISTRY_IMAGE:$CI_COMMIT_TAG
-        docker push $CI_REGISTRY_IMAGE:$CI_COMMIT_TAG
-      fi
+      /kaniko/executor \
+        --context $CI_PROJECT_DIR \
+        --dockerfile $CI_PROJECT_DIR/Dockerfile \
+        --build-arg NPM_REGISTRY=$NPM_REGISTRY \
+        --insecure-registry=g.ucas.com.cn:8088 \
+        --cache=true \
+        --cleanup \
+        $DESTINATIONS
   rules:
     - if: $CI_COMMIT_BRANCH == "main"
     - if: $CI_COMMIT_TAG
