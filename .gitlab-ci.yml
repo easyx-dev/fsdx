@@ -1,6 +1,7 @@
 build-and-push:
-  entrypoint: [""]
-  image: vyx7n6jknmproy-gcr.xuanyuan.run/kaniko-project/executor:debug
+  image:
+    name: vyx7n6jknmproy-gcr.xuanyuan.run/kaniko-project/executor:debug
+    entrypoint: [""]
   variables:
     NPM_REGISTRY: "https://registry.npmmirror.com"
   before_script:
