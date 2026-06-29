@@ -1,4 +1,9 @@
-build-and-push:
+stages:
+  - build
+  - notify
+
+构建推送:
+  stage: build
   image: docker:latest
   variables:
     DOCKER_HOST: unix:///var/run/docker.sock
@@ -20,6 +25,46 @@ build-and-push:
           -t $PRIVATE_REGISTRY/$tag .
         docker push $PRIVATE_REGISTRY/$tag
       done
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+    - if: $CI_COMMIT_TAG
+
+构建通知:
+  stage: notify
+  image: curlimages/curl:latest
+  when: always
+  before_script:
+    - apk add --no-cache jq
+    - |
+      if [ "$CI_JOB_STATUS" = "success" ]; then
+        STATUS="<font color=\"info\">成功</font>"
+      else
+        STATUS="<font color=\"warning\">失败</font>"
+      fi
+      NL=$(printf '\n')
+      IMAGES="> ${PRIVATE_REGISTRY}/ucas/fsdx-web:latest"
+      if [ -n "$CI_COMMIT_SHORT_SHA" ]; then
+        IMAGES="${IMAGES}${NL}> ${PRIVATE_REGISTRY}/ucas/fsdx-web:${CI_COMMIT_SHORT_SHA}"
+      fi
+      if [ -n "$CI_COMMIT_TAG" ]; then
+        IMAGES="${IMAGES}${NL}> ${PRIVATE_REGISTRY}/ucas/fsdx-web:${CI_COMMIT_TAG}"
+      fi
+  script:
+    - |
+      jq -n \
+        --arg project "$CI_PROJECT_NAME" \
+        --arg branch "$CI_COMMIT_REF_NAME" \
+        --arg sha "$CI_COMMIT_SHORT_SHA" \
+        --arg status "$STATUS" \
+        --arg images "$IMAGES" \
+        --arg pipeline "$CI_PIPELINE_URL" \
+        '{
+          msgtype: "markdown",
+          markdown: {
+            content: ("## 构建通知\n> 项目: \($project)\n> 分支: \($branch)\n> 提交: \($sha)\n> 状态: \($status)\n> 镜像:\n\($images)\n> [查看流水线](\($pipeline))")
+          }
+        }' \
+        | curl -sS -X POST "$WECHAT_WEBHOOK_URL" -H "Content-Type: application/json" -d @-
   rules:
     - if: $CI_COMMIT_BRANCH == "main"
     - if: $CI_COMMIT_TAG
