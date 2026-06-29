@@ -5,12 +5,13 @@ ARG NPM_REGISTRY
 WORKDIR /app
 
 ENV npm_config_registry=$NPM_REGISTRY
+ENV PNPM_HOME=/tmp/pnpm-home
 
 RUN npm install -g pnpm@10
 
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 
-RUN pnpm install --frozen-lockfile
+RUN pnpm install --frozen-lockfile --store-dir /tmp/pnpm-store
 
 COPY . .
 
