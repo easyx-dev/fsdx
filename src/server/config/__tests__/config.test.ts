@@ -96,7 +96,7 @@ describe("loadConfigCache", () => {
 					{
 						id: "c-1",
 						key: "site_name",
-						value: "FSDX CMS",
+						value: "FSDX",
 						clientVisible: true,
 					},
 				]),
@@ -104,7 +104,7 @@ describe("loadConfigCache", () => {
 		});
 		await loadConfigCache();
 		expect(mockConfigCache.set).toHaveBeenCalledWith("all", [
-			{ id: "c-1", key: "site_name", value: "FSDX CMS", clientVisible: true },
+			{ id: "c-1", key: "site_name", value: "FSDX", clientVisible: true },
 		]);
 	});
 });
@@ -134,7 +134,7 @@ describe("ensurePresetConfigs", () => {
 		mockDb.query.systemConfig.findFirst.mockResolvedValue({
 			id: "c-1",
 			key: "site_name",
-			value: "FSDX CMS",
+			value: "FSDX",
 			deletedAt: null,
 		});
 		mockDb.insert.mockReturnValue({
@@ -169,10 +169,10 @@ describe("ensurePresetConfigs", () => {
 describe("getConfig", () => {
 	it("从缓存同步获取配置值", () => {
 		mockConfigCache.set("all", [
-			{ id: "c-1", key: "site_name", value: "FSDX CMS", clientVisible: true },
+			{ id: "c-1", key: "site_name", value: "FSDX", clientVisible: true },
 		]);
 		const value = getConfig("site_name");
-		expect(value).toBe("FSDX CMS");
+		expect(value).toBe("FSDX");
 	});
 
 	it("缓存中不存在时返回空字符串", () => {
@@ -251,7 +251,7 @@ describe("deleteConfig", () => {
 describe("getVisibleConfigRows", () => {
 	it("返回 clientVisible=true 的配置行", () => {
 		mockConfigCache.set("all", [
-			{ id: "c-1", key: "site_name", value: "FSDX CMS", clientVisible: true },
+			{ id: "c-1", key: "site_name", value: "FSDX", clientVisible: true },
 			{ id: "c-2", key: "other", value: "val", clientVisible: false },
 		]);
 		const rows = getVisibleConfigRows();
@@ -279,9 +279,9 @@ describe("getConfigTranslations", () => {
 	});
 
 	it("缓存命中直接返回", async () => {
-		mockConfigTranslationCache.set("en", { "c-1": "FSDX CMS EN" });
+		mockConfigTranslationCache.set("en", { "c-1": "FSDX EN" });
 		const result = await getConfigTranslations("en");
-		expect(result).toEqual({ "c-1": "FSDX CMS EN" });
+		expect(result).toEqual({ "c-1": "FSDX EN" });
 	});
 
 	it("缓存未命中时查询 DB 并写入缓存", async () => {
@@ -290,13 +290,13 @@ describe("getConfigTranslations", () => {
 			from: vi.fn(() => ({
 				where: vi
 					.fn()
-					.mockResolvedValue([{ entityId: "c-1", value: "FSDX CMS EN" }]),
+					.mockResolvedValue([{ entityId: "c-1", value: "FSDX EN" }]),
 			})),
 		});
 		const result = await getConfigTranslations("en");
-		expect(result).toEqual({ "c-1": "FSDX CMS EN" });
+		expect(result).toEqual({ "c-1": "FSDX EN" });
 		expect(mockConfigTranslationCache.set).toHaveBeenCalledWith("en", {
-			"c-1": "FSDX CMS EN",
+			"c-1": "FSDX EN",
 		});
 	});
 });

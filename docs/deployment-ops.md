@@ -1,5 +1,106 @@
 # 部署运维
 
+## 生产环境部署
+
+### 服务器目录结构
+
+```
+/opt/fsdx-web/
+├── docker-compose.prod.yml     # 生产 docker compose 编排文件
+├── .env                        # 全部配置（DATABASE_URL、JWT_SECRET、LOG_LEVEL）
+└── volumes/
+    └── app/                    # 应用数据（日志、上传文件）
+```
+
+### 首次部署
+
+```bash
+# 1. 创建目录结构
+mkdir -p /opt/fsdx-web/volumes/app
+
+# 2. 创建配置文件
+cp .env.example /opt/fsdx-web/.env
+# 编辑 /opt/fsdx-web/.env，修改 DATABASE_URL 和 JWT_SECRET
+
+# 3. 放入 compose 文件
+cp docker-compose.prod.yml /opt/fsdx-web/
+
+# 4. 拉取镜像并启动
+cd /opt/fsdx-web
+docker compose -f docker-compose.prod.yml pull
+docker compose -f docker-compose.prod.yml up -d
+```
+
+### 服务拓扑
+
+```
+宿主机 nginx (80/443, SSL)
+    └── proxy_pass http://127.0.0.1:3000
+            │
+┌───────────┴───────────────┐
+│  docker compose (app)      │
+│                             │
+│  ┌──────────┐              │
+│  │   app    │──────────────┼──▶ 宿主机 PostgreSQL
+│  │ :3000    │              │
+│  │          │              │
+│  │ volumes  │              │
+│  └──────────┘              │
+│       │                     │
+│  volumes/app                │
+└───────┼─────────────────────┘
+```
+
+App 端口绑定 `127.0.0.1:3000`，仅允许宿主机 nginx 反代访问，不直接暴露公网。PostgreSQL 使用宿主实例，多服务共享。
+
+### 环境变量分层
+
+全部通过 compose `environment:` 注入，变量统一在 `.env` 文件管理：
+
+| 变量 | 说明 |
+|------|------|
+| `DATABASE_URL` | PostgreSQL 连接字符串，指向宿主 PG 实例 |
+| `STORAGE_DIR` | compose 硬编码 `/app/data` |
+| `JWT_SECRET` | JWT 签名密钥 |
+| `LOG_LEVEL` | 日志级别，默认 `info` |
+
+### 部署命令
+
+```bash
+# 手动部署指定版本
+cd /opt/fsdx-web
+TAG=v1.0.0 docker compose -f docker-compose.prod.yml pull
+TAG=v1.0.0 docker compose -f docker-compose.prod.yml up -d
+
+# 查看运行状态
+docker compose -f docker-compose.prod.yml ps
+docker compose -f docker-compose.prod.yml logs -f app
+
+# 回滚到指定版本
+TAG=<旧版本> docker compose -f docker-compose.prod.yml up -d
+```
+
+### CI/CD 自动部署
+
+GitLab CI 在 `main` 分支推送后自动构建镜像并部署：
+
+```
+git push main
+    ↓
+构建阶段: docker build → push to GitLab Registry
+    ↓
+部署阶段: SSH 到服务器 → docker compose pull → docker compose up -d
+```
+
+CI 部署使用 `${CI_COMMIT_SHORT_SHA}` 作为镜像 tag，每次部署可追溯到具体 commit。
+
+需要设置 GitLab CI 变量：
+- `DEPLOY_USER` — 服务器 SSH 用户
+- `DEPLOY_HOST` — 服务器地址
+- SSH 密钥配置（GitLab Runner → 目标服务器免密登录）
+
+---
+
 ## 启动流程
 
 ```
@@ -183,22 +284,9 @@ initSystem() 在事务中执行:
 
 ---
 
-## 生产构建
+## 镜像构建
 
-```bash
-pnpm build      # Vite 生产构建 → .output/
-pnpm start      # node .output/server/index.mjs
-```
-
-构建时 `importProtection` 规则确保 `bcryptjs`、`drizzle-orm`、`openai` 不会泄漏到客户端 bundle。
-
----
-
-## Docker 部署
-
-默认使用 Docker 镜像部署，推荐搭配 `docker compose` 一键启动。
-
-### 镜像构建
+### 本地构建
 
 ```bash
 # 默认官方源构建
@@ -213,7 +301,7 @@ docker build --build-arg NPM_REGISTRY=https://registry.npmmirror.com -t fsdx-cms
 ```
 多阶段构建
     │
-    ├── builder 阶段 (node:24-alpine)
+    ├── builder 阶段 (node:24-slim)
     │   ├── ARG NPM_REGISTRY           # 可选，自定义 npm 镜像源
     │   ├── corepack enable → 启用 pnpm
     │   ├── pnpm install --frozen-lockfile
@@ -222,106 +310,27 @@ docker build --build-arg NPM_REGISTRY=https://registry.npmmirror.com -t fsdx-cms
     └── runner 阶段 (node:24-alpine)
         ├── 非 root 用户 (nodejs:nodejs)
         ├── HEALTHCHECK → GET /health（每 30s）
-        ├── VOLUME /app/.tmp（日志 + 上传文件）
+        ├── VOLUME /app/data（日志 + 上传文件）
         ├── EXPOSE 3000
         └── CMD node .output/server/index.mjs
 ```
 
-### docker compose 部署
+---
 
-项目根目录提供 `docker-compose.yml`，包含 PostgreSQL + App 两个服务：
+## 开发环境 docker compose
+
+项目根目录 `docker-compose.yml` 用于本地开发，`build:` 从源码构建，自带默认配置开箱即用：
 
 ```bash
-# 1. 创建根目录 .env 文件，填写必填变量
-cat > .env << EOF
-DB_PASSWORD=your_db_password
-JWT_SECRET=your-jwt-secret-at-least-32-characters
-LOG_LEVEL=info
-PORT=3000
-EOF
-
-# 2. 启动所有服务
+# 直接启动（使用默认配置）
 docker compose up -d
 
-# 3. 查看日志
+# 查看日志
 docker compose logs -f app
 
-# 4. 停止服务
-docker compose down
+# 如需自定义，创建 .env 覆盖默认值
+cp .env.example .env
 ```
-
-服务拓扑：
-
-```
-┌──────────────────────────────────────┐
-│  docker compose                      │
-│                                      │
-│  ┌──────────┐     ┌──────────────┐   │
-│  │   app    │────▶│     db       │   │
-│  │  :3000   │     │ postgres:16  │   │
-│  │          │     │  :5432       │   │
-│  │ .tmp ◀──┼──┐  │ pgdata ◀─────┼───│── 卷持久化
-│  └──────────┘  │  └──────────────┘  │ │
-│                │                     │
-│  app-data ◀────┘  pgdata ◀──────────┘ │
-└──────────────────────────────────────┘
-```
-
-> **注意**：首次部署后需访问 `/admin` 完成系统初始化（创建 root 管理员），详见[首次部署 — 系统初始化](#首次部署--系统初始化)。
-
-### 环境变量映射
-
-docker compose 中 App 容器的环境变量自动拼接：
-
-| 变量 | 容器内值 | 来源 |
-|------|----------|------|
-| `DATABASE_URL` | `postgresql://postgres:${DB_PASSWORD}@db:5432/fsdx_cms_tan` | 自动拼接 |
-| `JWT_SECRET` | `${JWT_SECRET}` | 宿主机 `.env` |
-| `LOG_LEVEL` | `${LOG_LEVEL:-info}` | 宿主机 `.env` |
-| `STORAGE_DIR` | `/app/.tmp` | 硬编码 |
-
----
-
-## CI/CD 自动构建
-
-### GitHub Actions（`.github/workflows/deploy.yml`）
-
-触发条件：推送到 `main` 分支 / 打 `v*` 标签。
-
-```yaml
-流程:
-  检出代码 → 登录 GHCR → 生成镜像标签 → docker build & push
-```
-
-推送到 **GitHub Container Registry**（`ghcr.io/<owner>/<repo>`）：
-
-| 触发事件 | 镜像标签 |
-|----------|----------|
-| push `main` 分支 | `latest`、`main` |
-| push `v1.0.0` 标签 | `1.0.0`、`v1.0.0` |
-| 其他分支 | 分支名 |
-
-使用官方 npm 源构建，无需额外配置。镜像推送到 `ghcr.io`，默认使用 `GITHUB_TOKEN` 认证。
-
-### GitLab CI（`.gitlab-ci.yml`）
-
-触发条件：推送到 `main` 分支 / 打任意标签。
-
-```yaml
-流程:
-  登录 GitLab Registry → docker build（国内镜像源）→ docker push
-```
-
-推送到 **GitLab Container Registry**（`$CI_REGISTRY_IMAGE`）：
-
-| 触发事件 | 镜像标签 |
-|----------|----------|
-| push `main` 分支 | `latest` |
-| push 标签 | `latest` + 标签名 |
-
-构建时通过 `--build-arg NPM_REGISTRY=https://registry.npmmirror.com` 使用国内 npm 镜像源加速依赖安装。
-
----
 
 ## 健康检查
 
@@ -349,8 +358,9 @@ GET /health → { "status": "ok", "uptime": 123.456 }
 | `src/server/init/init.server.ts` | 系统初始化逻辑 |
 | `src/server/logs/logs.server.ts` | 日志文件查询 |
 | `env/.env.example` | 环境变量模板 |
+| `.env.example` | compose .env 变量模板 |
 | `Dockerfile` | Docker 多阶段构建 |
 | `.dockerignore` | Docker 构建排除规则 |
-| `docker-compose.yml` | Docker Compose 编排（PostgreSQL + App） |
-| `.github/workflows/deploy.yml` | GitHub Actions CI/CD（构建 → GHCR） |
-| `.gitlab-ci.yml` | GitLab CI/CD（构建 → GitLab Registry） |
+| `docker-compose.yml` | 开发环境 docker compose（build from source） |
+| `docker-compose.prod.yml` | 生产环境 docker compose（pull from registry） |
+| `.gitlab-ci.yml` | GitLab CI/CD（构建 + 自动部署） |

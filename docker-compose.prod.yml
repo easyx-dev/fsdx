@@ -1,0 +1,40 @@
+# 生产环境 docker compose 部署
+# 部署命令：
+#   cd /opt/fsdx-web
+#   TAG=latest docker compose -f docker-compose.prod.yml pull
+#   TAG=latest docker compose -f docker-compose.prod.yml up -d
+#
+# 服务器目录结构（建议 /opt/fsdx-web/）：
+#   cp .env.example .env
+#   ├── docker-compose.prod.yml
+#   ├── .env                      # 全部配置
+#   └── volumes/app/              # 应用数据（日志、上传文件）
+
+services:
+  app:
+    image: g.ucas.com.cn:8088/ucas/fsdx-web:${TAG:-latest}
+    container_name: fsdx-app
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    ports:
+      - "127.0.0.1:${APP_PORT:-3000}:3000"
+    environment:
+      DATABASE_URL: ${DATABASE_URL}
+      STORAGE_DIR: /app/data
+      JWT_SECRET: ${JWT_SECRET}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+    volumes:
+      - ./volumes/app:/app/data
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    mem_limit: 1g
+    mem_reservation: 256m
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3000/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3

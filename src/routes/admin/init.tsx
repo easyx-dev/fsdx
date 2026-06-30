@@ -45,7 +45,7 @@ const initSchema = z
 		password: z.string().min(6, "密码至少 6 位").max(100),
 		confirmPassword: z.string().min(1, "请确认密码"),
 		email: z.string().email("请输入有效的邮箱地址"),
-		siteName: z.string().default("FSDX WEB"),
+		siteName: z.string().default("FSDX"),
 		smtpHost: z.string().optional(),
 		smtpPort: z.number().int().optional(),
 		smtpSecure: z.boolean().optional(),
@@ -99,7 +99,7 @@ const initSFn = createServerFn({ method: "POST" })
 				password: data.password,
 				email: data.email,
 			},
-			siteName: data.siteName || "FSDX CMS",
+			siteName: data.siteName || "FSDX",
 			smtp: smtpProvided
 				? {
 						host: data.smtpHost,
@@ -247,7 +247,7 @@ function AdminInitPage() {
 						size="large"
 						autoComplete="off"
 						initialValues={{
-							siteName: "FSDX CMS",
+							siteName: "FSDX",
 							smtpPort: 587,
 							smtpSecure: false,
 						}}
