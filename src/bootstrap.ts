@@ -3,6 +3,7 @@
  */
 import { resolve } from "node:path";
 import { config } from "dotenv";
+import { runMigrations } from "#/db/migrate";
 import { logger } from "#/lib/logger/logger";
 import { ensurePresetConfigs } from "#/server/config/config.server";
 import { ensurePresetDicts } from "#/server/dict/dict.server";
@@ -19,12 +20,15 @@ import { registerAllTasks } from "#/server/tasks/tasks.server";
 /** 优雅关闭超时时间（毫秒），防止缓冲刷入挂起导致进程无法退出 */
 const GRACEFUL_SHUTDOWN_TIMEOUT = 10_000;
 
-export function bootstrap() {
+export async function bootstrap() {
 	logger.info("服务启动初始化开始");
 
 	// 加载环境变量（优先级：.env.local > .env）
 	config({ path: resolve(process.cwd(), "env", ".env") });
 	config({ path: resolve(process.cwd(), "env", ".env.local"), override: true });
+
+	// 程序化数据库迁移（在预置数据写入前执行，确保表结构就绪）
+	await runMigrations();
 
 	// 独立预置数据（fire-and-forget，不阻塞服务启动，无交叉依赖）
 	void ensurePresetDicts().catch((err) => {

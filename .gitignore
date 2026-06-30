@@ -3,6 +3,7 @@ node_modules
 dist
 dist-ssr
 .env.*
+.env
 !.env.example
 .nitro
 .tanstack
@@ -13,3 +14,4 @@ __unconfig*
 todos.json
 .tmp
 .data
+.volumes

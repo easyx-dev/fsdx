@@ -7,7 +7,7 @@
 import { bootstrap } from "./src/bootstrap";
 import { createHonoApp } from "./src/hono-app";
 
-bootstrap();
+await bootstrap();
 
 const app = createHonoApp();
 

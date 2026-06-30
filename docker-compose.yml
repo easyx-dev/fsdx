@@ -1,12 +1,32 @@
+# 启动前在项目根目录创建 .env 文件，设置 DB_PASSWORD：
+#   echo 'DB_PASSWORD=your-secure-password' > .env
+# 其他环境变量（DATABASE_URL、JWT_SECRET 等）从 env_prod/.env 加载
+
 services:
   db:
-    image: postgres:16-alpine
+    image: postgres:18-alpine
+    container_name: fsdx-db
     environment:
-      POSTGRES_DB: fsdx_cms_tan
+      POSTGRES_DB: fsdx_web
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: ${DB_PASSWORD}
     volumes:
-      - pgdata:/var/lib/postgresql/data
+      - ./.volumes/db/data:/var/lib/postgresql
+    ports:
+      - "127.0.0.1:5433:5432"
+    networks:
+      - fsdx-network
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+        reservations:
+          memory: 256M
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 10s
@@ -17,15 +37,35 @@ services:
   app:
     build:
       context: .
+    container_name: fsdx-app
     ports:
       - "${PORT:-3000}:3000"
+    env_file:
+      - env_prod/.env
+    environment:
+      DATABASE_URL: "postgresql://postgres:${DB_PASSWORD}@db:5432/fsdx_web"
+      STORAGE_DIR: /app/data
     volumes:
-      - ./env:/app/env:ro
-      - ./data:/app/data
+      - ./env_prod:/app/env:ro
+      - ./.volumes/app:/app/data
+    networks:
+      - fsdx-network
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+        reservations:
+          memory: 256M
     depends_on:
       db:
         condition: service_healthy
     restart: unless-stopped
 
-volumes:
-  pgdata:
+networks:
+  fsdx-network:
+    driver: bridge
