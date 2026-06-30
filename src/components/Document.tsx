@@ -16,7 +16,7 @@ import {
 	init as trackInit,
 } from "#/lib/track/track";
 import adminGlobalCss from "#/styles/admin.global.css?url";
-import ssrGlobalCss from "#/styles/ssr.global.css?url";
+import ssrGlobalCss from "#/styles/ssr.global.css?inline";
 import { AdminProvider } from "./admin/AdminProvider";
 
 const THEME_INIT_SCRIPT = `(function(){try{var s=window.localStorage.getItem('theme');var m=(s==='light'||s==='dark'||s==='auto')?s:'auto';var d=m==='auto'?window.matchMedia('(prefers-color-scheme: dark)').matches:m==='dark';var r=document.documentElement;r.classList.remove('light','dark');r.classList.add(d?'dark':'light');if(m==='auto'){r.removeAttribute('data-theme')}else{r.setAttribute('data-theme',m)}r.style.colorScheme=d?'dark':'light'}catch(e){}})();`;
@@ -56,7 +56,7 @@ export function SSRRootDocument({ children }: SSRRootDocumentProps) {
 		<html lang={locale} suppressHydrationWarning>
 			<head>
 				<script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
-				<link rel="stylesheet" href={ssrGlobalCss} />
+				<style dangerouslySetInnerHTML={{ __html: ssrGlobalCss }} />
 				<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
 				<title>{siteName}</title>
 				{systemConfig?.description && (
