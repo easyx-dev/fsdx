@@ -24,11 +24,11 @@ WORKDIR /app
 
 RUN addgroup -g 1001 -S nodejs && adduser -S nodejs -u 1001
 
-COPY --from=builder /app/.output ./.output
-COPY --from=builder /app/package.json ./package.json
-COPY --from=builder /app/drizzle ./drizzle
+COPY --from=builder --chown=nodejs:nodejs /app/.output ./.output
+COPY --from=builder --chown=nodejs:nodejs /app/package.json ./package.json
+COPY --from=builder --chown=nodejs:nodejs /app/drizzle ./drizzle
 
-RUN mkdir -p data && chown -R nodejs:nodejs /app
+RUN mkdir -p data && chown nodejs:nodejs /app/data
 
 USER nodejs
 
