@@ -53,7 +53,7 @@ pnpm dev
 | 文档 | 说明 |
 |------|------|
 | [架构总览](docs/architecture-overview.md) | 系统分层架构、数据流、路由体系 |
-| [数据库设计](docs/database-design.md) | 14 张表 ER 图、列命名约定、约束汇总 |
+| [数据库设计](docs/database-design.md) | 15 张表 ER 图、列命名约定、约束汇总 |
 | [认证与权限](docs/auth-permission-model.md) | 双用户体系、RBAC、JWT、中间件链路 |
 | [缓存体系](docs/cache-system.md) | MemoryCache 设计、7 个缓存实例、生命周期 |
 | [事件埋点](docs/event-tracking.md) | 客户端 SDK、服务端校验、缓冲写入、查询分析 |

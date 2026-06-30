@@ -1,12 +1,13 @@
 # 生产环境 docker compose 部署
+# 部署到服务器后重命名为 docker-compose.yml，无需 -f 参数
 # 部署命令：
 #   cd /opt/fsdx-web
-#   TAG=latest docker compose -f docker-compose.prod.yml pull
-#   TAG=latest docker compose -f docker-compose.prod.yml up -d
+#   TAG=latest docker compose pull
+#   TAG=latest docker compose up -d
 #
 # 服务器目录结构（建议 /opt/fsdx-web/）：
 #   cp .env.example .env
-#   ├── docker-compose.prod.yml
+#   ├── docker-compose.yml
 #   ├── .env                      # 全部配置
 #   └── volumes/app/              # 应用数据（日志、上传文件）
 

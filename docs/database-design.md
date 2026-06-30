@@ -305,8 +305,8 @@ erDiagram
 |----------|----------|----------|
 | 字典 | `ensurePresetDicts()` | 预置字典类型和条目 |
 | 系统配置 | `ensurePresetConfigs()` | 17 个预置配置项（SMTP、AI、站点设置等） |
-| 预设事件 | `ensurePresetEvents()` | 8 个事件类型（PageView、Click、FormSubmit 等） |
-| 预设属性 | `ensurePresetProperties()` | 11 个属性定义（包含 5 个 `$` 系统属性） |
+| 预设事件 | `ensurePresetEvents()` | 9 个事件类型（PageView、Click、FormSubmit、Search、Login、Register、Logout、Share、Scroll） |
+| 预设属性 | `ensurePresetProperties()` | 16 个属性定义（包含 7 个 `$` 系统属性） |
 | UI 翻译 | `ensurePresetTranslations()` | 英文翻译种子数据 |
 
 预置数据标记 `is_preset = true`，在管理端不可删除。
@@ -317,7 +317,7 @@ erDiagram
 
 | 文件 | 职责 |
 |------|------|
-| `src/db/schema/index.ts` | 全部 14 张表统一导出 |
+| `src/db/schema/index.ts` | 全部 15 张表统一导出 |
 | `src/db/index.ts` | Drizzle 客户端懒加载实例 |
 | `src/db/schema/*.ts` | 各表 Drizzle Schema 定义 |
 | `env/.env.example` | 环境变量模板（`DATABASE_URL`） |

@@ -254,7 +254,7 @@ sequenceDiagram
 
 ### 权限码体系
 
-权限码格式：`{模块}:{操作}`，共定义 **44 个权限常量**，按模块分组：
+权限码格式：`{模块}:{操作}`，共定义 **48 个权限常量**，按模块分组：
 
 | 模块 | 权限码 |
 |------|--------|
@@ -267,7 +267,9 @@ sequenceDiagram
 | `file` | `view`, `upload`, `edit`, `delete` |
 | `log` | `view`, `download` |
 | `dashboard` | `view` |
+| `event` | `view`, `query`, `manage` |
 | `translation` | `view`, `manage`, `export`, `import` |
+| `ai` | `test` |
 
 每个权限常量通过 `definePermission(code, name, desc)` 创建，返回 `{ code, name, desc, group }` 结构（`group` 由 code 前缀自动推导）。
 

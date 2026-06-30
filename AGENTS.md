@@ -14,9 +14,10 @@ src/
 ├── hono-app.ts                     # Hono 应用工厂（/health 路由）
 ├── server.ts                       # TanStack Start 服务端入口
 ├── components/
-│   ├── admin/                      # 管理端专用组件（AdminLayout、ProTable、TableOperate、RichEditor 等）
+│   ├── admin/                      # 管理端专用组件（AdminLayout、ProTable、TableOperate、RichEditor、AdminAuthProvider、CodeEditor、DictSelect、DictTag、FieldTranslationDrawer、JsonImportButton、PermissionSelector、SelectFileModal 等）
 │   ├── client/                     # 客户端前台专用组件（Header、Footer、CaptchaInput、ClientAuthProvider、ThemeToggle）
 │   ├── ui/                         # shadcn/ui 基础组件（button、input、textarea、badge、card）
+│   ├── AutofillBlocker.tsx         # 浏览器自动填充阻止组件
 │   ├── Document.tsx                # 根布局（AdminRootDocument / SSRRootDocument）
 │   ├── ErrorFallback.tsx           # 全局错误处理
 │   └── Logo.tsx                    # Logo 组件
@@ -26,7 +27,7 @@ src/
 ├── hooks/
 │   └── use-theme-mode.ts           # 主题模式 hook
 ├── lib/                            # 基础库（无业务逻辑）
-│   ├── cache/                      # 内存缓存（字典、系统配置、UI 翻译、客户端用户、预设事件）
+│   ├── cache/                      # 内存缓存（字典、系统配置、UI 翻译、配置翻译、客户端用户、预设事件、预设属性）
 │   ├── ai/                         # AI 调用（翻译、聊天等）
 │   ├── captcha/                    # 验证码生成工具（字体、路径、选项管理）
 │   ├── constants/                  # 管理端常量
@@ -75,13 +76,15 @@ src/
 │   ├── about.tsx                   # 关于页面
 │   ├── login.tsx                   # 客户端登录
 │   ├── register.tsx                # 客户端注册
+│   ├── forgot-password.tsx         # 客户端忘记密码
 │   ├── news/                       # 新闻列表 + 详情（SSR）
 │   ├── api/download/               # 文件/日志下载路由
 │   ├── admin.tsx                   # 管理端入口
 │   └── admin/                      # 管理端页面
 │       ├── init.tsx                # 系统初始化页面（首次部署）
 │       ├── login.tsx               # 管理员登录
-│       └── _admin/                 # 受保护管理端页面（仪表盘、用户、角色、字典、配置、文件、日志、操作日志、翻译、埋点、演示）
+│       ├── forgot-password.tsx     # 管理端忘记密码
+│       └── _admin/                 # 受保护管理端页面（仪表盘、新闻 CRUD、用户、角色、字典、配置、文件、日志、操作日志、翻译、埋点、定时任务、演示）
 ├── router.tsx                      # TanStack Router 实例
 ├── start.ts                        # TanStack Start 入口配置（locale + CSRF + SF 错误日志中间件）
 ├── styles/                         # 全局样式（index.css、admin.global.css、ssr.global.css）
@@ -151,7 +154,7 @@ src/
 - 客户端 SDK（`src/lib/track/track.ts`）自动采集 PageView，通过 `trackEventSFn` 上报
 - 服务端（`src/server/event/event.server.ts`）校验事件名/属性名/值类型后入内存缓冲
 - 缓冲策略：5 秒定时或满 100 条批量 INSERT，上限 1000 条
-- 预置 8 个事件类型（PageView、Click、FormSubmit 等）和 11 个属性定义
+- 预置 9 个事件类型（PageView、Click、FormSubmit、Search、Login、Register、Logout、Share、Scroll）和 16 个属性定义
 - 管理端支持事件查询、时间序列分析、事件分布、Top 页面统计
 - 预设事件/属性可在管理端 `/admin/events/` 页面管理
 
@@ -198,7 +201,7 @@ src/
 - 支持删除的表统一使用 `deleted_at` 软删除
 - 表名使用单数（如 `admin_user`、`file`）
 - Schema 文件按模块拆分在 `src/db/schema/`，通过 `index.ts` 统一导出
-- 包含 `uiTranslation`（UI 固定文案翻译）和 `contentTranslation`（实体字段翻译）两张翻译表
+- 包含 `captchaCode`（验证码记录）、`uiTranslation`（UI 固定文案翻译）和 `contentTranslation`（实体字段翻译）等系统辅助表
 - `admin_user` 表包含 `is_root` 布尔字段 + 数据库部分唯一索引，保证仅一个 root 用户
 - 包含 `event`（埋点事件）、`presetEvent`（预设事件）、`presetProperty`（预设属性）三张埋点相关表
 - 包含 `operationLog`（操作日志）表，用于管理端操作审计

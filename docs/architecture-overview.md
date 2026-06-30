@@ -58,7 +58,7 @@
 │                           │                                        │
 │  ┌────────────────────────▼──────────────────────────────────┐    │
 │  │           PostgreSQL (Drizzle ORM)                         │    │
-│  │  14 张表 + 7 个内存缓存实例                                  │    │
+│  │  15 张表 + 7 个内存缓存实例                                  │    │
 │  └───────────────────────────────────────────────────────────┘    │
 └─────────────────────────────────────────────────────────────────────┘
 ```
@@ -98,11 +98,13 @@ src/server/{module}/
 __root.tsx                    # HTML shell，按 pathname 分发 AdminLayout / SSRRootDocument
 ├── /                         # 前台首页 (SSR)
 ├── /login, /register         # 客户端认证 (SSR)
+├── /forgot-password          # 客户端忘记密码 (SSR)
 ├── /news/*                   # 新闻浏览 (SSR)
 ├── /about                    # 关于页面 (SSR)
 ├── admin.tsx                 # 管理端 Layout Route (SSR=false)
 │   ├── admin/init.tsx        # 系统初始化
 │   ├── admin/login.tsx       # 管理员登录
+│   ├── admin/forgot-password.tsx  # 管理端忘记密码
 │   └── admin/_admin.tsx      # 管理端鉴权布局 (beforeLoad)
 │       ├── /                 # 仪表盘
 │       ├── news/             # 新闻管理
@@ -116,6 +118,7 @@ __root.tsx                    # HTML shell，按 pathname 分发 AdminLayout / S
 │       ├── operation-logs/   # 操作日志审计
 │       ├── translations/     # 翻译管理
 │       ├── events/           # 埋点分析
+│       ├── tasks/            # 定时任务管理
 │       └── demo/             # 组件演示
 └── api/download/             # 文件/日志下载 API
 ```

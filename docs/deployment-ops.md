@@ -6,7 +6,7 @@
 
 ```
 /opt/fsdx-web/
-├── docker-compose.prod.yml     # 生产 docker compose 编排文件
+├── docker-compose.yml          # 生产 docker compose 编排文件（由仓库 docker-compose.prod.yml 复制而来）
 ├── .env                        # 全部配置（DATABASE_URL、JWT_SECRET、LOG_LEVEL）
 └── volumes/
     └── app/                    # 应用数据（日志、上传文件）
@@ -22,13 +22,13 @@ mkdir -p /opt/fsdx-web/volumes/app
 cp .env.example /opt/fsdx-web/.env
 # 编辑 /opt/fsdx-web/.env，修改 DATABASE_URL 和 JWT_SECRET
 
-# 3. 放入 compose 文件
-cp docker-compose.prod.yml /opt/fsdx-web/
+# 3. 放入 compose 文件（生产环境统一使用 docker-compose.yml 作为默认文件名）
+cp docker-compose.prod.yml /opt/fsdx-web/docker-compose.yml
 
 # 4. 拉取镜像并启动
 cd /opt/fsdx-web
-docker compose -f docker-compose.prod.yml pull
-docker compose -f docker-compose.prod.yml up -d
+docker compose pull
+docker compose up -d
 ```
 
 ### 服务拓扑
@@ -69,15 +69,15 @@ App 端口绑定 `127.0.0.1:3000`，仅允许宿主机 nginx 反代访问，不�
 ```bash
 # 手动部署指定版本
 cd /opt/fsdx-web
-TAG=v1.0.0 docker compose -f docker-compose.prod.yml pull
-TAG=v1.0.0 docker compose -f docker-compose.prod.yml up -d
+TAG=v1.0.0 docker compose pull
+TAG=v1.0.0 docker compose up -d
 
 # 查看运行状态
-docker compose -f docker-compose.prod.yml ps
-docker compose -f docker-compose.prod.yml logs -f app
+docker compose ps
+docker compose logs -f app
 
 # 回滚到指定版本
-TAG=<旧版本> docker compose -f docker-compose.prod.yml up -d
+TAG=<旧版本> docker compose up -d
 ```
 
 ### CI/CD 自动部署
@@ -111,16 +111,16 @@ server.ts (根目录, Nitro entry)
     │
     ├── bootstrap()                          # src/bootstrap.ts
     │   ├── dotenv 加载 env/.env + env/.env.local
-    │   ├── 注册 uncaughtException 处理器 → logger.fatal + exit(1)
-    │   ├── 注册 unhandledRejection 处理器 → logger.fatal
-    │   ├── ensurePresetDicts()              同步等待
-    │   ├── ensurePresetConfigs()            同步等待
-    │   ├── ensurePresetEvents()             同步等待
-    │   ├── ensurePresetProperties()         同步等待
-    │   ├── ensurePresetTranslations()       同步等待
-    │   ├── loadPresetCache()               异步（不阻塞）
+    │   ├── runMigrations()                  程序化数据库迁移（同步等待）
+    │   ├── ensurePresetDicts()              fire-and-forget（不阻塞）
+    │   ├── ensurePresetConfigs()            fire-and-forget（不阻塞）
+    │   ├── ensurePresetTranslations()       fire-and-forget（不阻塞）
+    │   ├── ensurePresetEvents() + ensurePresetProperties()
+    │   │       └─ .then(loadPresetCache())  链式加载缓存
     │   ├── registerAllTasks()              注册定时任务
-    │   └── 注册 SIGTERM/SIGINT 处理器 → flushTrackEvents() + flushOperationLogs()
+    │   ├── 注册 uncaughtException 处理器 → logger.fatal + exit(1)
+    │   ├── 注册 unhandledRejection 处理器 → logger.fatal + exit(1)
+    │   └── 注册 SIGTERM/SIGINT/SIGQUIT 处理器 → 缓冲刷入（含超时保护）
     │
     ├── createHonoApp()                      # src/hono-app.ts
     │   └── /health 路由 → { status: "ok", uptime }
@@ -247,15 +247,22 @@ sha256 校验 → 秒传检测（相同哈希复用已有文件）
 
 ## 优雅关闭
 
-进程监听 `SIGTERM` 和 `SIGINT` 信号，在退出前执行：
+进程监听 `SIGTERM`、`SIGINT` 和 `SIGQUIT` 信号，在退出前执行：
 
 ```typescript
 const gracefulShutdown = async () => {
     // 刷新缓冲中的事件埋点和操作日志，避免数据丢失
-    await Promise.all([flushTrackEvents(), flushOperationLogs()]);
+    // 10 秒超时保护，防止缓冲刷入挂起导致进程无法退出
+    await Promise.race([
+        Promise.all([flushTrackEvents(), flushOperationLogs()]),
+        new Promise((_, reject) =>
+            setTimeout(() => reject(new Error("缓冲刷入超时，强制退出")), 10_000),
+        ),
+    ]);
 };
-process.on("SIGTERM", () => gracefulShutdown().finally(() => process.exit(0)));
-process.on("SIGINT", () => gracefulShutdown().finally(() => process.exit(0)));
+process.on("SIGTERM", gracefulShutdown);
+process.on("SIGINT", gracefulShutdown);
+process.on("SIGQUIT", gracefulShutdown);
 ```
 
 ---

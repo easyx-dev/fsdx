@@ -70,9 +70,9 @@ stages:
 #     - |
 #       ssh -o StrictHostKeyChecking=no $DEPLOY_USER@$DEPLOY_HOST "
 #         cd /opt/fsdx-web &&
-#         TAG=${CI_COMMIT_SHORT_SHA} docker compose -f docker-compose.prod.yml pull &&
-#         TAG=${CI_COMMIT_SHORT_SHA} docker compose -f docker-compose.prod.yml up -d &&
-#         docker compose -f docker-compose.prod.yml ps
+#         TAG=${CI_COMMIT_SHORT_SHA} docker compose pull &&
+#         TAG=${CI_COMMIT_SHORT_SHA} docker compose up -d &&
+#         docker compose ps
 #       "
 #   after_script:
 #     - |

@@ -139,7 +139,7 @@ flowchart TD
 
 ## 预置事件与属性
 
-### 8 个预置事件
+### 9 个预置事件
 
 | 事件名 | 标签 | 分类 |
 |--------|------|------|
@@ -149,10 +149,11 @@ flowchart TD
 | `Search` | 搜索行为 | 用户行为 |
 | `Login` | 用户登录 | 用户行为 |
 | `Register` | 用户注册 | 用户行为 |
+| `Logout` | 用户退出 | 用户行为 |
 | `Share` | 内容分享 | 内容互动 |
 | `Scroll` | 页面滚动 | 页面交互 |
 
-### 11 个预置属性
+### 16 个预置属性
 
 | 属性键 | 标签 | 类型 | 说明 |
 |--------|------|------|------|
@@ -165,8 +166,13 @@ flowchart TD
 | `url` | 页面地址 | string | 客户端自动采集 |
 | `referer` | 来源地址 | string | 客户端自动采集 |
 | `$screen_size` | 屏幕分辨率 | string | 客户端自动采集 |
+| `$language` | 浏览器语言 | string | 客户端自动采集（navigator.language） |
 | `element_id` | 元素 ID | string | — |
 | `element_text` | 元素文本 | string | — |
+| `scroll_depth` | 滚动深度 | number | 页面滚动深度百分比 |
+| `form_name` | 表单名称 | string | 被提交的表单名称 |
+| `search_query` | 搜索关键词 | string | 用户执行的搜索关键词 |
+| `share_platform` | 分享平台 | string | 内容分享的目标平台 |
 
 `$` 前缀属性为系统属性，校验时仅检查键是否存在，不做值类型校验（由服务端补齐）。
 
