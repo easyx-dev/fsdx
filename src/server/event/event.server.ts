@@ -244,7 +244,7 @@ export function trackEvent(input: TrackEventInput): void {
 	// 缓存未就绪时不校验，允许写入（启动阶段兜底）
 	if (!presetCacheLoaded) {
 		ensurePresetCache().catch((err) => {
-			logger.error({ error: (err as Error).message }, "预设缓存加载失败");
+			logger.warn({ error: (err as Error).message }, "预设缓存加载失败");
 		});
 		pushToBuffer(input);
 		return;

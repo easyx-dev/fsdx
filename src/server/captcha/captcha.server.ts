@@ -88,7 +88,7 @@ export async function sendCaptcha(
 			await sendSms(target, code);
 		} catch (err) {
 			const message = err instanceof Error ? err.message : "短信发送失败";
-			logger.error({ target, error: message }, "短信发送失败");
+			logger.warn({ target, error: message }, "短信发送失败");
 			return { success: false, message };
 		}
 	}

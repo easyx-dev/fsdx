@@ -25,7 +25,7 @@ const tasks = new Map<string, CronJob>();
 export function registerTask(task: ScheduledTask): void {
 	const validation = CronTime.validateCronExpression(task.cronExpression);
 	if (!validation.valid) {
-		logger.error(
+		logger.warn(
 			{
 				name: task.name,
 				expr: task.cronExpression,

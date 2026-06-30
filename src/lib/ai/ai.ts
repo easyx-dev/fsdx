@@ -176,7 +176,7 @@ async function chat(
 		};
 	} catch (err) {
 		const message = err instanceof Error ? err.message : String(err);
-		logger.error({ model, type, error: message }, "AI 调用失败");
+		logger.warn({ model, type, error: message }, "AI 调用失败");
 		throw err;
 	}
 }

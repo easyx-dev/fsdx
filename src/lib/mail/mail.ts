@@ -72,7 +72,7 @@ export async function sendMail(options: SendMailOptions): Promise<boolean> {
 		logger.info({ to: options.to, subject: options.subject }, "邮件发送成功");
 		return true;
 	} catch (err) {
-		logger.error(
+		logger.warn(
 			{ to: options.to, error: (err as Error).message },
 			"邮件发送失败",
 		);

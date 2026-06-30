@@ -47,7 +47,7 @@ export async function verifyToken(token: string): Promise<JwtPayload | null> {
 		const { payload } = await jwtVerify(token, getJwtSecret());
 		return payload as unknown as JwtPayload;
 	} catch (err) {
-		logger.error({ error: (err as Error).message }, "JWT 校验失败");
+		logger.debug({ error: (err as Error).message }, "JWT 校验失败");
 		return null;
 	}
 }
