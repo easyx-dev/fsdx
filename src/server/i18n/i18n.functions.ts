@@ -185,7 +185,7 @@ export const aiTranslateFieldSFn = createServerFn({ method: "POST" })
 		}),
 	)
 	.handler(async ({ data: { sourceText, targetLang, sourceLang } }) => {
-		const promptTemplate = getConfig("ai_translation_prompt");
+		const promptTemplate = await getConfig("ai_translation_prompt");
 		if (!promptTemplate) {
 			throw new Error(
 				"AI 翻译提示词未配置，请在系统配置中设置 ai_translation_prompt",

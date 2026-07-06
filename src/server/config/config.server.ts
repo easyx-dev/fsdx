@@ -25,8 +25,12 @@ export async function loadConfigCache(): Promise<void> {
 	logger.info({ count: configs.length }, "系统配置缓存加载完成");
 }
 
-export function getConfig(key: string): string {
-	const list = configCache.get("all") ?? [];
+export async function getConfig(key: string): Promise<string> {
+	let list = configCache.get("all");
+	if (!list) {
+		await loadConfigCache();
+		list = configCache.get("all") ?? [];
+	}
 	return list.find((c) => c.key === key)?.value ?? "";
 }
 
@@ -321,7 +325,6 @@ const PRESET_CONFIGS: {
 
 /** 运行时校验预置系统配置（幂等安全，恢复软删除的预设项） */
 export async function ensurePresetConfigs(): Promise<void> {
-	let changed = false;
 	for (const preset of PRESET_CONFIGS) {
 		const existing = await db.query.systemConfig.findFirst({
 			where: eq(systemConfig.key, preset.key),
@@ -340,26 +343,30 @@ export async function ensurePresetConfigs(): Promise<void> {
 					updatedAt: new Date(),
 				})
 				.where(eq(systemConfig.id, existing.id));
-			changed = true;
 			logger.info({ key: preset.key }, "预置系统配置已恢复");
 		} else if (!existing) {
 			await db.insert(systemConfig).values(preset);
-			changed = true;
 			logger.info({ key: preset.key }, "预置系统配置已创建");
 		}
 	}
-	if (changed) await loadConfigCache();
+	await loadConfigCache();
 }
 
 // ========== 客户端可见配置 ==========
 
-/** 客户端可见的配置行：从缓存的配置列表中过滤 */
-export function getVisibleConfigRows(): {
-	id: string;
-	key: string;
-	value: string;
-}[] {
-	const list = configCache.get("all") ?? [];
+/** 客户端可见的配置行：先取缓存，缓存 miss 则查库并回填 */
+export async function getVisibleConfigRows(): Promise<
+	{
+		id: string;
+		key: string;
+		value: string;
+	}[]
+> {
+	let list = configCache.get("all");
+	if (!list) {
+		await loadConfigCache();
+		list = configCache.get("all") ?? [];
+	}
 	return list.filter((c) => c.clientVisible);
 }
 

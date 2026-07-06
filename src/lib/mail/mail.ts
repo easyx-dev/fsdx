@@ -16,25 +16,25 @@ let _transporter: Transporter | null = null;
 let _lastConfigFingerprint = "";
 
 /** 读取系统配置并确保返回纯字符串 */
-function readConfig(key: string): string {
-	return getSystemConfig(key) as unknown as string;
+async function readConfig(key: string): Promise<string> {
+	return await getSystemConfig(key);
 }
 
 /**
  * 懒加载创建 transporter，配置变更时自动重建
  */
-function getTransporter(): Transporter | null {
-	const host = readConfig("smtp_host");
+async function getTransporter(): Promise<Transporter | null> {
+	const host = await readConfig("smtp_host");
 	if (!host) {
 		logger.warn("SMTP 未配置（smtp_host 为空），邮件功能不可用");
 		return null;
 	}
 
-	const port = Number(readConfig("smtp_port")) || 587;
-	const secure = readConfig("smtp_secure") === "true";
-	const user = readConfig("smtp_user");
-	const pass = readConfig("smtp_pass");
-	const from = readConfig("smtp_from");
+	const port = Number(await readConfig("smtp_port")) || 587;
+	const secure = (await readConfig("smtp_secure")) === "true";
+	const user = await readConfig("smtp_user");
+	const pass = await readConfig("smtp_pass");
+	const from = await readConfig("smtp_from");
 	const fingerprint = [host, port, secure, user, pass, from].join("|");
 
 	if (_transporter && _lastConfigFingerprint === fingerprint) {
@@ -56,13 +56,13 @@ function getTransporter(): Transporter | null {
  */
 export async function sendMail(options: SendMailOptions): Promise<boolean> {
 	try {
-		const transporter = getTransporter();
+		const transporter = await getTransporter();
 		if (!transporter) {
 			logger.warn({ to: options.to }, "邮件发送跳过：SMTP 未配置");
 			return false;
 		}
 
-		const from = readConfig("smtp_from") || "noreply@example.com";
+		const from = (await readConfig("smtp_from")) || "noreply@example.com";
 		await transporter.sendMail({
 			from,
 			to: options.to,

@@ -167,16 +167,16 @@ describe("ensurePresetConfigs", () => {
 	});
 });
 describe("getConfig", () => {
-	it("从缓存同步获取配置值", () => {
+	it("从缓存获取配置值", async () => {
 		mockConfigCache.set("all", [
 			{ id: "c-1", key: "site_name", value: "FSDX", clientVisible: true },
 		]);
-		const value = getConfig("site_name");
+		const value = await getConfig("site_name");
 		expect(value).toBe("FSDX");
 	});
 
-	it("缓存中不存在时返回空字符串", () => {
-		const value = getConfig("nonexistent_key");
+	it("缓存中不存在时返回空字符串", async () => {
+		const value = await getConfig("nonexistent_key");
 		expect(value).toBe("");
 	});
 });
@@ -249,21 +249,21 @@ describe("deleteConfig", () => {
 // ═══════════════════════════════════════════════════════════════════
 
 describe("getVisibleConfigRows", () => {
-	it("返回 clientVisible=true 的配置行", () => {
+	it("返回 clientVisible=true 的配置行", async () => {
 		mockConfigCache.set("all", [
 			{ id: "c-1", key: "site_name", value: "FSDX", clientVisible: true },
 			{ id: "c-2", key: "other", value: "val", clientVisible: false },
 		]);
-		const rows = getVisibleConfigRows();
+		const rows = await getVisibleConfigRows();
 		expect(rows).toHaveLength(1);
 		expect(rows[0].key).toBe("site_name");
 	});
 
-	it("无 clientVisible 配置时返回空数组", () => {
+	it("无 clientVisible 配置时返回空数组", async () => {
 		mockConfigCache.set("all", [
 			{ id: "c-1", key: "other", value: "val", clientVisible: false },
 		]);
-		const rows = getVisibleConfigRows();
+		const rows = await getVisibleConfigRows();
 		expect(rows).toHaveLength(0);
 	});
 });

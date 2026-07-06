@@ -23,24 +23,24 @@ let _client: Dysmsapi20170525 | null = null;
 let _lastConfigFingerprint = "";
 
 /** 读取阿里云配置并计算指纹 */
-function readAliyunConfig(): {
+async function readAliyunConfig(): Promise<{
 	accessKeyId: string;
 	accessKeySecret: string;
 	signName: string;
 	templateCode: string;
 	fingerprint: string;
-} {
-	const accessKeyId = getConfig(ALIYUN_CONFIG_KEYS.accessKeyId);
-	const accessKeySecret = getConfig(ALIYUN_CONFIG_KEYS.accessKeySecret);
-	const signName = getConfig(ALIYUN_CONFIG_KEYS.signName);
-	const templateCode = getConfig(ALIYUN_CONFIG_KEYS.templateCode);
+}> {
+	const accessKeyId = await getConfig(ALIYUN_CONFIG_KEYS.accessKeyId);
+	const accessKeySecret = await getConfig(ALIYUN_CONFIG_KEYS.accessKeySecret);
+	const signName = await getConfig(ALIYUN_CONFIG_KEYS.signName);
+	const templateCode = await getConfig(ALIYUN_CONFIG_KEYS.templateCode);
 	const fingerprint = `${accessKeyId}||${accessKeySecret}||${signName}||${templateCode}`;
 	return { accessKeyId, accessKeySecret, signName, templateCode, fingerprint };
 }
 
 /** 获取阿里云短信客户端（延迟初始化，配置变更时重建） */
-function getAliyunClient(): Dysmsapi20170525 | null {
-	const config = readAliyunConfig();
+async function getAliyunClient(): Promise<Dysmsapi20170525 | null> {
+	const config = await readAliyunConfig();
 
 	if (!config.accessKeyId || !config.accessKeySecret) {
 		if (_client) {
@@ -71,12 +71,12 @@ function maskPhone(phone: string): string {
 
 /** 发送阿里云短信验证码 */
 async function sendAliyunSms(phone: string, code: string): Promise<void> {
-	const client = getAliyunClient();
+	const client = await getAliyunClient();
 	if (!client) {
 		throw new Error("阿里云短信未配置，请检查 AccessKey 相关系统配置");
 	}
 
-	const config = readAliyunConfig();
+	const config = await readAliyunConfig();
 	if (!config.signName) {
 		throw new Error("短信签名未配置");
 	}
@@ -106,7 +106,7 @@ async function sendAliyunSms(phone: string, code: string): Promise<void> {
  * 根据系统配置 sms_provider 自动选择服务商
  */
 export async function sendSms(phone: string, code: string): Promise<void> {
-	const provider = getConfig("sms_provider") as SmsProvider | "";
+	const provider = (await getConfig("sms_provider")) as SmsProvider | "";
 	if (!provider) {
 		throw new Error("短信服务未配置，请先在系统配置中选择短信服务商");
 	}

@@ -42,24 +42,24 @@ let _client: OpenAI | null = null;
 let _lastConfigFingerprint = "";
 
 /** 读取 AI 配置并计算指纹 */
-function readAiConfig(): {
+async function readAiConfig(): Promise<{
 	baseUrl: string;
 	apiKey: string;
 	deepModel: string;
 	fastModel: string;
 	fingerprint: string;
-} {
-	const baseUrl = getConfig("ai_base_url");
-	const apiKey = getConfig("ai_api_key");
-	const deepModel = getConfig("ai_deep_model");
-	const fastModel = getConfig("ai_fast_model");
+}> {
+	const baseUrl = await getConfig("ai_base_url");
+	const apiKey = await getConfig("ai_api_key");
+	const deepModel = await getConfig("ai_deep_model");
+	const fastModel = await getConfig("ai_fast_model");
 	const fingerprint = `${baseUrl}||${apiKey}||${deepModel}||${fastModel}`;
 	return { baseUrl, apiKey, deepModel, fastModel, fingerprint };
 }
 
 /** 获取 OpenAI 客户端（延迟初始化，配置变更时重建） */
-function getClient(): OpenAI | null {
-	const config = readAiConfig();
+async function getClient(): Promise<OpenAI | null> {
+	const config = await readAiConfig();
 
 	if (!config.baseUrl || !config.apiKey) {
 		if (_client) {
@@ -82,8 +82,8 @@ function getClient(): OpenAI | null {
 }
 
 /** 获取指定类型的模型名称 */
-function getModelName(type: AiModelType): string {
-	const config = readAiConfig();
+async function getModelName(type: AiModelType): Promise<string> {
+	const config = await readAiConfig();
 	return type === "deep" ? config.deepModel : config.fastModel;
 }
 
@@ -129,12 +129,12 @@ async function chat(
 	messages: ChatMessage[],
 	options?: ChatOptions,
 ): Promise<ChatResult> {
-	const client = getClient();
+	const client = await getClient();
 	if (!client) {
 		throw new Error("AI 客户端未配置，请检查 ai_base_url 和 ai_api_key");
 	}
 
-	const model = getModelName(type);
+	const model = await getModelName(type);
 	if (!model) {
 		throw new Error(`AI 模型名称未配置，请检查 ai_${type}_model`);
 	}

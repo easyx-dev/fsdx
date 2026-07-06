@@ -5,8 +5,8 @@ import bcrypt from "bcryptjs";
 import { and, eq, ilike, or } from "drizzle-orm";
 import { db } from "#/db/index";
 import { clientUser } from "#/db/schema";
-import { clientUserCache } from "#/lib/cache/cache";
 import type { PaginatedSortParams } from "#/lib/query/query-utils";
+import { clearClientUserCache } from "#/server/client-auth/client-auth.server";
 import {
 	buildSortClause,
 	executePaginatedQuery,
@@ -129,7 +129,7 @@ export async function updateClientUser(
 	if (record) {
 		// 状态变更时清除缓存，避免返回已禁用的用户
 		if (input.status !== undefined) {
-			clientUserCache.delete(id);
+			clearClientUserCache(id);
 		}
 	}
 	return record;
@@ -144,7 +144,7 @@ export async function deleteClientUser(id: string): Promise<boolean> {
 		.update(clientUser)
 		.set({ deletedAt: new Date() })
 		.where(eq(clientUser.id, id));
-	clientUserCache.delete(id);
+	clearClientUserCache(id);
 	return true;
 }
 

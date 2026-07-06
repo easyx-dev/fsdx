@@ -123,7 +123,7 @@ export async function resetPasswordByEmail(
 		.where(eq(clientUser.id, user.id));
 
 	// 清除缓存，强制下次请求重新从数据库获取
-	clientUserCache.delete(user.id);
+	clearClientUserCache(user.id);
 
 	logger.info({ userId: user.id }, "客户端用户密码已重置");
 	return { success: true, message: "密码重置成功" };
@@ -177,4 +177,9 @@ export async function getCurrentClient(
 		isRoot: false,
 		userType: "client",
 	};
+}
+
+/** 清除客户端用户缓存（用户信息/状态变更时调用） */
+export function clearClientUserCache(userId: string): void {
+	clientUserCache.delete(userId);
 }

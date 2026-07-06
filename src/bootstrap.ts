@@ -30,13 +30,12 @@ export async function bootstrap() {
 	// 程序化数据库迁移（在预置数据写入前执行，确保表结构就绪）
 	await runMigrations();
 
-	// 独立预置数据（fire-and-forget，不阻塞服务启动，无交叉依赖）
-	void ensurePresetDicts().catch((err) => {
-		logger.error({ err }, "预置字典初始化失败");
-	});
-	void ensurePresetConfigs().catch((err) => {
-		logger.error({ err }, "预置系统配置初始化失败");
-	});
+	// 预置数据：确保缓存就绪后再处理请求
+	try {
+		await Promise.all([ensurePresetDicts(), ensurePresetConfigs()]);
+	} catch (err) {
+		logger.error({ err }, "预置字典或系统配置初始化失败");
+	}
 	void ensurePresetTranslations().catch((err) => {
 		logger.error({ err }, "预置翻译初始化失败");
 	});

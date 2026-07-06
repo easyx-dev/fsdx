@@ -212,6 +212,22 @@ src/
 
 > 完整列命名决策表、表定义模板、常见陷阱 → 见 [db-schema](.agents/skills/db-schema/SKILL.md) skill。
 
+### 内存缓存约定
+
+- `src/lib/cache/cache.ts` 中的每个缓存实例只能在唯一一个服务端模块中直接操作，禁止跨模块 import 缓存实例
+- 外部模块通过所属模块的导出函数访问缓存数据
+- 读缓存函数必须实现懒加载模式：cache miss → 查库 → 写缓存 → 返回
+
+| 缓存实例 | 所属模块 |
+|----------|----------|
+| `configCache` / `configTranslationCache` | `src/server/config/config.server.ts` |
+| `dictCache` | `src/server/dict/dict.server.ts` |
+| `uiTranslationCache` | `src/server/i18n/i18n.server.ts` |
+| `clientUserCache` | `src/server/client-auth/client-auth.server.ts` |
+| `presetEventCache` / `presetPropertyCache` | `src/server/event/event.server.ts` |
+
+> 完整规则、懒加载模板、新增缓存步骤、违规自查清单 → 见 [cache](.agents/skills/cache/SKILL.md) skill。
+
 ## 测试约定
 
 ### 目录结构
