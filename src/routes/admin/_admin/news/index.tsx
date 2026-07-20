@@ -7,11 +7,9 @@ import {
 	PlusOutlined,
 } from "@ant-design/icons";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { createServerFn } from "@tanstack/react-start";
 import { Button, Drawer, Image, message, Segmented, Space, Tag } from "antd";
 import dayjs from "dayjs";
 import { useMemo, useState } from "react";
-import { z } from "zod";
 import { AdminPageContent } from "#/components/admin/AdminPageContent";
 import { DictTag } from "#/components/admin/DictTag";
 import { FieldTranslationDrawer } from "#/components/admin/FieldTranslationDrawer";
@@ -20,107 +18,16 @@ import { ProTable } from "#/components/admin/ProTable";
 import { TableOperate } from "#/components/admin/TableOperate";
 import { downloadFile } from "#/lib/export/export.utils";
 import { useAdminDictStore } from "#/lib/global-store/admin-dict-store";
-import { PERMISSIONS } from "#/lib/permissions/permissions";
 import { formatDateTime } from "#/lib/utils/format-date";
-import { adminPermGuard } from "#/middleware/admin-auth";
-import { exportNewsSFn } from "#/server/news/news.functions";
 import type { NewsRecord } from "#/server/news/news.server";
-import {
-	changeNewsStatus,
-	deleteNews,
-	getNewsById,
-	getNewsList,
-	importNews,
-} from "#/server/news/news.server";
-import { logOperation } from "#/server/operation-log/operation-log.server";
 import { NewsForm } from "./-mods/NewsForm";
-
-const listSchema = z.object({
-	status: z.string().optional(),
-	page: z.number().optional(),
-	sortField: z.string().optional(),
-	sortOrder: z.enum(["ascend", "descend"]).optional(),
-});
-const idSchema = z.object({ id: z.string().min(1) });
-const statusSchema = z.object({
-	id: z.string().min(1),
-	status: z.enum(["draft", "published", "archived"]),
-});
-
-const getNewsListSFn = createServerFn({ method: "GET" })
-	.middleware([adminPermGuard(PERMISSIONS.NEWS_VIEW)])
-	.inputValidator(listSchema)
-	.handler(async ({ data: { status, page = 1, sortField, sortOrder } }) => {
-		return getNewsList({ status, page, pageSize: 20, sortField, sortOrder });
-	});
-
-const deleteNewsSFn = createServerFn({ method: "POST" })
-	.middleware([adminPermGuard(PERMISSIONS.NEWS_DELETE)])
-	.inputValidator(idSchema)
-	.handler(async ({ data: { id }, context }) => {
-		const newsRecord = await getNewsById(id);
-		await deleteNews(id);
-		logOperation({
-			operatorId: context.user.id,
-			operatorName: context.user.username,
-			module: "news",
-			action: "delete",
-			targetType: "news",
-			targetId: id,
-			targetName: newsRecord?.title ?? id,
-		});
-		return { success: true };
-	});
-
-const changeStatusSFn = createServerFn({ method: "POST" })
-	.middleware([adminPermGuard(PERMISSIONS.NEWS_PUBLISH)])
-	.inputValidator(statusSchema)
-	.handler(async ({ data: { id, status }, context }) => {
-		const newsRecord = await getNewsById(id);
-		const result = await changeNewsStatus(id, status);
-		logOperation({
-			operatorId: context.user.id,
-			operatorName: context.user.username,
-			module: "news",
-			action: "change_status",
-			targetType: "news",
-			targetId: id,
-			targetName: newsRecord?.title || id,
-		});
-		return result;
-	});
-
-const newsImportSchema = z.object({
-	news: z.array(
-		z.object({
-			title: z.string().min(1),
-			description: z.string().optional(),
-			content: z.string().optional(),
-			externalUrl: z.string().optional(),
-			coverImageId: z.string().optional(),
-			status: z.enum(["draft", "published"]).default("draft"),
-			isPinned: z.boolean().default(false),
-			isRecommended: z.boolean().default(false),
-			sortOrder: z.number().int().default(0),
-		}),
-	),
-});
-
-const importNewsSFn = createServerFn({ method: "POST" })
-	.middleware([adminPermGuard(PERMISSIONS.NEWS_IMPORT)])
-	.inputValidator(newsImportSchema)
-	.handler(async ({ data, context }) => {
-		const result = await importNews(data.news, context.user.id);
-		logOperation({
-			operatorId: context.user.id,
-			operatorName: context.user.username,
-			module: "news",
-			action: "import",
-			targetType: "news",
-			detail: { created: result.created },
-		});
-		return result;
-	});
+import {
+	changeStatusSFn,
+	deleteNewsSFn,
+	exportNewsSFn,
+	getNewsListSFn,
+	importNewsSFn,
+} from "./-mods/news.functions";
 
 export const Route = createFileRoute("/admin/_admin/news/")({
 	component: NewsListPage,

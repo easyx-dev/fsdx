@@ -1,34 +1,22 @@
 /**
- * 国际化 Server Function 包装器：查询 + 维护翻译数据 + 导出 / 导入
+ * 国际化 Server Function 包装器：共享查询 + AI 翻译
  */
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { fastChat } from "#/lib/ai/ai";
-import { toJson } from "#/lib/export/export.utils";
 import type { Locale } from "#/lib/i18n/i18n.types";
 import { DEFAULT_LOCALE, SUPPORTED_LOCALES } from "#/lib/i18n/i18n.types";
 import { PERMISSIONS } from "#/lib/permissions/permissions";
 import { adminPermGuard } from "#/middleware/admin-auth";
 import { getConfig } from "#/server/config/config.server";
-import type {
-	ContentTranslationExportData,
-	TranslationImportResult,
-	UiTranslationExportData,
-} from "#/server/i18n/i18n.server";
 import {
-	getAllContentTranslationsForExport,
-	getAllUITranslationsForExport,
 	getFieldTranslations,
 	getUITranslations,
-	importContentTranslations,
-	importUiTranslations,
 	upsertContentTranslation,
 } from "#/server/i18n/i18n.server";
 import { logOperation } from "#/server/operation-log/operation-log.server";
 
 const localeSchema = z.enum(SUPPORTED_LOCALES).default(DEFAULT_LOCALE);
-
-// ══════════════════ 查询 ══════════════════
 
 /** 获取当前请求的 locale 及对应翻译（从 requestMiddleware context 读取 Cookie locale） */
 export const getLocaleBundleSFn = createServerFn({ method: "GET" }).handler(
@@ -38,51 +26,6 @@ export const getLocaleBundleSFn = createServerFn({ method: "GET" }).handler(
 		return { locale, translations };
 	},
 );
-// ══════════════════ UI 翻译导出 / 导入 ══════════════════
-
-/** 导出 UI 翻译数据（JSON） */
-export const exportUITranslationsSFn = createServerFn({ method: "GET" })
-	.middleware([adminPermGuard(PERMISSIONS.TRANSLATION_EXPORT)])
-	.handler(async () => {
-		const translations = await getAllUITranslationsForExport();
-		return toJson({ translations });
-	});
-
-/** 导入 UI 翻译数据（JSON） */
-export const importUITranslationsSFn = createServerFn({ method: "POST" })
-	.middleware([adminPermGuard(PERMISSIONS.TRANSLATION_IMPORT)])
-	.inputValidator(
-		z.object({
-			data: z.object({
-				translations: z.array(
-					z.object({
-						locale: z.string().min(1),
-						key: z.string().min(1),
-						value: z.string().min(1),
-						valueType: z.string().optional(),
-					}),
-				),
-			}),
-		}),
-	)
-	.handler(
-		async ({ data: { data }, context }): Promise<TranslationImportResult> => {
-			const result = await importUiTranslations(
-				data as UiTranslationExportData,
-			);
-			logOperation({
-				operatorId: context.user.id,
-				operatorName: context.user.username,
-				module: "translation",
-				action: "import",
-				targetType: "ui_translation",
-				detail: { created: result.created, updated: result.updated },
-			});
-			return result;
-		},
-	);
-
-// ══════════════════ 实体翻译维护 ══════════════════
 
 /** 获取某实体某字段的所有语言翻译（抽屉用） */
 export const getFieldTranslationsSFn = createServerFn({ method: "GET" })
@@ -125,52 +68,6 @@ export const saveContentTranslationSFn = createServerFn({ method: "POST" })
 		});
 		return result;
 	});
-
-// ══════════════════ 实体翻译导出 / 导入 ══════════════════
-
-/** 导出实体翻译数据（JSON） */
-export const exportContentTranslationsSFn = createServerFn({ method: "GET" })
-	.middleware([adminPermGuard(PERMISSIONS.TRANSLATION_EXPORT)])
-	.handler(async () => {
-		const translations = await getAllContentTranslationsForExport();
-		return toJson({ translations });
-	});
-
-/** 导入实体翻译数据（JSON） */
-export const importContentTranslationsSFn = createServerFn({ method: "POST" })
-	.middleware([adminPermGuard(PERMISSIONS.TRANSLATION_IMPORT)])
-	.inputValidator(
-		z.object({
-			data: z.object({
-				translations: z.array(
-					z.object({
-						entityType: z.string().min(1),
-						entityId: z.string().min(1),
-						fieldName: z.string().min(1),
-						locale: z.string().min(1),
-						value: z.string().min(1),
-						valueType: z.string().optional(),
-					}),
-				),
-			}),
-		}),
-	)
-	.handler(
-		async ({ data: { data }, context }): Promise<TranslationImportResult> => {
-			const result = await importContentTranslations(
-				data as ContentTranslationExportData,
-			);
-			logOperation({
-				operatorId: context.user.id,
-				operatorName: context.user.username,
-				module: "translation",
-				action: "import",
-				targetType: "content_translation",
-				detail: { created: result.created, updated: result.updated },
-			});
-			return result;
-		},
-	);
 
 // ══════════════════ AI 翻译 ══════════════════
 

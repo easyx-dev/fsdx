@@ -3,7 +3,6 @@
  */
 import { DownloadOutlined, PlusOutlined } from "@ant-design/icons";
 import { createFileRoute, useRouter } from "@tanstack/react-router";
-import { createServerFn } from "@tanstack/react-start";
 import {
 	Button,
 	Card,
@@ -17,7 +16,6 @@ import {
 } from "antd";
 import dayjs from "dayjs";
 import { useMemo, useState } from "react";
-import { z } from "zod";
 import { AdminPageContent } from "#/components/admin/AdminPageContent";
 import { EditorTypes } from "#/components/admin/editor-type";
 import {
@@ -27,23 +25,17 @@ import {
 import { JsonImportButton } from "#/components/admin/JsonImportButton";
 import { ProTable } from "#/components/admin/ProTable";
 import { TableOperate } from "#/components/admin/TableOperate";
-
 import type { EditorType } from "#/lib/editor-types/editor-types";
 import { downloadFile } from "#/lib/export/export.utils";
-import { PERMISSIONS } from "#/lib/permissions/permissions";
-import { adminPermGuard } from "#/middleware/admin-auth";
+import type { ConfigRecord } from "#/server/config/config.server";
 import {
+	createConfigSFn,
+	deleteConfigSFn,
 	exportConfigsSFn,
+	getConfigListSFn,
 	importConfigsSFn,
-} from "#/server/config/config.functions";
-import {
-	type ConfigRecord,
-	createConfig,
-	deleteConfig,
-	getConfigList as getConfigListService,
-	updateConfig,
-} from "#/server/config/config.server";
-import { logOperation } from "#/server/operation-log/operation-log.server";
+	updateConfigSFn,
+} from "./-mods/config.functions";
 
 const UNGROUPED_KEY = "__ungrouped__";
 
@@ -51,80 +43,6 @@ const UNGROUPED_KEY = "__ungrouped__";
 const CONFIG_TRANSLATABLE_FIELDS: TranslatableField[] = [
 	{ name: "value", label: "配置值", valueType: "text" },
 ];
-
-const createConfigSchema = z.object({
-	key: z.string().min(1, "配置键不能为空").max(100),
-	value: z.string().min(1, "配置值不能为空"),
-	clientVisible: z.boolean().optional(),
-	valueType: z.string().optional(),
-	groupName: z.string().optional(),
-	description: z.string().optional(),
-});
-const updateConfigSchema = z.object({
-	id: z.string().min(1),
-	value: z.string().optional(),
-	clientVisible: z.boolean().optional(),
-	valueType: z.string().optional(),
-	groupName: z.string().optional(),
-	description: z.string().optional(),
-});
-const deleteConfigSchema = z.object({ id: z.string().min(1) });
-
-const getConfigListSFn = createServerFn({ method: "GET" })
-	.middleware([adminPermGuard(PERMISSIONS.CONFIG_VIEW)])
-	.handler(async () => {
-		return getConfigListService();
-	});
-
-const createConfigSFn = createServerFn({ method: "POST" })
-	.middleware([adminPermGuard(PERMISSIONS.CONFIG_CREATE)])
-	.inputValidator(createConfigSchema)
-	.handler(async ({ data, context }) => {
-		const result = await createConfig(data);
-		logOperation({
-			operatorId: context.user.id,
-			operatorName: context.user.username,
-			module: "config",
-			action: "create",
-			targetType: "config",
-			targetId: result.id,
-			targetName: result.key,
-		});
-		return { success: true };
-	});
-
-const updateConfigSFn = createServerFn({ method: "POST" })
-	.middleware([adminPermGuard(PERMISSIONS.CONFIG_EDIT)])
-	.inputValidator(updateConfigSchema)
-	.handler(async ({ data, context }) => {
-		const { id, ...rest } = data;
-		await updateConfig(id, rest);
-		logOperation({
-			operatorId: context.user.id,
-			operatorName: context.user.username,
-			module: "config",
-			action: "update",
-			targetType: "config",
-			targetId: data.id,
-		});
-		return { success: true };
-	});
-
-const deleteConfigSFn = createServerFn({ method: "POST" })
-	.middleware([adminPermGuard(PERMISSIONS.CONFIG_DELETE)])
-	.inputValidator(deleteConfigSchema)
-	.handler(async ({ data, context }) => {
-		await deleteConfig(data.id);
-		logOperation({
-			operatorId: context.user.id,
-			operatorName: context.user.username,
-			module: "config",
-			action: "delete",
-			targetType: "config",
-			targetId: data.id,
-		});
-		return { success: true };
-	});
 
 export const Route = createFileRoute("/admin/_admin/config/")({
 	component: ConfigPage,
@@ -368,7 +286,7 @@ function ConfigPage() {
 						successMessage="导入完成"
 						onImport={async (jsonString) => {
 							const data = JSON.parse(jsonString);
-							const result = await importConfigsSFn({ data: { data } });
+							const result = await importConfigsSFn({ data });
 							message.success(
 								`导入完成：新增 ${result.created} / 更新 ${result.updated}`,
 							);

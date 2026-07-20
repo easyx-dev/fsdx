@@ -29,7 +29,7 @@ const { mockDb } = vi.hoisted(() => {
 });
 vi.mock("#/db", () => ({ db: mockDb }));
 
-import { getStats } from "#/server/stats/stats.server";
+import { getStats } from "#/routes/admin/_admin/-mods/stats.server";
 
 describe("getStats", () => {
 	beforeEach(() => vi.clearAllMocks());

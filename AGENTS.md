@@ -51,24 +51,21 @@ src/
 │   ├── sf-error-logger.ts          # SF 全局错误日志中间件（自动覆盖所有 SF）
 │   └── __tests__/
 │       └── admin-auth.test.ts
-├── server/                         # 服务端业务逻辑
+├── server/                         # 服务端共享业务逻辑（仅放被多模块消费的代码）
 │   ├── admin-auth/                 # 管理端认证（登录、当前用户查询）
-│   ├── admin-user/                 # 管理员用户 CRUD
-│   ├── captcha/                    # 验证码生成、发送、校验
+│   ├── captcha/                    # 验证码生成、发送、校验（admin + client 双端）
 │   ├── client-auth/                # 客户端认证（登录、注册、当前用户查询，含缓存）
-│   ├── client-user/                # 客户端用户 CRUD
-│   ├── config/                     # 系统配置管理 + 缓存（SMTP 从系统配置表读取）
-│   ├── dict/                       # 字典管理 + 缓存
-│   ├── event/                      # 埋点事件（缓冲写入、预设管理、查询分析）
-│   ├── file/                       # 文件管理（上传逻辑、清理、列表、删除）
-│   ├── i18n/                       # 国际化服务端（翻译查询、维护、种子数据、导出导入）
-│   ├── init/                       # 系统初始化
-│   ├── logs/                       # 日志查询
-│   ├── news/                       # 新闻 CRUD
-│   ├── operation-log/              # 操作日志（缓冲写入、分页查询）
+│   ├── config/                     # 系统配置管理 + 缓存（getConfig 被 ai/mail/sms/i18n 调用）
+│   ├── dict/                       # 字典管理 + 缓存（页面 + bootstrap + DictTag/DictSelect 组件）
+│   ├── event/                      # 埋点事件（缓冲写入、预设管理、查询分析；SDK + admin + bootstrap）
+│   ├── file/                       # 文件管理（上传逻辑、清理、列表、删除；files 页 + 3 组件）
+│   ├── i18n/                       # 国际化服务端（翻译查询、维护、种子数据）
+│   ├── init/                       # 系统初始化（bootstrap + admin 初始化）
+│   ├── logs/                       # 日志查询（admin 日志页 + api/download）
+│   ├── news/                       # 新闻共享（admin CRUD + 客户端 SSR 路由）
+│   ├── operation-log/              # 操作日志（缓冲写入；16 个消费者跨模块调用）
 │   ├── query/                      # 服务端查询工具（分页、排序、防注入）
-│   ├── role/                       # 角色管理
-│   ├── stats/                      # 仪表盘统计
+│   ├── role/                       # 角色管理（roles + admins 页面共用）
 │   └── tasks/                      # 定时任务注册
 ├── routes/
 │   ├── __root.tsx                  # 根布局（HTML shell）
@@ -84,7 +81,20 @@ src/
 │       ├── init.tsx                # 系统初始化页面（首次部署）
 │       ├── login.tsx               # 管理员登录
 │       ├── forgot-password.tsx     # 管理端忘记密码
-│       └── _admin/                 # 受保护管理端页面（仪表盘、新闻 CRUD、用户、角色、字典、配置、文件、日志、操作日志、翻译、埋点、定时任务、演示）
+│       └── _admin/                 # 受保护管理端页面
+│           ├── index.tsx           # 仪表盘（内联 SFn：getStatsSFn / logoutSFn）
+│           ├── -mods/              # 仪表盘私有服务层（stats.server.ts）
+│           ├── news/               # 新闻 CRUD（列表/创建/编辑 + -mods/ 私有 SFn 和服务层）
+│           ├── dicts/              # 字典管理（含 -mods/ 私有 SFn）
+│           ├── config/             # 系统配置（含 -mods/ 私有 SFn）
+│           ├── files/              # 文件管理
+│           ├── roles/              # 角色管理（含 -mods/ 私有 SFn）
+│           ├── users/              # 用户管理（admins + clients 各含 -mods/ 私有 SFn 和服务层）
+│           ├── logs/               # 日志查询
+│           ├── operation-logs/     # 操作日志（SFn 内联在页面中）
+│           ├── translations/       # 翻译管理（ui + content 各含 -mods/ 私有 SFn）
+│           ├── events/             # 埋点管理（query / analytics / preset-events / preset-properties，各含 SFn）
+│           └── demo/               # 演示功能
 ├── router.tsx                      # TanStack Router 实例
 ├── start.ts                        # TanStack Start 入口配置（locale + CSRF + SF 错误日志中间件）
 ├── styles/                         # 全局样式（index.css、admin.global.css、ssr.global.css）
@@ -128,6 +138,53 @@ src/
 所有 `createServerFn` 定义的函数**必须**以 `SFn` 为后缀。`.server.ts` 中的辅助函数**禁止**使用 `SFn` 后缀。`.functions.ts` 中未被引用的 `createServerFn` 包装器视为死代码，需删除。
 
 > 详细规范、三层分离决策、调用方模式、违规自查 → 见 [server-function](.agents/skills/server-function/SKILL.md) skill。
+
+### 代码分层与就近原则
+
+代码应尽可能靠近其唯一消费者。仅被多方共享的模块才能放入 `src/server/`。
+
+#### SFn 放置规则
+
+| 场景 | 位置 |
+|------|------|
+| 单路由使用，总数 ≤ 3 | 路由 `.tsx` 文件内联 |
+| 单路由使用，总数 > 3 | 路由目录 `-mods/<name>.functions.ts` |
+| 多路由/跨端/全局组件共享 | `src/server/<module>/<module>.functions.ts` |
+
+#### 服务层放置规则
+
+| 场景 | 位置 |
+|------|------|
+| 只被 1 个 SFn 消费且无独立单测 | 内联到 SFn handler 体 |
+| 只被 1 个路由模块消费 | 路由 `-mods/<name>.server.ts` |
+| 被 ≥2 个消费者共享（路由、组件、bootstrap、定时任务等） | `src/server/<module>/` |
+
+#### `src/server/` 准入门槛
+
+一个模块留在 `src/server/` 必须满足以下至少一条：
+- 被 ≥2 个不同路由/组件/模块消费
+- 被 bootstrap / 定时任务等非路由上下文调用
+- 被 admin 和 client 两端路由同时使用
+
+单路由模块私有的 `admin-user`、`client-user`、`stats` 等服务层已迁出 `src/server/`，统一放在 `routes/admin/_admin/` 对应目录的 `-mods/` 下。
+
+#### 路由目录结构示例
+
+```
+src/routes/admin/_admin/news/
+├── index.tsx                         # 页面组件
+├── create.tsx                        # 新建页
+├── edit.tsx                          # 编辑页
+├── -mods/
+│   ├── news.schemas.ts               # zod schema
+│   ├── news.server.ts                # 仅本路由使用的服务逻辑（可选）
+│   ├── news.functions.ts             # SFn 定义
+│   └── NewsForm.tsx                  # 共享 UI 组件
+```
+
+#### 安全
+
+Server Function handler 体中直接调用 db 是安全的——SFn 始终在服务端执行，Vite 客户端构建已配置拦截 `drizzle-orm`。鉴权由 SFn middleware（`adminPermGuard`）保证，与 db 调用位置无关。
 
 ### 鉴权中间件
 
@@ -264,7 +321,8 @@ src/server/config/
 
 - `src/routes/` 下所有 `createServerFn` 的 `inputValidator` zod schema 必须编写校验测试
 - 测试文件统一放在 `src/routes/__tests__/sf-schemas.test.ts`
-- schema 测试仅校验合法输入通过、非法输入失败，不涉及 handler 业务逻辑（后者由 `src/server/` 服务层测试覆盖）
+- schema 测试仅校验合法输入通过、非法输入失败，不涉及 handler 业务逻辑
+- 业务逻辑测试覆盖 `.server.ts` 文件中的导出函数（`src/server/` 和 `-mods/` 下的 `.server.ts` 均适用）
 
 ## 组件约定
 

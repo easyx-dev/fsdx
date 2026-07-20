@@ -13,7 +13,7 @@ import { Card, Col, Row, Statistic } from "antd";
 import { AdminPageContent } from "#/components/admin/AdminPageContent";
 import { PERMISSIONS } from "#/lib/permissions/permissions";
 import { adminPermGuard } from "#/middleware/admin-auth";
-import { getStats } from "#/server/stats/stats.server";
+import { getStats } from "./-mods/stats.server";
 
 const getStatsSFn = createServerFn({ method: "GET" })
 	.middleware([adminPermGuard(PERMISSIONS.DASHBOARD_VIEW)])

@@ -3,103 +3,23 @@
  */
 import { PlusOutlined, SearchOutlined } from "@ant-design/icons";
 import { createFileRoute } from "@tanstack/react-router";
-import { createServerFn } from "@tanstack/react-start";
 import { Button, Form, Input, Modal, message, Popover, Tag } from "antd";
 import { useState } from "react";
-import { z } from "zod";
 import { AdminPageContent } from "#/components/admin/AdminPageContent";
 import { PermissionSelector } from "#/components/admin/PermissionSelector";
 import { ProTable } from "#/components/admin/ProTable";
 import { TableOperate } from "#/components/admin/TableOperate";
 import {
 	PERMISSION_META,
-	PERMISSIONS,
 	type PermissionCode,
 } from "#/lib/permissions/permissions";
-import { adminPermGuard } from "#/middleware/admin-auth";
-import { logOperation } from "#/server/operation-log/operation-log.server";
+import type { RoleRecord } from "#/server/role/role.server";
 import {
-	type CreateRoleInput,
-	createRole,
-	deleteRole,
-	getRoleList,
-	type RoleRecord,
-	type UpdateRoleInput,
-	updateRole,
-} from "#/server/role/role.server";
-
-// ─── Server Functions ──────────────────────────────────────────────
-
-const roleListSchema = z.object({ keyword: z.string().optional() });
-const roleCreateSchema = z.object({
-	name: z.string().min(1, "角色名称不能为空").max(50),
-	slug: z.string().min(1, "角色标识不能为空").max(50),
-	permissions: z.array(z.string()).default([]),
-	description: z.string().optional(),
-});
-const roleUpdateSchema = z.object({
-	id: z.string().min(1),
-	name: z.string().min(1).max(50).optional(),
-	slug: z.string().min(1).max(50).optional(),
-	permissions: z.array(z.string()).optional(),
-	description: z.string().optional(),
-});
-const idSchema = z.object({ id: z.string().min(1) });
-
-const getRolesSFn = createServerFn({ method: "GET" })
-	.middleware([adminPermGuard(PERMISSIONS.ROLE_VIEW)])
-	.inputValidator(roleListSchema)
-	.handler(async ({ data }) => getRoleList(data.keyword));
-
-const createRoleSFn = createServerFn({ method: "POST" })
-	.middleware([adminPermGuard(PERMISSIONS.ROLE_CREATE)])
-	.inputValidator(roleCreateSchema)
-	.handler(async ({ data, context }) => {
-		const result = await createRole(data as CreateRoleInput);
-		logOperation({
-			operatorId: context.user.id,
-			operatorName: context.user.username,
-			module: "role",
-			action: "create",
-			targetType: "role",
-			targetId: result.id,
-			targetName: result.name,
-		});
-		return result;
-	});
-
-const updateRoleSFn = createServerFn({ method: "POST" })
-	.middleware([adminPermGuard(PERMISSIONS.ROLE_EDIT)])
-	.inputValidator(roleUpdateSchema)
-	.handler(async ({ data, context }) => {
-		const result = await updateRole(data.id, data as UpdateRoleInput);
-		logOperation({
-			operatorId: context.user.id,
-			operatorName: context.user.username,
-			module: "role",
-			action: "update",
-			targetType: "role",
-			targetId: data.id,
-			targetName: result?.name,
-		});
-		return result;
-	});
-
-const deleteRoleSFn = createServerFn({ method: "POST" })
-	.middleware([adminPermGuard(PERMISSIONS.ROLE_DELETE)])
-	.inputValidator(idSchema)
-	.handler(async ({ data, context }) => {
-		const result = await deleteRole(data.id);
-		logOperation({
-			operatorId: context.user.id,
-			operatorName: context.user.username,
-			module: "role",
-			action: "delete",
-			targetType: "role",
-			targetId: data.id,
-		});
-		return result;
-	});
+	createRoleSFn,
+	deleteRoleSFn,
+	getRolesSFn,
+	updateRoleSFn,
+} from "./-mods/roles.functions";
 
 // ─── Route & Component ──────────────────────────────────────────────
 

@@ -8,14 +8,14 @@ import { useState } from "react";
 import { AdminPageContent } from "#/components/admin/AdminPageContent";
 import { ProTable } from "#/components/admin/ProTable";
 import { TableOperate } from "#/components/admin/TableOperate";
+import type { PresetPropertyRecord } from "#/server/event/event.types";
 import {
 	createPresetPropertySFn,
 	deletePresetPropertySFn,
 	getPresetPropertiesSFn,
 	PROPERTY_DATA_TYPES,
 	updatePresetPropertySFn,
-} from "#/server/event/event.functions";
-import type { PresetPropertyRecord } from "#/server/event/event.types";
+} from "./-mods/preset-properties.functions";
 
 export const Route = createFileRoute("/admin/_admin/events/preset-properties/")(
 	{

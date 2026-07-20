@@ -3,11 +3,9 @@
  */
 import { DownloadOutlined, PlusOutlined } from "@ant-design/icons";
 import { createFileRoute } from "@tanstack/react-router";
-import { createServerFn } from "@tanstack/react-start";
 import { Button, Form, Input, Modal, message, Select, Space, Tag } from "antd";
 import dayjs from "dayjs";
 import { useCallback, useEffect, useState } from "react";
-import { z } from "zod";
 import { AdminPageContent } from "#/components/admin/AdminPageContent";
 import { EditorTypes } from "#/components/admin/editor-type";
 import { JsonImportButton } from "#/components/admin/JsonImportButton";
@@ -15,77 +13,15 @@ import { ProTable } from "#/components/admin/ProTable";
 import { TableOperate } from "#/components/admin/TableOperate";
 import { downloadFile } from "#/lib/export/export.utils";
 import { SUPPORTED_LOCALES } from "#/lib/i18n/i18n.types";
-import { PERMISSIONS } from "#/lib/permissions/permissions";
 import type { SortOrder } from "#/lib/query/query-utils";
-import { adminPermGuard } from "#/middleware/admin-auth";
 import {
+	deleteSFn,
 	exportUITranslationsSFn,
+	getListSFn,
 	importUITranslationsSFn,
-} from "#/server/i18n/i18n.functions";
-import {
-	deleteUITranslation,
-	listUITranslations,
-	upsertUITranslation,
-} from "#/server/i18n/i18n.server";
-import { logOperation } from "#/server/operation-log/operation-log.server";
-
-// ── 表单 schema ──
-const formSchema = z.object({
-	id: z.string().optional(),
-	locale: z.enum(SUPPORTED_LOCALES),
-	key: z.string().min(1).max(300),
-	value: z.string().min(1),
-	valueType: z.string().optional(),
-});
-
-// ── Server Functions ──
-const getListSFn = createServerFn({ method: "GET" })
-	.middleware([adminPermGuard(PERMISSIONS.TRANSLATION_VIEW)])
-	.inputValidator(
-		z.object({
-			locale: z.string().optional(),
-			keyword: z.string().optional(),
-			page: z.number().optional(),
-			sortField: z.string().optional(),
-			sortOrder: z.enum(["ascend", "descend"]).optional(),
-		}),
-	)
-	.handler(async ({ data }) =>
-		listUITranslations(data as Parameters<typeof listUITranslations>[0]),
-	);
-
-const saveSFn = createServerFn({ method: "POST" })
-	.middleware([adminPermGuard(PERMISSIONS.TRANSLATION_MANAGE)])
-	.inputValidator(formSchema)
-	.handler(async ({ data, context }) => {
-		const result = await upsertUITranslation(
-			data as Parameters<typeof upsertUITranslation>[0],
-		);
-		logOperation({
-			operatorId: context.user.id,
-			operatorName: context.user.username,
-			module: "translation",
-			action: "update",
-			targetType: "ui_translation",
-		});
-		return result;
-	});
-
-const deleteSFn = createServerFn({ method: "POST" })
-	.middleware([adminPermGuard(PERMISSIONS.TRANSLATION_MANAGE)])
-	.inputValidator(z.object({ id: z.string().min(1) }))
-	.handler(async ({ data, context }) => {
-		await deleteUITranslation(data.id);
-		logOperation({
-			operatorId: context.user.id,
-			operatorName: context.user.username,
-			module: "translation",
-			action: "delete",
-			targetType: "ui_translation",
-			targetId: data.id,
-		});
-		return { success: true };
-	});
+	saveSFn,
+} from "./-mods/ui-translations.functions";
+import { formSchema } from "./-mods/ui-translations.schemas";
 
 export const Route = createFileRoute("/admin/_admin/translations/ui")({
 	component: UITranslationPage,

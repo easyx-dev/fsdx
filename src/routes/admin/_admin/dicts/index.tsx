@@ -11,7 +11,6 @@ import {
 	PlusOutlined,
 } from "@ant-design/icons";
 import { createFileRoute, useRouter } from "@tanstack/react-router";
-import { createServerFn } from "@tanstack/react-start";
 import {
 	Button,
 	Card,
@@ -32,181 +31,32 @@ import {
 } from "antd";
 import dayjs from "dayjs";
 import { useState } from "react";
-import { z } from "zod";
 import { AdminPageContent } from "#/components/admin/AdminPageContent";
 import { EditorTypes } from "#/components/admin/editor-type";
 import { FieldTranslationDrawer } from "#/components/admin/FieldTranslationDrawer";
 import { JsonImportButton } from "#/components/admin/JsonImportButton";
 import { ProTable } from "#/components/admin/ProTable";
-
 import { PRESET_DICTS } from "#/lib/constants/admin-constants";
 import type { EditorType } from "#/lib/editor-types/editor-types";
 import { downloadFile } from "#/lib/export/export.utils";
-import { PERMISSIONS } from "#/lib/permissions/permissions";
-import { adminPermGuard } from "#/middleware/admin-auth";
-import { exportDictsSFn, importDictsSFn } from "#/server/dict/dict.functions";
 import type { DictItemRecord, DictRecord } from "#/server/dict/dict.server";
 import {
-	createDict,
-	createDictItem,
-	deleteDict,
-	deleteDictItem,
-	getDictItemList,
-	getDictList as getDictListService,
-	updateDict,
-	updateDictItem,
-} from "#/server/dict/dict.server";
-import { logOperation } from "#/server/operation-log/operation-log.server";
+	createDictItemSFn,
+	createDictSFn,
+	deleteDictItemSFn,
+	deleteDictSFn,
+	exportDictsSFn,
+	getDictItemsSFn,
+	getDictListSFn,
+	importDictsSFn,
+	updateDictItemSFn,
+	updateDictSFn,
+} from "./-mods/dicts.functions";
 
 /** 字典条目可翻译字段定义 */
 const DICT_ITEM_TRANSLATABLE_FIELDS = [
 	{ name: "label", label: "标签", valueType: "input" as const },
 ];
-const dictSlugSchema = z.object({ dictSlug: z.string().min(1) });
-const idSchema = z.object({ id: z.string().min(1) });
-const createDictSchema = z.object({
-	name: z.string().min(1).max(100),
-	slug: z.string().min(1).max(50),
-	description: z.string().optional(),
-});
-const updateDictSchema = z.object({
-	id: z.string().min(1),
-	slug: z.string().min(1).max(50).optional(),
-	name: z.string().min(1).max(100).optional(),
-	description: z.string().optional(),
-});
-const createItemSchema = z.object({
-	dictSlug: z.string().min(1),
-	label: z.string().min(1).max(100),
-	value: z.string().min(1).max(100),
-	sortOrder: z.number().default(0),
-	extraType: z.string().optional(),
-	extra: z.string().optional(),
-	color: z.string().optional(),
-});
-const updateItemSchema = z.object({
-	id: z.string().min(1),
-	label: z.string().max(100).optional(),
-	value: z.string().max(100).optional(),
-	sortOrder: z.number().optional(),
-	status: z.string().optional(),
-	extraType: z.string().optional(),
-	extra: z.string().optional(),
-	color: z.string().optional(),
-});
-
-const getDictListSFn = createServerFn({ method: "GET" })
-	.middleware([adminPermGuard(PERMISSIONS.DICT_VIEW)])
-	.handler(async () => {
-		return getDictListService();
-	});
-
-const getDictItemsSFn = createServerFn({ method: "GET" })
-	.middleware([adminPermGuard(PERMISSIONS.DICT_VIEW)])
-	.inputValidator(dictSlugSchema)
-	.handler(async ({ data: { dictSlug } }) => {
-		return getDictItemList(dictSlug);
-	});
-
-const createDictSFn = createServerFn({ method: "POST" })
-	.middleware([adminPermGuard(PERMISSIONS.DICT_CREATE)])
-	.inputValidator(createDictSchema)
-	.handler(async ({ data, context }) => {
-		const result = await createDict(data);
-		logOperation({
-			operatorId: context.user.id,
-			operatorName: context.user.username,
-			module: "dict",
-			action: "create",
-			targetType: "dict",
-			targetId: result.id,
-			targetName: result.name,
-		});
-		return { success: true };
-	});
-
-const updateDictSFn = createServerFn({ method: "POST" })
-	.middleware([adminPermGuard(PERMISSIONS.DICT_EDIT)])
-	.inputValidator(updateDictSchema)
-	.handler(async ({ data, context }) => {
-		const { id, ...rest } = data;
-		await updateDict(id, rest);
-		logOperation({
-			operatorId: context.user.id,
-			operatorName: context.user.username,
-			module: "dict",
-			action: "update",
-			targetType: "dict",
-			targetId: data.id,
-		});
-		return { success: true };
-	});
-
-const deleteDictSFn = createServerFn({ method: "POST" })
-	.middleware([adminPermGuard(PERMISSIONS.DICT_DELETE)])
-	.inputValidator(idSchema)
-	.handler(async ({ data: { id }, context }) => {
-		await deleteDict(id);
-		logOperation({
-			operatorId: context.user.id,
-			operatorName: context.user.username,
-			module: "dict",
-			action: "delete",
-			targetType: "dict",
-			targetId: id,
-		});
-		return { success: true };
-	});
-
-const createDictItemSFn = createServerFn({ method: "POST" })
-	.middleware([adminPermGuard(PERMISSIONS.DICT_CREATE_ITEM)])
-	.inputValidator(createItemSchema)
-	.handler(async ({ data, context }) => {
-		const result = await createDictItem(data);
-		logOperation({
-			operatorId: context.user.id,
-			operatorName: context.user.username,
-			module: "dict",
-			action: "create",
-			targetType: "dict_item",
-			targetId: result.id,
-			targetName: `${data.dictSlug}:${data.label}`,
-		});
-		return { success: true };
-	});
-
-const updateDictItemSFn = createServerFn({ method: "POST" })
-	.middleware([adminPermGuard(PERMISSIONS.DICT_EDIT_ITEM)])
-	.inputValidator(updateItemSchema)
-	.handler(async ({ data, context }) => {
-		const { id, ...rest } = data;
-		await updateDictItem(id, rest);
-		logOperation({
-			operatorId: context.user.id,
-			operatorName: context.user.username,
-			module: "dict",
-			action: "update",
-			targetType: "dict_item",
-			targetId: data.id,
-		});
-		return { success: true };
-	});
-
-const deleteDictItemSFn = createServerFn({ method: "POST" })
-	.middleware([adminPermGuard(PERMISSIONS.DICT_DELETE_ITEM)])
-	.inputValidator(idSchema)
-	.handler(async ({ data: { id }, context }) => {
-		await deleteDictItem(id);
-		logOperation({
-			operatorId: context.user.id,
-			operatorName: context.user.username,
-			module: "dict",
-			action: "delete",
-			targetType: "dict_item",
-			targetId: id,
-		});
-		return { success: true };
-	});
 
 export const Route = createFileRoute("/admin/_admin/dicts/")({
 	component: DictsPage,
@@ -522,7 +372,7 @@ function DictsPage() {
 					<JsonImportButton
 						onImport={async (jsonString) => {
 							const data = JSON.parse(jsonString);
-							const result = await importDictsSFn({ data: { data } });
+							const result = await importDictsSFn({ data });
 							message.success(
 								`导入完成：字典类型 新增 ${result.dictsCreated} / 更新 ${result.dictsUpdated}，` +
 									`条目 新增 ${result.itemsCreated} / 更新 ${result.itemsUpdated}` +

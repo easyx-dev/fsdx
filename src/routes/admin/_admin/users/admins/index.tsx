@@ -3,140 +3,24 @@
  */
 import { KeyOutlined, PlusOutlined, SearchOutlined } from "@ant-design/icons";
 import { createFileRoute } from "@tanstack/react-router";
-import { createServerFn } from "@tanstack/react-start";
 import { Button, Form, Input, Modal, message, Select, Tag } from "antd";
 import { useState } from "react";
-import { z } from "zod";
 import { AutofillBlocker } from "#/components/AutofillBlocker";
 import { AdminPageContent } from "#/components/admin/AdminPageContent";
 import { DictSelect } from "#/components/admin/DictSelect";
 import { DictTag } from "#/components/admin/DictTag";
 import { ProTable } from "#/components/admin/ProTable";
 import { TableOperate } from "#/components/admin/TableOperate";
-import { PERMISSIONS } from "#/lib/permissions/permissions";
 import type { SortOrder } from "#/lib/query/query-utils";
-import { adminPermGuard } from "#/middleware/admin-auth";
 import {
-	type AdminUserListItem,
-	type AdminUserListParams,
-	type CreateAdminUserInput,
-	createAdminUser,
-	deleteAdminUser,
-	getAdminUser,
-	getAdminUserList,
-	resetAdminPassword,
-	type UpdateAdminUserInput,
-	updateAdminUser,
-} from "#/server/admin-user/admin-user.server";
-import { logOperation } from "#/server/operation-log/operation-log.server";
-import { getRoleList as getRoleListService } from "#/server/role/role.server";
-
-// ─── Server Functions ──────────────────────────────────────────────
-
-const listSchema = z.object({
-	page: z.number().optional(),
-	pageSize: z.number().optional(),
-	keyword: z.string().optional(),
-	sortField: z.string().optional(),
-	sortOrder: z.enum(["ascend", "descend"]).optional(),
-});
-
-const getRolesForSelectSFn = createServerFn({ method: "GET" })
-	.middleware([adminPermGuard(PERMISSIONS.ADMIN_VIEW)])
-	.handler(async () => getRoleListService());
-const createSchema = z.object({
-	username: z.string().min(1).max(50),
-	email: z.string().email().max(255),
-	password: z.string().min(6).max(100),
-	roleId: z.string().min(1),
-});
-const updateSchema = z.object({
-	id: z.string().min(1),
-	username: z.string().min(1).max(50).optional(),
-	email: z.string().email().max(255).optional(),
-	roleId: z.string().optional(),
-	status: z.string().optional(),
-});
-const idSchema = z.object({ id: z.string().min(1) });
-const resetPwdSchema = z.object({
-	id: z.string().min(1),
-	password: z.string().min(6).max(100),
-});
-
-const getListSFn = createServerFn({ method: "GET" })
-	.middleware([adminPermGuard(PERMISSIONS.ADMIN_VIEW)])
-	.inputValidator(listSchema)
-	.handler(async ({ data }) => getAdminUserList(data as AdminUserListParams));
-
-const createSFn = createServerFn({ method: "POST" })
-	.middleware([adminPermGuard(PERMISSIONS.ADMIN_CREATE)])
-	.inputValidator(createSchema)
-	.handler(async ({ data, context }) => {
-		const record = await createAdminUser(data as CreateAdminUserInput);
-		logOperation({
-			operatorId: context.user.id,
-			operatorName: context.user.username,
-			module: "admin",
-			action: "create",
-			targetType: "admin_user",
-			targetId: record.id,
-			targetName: record.username,
-		});
-		return record;
-	});
-
-const updateSFn = createServerFn({ method: "POST" })
-	.middleware([adminPermGuard(PERMISSIONS.ADMIN_EDIT)])
-	.inputValidator(updateSchema)
-	.handler(async ({ data, context }) => {
-		const result = await updateAdminUser(data.id, data as UpdateAdminUserInput);
-		logOperation({
-			operatorId: context.user.id,
-			operatorName: context.user.username,
-			module: "admin",
-			action: "update",
-			targetType: "admin_user",
-			targetId: data.id,
-			targetName: result?.username || data.id,
-		});
-		return result;
-	});
-
-const deleteSFn = createServerFn({ method: "POST" })
-	.middleware([adminPermGuard(PERMISSIONS.ADMIN_DELETE)])
-	.inputValidator(idSchema)
-	.handler(async ({ data, context }) => {
-		const existing = await getAdminUser(data.id);
-		const result = await deleteAdminUser(data.id, context.user.id);
-		logOperation({
-			operatorId: context.user.id,
-			operatorName: context.user.username,
-			module: "admin",
-			action: "delete",
-			targetType: "admin_user",
-			targetId: data.id,
-			targetName: existing?.username || data.id,
-		});
-		return result;
-	});
-
-const resetPwdSFn = createServerFn({ method: "POST" })
-	.middleware([adminPermGuard(PERMISSIONS.ADMIN_EDIT)])
-	.inputValidator(resetPwdSchema)
-	.handler(async ({ data, context }) => {
-		const existing = await getAdminUser(data.id);
-		const result = await resetAdminPassword(data.id, data.password);
-		logOperation({
-			operatorId: context.user.id,
-			operatorName: context.user.username,
-			module: "admin",
-			action: "reset_pwd",
-			targetType: "admin_user",
-			targetId: data.id,
-			targetName: existing?.username || data.id,
-		});
-		return result;
-	});
+	createSFn,
+	deleteSFn,
+	getListSFn,
+	getRolesForSelectSFn,
+	resetPwdSFn,
+	updateSFn,
+} from "./-mods/admins.functions";
+import type { AdminUserListItem } from "./-mods/admins.server";
 
 // ─── Route & Component ──────────────────────────────────────────────
 

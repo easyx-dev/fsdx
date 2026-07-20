@@ -8,13 +8,13 @@ import { useState } from "react";
 import { AdminPageContent } from "#/components/admin/AdminPageContent";
 import { ProTable } from "#/components/admin/ProTable";
 import { TableOperate } from "#/components/admin/TableOperate";
+import type { PresetEventRecord } from "#/server/event/event.types";
 import {
 	createPresetEventSFn,
 	deletePresetEventSFn,
 	getPresetEventsSFn,
 	updatePresetEventSFn,
-} from "#/server/event/event.functions";
-import type { PresetEventRecord } from "#/server/event/event.types";
+} from "./-mods/preset-events.functions";
 
 export const Route = createFileRoute("/admin/_admin/events/preset-events/")({
 	component: PresetEventsPage,
