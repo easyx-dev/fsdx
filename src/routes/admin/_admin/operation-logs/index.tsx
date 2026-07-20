@@ -7,30 +7,18 @@ import {
 	SearchOutlined,
 } from "@ant-design/icons";
 import { createFileRoute } from "@tanstack/react-router";
-import { createServerFn } from "@tanstack/react-start";
 import { Button, DatePicker, Form, Input, message, Select, Tag } from "antd";
 import type { Dayjs } from "dayjs";
 import { useState } from "react";
-import { z } from "zod";
 import { AdminPageContent } from "#/components/admin/AdminPageContent";
 import { ProTable } from "#/components/admin/ProTable";
-import { PERMISSIONS } from "#/lib/permissions/permissions";
 import type { SortOrder } from "#/lib/query/query-utils";
 import { formatDateTime } from "#/lib/utils/format-date";
-import { adminPermGuard } from "#/middleware/admin-auth";
 import {
-	getOperationLogModules,
-	searchOperationLogs,
-} from "#/server/operation-log/operation-log.server";
-
-/** JSON 可序列化的递归值类型 */
-type JsonValue =
-	| string
-	| number
-	| boolean
-	| null
-	| JsonValue[]
-	| { [key: string]: JsonValue };
+	getOperationLogModulesSFn,
+	type JsonValue,
+	searchOperationLogsSFn,
+} from "./-mods/operation-logs.functions";
 
 /** 可序列化的操作日志条目 */
 interface OperationLogEntry {
@@ -45,53 +33,6 @@ interface OperationLogEntry {
 	detail: JsonValue;
 	createdAt: string;
 }
-
-const searchOperationLogsSchema = z.object({
-	module: z.string().optional(),
-	action: z.string().optional(),
-	keyword: z.string().optional(),
-	startDate: z.string().optional(),
-	endDate: z.string().optional(),
-	page: z.number().optional(),
-	pageSize: z.number().optional(),
-	sortField: z.string().optional(),
-	sortOrder: z.enum(["ascend", "descend"]).optional(),
-});
-
-/** 分页查询操作日志 */
-const searchOperationLogsSFn = createServerFn({ method: "GET" })
-	.middleware([adminPermGuard(PERMISSIONS.LOG_VIEW)])
-	.inputValidator(searchOperationLogsSchema)
-	.handler(async ({ data }) => {
-		const result = await searchOperationLogs(data);
-		return {
-			total: result.total,
-			page: result.page,
-			pageSize: result.pageSize,
-			records: result.records.map((e) => ({
-				id: e.id,
-				operatorId: e.operatorId,
-				operatorName: e.operatorName,
-				module: e.module,
-				action: e.action,
-				targetType: e.targetType,
-				targetId: e.targetId,
-				targetName: e.targetName,
-				detail: e.detail as JsonValue,
-				createdAt:
-					e.createdAt instanceof Date
-						? e.createdAt.toISOString()
-						: String(e.createdAt),
-			})),
-		};
-	});
-
-/** 获取操作模块列表 */
-const getOperationLogModulesSFn = createServerFn({ method: "GET" })
-	.middleware([adminPermGuard(PERMISSIONS.LOG_VIEW)])
-	.handler(async () => {
-		return getOperationLogModules();
-	});
 
 /** 模块对应 Tag 颜色 */
 const MODULE_COLORS: Record<string, string> = {

@@ -38,7 +38,6 @@ vi.mock("#/db", () => ({ db: mockDb }));
 import {
 	createRole,
 	deleteRole,
-	getRole,
 	getRoleList,
 	updateRole,
 } from "#/server/role/role.server";
@@ -72,28 +71,6 @@ describe("getRoleList", () => {
 		const result = await getRoleList("管理");
 		expect(result).toHaveLength(2);
 		expect(result[0].name).toBe("管理员");
-	});
-});
-
-describe("getRole", () => {
-	it("找到角色时返回角色记录", async () => {
-		const mockRole = {
-			id: "r-1",
-			name: "管理员",
-			slug: "admin",
-			permissions: ["**"],
-		};
-		mockDb.query.role.findFirst.mockResolvedValue(mockRole);
-
-		const result = await getRole("r-1");
-		expect(result).toEqual(mockRole);
-	});
-
-	it("未找到角色时返回 undefined", async () => {
-		mockDb.query.role.findFirst.mockResolvedValue(undefined);
-
-		const result = await getRole("不存在的ID");
-		expect(result).toBeUndefined();
 	});
 });
 

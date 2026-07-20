@@ -1,10 +1,17 @@
 /**
  * 埋点事件 Server Function 包装器
+ * trackEventSFn 被客户端 SDK 调用，其余 SF 被 admin 多路由共享
  */
 import { createServerFn } from "@tanstack/react-start";
 import { getRequestHeader, getRequestIP } from "@tanstack/react-start/server";
 import { z } from "zod";
-import { trackEvent } from "./event.server";
+import { PERMISSIONS } from "#/lib/permissions/permissions";
+import { adminPermGuard } from "#/middleware/admin-auth";
+import {
+	getPresetEventList,
+	getPresetPropertyList,
+	trackEvent,
+} from "./event.server";
 
 const trackEventSchema = z.object({
 	time: z.number(),
@@ -40,3 +47,13 @@ export const trackEventSFn = createServerFn({ method: "POST" })
 		});
 		return { success: true };
 	});
+
+/** 获取预设事件列表（admin 多路由共享：preset-events 管理页 + 事件查询页） */
+export const getPresetEventsSFn = createServerFn({ method: "GET" })
+	.middleware([adminPermGuard(PERMISSIONS.EVENT_VIEW)])
+	.handler(async () => getPresetEventList());
+
+/** 获取预设属性列表（admin 多路由共享：preset-properties 管理页 + 事件查询页） */
+export const getPresetPropertiesSFn = createServerFn({ method: "GET" })
+	.middleware([adminPermGuard(PERMISSIONS.EVENT_VIEW)])
+	.handler(async () => getPresetPropertyList());

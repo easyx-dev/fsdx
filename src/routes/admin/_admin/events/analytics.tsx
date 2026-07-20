@@ -5,7 +5,6 @@
 import { Column, Line, Pie } from "@ant-design/charts";
 import { ReloadOutlined } from "@ant-design/icons";
 import { createFileRoute } from "@tanstack/react-router";
-import { createServerFn } from "@tanstack/react-start";
 import {
 	Button,
 	Card,
@@ -20,26 +19,11 @@ import {
 } from "antd";
 import dayjs from "dayjs";
 import { useEffect, useRef, useState } from "react";
-import { z } from "zod";
 import { AdminPageContent } from "#/components/admin/AdminPageContent";
-import { PERMISSIONS } from "#/lib/permissions/permissions";
-import { adminPermGuard } from "#/middleware/admin-auth";
-import { getEventAnalytics } from "#/server/event/event.server";
 import type { AnalyticsResult } from "#/server/event/event.types";
+import { getEventAnalyticsSFn } from "./-mods/analytics.functions";
 
 const { RangePicker } = DatePicker;
-
-const analyticsQuerySchema = z.object({
-	startDate: z.string().min(1),
-	endDate: z.string().min(1),
-	granularity: z.enum(["hour", "day"]).optional(),
-});
-
-/** 获取事件分析数据 */
-const getEventAnalyticsSFn = createServerFn({ method: "GET" })
-	.middleware([adminPermGuard(PERMISSIONS.EVENT_QUERY)])
-	.inputValidator(analyticsQuerySchema)
-	.handler(async ({ data }) => getEventAnalytics(data));
 
 export const Route = createFileRoute("/admin/_admin/events/analytics")({
 	component: EventAnalyticsPage,

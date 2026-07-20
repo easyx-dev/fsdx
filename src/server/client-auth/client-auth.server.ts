@@ -92,44 +92,6 @@ export async function clientRegister(
 }
 
 /**
- * 通过邮箱验证码重置客户端用户密码
- */
-export async function resetPasswordByEmail(
-	email: string,
-	captcha: string,
-	newPassword: string,
-): Promise<{ success: boolean; message: string }> {
-	const captchaValid = await verifyCaptcha("email", email, captcha);
-	if (!captchaValid) {
-		return { success: false, message: "验证码错误或已过期" };
-	}
-
-	const user = await db.query.clientUser.findFirst({
-		where: (t, { eq }) => eq(t.email, email),
-	});
-
-	if (!user || user.deletedAt) {
-		return { success: false, message: "该邮箱未注册" };
-	}
-
-	if (user.status !== "active") {
-		return { success: false, message: "该账号已被禁用" };
-	}
-
-	const passwordHash = await bcrypt.hash(newPassword, 10);
-	await db
-		.update(clientUser)
-		.set({ passwordHash, updatedAt: new Date() })
-		.where(eq(clientUser.id, user.id));
-
-	// 清除缓存，强制下次请求重新从数据库获取
-	clearClientUserCache(user.id);
-
-	logger.info({ userId: user.id }, "客户端用户密码已重置");
-	return { success: true, message: "密码重置成功" };
-}
-
-/**
  * 从客户端 JWT token 获取当前登录用户信息
  * 优先从缓存读取，缓存在用户信息变更时需主动清除
  * 返回 null 表示未登录或 token 无效

@@ -3,7 +3,6 @@
  */
 import { RobotOutlined, SendOutlined } from "@ant-design/icons";
 import { createFileRoute } from "@tanstack/react-router";
-import { createServerFn } from "@tanstack/react-start";
 import {
 	Button,
 	Card,
@@ -18,40 +17,13 @@ import {
 	Typography,
 } from "antd";
 import { useState } from "react";
-import { z } from "zod";
+import type { z } from "zod";
 import { AdminPageContent } from "#/components/admin/AdminPageContent";
-import { type ChatMessage, deepChat, fastChat } from "#/lib/ai/ai";
-import { PERMISSIONS } from "#/lib/permissions/permissions";
-import { adminPermGuard } from "#/middleware/admin-auth";
+import { type aiTestSchema, aiTestSFn } from "./-mods/ai.functions";
 
 const { Text, Paragraph } = Typography;
 
-const aiTestSchema = z.object({
-	modelType: z.enum(["deep", "fast"]),
-	systemMessage: z.string().optional(),
-	userMessage: z.string().min(1, "请输入消息内容"),
-	temperature: z.number().min(0).max(2).default(0.7),
-	maxTokens: z.number().int().min(1).max(16384).optional(),
-});
-
 type AiTestInput = z.infer<typeof aiTestSchema>;
-
-const aiTestSFn = createServerFn({ method: "POST" })
-	.middleware([adminPermGuard(PERMISSIONS.AI_TEST)])
-	.inputValidator(aiTestSchema)
-	.handler(async ({ data }) => {
-		const messages: ChatMessage[] = [];
-		if (data.systemMessage) {
-			messages.push({ role: "system", content: data.systemMessage });
-		}
-		messages.push({ role: "user", content: data.userMessage });
-
-		const chatFn = data.modelType === "deep" ? deepChat : fastChat;
-		return chatFn(messages, {
-			temperature: data.temperature,
-			maxTokens: data.maxTokens,
-		});
-	});
 
 export const Route = createFileRoute("/admin/_admin/demo/ai")({
 	component: AiDemoPage,

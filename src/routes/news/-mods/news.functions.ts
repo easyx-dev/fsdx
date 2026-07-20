@@ -1,0 +1,40 @@
+/**
+ * 新闻前台 Server Functions
+ */
+import { createServerFn } from "@tanstack/react-start";
+import DOMPurify from "isomorphic-dompurify";
+import { z } from "zod";
+import {
+	getNewsBySlug,
+	getNewsList,
+	translateNewsRecord,
+	translateNewsRecords,
+} from "#/server/news/news.server";
+
+export const getPublishedNewsSFn = createServerFn({ method: "GET" })
+	.inputValidator(
+		z.object({
+			page: z.number().int().min(1).optional().default(1),
+			pageSize: z.number().int().min(1).max(50).optional().default(12),
+		}),
+	)
+	.handler(async ({ data, context }) => {
+		const { records, ...rest } = await getNewsList({
+			status: "published",
+			...data,
+		});
+		return {
+			records: await translateNewsRecords(records, context.locale),
+			...rest,
+		};
+	});
+
+export const getNewsDetailSFn = createServerFn({ method: "GET" })
+	.inputValidator(z.object({ slug: z.string().min(1) }))
+	.handler(async ({ data: { slug }, context }) => {
+		const record = await getNewsBySlug(slug);
+		if (!record) return null;
+		const translated = await translateNewsRecord(record, context.locale);
+		const safeHtml = DOMPurify.sanitize(translated.content ?? "");
+		return { ...translated, html: safeHtml };
+	});

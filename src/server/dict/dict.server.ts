@@ -50,45 +50,11 @@ export async function loadDictCache(): Promise<void> {
 	logger.info({ count: dicts.length }, "字典缓存加载完成");
 }
 
-export async function getDictLabel(
-	slug: string,
-	value: string,
-): Promise<string> {
-	await ensureCache();
-	const map = dictCache.get(slug);
-	return map?.[value]?.label ?? value;
-}
-
-export async function getDictMap(
-	slug: string,
-): Promise<Record<string, string>> {
-	await ensureCache();
-	const map = dictCache.get(slug);
-	if (!map) return {};
-	const result: Record<string, string> = {};
-	for (const [value, info] of Object.entries(map)) {
-		result[value] = info.label;
-	}
-	return result;
-}
-
 /** 字典选项（供 UI Select/Segmented/Tag 使用） */
 export interface DictOption {
 	label: string;
 	value: string;
 	color?: string | null;
-}
-
-/** 获取指定字典的所有条目选项（含颜色） */
-export async function getDictOptions(slug: string): Promise<DictOption[]> {
-	await ensureCache();
-	const map = dictCache.get(slug);
-	if (!map) return [];
-	return Object.entries(map).map(([value, info]) => ({
-		label: info.label,
-		value,
-		color: info.color,
-	}));
 }
 
 /** 获取全部字典选项（按 slug 分组，供 zustand store 一次性加载） */

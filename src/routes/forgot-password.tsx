@@ -9,34 +9,14 @@ import {
 	redirect,
 	useNavigate,
 } from "@tanstack/react-router";
-import { createServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { z } from "zod";
 import { CaptchaInput } from "#/components/client/CaptchaInput";
 import { Button } from "#/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "#/components/ui/card";
 import { Input } from "#/components/ui/input";
 import { useTranslation } from "#/lib/i18n/i18n-context";
 import { getCurrentClientSFn } from "#/server/client-auth/client-auth.functions";
-import { resetPasswordByEmail } from "#/server/client-auth/client-auth.server";
-
-const forgotPasswordSchema = z
-	.object({
-		email: z.string().email("邮箱格式不正确"),
-		captcha: z.string().length(6, "验证码为 6 位"),
-		password: z.string().min(6, "密码至少 6 位").max(100),
-		confirmPassword: z.string().min(1, "请确认密码"),
-	})
-	.refine((d) => d.password === d.confirmPassword, {
-		message: "两次输入的密码不一致",
-		path: ["confirmPassword"],
-	});
-
-const resetPwdSFn = createServerFn({ method: "POST" })
-	.inputValidator(forgotPasswordSchema)
-	.handler(async ({ data: { email, captcha, password } }) => {
-		return resetPasswordByEmail(email, captcha, password);
-	});
+import { resetPwdSFn } from "./-mods/forgot-password.functions";
 
 function ForgotPasswordError({ error }: { error: unknown }) {
 	return (

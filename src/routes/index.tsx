@@ -2,8 +2,6 @@
  * 前台首页：Hero 营销区 + 最新新闻区块
  */
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { createServerFn } from "@tanstack/react-start";
-import { getCookie } from "@tanstack/react-start/server";
 import { ArrowRight } from "lucide-react";
 import { Button } from "#/components/ui/button";
 import {
@@ -13,30 +11,10 @@ import {
 	CardHeader,
 	CardTitle,
 } from "#/components/ui/card";
-import type { Locale } from "#/lib/i18n/i18n.types";
-import {
-	DEFAULT_LOCALE,
-	LOCALE_COOKIE,
-	SUPPORTED_LOCALES,
-} from "#/lib/i18n/i18n.types";
 import { useTranslation } from "#/lib/i18n/i18n-context";
 import { formatDate } from "#/lib/utils/format-date";
 import type { NewsRecord } from "#/server/news/news.server";
-import { getNewsList, translateNewsRecords } from "#/server/news/news.server";
-
-const getLatestNewsSFn = createServerFn({ method: "GET" }).handler(async () => {
-	const cookieLocale = getCookie(LOCALE_COOKIE);
-	const locale: Locale = (SUPPORTED_LOCALES as readonly string[]).includes(
-		cookieLocale ?? "",
-	)
-		? (cookieLocale as Locale)
-		: DEFAULT_LOCALE;
-	const { records, ...rest } = await getNewsList({
-		status: "published",
-		pageSize: 6,
-	});
-	return { records: await translateNewsRecords(records, locale), ...rest };
-});
+import { getLatestNewsSFn } from "./-mods/index.functions";
 
 export const Route = createFileRoute("/")({
 	component: HomePage,

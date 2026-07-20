@@ -7,7 +7,6 @@ import { adminPermGuard } from "#/middleware/admin-auth";
 import {
 	createPresetProperty,
 	deletePresetProperty,
-	getPresetPropertyList,
 	updatePresetProperty,
 } from "#/server/event/event.server";
 import {
@@ -25,11 +24,6 @@ export const PROPERTY_DATA_TYPES = [
 	{ label: "array", value: "array" },
 	{ label: "object", value: "object" },
 ] as const;
-
-/** 获取预设属性列表 */
-export const getPresetPropertiesSFn = createServerFn({ method: "GET" })
-	.middleware([adminPermGuard(PERMISSIONS.EVENT_VIEW)])
-	.handler(async () => getPresetPropertyList());
 
 /** 创建预设属性 */
 export const createPresetPropertySFn = createServerFn({ method: "POST" })

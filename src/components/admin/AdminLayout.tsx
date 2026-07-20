@@ -34,7 +34,7 @@ import { Logo } from "#/components/Logo";
 import type { ThemeMode } from "#/hooks/use-theme-mode";
 import { useAdminConfigStore } from "#/lib/global-store/admin-config-store";
 import { useAdminDictStore } from "#/lib/global-store/admin-dict-store";
-import { logoutSFn } from "#/routes/admin/_admin";
+import { logoutSFn } from "#/server/admin-auth/admin-auth.functions";
 
 /** Admin 主题 Context */
 interface AdminThemeContextType {

@@ -10,9 +10,7 @@ import {
 	redirect,
 	useNavigate,
 } from "@tanstack/react-router";
-import { createServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { z } from "zod";
 import { CaptchaInput } from "#/components/client/CaptchaInput";
 import { Button } from "#/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "#/components/ui/card";
@@ -20,20 +18,7 @@ import { Input } from "#/components/ui/input";
 import { useTranslation } from "#/lib/i18n/i18n-context";
 import { track } from "#/lib/track/track";
 import { getCurrentClientSFn } from "#/server/client-auth/client-auth.functions";
-import { clientRegister } from "#/server/client-auth/client-auth.server";
-
-const registerSchema = z.object({
-	username: z.string().min(1, "用户名不能为空").max(50),
-	email: z.string().email("邮箱格式不正确"),
-	password: z.string().min(6, "密码至少 6 位").max(100),
-	captcha: z.string().length(6, "验证码为 6 位"),
-});
-
-const clientRegisterSFn = createServerFn({ method: "POST" })
-	.inputValidator(registerSchema)
-	.handler(async ({ data: { username, email, password, captcha } }) => {
-		return clientRegister(username, email, password, captcha);
-	});
+import { clientRegisterSFn } from "./-mods/register.functions";
 
 function RegisterError({ error }: { error: unknown }) {
 	return (

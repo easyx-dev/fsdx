@@ -36,8 +36,8 @@ export async function getRoleList(keyword?: string) {
 		.orderBy(role.createdAt);
 }
 
-/** 获取单个角色 */
-export async function getRole(id: string) {
+/** 获取单个角色（仅内部使用） */
+async function getRole(id: string) {
 	return db.query.role.findFirst({
 		where: and(eq(role.id, id), isNull(role.deletedAt)),
 	});
@@ -74,8 +74,6 @@ export async function updateRole(id: string, input: UpdateRoleInput) {
 		})
 		.where(and(eq(role.id, id), isNull(role.deletedAt)))
 		.returning();
-	if (record) {
-	}
 	return record;
 }
 

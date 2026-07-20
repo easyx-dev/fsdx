@@ -7,7 +7,6 @@ import {
 	SearchOutlined,
 } from "@ant-design/icons";
 import { createFileRoute } from "@tanstack/react-router";
-import { createServerFn } from "@tanstack/react-start";
 import {
 	Button,
 	DatePicker,
@@ -21,45 +20,20 @@ import {
 } from "antd";
 import dayjs from "dayjs";
 import { useMemo, useState } from "react";
-import { z } from "zod";
 import { AdminPageContent } from "#/components/admin/AdminPageContent";
-import { PERMISSIONS } from "#/lib/permissions/permissions";
 import type { SortOrder } from "#/lib/query/query-utils";
-import { adminPermGuard } from "#/middleware/admin-auth";
-import { getEventNames, searchEvents } from "#/server/event/event.server";
+import {
+	getPresetEventsSFn,
+	getPresetPropertiesSFn,
+} from "#/server/event/event.functions";
 import type {
 	EventQueryResult,
 	EventRecord,
 	PresetPropertyRecord,
 } from "#/server/event/event.types";
-import { getPresetEventsSFn } from "./preset-events/-mods/preset-events.functions";
-import { getPresetPropertiesSFn } from "./preset-properties/-mods/preset-properties.functions";
+import { getEventNamesSFn, searchEventsSFn } from "./-mods/query.functions";
 
 const { RangePicker } = DatePicker;
-
-const eventQuerySchema = z.object({
-	event: z.string().optional(),
-	userId: z.string().optional(),
-	sessionId: z.string().optional(),
-	keyword: z.string().optional(),
-	startDate: z.string().optional(),
-	endDate: z.string().optional(),
-	page: z.number().int().min(1).optional(),
-	pageSize: z.number().int().min(1).max(100).optional(),
-	sortField: z.string().optional(),
-	sortOrder: z.enum(["ascend", "descend"]).optional(),
-});
-
-/** 分页查询埋点事件 */
-const searchEventsSFn = createServerFn({ method: "GET" })
-	.middleware([adminPermGuard(PERMISSIONS.EVENT_QUERY)])
-	.inputValidator(eventQuerySchema)
-	.handler(async ({ data }) => searchEvents(data));
-
-/** 获取已有的事件名称列表 */
-const getEventNamesSFn = createServerFn({ method: "GET" })
-	.middleware([adminPermGuard(PERMISSIONS.EVENT_QUERY)])
-	.handler(async () => getEventNames());
 
 export const Route = createFileRoute("/admin/_admin/events/query")({
 	component: EventListPage,

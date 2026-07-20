@@ -2,24 +2,11 @@
  * 新闻详情页（SSR）
  */
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { createServerFn } from "@tanstack/react-start";
-import DOMPurify from "isomorphic-dompurify";
 import { ArrowLeft, ChevronRight, Home } from "lucide-react";
-import { z } from "zod";
 import { Button } from "#/components/ui/button";
 import { useTranslation } from "#/lib/i18n/i18n-context";
 import { formatDate } from "#/lib/utils/format-date";
-import { getNewsBySlug, translateNewsRecord } from "#/server/news/news.server";
-
-const getNewsDetailSFn = createServerFn({ method: "GET" })
-	.inputValidator(z.object({ slug: z.string().min(1) }))
-	.handler(async ({ data: { slug }, context }) => {
-		const record = await getNewsBySlug(slug);
-		if (!record) return null;
-		const translated = await translateNewsRecord(record, context.locale);
-		const safeHtml = DOMPurify.sanitize(translated.content ?? "");
-		return { ...translated, html: safeHtml };
-	});
+import { getNewsDetailSFn } from "./-mods/news.functions";
 
 export const Route = createFileRoute("/news/$slug")({
 	component: NewsDetailPage,

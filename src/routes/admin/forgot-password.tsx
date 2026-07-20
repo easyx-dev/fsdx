@@ -3,42 +3,20 @@
  */
 import { LockOutlined, MailOutlined, ReloadOutlined } from "@ant-design/icons";
 import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
-import { createServerFn } from "@tanstack/react-start";
 import { Button, Form, Input, Modal, message } from "antd";
 import type React from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { z } from "zod";
-import { getCurrentAdminSFn } from "#/routes/admin/_admin";
-import { resetAdminPasswordByEmail } from "#/server/admin-auth/admin-auth.server";
+import type { z } from "zod";
+import { getCurrentAdminSFn } from "#/server/admin-auth/admin-auth.functions";
 import {
 	getImageCaptchaSFn,
 	sendCaptchaWithImageVerificationSFn,
 } from "#/server/captcha/captcha.functions";
-
-const checkInitStatusSFn = createServerFn({ method: "GET" }).handler(
-	async () => {
-		const { checkInitStatus } = await import("#/server/init/init.server");
-		return checkInitStatus();
-	},
-);
-
-const resetPwdSchema = z
-	.object({
-		email: z.string().email("请输入有效的邮箱地址"),
-		captcha: z.string().length(6, "验证码为 6 位数字"),
-		password: z.string().min(6, "密码至少 6 位").max(100),
-		confirmPassword: z.string().min(1, "请确认密码"),
-	})
-	.refine((d) => d.password === d.confirmPassword, {
-		message: "两次输入的密码不一致",
-		path: ["confirmPassword"],
-	});
-
-const resetPwdSFn = createServerFn({ method: "POST" })
-	.inputValidator(resetPwdSchema)
-	.handler(async ({ data: { email, captcha, password } }) => {
-		return resetAdminPasswordByEmail(email, captcha, password);
-	});
+import { checkInitStatusSFn } from "#/server/init/init.functions";
+import {
+	type resetPwdSchema,
+	resetPwdSFn,
+} from "./-mods/forgot-password.functions";
 
 export const Route = createFileRoute("/admin/forgot-password")({
 	beforeLoad: async () => {

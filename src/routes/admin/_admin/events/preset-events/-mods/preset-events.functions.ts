@@ -7,7 +7,6 @@ import { adminPermGuard } from "#/middleware/admin-auth";
 import {
 	createPresetEvent,
 	deletePresetEvent,
-	getPresetEventList,
 	updatePresetEvent,
 } from "#/server/event/event.server";
 import {
@@ -15,11 +14,6 @@ import {
 	presetEventDeleteSchema,
 	presetEventUpdateSchema,
 } from "./preset-events.schemas";
-
-/** 获取预设事件列表 */
-export const getPresetEventsSFn = createServerFn({ method: "GET" })
-	.middleware([adminPermGuard(PERMISSIONS.EVENT_VIEW)])
-	.handler(async () => getPresetEventList());
 
 /** 创建预设事件 */
 export const createPresetEventSFn = createServerFn({ method: "POST" })

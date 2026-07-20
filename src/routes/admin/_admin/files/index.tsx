@@ -9,7 +9,6 @@ import {
 	SwapOutlined,
 } from "@ant-design/icons";
 import { createFileRoute, useRouter } from "@tanstack/react-router";
-import { createServerFn } from "@tanstack/react-start";
 import type { UploadProps } from "antd";
 import {
 	Button,
@@ -25,50 +24,12 @@ import {
 	Upload,
 } from "antd";
 import { useRef, useState } from "react";
-import { z } from "zod";
 import { AdminPageContent } from "#/components/admin/AdminPageContent";
 import { ProTable } from "#/components/admin/ProTable";
 import { TableOperate } from "#/components/admin/TableOperate";
-import { PERMISSIONS } from "#/lib/permissions/permissions";
-import { adminPermGuard } from "#/middleware/admin-auth";
 import { getFileListSFn, uploadFileSFn } from "#/server/file/file.functions";
 import type { FileRecord } from "#/server/file/file.server";
-import { deleteFile, makePermanent } from "#/server/file/file.server";
-import { logOperation } from "#/server/operation-log/operation-log.server";
-
-const idSchema = z.object({ id: z.string().min(1) });
-
-const deleteFileSFn = createServerFn({ method: "POST" })
-	.middleware([adminPermGuard(PERMISSIONS.FILE_DELETE)])
-	.inputValidator(idSchema)
-	.handler(async ({ data, context }) => {
-		await deleteFile(data.id);
-		logOperation({
-			operatorId: context.user.id,
-			operatorName: context.user.username,
-			module: "file",
-			action: "delete",
-			targetType: "file",
-			targetId: data.id,
-		});
-		return { success: true };
-	});
-
-const makePermanentSFn = createServerFn({ method: "POST" })
-	.middleware([adminPermGuard(PERMISSIONS.FILE_EDIT)])
-	.inputValidator(idSchema)
-	.handler(async ({ data, context }) => {
-		await makePermanent(data.id);
-		logOperation({
-			operatorId: context.user.id,
-			operatorName: context.user.username,
-			module: "file",
-			action: "make_permanent",
-			targetType: "file",
-			targetId: data.id,
-		});
-		return { success: true };
-	});
+import { deleteFileSFn, makePermanentSFn } from "./-mods/files.functions";
 
 /** 格式化文件大小 */
 function formatSize(bytes: number): string {

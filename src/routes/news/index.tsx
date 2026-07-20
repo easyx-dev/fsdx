@@ -2,8 +2,6 @@
  * 新闻列表页（SSR）：分页展示已发布新闻
  */
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { createServerFn } from "@tanstack/react-start";
-import { z } from "zod";
 import { Badge } from "#/components/ui/badge";
 import {
 	Card,
@@ -15,25 +13,7 @@ import {
 import { useTranslation } from "#/lib/i18n/i18n-context";
 import { formatDate } from "#/lib/utils/format-date";
 import type { NewsRecord } from "#/server/news/news.server";
-import { getNewsList, translateNewsRecords } from "#/server/news/news.server";
-
-const getPublishedNewsSFn = createServerFn({ method: "GET" })
-	.inputValidator(
-		z.object({
-			page: z.number().int().min(1).optional().default(1),
-			pageSize: z.number().int().min(1).max(50).optional().default(12),
-		}),
-	)
-	.handler(async ({ data, context }) => {
-		const { records, ...rest } = await getNewsList({
-			status: "published",
-			...data,
-		});
-		return {
-			records: await translateNewsRecords(records, context.locale),
-			...rest,
-		};
-	});
+import { getPublishedNewsSFn } from "./-mods/news.functions";
 
 export const Route = createFileRoute("/news/")({
 	component: NewsListPage,

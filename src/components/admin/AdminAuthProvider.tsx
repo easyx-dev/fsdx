@@ -10,7 +10,7 @@ import {
 	useEffect,
 	useState,
 } from "react";
-import { getCurrentAdminSFn } from "#/routes/admin/_admin";
+import { getCurrentAdminSFn } from "#/server/admin-auth/admin-auth.functions";
 import type { AdminUser } from "#/server/admin-auth/admin-auth.types";
 
 interface AdminAuthContextType {

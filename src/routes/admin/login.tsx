@@ -3,41 +3,10 @@
  */
 import { LockOutlined, UserOutlined } from "@ant-design/icons";
 import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
-import { createServerFn } from "@tanstack/react-start";
-import { setCookie } from "@tanstack/react-start/server";
 import { Button, Form, Input, message } from "antd";
 import { useEffect, useState } from "react";
-import { z } from "zod";
-import { COOKIE_NAMES } from "#/lib/jwt/jwt";
-import { adminLogin } from "#/server/admin-auth/admin-auth.server";
-import { checkInitStatus } from "#/server/init/init.server";
-
-const checkInitStatusSFn = createServerFn({ method: "GET" }).handler(
-	async () => {
-		return checkInitStatus();
-	},
-);
-
-const loginSchema = z.object({
-	username: z.string().min(1, "用户名不能为空").max(50),
-	password: z.string().min(1, "密码不能为空").max(100),
-});
-
-const adminLoginSFn = createServerFn({ method: "POST" })
-	.inputValidator(loginSchema)
-	.handler(async ({ data: { username, password } }) => {
-		const result = await adminLogin(username, password);
-		if (result.success && result.token) {
-			setCookie(COOKIE_NAMES.ADMIN_TOKEN, result.token, {
-				httpOnly: true,
-				secure: process.env.NODE_ENV === "production",
-				sameSite: "lax",
-				path: "/",
-				maxAge: 7 * 24 * 3600,
-			});
-		}
-		return result;
-	});
+import { checkInitStatusSFn } from "#/server/init/init.functions";
+import { adminLoginSFn } from "./-mods/login.functions";
 
 export const Route = createFileRoute("/admin/login")({
 	beforeLoad: async () => {

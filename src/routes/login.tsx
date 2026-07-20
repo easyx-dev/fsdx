@@ -9,39 +9,14 @@ import {
 	redirect,
 	useNavigate,
 } from "@tanstack/react-router";
-import { createServerFn } from "@tanstack/react-start";
-import { setCookie } from "@tanstack/react-start/server";
 import { toast } from "sonner";
-import { z } from "zod";
 import { Button } from "#/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "#/components/ui/card";
 import { Input } from "#/components/ui/input";
 import { useTranslation } from "#/lib/i18n/i18n-context";
-import { COOKIE_NAMES } from "#/lib/jwt/jwt";
 import { track } from "#/lib/track/track";
 import { getCurrentClientSFn } from "#/server/client-auth/client-auth.functions";
-import { clientLogin } from "#/server/client-auth/client-auth.server";
-
-const loginSchema = z.object({
-	username: z.string().min(1, "用户名不能为空").max(50),
-	password: z.string().min(1, "密码不能为空").max(100),
-});
-
-const clientLoginSFn = createServerFn({ method: "POST" })
-	.inputValidator(loginSchema)
-	.handler(async ({ data: { username, password } }) => {
-		const result = await clientLogin(username, password);
-		if (result.success && result.token) {
-			setCookie(COOKIE_NAMES.CLIENT_TOKEN, result.token, {
-				httpOnly: true,
-				secure: process.env.NODE_ENV === "production",
-				sameSite: "lax",
-				path: "/",
-				maxAge: 7 * 24 * 3600,
-			});
-		}
-		return result;
-	});
+import { clientLoginSFn } from "./-mods/login.functions";
 
 function LoginError({ error }: { error: unknown }) {
 	return (

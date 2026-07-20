@@ -82,18 +82,18 @@ src/
 │       ├── login.tsx               # 管理员登录
 │       ├── forgot-password.tsx     # 管理端忘记密码
 │       └── _admin/                 # 受保护管理端页面
-│           ├── index.tsx           # 仪表盘（内联 SFn：getStatsSFn / logoutSFn）
-│           ├── -mods/              # 仪表盘私有服务层（stats.server.ts）
+│           ├── index.tsx           # 仪表盘
+│           ├── -mods/              # 仪表盘私有服务层 + SFn（stats.server.ts、index.functions.ts）
 │           ├── news/               # 新闻 CRUD（列表/创建/编辑 + -mods/ 私有 SFn 和服务层）
 │           ├── dicts/              # 字典管理（含 -mods/ 私有 SFn）
 │           ├── config/             # 系统配置（含 -mods/ 私有 SFn）
-│           ├── files/              # 文件管理
+│           ├── files/              # 文件管理（含 -mods/ 私有 SFn）
 │           ├── roles/              # 角色管理（含 -mods/ 私有 SFn）
 │           ├── users/              # 用户管理（admins + clients 各含 -mods/ 私有 SFn 和服务层）
-│           ├── logs/               # 日志查询
-│           ├── operation-logs/     # 操作日志（SFn 内联在页面中）
+│           ├── logs/               # 日志查询（含 -mods/ 私有 SFn）
+│           ├── operation-logs/     # 操作日志（含 -mods/ 私有 SFn）
 │           ├── translations/       # 翻译管理（ui + content 各含 -mods/ 私有 SFn）
-│           ├── events/             # 埋点管理（query / analytics / preset-events / preset-properties，各含 SFn）
+│           ├── events/             # 埋点管理（query / analytics / preset-events / preset-properties，各含 -mods/ 私有 SFn）
 │           └── demo/               # 演示功能
 ├── router.tsx                      # TanStack Router 实例
 ├── start.ts                        # TanStack Start 入口配置（locale + CSRF + SF 错误日志中间件）
@@ -145,10 +145,11 @@ src/
 
 #### SFn 放置规则
 
+所有 Server Function **必须**放在 `.functions.ts` 文件中，禁止在 `.tsx` 路由文件内联，以保持 UI 层和数据访问层的清晰分离。
+
 | 场景 | 位置 |
 |------|------|
-| 单路由使用，总数 ≤ 3 | 路由 `.tsx` 文件内联 |
-| 单路由使用，总数 > 3 | 路由目录 `-mods/<name>.functions.ts` |
+| 单路由模块使用 | 路由目录 `-mods/<name>.functions.ts` |
 | 多路由/跨端/全局组件共享 | `src/server/<module>/<module>.functions.ts` |
 
 #### 服务层放置规则

@@ -9,7 +9,6 @@ import {
 	SearchOutlined,
 } from "@ant-design/icons";
 import { createFileRoute } from "@tanstack/react-router";
-import { createServerFn } from "@tanstack/react-start";
 import {
 	Button,
 	DatePicker,
@@ -23,41 +22,12 @@ import {
 } from "antd";
 import type { Dayjs } from "dayjs";
 import { useState } from "react";
-import { z } from "zod";
 import { AdminPageContent } from "#/components/admin/AdminPageContent";
 import { ProTable } from "#/components/admin/ProTable";
 import { LEVEL_COLORS, LEVEL_OPTIONS } from "#/lib/constants/admin-constants";
-import { PERMISSIONS } from "#/lib/permissions/permissions";
 import { formatDateTime } from "#/lib/utils/format-date";
-import { adminPermGuard } from "#/middleware/admin-auth";
-import {
-	getLogDates as getLogDatesService,
-	type LogEntry,
-	type LogQueryResult,
-	searchLogs as searchLogsService,
-} from "#/server/logs/logs.server";
-
-const searchLogsSchema = z.object({
-	startDate: z.string().optional(),
-	endDate: z.string().optional(),
-	keyword: z.string().optional(),
-	level: z.string().optional(),
-	page: z.number().optional(),
-	pageSize: z.number().optional(),
-});
-
-const searchLogsSFn = createServerFn({ method: "GET" })
-	.middleware([adminPermGuard(PERMISSIONS.LOG_VIEW)])
-	.inputValidator(searchLogsSchema)
-	.handler(async ({ data }) => {
-		return searchLogsService(data);
-	});
-
-const getDatesSFn = createServerFn({ method: "GET" })
-	.middleware([adminPermGuard(PERMISSIONS.LOG_VIEW)])
-	.handler(async () => {
-		return getLogDatesService();
-	});
+import type { LogEntry, LogQueryResult } from "#/server/logs/logs.server";
+import { getDatesSFn, searchLogsSFn } from "./-mods/logs.functions";
 
 /** 将日志时间戳转为本地化时间字符串 */
 function formatTime(entry: LogEntry): string {

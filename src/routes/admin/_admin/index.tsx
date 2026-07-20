@@ -8,18 +8,9 @@ import {
 	TeamOutlined,
 } from "@ant-design/icons";
 import { createFileRoute } from "@tanstack/react-router";
-import { createServerFn } from "@tanstack/react-start";
 import { Card, Col, Row, Statistic } from "antd";
 import { AdminPageContent } from "#/components/admin/AdminPageContent";
-import { PERMISSIONS } from "#/lib/permissions/permissions";
-import { adminPermGuard } from "#/middleware/admin-auth";
-import { getStats } from "./-mods/stats.server";
-
-const getStatsSFn = createServerFn({ method: "GET" })
-	.middleware([adminPermGuard(PERMISSIONS.DASHBOARD_VIEW)])
-	.handler(async () => {
-		return getStats();
-	});
+import { getStatsSFn } from "./-mods/index.functions";
 
 export const Route = createFileRoute("/admin/_admin/")({
 	component: Dashboard,
