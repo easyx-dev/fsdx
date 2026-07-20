@@ -71,29 +71,28 @@ src/
 │   ├── __root.tsx                  # 根布局（HTML shell）
 │   ├── index.tsx                   # 前台首页（Hero + 最新新闻 SSR）
 │   ├── about.tsx                   # 关于页面
-│   ├── login.tsx                   # 客户端登录
-│   ├── register.tsx                # 客户端注册
-│   ├── forgot-password.tsx         # 客户端忘记密码
+│   ├── login/                      # 客户端登录（目录路由）
+│   ├── register/                   # 客户端注册（目录路由）
+│   ├── forgot-password/            # 客户端忘记密码（目录路由）
 │   ├── news/                       # 新闻列表 + 详情（SSR）
 │   ├── api/download/               # 文件/日志下载路由
 │   ├── admin.tsx                   # 管理端入口
 │   └── admin/                      # 管理端页面
-│       ├── init.tsx                # 系统初始化页面（首次部署）
-│       ├── login.tsx               # 管理员登录
-│       ├── forgot-password.tsx     # 管理端忘记密码
+│       ├── login/                  # 管理员登录（目录路由）
+│       ├── init/                   # 系统初始化（目录路由）
+│       ├── forgot-password/        # 管理端忘记密码（目录路由）
 │       └── _admin/                 # 受保护管理端页面
 │           ├── index.tsx           # 仪表盘
-│           ├── -mods/              # 仪表盘私有服务层 + SFn（stats.server.ts、index.functions.ts）
-│           ├── news/               # 新闻 CRUD（列表/创建/编辑 + -mods/ 私有 SFn 和服务层）
-│           ├── dicts/              # 字典管理（含 -mods/ 私有 SFn）
-│           ├── config/             # 系统配置（含 -mods/ 私有 SFn）
-│           ├── files/              # 文件管理（含 -mods/ 私有 SFn）
-│           ├── roles/              # 角色管理（含 -mods/ 私有 SFn）
-│           ├── users/              # 用户管理（admins + clients 各含 -mods/ 私有 SFn 和服务层）
-│           ├── logs/               # 日志查询（含 -mods/ 私有 SFn）
-│           ├── operation-logs/     # 操作日志（含 -mods/ 私有 SFn）
-│           ├── translations/       # 翻译管理（ui + content 各含 -mods/ 私有 SFn）
-│           ├── events/             # 埋点管理（query / analytics / preset-events / preset-properties，各含 -mods/ 私有 SFn）
+│           ├── news/               # 新闻 CRUD（保留 -mods/）
+│           ├── dicts/              # 字典管理
+│           ├── config/             # 系统配置
+│           ├── files/              # 文件管理
+│           ├── roles/              # 角色管理
+│           ├── users/              # 用户管理（admins + clients）
+│           ├── logs/               # 日志查询
+│           ├── operation-logs/     # 操作日志
+│           ├── translations/       # 翻译管理（保留 -mods/）
+│           ├── events/             # 埋点管理
 │           └── demo/               # 演示功能
 ├── router.tsx                      # TanStack Router 实例
 ├── start.ts                        # TanStack Start 入口配置（locale + CSRF + SF 错误日志中间件）
@@ -149,7 +148,7 @@ src/
 
 | 场景 | 位置 |
 |------|------|
-| 单路由模块使用 | 路由目录 `-mods/<name>.functions.ts` |
+| 单路由模块使用 | 路由同目录 `<name>.functions.ts`（或 `-mods/<name>.functions.ts` 当符合 -mods/ 门槛时） |
 | 多路由/跨端/全局组件共享 | `src/server/<module>/<module>.functions.ts` |
 
 #### 服务层放置规则
@@ -157,7 +156,7 @@ src/
 | 场景 | 位置 |
 |------|------|
 | 只被 1 个 SFn 消费且无独立单测 | 内联到 SFn handler 体 |
-| 只被 1 个路由模块消费 | 路由 `-mods/<name>.server.ts` |
+| 只被 1 个路由模块消费 | 路由同目录 `<name>.server.ts` |
 | 被 ≥2 个消费者共享（路由、组件、bootstrap、定时任务等） | `src/server/<module>/` |
 
 #### `src/server/` 准入门槛
@@ -167,7 +166,7 @@ src/
 - 被 bootstrap / 定时任务等非路由上下文调用
 - 被 admin 和 client 两端路由同时使用
 
-单路由模块私有的 `admin-user`、`client-user`、`stats` 等服务层已迁出 `src/server/`，统一放在 `routes/admin/_admin/` 对应目录的 `-mods/` 下。
+单路由模块私有的 `admin-user`、`client-user`、`stats` 等服务层已迁出 `src/server/`，统一放在 `routes/admin/_admin/` 对应目录下。
 
 #### 路由目录结构示例
 
@@ -175,7 +174,7 @@ src/
 src/routes/admin/_admin/news/
 ├── index.tsx                         # 页面组件
 ├── create.tsx                        # 新建页
-├── edit.tsx                          # 编辑页
+├── $id/edit.tsx                      # 编辑页
 ├── -mods/
 │   ├── news.schemas.ts               # zod schema
 │   ├── news.server.ts                # 仅本路由使用的服务逻辑（可选）
@@ -253,6 +252,69 @@ Server Function handler 体中直接调用 db 是安全的——SFn 始终在服
 - 根布局 `__root.tsx` 根据 pathname 前缀决定是否显示 AdminLayout
 - `/admin/login` 和 `/admin/init` 无布局外壳
 
+### 路由目录组织
+
+路由目录本身就是天然的分组容器。`-mods/` 仅在 companion 文件足够多、需要和页面/子路由做视觉分隔时引入。
+
+#### 决策表
+
+| 条件 | 结构 | 示例 |
+|------|------|------|
+| 无 companion 文件 | 平级 `.tsx` | `about.tsx` |
+| 有 companion 文件（≤2 个） | 目录路由 + companion 平级 | `login/index.tsx` + `login/login.functions.ts` |
+| ≥3 companion 文件 **且** 有子路由 | 目录路由 + `-mods/` | `news/index.tsx` + `news/-mods/news.functions.ts` + `news/create.tsx` |
+
+#### 目录路由
+
+如果一个路由有自己的 companion 文件（`.functions.ts` / `.schemas.ts` / `.server.ts`），则将 `.tsx` 转为目录路由 `xxx/index.tsx`，companion 文件放在同目录下：
+
+```
+# 简单模块（≤2 个 companion）
+src/routes/login/
+├── index.tsx
+└── login.functions.ts
+
+src/routes/admin/_admin/config/
+├── index.tsx
+├── config.functions.ts
+└── config.schemas.ts
+```
+
+#### -mods/ 使用门槛
+
+仅当同时满足以下条件时才引入 `-mods/`：
+
+1. 路由目录下有 ≥3 个 companion 文件（`.functions.ts` / `.schemas.ts` / `.server.ts` / 组件等）
+2. 路由目录下存在子路由页面（`index.tsx` / `create.tsx` / `$id/edit.tsx` 等），companion 文件混在一起难以分辨
+
+```
+# ✓ 正确：3 companion + 3 页面文件，需要 -mods/ 分隔
+src/routes/admin/_admin/news/
+├── index.tsx
+├── create.tsx
+├── $id/edit.tsx
+└── -mods/
+    ├── news.functions.ts
+    ├── news.schemas.ts
+    └── NewsForm.tsx
+
+# ✓ 正确：4 companion + 2 页面文件，需要 -mods/ 分隔
+src/routes/admin/_admin/translations/
+├── ui.tsx
+├── content.tsx
+└── -mods/
+    ├── ui-translations.functions.ts
+    ├── ui-translations.schemas.ts
+    ├── content-translations.functions.ts
+    └── content-translations.schemas.ts
+
+# ✗ 错误：只有 1 个 companion，无需 -mods/
+src/routes/admin/_admin/files/
+├── index.tsx
+└── -mods/                   ← 应改为 files/files.functions.ts
+    └── files.functions.ts
+```
+
 ### 数据库
 
 - 所有表使用 `uuid` 主键（`defaultRandom()`）
@@ -323,7 +385,7 @@ src/server/config/
 - `src/routes/` 下所有 `createServerFn` 的 `inputValidator` zod schema 必须编写校验测试
 - 测试文件统一放在 `src/routes/__tests__/sf-schemas.test.ts`
 - schema 测试仅校验合法输入通过、非法输入失败，不涉及 handler 业务逻辑
-- 业务逻辑测试覆盖 `.server.ts` 文件中的导出函数（`src/server/` 和 `-mods/` 下的 `.server.ts` 均适用）
+- 业务逻辑测试覆盖 `.server.ts` 文件中的导出函数（`src/server/` 和路由目录下的 `.server.ts` 均适用）
 
 ## 组件约定
 

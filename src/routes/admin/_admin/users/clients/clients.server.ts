@@ -159,7 +159,5 @@ export async function resetClientPassword(
 		.set({ passwordHash, updatedAt: new Date() })
 		.where(and(eq(clientUser.id, id), notDeleted(clientUser.deletedAt)))
 		.returning();
-	if (record) {
-	}
 	return !!record;
 }

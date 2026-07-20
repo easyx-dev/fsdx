@@ -151,8 +151,6 @@ export async function updateAdminUser(id: string, input: UpdateAdminUserInput) {
 		.set(setData)
 		.where(and(eq(adminUser.id, id), notDeleted(adminUser.deletedAt)))
 		.returning();
-	if (record) {
-	}
 	return record;
 }
 

@@ -15,7 +15,7 @@ import {
 	deletePresetPropertySFn,
 	PROPERTY_DATA_TYPES,
 	updatePresetPropertySFn,
-} from "./-mods/preset-properties.functions";
+} from "./preset-properties.functions";
 
 export const Route = createFileRoute("/admin/_admin/events/preset-properties/")(
 	{

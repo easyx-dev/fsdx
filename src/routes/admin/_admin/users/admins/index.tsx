@@ -19,8 +19,8 @@ import {
 	getRolesForSelectSFn,
 	resetPwdSFn,
 	updateSFn,
-} from "./-mods/admins.functions";
-import type { AdminUserListItem } from "./-mods/admins.server";
+} from "./admins.functions";
+import type { AdminUserListItem } from "./admins.server";
 
 // ─── Route & Component ──────────────────────────────────────────────
 

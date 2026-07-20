@@ -1,5 +1,6 @@
 /**
- * 客户端用户登录页面（TanStack Form）
+ * 客户端用户注册页面（TanStack Form）
+ * 集成图片验证码防护，禁用浏览器自动填充
  */
 
 import { useForm } from "@tanstack/react-form";
@@ -10,15 +11,16 @@ import {
 	useNavigate,
 } from "@tanstack/react-router";
 import { toast } from "sonner";
+import { CaptchaInput } from "#/components/client/CaptchaInput";
 import { Button } from "#/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "#/components/ui/card";
 import { Input } from "#/components/ui/input";
 import { useTranslation } from "#/lib/i18n/i18n-context";
 import { track } from "#/lib/track/track";
 import { getCurrentClientSFn } from "#/server/client-auth/client-auth.functions";
-import { clientLoginSFn } from "./-mods/login.functions";
+import { clientRegisterSFn } from "./register.functions";
 
-function LoginError({ error }: { error: unknown }) {
+function RegisterError({ error }: { error: unknown }) {
 	return (
 		<main className="flex flex-1 items-center justify-center bg-background px-4 py-8">
 			<p className="text-sm text-destructive">
@@ -28,36 +30,45 @@ function LoginError({ error }: { error: unknown }) {
 	);
 }
 
-export const Route = createFileRoute("/login")({
+export const Route = createFileRoute("/register/")({
 	beforeLoad: async () => {
 		const user = await getCurrentClientSFn();
 		if (user) {
 			throw redirect({ to: "/" });
 		}
 	},
-	component: ClientLoginPage,
-	errorComponent: LoginError,
+	component: ClientRegisterPage,
+	errorComponent: RegisterError,
 });
 
-function ClientLoginPage() {
+function ClientRegisterPage() {
 	const navigate = useNavigate();
 	const { t } = useTranslation();
 
 	const form = useForm({
 		defaultValues: {
 			username: "",
+			email: "",
 			password: "",
+			captcha: "",
 		},
 		onSubmit: async ({ value }) => {
-			const result = await clientLoginSFn({ data: value });
+			const result = await clientRegisterSFn({
+				data: {
+					username: value.username,
+					email: value.email,
+					password: value.password,
+					captcha: value.captcha,
+				},
+			});
 			if (!result.success) {
-				toast.error(result.message || t("登录失败"));
+				toast.error(result.message || t("注册失败"));
 				return;
 			}
-			toast.success(t("登录成功"));
-			track("Login", { form_name: "clientLogin" });
-			track("FormSubmit", { form_name: "clientLogin" });
-			navigate({ to: "/" });
+			toast.success(t("注册成功"));
+			track("Register", { form_name: "clientRegister" });
+			track("FormSubmit", { form_name: "clientRegister" });
+			navigate({ to: "/login" });
 		},
 	});
 
@@ -67,7 +78,7 @@ function ClientLoginPage() {
 				<Card>
 					<CardHeader className="p-4 sm:p-6">
 						<CardTitle className="text-center text-xl sm:text-2xl">
-							{t("用户登录")}
+							{t("用户注册")}
 						</CardTitle>
 					</CardHeader>
 					<CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
@@ -78,6 +89,7 @@ function ClientLoginPage() {
 								form.handleSubmit();
 							}}
 							className="space-y-3 sm:space-y-4"
+							autoComplete="off"
 						>
 							<form.Field
 								name="username"
@@ -98,6 +110,7 @@ function ClientLoginPage() {
 											value={field.state.value}
 											onBlur={field.handleBlur}
 											onChange={(e) => field.handleChange(e.target.value)}
+											autoComplete="off"
 											autoFocus
 										/>
 										{field.state.meta.isTouched &&
@@ -111,10 +124,86 @@ function ClientLoginPage() {
 							</form.Field>
 
 							<form.Field
+								name="email"
+								validators={{
+									onChange: ({ value }) => {
+										if (!value) return t("请输入邮箱");
+										if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value))
+											return t("邮箱格式不正确");
+										return undefined;
+									},
+								}}
+							>
+								{(field) => (
+									<div className="space-y-1.5 sm:space-y-2">
+										<label htmlFor={field.name} className="text-sm font-medium">
+											{t("邮箱")}
+										</label>
+										<Input
+											id={field.name}
+											name={field.name}
+											type="email"
+											value={field.state.value}
+											onBlur={field.handleBlur}
+											onChange={(e) => field.handleChange(e.target.value)}
+											autoComplete="off"
+										/>
+										{field.state.meta.isTouched &&
+											field.state.meta.errors.length > 0 && (
+												<p className="text-xs text-destructive">
+													{field.state.meta.errors.join(", ")}
+												</p>
+											)}
+									</div>
+								)}
+							</form.Field>
+
+							{/* 邮箱验证码 + 图片验证码弹窗 */}
+							<form.Field
+								name="captcha"
+								validators={{
+									onChange: ({ value }) => {
+										if (!value) return t("请输入验证码");
+										if (value.length !== 6) return t("验证码为 6 位");
+										return undefined;
+									},
+								}}
+							>
+								{(field) => (
+									<div className="space-y-1.5 sm:space-y-2">
+										<label htmlFor={field.name} className="text-sm font-medium">
+											{t("邮箱验证码")}
+										</label>
+										<form.Subscribe selector={(state) => state.values.email}>
+											{(email) => (
+												<CaptchaInput
+													email={email}
+													value={field.state.value}
+													onChange={field.handleChange}
+													onMessage={(msg) => {
+														toast.success(msg);
+													}}
+												/>
+											)}
+										</form.Subscribe>
+										{field.state.meta.isTouched &&
+											field.state.meta.errors.length > 0 && (
+												<p className="text-xs text-destructive">
+													{field.state.meta.errors.join(", ")}
+												</p>
+											)}
+									</div>
+								)}
+							</form.Field>
+
+							<form.Field
 								name="password"
 								validators={{
-									onChange: ({ value }) =>
-										!value ? t("请输入密码") : undefined,
+									onChange: ({ value }) => {
+										if (!value) return t("请输入密码");
+										if (value.length < 6) return t("密码至少 6 位");
+										return undefined;
+									},
 								}}
 							>
 								{(field) => (
@@ -129,6 +218,7 @@ function ClientLoginPage() {
 											value={field.state.value}
 											onBlur={field.handleBlur}
 											onChange={(e) => field.handleChange(e.target.value)}
+											autoComplete="new-password"
 										/>
 										{field.state.meta.isTouched &&
 											field.state.meta.errors.length > 0 && (
@@ -149,28 +239,19 @@ function ClientLoginPage() {
 										disabled={!canSubmit}
 										className="w-full"
 									>
-										{isSubmitting ? t("登录中") : t("登录")}
+										{isSubmitting ? t("注册中") : t("注册")}
 									</Button>
 								)}
 							</form.Subscribe>
 						</form>
 
-						<p className="text-center text-sm text-muted-foreground">
+						<p className="mt-3 text-center text-sm text-muted-foreground sm:mt-4">
+							{t("已有账号？")}{" "}
 							<Link
-								to="/forgot-password"
+								to="/login"
 								className="underline underline-offset-4 hover:text-foreground"
 							>
-								{t("忘记密码？")}
-							</Link>
-						</p>
-
-						<p className="mt-1 text-center text-sm text-muted-foreground">
-							{t("还没有账号？")}{" "}
-							<Link
-								to="/register"
-								className="underline underline-offset-4 hover:text-foreground"
-							>
-								{t("立即注册")}
+								{t("立即登录")}
 							</Link>
 						</p>
 					</CardContent>

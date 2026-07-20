@@ -31,7 +31,7 @@ import type {
 	EventRecord,
 	PresetPropertyRecord,
 } from "#/server/event/event.types";
-import { getEventNamesSFn, searchEventsSFn } from "./-mods/query.functions";
+import { getEventNamesSFn, searchEventsSFn } from "./query.functions";
 
 const { RangePicker } = DatePicker;
 

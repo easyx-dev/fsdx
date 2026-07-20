@@ -19,7 +19,7 @@ import {
 	deleteRoleSFn,
 	getRolesSFn,
 	updateRoleSFn,
-} from "./-mods/roles.functions";
+} from "./roles.functions";
 
 // ─── Route & Component ──────────────────────────────────────────────
 

@@ -51,7 +51,7 @@ import {
 	importDictsSFn,
 	updateDictItemSFn,
 	updateDictSFn,
-} from "./-mods/dicts.functions";
+} from "./dicts.functions";
 
 /** 字典条目可翻译字段定义 */
 const DICT_ITEM_TRANSLATABLE_FIELDS = [

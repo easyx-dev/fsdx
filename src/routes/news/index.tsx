@@ -13,7 +13,7 @@ import {
 import { useTranslation } from "#/lib/i18n/i18n-context";
 import { formatDate } from "#/lib/utils/format-date";
 import type { NewsRecord } from "#/server/news/news.server";
-import { getPublishedNewsSFn } from "./-mods/news.functions";
+import { getPublishedNewsSFn } from "./news.functions";
 
 export const Route = createFileRoute("/news/")({
 	component: NewsListPage,

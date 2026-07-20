@@ -29,7 +29,7 @@ import { ProTable } from "#/components/admin/ProTable";
 import { TableOperate } from "#/components/admin/TableOperate";
 import { getFileListSFn, uploadFileSFn } from "#/server/file/file.functions";
 import type { FileRecord } from "#/server/file/file.server";
-import { deleteFileSFn, makePermanentSFn } from "./-mods/files.functions";
+import { deleteFileSFn, makePermanentSFn } from "./files.functions";
 
 /** 格式化文件大小 */
 function formatSize(bytes: number): string {

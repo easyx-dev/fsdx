@@ -14,7 +14,7 @@ import {
 	createPresetEventSFn,
 	deletePresetEventSFn,
 	updatePresetEventSFn,
-} from "./-mods/preset-events.functions";
+} from "./preset-events.functions";
 
 export const Route = createFileRoute("/admin/_admin/events/preset-events/")({
 	component: PresetEventsPage,

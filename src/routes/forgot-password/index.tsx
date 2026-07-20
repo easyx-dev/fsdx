@@ -16,7 +16,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "#/components/ui/card";
 import { Input } from "#/components/ui/input";
 import { useTranslation } from "#/lib/i18n/i18n-context";
 import { getCurrentClientSFn } from "#/server/client-auth/client-auth.functions";
-import { resetPwdSFn } from "./-mods/forgot-password.functions";
+import { resetPwdSFn } from "./forgot-password.functions";
 
 function ForgotPasswordError({ error }: { error: unknown }) {
 	return (
@@ -28,7 +28,7 @@ function ForgotPasswordError({ error }: { error: unknown }) {
 	);
 }
 
-export const Route = createFileRoute("/forgot-password")({
+export const Route = createFileRoute("/forgot-password/")({
 	beforeLoad: async () => {
 		const user = await getCurrentClientSFn();
 		if (user) {

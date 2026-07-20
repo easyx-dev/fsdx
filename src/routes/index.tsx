@@ -14,7 +14,7 @@ import {
 import { useTranslation } from "#/lib/i18n/i18n-context";
 import { formatDate } from "#/lib/utils/format-date";
 import type { NewsRecord } from "#/server/news/news.server";
-import { getLatestNewsSFn } from "./-mods/index.functions";
+import { getLatestNewsSFn } from "./index.functions";
 
 export const Route = createFileRoute("/")({
 	component: HomePage,

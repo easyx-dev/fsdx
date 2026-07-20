@@ -6,9 +6,9 @@ import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
 import { Button, Form, Input, message } from "antd";
 import { useEffect, useState } from "react";
 import { checkInitStatusSFn } from "#/server/init/init.functions";
-import { adminLoginSFn } from "./-mods/login.functions";
+import { adminLoginSFn } from "./login.functions";
 
-export const Route = createFileRoute("/admin/login")({
+export const Route = createFileRoute("/admin/login/")({
 	beforeLoad: async () => {
 		const initialized = await checkInitStatusSFn();
 		if (!initialized) {

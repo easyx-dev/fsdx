@@ -6,7 +6,7 @@ import { ArrowLeft, ChevronRight, Home } from "lucide-react";
 import { Button } from "#/components/ui/button";
 import { useTranslation } from "#/lib/i18n/i18n-context";
 import { formatDate } from "#/lib/utils/format-date";
-import { getNewsDetailSFn } from "./-mods/news.functions";
+import { getNewsDetailSFn } from "./news.functions";
 
 export const Route = createFileRoute("/news/$slug")({
 	component: NewsDetailPage,

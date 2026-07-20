@@ -27,7 +27,7 @@ import { ProTable } from "#/components/admin/ProTable";
 import { LEVEL_COLORS, LEVEL_OPTIONS } from "#/lib/constants/admin-constants";
 import { formatDateTime } from "#/lib/utils/format-date";
 import type { LogEntry, LogQueryResult } from "#/server/logs/logs.server";
-import { getDatesSFn, searchLogsSFn } from "./-mods/logs.functions";
+import { getDatesSFn, searchLogsSFn } from "./logs.functions";
 
 /** 将日志时间戳转为本地化时间字符串 */
 function formatTime(entry: LogEntry): string {

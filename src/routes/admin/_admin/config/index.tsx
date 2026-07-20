@@ -35,7 +35,7 @@ import {
 	getConfigListSFn,
 	importConfigsSFn,
 	updateConfigSFn,
-} from "./-mods/config.functions";
+} from "./config.functions";
 
 const UNGROUPED_KEY = "__ungrouped__";
 

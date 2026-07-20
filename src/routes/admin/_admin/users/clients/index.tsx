@@ -18,8 +18,8 @@ import {
 	getListSFn,
 	resetPwdSFn,
 	updateSFn,
-} from "./-mods/clients.functions";
-import type { ClientUserRecord } from "./-mods/clients.server";
+} from "./clients.functions";
+import type { ClientUserRecord } from "./clients.server";
 
 // ─── Route & Component ──────────────────────────────────────────────
 

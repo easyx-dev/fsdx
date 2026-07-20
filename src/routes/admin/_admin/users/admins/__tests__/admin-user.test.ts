@@ -68,7 +68,7 @@ import {
 	getAdminUserList,
 	resetAdminPassword,
 	updateAdminUser,
-} from "#/routes/admin/_admin/users/admins/-mods/admins.server";
+} from "#/routes/admin/_admin/users/admins/admins.server";
 
 beforeEach(() => {
 	vi.clearAllMocks();

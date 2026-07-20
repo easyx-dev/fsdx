@@ -13,12 +13,9 @@ import {
 	sendCaptchaWithImageVerificationSFn,
 } from "#/server/captcha/captcha.functions";
 import { checkInitStatusSFn } from "#/server/init/init.functions";
-import {
-	type resetPwdSchema,
-	resetPwdSFn,
-} from "./-mods/forgot-password.functions";
+import { type resetPwdSchema, resetPwdSFn } from "./forgot-password.functions";
 
-export const Route = createFileRoute("/admin/forgot-password")({
+export const Route = createFileRoute("/admin/forgot-password/")({
 	beforeLoad: async () => {
 		const initialized = await checkInitStatusSFn();
 		if (!initialized) {

@@ -27,9 +27,9 @@ import type { z } from "zod";
 import { AutofillBlocker } from "#/components/AutofillBlocker";
 import { JsonImportButton } from "#/components/admin/JsonImportButton";
 import { checkInitStatusSFn } from "#/server/init/init.functions";
-import { type initSchema, initSFn } from "./-mods/init.functions";
+import { type initSchema, initSFn } from "./init.functions";
 
-export const Route = createFileRoute("/admin/init")({
+export const Route = createFileRoute("/admin/init/")({
 	beforeLoad: async () => {
 		const initialized = await checkInitStatusSFn();
 		if (initialized) {

@@ -19,7 +19,7 @@ import {
 import { useState } from "react";
 import type { z } from "zod";
 import { AdminPageContent } from "#/components/admin/AdminPageContent";
-import { type aiTestSchema, aiTestSFn } from "./-mods/ai.functions";
+import { type aiTestSchema, aiTestSFn } from "./ai.functions";
 
 const { Text, Paragraph } = Typography;
 
