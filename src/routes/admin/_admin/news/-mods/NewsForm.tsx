@@ -16,6 +16,7 @@ import dayjs from "dayjs";
 import { useEffect, useState } from "react";
 import { DictSelect } from "#/components/admin/DictSelect";
 import { RichEditor } from "#/components/admin/RichEditor";
+import { ImageUpload } from "#/components/admin/upload/ImageUpload";
 import { createNewsSFn, getNewsByIdSFn, updateNewsSFn } from "./news.functions";
 
 export interface NewsFormValues {
@@ -23,8 +24,11 @@ export interface NewsFormValues {
 	slug?: string;
 	description?: string;
 	content?: string;
+	externalUrl?: string;
+	coverImageId?: string;
 	status: "draft" | "published" | "archived";
 	isPinned: boolean;
+	isRecommended: boolean;
 	publishedAt?: dayjs.Dayjs;
 	sortOrder?: number;
 }
@@ -61,8 +65,11 @@ export function NewsForm({ id, onSuccess, onError, onCancel }: NewsFormProps) {
 						slug: record.slug,
 						description: record.description,
 						content: record.content || "",
+						externalUrl: record.externalUrl || "",
+						coverImageId: record.coverImageId || "",
 						status: record.status,
 						isPinned: record.isPinned,
+						isRecommended: record.isRecommended,
 						publishedAt: record.publishedAt
 							? dayjs(record.publishedAt)
 							: undefined,
@@ -87,6 +94,7 @@ export function NewsForm({ id, onSuccess, onError, onCancel }: NewsFormProps) {
 		setSubmitting(true);
 		try {
 			if (id) {
+				const coverImageId = values.coverImageId || undefined;
 				await updateNewsSFn({
 					data: {
 						id,
@@ -94,8 +102,11 @@ export function NewsForm({ id, onSuccess, onError, onCancel }: NewsFormProps) {
 						slug: values.slug || undefined,
 						description: values.description || undefined,
 						content: values.content || undefined,
+						externalUrl: values.externalUrl || undefined,
+						coverImageId: coverImageId || null,
 						status: values.status as "draft" | "published" | "archived",
 						isPinned: values.isPinned || false,
+						isRecommended: values.isRecommended || false,
 						sortOrder: values.sortOrder ?? 0,
 						publishedAt: values.publishedAt
 							? values.publishedAt.toISOString()
@@ -104,14 +115,18 @@ export function NewsForm({ id, onSuccess, onError, onCancel }: NewsFormProps) {
 				});
 				onSuccess?.(id);
 			} else {
+				const coverImageId = values.coverImageId || undefined;
 				const record = await createNewsSFn({
 					data: {
 						title: values.title,
 						slug: values.slug || undefined,
 						description: values.description || undefined,
 						content: values.content || undefined,
+						externalUrl: values.externalUrl || undefined,
+						coverImageId: coverImageId || undefined,
 						status: values.status as "draft" | "published",
 						isPinned: values.isPinned || false,
+						isRecommended: values.isRecommended || false,
 						sortOrder: values.sortOrder ?? 0,
 						publishedAt: values.publishedAt
 							? values.publishedAt.toISOString()
@@ -141,7 +156,14 @@ export function NewsForm({ id, onSuccess, onError, onCancel }: NewsFormProps) {
 			layout="vertical"
 			onFinish={handleSubmit}
 			initialValues={
-				!isEdit ? { status: "draft", isPinned: false, content: "" } : undefined
+				!isEdit
+					? {
+							status: "draft",
+							isPinned: false,
+							isRecommended: false,
+							content: "",
+						}
+					: undefined
 			}
 		>
 			<Form.Item
@@ -164,8 +186,24 @@ export function NewsForm({ id, onSuccess, onError, onCancel }: NewsFormProps) {
 				<Input.TextArea rows={2} placeholder="新闻摘要（可选）" />
 			</Form.Item>
 
-			<Form.Item name="content" label="正文">
+			<Form.Item name="coverImageId" label="封面图片">
+				<ImageUpload />
+			</Form.Item>
+
+			<Form.Item
+				name="content"
+				label="正文"
+				extra="内部文章填写此栏，有外部链接时以链接为准"
+			>
 				<RichEditor />
+			</Form.Item>
+
+			<Form.Item
+				name="externalUrl"
+				label="外部链接"
+				extra="外部链接优先（如微信公众号链接），前台点击直接跳转外链"
+			>
+				<Input placeholder="https://mp.weixin.qq.com/s/..." />
 			</Form.Item>
 
 			<div className="flex gap-8">
@@ -177,6 +215,15 @@ export function NewsForm({ id, onSuccess, onError, onCancel }: NewsFormProps) {
 				</Form.Item>
 
 				<Form.Item name="isPinned" label="置顶" valuePropName="checked">
+					<Switch />
+				</Form.Item>
+
+				<Form.Item
+					name="isRecommended"
+					label="首页推荐"
+					valuePropName="checked"
+					extra="最多5条"
+				>
 					<Switch />
 				</Form.Item>
 

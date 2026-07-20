@@ -29,8 +29,10 @@ export const createNewsSFn = createServerFn({ method: "POST" })
 	.handler(async ({ data, context }) => {
 		const record = await createNews({
 			...data,
+			externalUrl: data.externalUrl || undefined,
 			publishedAt: data.publishedAt || undefined,
 			sortOrder: data.sortOrder,
+			createdById: context.user.id,
 		});
 		logOperation({
 			operatorId: context.user.id,

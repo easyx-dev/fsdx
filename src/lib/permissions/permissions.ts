@@ -51,6 +51,11 @@ export const PERMISSIONS = {
 		"导出新闻",
 		"允许将新闻数据导出为 CSV 或 JSON 文件",
 	),
+	NEWS_IMPORT: definePermission(
+		"news:import",
+		"导入新闻",
+		"允许从 JSON 文件导入新闻数据",
+	),
 	// 管理员管理
 	ADMIN_VIEW: definePermission(
 		"admin:view",

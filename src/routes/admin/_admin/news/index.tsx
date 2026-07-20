@@ -8,13 +8,14 @@ import {
 } from "@ant-design/icons";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
-import { Button, Drawer, message, Segmented, Space, Tag } from "antd";
+import { Button, Drawer, Image, message, Segmented, Space, Tag } from "antd";
 import dayjs from "dayjs";
 import { useMemo, useState } from "react";
 import { z } from "zod";
 import { AdminPageContent } from "#/components/admin/AdminPageContent";
 import { DictTag } from "#/components/admin/DictTag";
 import { FieldTranslationDrawer } from "#/components/admin/FieldTranslationDrawer";
+import { JsonImportButton } from "#/components/admin/JsonImportButton";
 import { ProTable } from "#/components/admin/ProTable";
 import { TableOperate } from "#/components/admin/TableOperate";
 import { downloadFile } from "#/lib/export/export.utils";
@@ -29,6 +30,7 @@ import {
 	deleteNews,
 	getNewsById,
 	getNewsList,
+	importNews,
 } from "#/server/news/news.server";
 import { logOperation } from "#/server/operation-log/operation-log.server";
 import { NewsForm } from "./-mods/NewsForm";
@@ -84,6 +86,38 @@ const changeStatusSFn = createServerFn({ method: "POST" })
 			targetType: "news",
 			targetId: id,
 			targetName: newsRecord?.title || id,
+		});
+		return result;
+	});
+
+const newsImportSchema = z.object({
+	news: z.array(
+		z.object({
+			title: z.string().min(1),
+			description: z.string().optional(),
+			content: z.string().optional(),
+			externalUrl: z.string().optional(),
+			coverImageId: z.string().optional(),
+			status: z.enum(["draft", "published"]).default("draft"),
+			isPinned: z.boolean().default(false),
+			isRecommended: z.boolean().default(false),
+			sortOrder: z.number().int().default(0),
+		}),
+	),
+});
+
+const importNewsSFn = createServerFn({ method: "POST" })
+	.middleware([adminPermGuard(PERMISSIONS.NEWS_IMPORT)])
+	.inputValidator(newsImportSchema)
+	.handler(async ({ data, context }) => {
+		const result = await importNews(data.news, context.user.id);
+		logOperation({
+			operatorId: context.user.id,
+			operatorName: context.user.username,
+			module: "news",
+			action: "import",
+			targetType: "news",
+			detail: { created: result.created },
 		});
 		return result;
 	});
@@ -188,6 +222,23 @@ function NewsListPage() {
 			ellipsis: true,
 		},
 		{
+			title: "封面",
+			key: "cover",
+			width: 80,
+			render: (_: unknown, record: NewsRecord) => {
+				if (!record.coverImageId)
+					return <span style={{ color: "#5A6478" }}>—</span>;
+				return (
+					<Image
+						src={`/api/download/file/${record.coverImageId}`}
+						width={60}
+						height={40}
+						style={{ objectFit: "cover", borderRadius: 4 }}
+					/>
+				);
+			},
+		},
+		{
 			title: "状态",
 			dataIndex: "status",
 			key: "status",
@@ -197,6 +248,7 @@ function NewsListPage() {
 					<Space size={4}>
 						<DictTag dictSlug="news_status" value={record.status ?? ""} />
 						{record.isPinned && <Tag color="blue">置顶</Tag>}
+						{record.isRecommended && <Tag color="gold">推荐</Tag>}
 					</Space>
 				);
 			},
@@ -207,6 +259,15 @@ function NewsListPage() {
 			key: "sortOrder",
 			width: 90,
 			sorter: true,
+		},
+		{
+			title: "类型",
+			key: "type",
+			width: 90,
+			render: (_: unknown, record: NewsRecord) => {
+				if (record.externalUrl) return <Tag color="cyan">外部链接</Tag>;
+				return <Tag color="green">内部文章</Tag>;
+			},
 		},
 		{
 			title: "发布时间",
@@ -332,6 +393,23 @@ function NewsListPage() {
 			title="新闻管理"
 			extra={
 				<Space>
+					<JsonImportButton
+						onImport={async (jsonString) => {
+							const data = JSON.parse(jsonString);
+							const result = await importNewsSFn({ data });
+							const msg = `新增 ${result.created} 条`;
+							if (result.skipped > 0) {
+								message.success(
+									`${msg}，跳过 ${result.skipped} 条（标题重复）`,
+								);
+							} else {
+								message.success(msg);
+							}
+							await refresh();
+						}}
+					>
+						导入 JSON
+					</JsonImportButton>
 					<Button
 						icon={<DownloadOutlined />}
 						onClick={() => handleExport("csv")}
@@ -368,7 +446,7 @@ function NewsListPage() {
 				columns={columns}
 				rowKey="id"
 				onChange={handleTableChange}
-				scroll={{ x: 1480 }}
+				scroll={{ x: 1660 }}
 				pagination={{
 					total: data.total,
 					pageSize: data.pageSize,

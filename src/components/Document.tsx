@@ -79,11 +79,17 @@ export function SSRRootDocument({ children }: SSRRootDocumentProps) {
 }
 
 /** Admin 路由：客户端渲染，集成主题管理与 antd ConfigProvider */
-export function AdminRootDocument({ children }: { children: React.ReactNode }) {
+export function AdminRootDocument({
+	children,
+	siteName = "FSDX",
+}: {
+	children: React.ReactNode;
+	siteName?: string;
+}) {
 	return (
 		<html lang="zh-CN" suppressHydrationWarning>
 			<head>
-				<title>FSDX 管理后台</title>
+				<title>{siteName} 管理后台</title>
 				<HeadContent />
 				<link rel="stylesheet" href={adminGlobalCss} />
 				<link rel="icon" type="image/svg+xml" href="/favicon-admin.svg" />

@@ -24,7 +24,7 @@ import {
 	Tooltip,
 	Upload,
 } from "antd";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { z } from "zod";
 import { AdminPageContent } from "#/components/admin/AdminPageContent";
 import { ProTable } from "#/components/admin/ProTable";
@@ -87,6 +87,7 @@ function FilesPage() {
 	const initialData = Route.useLoaderData();
 	const [data, setData] = useState(initialData);
 	const [filter, setFilter] = useState("");
+	const uploadingCountRef = useRef(0);
 	const [uploading, setUploading] = useState(false);
 	const [keyword, setKeyword] = useState("");
 	const [sortField, setSortField] = useState<string | undefined>();
@@ -145,13 +146,14 @@ function FilesPage() {
 		await refreshFiles({ sortField: field, sortOrder: order });
 	};
 
-	/** 上传核心逻辑 */
+	/** 上传核心逻辑（支持多文件并行上传） */
 	const doUpload = async (
 		file: File,
 		onSuccess: (body: unknown) => void,
 		onError: (err: Error) => void,
 		permanent: boolean,
 	) => {
+		uploadingCountRef.current++;
 		setUploading(true);
 		try {
 			const fd = new FormData();
@@ -160,21 +162,20 @@ function FilesPage() {
 			const result = await uploadFileSFn({ data: fd });
 			if (result.success) {
 				onSuccess?.(result.data);
-				message.success(
-					result.data.isDuplicated ? "秒传成功（文件已存在）" : "上传成功",
-				);
-				await refreshFiles();
-				await router.invalidate();
 			} else {
 				onError?.(new Error("上传失败"));
-				message.error("上传失败");
 			}
 		} catch (err) {
 			console.error("[文件上传失败]", err);
 			onError?.(err as Error);
-			message.error("上传失败: 网络错误");
 		} finally {
-			setUploading(false);
+			uploadingCountRef.current--;
+			if (uploadingCountRef.current === 0) {
+				setUploading(false);
+				message.success("上传完成");
+				await refreshFiles();
+				await router.invalidate();
+			}
 		}
 	};
 
@@ -313,6 +314,7 @@ function FilesPage() {
 					<Upload.Dragger
 						customRequest={permanentRequest}
 						showUploadList={true}
+						multiple
 						disabled={uploading}
 						className="compact-dragger"
 					>
@@ -326,6 +328,7 @@ function FilesPage() {
 					<Upload.Dragger
 						customRequest={tempRequest}
 						showUploadList={true}
+						multiple
 						disabled={uploading}
 						className="compact-dragger"
 					>

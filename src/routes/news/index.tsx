@@ -64,7 +64,7 @@ function NewsListPage() {
 	const { t, locale } = useTranslation();
 
 	return (
-		<main className="mx-auto max-w-5xl px-4 py-8 sm:py-12">
+		<main className="mx-auto max-w-5xl px-4 py-8 sm:py-12 max-sm:px-3 max-sm:py-6">
 			<header className="mb-6 sm:mb-10">
 				<h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
 					{t("新闻资讯")}

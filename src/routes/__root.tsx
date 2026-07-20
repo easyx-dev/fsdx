@@ -13,7 +13,7 @@ import { Fragment } from "react";
 import { ClientAuthProvider } from "#/components/client/ClientAuthProvider";
 import { AdminRootDocument, SSRRootDocument } from "#/components/Document";
 import { GlobalStoreProvider } from "#/lib/global-store/global-store";
-import type { Locale, Translations } from "#/lib/i18n/i18n.types";
+import type { Locale } from "#/lib/i18n/i18n.types";
 import { getVisibleConfigsSFn } from "#/server/config/config.functions";
 import { getLocaleBundleSFn } from "#/server/i18n/i18n.functions";
 
@@ -31,7 +31,7 @@ export const Route = createRootRouteWithContext<{
 			],
 		};
 	},
-	async beforeLoad({ context }) {
+	async loader({ context }) {
 		void context.locale;
 		const [bundle, systemConfig] = await Promise.all([
 			getLocaleBundleSFn(),
@@ -60,23 +60,21 @@ function RootError({ error }: { error: unknown }) {
 
 function RootDocument({ children }: { children: React.ReactNode }) {
 	const pathname = useLocation().pathname;
-	const context = Route.useRouteContext() as {
-		locale: Locale;
-		translations: Translations;
-		systemConfig: Record<string, string>;
-	};
+	const data = Route.useLoaderData();
 
 	const isAdmin = pathname.startsWith("/admin");
 	return (
 		<Fragment>
 			{isAdmin ? (
-				<AdminRootDocument>{children}</AdminRootDocument>
+				<AdminRootDocument siteName={data.systemConfig?.site_name}>
+					{children}
+				</AdminRootDocument>
 			) : (
 				<GlobalStoreProvider
 					value={{
-						locale: context.locale,
-						translations: context.translations,
-						systemConfig: context.systemConfig,
+						locale: data.locale,
+						translations: data.translations,
+						systemConfig: data.systemConfig,
 					}}
 				>
 					<ClientAuthProvider>

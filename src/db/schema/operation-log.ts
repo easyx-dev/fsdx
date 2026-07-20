@@ -10,15 +10,12 @@ import {
 	uuid,
 	varchar,
 } from "drizzle-orm/pg-core";
-import { adminUser } from "./admin-user";
 
 export const operationLog = pgTable(
 	"operation_log",
 	{
 		id: uuid().defaultRandom().primaryKey(),
-		operatorId: uuid()
-			.notNull()
-			.references(() => adminUser.id),
+		operatorId: uuid().notNull(),
 		operatorName: varchar({ length: 100 }).notNull(),
 		module: varchar({ length: 50 }).notNull(),
 		action: varchar({ length: 50 }).notNull(),

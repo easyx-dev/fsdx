@@ -71,7 +71,7 @@ export async function initSystem(data: InitData): Promise<{
 			return { success: false, message: "系统已初始化，禁止重复操作" };
 		}
 
-		// 1. 创建超级管理员角色
+		// 1. 创建超级管理员角色（幂等：如已存在则先查后返）
 		const [superRole] = await tx
 			.insert(role)
 			.values({
@@ -80,9 +80,21 @@ export async function initSystem(data: InitData): Promise<{
 				permissions: ["**"],
 				description: "拥有全部权限的超级管理员角色",
 			})
+			.onConflictDoNothing()
 			.returning();
 
-		logger.info({ roleId: superRole.id }, "超级管理员角色已创建");
+		// onConflictDoNothing 返回空数组表示记录已存在，此时查询已有记录
+		const effectiveRole =
+			superRole ??
+			(await tx.query.role.findFirst({
+				where: eq(role.slug, "super-admin"),
+			}));
+
+		if (!effectiveRole) {
+			throw new Error("无法创建或查找超级管理员角色");
+		}
+
+		logger.info({ roleId: effectiveRole.id }, "超级管理员角色已创建");
 
 		// 2. 创建 root 管理员用户
 		const passwordHash = await bcrypt.hash(admin.password, 10);
@@ -92,7 +104,7 @@ export async function initSystem(data: InitData): Promise<{
 				username: admin.username,
 				email: admin.email,
 				passwordHash,
-				roleId: superRole.id,
+				roleId: effectiveRole.id,
 				isRoot: true,
 				status: "active",
 			})

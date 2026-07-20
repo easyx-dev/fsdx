@@ -89,8 +89,8 @@ function ForgotPasswordPage() {
 	});
 
 	return (
-		<main className="flex flex-1 items-center justify-center bg-background px-4 py-8">
-			<div className="w-full max-w-sm">
+		<main className="flex flex-1 items-center justify-center bg-background px-4 py-8 max-sm:px-0">
+			<div className="w-full max-w-sm max-sm:max-w-full">
 				<Card>
 					<CardHeader className="p-4 sm:p-6">
 						<CardTitle className="text-center text-xl sm:text-2xl">

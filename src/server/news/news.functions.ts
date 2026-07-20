@@ -8,6 +8,7 @@ import { PERMISSIONS } from "#/lib/permissions/permissions";
 import { adminPermGuard } from "#/middleware/admin-auth";
 import {
 	getAllNewsForExport,
+	getRecommendedNews,
 	NEWS_EXPORT_COLUMNS,
 } from "#/server/news/news.server";
 
@@ -29,3 +30,10 @@ export const exportNewsSFn = createServerFn({ method: "GET" })
 		}
 		return { format: "json" as const, content: toJson(records) };
 	});
+
+/** 获取首页推荐新闻（客户端前台调用，无需鉴权） */
+export const getRecommendedNewsSFn = createServerFn({ method: "GET" }).handler(
+	async () => {
+		return getRecommendedNews();
+	},
+);

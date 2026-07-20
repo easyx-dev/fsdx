@@ -79,9 +79,9 @@ function NewsDetailPage() {
 	}
 
 	return (
-		<main className="mx-auto max-w-3xl px-4 py-8 sm:py-12">
+		<main className="mx-auto max-w-3xl px-4 py-8 sm:py-12 max-sm:py-6 max-sm:px-3">
 			{/* 面包屑导航 */}
-			<nav className="mb-4 flex items-center gap-1.5 text-sm text-muted-foreground">
+			<nav className="mb-4 flex items-center gap-1.5 text-sm text-muted-foreground max-sm:text-xs max-sm:gap-1 max-sm:mb-3 flex-wrap">
 				<Link
 					to="/"
 					className="flex items-center gap-1 hover:text-foreground transition-colors"
@@ -99,7 +99,7 @@ function NewsDetailPage() {
 
 			<article>
 				<header className="mb-6 sm:mb-8">
-					<h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-4xl">
+					<h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-4xl max-sm:text-xl">
 						{data.title}
 					</h1>
 					<div className="mt-3 flex flex-wrap items-center gap-3 text-sm text-muted-foreground sm:mt-4 sm:gap-4">

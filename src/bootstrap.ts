@@ -28,7 +28,14 @@ export async function bootstrap() {
 	config({ path: resolve(process.cwd(), "env", ".env.local"), override: true });
 
 	// 程序化数据库迁移（在预置数据写入前执行，确保表结构就绪）
-	await runMigrations();
+	try {
+		await runMigrations();
+	} catch (err) {
+		logger.warn(
+			{ err: (err as Error).message },
+			"数据库迁移执行失败，请手动执行 pnpm db:push 同步表结构",
+		);
+	}
 
 	// 预置数据：确保缓存就绪后再处理请求
 	try {

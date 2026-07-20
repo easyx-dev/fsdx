@@ -18,6 +18,8 @@ import {
 
 export type NewsRecord = typeof news.$inferSelect;
 
+const MAX_RECOMMENDED = 5;
+
 /** 新闻详情返回类型（扁平结构，避免 SF 序列化嵌套问题） */
 export type NewsDetail = NewsRecord & { html: string };
 
@@ -177,12 +179,27 @@ export async function createNews(params: {
 	description?: string;
 	content?: string;
 	coverImageId?: string;
+	externalUrl?: string;
 	status?: string;
 	isPinned?: boolean;
+	isRecommended?: boolean;
 	sortOrder?: number;
 	publishedAt?: Date | string;
 	createdById?: string;
 }): Promise<NewsRecord> {
+	// 推荐上限校验
+	if (params.isRecommended) {
+		const recommendedCount = await db.$count(
+			db
+				.select()
+				.from(news)
+				.where(and(eq(news.isRecommended, true), notDeleted(news.deletedAt))),
+		);
+		if (recommendedCount >= MAX_RECOMMENDED) {
+			throw new Error(`最多推荐 ${MAX_RECOMMENDED} 条新闻`);
+		}
+	}
+
 	let slug = params.slug?.trim() || generateSlug(params.title);
 	slug = await ensureUniqueSlug(slug);
 
@@ -199,8 +216,10 @@ export async function createNews(params: {
 			description: params.description,
 			content: params.content,
 			coverImageId: params.coverImageId,
+			externalUrl: params.externalUrl,
 			status: params.status || "draft",
 			isPinned: params.isPinned ?? false,
+			isRecommended: params.isRecommended ?? false,
 			sortOrder: params.sortOrder ?? 0,
 			publishedAt:
 				params.status === "published" ? publishedAtValue || new Date() : null,
@@ -220,8 +239,10 @@ export async function updateNews(
 		description?: string;
 		content?: string;
 		coverImageId?: string | null;
+		externalUrl?: string;
 		status?: string;
 		isPinned?: boolean;
+		isRecommended?: boolean;
 		sortOrder?: number;
 		publishedAt?: Date | string | null;
 		updatedById?: string;
@@ -229,6 +250,25 @@ export async function updateNews(
 ): Promise<NewsRecord | null> {
 	const existing = await getNewsById(id);
 	if (!existing) return null;
+
+	// 推荐上限校验（不包括当前记录自身）
+	if (params.isRecommended && !existing.isRecommended) {
+		const recommendedCount = await db.$count(
+			db
+				.select()
+				.from(news)
+				.where(
+					and(
+						eq(news.isRecommended, true),
+						notDeleted(news.deletedAt),
+						ne(news.id, id),
+					),
+				),
+		);
+		if (recommendedCount >= MAX_RECOMMENDED) {
+			throw new Error(`最多推荐 ${MAX_RECOMMENDED} 条新闻`);
+		}
+	}
 
 	let slug = existing.slug;
 	if (params.slug && params.slug !== existing.slug) {
@@ -248,8 +288,10 @@ export async function updateNews(
 		description: params.description,
 		content: params.content,
 		coverImageId: params.coverImageId,
+		externalUrl: params.externalUrl,
 		status: params.status,
 		isPinned: params.isPinned,
+		isRecommended: params.isRecommended,
 		sortOrder: params.sortOrder,
 		slug,
 		updatedAt: new Date(),
@@ -337,3 +379,109 @@ export const NEWS_EXPORT_COLUMNS: { key: string; title: string }[] = [
 	{ key: "createdAt", title: "创建时间" },
 	{ key: "updatedAt", title: "更新时间" },
 ];
+
+/** 前台首页新闻条目类型（精选数据结构） */
+export type NewsItem = {
+	id: string;
+	title: string;
+	image: string;
+	date: string;
+	url: string;
+};
+
+/** 获取首页推荐新闻（最多 5 条，sortOrder 降序，仅已发布） */
+export async function getRecommendedNews(): Promise<NewsItem[]> {
+	const records = await db
+		.select()
+		.from(news)
+		.where(
+			and(
+				eq(news.isRecommended, true),
+				eq(news.status, "published"),
+				notDeleted(news.deletedAt),
+			),
+		)
+		.orderBy(desc(news.sortOrder))
+		.limit(MAX_RECOMMENDED);
+
+	return records.map((r) => ({
+		id: r.id,
+		title: r.title,
+		image: r.coverImageId ? `/api/download/file/${r.coverImageId}` : "",
+		date: new Date(r.publishedAt ?? r.createdAt).toISOString().split("T")[0],
+		url: r.externalUrl ?? `/news/${r.slug}`,
+	}));
+}
+
+/** 新闻导入数据格式 */
+export interface NewsImportRow {
+	title: string;
+	description?: string;
+	content?: string;
+	externalUrl?: string;
+	coverImageId?: string;
+	status?: string;
+	isPinned?: boolean;
+	isRecommended?: boolean;
+	sortOrder?: number;
+}
+
+/** 新闻导入返回值 */
+export interface NewsImportResult {
+	created: number;
+	skipped: number;
+}
+
+/** 批量导入新闻（按标题去重，已存在则跳过） */
+export async function importNews(
+	rows: NewsImportRow[],
+	createdById: string,
+): Promise<NewsImportResult> {
+	// 推荐上限校验：已推荐数 + 本次导入推荐数 ≤ MAX_RECOMMENDED
+	const newRecommendedCount = rows.filter((r) => r.isRecommended).length;
+	if (newRecommendedCount > 0) {
+		const existingRecommended = await db.$count(
+			db
+				.select()
+				.from(news)
+				.where(and(eq(news.isRecommended, true), notDeleted(news.deletedAt))),
+		);
+		if (existingRecommended + newRecommendedCount > MAX_RECOMMENDED) {
+			throw new Error(
+				`最多推荐 ${MAX_RECOMMENDED} 条新闻（已有 ${existingRecommended} 条，本次导入 ${newRecommendedCount} 条）`,
+			);
+		}
+	}
+
+	let created = 0;
+	let skipped = 0;
+
+	for (const row of rows) {
+		const existing = await db.query.news.findFirst({
+			where: and(eq(news.title, row.title), notDeleted(news.deletedAt)),
+		});
+		if (existing) {
+			skipped++;
+			continue;
+		}
+
+		const slug = await ensureUniqueSlug(generateSlug(row.title));
+		await db.insert(news).values({
+			title: row.title,
+			slug,
+			description: row.description ?? null,
+			content: row.content ?? null,
+			externalUrl: row.externalUrl ?? null,
+			coverImageId: row.coverImageId ?? null,
+			status: row.status ?? "draft",
+			isPinned: row.isPinned ?? false,
+			isRecommended: row.isRecommended ?? false,
+			sortOrder: row.sortOrder ?? 0,
+			publishedAt: row.status === "published" ? new Date() : null,
+			createdById,
+		});
+		created++;
+	}
+
+	return { created, skipped };
+}

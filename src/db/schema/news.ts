@@ -23,8 +23,10 @@ export const news = pgTable(
 		description: text("description"),
 		content: text(), // TipTap JSON
 		coverImageId: uuid("cover_image_id").references(() => file.id),
+		externalUrl: text("external_url"),
 		status: varchar({ length: 20 }).default("draft").notNull(), // draft | published | archived
 		isPinned: boolean("is_pinned").default(false).notNull(),
+		isRecommended: boolean("is_recommended").default(false).notNull(),
 		sortOrder: integer("sort_order").default(0).notNull(),
 		publishedAt: timestamp("published_at", { withTimezone: true }),
 		createdById: uuid("created_by_id").references(() => adminUser.id),
