@@ -7,7 +7,7 @@ import { z } from "zod";
 import { COOKIE_NAMES } from "#/lib/jwt/jwt";
 import { adminLogin } from "#/server/admin-auth/admin-auth.server";
 
-const loginSchema = z.object({
+export const loginSchema = z.object({
 	username: z.string().min(1, "用户名不能为空").max(50),
 	password: z.string().min(1, "密码不能为空").max(100),
 });

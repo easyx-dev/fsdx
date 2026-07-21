@@ -93,7 +93,7 @@ export const exportConfigsSFn = createServerFn({ method: "GET" })
 	});
 
 /** 配置导入数据格式 */
-interface ConfigImportData {
+export interface ConfigImportData {
 	configs: {
 		key: string;
 		value: string;
@@ -104,13 +104,13 @@ interface ConfigImportData {
 	}[];
 }
 
-interface ConfigImportResult {
+export interface ConfigImportResult {
 	created: number;
 	updated: number;
 }
 
 /** 导入配置数据（按 key upsert） */
-async function importConfigs(
+export async function importConfigs(
 	data: ConfigImportData,
 ): Promise<ConfigImportResult> {
 	const result: ConfigImportResult = { created: 0, updated: 0 };

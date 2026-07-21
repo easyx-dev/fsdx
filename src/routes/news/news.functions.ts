@@ -11,13 +11,17 @@ import {
 	translateNewsRecords,
 } from "#/server/news/news.server";
 
+/** 前台新闻列表分页 */
+export const publishedNewsSchema = z.object({
+	page: z.number().int().min(1).optional().default(1),
+	pageSize: z.number().int().min(1).max(50).optional().default(12),
+});
+
+/** 前台新闻详情 slug */
+export const newsSlugSchema = z.object({ slug: z.string().min(1) });
+
 export const getPublishedNewsSFn = createServerFn({ method: "GET" })
-	.inputValidator(
-		z.object({
-			page: z.number().int().min(1).optional().default(1),
-			pageSize: z.number().int().min(1).max(50).optional().default(12),
-		}),
-	)
+	.inputValidator(publishedNewsSchema)
 	.handler(async ({ data, context }) => {
 		const { records, ...rest } = await getNewsList({
 			status: "published",
@@ -30,7 +34,7 @@ export const getPublishedNewsSFn = createServerFn({ method: "GET" })
 	});
 
 export const getNewsDetailSFn = createServerFn({ method: "GET" })
-	.inputValidator(z.object({ slug: z.string().min(1) }))
+	.inputValidator(newsSlugSchema)
 	.handler(async ({ data: { slug }, context }) => {
 		const record = await getNewsBySlug(slug);
 		if (!record) return null;

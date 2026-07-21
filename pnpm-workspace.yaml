@@ -2,3 +2,7 @@ allowBuilds:
   '@alicloud/openapi-core': false
   es5-ext: true
   esbuild: true
+
+onlyBuiltDependencies:
+  - esbuild
+  - lightningcss

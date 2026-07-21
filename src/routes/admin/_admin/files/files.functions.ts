@@ -8,7 +8,7 @@ import { adminPermGuard } from "#/middleware/admin-auth";
 import { deleteFile, makePermanent } from "#/server/file/file.server";
 import { logOperation } from "#/server/operation-log/operation-log.server";
 
-const idSchema = z.object({ id: z.string().min(1) });
+export const idSchema = z.object({ id: z.string().min(1) });
 
 export const deleteFileSFn = createServerFn({ method: "POST" })
 	.middleware([adminPermGuard(PERMISSIONS.FILE_DELETE)])

@@ -32,7 +32,7 @@ import {
 const MAX_RECOMMENDED = 5;
 
 /** 根据标题生成 slug */
-function generateSlug(title: string): string {
+export function generateSlug(title: string): string {
 	const hasChinese = /[\u4e00-\u9fff]/.test(title);
 	if (hasChinese) return `news-${Date.now()}`;
 	return (
@@ -47,7 +47,7 @@ function generateSlug(title: string): string {
 }
 
 /** 确保 slug 唯一 */
-async function ensureUniqueSlug(
+export async function ensureUniqueSlug(
 	slug: string,
 	excludeId?: string,
 ): Promise<string> {

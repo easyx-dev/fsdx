@@ -226,7 +226,7 @@ export const exportDictsSFn = createServerFn({ method: "GET" })
 	});
 
 /** 字典导入数据结构 */
-interface DictImportData {
+export interface DictImportData {
 	dicts: { name: string; slug: string; description?: string | null }[];
 	dictItems: {
 		dictSlug: string;
@@ -240,7 +240,7 @@ interface DictImportData {
 	}[];
 }
 
-interface DictImportResult {
+export interface DictImportResult {
 	dictsCreated: number;
 	dictsUpdated: number;
 	itemsCreated: number;
@@ -249,7 +249,9 @@ interface DictImportResult {
 }
 
 /** 导入字典数据（事务中 upsert） */
-async function importDicts(data: DictImportData): Promise<DictImportResult> {
+export async function importDicts(
+	data: DictImportData,
+): Promise<DictImportResult> {
 	const result: DictImportResult = {
 		dictsCreated: 0,
 		dictsUpdated: 0,

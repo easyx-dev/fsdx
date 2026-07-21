@@ -19,6 +19,11 @@ export type JsonValue =
 	| JsonValue[]
 	| { [key: string]: JsonValue };
 
+/** 将可能为 Date 的值转为 ISO 字符串（可测试的核心逻辑） */
+export function mapDateField(value: unknown): string {
+	return value instanceof Date ? value.toISOString() : String(value);
+}
+
 export const searchOperationLogsSchema = z.object({
 	module: z.string().optional(),
 	action: z.string().optional(),
@@ -51,10 +56,7 @@ export const searchOperationLogsSFn = createServerFn({ method: "GET" })
 				targetId: e.targetId,
 				targetName: e.targetName,
 				detail: e.detail as JsonValue,
-				createdAt:
-					e.createdAt instanceof Date
-						? e.createdAt.toISOString()
-						: String(e.createdAt),
+				createdAt: mapDateField(e.createdAt),
 			})),
 		};
 	});

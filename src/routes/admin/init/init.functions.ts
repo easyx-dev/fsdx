@@ -33,65 +33,70 @@ export const initSchema = z
 		path: ["confirmPassword"],
 	});
 
+type InitInput = z.infer<typeof initSchema>;
+
+/** 将表单输入转换为初始化负载（可测试的核心逻辑） */
+export function buildInitData(data: InitInput): InitData {
+	const smtpProvided = !!(
+		data.smtpHost ||
+		data.smtpPort ||
+		data.smtpUser ||
+		data.smtpPass ||
+		data.smtpFrom
+	);
+	const aiProvided = !!(
+		data.aiBaseUrl ||
+		data.aiApiKey ||
+		data.aiDeepModel ||
+		data.aiFastModel
+	);
+	const smsProvided = !!(
+		data.smsProvider ||
+		data.smsAccessKeyId ||
+		data.smsAccessKeySecret ||
+		data.smsSignName ||
+		data.smsTemplateCode
+	);
+
+	return {
+		admin: {
+			username: data.username,
+			password: data.password,
+			email: data.email,
+		},
+		siteName: data.siteName || "FSDX",
+		smtp: smtpProvided
+			? {
+					host: data.smtpHost,
+					port: data.smtpPort,
+					secure: data.smtpSecure,
+					user: data.smtpUser,
+					pass: data.smtpPass,
+					from: data.smtpFrom,
+				}
+			: undefined,
+		ai: aiProvided
+			? {
+					baseUrl: data.aiBaseUrl,
+					apiKey: data.aiApiKey,
+					deepModel: data.aiDeepModel,
+					fastModel: data.aiFastModel,
+				}
+			: undefined,
+		sms: smsProvided
+			? {
+					provider: data.smsProvider,
+					accessKeyId: data.smsAccessKeyId,
+					accessKeySecret: data.smsAccessKeySecret,
+					signName: data.smsSignName,
+					templateCode: data.smsTemplateCode,
+				}
+			: undefined,
+	};
+}
+
 export const initSFn = createServerFn({ method: "POST" })
 	.inputValidator(initSchema)
 	.handler(async ({ data }) => {
-		const smtpProvided = !!(
-			data.smtpHost ||
-			data.smtpPort ||
-			data.smtpUser ||
-			data.smtpPass ||
-			data.smtpFrom
-		);
-		const aiProvided = !!(
-			data.aiBaseUrl ||
-			data.aiApiKey ||
-			data.aiDeepModel ||
-			data.aiFastModel
-		);
-		const smsProvided = !!(
-			data.smsProvider ||
-			data.smsAccessKeyId ||
-			data.smsAccessKeySecret ||
-			data.smsSignName ||
-			data.smsTemplateCode
-		);
-
-		const payload: InitData = {
-			admin: {
-				username: data.username,
-				password: data.password,
-				email: data.email,
-			},
-			siteName: data.siteName || "FSDX",
-			smtp: smtpProvided
-				? {
-						host: data.smtpHost,
-						port: data.smtpPort,
-						secure: data.smtpSecure,
-						user: data.smtpUser,
-						pass: data.smtpPass,
-						from: data.smtpFrom,
-					}
-				: undefined,
-			ai: aiProvided
-				? {
-						baseUrl: data.aiBaseUrl,
-						apiKey: data.aiApiKey,
-						deepModel: data.aiDeepModel,
-						fastModel: data.aiFastModel,
-					}
-				: undefined,
-			sms: smsProvided
-				? {
-						provider: data.smsProvider,
-						accessKeyId: data.smsAccessKeyId,
-						accessKeySecret: data.smsAccessKeySecret,
-						signName: data.smsSignName,
-						templateCode: data.smsTemplateCode,
-					}
-				: undefined,
-		};
-
-		return initSystem(payload);
+		return initSystem(buildInitData(data));
 	});
