@@ -14,7 +14,7 @@ src/
 ├── hono-app.ts                     # Hono 应用工厂（/health 路由）
 ├── server.ts                       # TanStack Start 服务端入口
 ├── components/
-│   ├── admin/                      # 管理端专用组件（AdminLayout、ProTable、TableOperate、RichEditor、AdminAuthProvider、CodeEditor、DictSelect、DictTag、FieldTranslationDrawer、JsonImportButton、PermissionSelector、SelectFileModal 等）
+│   ├── admin/                      # 管理端专用组件（AdminLayout、AdminPageContent、AdminProvider、ProTable、TableOperate、RichEditor、AdminAuthProvider、CodeEditor、DictSelect、DictTag、FieldTranslationDrawer、JsonImportButton、PermissionSelector、SelectFileModal、editor-type/、nav-config、upload/ 等）
 │   ├── client/                     # 客户端前台专用组件（Header、Footer、CaptchaInput、ClientAuthProvider、ThemeToggle）
 │   ├── ui/                         # shadcn/ui 基础组件（button、input、textarea、badge、card）
 │   ├── AutofillBlocker.tsx         # 浏览器自动填充阻止组件
@@ -23,7 +23,7 @@ src/
 │   └── Logo.tsx                    # Logo 组件
 ├── db/
 │   ├── index.ts                    # Drizzle 客户端实例化
-│   └── schema/                     # 数据库表定义（按模块拆分，共 15 张表）
+│   └── schema/                     # 数据库表定义（按模块拆分，共 15 张表，13 个 schema 文件）
 ├── hooks/
 │   └── use-theme-mode.ts           # 主题模式 hook
 ├── lib/                            # 基础库（无业务逻辑）
@@ -41,6 +41,7 @@ src/
 │   ├── permissions/                # 权限码常量
 │   ├── query/                      # 查询工具（排序、分页辅助）
 │   ├── scheduler/                  # 定时任务调度（cron）
+│   ├── sms/                        # 短信发送
 │   ├── storage/                    # 文件存储抽象层（本地实现）
 │   ├── track/                      # 客户端埋点追踪 SDK
 │   └── utils/                      # 通用工具函数（cn、日期格式化等）

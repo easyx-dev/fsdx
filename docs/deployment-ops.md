@@ -111,12 +111,12 @@ server.ts (根目录, Nitro entry)
     │
     ├── bootstrap()                          # src/bootstrap.ts
     │   ├── dotenv 加载 env/.env + env/.env.local
-    │   ├── runMigrations()                  程序化数据库迁移（同步等待）
-    │   ├── ensurePresetDicts()              fire-and-forget（不阻塞）
-    │   ├── ensurePresetConfigs()            fire-and-forget（不阻塞）
-    │   ├── ensurePresetTranslations()       fire-and-forget（不阻塞）
-    │   ├── ensurePresetEvents() + ensurePresetProperties()
-    │   │       └─ .then(loadPresetCache())  链式加载缓存
+    │   ├── runMigrations()                 程序化数据库迁移（try/catch 容错，表已存在则跳过）
+    │   ├── await Promise.all([ensurePresetDicts(), ensurePresetConfigs()])
+    │   │       等待预置字典和系统配置完成（同步等待）
+    │   ├── void ensurePresetTranslations()  fire-and-forget（不阻塞）
+    │   ├── void Promise.all([ensurePresetEvents(), ensurePresetProperties()])
+    │   │       .then(loadPresetCache())     链式加载缓存（不阻塞）
     │   ├── registerAllTasks()              注册定时任务
     │   ├── 注册 uncaughtException 处理器 → logger.fatal + exit(1)
     │   ├── 注册 unhandledRejection 处理器 → logger.fatal + exit(1)

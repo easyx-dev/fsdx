@@ -57,7 +57,7 @@ erDiagram
 
     role {
         uuid id PK
-        varchar name
+        varchar name UK
         varchar slug UK
         jsonb permissions "字符串数组，如 ['news:*','admin:view']"
         text description
@@ -84,10 +84,13 @@ erDiagram
         uuid id PK
         varchar title
         varchar slug UK
-        jsonb content "TipTap JSON"
-        varchar cover_image_id FK
+        text description
+        text content "TipTap JSON"
+        text external_url
+        uuid cover_image_id FK
         varchar status "draft/published/archived"
         boolean is_pinned
+        boolean is_recommended
         int sort_order
         timestamp published_at
         uuid created_by_id FK
@@ -102,8 +105,6 @@ erDiagram
         varchar name
         varchar slug UK
         text description
-        boolean is_preset
-        int sort_order
         timestamp created_at
         timestamp updated_at
         timestamp deleted_at
@@ -117,7 +118,7 @@ erDiagram
         int sort_order
         varchar status "active/disabled"
         varchar extra_type
-        jsonb extra
+        text extra
         varchar color
         timestamp created_at
         timestamp updated_at
@@ -133,6 +134,8 @@ erDiagram
         bigint size
         varchar path
         varchar status "temp/permanent"
+        varchar created_by_type
+        uuid created_by_id
         timestamp expired_at "临时文件过期时间"
         timestamp created_at
         timestamp updated_at
@@ -206,15 +209,15 @@ erDiagram
 
     operation_log {
         uuid id PK
-        uuid operator_id FK "索引"
-        varchar operator_name
+        uuid operatorId FK "索引"
+        varchar operatorName
         varchar module "索引"
         varchar action
-        varchar target_type
-        varchar target_id
-        varchar target_name
+        varchar targetType
+        uuid targetId
+        varchar targetName
         jsonb detail
-        timestamp created_at "索引"
+        timestamp createdAt "索引"
     }
 
     captcha_code {
@@ -231,7 +234,7 @@ erDiagram
     dict ||--o{ dict_item : "dict_slug FK (CASCADE)"
     file ||--o{ news : "cover_image_id FK"
     admin_user ||--o{ news : "created_by_id / updated_by_id FK"
-    admin_user ||--o{ operation_log : "operator_id FK"
+    admin_user ||--o{ operation_log : "operatorId FK"
 ```
 
 ---
@@ -292,8 +295,8 @@ erDiagram
 | `news` | `cover_image_id` | `file.id` | 否 |
 | `news` | `created_by_id` | `admin_user.id` | 否 |
 | `news` | `updated_by_id` | `admin_user.id` | 否 |
-| `dict_item` | `dict_slug` | `dict.slug` | **是** |
-| `operation_log` | `operator_id` | `admin_user.id` | 否 |
+| `dict_item` | `dict_slug` | `dict.slug` | 仅 UPDATE |
+| `operation_log` | `operatorId` | `admin_user.id` | 否 |
 
 ---
 
@@ -304,7 +307,7 @@ erDiagram
 | 预置类型 | 入口函数 | 数据内容 |
 |----------|----------|----------|
 | 字典 | `ensurePresetDicts()` | 预置字典类型和条目 |
-| 系统配置 | `ensurePresetConfigs()` | 17 个预置配置项（SMTP、AI、站点设置等） |
+| 系统配置 | `ensurePresetConfigs()` | 22 个预置配置项（站点设置 6、SMTP 6、AI 5、短信 5） |
 | 预设事件 | `ensurePresetEvents()` | 9 个事件类型（PageView、Click、FormSubmit、Search、Login、Register、Logout、Share、Scroll） |
 | 预设属性 | `ensurePresetProperties()` | 16 个属性定义（包含 7 个 `$` 系统属性） |
 | UI 翻译 | `ensurePresetTranslations()` | 英文翻译种子数据 |

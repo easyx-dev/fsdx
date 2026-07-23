@@ -254,11 +254,11 @@ sequenceDiagram
 
 ### 权限码体系
 
-权限码格式：`{模块}:{操作}`，共定义 **48 个权限常量**，按模块分组：
+权限码格式：`{模块}:{操作}`，共定义 **49 个权限常量**，按模块分组：
 
 | 模块 | 权限码 |
 |------|--------|
-| `news` | `view`, `create`, `edit`, `delete`, `publish`, `export` |
+| `news` | `view`, `create`, `edit`, `delete`, `publish`, `export`, `import` |
 | `admin` | `view`, `create`, `edit`, `delete` |
 | `client` | `view`, `create`, `edit`, `delete` |
 | `role` | `view`, `create`, `edit`, `delete` |
@@ -608,7 +608,8 @@ const csrfMiddleware = createCsrfMiddleware({
 | `src/server/client-auth/client-auth.server.ts` | 客户端登录、注册、当前用户查询（含缓存） |
 | `src/server/client-auth/client-auth.functions.ts` | 客户端认证 Server Function 包装器 |
 | `src/server/init/init.server.ts` | 系统初始化（checkInitStatus / initSystem） |
-| `src/server/admin-user/admin-user.server.ts` | 管理员 CRUD（含 root 禁用/删除拦截） |
+| `src/routes/admin/_admin/users/admins/admins.server.ts` | 管理员 CRUD（含 root 禁用/删除拦截） |
+| `src/routes/admin/_admin/users/clients/clients.server.ts` | 客户端用户 CRUD |
 | `src/server/role/role.server.ts` | 角色 CRUD |
 | `src/db/schema/admin-user.ts` | admin_user 表（含部分唯一索引） |
 | `src/db/schema/client-user.ts` | client_user 表 |

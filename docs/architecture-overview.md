@@ -45,15 +45,15 @@
 │                           │                                        │
 │  ┌────────────────────────▼──────────────────────────────────┐    │
 │  │              服务层 (src/server/)                           │    │
-│  │  admin-auth / admin-user / client-auth / client-user       │    │
-│  │  news / dict / config / file / role / i18n / stats          │    │
-│  │  event / operation-log / logs / captcha / init / tasks      │    │
+│  │  admin-auth / captcha / client-auth / config               │    │
+│  │  dict / event / file / i18n / init / logs                   │    │
+│  │  news / operation-log / query / role / tasks                │    │
 │  └────────────────────────┬──────────────────────────────────┘    │
 │                           │                                        │
 │  ┌────────────────────────▼──────────────────────────────────┐    │
 │  │              基础库 (src/lib/)                              │    │
 │  │  cache / jwt / permissions / logger / scheduler / storage  │    │
-│  │  ai / mail / i18n / captcha / track / query / utils         │    │
+│  │  ai / mail / sms / i18n / captcha / track / query / utils    │    │
 │  └────────────────────────┬──────────────────────────────────┘    │
 │                           │                                        │
 │  ┌────────────────────────▼──────────────────────────────────┐    │
@@ -85,7 +85,7 @@
 src/server/{module}/
 ├── {module}.server.ts      # 服务层：纯业务逻辑，可被 .functions.ts 和 其他 .server.ts 引用
 ├── {module}.functions.ts   # SFn 包装层：createServerFn + inputValidator + 鉴权中间件
-└── {module}.types.ts       # 类型定义（如有需要）
+└── {module}.schemas.ts     # zod schema 定义
 ```
 
 - `.server.ts` 中的函数**禁止**以 `SFn` 为后缀
@@ -118,7 +118,6 @@ __root.tsx                    # HTML shell，按 pathname 分发 AdminLayout / S
 │       ├── operation-logs/   # 操作日志审计
 │       ├── translations/     # 翻译管理
 │       ├── events/           # 埋点分析
-│       ├── tasks/            # 定时任务管理
 │       └── demo/             # 组件演示
 └── api/download/             # 文件/日志下载 API
 ```
