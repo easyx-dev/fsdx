@@ -3,9 +3,6 @@
  */
 
 import { createServerFn } from "@tanstack/react-start";
-import { eq } from "drizzle-orm";
-import { db } from "#/db/index";
-import { systemConfig } from "#/db/schema";
 import { toJson } from "#/lib/export/export.utils";
 import { PERMISSIONS } from "#/lib/permissions/permissions";
 import { adminPermGuard } from "#/middleware/admin-auth";
@@ -13,7 +10,6 @@ import {
 	createConfig,
 	deleteConfig,
 	getConfigList,
-	loadConfigCache,
 	updateConfig,
 } from "#/server/config/config.server";
 import { logOperation } from "#/server/operation-log/operation-log.server";
@@ -23,6 +19,7 @@ import {
 	deleteConfigSchema,
 	updateConfigSchema,
 } from "./config.schemas";
+import { importConfigs } from "./config.server";
 
 /** 获取配置列表 */
 export const getConfigListSFn = createServerFn({ method: "GET" })
@@ -107,47 +104,6 @@ export interface ConfigImportData {
 export interface ConfigImportResult {
 	created: number;
 	updated: number;
-}
-
-/** 导入配置数据（按 key upsert） */
-export async function importConfigs(
-	data: ConfigImportData,
-): Promise<ConfigImportResult> {
-	const result: ConfigImportResult = { created: 0, updated: 0 };
-
-	for (const cfg of data.configs) {
-		const existing = await db.query.systemConfig.findFirst({
-			where: eq(systemConfig.key, cfg.key),
-		});
-
-		if (existing) {
-			await db
-				.update(systemConfig)
-				.set({
-					value: cfg.value,
-					clientVisible: cfg.clientVisible ?? existing.clientVisible,
-					valueType: cfg.valueType ?? existing.valueType,
-					groupName: cfg.groupName ?? existing.groupName,
-					description: cfg.description ?? existing.description,
-					updatedAt: new Date(),
-				})
-				.where(eq(systemConfig.id, existing.id));
-			result.updated++;
-		} else {
-			await db.insert(systemConfig).values({
-				key: cfg.key,
-				value: cfg.value,
-				clientVisible: cfg.clientVisible ?? false,
-				valueType: cfg.valueType ?? "input",
-				groupName: cfg.groupName ?? null,
-				description: cfg.description ?? null,
-			});
-			result.created++;
-		}
-	}
-
-	await loadConfigCache();
-	return result;
 }
 
 /** 导入配置数据（JSON） */

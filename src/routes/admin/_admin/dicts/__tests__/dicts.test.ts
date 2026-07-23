@@ -40,7 +40,7 @@ const { mockDb, txDictFindFirst, txDictItemFindFirst, txSelectWhere } =
 
 vi.mock("#/db/index", () => ({ db: mockDb }));
 
-import { importDicts } from "../dicts.functions";
+import { importDicts } from "../dicts.server";
 
 beforeEach(() => {
 	vi.clearAllMocks();

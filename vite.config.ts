@@ -7,14 +7,14 @@ import { nitro } from "nitro/vite";
 import { defineConfig, type PluginOption } from "vite";
 
 const config = defineConfig({
-	envDir: "./env",
 	resolve: { tsconfigPaths: true },
 	plugins: [
 		devtools(),
 		tailwindcss(),
 		tanstackStart({
 			router: {
-				routeFileIgnorePattern: "(__tests__|.*\\.(functions|schemas|server)\\.ts)",
+				routeFileIgnorePattern:
+					"(__tests__|.*\\.(functions|schemas|server)\\.ts)",
 			},
 			importProtection: {
 				client: {

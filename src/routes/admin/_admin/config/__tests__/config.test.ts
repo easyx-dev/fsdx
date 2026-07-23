@@ -24,7 +24,7 @@ vi.mock("#/server/config/config.server", () => ({
 	loadConfigCache: mockLoadConfigCache,
 }));
 
-import { importConfigs } from "../config.functions";
+import { importConfigs } from "../config.server";
 
 beforeEach(() => {
 	vi.clearAllMocks();

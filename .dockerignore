@@ -13,7 +13,7 @@ dist
 dist-ssr
 __unconfig*
 
-env/.env.local
+.env.local
 
 *.md
 !README.md

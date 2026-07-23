@@ -11,7 +11,8 @@ const { mockDb } = vi.hoisted(() => ({
 
 vi.mock("#/db/index", () => ({ db: mockDb }));
 
-import { ensureUniqueSlug, generateSlug } from "../news.functions";
+import { generateSlug } from "../news.functions";
+import { ensureUniqueSlug } from "../news.server";
 
 describe("generateSlug", () => {
 	it("英文标题生成 slug", () => {

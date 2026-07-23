@@ -1,8 +1,6 @@
 /**
  * 服务启动初始化：环境变量加载、错误处理、预置数据、定时任务、优雅关闭
  */
-import { resolve } from "node:path";
-import { config } from "dotenv";
 import { runMigrations } from "#/db/migrate";
 import { logger } from "#/lib/logger/logger";
 import { ensurePresetConfigs } from "#/server/config/config.server";
@@ -22,11 +20,6 @@ const GRACEFUL_SHUTDOWN_TIMEOUT = 10_000;
 
 export async function bootstrap() {
 	logger.info("服务启动初始化开始");
-
-	// 加载环境变量（优先级：.env.local > .env）
-	config({ path: resolve(process.cwd(), "env", ".env") });
-	config({ path: resolve(process.cwd(), "env", ".env.local"), override: true });
-
 	// 程序化数据库迁移（在预置数据写入前执行，确保表结构就绪）
 	try {
 		await runMigrations();
