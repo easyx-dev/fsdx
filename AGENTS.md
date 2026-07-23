@@ -326,6 +326,20 @@ src/routes/admin/_admin/files/
 - 包含 `event`（埋点事件）、`presetEvent`（预设事件）、`presetProperty`（预设属性）三张埋点相关表
 - 包含 `operationLog`（操作日志）表，用于管理端操作审计
 
+### jsonb 列类型约定
+
+所有 `jsonb()` 列**必须**通过 `.$type<>()` 显式指定 TS 类型，禁止无类型 `jsonb()`。
+
+```
+// ✓ 正确
+permissions: jsonb().$type<string[]>().default([]).notNull(),
+properties: jsonb().$type<Record<string, unknown>>().default({}).notNull(),
+
+// ✗ 错误
+properties: jsonb().default({}).notNull(),
+detail: jsonb(),
+```
+
 ### 数据库列命名约定
 
 所有列统一遵循命名规则：主键 `id`、时间列 `created_at`/`updated_at`（timestamptz）、软删除 `deleted_at`、描述 `description`、排序 `sort_order`。外键列名 `xxx_id`，JS 属性以 `Id` 结尾。所有列必须显式指定数据库列名，timestamp 必须加 `{ withTimezone: true }`。Schema 修改使用 `pnpm db:push`，重命名列时选择 rename column。

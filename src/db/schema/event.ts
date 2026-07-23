@@ -19,7 +19,7 @@ export const event = pgTable(
 		userId: uuid("user_id"),
 		sessionId: varchar("session_id", { length: 64 }).notNull(),
 		event: varchar({ length: 100 }).notNull(),
-		properties: jsonb().default({}).notNull(),
+		properties: jsonb().$type<Record<string, unknown>>().default({}).notNull(),
 		createdAt: timestamp("created_at", { withTimezone: true })
 			.notNull()
 			.defaultNow(),

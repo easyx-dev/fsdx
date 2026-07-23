@@ -22,7 +22,7 @@ export const operationLog = pgTable(
 		targetType: varchar({ length: 50 }).notNull(),
 		targetId: uuid(),
 		targetName: varchar({ length: 500 }),
-		detail: jsonb(),
+		detail: jsonb().$type<Record<string, unknown>>(),
 		createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
 	},
 	(table) => [
