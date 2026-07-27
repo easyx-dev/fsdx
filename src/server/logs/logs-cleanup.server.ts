@@ -37,7 +37,7 @@ export function cleanExpiredLogs(retentionDays = 30): number {
 				unlinkSync(join(logDir, f));
 				deleted++;
 			} catch {
-				// 单个文件删除失败不中断清理
+				console.warn(`清理日志文件 ${f} 失败`);
 			}
 		}
 	}

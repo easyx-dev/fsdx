@@ -2,7 +2,7 @@
  * 国际化服务端：UI 翻译 / 实体字段翻译的查询与维护
  * 内存缓存全量 UI 翻译，实体字段翻译按需查询
  */
-import { and, eq, like, or } from "drizzle-orm";
+import { and, eq, inArray, like, or } from "drizzle-orm";
 import { db } from "#/db/index";
 import { contentTranslation, uiTranslation } from "#/db/schema";
 import { uiTranslationCache } from "#/lib/cache/cache";
@@ -375,15 +375,85 @@ export interface ContentTranslationResult {
 }
 
 /**
- * 查询某个实体的所有字段翻译
+ * 将翻译数据合并到单条记录中，覆盖对应字段的值
+ */
+export function applyTranslations<T extends Record<string, unknown>>(
+	record: T,
+	translations: Record<string, ContentTranslationResult>,
+): T;
+/**
+ * 批量将翻译数据合并到多条记录中（需传入按 entityId 分组的翻译 Map）
+ */
+export function applyTranslations<
+	T extends Record<string, unknown> & { id: string },
+>(
+	records: T[],
+	translationsMap: Record<string, Record<string, ContentTranslationResult>>,
+): T[];
+export function applyTranslations<
+	T extends Record<string, unknown> & { id: string },
+>(
+	recordOrRecords: T | T[],
+	translations:
+		| Record<string, ContentTranslationResult>
+		| Record<string, Record<string, ContentTranslationResult>>,
+): T | T[] {
+	if (Array.isArray(recordOrRecords)) {
+		const map = translations as Record<
+			string,
+			Record<string, ContentTranslationResult>
+		>;
+		return recordOrRecords.map((record) => {
+			const t = map[record.id];
+			if (!t) return record;
+			const result = { ...record };
+			for (const [fieldName, ct] of Object.entries(t)) {
+				(result as Record<string, unknown>)[fieldName] = ct.value;
+			}
+			return result;
+		});
+	}
+
+	const t = translations as Record<string, ContentTranslationResult>;
+	const result = { ...recordOrRecords };
+	for (const [fieldName, ct] of Object.entries(t)) {
+		(result as Record<string, unknown>)[fieldName] = ct.value;
+	}
+	return result;
+}
+
+/**
+ * 查询某个实体的所有字段翻译（单 ID）
  * 返回 { fieldName: value } 映射，可直接覆盖主表查询结果
  */
 export async function getContentTranslations(
 	entityType: string,
 	entityId: string,
 	locale: Locale,
-): Promise<Record<string, ContentTranslationResult>> {
-	if (locale === DEFAULT_LOCALE) return {};
+): Promise<Record<string, ContentTranslationResult>>;
+/**
+ * 批量查询多个实体的所有字段翻译（多 ID）
+ * 返回按 entityId 分组的映射，可直接覆盖主表查询结果
+ */
+export async function getContentTranslations(
+	entityType: string,
+	entityIds: string[],
+	locale: Locale,
+): Promise<Record<string, Record<string, ContentTranslationResult>>>;
+export async function getContentTranslations(
+	entityType: string,
+	entityIds: string | string[],
+	locale: Locale,
+): Promise<
+	| Record<string, ContentTranslationResult>
+	| Record<string, Record<string, ContentTranslationResult>>
+> {
+	if (locale === DEFAULT_LOCALE) {
+		if (Array.isArray(entityIds)) return {};
+		return {};
+	}
+
+	const idList = Array.isArray(entityIds) ? entityIds : [entityIds];
 
 	const rows = await db
 		.select()
@@ -391,10 +461,23 @@ export async function getContentTranslations(
 		.where(
 			and(
 				eq(contentTranslation.entityType, entityType),
-				eq(contentTranslation.entityId, entityId),
+				inArray(contentTranslation.entityId, idList),
 				eq(contentTranslation.locale, locale),
 			),
 		);
+
+	if (Array.isArray(entityIds)) {
+		const result: Record<string, Record<string, ContentTranslationResult>> = {};
+		for (const row of rows) {
+			if (!result[row.entityId]) result[row.entityId] = {};
+			result[row.entityId][row.fieldName] = {
+				fieldName: row.fieldName,
+				value: row.value,
+				valueType: row.valueType as EditorType,
+			};
+		}
+		return result;
+	}
 
 	const result: Record<string, ContentTranslationResult> = {};
 	for (const row of rows) {

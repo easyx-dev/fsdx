@@ -8,7 +8,10 @@ import { db } from "#/db/index";
 import { news } from "#/db/schema";
 import { DEFAULT_LOCALE, type Locale } from "#/lib/i18n/i18n.types";
 import type { PaginatedSortParams } from "#/lib/query/query-utils";
-import { getContentTranslations } from "#/server/i18n/i18n.server";
+import {
+	applyTranslations,
+	getContentTranslations,
+} from "#/server/i18n/i18n.server";
 import {
 	buildSortClause,
 	executePaginatedQuery,
@@ -86,12 +89,7 @@ export async function translateNewsRecord(
 
 	const translations = await getContentTranslations("news", record.id, locale);
 
-	const result = { ...record };
-	for (const [fieldName, ct] of Object.entries(translations)) {
-		(result as Record<string, unknown>)[fieldName] = ct.value;
-	}
-
-	return result;
+	return applyTranslations(record, translations);
 }
 
 /** 获取新闻列表（支持排序） */
@@ -260,11 +258,16 @@ export async function deleteNews(id: string): Promise<boolean> {
 	return true;
 }
 
-/** 批量翻译新闻记录（函数式组合，调用方在获取列表后按需调用） */
+/** 批量翻译新闻记录（一次查询获取所有翻译，避免 N+1） */
 export async function translateNewsRecords(
 	records: NewsRecord[],
 	locale: Locale,
 ): Promise<NewsRecord[]> {
 	if (locale === DEFAULT_LOCALE) return records;
-	return Promise.all(records.map((r) => translateNewsRecord(r, locale)));
+	if (records.length === 0) return records;
+
+	const ids = records.map((r) => r.id);
+	const translationsMap = await getContentTranslations("news", ids, locale);
+
+	return applyTranslations(records, translationsMap);
 }

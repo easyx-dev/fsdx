@@ -3,7 +3,7 @@
  * 支持预览模式（preview），以只读形式展示内容
  * value / onChange 兼容 antd Form.Item 注入
  */
-import { Input, InputNumber } from "antd";
+import { Input, InputNumber, message } from "antd";
 import { lazy, Suspense, useEffect, useState } from "react";
 import { RichEditor } from "#/components/admin/RichEditor";
 import { getFileInfoSFn } from "#/server/file/file.functions";
@@ -92,7 +92,10 @@ function FilePreview({ fileId }: { fileId: string }) {
 				}
 			})
 			.catch(() => {
-				if (!cancelled) setLoading(false);
+				if (!cancelled) {
+					setLoading(false);
+					message.error("文件信息加载失败");
+				}
 			});
 		return () => {
 			cancelled = true;

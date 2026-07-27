@@ -92,7 +92,7 @@ export const updateNewsSFn = createServerFn({ method: "POST" })
 	.inputValidator(updateNewsSchema)
 	.handler(async ({ data, context }) => {
 		const existing = await getNewsById(data.id);
-		if (!existing) return null;
+		if (!existing) throw new Error("新闻不存在或已被删除");
 
 		if (data.isRecommended && !existing.isRecommended) {
 			await checkRecommendedLimit(data.id);

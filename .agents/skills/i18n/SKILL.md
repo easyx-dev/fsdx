@@ -219,9 +219,18 @@ const NEWS_TRANSLATABLE_FIELDS = [
 
 ### Step 2：服务端添加翻译函数
 
+实体翻译的核心 API 在 `src/server/i18n/i18n.server.ts` 中：
+
+| API | 说明 |
+|-----|------|
+| `getContentTranslations(entityType, id, locale)` | 查询单个实体的翻译（返回 `Record<fieldName, result>`） |
+| `getContentTranslations(entityType, ids[], locale)` | **批量查询**多个实体的翻译（返回按 entityId 分组的 Map，避免 N+1） |
+| `applyTranslations(record, translations)` | 将翻译合并到单条记录 |
+| `applyTranslations(records, translationsMap)` | 批量合并，内部按 `record.id` 查找对应翻译 |
+
 ```ts
 // src/server/news/news.server.ts
-import { getContentTranslations } from "#/server/i18n/i18n.server";
+import { applyTranslations, getContentTranslations } from "#/server/i18n/i18n.server";
 
 /** 对单条记录应用 content_translation 翻译 */
 export async function translateNewsRecord(
@@ -232,20 +241,20 @@ export async function translateNewsRecord(
 
   const translations = await getContentTranslations("news", record.id, locale);
 
-  const result = { ...record };
-  for (const [fieldName, ct] of Object.entries(translations)) {
-    (result as Record<string, unknown>)[fieldName] = ct.value;
-  }
-  return result;
+  return applyTranslations(record, translations);
 }
 
-/** 批量翻译 */
+/** 批量翻译（一次查询获取所有翻译，避免 N+1） */
 export async function translateNewsRecords(
   records: NewsRecord[],
   locale: Locale,
 ): Promise<NewsRecord[]> {
-  if (locale === DEFAULT_LOCALE) return records;
-  return Promise.all(records.map((r) => translateNewsRecord(r, locale)));
+  if (locale === DEFAULT_LOCALE || records.length === 0) return records;
+
+  const ids = records.map((r) => r.id);
+  const translationsMap = await getContentTranslations("news", ids, locale);
+
+  return applyTranslations(records, translationsMap);
 }
 ```
 
@@ -355,7 +364,7 @@ export const uiTranslationCache = new MemoryCache<Record<string, string>>({
 | 前台组件显示翻译文本 | `import { useTranslation }` → `const { t } = useTranslation()` → `t("中文")` |
 | 获取当前语言 | `import { useLocale }` → `const locale = useLocale()` |
 | 新增 UI 翻译条目 | 组件用 `t()` 包裹 → 在 `i18n-seed.ts` 添加翻译 → 管理端可编辑 |
-| 为实体添加字段翻译 | 服务端添加 `translateXxxRecord` → loader 调用翻译 → 管理端集成 `FieldTranslationDrawer` |
+| 为实体添加字段翻译 | 调用 `getContentTranslations(entityType, ids[], locale)` 批量查询翻译 → `applyTranslations(record, translations)` 合并翻译数据 → 管理端集成 `FieldTranslationDrawer` |
 | 刷新 UI 翻译缓存 | 管理端保存翻译时自动刷新；手动调用 `refreshUITranslationCache(locale)` |
 | 切换语言 | 修改 `lang` Cookie → `window.location.reload()` |
 | 添加新支持语言 | 修改 `SUPPORTED_LOCALES` → 添加种子数据 → 更新语言标签 |

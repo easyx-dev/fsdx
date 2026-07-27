@@ -5,6 +5,7 @@
 
 import { RefreshCw } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { toast } from "sonner";
 import { Button } from "#/components/ui/button";
 import { Input } from "#/components/ui/input";
 import {
@@ -54,6 +55,7 @@ export function CaptchaInput({
 			})
 			.catch(() => {
 				setIsLoadingSvg(false);
+				toast.error("验证码加载失败，请稍后重试");
 			});
 	}, []);
 

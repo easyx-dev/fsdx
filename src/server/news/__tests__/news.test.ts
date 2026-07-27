@@ -246,14 +246,24 @@ describe("translateNewsRecords", () => {
 	it("批量翻译多条记录", async () => {
 		const records = [newsRecord, { ...newsRecord, id: "n-2" }];
 		mockGetContentTranslations.mockResolvedValue({
-			title: { fieldName: "title", value: "Translated", valueType: "text" },
+			"n-1": {
+				title: { fieldName: "title", value: "Translated", valueType: "text" },
+			},
+			"n-2": {
+				title: { fieldName: "title", value: "Translated", valueType: "text" },
+			},
 		});
 
 		const results = await translateNewsRecords(records, "en");
 		expect(results).toHaveLength(2);
 		expect(results[0].title).toBe("Translated");
 		expect(results[1].title).toBe("Translated");
-		expect(mockGetContentTranslations).toHaveBeenCalledTimes(2);
+		expect(mockGetContentTranslations).toHaveBeenCalledTimes(1);
+		expect(mockGetContentTranslations).toHaveBeenCalledWith(
+			"news",
+			["n-1", "n-2"],
+			"en",
+		);
 	});
 
 	it("默认语言直接返回，不查询翻译", async () => {

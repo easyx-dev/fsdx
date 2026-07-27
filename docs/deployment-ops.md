@@ -110,7 +110,7 @@ CI 部署使用 `${CI_COMMIT_SHORT_SHA}` 作为镜像 tag，每次部署可追�
 server.ts (根目录, Nitro entry)
     │
     ├── bootstrap()                          # src/bootstrap.ts
-    │   ├── dotenv 加载 env/.env + env/.env.local
+    │   ├── Vite 内置 env 加载 .env + .env.example
     │   ├── runMigrations()                 程序化数据库迁移（try/catch 容错，表已存在则跳过）
     │   ├── await Promise.all([ensurePresetDicts(), ensurePresetConfigs()])
     │   │       等待预置字典和系统配置完成（同步等待）
@@ -148,14 +148,14 @@ Hono (createHonoApp)
 
 ## 环境变量
 
-所有环境变量存放于 `env/` 目录：
+环境变量文件位于项目根目录（`.env`、`.env.example`），通过 Vite 内置 env 加载机制注入 `process.env`：
 
-| 文件 | 说明 | 加载时机 |
-|------|------|----------|
-| `env/.env` | 默认环境变量 | 优先加载 |
-| `env/.env.local` | 本地覆盖配置 | 覆盖 .env（`override: true`） |
+| 文件 | 说明 |
+|------|------|
+| `.env` | 运行环境变量 |
+| `.env.example` | 环境变量模板 |
 
-通过 `dotenv` 在 `bootstrap()` 中手动加载，不使用 Vite 的内置 `--mode`。应用代码通过 `getEnv()` 获取，禁止直接读取 `process.env`（日志模块例外，因 pino transport worker 兼容性问题）。
+应用代码通过 `process.env` 直接读取（日志模块因 pino transport worker 兼容性问题同样直接读取 `process.env`）。
 
 ### 核心环境变量
 
@@ -364,7 +364,7 @@ GET /health → { "status": "ok", "uptime": 123.456 }
 | `src/lib/storage/storage.ts` | 文件存储抽象层 |
 | `src/server/init/init.server.ts` | 系统初始化逻辑 |
 | `src/server/logs/logs.server.ts` | 日志文件查询 |
-| `env/.env.example` | 环境变量模板 |
+| `.env.example` | 环境变量模板 |
 | `.env.example` | compose .env 变量模板 |
 | `Dockerfile` | Docker 多阶段构建 |
 | `.dockerignore` | Docker 构建排除规则 |

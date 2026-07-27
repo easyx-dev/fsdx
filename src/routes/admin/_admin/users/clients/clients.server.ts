@@ -14,7 +14,10 @@ import {
 	paginationOffset,
 } from "#/server/query/query-utils.server";
 
-export type ClientUserRecord = typeof clientUser.$inferSelect;
+export type ClientUserRecord = Omit<
+	typeof clientUser.$inferSelect,
+	"passwordHash" | "deletedAt"
+>;
 
 export interface CreateClientUserInput {
 	username: string;
@@ -34,7 +37,19 @@ export interface ClientUserListParams extends PaginatedSortParams {
 	keyword?: string;
 }
 
-/** 获取客户端用户列表（支持关键词搜索和排序） */
+const clientUserSafeCols = {
+	id: clientUser.id,
+	username: clientUser.username,
+	email: clientUser.email,
+	avatar: clientUser.avatar,
+	status: clientUser.status,
+	emailVerified: clientUser.emailVerified,
+	lastLoginAt: clientUser.lastLoginAt,
+	createdAt: clientUser.createdAt,
+	updatedAt: clientUser.updatedAt,
+};
+
+/** 获取客户端用户列表（支持关键词搜索和排序，排除 password_hash 敏感字段） */
 export async function getClientUserList(params?: ClientUserListParams) {
 	const {
 		keyword,
@@ -70,7 +85,7 @@ export async function getClientUserList(params?: ClientUserListParams) {
 
 	return executePaginatedQuery(
 		db
-			.select()
+			.select(clientUserSafeCols)
 			.from(clientUser)
 			.where(and(...conditions))
 			.orderBy(direction)

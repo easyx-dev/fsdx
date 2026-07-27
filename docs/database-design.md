@@ -323,5 +323,5 @@ erDiagram
 | `src/db/schema/index.ts` | 全部 15 张表统一导出 |
 | `src/db/index.ts` | Drizzle 客户端懒加载实例 |
 | `src/db/schema/*.ts` | 各表 Drizzle Schema 定义 |
-| `env/.env.example` | 环境变量模板（`DATABASE_URL`） |
+| `.env.example` | 环境变量模板（`DATABASE_URL`） |
 | `drizzle.config.ts` | Drizzle Kit 配置（dialect、schema 路径） |

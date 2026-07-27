@@ -1,7 +1,6 @@
 /**
  * getCurrentClient 逻辑测试：JWT 解析 + 客户端用户查询
  */
-
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const { mockVerifyToken } = vi.hoisted(() => ({ mockVerifyToken: vi.fn() }));
@@ -32,13 +31,25 @@ const { mockDb } = vi.hoisted(() => {
 });
 vi.mock("#/db", () => ({ db: mockDb }));
 
-import { clientUserCache } from "#/lib/cache/cache";
+// 通过 vi.hoisted 持有 mock 对象引用，避免在测试中直接 import 缓存实例
+const { mockCacheMethods } = vi.hoisted(() => {
+	const cacheStore = new Map();
+	return {
+		mockCacheMethods: {
+			get: vi.fn((key: string) => cacheStore.get(key)),
+			set: vi.fn((key: string, value: unknown) => cacheStore.set(key, value)),
+			clear: vi.fn(() => cacheStore.clear()),
+		},
+	};
+});
+vi.mock("#/lib/cache/cache", () => ({ clientUserCache: mockCacheMethods }));
+
 import { getCurrentClient } from "#/server/client-auth/client-auth.server";
 
 describe("getCurrentClient", () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
-		clientUserCache.clear();
+		mockCacheMethods.clear();
 	});
 
 	it("token 为 undefined 返回 null", async () => {

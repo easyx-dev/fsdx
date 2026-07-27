@@ -8,7 +8,6 @@
 ## 工程结构
 
 ```
-env/                                # 环境变量配置（.env、.env.local、.env.example）
 src/
 ├── bootstrap.ts                    # 服务启动初始化（env 加载、预置数据、定时任务、优雅关闭）
 ├── hono-app.ts                     # Hono 应用工厂（/health 路由）
@@ -233,9 +232,8 @@ Server Function handler 体中直接调用 db 是安全的——SFn 始终在服
 
 ### 环境变量
 
-- 环境变量文件统一放在 `env/` 目录（`.env`、`.env.local`）
-- 应用代码通过 `getEnv()` 获取环境变量，禁止直接读取 `process.env`
-- zod schema 定义所有环境变量及默认值，启动时校验
+- 环境变量文件位于项目根目录（`.env`、`.env.example`），通过 Vite 内置 env 加载机制注入 `process.env`
+- 应用代码通过 `process.env` 直接读取
 - SMTP 邮件配置已迁移至系统配置表，不再通过环境变量管理
 
 ### 系统初始化

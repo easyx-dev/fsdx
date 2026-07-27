@@ -182,7 +182,5 @@ export async function resetAdminPassword(
 		.set({ passwordHash, updatedAt: new Date() })
 		.where(and(eq(adminUser.id, id), notDeleted(adminUser.deletedAt)))
 		.returning();
-	if (record) {
-	}
 	return !!record;
 }

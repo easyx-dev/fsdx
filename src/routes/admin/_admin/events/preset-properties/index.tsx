@@ -75,6 +75,8 @@ function PresetPropertiesPage() {
 		} catch (err) {
 			if (err instanceof Error && err.message) {
 				message.error(err.message);
+			} else {
+				message.error("操作失败");
 			}
 		} finally {
 			setSaving(false);

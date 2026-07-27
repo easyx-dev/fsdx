@@ -13,8 +13,8 @@ TanStack Start + React 19 · TypeScript 6 · Hono · PostgreSQL + Drizzle ORM ·
 pnpm install
 
 # 配置环境变量
-cp env/.env.example env/.env.local
-# 编辑 env/.env.local 填写 DATABASE_URL 和 JWT_SECRET
+cp .env.example .env
+# 编辑 .env 填写 DATABASE_URL 和 JWT_SECRET
 
 # 推送数据库 Schema
 pnpm db:push

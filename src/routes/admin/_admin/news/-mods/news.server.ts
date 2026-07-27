@@ -1,7 +1,7 @@
 /**
  * 新闻管理路由服务层：路由级数据库操作
  */
-import { and, desc, eq, ne } from "drizzle-orm";
+import { and, desc, eq, inArray, ne } from "drizzle-orm";
 import { db } from "#/db/index";
 import { news } from "#/db/schema";
 import { toCsv, toJson } from "#/lib/export/export.utils";
@@ -82,7 +82,7 @@ export async function updateNewsRecord(
 	return record ?? null;
 }
 
-/** 批量导入新闻 */
+/** 批量导入新闻（先批量查询已有标题去重，避免 N+1） */
 export async function importNewsItems(
 	items: {
 		title: string;
@@ -98,13 +98,25 @@ export async function importNewsItems(
 	}[],
 	userId: string,
 ): Promise<{ created: number; skipped: number }> {
+	// 一次性查询所有标题对应的已有新闻，构建去重集合
+	const existingNews = await db
+		.select({ title: news.title })
+		.from(news)
+		.where(
+			and(
+				inArray(
+					news.title,
+					items.map((r) => r.title),
+				),
+				notDeleted(news.deletedAt),
+			),
+		);
+	const existingTitles = new Set(existingNews.map((n) => n.title));
+
 	let created = 0;
 	let skipped = 0;
 	for (const row of items) {
-		const existing = await db.query.news.findFirst({
-			where: and(eq(news.title, row.title), notDeleted(news.deletedAt)),
-		});
-		if (existing) {
+		if (existingTitles.has(row.title)) {
 			skipped++;
 			continue;
 		}

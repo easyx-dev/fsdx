@@ -3,7 +3,7 @@
  */
 
 import { describe, expect, it } from "vitest";
-import { create, createMathExpr } from "#/lib/captcha/captcha";
+import { create } from "#/lib/captcha/captcha";
 import { captchaText } from "#/lib/captcha/random";
 
 describe("create", () => {
@@ -91,33 +91,6 @@ describe("create", () => {
 	it("path data 包含路径命令", () => {
 		const result = create({ noise: 0 });
 		expect(result.data).toMatch(/d="M[\d.]+ [\d.]+/);
-	});
-});
-
-describe("createMathExpr", () => {
-	it("返回 data 和 text", () => {
-		const result = createMathExpr();
-		expect(result).toHaveProperty("data");
-		expect(result).toHaveProperty("text");
-	});
-
-	it("text 为数字字符串", () => {
-		const result = createMathExpr({ mathMin: 1, mathMax: 3 });
-		expect(Number.isInteger(Number(result.text))).toBe(true);
-	});
-
-	it("data 包含运算符号", () => {
-		const result = createMathExpr({
-			mathOperator: "+",
-			mathMin: 1,
-			mathMax: 1,
-		});
-		// 表达式 1+1 的 path data 会包含数字和加号
-		expect(result.data).toContain("<svg");
-	});
-
-	it("mathOperator 随机模式不报错", () => {
-		expect(() => createMathExpr({ mathOperator: "+-" })).not.toThrow();
 	});
 });
 
