@@ -2,9 +2,44 @@
 
 ## [Unreleased]
 
+### Breaking Changes
+
+- **埋点模块重构为神策简化模型（track 命名体系）**：表/服务/路由/权限码统一更名
+  - 表：`event`→`track_event`（列 `event`→`name`）、`preset_event`→`track_event_meta`、`preset_property`→`track_property_meta`，Schema 合并为 `src/db/schema/track.ts`
+  - 服务：`src/services/event/`→`src/services/track/`，`trackEvent()` 增加 per-session 频控（60 条/分钟）与时间钳制（过去 1 天 ~ 未来 5 分钟）
+  - 路由：`/admin/events/*`→`/admin/track/*`（`/admin/track/query`、`/admin/track/analytics`、`/admin/track/event-meta`、`/admin/track/property-meta`），菜单「预设事件/预设属性」→「元事件/元属性」
+  - 权限码：`event:view/query/manage`→`track:view/query/manage`
+  - SDK 入参：`trackEventSFn` payload 字段 `event`→`name`
+  - 预置清单裁剪：元事件 9→5、元属性 16→11，`ensurePreset*` 增补清理逻辑
+- **管理端角色改名 `role`→`admin_role`**：表、`admin_user.role_id`→`admin_role_id`、模块 `src/services/admin-role/`、路由 `/admin/admin-roles`、权限码 `role:*`→`admin-role:*`、审计模块名 `admin_role`
+- **DB 迁移基线重置**：统一 generate+migrate（移除 db:push），重建 `drizzle/0000_initial.sql`（17 张表全量建表，允许清库）
+
 ### Refactor
 
-- 将服务端共享业务逻辑目录 `src/server/` 重命名为 `src/services/`，import 别名同步更新为 `#/services/`
+- 目录分层：新增 `src/constants/`、`src/validators/`、`src/utils/`、`src/types/`；`lib/query` 类型迁入 `types/query.ts`；删除 `format-date` 改用 dayjs 内联
+- 缓存拆分：`lib/cache/cache.ts`→`core.ts` + 按模块 `*.cache.ts` 实例文件，新增 `adminUserCache`
+- 新增 `lib/request-context`（AsyncLocalStorage 操作者身份）+ `lib/buffer/batch-writer`（通用缓冲写入器，event/operation-log 复用）
+- 操作日志：`logCrud()` 一行式审计封装 + `logExternalRequest()`（从 ALS 读操作者），`operation_log` 新增 `operator_type` 列；32 处 CRUD 审计调用迁移
+- 中间件统一：`resolveAdminAuthContext()` 一步校验 + `adminPermRouteGuard`（Server Route）+ api-auth 复用；中间件不直接查 DB，委托 `getAdminUserForAuth()`/`getClientUserForAuth()`（带缓存）
+- 新增客户端 RBAC 框架：`client_role` 表 + `client-permissions.ts` + `clientAuthGuard`/`clientPermGuard`，init 种子 `client-super-admin`/`normal-user`，注册分配默认角色
+- Schema 单一来源：admins/clients/admin-role 服务输入类型改 `z.infer` 派生，消除 `as XxxInput` 桥接断言
+- 分层违规清理：captcha/file/forgot-password 的 DB 逻辑从 `.functions.ts` 提取到 `.server.ts`；news `generateSlug` 去重（消除循环依赖）
+- antd-static 桥接：message/modal/notification 经 `App.useApp` 捕获，31 处静态 message 调用迁移；AdminProvider 加 `<StyleProvider layer>` + 品牌色 `#00b96b`
+- 样式分层：两份 global.css 预声明 `@layer theme, base, antd, components, utilities` + 裸 `a` 语义色兜底
+- 新增 `sfn-helpers.ts`（safeSfnCall/unwrapSfn）+ `hooks/use-sfn-call.ts` + `PermissionTags` + `useCrudPage`
+
+### Features
+
+- **消息中心（message）**：`message` 表（`recipient_type` + `recipient_id` 无外键）+ 服务层 10 函数 + 三组 SFn（客户端自助/管理端收件箱/管理端管理）+ 前台 `/messages`（shadcn/ui SSR）+ 管理端 `/admin/messages`（收件箱）与 `/admin/messages/manage`（管理）+ Header/AdminLayout 消息铃铛（30 秒轮询）+ `message:view/send/delete` 权限
+- **文件资源管理器（file-explorer）**：`STORAGE_DIR` 目录浏览 + 路径穿越防护 + 写保护 + `/admin/file-explorer` 页面 + `/api/download/file-explorer/*` 下载路由 + `file_explorer:*` 权限
+- **lib/ms + MSInput**：vercel/ms 移植（parse/parseStrict/format/ms）+ 4 个测试文件 + antd 时长输入组件
+- 修复既有测试失败：jwt 测试 logger mock 缺 `debug`；news 测试 i18n.server mock 缺 `applyTranslations`（改用 `importOriginal`）
+
+### Infrastructure
+
+- PostgreSQL + Drizzle ORM（17 张表，uuid 主键，软删除，timestamptz）
+- Vitest 测试（79 个测试文件，822 条测试）
+- 迁移流程：`pnpm db:generate` + `pnpm db:migrate`（bootstrap 启动自动执行）
 
 ## [1.0.0] - 2026-06-23
 

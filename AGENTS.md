@@ -3,7 +3,7 @@
 ## 项目概况
 
 基于 TanStack Start 构建的全栈 Web 应用框架，涵盖管理端（/admin）和客户端前台（/），开箱内置 CMS 示例。
-提供双用户认证 + RBAC、Server Function 三层分离、内存缓存、事件埋点、操作审计、国际化、文件存储、日志运维等基础设施，可快速扩展为任意业务系统。
+提供双用户认证 + 双端 RBAC、Server Function 三层分离、内存缓存、事件埋点（神策简化模型）、操作审计、国际化、文件存储、日志运维等基础设施，可快速扩展为任意业务系统。
 
 ## 工程结构
 
@@ -13,60 +13,66 @@ src/
 ├── hono-app.ts                     # Hono 应用工厂（/health 路由）
 ├── server.ts                       # TanStack Start 服务端入口
 ├── components/
-│   ├── admin/                      # 管理端专用组件（AdminLayout、AdminPageContent、AdminProvider、ProTable、TableOperate、RichEditor、AdminAuthProvider、CodeEditor、DictSelect、DictTag、FieldTranslationDrawer、JsonImportButton、PermissionSelector、SelectFileModal、editor-type/、nav-config、upload/ 等）
+│   ├── admin/                      # 管理端专用组件（AdminLayout、AdminPageContent、AdminProvider、ProTable、TableOperate、RichEditor、AdminAuthProvider、CodeEditor、DictSelect、DictTag、FieldTranslationDrawer、JsonImportButton、PermissionSelector、PermissionTags、useCrudPage、sfn-helpers、MSInput、antd-static/、editor-type/、nav-config、upload/ 等）
+│   ├── antd-static/                # antd 静态方法桥接（message/modal/notification 经 App.useApp 捕获）
 │   ├── client/                     # 客户端前台专用组件（Header、Footer、CaptchaInput、ClientAuthProvider、ThemeToggle）
 │   ├── ui/                         # shadcn/ui 基础组件（button、input、textarea、badge、card）
 │   ├── AutofillBlocker.tsx         # 浏览器自动填充阻止组件
 │   ├── Document.tsx                # 根布局（AdminRootDocument / SSRRootDocument）
 │   ├── ErrorFallback.tsx           # 全局错误处理
 │   └── Logo.tsx                    # Logo 组件
+├── constants/                      # 项目级常量（日志级别、编辑器类型等）
 ├── db/
 │   ├── index.ts                    # Drizzle 客户端实例化
-│   └── schema/                     # 数据库表定义（按模块拆分，共 15 张表，13 个 schema 文件）
+│   └── schema/                     # 数据库表定义（按模块拆分，17 张表）
 ├── hooks/
+│   ├── use-sfn-call.ts             # SFn 调用 hook（safeSfnCall 薄封装）
 │   └── use-theme-mode.ts           # 主题模式 hook
 ├── lib/                            # 基础库（无业务逻辑）
-│   ├── cache/                      # 内存缓存（字典、系统配置、UI 翻译、配置翻译、客户端用户、预设事件、预设属性）
+│   ├── buffer/                     # 通用批量缓冲写入器（event/operation-log 复用）
+│   ├── cache/                      # 内存缓存（core.ts 类 + 按模块 *.cache.ts 实例）
 │   ├── ai/                         # AI 调用（翻译、聊天等）
 │   ├── captcha/                    # 验证码生成工具（字体、路径、选项管理）
-│   ├── constants/                  # 管理端常量
-│   ├── editor-types/               # 编辑器类型常量（类型、标签映射）
 │   ├── export/                     # 导出工具
 │   ├── global-store/               # 全局状态（locale、翻译、系统配置）
 │   ├── i18n/                       # 国际化客户端（i18next 实例、Context Provider、hooks）
 │   ├── jwt/                        # JWT 签发与校验（jose）
 │   ├── logger/                     # pino 日志 + 管理端日志文件查询
 │   ├── mail/                       # 邮件发送
-│   ├── permissions/                # 权限码常量
-│   ├── query/                      # 查询工具（排序、分页辅助）
+│   ├── ms/                         # 毫秒时间转换（vercel/ms 移植）
+│   ├── permissions/                # 权限码常量（管理端 + 客户端 client-permissions.ts）
+│   ├── request-context/            # 请求级上下文（AsyncLocalStorage，承载操作者身份）
 │   ├── scheduler/                  # 定时任务调度（cron）
 │   ├── sms/                        # 短信发送
 │   ├── storage/                    # 文件存储抽象层（本地实现）
 │   ├── track/                      # 客户端埋点追踪 SDK
-│   └── utils/                      # 通用工具函数（cn、日期格式化等）
+│   └── utils/                      # 通用工具函数（cn）
 ├── middleware/
-│   ├── admin-auth.ts               # 管理端 Server Function 鉴权与权限中间件
-│   ├── api-auth.ts                 # API 路由鉴权（verifyAdminAuth / verifyAdminPerm）
+│   ├── admin-auth.ts               # 管理端鉴权（resolveAdminAuthContext + adminPermGuard + adminPermRouteGuard）
+│   ├── client-auth.ts              # 客户端鉴权（clientAuthGuard + clientPermGuard）
+│   ├── api-auth.ts                 # API 路由鉴权（复用 resolveAdminAuthContext）
 │   ├── locale-middleware.ts        # 请求级语言检测中间件
 │   ├── sf-error-logger.ts          # SF 全局错误日志中间件（自动覆盖所有 SF）
 │   └── __tests__/
 │       └── admin-auth.test.ts
 ├── services/                       # 服务端共享业务逻辑（仅放被多模块消费的代码）
-│   ├── admin-auth/                 # 管理端认证（登录、当前用户查询）
+│   ├── admin-auth/                 # 管理端认证（登录、getAdminUserForAuth 带缓存）
+│   ├── admin-role/                 # 管理端角色管理（admin_role 表，含 schemas 单一来源）
 │   ├── captcha/                    # 验证码生成、发送、校验（admin + client 双端）
-│   ├── client-auth/                # 客户端认证（登录、注册、当前用户查询，含缓存）
+│   ├── client-auth/                # 客户端认证（登录、注册、getClientUserForAuth 带缓存）
 │   ├── config/                     # 系统配置管理 + 缓存（getConfig 被 ai/mail/sms/i18n 调用）
 │   ├── dict/                       # 字典管理 + 缓存（页面 + bootstrap + DictTag/DictSelect 组件）
-│   ├── event/                      # 埋点事件（缓冲写入、预设管理、查询分析；SDK + admin + bootstrap）
 │   ├── file/                       # 文件管理（上传逻辑、清理、列表、删除；files 页 + 3 组件）
+│   ├── file-explorer/              # 文件资源管理器（STORAGE_DIR 目录浏览，路径穿越防护 + 写保护）
 │   ├── i18n/                       # 国际化服务端（翻译查询、维护、种子数据）
-│   ├── init/                       # 系统初始化（bootstrap + admin 初始化）
+│   ├── init/                       # 系统初始化（bootstrap + admin 初始化 + 双端角色种子）
 │   ├── logs/                       # 日志查询（admin 日志页 + api/download）
+│   ├── message/                    # 通用消息（recipientType + recipientId 定位接收者，双端共用）
 │   ├── news/                       # 新闻共享（admin CRUD + 客户端 SSR 路由）
-│   ├── operation-log/              # 操作日志（缓冲写入；16 个消费者跨模块调用）
+│   ├── operation-log/              # 操作日志（BatchWriter 缓冲 + logCrud + logExternalRequest）
 │   ├── query/                      # 服务端查询工具（分页、排序、防注入）
-│   ├── role/                       # 角色管理（roles + admins 页面共用）
-│   └── tasks/                      # 定时任务注册
+│   ├── tasks/                      # 定时任务注册
+│   └── track/                      # 埋点事件（神策简化模型，频控 + 时间钳制 + BatchWriter 缓冲）
 ├── routes/
 │   ├── __root.tsx                  # 根布局（HTML shell）
 │   ├── index.tsx                   # 前台首页（Hero + 最新新闻 SSR）
@@ -87,18 +93,24 @@ src/
 │           ├── dicts/              # 字典管理
 │           ├── config/             # 系统配置
 │           ├── files/              # 文件管理
-│           ├── roles/              # 角色管理
+│           ├── file-explorer/      # 文件资源管理器
+│           ├── admin-roles/        # 管理端角色管理
 │           ├── users/              # 用户管理（admins + clients）
+│           ├── messages/           # 管理端消息中心（收件箱 + 消息管理）
 │           ├── logs/               # 日志查询
 │           ├── operation-logs/     # 操作日志
 │           ├── translations/       # 翻译管理（保留 -mods/）
-│           ├── events/             # 埋点管理
+│           ├── track/              # 埋点管理（query/analytics/event-meta/property-meta）
 │           └── demo/               # 演示功能
+├── routes/
+│   └── messages/                   # 客户端消息中心（shadcn/ui SSR）
 ├── router.tsx                      # TanStack Router 实例
 ├── start.ts                        # TanStack Start 入口配置（locale + CSRF + SF 错误日志中间件）
-├── styles/                         # 全局样式（index.css、admin.global.css、ssr.global.css）
+├── styles/                         # 全局样式（@layer theme, base, antd, components, utilities）
 ├── test-utils/                     # 测试工具（db-mock 等）
-└── types/                          # 全局类型定义（预留）
+├── types/                          # 全局类型定义（query.ts）
+├── utils/                          # 纯工具函数（cn）
+└── validators/                     # 共享 zod schema（common.schemas.ts）
 ```
 
 ## 技术栈
@@ -188,11 +200,15 @@ Server Function handler 体中直接调用 db 是安全的——SFn 始终在服
 
 ### 鉴权中间件
 
-- 所有管理端 Server Function 使用 `src/middleware/admin-auth.ts` 的 `adminPermGuard` 中间件
-- `adminPermGuard(permission)` 组合 `adminAuthGuard` 先验证登录，再校验指定权限
+- 所有管理端 Server Function 和 Server Route 使用 `src/middleware/admin-auth.ts` 的 `adminPermGuard` / `adminPermRouteGuard` 中间件
+- `adminPermGuard(permission)` 内部直接调用 `resolveAdminAuthContext()` 一步完成登录校验 + 权限校验（委托 `getAdminUserForAuth()` 带缓存）
+- `adminPermRouteGuard(permission)` 为 Server Route 专用，捕获 `AdminAuthError` 转为对应 HTTP 状态码 JSON
 - `adminAuthGuard` 基于 TanStack Start `createMiddleware` 实现，从 Cookie 读取 JWT 并注入 `context.user` 和 `context.rolePermissions`
 - Root 管理员自动拥有 `**` 权限，无需查询角色表
+- 中间件不直接访问数据库，用户查询与权限解析委托服务层（`admin-auth.server.ts` / `client-auth.server.ts`）
 - 路由 `beforeLoad` 中通过 Server Function 调用 `getCurrentAdminSFn` 获取当前用户信息
+- 客户端前台同样支持 RBAC，使用 `src/middleware/client-auth.ts` 的 `clientAuthGuard`（仅认证）/ `clientPermGuard`（认证 + 权限码）
+- 客户端权限码定义在 `src/lib/permissions/client-permissions.ts`（当前为空集合，业务模块扩展时填充）
 
 ### CSRF 保护
 - `src/start.ts` 通过 `createCsrfMiddleware` 显式注册 CSRF 中间件
@@ -202,24 +218,28 @@ Server Function handler 体中直接调用 db 是安全的——SFn 始终在服
 ### SF 错误日志中间件
 
 - `src/middleware/sf-error-logger.ts` 注册在 `start.ts` 的 `functionMiddleware` 中，自动覆盖所有 SF
-- 鉴权失败（`AdminAuthError` / `ApiAuthError`）记录 warn 级别日志，系统异常记录 error 级别日志
+- 鉴权失败（`AdminAuthError` / `ApiAuthError` / `ClientAuthError`）记录 warn 级别日志，系统异常记录 error 级别日志
 - 开发环境额外记录 SF 执行耗时
 - 错误通过 `sanitizeError()` 脱敏后写入日志，保持原始错误传播不变
 
 ### 事件埋点系统
 
-- 客户端 SDK（`src/lib/track/track.ts`）自动采集 PageView，通过 `trackEventSFn` 上报
-- 服务端（`src/services/event/event.server.ts`）校验事件名/属性名/值类型后入内存缓冲
-- 缓冲策略：5 秒定时或满 100 条批量 INSERT，上限 1000 条
-- 预置 9 个事件类型（PageView、Click、FormSubmit、Search、Login、Register、Logout、Share、Scroll）和 16 个属性定义
+- 数据模型参考神策分析简化版：`track_event`（事件实例）+ `track_event_meta`（元事件）+ `track_property_meta`（元属性）
+- 客户端 SDK（`src/lib/track/track.ts`）自动采集 PageView，通过 `trackEventSFn` 上报；SDK 入参字段为 `name`
+- 服务端（`src/services/track/track.server.ts`）依次校验：per-session 频控（60 条/分钟）→ 时间钳制（过去 1 天 ~ 未来 5 分钟）→ 事件名/属性名/值类型
+- 缓冲策略：BatchWriter，5 秒定时或满 100 条批量 INSERT，上限 1000 条
+- 预置 5 个元事件（PageView、FormSubmit、Login、Register、Logout）和 11 个元属性（含 7 个 `$` 系统属性）
 - 管理端支持事件查询、时间序列分析、事件分布、Top 页面统计
-- 预设事件/属性可在管理端 `/admin/events/` 页面管理
+- 元事件/元属性可在管理端 `/admin/track/` 页面管理
 
 ### 操作日志审计
 
 - `src/services/operation-log/operation-log.server.ts` 提供 `logOperation()` fire-and-forget 接口
-- 与事件埋点共享相同的缓冲写入策略（5 秒 / 100 条 / 上限 1000 条）
-- 记录操作人、模块、动作、目标类型/ID/名称、详情 JSON
+- SFn handler 写 CRUD 审计必须使用同模块的 `logCrud()` 一行式封装（自动装配操作人 + targetType 默认值）
+- CRUD 审计与外部调用日志使用独立 BatchWriter（互不挤压）：CRUD 缓冲上限 1000，外部调用缓冲上限 5000
+- 记录操作人（ID + 类型 + 名称）、模块、动作、目标类型/ID/名称、详情 JSON
+- `operation_log.operator_type` 列区分 admin / client / system；`operator_id` 无外键
+- 操作者身份经 `src/lib/request-context/`（AsyncLocalStorage）由鉴权中间件注入，`logExternalRequest()` 从 ALS 读取
 - 管理端 `/admin/operation-logs` 页面支持按模块/动作/关键词/日期范围查询
 - 进程退出时自动刷新缓冲（SIGTERM / SIGINT）
 
@@ -322,8 +342,26 @@ src/routes/admin/_admin/files/
 - Schema 文件按模块拆分在 `src/db/schema/`，通过 `index.ts` 统一导出
 - 包含 `captchaCode`（验证码记录）、`uiTranslation`（UI 固定文案翻译）和 `contentTranslation`（实体字段翻译）等系统辅助表
 - `admin_user` 表包含 `is_root` 布尔字段 + 数据库部分唯一索引，保证仅一个 root 用户
-- 包含 `event`（埋点事件）、`presetEvent`（预设事件）、`presetProperty`（预设属性）三张埋点相关表
-- 包含 `operationLog`（操作日志）表，用于管理端操作审计
+- 包含 `trackEvent`（埋点事件）、`trackEventMeta`（元事件）、`trackPropertyMeta`（元属性）三张埋点相关表（神策简化模型）
+- 包含 `operationLog`（操作日志）表，用于管理端操作审计，`operator_type` 区分 admin / client / system
+- 包含 `adminRole`（管理端角色）表与 `clientRole`（客户端角色）表，分别支撑双端 RBAC
+- 包含 `message`（通用消息）表，`recipient_type` + `recipient_id` 定位接收者（无外键，仿 operation_log 的 operator_id 模式）
+
+### 数据库迁移流程
+
+Schema 变更统一走 **generate + migrate**，禁止使用 `db:push`（直接改库不生成迁移文件、不更新 snapshot，与启动时自动迁移机制状态脱节，混用必炸）。
+
+**开发流程**：
+1. 修改 `src/db/schema/*.ts`
+2. `pnpm db:generate` —— 生成迁移 SQL 文件（重命名列时在交互中选 rename，否则会丢数据）
+3. **审查生成的 SQL** —— 确认无破坏性操作（删列、改类型等）
+4. `pnpm db:migrate` —— 本地执行（或直接 `pnpm dev`，bootstrap 启动时也会自动执行）
+5. schema 文件 + `drizzle/` 目录（SQL + meta snapshot）一起提交 git
+
+**生产上线**：
+- 部署后进程启动时 `bootstrap → runMigrations()` 自动执行新迁移文件（已有机制）
+- 迁移失败 = 进程启动即崩（fail-fast，避免带病运行）—— 因此迁移 SQL 必须可靠
+- 本项目为单实例架构（内存缓存、BatchWriter、cron 均为单进程语义），无并发迁移竞态；若未来改多实例部署，须先单实例完成迁移再全量扩容
 
 ### jsonb 列类型约定
 
@@ -341,15 +379,16 @@ detail: jsonb(),
 
 ### 数据库列命名约定
 
-所有列统一遵循命名规则：主键 `id`、时间列 `created_at`/`updated_at`（timestamptz）、软删除 `deleted_at`、描述 `description`、排序 `sort_order`。外键列名 `xxx_id`，JS 属性以 `Id` 结尾。所有列必须显式指定数据库列名，timestamp 必须加 `{ withTimezone: true }`。Schema 修改使用 `pnpm db:push`，重命名列时选择 rename column。
+所有列统一遵循命名规则：主键 `id`、时间列 `created_at`/`updated_at`（timestamptz）、软删除 `deleted_at`、描述 `description`、排序 `sort_order`。外键列名 `xxx_id`，JS 属性以 `Id` 结尾。所有列必须显式指定数据库列名，timestamp 必须加 `{ withTimezone: true }`。Schema 修改使用 `pnpm db:generate` + `pnpm db:migrate`，重命名列时选择 rename column。
 
 > 完整列命名决策表、表定义模板、常见陷阱 → 见 [db-schema](.agents/skills/db-schema/SKILL.md) skill。
 
 ### 内存缓存约定
 
-- `src/lib/cache/cache.ts` 中的每个缓存实例只能在唯一一个服务端模块中直接操作，禁止跨模块 import 缓存实例
+- `src/lib/cache/*.cache.ts` 中的每个缓存实例只能在唯一一个服务端模块中直接操作，禁止跨模块 import 缓存实例
 - 外部模块通过所属模块的导出函数访问缓存数据
 - 读缓存函数必须实现懒加载模式：cache miss → 查库 → 写缓存 → 返回
+- `MemoryCache` 泛型类在 `src/lib/cache/core.ts`，实例按模块拆分在 `*.cache.ts` 独立文件
 
 | 缓存实例 | 所属模块 |
 |----------|----------|
@@ -357,7 +396,8 @@ detail: jsonb(),
 | `dictCache` | `src/services/dict/dict.server.ts` |
 | `uiTranslationCache` | `src/services/i18n/i18n.server.ts` |
 | `clientUserCache` | `src/services/client-auth/client-auth.server.ts` |
-| `presetEventCache` / `presetPropertyCache` | `src/services/event/event.server.ts` |
+| `adminUserCache` | `src/services/admin-auth/admin-auth.server.ts` |
+| `trackEventMetaCache` / `trackPropertyMetaCache` | `src/services/track/track.server.ts` |
 
 > 完整规则、懒加载模板、新增缓存步骤、违规自查清单 → 见 [cache](.agents/skills/cache/SKILL.md) skill。
 
@@ -443,7 +483,6 @@ src/services/config/
 | `pnpm test` | 运行 Vitest 测试 |
 | `pnpm db:generate` | 生成数据库迁移文件 |
 | `pnpm db:migrate` | 运行数据库迁移 |
-| `pnpm db:push` | 推送 Schema 到数据库 |
 | `pnpm db:studio` | 启动 Drizzle Studio |
 | `pnpm db:pull` | 从数据库拉取 Schema |
 
@@ -519,6 +558,8 @@ src/services/config/
 ### 错误通知分层
 
 管理端（`/admin/*`）使用 antd `message.error/success`，前台 SSR 使用 sonner `toast.error/success`。loader/beforeLoad 失败走 `errorComponent`，不调用 DOM API。
+
+管理端 `message` / `modal` / `notification` 统一从 `#/components/antd-static` 导入（`src/components/antd-static/index.tsx`），**禁止**静态导入 antd。原因：antd 静态函数会创建独立 React root，脱离 `<StyleProvider layer>` 上下文，导致其注入的 reset/link 样式（`:where(hash) a`）未分层、压制所有 `@layer`（把全站 `a` 标签冲成 antd 蓝），且无法继承 ConfigProvider 动态主题（暗色算法、品牌色）。桥接组件 `AntdStaticBridge` 已挂载在管理端 `<App>` 内，从 `App.useApp()` 捕获实例。
 
 > SFn 调用方完整模式、前台 vs 管理端代码示例 → 见 [server-function](.agents/skills/server-function/SKILL.md) skill。
 

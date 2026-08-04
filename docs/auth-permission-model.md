@@ -6,7 +6,7 @@
 
 | 用户体系 | 入口路由 | Cookie 名 | 是否支持 RBAC | 注册方式 |
 |----------|----------|-----------|---------------|----------|
-| 管理端 (admin) | `/admin/login` | `fsdx_admin_token` | 是（role 表） | 仅管理员手动创建 |
+| 管理端 (admin) | `/admin/login` | `fsdx_admin_token` | 是（admin_role 表） | 仅管理员手动创建 |
 | 客户端 (client) | `/login` | `fsdx_client_token` | 否 | 公开注册 + 邮箱验证码 |
 
 两套体系使用**独立的 Cookie**，允许同一浏览器同时登录管理员和前台用户。
@@ -51,7 +51,7 @@ flowchart TB
 
     subgraph DB["PostgreSQL"]
         AdminTbl["admin_user"]
-        RoleTbl["role<br/>(permissions: JSONB)"]
+        RoleTbl["admin_role<br/>(permissions: JSONB)"]
         ClientTbl["client_user"]
         CaptchaTbl["captcha_code"]
     end
@@ -92,7 +92,7 @@ erDiagram
         varchar email UK "邮箱"
         varchar password_hash "bcrypt 哈希"
         varchar avatar "头像"
-        uuid role_id FK "关联角色"
+        uuid admin_role_id FK "关联角色"
         boolean is_root "是否超级管理员(仅一个)"
         varchar status "active/disabled"
         timestamp last_login_at
@@ -125,15 +125,15 @@ erDiagram
         timestamp created_at
     }
 
-    role ||--o{ admin_user : "role_id FK"
+    admin_role ||--o{ admin_user : "admin_role_id FK"
 ```
 
 ### `admin_user` 表关键约束
 
 - `is_root` 列有 **部分唯一索引**：`CREATE UNIQUE INDEX idx_admin_user_single_root ON admin_user (is_root) WHERE is_root = true`，从数据库层面保证全局仅一个 root 管理员。
-- `role_id` 为必填字段（`NOT NULL`），包括 root 管理员也必须关联一个角色。
+- `admin_role_id` 为必填字段（`NOT NULL`），包括 root 管理员也必须关联一个角色。
 
-### `role.permissions` 字段
+### `admin_role.permissions` 字段
 
 权限以 `jsonb` 格式存储，值为字符串数组：
 
@@ -150,7 +150,7 @@ erDiagram
 
 | 特性 | admin_user | client_user |
 |------|------------|-------------|
-| RBAC 角色 | `role_id` FK（必填） | 无 |
+| 管理端 RBAC 角色 | `admin_role_id` FK（必填） | 无 |
 | is_root | 有（部分唯一索引） | 无 |
 | 邮箱验证 | 无 | `email_verified` 字段 |
 | 注册入口 | 管理员手动创建 | 公开 `/register` |
@@ -261,7 +261,7 @@ sequenceDiagram
 | `news` | `view`, `create`, `edit`, `delete`, `publish`, `export`, `import` |
 | `admin` | `view`, `create`, `edit`, `delete` |
 | `client` | `view`, `create`, `edit`, `delete` |
-| `role` | `view`, `create`, `edit`, `delete` |
+| `admin-role` | `view`, `create`, `edit`, `delete` |
 | `dict` | `view`, `create`, `edit`, `delete`, `create_item`, `edit_item`, `delete_item`, `export`, `import` |
 | `config` | `view`, `create`, `edit`, `delete`, `export`, `import` |
 | `file` | `view`, `upload`, `edit`, `delete` |
@@ -320,9 +320,9 @@ flowchart LR
         Match["matchPermission()"]
     end
 
-    Root -->|"role_id FK"| SuperRole
-    Admin1 -->|"role_id FK"| EditorRole
-    Admin2 -->|"role_id FK"| ViewerRole
+    Root -->|"admin_role_id FK"| SuperRole
+    Admin1 -->|"admin_role_id FK"| EditorRole
+    Admin2 -->|"admin_role_id FK"| ViewerRole
 
     SuperRole -->|"自动跳过 DB 查询<br/>直接设置 ['**']"| Match
     EditorRole -->|"从 DB 读取"| Match
@@ -363,7 +363,7 @@ flowchart TD
         A4["db.query.adminUser → 查用户"]
         A5{"isRoot ?"}
         A6["rolePermissions = ['**']"]
-        A7["db.query.role → 读取权限"]
+        A7["getAdminUserForAuth → 读取权限"]
         A8["注入 context: { user, rolePermissions }"]
 
         A1 --> A2 --> A3 --> A4 --> A5
@@ -387,8 +387,8 @@ flowchart TD
     QueryUser["db.query.adminUser"]
     CheckUser{"用户存在且<br/>deletedAt = NULL<br/>status = 'active'?"}
     CheckRoot{"isRoot ?"}
-    SetAllPerms["设置 rolePermissions = ['**']<br/>（不查询 role 表）"]
-    QueryRole["db.query.role<br/>读取 role.permissions"]
+    SetAllPerms["设置 rolePermissions = ['**']<br/>（不查询 admin_role 表）"]
+    QueryRole["getAdminUserForAuth<br/>读取 admin_role.permissions"]
     InjectContext["注入 context:<br/>{ user, rolePermissions }"]
     Proceed(["执行 handler"])
 
@@ -487,8 +487,8 @@ sequenceDiagram
     critical 数据库事务
         InitServer->>DB: BEGIN TRANSACTION
         InitServer->>DB: 再次检查 is_root = true 是否存在
-        InitServer->>DB: INSERT INTO role (name="超级管理员", slug="super-admin", permissions=["**"])
-        InitServer->>DB: INSERT INTO admin_user (is_root=true, role_id=新角色ID, ...)
+        InitServer->>DB: INSERT INTO admin_role (name="超级管理员", slug="super-admin", permissions=["**"])
+        InitServer->>DB: INSERT INTO admin_user (is_root=true, admin_role_id=新角色ID, ...)
         InitServer->>DB: INSERT INTO system_config (site_name, smtp_*, ai_*)
         InitServer->>DB: COMMIT
     end
@@ -610,10 +610,10 @@ const csrfMiddleware = createCsrfMiddleware({
 | `src/services/init/init.server.ts` | 系统初始化（checkInitStatus / initSystem） |
 | `src/routes/admin/_admin/users/admins/admins.server.ts` | 管理员 CRUD（含 root 禁用/删除拦截） |
 | `src/routes/admin/_admin/users/clients/clients.server.ts` | 客户端用户 CRUD |
-| `src/services/role/role.server.ts` | 角色 CRUD |
+| `src/services/admin-role/admin-role.server.ts` | 管理端角色 CRUD |
 | `src/db/schema/admin-user.ts` | admin_user 表（含部分唯一索引） |
 | `src/db/schema/client-user.ts` | client_user 表 |
-| `src/db/schema/role.ts` | role 表（permissions JSONB） |
+| `src/db/schema/admin-role.ts` | admin_role 表（permissions JSONB） |
 | `src/routes/admin/_admin.tsx` | 管理端布局：beforeLoad 鉴权 |
 | `src/routes/admin/login.tsx` | 管理端登录页 |
 | `src/routes/admin/init.tsx` | 系统初始化页 |

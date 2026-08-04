@@ -18,22 +18,22 @@
 │                                                              │
 │  trackEvent(input)                                           │
 │       │                                                      │
-│       ├─ 校验事件名 (presetEventCache)                        │
-│       ├─ 校验属性键 (presetPropertyCache)                      │
+│       ├─ 校验事件名 (trackEventMetaCache)                        │
+│       ├─ 校验属性键 (trackPropertyMetaCache)                      │
 │       └─ 校验属性值类型 (isValidPropertyValue)                 │
 │              │                                               │
 │              ▼                                               │
 │  ┌─────────────────────┐                                     │
 │  │   内存缓冲队列        │  上限 1000 条                        │
-│  │   eventBuffer[]      │                                     │
+│  │   eventWriter (BatchWriter)      │                                     │
 │  └────────┬────────────┘                                     │
 │           │  5 秒 / 100 条 / SIGTERM                         │
 │           ▼                                                  │
-│  event 表 (PostgreSQL)                                       │
+│  track_event 表 (PostgreSQL)                                       │
 │       │                                                      │
-│       ├── searchEvents()      分页查询                        │
-│       ├── getEventAnalytics() 趋势/分布/Top页面                │
-│       └── getEventNames()     事件名列表                       │
+│       ├── searchTrackEvents()      分页查询                        │
+│       ├── getTrackAnalytics() 趋势/分布/Top页面                │
+│       └── getTrackEventNames()     事件名列表                       │
 └──────────────────────────────────────────────────────────────┘
 ```
 
@@ -80,16 +80,16 @@ track('Click', { element_id: 'btn-submit', element_text: '提交' })
 ```mermaid
 flowchart TD
     Input(["trackEvent(input)"])
-    CacheReady{"presetCacheLoaded ?"}
+    CacheReady{"trackMetaCacheLoaded ?"}
     CacheReady -->|否| PushToBuffer1["pushToBuffer → 入缓冲"]
-    CacheReady -->|是| CheckEvent{"事件名在<br/>presetEventCache ?"}
+    CacheReady -->|是| CheckEvent{"事件名在<br/>trackEventMetaCache ?"}
     CheckEvent -->|否| Drop1["❌ 丢弃 + warn 日志<br/>'事件名不在预设中'"]
     CheckEvent -->|是| LoopProps["遍历 input.properties"]
-    LoopProps --> CheckKey{"属性键在<br/>presetPropertyCache ?"}
+    LoopProps --> CheckKey{"属性键在<br/>trackPropertyMetaCache ?"}
     CheckKey -->|否| Drop2["❌ 丢弃 + warn 日志<br/>'属性键不在预设中'"]
     CheckKey -->|是| IsSysProp{"$ 开头 ?"}
     IsSysProp -->|是| NextProp["跳过类型校验"]
-    IsSysProp -->|否| CheckType{"值类型匹配<br/>presetPropertyCache ?"}
+    IsSysProp -->|否| CheckType{"值类型匹配<br/>trackPropertyMetaCache ?"}
     CheckType -->|否| Drop3["❌ 丢弃 + warn 日志<br/>'属性值类型校验失败'"]
     CheckType -->|是| NextProp
     NextProp --> MoreProps{"还有属性 ?"}
@@ -97,7 +97,7 @@ flowchart TD
     MoreProps -->|否| PushToBuffer2["pushToBuffer → 入缓冲<br/>满 100 条触发批量 flush"]
     PushToBuffer1 --> Buffer
     PushToBuffer2 --> Buffer
-    Buffer["内存缓冲 eventBuffer[]"]
+    Buffer["内存缓冲 eventWriter (BatchWriter)"]
 ```
 
 ### 属性值类型校验
@@ -119,7 +119,7 @@ flowchart TD
 
 ```
 写入入口: pushToBuffer(input)
-    ├─ 缓冲未满 → 追加到 eventBuffer[]
+    ├─ 缓冲未满 → 追加到 eventWriter (BatchWriter)
     ├─ 缓冲命中 BATCH_SIZE(100) → 立即 flushEventBuffer("batch")
     ├─ 缓冲命中 MAX_BUFFER_SIZE(1000) → 丢弃最旧条目 + warn 日志
     └─ 定时器 FLUSH_INTERVAL(5000ms) → 定时 flushEventBuffer("timer")
@@ -137,9 +137,9 @@ flowchart TD
 
 ---
 
-## 预置事件与属性
+## 预置元事件与元属性
 
-### 9 个预置事件
+### 5 个预置元事件
 
 | 事件名 | 标签 | 分类 |
 |--------|------|------|
@@ -153,7 +153,7 @@ flowchart TD
 | `Share` | 内容分享 | 内容互动 |
 | `Scroll` | 页面滚动 | 页面交互 |
 
-### 16 个预置属性
+### 11 个预置元属性
 
 | 属性键 | 标签 | 类型 | 说明 |
 |--------|------|------|------|
@@ -182,7 +182,7 @@ flowchart TD
 
 ### 事件查询
 
-`searchEvents(query)` — 支持按事件名、用户 ID、会话 ID、关键词、日期范围筛选，分页返回 `EventQueryResult`。
+`searchTrackEvents(query)` — 支持按事件名、用户 ID、会话 ID、关键词、日期范围筛选，分页返回 `EventQueryResult`。
 
 ### 事件分析
 
@@ -200,7 +200,7 @@ flowchart TD
 
 ## 预设管理
 
-管理端 `/admin/events/preset-events/` 和 `/admin/events/preset-properties/` 页面支持：
+管理端 `/admin/track/event-meta/` 和 `/admin/track/property-meta/` 页面支持：
 - 查看预设事件/属性列表
 - 新增自定义事件/属性
 - 编辑事件/属性（`is_preset = true` 的不可删除）
@@ -213,12 +213,12 @@ flowchart TD
 | 文件 | 职责 |
 |------|------|
 | `src/lib/track/track.ts` | 客户端埋点 SDK |
-| `src/services/event/event.server.ts` | 服务端：校验、缓冲、查询、分析、预设管理 |
-| `src/services/event/event.functions.ts` | Server Function 包装器 |
-| `src/services/event/event.types.ts` | 类型定义 |
+| `src/services/track/track.server.ts` | 服务端：校验、缓冲、查询、分析、预设管理 |
+| `src/services/track/track.functions.ts` | Server Function 包装器 |
+| `src/services/track/event.types.ts` | 类型定义 |
 | `src/db/schema/event.ts` | event 表 Schema |
-| `src/db/schema/preset-event.ts` | preset_event 表 Schema |
-| `src/db/schema/preset-property.ts` | preset_property 表 Schema |
-| `src/lib/cache/cache.ts` | presetEventCache / presetPropertyCache 缓存实例 |
+| `src/db/schema/track.ts` | track_event / track_event_meta / track_property_meta 表 Schema |
+|  |
+| `src/lib/cache/cache.ts` | trackEventMetaCache / trackPropertyMetaCache 缓存实例 |
 | `src/routes/admin/_admin/events/query.tsx` | 事件查询页面 |
 | `src/routes/admin/_admin/events/analytics.tsx` | 事件分析页面 |

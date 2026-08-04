@@ -54,7 +54,7 @@ const { mockDb } = vi.hoisted(() => {
         news: q(), adminUser: q(), clientUser: q(), role: q(),
         dict: q(), dictItem: q(), systemConfig: q(), file: q(),
         captchaCode: q(), event: q(), operationLog: q(),
-        presetEvent: q(), presetProperty: q(),
+        trackEventMeta: q(), trackPropertyMeta: q(),
         uiTranslation: q(), contentTranslation: q(),
       },
       $count: vi.fn(),
@@ -107,7 +107,7 @@ const productRecord = {
 ```
 adminUser, clientUser, role, news, file,
 dict, dictItem, systemConfig, captchaCode,
-event, operationLog, presetEvent, presetProperty,
+trackEvent, operationLog, trackEventMeta, trackPropertyMeta,
 uiTranslation, contentTranslation
 ```
 

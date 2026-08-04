@@ -32,7 +32,9 @@ class MemoryCache<T> {
 
 ---
 
-## 7 个缓存实例
+## 6 个缓存实例（`MemoryCache` 类 + 按模块实例文件）
+
+> `MemoryCache<T>` 泛型类在 `src/lib/cache/core.ts`，各实例按模块拆分在 `src/lib/cache/*.cache.ts`，每个实例只能在唯一服务模块中直接操作。
 
 ### 字典缓存 (`dictCache`)
 
@@ -87,31 +89,41 @@ SMTP 邮件配置从数据库读取而非环境变量，通过此缓存获取。
 | 属性 | 值 |
 |------|-----|
 | Key | `userId` |
-| Value | `{ id, username, email, avatar, status }` |
+| Value | `{ id, username, email, avatar, clientRoleId, status }` |
 | TTL | **5 分钟** |
 
-用于减少 `getCurrentClient()` 的数据库查询频率。缓存失效场景：
+用于减少 `getCurrentClient()` / `getClientUserForAuth()` 的数据库查询频率。缓存失效场景：
 - 管理员修改客户端用户状态 → 主动 `clientUserCache.delete(userId)`
 - 管理员删除客户端用户 → 主动清除
 - TTL 自然过期
 
-### 预设事件缓存 (`presetEventCache`)
+### 管理员用户缓存 (`adminUserCache`)
+
+| 属性 | 值 |
+|------|-----|
+| Key | `userId` |
+| Value | `{ id, username, email, avatar, isRoot, adminRoleId, status }` |
+| TTL | **5 分钟** |
+
+用于减少 `getAdminUserForAuth()`（鉴权中间件核心调用）的数据库查询频率。isRoot 用户命中缓存后直接返回 `["**"]` 权限，不查角色表。
+
+### 元事件缓存 (`trackEventMetaCache`)
 
 | 属性 | 值 |
 |------|-----|
 | Key | 事件名称（如 `"PageView"`） |
-| Value | `boolean`（`true` 表示在预设中） |
-| TTL | 无（永不过期） |
+| Value | `boolean`（`true` 表示已注册） |
+| TTL | 无（永不过期，随元数据变更主动失效） |
 
-用于 `trackEvent()` 中快速校验上报事件名是否在预设中，避免每次查询数据库。
+用于 `trackEvent()` 中快速校验上报事件名是否已注册，避免每次查询数据库。
 
-### 预设属性缓存 (`presetPropertyCache`)
+### 元属性缓存 (`trackPropertyMetaCache`)
 
 | 属性 | 值 |
 |------|-----|
 | Key | 属性键（如 `"page_name"`、`"$ip"`） |
 | Value | `string`（数据类型，如 `"string"`、`"number"`） |
-| TTL | 无（永不过期） |
+| TTL | 无（永不过期，随元数据变更主动失效） |
 
 用于 `trackEvent()` 中校验上报属性的键是否存在及其值的类型是否匹配。
 
@@ -167,8 +179,9 @@ Server Function handler
 | `uiTranslationCache` | `refreshUITranslationCache(locale?)` | UI 翻译增删改 |
 | `configTranslationCache` | `refreshConfigTranslationCache(locale?)` | 配置翻译修改 |
 | `clientUserCache` | `clientUserCache.delete(userId)` | 用户状态变更/删除 |
-| `presetEventCache` | `invalidatePresetCache()` + 下次懒加载 | 预设事件增删改 |
-| `presetPropertyCache` | `invalidatePresetCache()` + 下次懒加载 | 预设属性增删改 |
+| `adminUserCache` | `adminUserCache.delete(userId)` | 管理员状态/角色变更/删除 |
+| `trackEventMetaCache` | `invalidateTrackMetaCache()` + 下次懒加载 | 元事件增删改 |
+| `trackPropertyMetaCache` | `invalidateTrackMetaCache()` + 下次懒加载 | 元属性增删改 |
 
 ---
 
@@ -176,8 +189,9 @@ Server Function handler
 
 | 文件 | 职责 |
 |------|------|
-| `src/lib/cache/cache.ts` | `MemoryCache<T>` 通用类 + 7 个缓存实例定义 |
-| `src/lib/cache/__tests__/cache.test.ts` | 缓存单元测试（225 行） |
+| `src/lib/cache/core.ts` | `MemoryCache<T>` 通用类 |
+| `src/lib/cache/*.cache.ts` | 按模块拆分的缓存实例（config/dict/ui-translation/client-user/admin-user/track） |
+| `src/lib/cache/__tests__/cache.test.ts` | 缓存单元测试 |
 | `src/services/config/config.server.ts` | `loadConfigCache()` / 配置缓存管理 |
 | `src/services/dict/dict.server.ts` | `loadDictCache()` / 字典缓存管理 |
 | `src/services/i18n/i18n.server.ts` | UI 翻译缓存管理 |

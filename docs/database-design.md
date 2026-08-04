@@ -2,15 +2,17 @@
 
 ## 表总览
 
-共 15 张表，按用途分为三组：
+共 17 张表，按用途分为三组：
 
-### 业务表（6 张）
+### 业务表（8 张）
 
 | 表名 | 主键 | 软删除 | 核心职责 |
 |------|------|--------|----------|
-| `admin_user` | UUID | `deleted_at` | 管理端用户（含 root），关联 `role_id` FK |
-| `client_user` | UUID | `deleted_at` | 前台注册用户，无 RBAC |
-| `role` | UUID | `deleted_at` | RBAC 角色，`permissions` 为 JSONB 字符串数组 |
+| `admin_user` | UUID | `deleted_at` | 管理端用户（含 root），关联 `admin_role_id` FK |
+| `client_user` | UUID | `deleted_at` | 前台注册用户，关联 `client_role_id` FK（可空） |
+| `admin_role` | UUID | `deleted_at` | 管理端 RBAC 角色，`permissions` 为 JSONB 字符串数组 |
+| `client_role` | UUID | `deleted_at` | 客户端 RBAC 角色，`permissions` 为 JSONB 字符串数组 |
+| `message` | UUID | `deleted_at` | 通用消息，`recipient_type` + `recipient_id` 定位接收者（无外键） |
 | `news` | UUID | `deleted_at` | 新闻文章，`content` 为 TipTap JSON |
 | `dict` | UUID | `deleted_at` | 字典类型（`name` + `slug`） |
 | `dict_item` | UUID | `deleted_at` | 字典条目，`dict_slug` FK → dict.slug，唯一约束 `(dict_slug, value)` |
@@ -29,10 +31,10 @@
 
 | 表名 | 主键 | 软删除 | 核心职责 |
 |------|------|--------|----------|
-| `event` | UUID | — | 埋点原始事件，`properties` 为 JSONB |
-| `preset_event` | name (varchar) | — | 预设事件定义，`is_preset` 标记是否系统预置 |
-| `preset_property` | key (varchar) | — | 预设属性定义，`data_type` 声明值类型 |
-| `operation_log` | UUID | — | 管理端操作审计日志，`detail` 为 JSONB |
+| `track_event` | UUID | — | 埋点原始事件，`name` 为事件名，`properties` 为 JSONB |
+| `track_event_meta` | name (varchar) | — | 元事件定义，`is_preset` 标记是否系统预置 |
+| `track_property_meta` | key (varchar) | — | 元属性定义，`data_type` 声明值类型 |
+| `operation_log` | UUID | — | 操作审计日志（含外部调用），`operator_type` 区分 admin/client/system，`detail` 为 JSONB |
 
 ---
 
@@ -46,7 +48,7 @@ erDiagram
         varchar email UK
         varchar password_hash
         varchar avatar
-        uuid role_id FK
+        uuid admin_role_id FK
         boolean is_root "部分唯一索引"
         varchar status "active/disabled"
         timestamp last_login_at
@@ -55,7 +57,7 @@ erDiagram
         timestamp deleted_at
     }
 
-    role {
+    admin_role {
         uuid id PK
         varchar name UK
         varchar slug UK
@@ -72,9 +74,35 @@ erDiagram
         varchar email UK
         varchar password_hash
         varchar avatar
+        uuid client_role_id FK
         varchar status "active/disabled"
         boolean email_verified
         timestamp last_login_at
+        timestamp created_at
+        timestamp updated_at
+        timestamp deleted_at
+    }
+
+    client_role {
+        uuid id PK
+        varchar name UK
+        varchar slug UK
+        jsonb permissions "字符串数组，客户端权限码"
+        text description
+        timestamp created_at
+        timestamp updated_at
+        timestamp deleted_at
+    }
+
+    message {
+        uuid id PK
+        varchar recipient_type "admin/client"
+        uuid recipient_id "无外键"
+        varchar title
+        text content
+        varchar type "system/..."
+        varchar status "unread/read"
+        varchar related_link
         timestamp created_at
         timestamp updated_at
         timestamp deleted_at
@@ -177,17 +205,17 @@ erDiagram
         timestamp updated_at
     }
 
-    event {
+    track_event {
         uuid id PK
         timestamp time "索引"
         uuid user_id "索引"
         varchar session_id "索引"
-        varchar event "索引"
+        varchar name "索引"
         jsonb properties
         timestamp created_at "索引"
     }
 
-    preset_event {
+    track_event_meta {
         varchar name PK
         varchar label
         varchar category
@@ -197,7 +225,7 @@ erDiagram
         timestamp updated_at
     }
 
-    preset_property {
+    track_property_meta {
         varchar key PK
         varchar label
         varchar data_type
@@ -209,12 +237,13 @@ erDiagram
 
     operation_log {
         uuid id PK
-        uuid operatorId FK "索引"
+        uuid operatorId "索引"
         varchar operatorName
+        varchar operatorType "admin/client/system"
         varchar module "索引"
         varchar action
         varchar targetType
-        uuid targetId
+        varchar targetId
         varchar targetName
         jsonb detail
         timestamp createdAt "索引"
@@ -230,11 +259,11 @@ erDiagram
         timestamp created_at
     }
 
-    role ||--o{ admin_user : "role_id FK"
+    admin_role ||--o{ admin_user : "admin_role_id FK"
+    client_role ||--o{ client_user : "client_role_id FK"
     dict ||--o{ dict_item : "dict_slug FK (CASCADE)"
     file ||--o{ news : "cover_image_id FK"
     admin_user ||--o{ news : "created_by_id / updated_by_id FK"
-    admin_user ||--o{ operation_log : "operatorId FK"
 ```
 
 ---
@@ -280,23 +309,25 @@ erDiagram
 ### 软删除策略
 
 以下表使用 `deleted_at` 软删除：
-`admin_user`、`client_user`、`role`、`news`、`dict`、`dict_item`、`file`、`system_config`
+`admin_user`、`client_user`、`admin_role`、`client_role`、`message`、`news`、`dict`、`dict_item`、`file`、`system_config`
 
 查询时通过 `notDeleted(col)` 工具函数过滤（`isNull(deleted_at)`）。
 
 以下表不设软删除（写入后不可删除或仅逻辑删除）：
-`event`、`preset_event`、`preset_property`、`operation_log`、`captcha_code`、`ui_translation`、`content_translation`
+`track_event`、`track_event_meta`、`track_property_meta`、`operation_log`、`captcha_code`、`ui_translation`、`content_translation`
 
 ### 外键关系
 
 | 子表 | 列 | 父表 | CASCADE |
 |------|----|------|---------|
-| `admin_user` | `role_id` | `role.id` | 否 |
+| `admin_user` | `admin_role_id` | `admin_role.id` | 否 |
+| `client_user` | `client_role_id` | `client_role.id` | 否 |
 | `news` | `cover_image_id` | `file.id` | 否 |
 | `news` | `created_by_id` | `admin_user.id` | 否 |
 | `news` | `updated_by_id` | `admin_user.id` | 否 |
 | `dict_item` | `dict_slug` | `dict.slug` | 仅 UPDATE |
-| `operation_log` | `operatorId` | `admin_user.id` | 否 |
+
+> `message` 与 `operation_log` 的接收者/操作者列均无外键（`operator_id`、`recipient_id` 指向不同类型用户），避免跨表约束。
 
 ---
 
@@ -308,8 +339,9 @@ erDiagram
 |----------|----------|----------|
 | 字典 | `ensurePresetDicts()` | 预置字典类型和条目 |
 | 系统配置 | `ensurePresetConfigs()` | 22 个预置配置项（站点设置 6、SMTP 6、AI 5、短信 5） |
-| 预设事件 | `ensurePresetEvents()` | 9 个事件类型（PageView、Click、FormSubmit、Search、Login、Register、Logout、Share、Scroll） |
-| 预设属性 | `ensurePresetProperties()` | 16 个属性定义（包含 7 个 `$` 系统属性） |
+| 元事件 | `ensurePresetEvents()` | 5 个元事件（PageView、FormSubmit、Login、Register、Logout），清理被裁剪项 |
+| 元属性 | `ensurePresetProperties()` | 11 个元属性（包含 7 个 `$` 系统属性），清理被裁剪项 |
+| 客户端角色 | `initSystem()` | `client-super-admin`（`**`）与 `normal-user`（空权限） |
 | UI 翻译 | `ensurePresetTranslations()` | 英文翻译种子数据 |
 
 预置数据标记 `is_preset = true`，在管理端不可删除。
@@ -320,8 +352,9 @@ erDiagram
 
 | 文件 | 职责 |
 |------|------|
-| `src/db/schema/index.ts` | 全部 15 张表统一导出 |
+| `src/db/schema/index.ts` | 全部 17 张表统一导出 |
 | `src/db/index.ts` | Drizzle 客户端懒加载实例 |
 | `src/db/schema/*.ts` | 各表 Drizzle Schema 定义 |
+| `drizzle/` | 迁移 SQL + meta snapshot（`pnpm db:generate` 生成，bootstrap 启动自动执行） |
 | `.env.example` | 环境变量模板（`DATABASE_URL`） |
 | `drizzle.config.ts` | Drizzle Kit 配置（dialect、schema 路径） |

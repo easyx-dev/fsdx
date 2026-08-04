@@ -46,6 +46,22 @@ export async function getNewsList(params) { /* ... */ }  // 不是 SFn
 export async function createNews(data) { /* ... */ }     // 不是 SFn
 ```
 
+## Schema 单一来源
+
+有入参 SFn 的 zod schema 统一定义在 `.schemas.ts` 文件（路由级放 `-mods/`，跨路由共享放 `src/services/<module>/`）。服务层输入类型用 `z.infer` 派生，**禁止**手写接口 + `as XxxInput` 桥接：
+
+```ts
+// services/news/news.schemas.ts
+export const createNewsSchema = z.object({ title: z.string().min(1), ... });
+
+// services/news/news.server.ts
+export type CreateNewsInput = z.infer<typeof createNewsSchema>;
+export function createNews(input: CreateNewsInput) { ... }
+
+// news.functions.ts —— 直接传 data，无需 as 断言
+.handler(async ({ data }) => createNews(data));
+```
+
 ## SFn 标准模板
 
 ### 路由内 SFn（页面局部）
@@ -62,7 +78,7 @@ import {
   getProductById,
   deleteProduct,
 } from "#/services/product/product.server";
-import { logOperation } from "#/services/operation-log/operation-log.server";
+import { logCrud } from "#/services/operation-log/operation-log.server";
 
 // ── Zod Schema ──
 const listSchema = z.object({
@@ -88,15 +104,7 @@ const deleteProductSFn = createServerFn({ method: "POST" })
   .handler(async ({ data: { id }, context }) => {
     const record = await getProductById(id);
     await deleteProduct(id);
-    logOperation({
-      operatorId: context.user.id,
-      operatorName: context.user.username,
-      module: "product",
-      action: "delete",
-      targetType: "product",
-      targetId: id,
-      targetName: record?.name ?? id,
-    });
+    logCrud(context.user, "product", "delete", { id: id, name: record?.name ?? id });
     return { success: true };
   });
 ```
@@ -114,7 +122,7 @@ import {
   getProductById,
   updateProduct,
 } from "#/services/product/product.server";
-import { logOperation } from "#/services/operation-log/operation-log.server";
+import { logCrud } from "#/services/operation-log/operation-log.server";
 import {
   createProductSchema,
   getProductSchema,
@@ -136,15 +144,7 @@ export const createProductSFn = createServerFn({ method: "POST" })
       ...data,
       createdById: context.user.id,
     });
-    logOperation({
-      operatorId: context.user.id,
-      operatorName: context.user.username,
-      module: "product",
-      action: "create",
-      targetType: "product",
-      targetId: record.id,
-      targetName: record.name,
-    });
+    logCrud(context.user, "product", "create", { id: record.id, name: record.name });
     return record;
   });
 
@@ -153,15 +153,7 @@ export const updateProductSFn = createServerFn({ method: "POST" })
   .inputValidator(updateProductSchema)
   .handler(async ({ data, context }) => {
     const record = await updateProduct(data.id, { ...data });
-    logOperation({
-      operatorId: context.user.id,
-      operatorName: context.user.username,
-      module: "product",
-      action: "update",
-      targetType: "product",
-      targetId: data.id,
-      targetName: data.name,
-    });
+    logCrud(context.user, "product", "update", { id: data.id, name: data.name });
     return record;
   });
 ```
@@ -212,7 +204,7 @@ export const exportProductsSFn = createServerFn({ method: "GET" })
 ### 必须做的
 
 - **通过 throw 传播错误**：错误会被全局 `sfErrorLogger` 捕获并传播到客户端
-- **写操作必须调用 `logOperation()`**：fire-and-forget，同步返回，不阻塞业务
+- **写操作必须调用 `logCrud()`**：一行式审计封装，fire-and-forget，同步返回，不阻塞业务
 - **`context.user` 可安全使用**：`adminPermGuard` 已注入用户信息和权限
 
 ```ts
@@ -220,15 +212,10 @@ export const exportProductsSFn = createServerFn({ method: "GET" })
   // ✅ 直接使用 context.user
   const record = await createProduct({ ...data, createdById: context.user.id });
 
-  // ✅ fire-and-forget 操作日志
-  logOperation({
-    operatorId: context.user.id,
-    operatorName: context.user.username,
-    module: "product",
-    action: "create",
-    targetType: "product",
-    targetId: record.id,
-    targetName: record.name,
+  // ✅ fire-and-forget 操作审计（自动装配操作人 + targetType）
+  logCrud(context.user, "product", "create", {
+    id: record.id,
+    name: record.name,
   });
 
   return record;

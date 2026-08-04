@@ -46,8 +46,8 @@
 │  ┌────────────────────────▼──────────────────────────────────┐    │
 │  │              服务层 (src/services/)                           │    │
 │  │  admin-auth / captcha / client-auth / config               │    │
-│  │  dict / event / file / i18n / init / logs                   │    │
-│  │  news / operation-log / query / role / tasks                │    │
+│  │  dict / track / file / i18n / init / logs                   │    │
+│  │  news / operation-log / query / admin-role / message / tasks                │    │
 │  └────────────────────────┬──────────────────────────────────┘    │
 │                           │                                        │
 │  ┌────────────────────────▼──────────────────────────────────┐    │
@@ -58,7 +58,7 @@
 │                           │                                        │
 │  ┌────────────────────────▼──────────────────────────────────┐    │
 │  │           PostgreSQL (Drizzle ORM)                         │    │
-│  │  15 张表 + 7 个内存缓存实例                                  │    │
+│  │  17 张表 + 6 个内存缓存实例                                  │    │
 │  └───────────────────────────────────────────────────────────┘    │
 └─────────────────────────────────────────────────────────────────────┘
 ```
@@ -110,14 +110,14 @@ __root.tsx                    # HTML shell，按 pathname 分发 AdminLayout / S
 │       ├── news/             # 新闻管理
 │       ├── users/admins/     # 管理员用户
 │       ├── users/clients/    # 客户端用户
-│       ├── roles/            # 角色管理
+│       ├── admin-roles/      # 管理端角色管理
 │       ├── dicts/            # 字典管理
 │       ├── config/           # 系统配置
 │       ├── files/            # 文件管理
 │       ├── logs/             # 日志查询
 │       ├── operation-logs/   # 操作日志审计
 │       ├── translations/     # 翻译管理
-│       ├── events/           # 埋点分析
+│       ├── track/            # 埋点分析
 │       └── demo/             # 组件演示
 └── api/download/             # 文件/日志下载 API
 ```
@@ -156,8 +156,8 @@ requestMiddleware                    functionMiddleware
 │  uiTranslationCache  UI 翻译 (按 locale)       │
 │  configTranslationCache  配置翻译 (按 locale)  │
 │  clientUserCache    客户端用户 (TTL 5 分钟)     │
-│  presetEventCache   预设事件名校验              │
-│  presetPropertyCache 预设属性类型校验            │
+│  trackEventMetaCache   元事件名校验              │
+│  trackPropertyMetaCache 元属性类型校验            │
 └─────────────────────────────────────────────┘
 ```
 
@@ -181,7 +181,7 @@ Fire-and-forget 调用
 ```
 
 应用场景：
-- **事件埋点** (`trackEvent()`) — `src/services/event/event.server.ts`
+- **事件埋点** (`trackEvent()`) — `src/services/track/track.server.ts`
 - **操作日志** (`logOperation()`) — `src/services/operation-log/operation-log.server.ts`
 
 ## 数据流全景
@@ -189,12 +189,12 @@ Fire-and-forget 调用
 ```
 用户操作 → 客户端埋点 SDK (track.ts)
     │
-    ├─ trackEventSFn() ──→ event.functions.ts
+    ├─ trackEventSFn() ──→ track.functions.ts
     │                           │
-    │                     event.server.ts
-    │                      ├─ 校验预设事件名 (presetEventCache)
-    │                      ├─ 校验属性键 + 值类型 (presetPropertyCache)
-    │                      └─ 入缓冲 → 批量写入 event 表
+    │                     track.server.ts
+    │                      ├─ 频控（60 条/分钟）+ 时间钳制
+    │                      ├─ 校验事件名/属性键 + 值类型（trackEventMetaCache / trackPropertyMetaCache）
+    │                      └─ 入缓冲 → 批量写入 track_event 表
     │
     └─ 管理端操作 ──→ logOperation()
                           │
@@ -202,7 +202,7 @@ Fire-and-forget 调用
                      └─ 入缓冲 → 批量写入 operation_log 表
 
 管理端查询:
-  event 表 → searchEvents() / getEventAnalytics()
+  track_event 表 → searchTrackEvents() / getTrackAnalytics()
   operation_log 表 → searchOperationLogs()
 ```
 

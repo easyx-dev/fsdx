@@ -19,21 +19,22 @@ description: >
 
 ## 缓存实例所有权
 
-`src/lib/cache/cache.ts` 定义了 7 个 MemoryCache 实例，每个实例**只能在唯一一个服务端模块中直接操作**：
+`MemoryCache<T>` 泛型类在 `src/lib/cache/core.ts`，各实例按模块拆分在 `src/lib/cache/*.cache.ts`，每个实例**只能在唯一一个服务端模块中直接操作**：
 
-| 缓存实例 | 所属模块 | 存储内容 |
-|----------|----------|----------|
-| `configCache` | `src/services/config/config.server.ts` | 系统配置全量列表（key=`"all"`） |
-| `configTranslationCache` | `src/services/config/config.server.ts` | 系统配置的 content_translation 翻译 |
-| `dictCache` | `src/services/dict/dict.server.ts` | 字典条目（按 slug 分片） |
-| `uiTranslationCache` | `src/services/i18n/i18n.server.ts` | UI 文案翻译（按 locale 分片） |
-| `clientUserCache` | `src/services/client-auth/client-auth.server.ts` | 客户端用户（按 userId，TTL 5 分钟） |
-| `presetEventCache` | `src/services/event/event.server.ts` | 预设埋点事件名 |
-| `presetPropertyCache` | `src/services/event/event.server.ts` | 预设埋点属性键及数据类型 |
+| 缓存实例 | 实例文件 | 所属模块 | 存储内容 |
+|----------|----------|----------|----------|
+| `configCache` | `config.cache.ts` | `src/services/config/config.server.ts` | 系统配置全量列表（key=`"all"`） |
+| `configTranslationCache` | `config.cache.ts` | `src/services/config/config.server.ts` | 系统配置的 content_translation 翻译 |
+| `dictCache` | `dict.cache.ts` | `src/services/dict/dict.server.ts` | 字典条目（按 slug 分片） |
+| `uiTranslationCache` | `ui-translation.cache.ts` | `src/services/i18n/i18n.server.ts` | UI 文案翻译（按 locale 分片） |
+| `clientUserCache` | `client-user.cache.ts` | `src/services/client-auth/client-auth.server.ts` | 客户端用户（按 userId，TTL 5 分钟） |
+| `adminUserCache` | `admin-user.cache.ts` | `src/services/admin-auth/admin-auth.server.ts` | 管理员用户（按 userId，TTL 5 分钟） |
+| `trackEventMetaCache` | `track.cache.ts` | `src/services/track/track.server.ts` | 元事件名校验 |
+| `trackPropertyMetaCache` | `track.cache.ts` | `src/services/track/track.server.ts` | 元属性键及数据类型 |
 
 ## 核心规则
 
-1. **缓存实例只能在所属模块中直接操作**（get/set/delete/has/clear），其他模块禁止 `import { xxxCache } from "#/lib/cache/cache"`
+1. **缓存实例只能在所属模块中直接操作**（get/set/delete/has/clear），其他模块禁止跨模块 import 缓存实例
 2. 外部模块访问缓存数据时，必须调用所属模块导出的函数
 3. 读缓存的函数必须实现**懒加载模式**（cache miss → 查库 → 写缓存 → 返回）
 
@@ -66,7 +67,7 @@ export async function getXxx(key: string): Promise<string> {
 
 当需要新的内存缓存时，按以下步骤操作：
 
-1. 在 `src/lib/cache/cache.ts` 中定义新的 `MemoryCache` 实例，指定 `name` 和合适的 `defaultTTL`
+1. 在 `src/lib/cache/` 下新建 `<模块名>.cache.ts`，定义 `MemoryCache` 实例并导出缓存条目类型，指定 `name` 和合适的 `defaultTTL`
 2. 明确其所属服务端模块（一个模块可以拥有多个缓存，但每个缓存只能属于一个模块）
 3. 在所属模块中：
    - 实现 `load*Cache()` 函数（清空旧缓存 + 从数据库加载 + 写入缓存）

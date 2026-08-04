@@ -322,7 +322,7 @@ import { FieldTranslationDrawer } from "#/components/admin/FieldTranslationDrawe
 
 ## 缓存机制
 
-UI 翻译使用 `MemoryCache` 全量缓存，定义在 `src/lib/cache/cache.ts`：
+UI 翻译使用 `MemoryCache` 全量缓存，定义在 `src/lib/cache/ui-translation.cache.ts`：
 
 ```ts
 export const uiTranslationCache = new MemoryCache<Record<string, string>>({
