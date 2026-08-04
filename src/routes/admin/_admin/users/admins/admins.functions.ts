@@ -4,8 +4,8 @@
 import { createServerFn } from "@tanstack/react-start";
 import { PERMISSIONS } from "#/lib/permissions/permissions";
 import { adminPermGuard } from "#/middleware/admin-auth";
+import { getAdminRoleList } from "#/services/admin-role/admin-role.server";
 import { logCrud } from "#/services/operation-log/operation-log.server";
-import { getRoleList as getRoleListService } from "#/services/role/role.server";
 import {
 	createSchema,
 	idSchema,
@@ -26,9 +26,9 @@ import {
 } from "./admins.server";
 
 /** 获取角色下拉列表 */
-export const getRolesForSelectSFn = createServerFn({ method: "GET" })
+export const getAdminRolesForSelectSFn = createServerFn({ method: "GET" })
 	.middleware([adminPermGuard(PERMISSIONS.ADMIN_VIEW)])
-	.handler(async () => getRoleListService());
+	.handler(async () => getAdminRoleList());
 
 /** 获取管理员列表（分页、筛选、排序） */
 export const getListSFn = createServerFn({ method: "GET" })

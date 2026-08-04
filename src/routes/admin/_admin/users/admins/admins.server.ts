@@ -4,7 +4,7 @@
 import bcrypt from "bcryptjs";
 import { and, eq, ilike, or } from "drizzle-orm";
 import { db } from "#/db/index";
-import { adminUser, role } from "#/db/schema";
+import { adminRole, adminUser } from "#/db/schema";
 import {
 	buildSortClause,
 	executePaginatedQuery,
@@ -24,13 +24,13 @@ export interface CreateAdminUserInput {
 	username: string;
 	email: string;
 	password: string;
-	roleId: string;
+	adminRoleId: string;
 }
 
 export interface UpdateAdminUserInput {
 	username?: string;
 	email?: string;
-	roleId?: string;
+	adminRoleId?: string;
 	status?: string;
 }
 
@@ -81,7 +81,7 @@ export async function getAdminUserList(params?: AdminUserListParams) {
 				username: adminUser.username,
 				email: adminUser.email,
 				avatar: adminUser.avatar,
-				roleId: adminUser.roleId,
+				adminRoleId: adminUser.adminRoleId,
 				isRoot: adminUser.isRoot,
 				status: adminUser.status,
 				lastLoginAt: adminUser.lastLoginAt,
@@ -89,10 +89,10 @@ export async function getAdminUserList(params?: AdminUserListParams) {
 				updatedAt: adminUser.updatedAt,
 				deletedAt: adminUser.deletedAt,
 				passwordHash: adminUser.passwordHash,
-				roleName: role.name,
+				roleName: adminRole.name,
 			})
 			.from(adminUser)
-			.leftJoin(role, eq(adminUser.roleId, role.id))
+			.leftJoin(adminRole, eq(adminUser.adminRoleId, adminRole.id))
 			.where(and(...conditions))
 			.orderBy(direction)
 			.limit(pageSize)
@@ -124,7 +124,7 @@ export async function createAdminUser(input: CreateAdminUserInput) {
 			username: input.username,
 			email: input.email,
 			passwordHash,
-			roleId: input.roleId,
+			adminRoleId: input.adminRoleId,
 			status: "active",
 		})
 		.returning();
@@ -143,7 +143,7 @@ export async function updateAdminUser(id: string, input: UpdateAdminUserInput) {
 	}
 
 	if (input.email !== undefined) setData.email = input.email;
-	if (input.roleId !== undefined) setData.roleId = input.roleId;
+	if (input.adminRoleId !== undefined) setData.adminRoleId = input.adminRoleId;
 	if (input.status !== undefined) setData.status = input.status;
 
 	const [record] = await db

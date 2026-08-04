@@ -4,7 +4,7 @@
 import bcrypt from "bcryptjs";
 import { eq } from "drizzle-orm";
 import { db } from "#/db/index";
-import { adminUser, role } from "#/db/schema";
+import { adminRole, adminUser, clientRole } from "#/db/schema";
 import { logger } from "#/lib/logger/logger";
 import { loadConfigCache, upsertConfig } from "#/services/config/config.server";
 
@@ -73,7 +73,7 @@ export async function initSystem(data: InitData): Promise<{
 
 		// 1. 创建超级管理员角色（幂等：如已存在则先查后返）
 		const [superRole] = await tx
-			.insert(role)
+			.insert(adminRole)
 			.values({
 				name: "超级管理员",
 				slug: "super-admin",
@@ -86,8 +86,8 @@ export async function initSystem(data: InitData): Promise<{
 		// onConflictDoNothing 返回空数组表示记录已存在，此时查询已有记录
 		const effectiveRole =
 			superRole ??
-			(await tx.query.role.findFirst({
-				where: eq(role.slug, "super-admin"),
+			(await tx.query.adminRole.findFirst({
+				where: eq(adminRole.slug, "super-admin"),
 			}));
 
 		if (!effectiveRole) {
@@ -95,6 +95,35 @@ export async function initSystem(data: InitData): Promise<{
 		}
 
 		logger.info({ roleId: effectiveRole.id }, "超级管理员角色已创建");
+
+		// 1.1 创建客户端预置角色（幂等）：超级客户端角色 + 普通用户角色
+		const clientRoleSeeds = [
+			{
+				name: "超级用户",
+				slug: "client-super-admin",
+				permissions: ["**"],
+				description: "拥有全部客户端权限的角色",
+			},
+			{
+				name: "普通用户",
+				slug: "normal-user",
+				permissions: [],
+				description: "默认注册用户的角色",
+			},
+		];
+		for (const seed of clientRoleSeeds) {
+			const existing = await tx.query.clientRole.findFirst({
+				where: eq(clientRole.slug, seed.slug),
+			});
+			if (existing) continue;
+			await tx.insert(clientRole).values({
+				name: seed.name,
+				slug: seed.slug,
+				permissions: seed.permissions,
+				description: seed.description,
+			});
+		}
+		logger.info({ count: clientRoleSeeds.length }, "客户端预置角色已创建");
 
 		// 2. 创建 root 管理员用户
 		const passwordHash = await bcrypt.hash(admin.password, 10);
@@ -104,7 +133,7 @@ export async function initSystem(data: InitData): Promise<{
 				username: admin.username,
 				email: admin.email,
 				passwordHash,
-				roleId: effectiveRole.id,
+				adminRoleId: effectiveRole.id,
 				isRoot: true,
 				status: "active",
 			})

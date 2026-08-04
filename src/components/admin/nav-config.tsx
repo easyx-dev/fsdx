@@ -64,7 +64,7 @@ export const NAV_GROUPS: NavGroup[] = [
 		label: "权限管理",
 		items: [
 			{
-				key: "/admin/roles",
+				key: "/admin/admin-roles",
 				label: "角色管理",
 				icon: <AppstoreOutlined />,
 			},

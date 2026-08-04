@@ -12,7 +12,7 @@ const { mockDb } = vi.hoisted(() => {
 				news: q(),
 				adminUser: q(),
 				clientUser: q(),
-				role: q(),
+				adminRole: q(),
 				dict: q(),
 				dictItem: q(),
 				systemConfig: q(),

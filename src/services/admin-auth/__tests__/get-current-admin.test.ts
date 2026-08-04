@@ -14,7 +14,7 @@ const { mockDb } = vi.hoisted(() => {
 			query: {
 				adminUser: q(),
 				clientUser: q(),
-				role: q(),
+				adminRole: q(),
 				news: q(),
 				dict: q(),
 				dictItem: q(),
@@ -69,11 +69,11 @@ describe("getCurrentAdmin", () => {
 			username: "admin",
 			email: "admin@t.com",
 			isRoot: false,
-			roleId: "role-1",
+			adminRoleId: "role-1",
 			status: "active",
 			deletedAt: null,
 		});
-		mockDb.query.role.findFirst.mockResolvedValue({
+		mockDb.query.adminRole.findFirst.mockResolvedValue({
 			name: "编辑者",
 		});
 

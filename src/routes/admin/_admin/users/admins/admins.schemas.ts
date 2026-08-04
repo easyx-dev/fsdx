@@ -17,7 +17,7 @@ export const createSchema = z.object({
 	username: z.string().min(1).max(50),
 	email: z.string().email().max(255),
 	password: z.string().min(6).max(100),
-	roleId: z.string().min(1),
+	adminRoleId: z.string().min(1),
 });
 
 /** 更新管理员 */
@@ -25,7 +25,7 @@ export const updateSchema = z.object({
 	id: z.string().min(1),
 	username: z.string().min(1).max(50).optional(),
 	email: z.string().email().max(255).optional(),
-	roleId: z.string().optional(),
+	adminRoleId: z.string().optional(),
 	status: z.string().optional(),
 });
 

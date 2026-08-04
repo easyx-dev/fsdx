@@ -1,17 +1,16 @@
 /**
- * 管理端 Server Function 鉴权与权限中间件
- * 使用 createMiddleware 实现可复用的函数级中间件
+ * 管理端鉴权中间件：登录校验 + 权限控制
+ * 统一为 request middleware，同时支持 Server Function 和 Server Route
  */
-
 import { createMiddleware } from "@tanstack/react-start";
 import { getCookie } from "@tanstack/react-start/server";
-import { db } from "#/db/index";
 import { COOKIE_NAMES, verifyToken } from "#/lib/jwt/jwt";
 import {
 	hasPermission,
 	type PermissionDef,
 } from "#/lib/permissions/permissions";
 import { runWithRequestContext } from "#/lib/request-context/request-context";
+import { getAdminUserForAuth } from "#/services/admin-auth/admin-auth.server";
 
 /** 通过中间件注入 handler 的管理端鉴权上下文 */
 export interface AdminAuthContext {
@@ -37,13 +36,13 @@ export class AdminAuthError extends Error {
 }
 
 /**
- * 管理端登录校验中间件：读取管理端 Cookie，校验 JWT，将用户信息和角色权限注入 context
+ * 管理端鉴权核心逻辑：校验 token 并返回用户上下文
+ * 不涉及 Cookie 读取，由中间件层传入
  * isRoot 用户自动拥有所有权限，不依赖角色表
  */
-export const adminAuthGuard = createMiddleware({
-	type: "function",
-}).server(async ({ next }) => {
-	const token = getCookie(COOKIE_NAMES.ADMIN_TOKEN);
+export async function resolveAdminAuthContext(
+	token: string | undefined,
+): Promise<AdminAuthContext> {
 	if (!token) {
 		throw new AdminAuthError("未登录或登录已过期", 401);
 	}
@@ -57,67 +56,91 @@ export const adminAuthGuard = createMiddleware({
 		throw new AdminAuthError("无权访问管理端", 403);
 	}
 
-	// 查管理员用户
-	const user = await db.query.adminUser.findFirst({
-		where: (t, { eq }) => eq(t.id, jwtPayload.userId),
-	});
-
-	if (!user || user.deletedAt || user.status !== "active") {
+	const result = await getAdminUserForAuth(jwtPayload.userId);
+	if (!result.success) {
+		if (result.reason === "not_found") {
+			throw new AdminAuthError("用户不存在", 401);
+		}
 		throw new AdminAuthError("账号已被禁用或删除", 403);
 	}
 
-	// Root 用户自动拥有全部权限，无需查询角色表
-	let rolePermissions: string[] = [];
-	if (user.isRoot) {
-		rolePermissions = ["**"];
-	} else {
-		const userRole = await db.query.role.findFirst({
-			where: (t, { eq }) => eq(t.id, user.roleId),
-		});
-		rolePermissions = (userRole?.permissions ?? []) as string[];
-	}
+	return {
+		user: {
+			id: result.id,
+			username: result.username,
+			email: result.email,
+			userType: "admin" as const,
+			isRoot: result.isRoot,
+		},
+		rolePermissions: result.rolePermissions,
+	};
+}
 
-	// 将操作者身份注入请求上下文（AsyncLocalStorage），供审计日志等下游读取
+/**
+ * 管理端登录校验中间件：读取管理端 Cookie，调用 resolveAdminAuthContext 校验身份
+ * 适用场景：仅需认证不需权限码的接口
+ */
+export const adminAuthGuard = createMiddleware().server(async ({ next }) => {
+	const token = getCookie(COOKIE_NAMES.ADMIN_TOKEN);
+	const ctx = await resolveAdminAuthContext(token);
 	return runWithRequestContext(
 		{
 			operator: {
-				id: user.id,
-				username: user.username,
-				email: user.email,
-				type: "admin" as const,
+				id: ctx.user.id,
+				username: ctx.user.username,
+				email: ctx.user.email,
+				type: "admin",
 			},
 		},
-		() =>
-			next({
-				context: {
-					user: {
-						id: user.id,
-						username: user.username,
-						email: user.email,
-						userType: "admin" as const,
-						isRoot: user.isRoot,
-					},
-					rolePermissions,
-				} as AdminAuthContext,
-			}),
+		() => next({ context: ctx }),
 	);
 });
 
 /**
  * 管理端权限校验中间件工厂
- * 内部组合 adminAuthGuard，先验证登录再校验指定权限
+ * 直接调用 resolveAdminAuthContext 完成登录校验和权限校验
+ * Server Function 和 Server Route 通用
  */
 export function adminPermGuard(required: PermissionDef) {
-	return createMiddleware({ type: "function" })
-		.middleware([adminAuthGuard])
-		.server(async (opts) => {
-			const ctx = opts.context as Partial<AdminAuthContext> | undefined;
-			const rolePermissions = ctx?.rolePermissions ?? [];
+	return createMiddleware().server(async ({ next }) => {
+		const token = getCookie(COOKIE_NAMES.ADMIN_TOKEN);
+		const ctx = await resolveAdminAuthContext(token);
+		if (!hasPermission(ctx.rolePermissions, required)) {
+			throw new AdminAuthError("权限不足", 403);
+		}
+		return runWithRequestContext(
+			{
+				operator: {
+					id: ctx.user.id,
+					username: ctx.user.username,
+					email: ctx.user.email,
+					type: "admin",
+				},
+			},
+			() => next({ context: ctx }),
+		);
+	});
+}
 
-			if (!hasPermission(rolePermissions, required)) {
-				throw new AdminAuthError("权限不足", 403);
+/**
+ * Server Route 专用权限守卫
+ * 组合 adminPermGuard，捕获 AdminAuthError 转为对应 HTTP 状态码 JSON，避免中间件抛错被框架统一转 500
+ */
+export function adminPermRouteGuard(required: PermissionDef) {
+	const guard = adminPermGuard(required);
+	return createMiddleware()
+		.middleware([guard])
+		.server(async ({ next }) => {
+			try {
+				return await next();
+			} catch (err) {
+				if (err instanceof AdminAuthError) {
+					return new Response(JSON.stringify({ error: err.message }), {
+						status: err.statusCode,
+						headers: { "Content-Type": "application/json" },
+					});
+				}
+				throw err;
 			}
-
-			return opts.next();
 		});
 }

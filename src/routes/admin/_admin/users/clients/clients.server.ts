@@ -42,6 +42,7 @@ const clientUserSafeCols = {
 	username: clientUser.username,
 	email: clientUser.email,
 	avatar: clientUser.avatar,
+	clientRoleId: clientUser.clientRoleId,
 	status: clientUser.status,
 	emailVerified: clientUser.emailVerified,
 	lastLoginAt: clientUser.lastLoginAt,

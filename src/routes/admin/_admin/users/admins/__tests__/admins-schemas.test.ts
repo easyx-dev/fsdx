@@ -35,12 +35,12 @@ describe("createSchema", () => {
 				username: "admin",
 				email: "admin@example.com",
 				password: "123456",
-				roleId: "r-1",
+				adminRoleId: "r-1",
 			}).success,
 		).toBe(true);
 	});
 
-	it("缺少 roleId 失败", () => {
+	it("缺少 adminRoleId 失败", () => {
 		expect(
 			createSchema.safeParse({
 				username: "admin",
@@ -56,7 +56,7 @@ describe("createSchema", () => {
 				username: "admin",
 				email: "bad",
 				password: "123456",
-				roleId: "r-1",
+				adminRoleId: "r-1",
 			}).success,
 		).toBe(false);
 	});

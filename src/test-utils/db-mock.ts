@@ -24,7 +24,7 @@ export function createMockDb() {
 			dictItem: _createQueryMock(),
 			file: _createQueryMock(),
 			news: _createQueryMock(),
-			role: _createQueryMock(),
+			adminRole: _createQueryMock(),
 			systemConfig: _createQueryMock(),
 		},
 		$count: vi.fn(),

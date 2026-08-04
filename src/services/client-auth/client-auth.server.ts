@@ -3,7 +3,7 @@
  */
 
 import bcrypt from "bcryptjs";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { db } from "#/db/index";
 import { clientUser } from "#/db/schema";
 import {
@@ -18,6 +18,18 @@ import type {
 	ClientRegisterResult,
 	ClientUser,
 } from "#/services/client-auth/client-auth.types";
+
+/** 查询客户端角色权限列表（未分配角色时返回空） */
+async function getClientRolePermissions(
+	clientRoleId: string | null,
+): Promise<string[]> {
+	if (!clientRoleId) return [];
+	const roleRecord = await db.query.clientRole.findFirst({
+		where: (t, { eq: e, isNull: n }) =>
+			and(e(t.id, clientRoleId), n(t.deletedAt)),
+	});
+	return (roleRecord?.permissions as string[]) ?? [];
+}
 
 /**
  * 客户端用户登录逻辑：验证用户名密码，签发 JWT
@@ -83,11 +95,16 @@ export async function clientRegister(
 	}
 
 	const passwordHash = await bcrypt.hash(password, 10);
+	// 新注册用户分配默认普通用户角色（normal-user）
+	const normalRole = await db.query.clientRole.findFirst({
+		where: (t, { eq: e }) => e(t.slug, "normal-user"),
+	});
 	await db.insert(clientUser).values({
 		username,
 		email,
 		passwordHash,
 		emailVerified: true,
+		clientRoleId: normalRole?.id ?? null,
 	});
 
 	logger.info({ username }, "客户端用户注册成功");
@@ -130,6 +147,7 @@ export async function getCurrentClient(
 		username: user.username,
 		email: user.email,
 		avatar: user.avatar,
+		clientRoleId: user.clientRoleId ?? null,
 		status: user.status,
 	};
 	clientUserCache.set(jwtPayload.userId, cacheEntry);
@@ -141,6 +159,64 @@ export async function getCurrentClient(
 		avatar: user.avatar,
 		isRoot: false,
 		userType: "client",
+	};
+}
+
+/**
+ * 获取客户端用户鉴权上下文（登录 + 权限），供客户端鉴权中间件使用
+ * 带内存缓存（5 分钟 TTL）
+ */
+export async function getClientUserForAuth(userId: string): Promise<
+	| {
+			success: true;
+			id: string;
+			username: string;
+			email: string;
+			rolePermissions: string[];
+	  }
+	| { success: false; reason: "not_found" | "disabled" }
+> {
+	const cached = clientUserCache.get(userId);
+	if (cached) {
+		if (cached.status !== "active") {
+			return { success: false, reason: "disabled" };
+		}
+		const permissions = await getClientRolePermissions(cached.clientRoleId);
+		return {
+			success: true,
+			id: cached.id,
+			username: cached.username,
+			email: cached.email,
+			rolePermissions: permissions,
+		};
+	}
+
+	const user = await db.query.clientUser.findFirst({
+		where: (t, { eq: e, isNull: n }) => and(e(t.id, userId), n(t.deletedAt)),
+	});
+	if (!user) return { success: false, reason: "not_found" };
+
+	const cacheEntry: CachedClientUser = {
+		id: user.id,
+		username: user.username,
+		email: user.email,
+		avatar: user.avatar,
+		clientRoleId: user.clientRoleId ?? null,
+		status: user.status,
+	};
+	clientUserCache.set(userId, cacheEntry);
+
+	if (user.status !== "active") return { success: false, reason: "disabled" };
+
+	const rolePermissions = await getClientRolePermissions(
+		user.clientRoleId ?? null,
+	);
+	return {
+		success: true,
+		id: user.id,
+		username: user.username,
+		email: user.email,
+		rolePermissions,
 	};
 }
 

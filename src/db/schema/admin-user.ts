@@ -11,7 +11,7 @@ import {
 	uuid,
 	varchar,
 } from "drizzle-orm/pg-core";
-import { role } from "./role";
+import { adminRole } from "./admin-role";
 
 export const adminUser = pgTable(
 	"admin_user",
@@ -21,8 +21,8 @@ export const adminUser = pgTable(
 		email: varchar({ length: 255 }).unique().notNull(),
 		passwordHash: varchar("password_hash", { length: 255 }).notNull(),
 		avatar: varchar({ length: 500 }),
-		roleId: uuid("role_id")
-			.references(() => role.id)
+		adminRoleId: uuid("admin_role_id")
+			.references(() => adminRole.id)
 			.notNull(),
 		isRoot: boolean("is_root").default(false).notNull(),
 		status: varchar({ length: 20 }).default("active").notNull(),

@@ -21,6 +21,7 @@ const { mockDb, mockTx } = vi.hoisted(() => {
 	const createTx = () => {
 		const txQuery = {
 			adminUser: { findFirst: vi.fn() },
+			clientRole: { findFirst: vi.fn().mockResolvedValue(undefined) },
 		};
 		const tx = {
 			query: txQuery,
@@ -35,7 +36,7 @@ const { mockDb, mockTx } = vi.hoisted(() => {
 			query: {
 				adminUser: q(),
 				clientUser: q(),
-				role: q(),
+				adminRole: q(),
 				systemConfig: q(),
 				news: q(),
 				dict: q(),
@@ -59,10 +60,14 @@ import { checkInitStatus, initSystem } from "#/services/init/init.server";
 
 /**
  * 构造 insert(表).values(...).returning() 的链式 mock，返回指定数据
+ * 支持 onConflictDoNothing().returning() 链（init 超级角色创建使用）
  */
 function mockInsertReturning(data: Record<string, unknown>) {
 	return vi.fn(() => ({
 		values: vi.fn(() => ({
+			onConflictDoNothing: vi.fn(() => ({
+				returning: vi.fn().mockResolvedValue([data]),
+			})),
 			returning: vi.fn().mockResolvedValue([data]),
 		})),
 	}));

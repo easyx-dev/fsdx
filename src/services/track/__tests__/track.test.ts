@@ -44,7 +44,7 @@ const { mockDb } = vi.hoisted(() => {
 				trackPropertyMeta: q(),
 				adminUser: q(),
 				clientUser: q(),
-				role: q(),
+				adminRole: q(),
 				news: q(),
 				dict: q(),
 				dictItem: q(),

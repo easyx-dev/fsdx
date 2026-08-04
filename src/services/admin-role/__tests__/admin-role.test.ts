@@ -13,7 +13,7 @@ const { mockDb } = vi.hoisted(() => {
 	return {
 		mockDb: {
 			query: {
-				role: q(),
+				adminRole: q(),
 				adminUser: q(),
 				clientUser: q(),
 				dict: q(),
@@ -36,13 +36,13 @@ const { mockDb } = vi.hoisted(() => {
 vi.mock("#/db", () => ({ db: mockDb }));
 
 import {
-	createRole,
-	deleteRole,
-	getRoleList,
-	updateRole,
-} from "#/services/role/role.server";
+	createAdminRole,
+	deleteAdminRole,
+	getAdminRoleList,
+	updateAdminRole,
+} from "#/services/admin-role/admin-role.server";
 
-describe("getRoleList", () => {
+describe("getAdminRoleList", () => {
 	it("返回空列表", async () => {
 		mockDb.select.mockReturnValue({
 			from: vi.fn(() => ({
@@ -50,7 +50,7 @@ describe("getRoleList", () => {
 			})),
 		});
 
-		const result = await getRoleList();
+		const result = await getAdminRoleList();
 		expect(Array.isArray(result)).toBe(true);
 		expect(result).toHaveLength(0);
 	});
@@ -68,13 +68,13 @@ describe("getRoleList", () => {
 			})),
 		});
 
-		const result = await getRoleList("管理");
+		const result = await getAdminRoleList("管理");
 		expect(result).toHaveLength(2);
 		expect(result[0].name).toBe("管理员");
 	});
 });
 
-describe("createRole", () => {
+describe("createAdminRole", () => {
 	it("创建角色成功", async () => {
 		const mockRecord = {
 			id: "r-new",
@@ -89,7 +89,7 @@ describe("createRole", () => {
 			})),
 		});
 
-		const result = await createRole({
+		const result = await createAdminRole({
 			name: "新角色",
 			slug: "new_role",
 			permissions: ["news:read"],
@@ -100,7 +100,7 @@ describe("createRole", () => {
 	});
 });
 
-describe("updateRole", () => {
+describe("updateAdminRole", () => {
 	it("部分更新角色名称", async () => {
 		const mockRecord = {
 			id: "r-1",
@@ -116,7 +116,7 @@ describe("updateRole", () => {
 			})),
 		});
 
-		const result = await updateRole("r-1", { name: "超级管理员" });
+		const result = await updateAdminRole("r-1", { name: "超级管理员" });
 		expect(result?.name).toBe("超级管理员");
 	});
 
@@ -135,31 +135,31 @@ describe("updateRole", () => {
 			})),
 		});
 
-		const result = await updateRole("r-1", {
+		const result = await updateAdminRole("r-1", {
 			permissions: ["**", "news:write"],
 		});
 		expect(result?.permissions).toEqual(["**", "news:write"]);
 	});
 });
 
-describe("deleteRole", () => {
+describe("deleteAdminRole", () => {
 	beforeEach(() => vi.clearAllMocks());
 
 	it("角色不存在时返回 false", async () => {
-		mockDb.query.role.findFirst.mockResolvedValue(undefined);
+		mockDb.query.adminRole.findFirst.mockResolvedValue(undefined);
 
-		const result = await deleteRole("不存在的ID");
+		const result = await deleteAdminRole("不存在的ID");
 		expect(result).toBe(false);
 	});
 
 	it("删除成功返回 true", async () => {
-		mockDb.query.role.findFirst.mockResolvedValue({
+		mockDb.query.adminRole.findFirst.mockResolvedValue({
 			id: "r-1",
 			name: "旧角色",
 			slug: "old_role",
 		});
 
-		const result = await deleteRole("r-1");
+		const result = await deleteAdminRole("r-1");
 		expect(result).toBe(true);
 	});
 });

@@ -22,13 +22,13 @@ import { Route as AdminLoginIndexRouteImport } from './routes/admin/login/index'
 import { Route as AdminInitIndexRouteImport } from './routes/admin/init/index'
 import { Route as AdminForgotPasswordIndexRouteImport } from './routes/admin/forgot-password/index'
 import { Route as AdminAdminIndexRouteImport } from './routes/admin/_admin/index'
-import { Route as AdminAdminRolesIndexRouteImport } from './routes/admin/_admin/roles/index'
 import { Route as AdminAdminOperationLogsIndexRouteImport } from './routes/admin/_admin/operation-logs/index'
 import { Route as AdminAdminNewsIndexRouteImport } from './routes/admin/_admin/news/index'
 import { Route as AdminAdminLogsIndexRouteImport } from './routes/admin/_admin/logs/index'
 import { Route as AdminAdminFilesIndexRouteImport } from './routes/admin/_admin/files/index'
 import { Route as AdminAdminDictsIndexRouteImport } from './routes/admin/_admin/dicts/index'
 import { Route as AdminAdminConfigIndexRouteImport } from './routes/admin/_admin/config/index'
+import { Route as AdminAdminAdminRolesIndexRouteImport } from './routes/admin/_admin/admin-roles/index'
 import { Route as ApiDownloadLogIdRouteImport } from './routes/api/download/log.$id'
 import { Route as ApiDownloadFileIdRouteImport } from './routes/api/download/file.$id'
 import { Route as AdminAdminTranslationsUiRouteImport } from './routes/admin/_admin/translations/ui'
@@ -111,11 +111,6 @@ const AdminAdminIndexRoute = AdminAdminIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AdminAdminRoute,
 } as any)
-const AdminAdminRolesIndexRoute = AdminAdminRolesIndexRouteImport.update({
-  id: '/roles/',
-  path: '/roles/',
-  getParentRoute: () => AdminAdminRoute,
-} as any)
 const AdminAdminOperationLogsIndexRoute =
   AdminAdminOperationLogsIndexRouteImport.update({
     id: '/operation-logs/',
@@ -147,6 +142,12 @@ const AdminAdminConfigIndexRoute = AdminAdminConfigIndexRouteImport.update({
   path: '/config/',
   getParentRoute: () => AdminAdminRoute,
 } as any)
+const AdminAdminAdminRolesIndexRoute =
+  AdminAdminAdminRolesIndexRouteImport.update({
+    id: '/admin-roles/',
+    path: '/admin-roles/',
+    getParentRoute: () => AdminAdminRoute,
+  } as any)
 const ApiDownloadLogIdRoute = ApiDownloadLogIdRouteImport.update({
   id: '/api/download/log/$id',
   path: '/api/download/log/$id',
@@ -259,13 +260,13 @@ export interface FileRoutesByFullPath {
   '/admin/translations/ui': typeof AdminAdminTranslationsUiRoute
   '/api/download/file/$id': typeof ApiDownloadFileIdRoute
   '/api/download/log/$id': typeof ApiDownloadLogIdRoute
+  '/admin/admin-roles/': typeof AdminAdminAdminRolesIndexRoute
   '/admin/config/': typeof AdminAdminConfigIndexRoute
   '/admin/dicts/': typeof AdminAdminDictsIndexRoute
   '/admin/files/': typeof AdminAdminFilesIndexRoute
   '/admin/logs/': typeof AdminAdminLogsIndexRoute
   '/admin/news/': typeof AdminAdminNewsIndexRoute
   '/admin/operation-logs/': typeof AdminAdminOperationLogsIndexRoute
-  '/admin/roles/': typeof AdminAdminRolesIndexRoute
   '/admin/news/$id/edit': typeof AdminAdminNewsIdEditRoute
   '/admin/track/event-meta/': typeof AdminAdminTrackEventMetaIndexRoute
   '/admin/track/property-meta/': typeof AdminAdminTrackPropertyMetaIndexRoute
@@ -295,13 +296,13 @@ export interface FileRoutesByTo {
   '/admin/translations/ui': typeof AdminAdminTranslationsUiRoute
   '/api/download/file/$id': typeof ApiDownloadFileIdRoute
   '/api/download/log/$id': typeof ApiDownloadLogIdRoute
+  '/admin/admin-roles': typeof AdminAdminAdminRolesIndexRoute
   '/admin/config': typeof AdminAdminConfigIndexRoute
   '/admin/dicts': typeof AdminAdminDictsIndexRoute
   '/admin/files': typeof AdminAdminFilesIndexRoute
   '/admin/logs': typeof AdminAdminLogsIndexRoute
   '/admin/news': typeof AdminAdminNewsIndexRoute
   '/admin/operation-logs': typeof AdminAdminOperationLogsIndexRoute
-  '/admin/roles': typeof AdminAdminRolesIndexRoute
   '/admin/news/$id/edit': typeof AdminAdminNewsIdEditRoute
   '/admin/track/event-meta': typeof AdminAdminTrackEventMetaIndexRoute
   '/admin/track/property-meta': typeof AdminAdminTrackPropertyMetaIndexRoute
@@ -334,13 +335,13 @@ export interface FileRoutesById {
   '/admin/_admin/translations/ui': typeof AdminAdminTranslationsUiRoute
   '/api/download/file/$id': typeof ApiDownloadFileIdRoute
   '/api/download/log/$id': typeof ApiDownloadLogIdRoute
+  '/admin/_admin/admin-roles/': typeof AdminAdminAdminRolesIndexRoute
   '/admin/_admin/config/': typeof AdminAdminConfigIndexRoute
   '/admin/_admin/dicts/': typeof AdminAdminDictsIndexRoute
   '/admin/_admin/files/': typeof AdminAdminFilesIndexRoute
   '/admin/_admin/logs/': typeof AdminAdminLogsIndexRoute
   '/admin/_admin/news/': typeof AdminAdminNewsIndexRoute
   '/admin/_admin/operation-logs/': typeof AdminAdminOperationLogsIndexRoute
-  '/admin/_admin/roles/': typeof AdminAdminRolesIndexRoute
   '/admin/_admin/news/$id/edit': typeof AdminAdminNewsIdEditRoute
   '/admin/_admin/track/event-meta/': typeof AdminAdminTrackEventMetaIndexRoute
   '/admin/_admin/track/property-meta/': typeof AdminAdminTrackPropertyMetaIndexRoute
@@ -373,13 +374,13 @@ export interface FileRouteTypes {
     | '/admin/translations/ui'
     | '/api/download/file/$id'
     | '/api/download/log/$id'
+    | '/admin/admin-roles/'
     | '/admin/config/'
     | '/admin/dicts/'
     | '/admin/files/'
     | '/admin/logs/'
     | '/admin/news/'
     | '/admin/operation-logs/'
-    | '/admin/roles/'
     | '/admin/news/$id/edit'
     | '/admin/track/event-meta/'
     | '/admin/track/property-meta/'
@@ -409,13 +410,13 @@ export interface FileRouteTypes {
     | '/admin/translations/ui'
     | '/api/download/file/$id'
     | '/api/download/log/$id'
+    | '/admin/admin-roles'
     | '/admin/config'
     | '/admin/dicts'
     | '/admin/files'
     | '/admin/logs'
     | '/admin/news'
     | '/admin/operation-logs'
-    | '/admin/roles'
     | '/admin/news/$id/edit'
     | '/admin/track/event-meta'
     | '/admin/track/property-meta'
@@ -447,13 +448,13 @@ export interface FileRouteTypes {
     | '/admin/_admin/translations/ui'
     | '/api/download/file/$id'
     | '/api/download/log/$id'
+    | '/admin/_admin/admin-roles/'
     | '/admin/_admin/config/'
     | '/admin/_admin/dicts/'
     | '/admin/_admin/files/'
     | '/admin/_admin/logs/'
     | '/admin/_admin/news/'
     | '/admin/_admin/operation-logs/'
-    | '/admin/_admin/roles/'
     | '/admin/_admin/news/$id/edit'
     | '/admin/_admin/track/event-meta/'
     | '/admin/_admin/track/property-meta/'
@@ -567,13 +568,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminAdminIndexRouteImport
       parentRoute: typeof AdminAdminRoute
     }
-    '/admin/_admin/roles/': {
-      id: '/admin/_admin/roles/'
-      path: '/roles'
-      fullPath: '/admin/roles/'
-      preLoaderRoute: typeof AdminAdminRolesIndexRouteImport
-      parentRoute: typeof AdminAdminRoute
-    }
     '/admin/_admin/operation-logs/': {
       id: '/admin/_admin/operation-logs/'
       path: '/operation-logs'
@@ -614,6 +608,13 @@ declare module '@tanstack/react-router' {
       path: '/config'
       fullPath: '/admin/config/'
       preLoaderRoute: typeof AdminAdminConfigIndexRouteImport
+      parentRoute: typeof AdminAdminRoute
+    }
+    '/admin/_admin/admin-roles/': {
+      id: '/admin/_admin/admin-roles/'
+      path: '/admin-roles'
+      fullPath: '/admin/admin-roles/'
+      preLoaderRoute: typeof AdminAdminAdminRolesIndexRouteImport
       parentRoute: typeof AdminAdminRoute
     }
     '/api/download/log/$id': {
@@ -742,13 +743,13 @@ interface AdminAdminRouteChildren {
   AdminAdminTrackQueryRoute: typeof AdminAdminTrackQueryRoute
   AdminAdminTranslationsContentRoute: typeof AdminAdminTranslationsContentRoute
   AdminAdminTranslationsUiRoute: typeof AdminAdminTranslationsUiRoute
+  AdminAdminAdminRolesIndexRoute: typeof AdminAdminAdminRolesIndexRoute
   AdminAdminConfigIndexRoute: typeof AdminAdminConfigIndexRoute
   AdminAdminDictsIndexRoute: typeof AdminAdminDictsIndexRoute
   AdminAdminFilesIndexRoute: typeof AdminAdminFilesIndexRoute
   AdminAdminLogsIndexRoute: typeof AdminAdminLogsIndexRoute
   AdminAdminNewsIndexRoute: typeof AdminAdminNewsIndexRoute
   AdminAdminOperationLogsIndexRoute: typeof AdminAdminOperationLogsIndexRoute
-  AdminAdminRolesIndexRoute: typeof AdminAdminRolesIndexRoute
   AdminAdminNewsIdEditRoute: typeof AdminAdminNewsIdEditRoute
   AdminAdminTrackEventMetaIndexRoute: typeof AdminAdminTrackEventMetaIndexRoute
   AdminAdminTrackPropertyMetaIndexRoute: typeof AdminAdminTrackPropertyMetaIndexRoute
@@ -767,13 +768,13 @@ const AdminAdminRouteChildren: AdminAdminRouteChildren = {
   AdminAdminTrackQueryRoute: AdminAdminTrackQueryRoute,
   AdminAdminTranslationsContentRoute: AdminAdminTranslationsContentRoute,
   AdminAdminTranslationsUiRoute: AdminAdminTranslationsUiRoute,
+  AdminAdminAdminRolesIndexRoute: AdminAdminAdminRolesIndexRoute,
   AdminAdminConfigIndexRoute: AdminAdminConfigIndexRoute,
   AdminAdminDictsIndexRoute: AdminAdminDictsIndexRoute,
   AdminAdminFilesIndexRoute: AdminAdminFilesIndexRoute,
   AdminAdminLogsIndexRoute: AdminAdminLogsIndexRoute,
   AdminAdminNewsIndexRoute: AdminAdminNewsIndexRoute,
   AdminAdminOperationLogsIndexRoute: AdminAdminOperationLogsIndexRoute,
-  AdminAdminRolesIndexRoute: AdminAdminRolesIndexRoute,
   AdminAdminNewsIdEditRoute: AdminAdminNewsIdEditRoute,
   AdminAdminTrackEventMetaIndexRoute: AdminAdminTrackEventMetaIndexRoute,
   AdminAdminTrackPropertyMetaIndexRoute: AdminAdminTrackPropertyMetaIndexRoute,

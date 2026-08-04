@@ -11,12 +11,13 @@ import { DictSelect } from "#/components/admin/DictSelect";
 import { DictTag } from "#/components/admin/DictTag";
 import { ProTable } from "#/components/admin/ProTable";
 import { TableOperate } from "#/components/admin/TableOperate";
+import type { AdminRoleRecord } from "#/services/admin-role/admin-role.server";
 import type { SortOrder } from "#/types/query";
 import {
 	createSFn,
 	deleteSFn,
+	getAdminRolesForSelectSFn,
 	getListSFn,
-	getRolesForSelectSFn,
 	resetPwdSFn,
 	updateSFn,
 } from "./admins.functions";
@@ -29,7 +30,7 @@ export const Route = createFileRoute("/admin/_admin/users/admins/")({
 	loader: async () => {
 		const [result, roles] = await Promise.all([
 			getListSFn({ data: { page: 1, pageSize: 20 } }),
-			getRolesForSelectSFn(),
+			getAdminRolesForSelectSFn(),
 		]);
 		return { result, roles };
 	},
@@ -38,7 +39,7 @@ export const Route = createFileRoute("/admin/_admin/users/admins/")({
 function AdminsPage() {
 	const initial = Route.useLoaderData();
 	const [data, setData] = useState(initial.result);
-	const [roles] = useState<RoleRecord[]>(initial.roles);
+	const [roles] = useState<AdminRoleRecord[]>(initial.roles);
 	const [keyword, setKeyword] = useState("");
 	const [page, setPage] = useState(1);
 	const [sortField, setSortField] = useState<string | undefined>();
@@ -90,7 +91,7 @@ function AdminsPage() {
 		form.setFieldsValue({
 			username: record.username,
 			email: record.email,
-			roleId: record.roleId,
+			adminRoleId: record.adminRoleId,
 			status: record.status,
 		});
 		setModalOpen(true);
@@ -323,7 +324,7 @@ function AdminsPage() {
 						</Form.Item>
 					)}
 					<Form.Item
-						name="roleId"
+						name="adminRoleId"
 						label="角色"
 						rules={[{ required: true, message: "请选择角色" }]}
 					>
@@ -369,5 +370,3 @@ function AdminsPage() {
 		</AdminPageContent>
 	);
 }
-
-import type { RoleRecord } from "#/services/role/role.server";

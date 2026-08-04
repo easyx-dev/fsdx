@@ -18,7 +18,7 @@ const { mockBcryptHash, mockDb, mockListRows } = vi.hoisted(() => {
 		mockDb: {
 			query: {
 				adminUser: q(),
-				role: q(),
+				adminRole: q(),
 				clientUser: q(),
 				systemConfig: q(),
 				news: q(),
@@ -151,7 +151,7 @@ describe("createAdminUser", () => {
 			username: "newadmin",
 			email: "new@test.com",
 			password: "plainpassword",
-			roleId: "role-1",
+			adminRoleId: "role-1",
 		};
 		const createdUser = {
 			id: "2",

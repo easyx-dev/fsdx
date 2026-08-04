@@ -13,33 +13,35 @@ import {
 	PERMISSION_META,
 	type PermissionCode,
 } from "#/lib/permissions/permissions";
-import type { RoleRecord } from "#/services/role/role.server";
+import type { AdminRoleRecord } from "#/services/admin-role/admin-role.server";
 import {
-	createRoleSFn,
-	deleteRoleSFn,
-	getRolesSFn,
-	updateRoleSFn,
-} from "./roles.functions";
+	createAdminRoleSFn,
+	deleteAdminRoleSFn,
+	getAdminRolesSFn,
+	updateAdminRoleSFn,
+} from "./admin-roles.functions";
 
 // ─── Route & Component ──────────────────────────────────────────────
 
-export const Route = createFileRoute("/admin/_admin/roles/")({
-	component: RolesPage,
-	loader: async () => getRolesSFn({ data: {} }),
+export const Route = createFileRoute("/admin/_admin/admin-roles/")({
+	component: AdminRolesPage,
+	loader: async () => getAdminRolesSFn({ data: {} }),
 });
 
-function RolesPage() {
+function AdminRolesPage() {
 	const initialRoles = Route.useLoaderData();
-	const [roles, setRoles] = useState<RoleRecord[]>(initialRoles);
+	const [roles, setRoles] = useState<AdminRoleRecord[]>(initialRoles);
 	const [keyword, setKeyword] = useState("");
 	const [modalOpen, setModalOpen] = useState(false);
-	const [editingRole, setEditingRole] = useState<RoleRecord | null>(null);
+	const [editingRole, setEditingRole] = useState<AdminRoleRecord | null>(null);
 	const [saving, setSaving] = useState(false);
 	const [form] = Form.useForm();
 
 	/** 刷新列表 */
 	const refresh = async () => {
-		const data = await getRolesSFn({ data: { keyword: keyword || undefined } });
+		const data = await getAdminRolesSFn({
+			data: { keyword: keyword || undefined },
+		});
 		setRoles(data);
 	};
 
@@ -57,7 +59,7 @@ function RolesPage() {
 	};
 
 	/** 打开编辑弹窗 */
-	const handleEdit = (record: RoleRecord) => {
+	const handleEdit = (record: AdminRoleRecord) => {
 		setEditingRole(record);
 		form.setFieldsValue({
 			name: record.name,
@@ -74,12 +76,12 @@ function RolesPage() {
 			const values = await form.validateFields();
 			setSaving(true);
 			if (editingRole) {
-				await updateRoleSFn({
+				await updateAdminRoleSFn({
 					data: { id: editingRole.id, ...values },
 				});
 				message.success("角色已更新");
 			} else {
-				await createRoleSFn({ data: values });
+				await createAdminRoleSFn({ data: values });
 				message.success("角色已创建");
 			}
 			setModalOpen(false);
@@ -98,7 +100,7 @@ function RolesPage() {
 	/** 删除角色 */
 	const handleDelete = async (id: string) => {
 		try {
-			await deleteRoleSFn({ data: { id } });
+			await deleteAdminRoleSFn({ data: { id } });
 			message.success("角色已删除");
 			await refresh();
 		} catch (err) {
@@ -208,7 +210,7 @@ function RolesPage() {
 			title: "操作",
 			key: "actions",
 			fixed: "right" as const,
-			render: (_: unknown, record: RoleRecord) => (
+			render: (_: unknown, record: AdminRoleRecord) => (
 				<TableOperate>
 					<TableOperate.Edit onClick={() => handleEdit(record)} />
 					<TableOperate.Delete

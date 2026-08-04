@@ -3,25 +3,27 @@
  */
 import { describe, expect, it } from "vitest";
 import {
+	adminRoleCreateSchema,
+	adminRoleListSchema,
+	adminRoleUpdateSchema,
 	idSchema,
-	roleCreateSchema,
-	roleListSchema,
-	roleUpdateSchema,
-} from "../roles.schemas";
+} from "../admin-roles.schemas";
 
-describe("roleListSchema", () => {
+describe("adminRoleListSchema", () => {
 	it("空参数通过", () => {
-		expect(roleListSchema.safeParse({}).success).toBe(true);
+		expect(adminRoleListSchema.safeParse({}).success).toBe(true);
 	});
 
 	it("带 keyword 通过", () => {
-		expect(roleListSchema.safeParse({ keyword: "admin" }).success).toBe(true);
+		expect(adminRoleListSchema.safeParse({ keyword: "admin" }).success).toBe(
+			true,
+		);
 	});
 });
 
-describe("roleCreateSchema", () => {
+describe("adminRoleCreateSchema", () => {
 	it("合法输入通过，permissions 默认空数组", () => {
-		const result = roleCreateSchema.safeParse({
+		const result = adminRoleCreateSchema.safeParse({
 			name: "编辑者",
 			slug: "editor",
 			permissions: ["news:read", "news:create"],
@@ -31,7 +33,7 @@ describe("roleCreateSchema", () => {
 			expect(result.data.permissions).toEqual(["news:read", "news:create"]);
 		}
 
-		const defaultResult = roleCreateSchema.safeParse({
+		const defaultResult = adminRoleCreateSchema.safeParse({
 			name: "查看者",
 			slug: "viewer",
 		});
@@ -42,16 +44,16 @@ describe("roleCreateSchema", () => {
 	});
 
 	it("空 name 失败", () => {
-		expect(roleCreateSchema.safeParse({ name: "", slug: "e" }).success).toBe(
-			false,
-		);
+		expect(
+			adminRoleCreateSchema.safeParse({ name: "", slug: "e" }).success,
+		).toBe(false);
 	});
 });
 
-describe("roleUpdateSchema", () => {
+describe("adminRoleUpdateSchema", () => {
 	it("部分字段更新通过", () => {
 		expect(
-			roleUpdateSchema.safeParse({
+			adminRoleUpdateSchema.safeParse({
 				id: "r-1",
 				permissions: ["news:read"],
 			}).success,
@@ -59,13 +61,13 @@ describe("roleUpdateSchema", () => {
 	});
 
 	it("slug 不可为空字符串", () => {
-		expect(roleUpdateSchema.safeParse({ id: "r-1", slug: "" }).success).toBe(
-			false,
-		);
+		expect(
+			adminRoleUpdateSchema.safeParse({ id: "r-1", slug: "" }).success,
+		).toBe(false);
 	});
 
 	it("缺少 id 失败", () => {
-		expect(roleUpdateSchema.safeParse({ name: "x" }).success).toBe(false);
+		expect(adminRoleUpdateSchema.safeParse({ name: "x" }).success).toBe(false);
 	});
 });
 

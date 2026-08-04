@@ -1,5 +1,5 @@
 /**
- * 角色表
+ * 客户端角色表
  */
 import {
 	jsonb,
@@ -10,7 +10,7 @@ import {
 	varchar,
 } from "drizzle-orm/pg-core";
 
-export const role = pgTable("role", {
+export const clientRole = pgTable("client_role", {
 	id: uuid().defaultRandom().primaryKey(),
 	name: varchar({ length: 50 }).unique().notNull(),
 	slug: varchar({ length: 50 }).unique().notNull(),

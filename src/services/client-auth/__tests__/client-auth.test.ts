@@ -29,7 +29,8 @@ const { mockDb } = vi.hoisted(() => {
 			query: {
 				clientUser: q(),
 				adminUser: q(),
-				role: q(),
+				adminRole: q(),
+				clientRole: q(),
 				news: q(),
 				dict: q(),
 				dictItem: q(),
@@ -104,6 +105,10 @@ describe("clientRegister", () => {
 	it("注册成功", async () => {
 		mockVerifyCaptcha.mockResolvedValue(true);
 		mockDb.query.clientUser.findFirst.mockResolvedValue(undefined);
+		mockDb.query.clientRole.findFirst.mockResolvedValue({
+			id: "role-normal",
+			slug: "normal-user",
+		});
 		vi.mocked(bcrypt.hash).mockResolvedValue("hashed-pw" as never);
 
 		const result = await clientRegister(

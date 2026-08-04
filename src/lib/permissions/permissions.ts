@@ -99,14 +99,26 @@ export const PERMISSIONS = {
 		"允许删除客户端用户账号",
 	),
 	// 角色管理
-	ROLE_VIEW: definePermission("role:view", "查看角色", "允许查看角色列表"),
-	ROLE_CREATE: definePermission("role:create", "创建角色", "允许创建新的角色"),
-	ROLE_EDIT: definePermission(
-		"role:edit",
+	ADMIN_ROLE_VIEW: definePermission(
+		"admin-role:view",
+		"查看角色",
+		"允许查看角色列表",
+	),
+	ADMIN_ROLE_CREATE: definePermission(
+		"admin-role:create",
+		"创建角色",
+		"允许创建新的角色",
+	),
+	ADMIN_ROLE_EDIT: definePermission(
+		"admin-role:edit",
 		"编辑角色",
 		"允许编辑角色信息和权限分配",
 	),
-	ROLE_DELETE: definePermission("role:delete", "删除角色", "允许删除角色"),
+	ADMIN_ROLE_DELETE: definePermission(
+		"admin-role:delete",
+		"删除角色",
+		"允许删除角色",
+	),
 	// 字典管理
 	DICT_VIEW: definePermission(
 		"dict:view",
