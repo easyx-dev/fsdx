@@ -5,7 +5,7 @@ import { RobotOutlined, TranslationOutlined } from "@ant-design/icons";
 import { Button, Card, Drawer, message, Tabs, Tooltip } from "antd";
 import { useCallback, useEffect, useId, useState } from "react";
 import { EditorTypes } from "#/components/admin/editor-type";
-import type { EditorType } from "#/lib/editor-types/editor-types";
+import type { EditorType } from "#/constants/editor-types";
 import {
 	DEFAULT_LOCALE,
 	type Locale,

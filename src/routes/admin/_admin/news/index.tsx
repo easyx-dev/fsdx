@@ -18,7 +18,6 @@ import { ProTable } from "#/components/admin/ProTable";
 import { TableOperate } from "#/components/admin/TableOperate";
 import { downloadFile } from "#/lib/export/export.utils";
 import { useAdminDictStore } from "#/lib/global-store/admin-dict-store";
-import { formatDateTime } from "#/lib/utils/format-date";
 import type { NewsRecord } from "#/services/news/news.server";
 import { NewsForm } from "./-mods/NewsForm";
 import {
@@ -192,7 +191,7 @@ function NewsListPage() {
 			width: 160,
 			sorter: true,
 			render: (val: string | null) =>
-				val ? formatDateTime(val, "zh-CN") : "—",
+				val ? dayjs(val).format("YYYY-MM-DD HH:mm") : "—",
 		},
 		{
 			title: "更新时间",
@@ -201,7 +200,7 @@ function NewsListPage() {
 			width: 160,
 			sorter: true,
 			render: (val: string | null) =>
-				val ? formatDateTime(val, "zh-CN") : "—",
+				val ? dayjs(val).format("YYYY-MM-DD HH:mm") : "—",
 		},
 		{
 			title: "操作",

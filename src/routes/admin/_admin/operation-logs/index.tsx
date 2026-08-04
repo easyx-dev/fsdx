@@ -9,11 +9,11 @@ import {
 import { createFileRoute } from "@tanstack/react-router";
 import { Button, DatePicker, Form, Input, message, Select, Tag } from "antd";
 import type { Dayjs } from "dayjs";
+import dayjs from "dayjs";
 import { useState } from "react";
 import { AdminPageContent } from "#/components/admin/AdminPageContent";
 import { ProTable } from "#/components/admin/ProTable";
-import type { SortOrder } from "#/lib/query/query-utils";
-import { formatDateTime } from "#/lib/utils/format-date";
+import type { SortOrder } from "#/types/query";
 import {
 	getOperationLogModulesSFn,
 	type JsonValue,
@@ -188,7 +188,7 @@ function OperationLogsPage() {
 			sorter: true,
 			sortOrder: sortField === "createdAt" ? sortOrder : undefined,
 			render: (_: unknown, record: Record<string, unknown>) =>
-				formatDateTime(record.createdAt as Date, "zh-CN"),
+				dayjs(record.createdAt as Date).format("YYYY-MM-DD HH:mm"),
 		},
 		{
 			title: "操作人",

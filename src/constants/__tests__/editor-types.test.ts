@@ -3,11 +3,8 @@
  */
 
 import { describe, expect, it } from "vitest";
-import type { EditorType } from "#/lib/editor-types/editor-types";
-import {
-	EDITOR_TYPE_LABELS,
-	EDITOR_TYPES,
-} from "#/lib/editor-types/editor-types";
+import type { EditorType } from "#/constants/editor-types";
+import { EDITOR_TYPE_LABELS, EDITOR_TYPES } from "#/constants/editor-types";
 
 describe("EDITOR_TYPES", () => {
 	it("包含全部 8 种编辑器类型", () => {

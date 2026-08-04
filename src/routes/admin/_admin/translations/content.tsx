@@ -13,7 +13,7 @@ import { ProTable } from "#/components/admin/ProTable";
 import { TableOperate } from "#/components/admin/TableOperate";
 import { downloadFile } from "#/lib/export/export.utils";
 import { SUPPORTED_LOCALES } from "#/lib/i18n/i18n.types";
-import type { SortOrder } from "#/lib/query/query-utils";
+import type { SortOrder } from "#/types/query";
 import {
 	deleteSFn,
 	exportContentTranslationsSFn,

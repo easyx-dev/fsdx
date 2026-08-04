@@ -6,12 +6,12 @@ import { and, eq, gte, ilike, lt, or } from "drizzle-orm";
 import { db } from "#/db/index";
 import { operationLog } from "#/db/schema";
 import { logger } from "#/lib/logger/logger";
-import type { PaginatedSortParams } from "#/lib/query/query-utils";
 import {
 	buildSortClause,
 	executePaginatedQuery,
 	paginationOffset,
 } from "#/services/query/query-utils.server";
+import type { PaginatedSortParams } from "#/types/query";
 
 /** 操作日志输入参数 */
 export interface OperationLogInput {

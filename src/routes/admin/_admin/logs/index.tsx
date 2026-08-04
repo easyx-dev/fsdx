@@ -21,11 +21,11 @@ import {
 	Tooltip,
 } from "antd";
 import type { Dayjs } from "dayjs";
+import dayjs from "dayjs";
 import { useState } from "react";
 import { AdminPageContent } from "#/components/admin/AdminPageContent";
 import { ProTable } from "#/components/admin/ProTable";
-import { LEVEL_COLORS, LEVEL_OPTIONS } from "#/lib/constants/admin-constants";
-import { formatDateTime } from "#/lib/utils/format-date";
+import { LEVEL_COLORS, LEVEL_OPTIONS } from "#/constants";
 import type { LogEntry, LogQueryResult } from "#/services/logs/logs.server";
 import { getDatesSFn, searchLogsSFn } from "./logs.functions";
 
@@ -37,7 +37,7 @@ function formatTime(entry: LogEntry): string {
 			: entry.time
 				? new Date(entry.time as string)
 				: new Date();
-	return formatDateTime(t, "zh-CN");
+	return dayjs(t).format("YYYY-MM-DD HH:mm");
 }
 
 export const Route = createFileRoute("/admin/_admin/logs/")({

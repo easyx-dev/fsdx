@@ -36,8 +36,8 @@ import { EditorTypes } from "#/components/admin/editor-type";
 import { FieldTranslationDrawer } from "#/components/admin/FieldTranslationDrawer";
 import { JsonImportButton } from "#/components/admin/JsonImportButton";
 import { ProTable } from "#/components/admin/ProTable";
-import { PRESET_DICTS } from "#/lib/constants/admin-constants";
-import type { EditorType } from "#/lib/editor-types/editor-types";
+import { PRESET_DICTS } from "#/constants";
+import type { EditorType } from "#/constants/editor-types";
 import { downloadFile } from "#/lib/export/export.utils";
 import type { DictItemRecord, DictRecord } from "#/services/dict/dict.server";
 import {

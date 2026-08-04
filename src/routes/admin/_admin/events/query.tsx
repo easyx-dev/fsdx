@@ -21,7 +21,6 @@ import {
 import dayjs from "dayjs";
 import { useMemo, useState } from "react";
 import { AdminPageContent } from "#/components/admin/AdminPageContent";
-import type { SortOrder } from "#/lib/query/query-utils";
 import {
 	getPresetEventsSFn,
 	getPresetPropertiesSFn,
@@ -31,6 +30,7 @@ import type {
 	EventRecord,
 	PresetPropertyRecord,
 } from "#/services/event/event.types";
+import type { SortOrder } from "#/types/query";
 import { getEventNamesSFn, searchEventsSFn } from "./query.functions";
 
 const { RangePicker } = DatePicker;

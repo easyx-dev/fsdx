@@ -2,6 +2,7 @@
  * 前台首页：Hero 营销区 + 最新新闻区块
  */
 import { createFileRoute, Link } from "@tanstack/react-router";
+import dayjs from "dayjs";
 import { ArrowRight } from "lucide-react";
 import { Button } from "#/components/ui/button";
 import {
@@ -12,7 +13,6 @@ import {
 	CardTitle,
 } from "#/components/ui/card";
 import { useTranslation } from "#/lib/i18n/i18n-context";
-import { formatDate } from "#/lib/utils/format-date";
 import type { NewsRecord } from "#/services/news/news.server";
 import { getLatestNewsSFn } from "./index.functions";
 
@@ -184,7 +184,11 @@ function HomePage() {
 									<CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
 										<time className="text-xs text-muted-foreground">
 											{item.publishedAt
-												? formatDate(item.publishedAt, locale)
+												? dayjs(item.publishedAt).format(
+														locale.startsWith("zh")
+															? "YYYY年M月D日"
+															: "MMMM D, YYYY",
+													)
 												: ""}
 										</time>
 									</CardContent>

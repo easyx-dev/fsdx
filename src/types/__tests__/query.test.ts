@@ -9,7 +9,7 @@ import type {
 	PaginatedResult,
 	PaginatedSortParams,
 	SortOrder,
-} from "../query-utils";
+} from "../query";
 
 describe("query-utils 类型模块", () => {
 	it("SortOrder 类型被正确导入", () => {

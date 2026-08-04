@@ -2,7 +2,7 @@
  * shadcn/ui Input 组件
  */
 import type { InputHTMLAttributes, Ref } from "react";
-import { cn } from "#/lib/utils/utils";
+import { cn } from "#/utils/cn";
 
 function Input({
 	className,

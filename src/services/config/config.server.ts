@@ -2,10 +2,10 @@
  * 系统配置管理：CRUD 操作 + 内存缓存
  */
 import { and, asc, eq, isNull } from "drizzle-orm";
+import type { EditorType } from "#/constants/editor-types";
 import { db } from "#/db/index";
 import { contentTranslation, systemConfig } from "#/db/schema";
 import { configCache, configTranslationCache } from "#/lib/cache/cache";
-import type { EditorType } from "#/lib/editor-types/editor-types";
 import { DEFAULT_LOCALE, type Locale } from "#/lib/i18n/i18n.types";
 import { logger } from "#/lib/logger/logger";
 

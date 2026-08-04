@@ -3,20 +3,20 @@
  * 内存缓存全量 UI 翻译，实体字段翻译按需查询
  */
 import { and, eq, inArray, like, or } from "drizzle-orm";
+import { EDITOR_TYPES, type EditorType } from "#/constants/editor-types";
 import { db } from "#/db/index";
 import { contentTranslation, uiTranslation } from "#/db/schema";
 import { uiTranslationCache } from "#/lib/cache/cache";
-import { EDITOR_TYPES, type EditorType } from "#/lib/editor-types/editor-types";
 import type { Locale } from "#/lib/i18n/i18n.types";
 import { DEFAULT_LOCALE } from "#/lib/i18n/i18n.types";
 import { logger } from "#/lib/logger/logger";
-import type { PaginatedSortParams } from "#/lib/query/query-utils";
 import { refreshConfigTranslationCache } from "#/services/config/config.server";
 import {
 	buildSortClause,
 	executePaginatedQuery,
 	paginationOffset,
 } from "#/services/query/query-utils.server";
+import type { PaginatedSortParams } from "#/types/query";
 
 // ═══════════════════════════════════════════════════
 // UI 翻译查询

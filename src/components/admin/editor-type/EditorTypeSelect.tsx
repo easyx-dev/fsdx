@@ -4,10 +4,7 @@
 
 import { Select } from "antd";
 import type { ComponentPropsWithoutRef } from "react";
-import {
-	EDITOR_TYPE_LABELS,
-	EDITOR_TYPES,
-} from "#/lib/editor-types/editor-types";
+import { EDITOR_TYPE_LABELS, EDITOR_TYPES } from "#/constants/editor-types";
 
 type SelectProps = ComponentPropsWithoutRef<typeof Select>;
 

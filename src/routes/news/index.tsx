@@ -2,6 +2,7 @@
  * 新闻列表页（SSR）：分页展示已发布新闻
  */
 import { createFileRoute, Link } from "@tanstack/react-router";
+import dayjs from "dayjs";
 import { Badge } from "#/components/ui/badge";
 import {
 	Card,
@@ -11,7 +12,6 @@ import {
 	CardTitle,
 } from "#/components/ui/card";
 import { useTranslation } from "#/lib/i18n/i18n-context";
-import { formatDate } from "#/lib/utils/format-date";
 import type { NewsRecord } from "#/services/news/news.server";
 import { getPublishedNewsSFn } from "./news.functions";
 
@@ -83,7 +83,11 @@ function NewsListPage() {
 								<CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
 									<time className="text-xs text-muted-foreground">
 										{item.publishedAt
-											? formatDate(item.publishedAt, locale)
+											? dayjs(item.publishedAt).format(
+													locale.startsWith("zh")
+														? "YYYY年M月D日"
+														: "MMMM D, YYYY",
+												)
 											: ""}
 									</time>
 								</CardContent>

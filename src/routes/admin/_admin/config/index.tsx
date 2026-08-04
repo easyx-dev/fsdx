@@ -25,7 +25,7 @@ import {
 import { JsonImportButton } from "#/components/admin/JsonImportButton";
 import { ProTable } from "#/components/admin/ProTable";
 import { TableOperate } from "#/components/admin/TableOperate";
-import type { EditorType } from "#/lib/editor-types/editor-types";
+import type { EditorType } from "#/constants/editor-types";
 import { downloadFile } from "#/lib/export/export.utils";
 import type { ConfigRecord } from "#/services/config/config.server";
 import {

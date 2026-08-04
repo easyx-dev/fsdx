@@ -7,7 +7,6 @@ import { and, desc, eq, ne } from "drizzle-orm";
 import { db } from "#/db/index";
 import { news } from "#/db/schema";
 import { DEFAULT_LOCALE, type Locale } from "#/lib/i18n/i18n.types";
-import type { PaginatedSortParams } from "#/lib/query/query-utils";
 import {
 	applyTranslations,
 	getContentTranslations,
@@ -18,6 +17,7 @@ import {
 	notDeleted,
 	paginationOffset,
 } from "#/services/query/query-utils.server";
+import type { PaginatedSortParams } from "#/types/query";
 
 export type NewsRecord = typeof news.$inferSelect;
 

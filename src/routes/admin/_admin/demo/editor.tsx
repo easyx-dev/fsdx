@@ -11,7 +11,7 @@ import {
 	EDITOR_TYPE_LABELS,
 	EDITOR_TYPES,
 	type EditorType,
-} from "#/lib/editor-types/editor-types";
+} from "#/constants/editor-types";
 
 const { Text } = Typography;
 

@@ -3,7 +3,7 @@
  */
 
 import { describe, expect, it } from "vitest";
-import { cn } from "#/lib/utils/utils";
+import { cn } from "#/utils/cn";
 
 describe("cn", () => {
 	it("多个类名合并为一个字符串", () => {

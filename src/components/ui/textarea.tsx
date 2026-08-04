@@ -2,7 +2,7 @@
  * shadcn/ui Textarea 组件
  */
 import type { Ref, TextareaHTMLAttributes } from "react";
-import { cn } from "#/lib/utils/utils";
+import { cn } from "#/utils/cn";
 
 function Textarea({
 	className,

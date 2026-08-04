@@ -26,7 +26,7 @@ const FileUpload = lazy(() =>
 	})),
 );
 
-import type { EditorType } from "#/lib/editor-types/editor-types";
+import type { EditorType } from "#/constants/editor-types";
 
 export interface EditorProps {
 	/** 编辑器类型，决定使用何种编辑控件 */

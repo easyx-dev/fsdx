@@ -2,10 +2,10 @@
  * 新闻详情页（SSR）
  */
 import { createFileRoute, Link } from "@tanstack/react-router";
+import dayjs from "dayjs";
 import { ArrowLeft, ChevronRight, Home } from "lucide-react";
 import { Button } from "#/components/ui/button";
 import { useTranslation } from "#/lib/i18n/i18n-context";
-import { formatDate } from "#/lib/utils/format-date";
 import { getNewsDetailSFn } from "./news.functions";
 
 export const Route = createFileRoute("/news/$slug")({
@@ -91,7 +91,11 @@ function NewsDetailPage() {
 					</h1>
 					<div className="mt-3 flex flex-wrap items-center gap-3 text-sm text-muted-foreground sm:mt-4 sm:gap-4">
 						{data.publishedAt && (
-							<time>{formatDate(data.publishedAt, locale)}</time>
+							<time>
+								{dayjs(data.publishedAt).format(
+									locale.startsWith("zh") ? "YYYY年M月D日" : "MMMM D, YYYY",
+								)}
+							</time>
 						)}
 					</div>
 				</header>

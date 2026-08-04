@@ -3,7 +3,7 @@
  */
 
 import type { presetEvent, presetProperty } from "#/db/schema";
-import type { PaginatedSortParams } from "#/lib/query/query-utils";
+import type { PaginatedSortParams } from "#/types/query";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type JsonProperties = Record<string, any>;

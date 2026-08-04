@@ -6,10 +6,6 @@ import { and, eq, ilike, lt } from "drizzle-orm";
 import { db } from "#/db/index";
 import { file } from "#/db/schema";
 import { logger } from "#/lib/logger/logger";
-import type {
-	PaginatedResult,
-	PaginatedSortParams,
-} from "#/lib/query/query-utils";
 import { storage } from "#/lib/storage/storage";
 import {
 	buildSortClause,
@@ -17,6 +13,7 @@ import {
 	notDeleted,
 	paginationOffset,
 } from "#/services/query/query-utils.server";
+import type { PaginatedResult, PaginatedSortParams } from "#/types/query";
 
 export type FileRecord = typeof file.$inferSelect;
 

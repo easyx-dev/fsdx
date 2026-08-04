@@ -2,7 +2,7 @@
  * 通用查询工具函数：软删除条件、排序构建、分页执行
  */
 import { asc, desc, isNull, type SQL } from "drizzle-orm";
-import type { PaginatedResult, SortOrder } from "#/lib/query/query-utils";
+import type { PaginatedResult, SortOrder } from "#/types/query";
 
 /** 默认分页值 */
 export const DEFAULT_PAGE = 1;

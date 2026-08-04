@@ -5,13 +5,13 @@ import bcrypt from "bcryptjs";
 import { and, eq, ilike, or } from "drizzle-orm";
 import { db } from "#/db/index";
 import { adminUser, role } from "#/db/schema";
-import type { PaginatedSortParams } from "#/lib/query/query-utils";
 import {
 	buildSortClause,
 	executePaginatedQuery,
 	notDeleted,
 	paginationOffset,
 } from "#/services/query/query-utils.server";
+import type { PaginatedSortParams } from "#/types/query";
 
 export type AdminUserRecord = typeof adminUser.$inferSelect;
 

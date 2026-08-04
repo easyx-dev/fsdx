@@ -5,7 +5,6 @@ import bcrypt from "bcryptjs";
 import { and, eq, ilike, or } from "drizzle-orm";
 import { db } from "#/db/index";
 import { clientUser } from "#/db/schema";
-import type { PaginatedSortParams } from "#/lib/query/query-utils";
 import { clearClientUserCache } from "#/services/client-auth/client-auth.server";
 import {
 	buildSortClause,
@@ -13,6 +12,7 @@ import {
 	notDeleted,
 	paginationOffset,
 } from "#/services/query/query-utils.server";
+import type { PaginatedSortParams } from "#/types/query";
 
 export type ClientUserRecord = Omit<
 	typeof clientUser.$inferSelect,

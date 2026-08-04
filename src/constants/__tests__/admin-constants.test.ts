@@ -4,7 +4,7 @@
 
 import { describe, expect, it } from "vitest";
 
-import { LEVEL_COLORS, LEVEL_OPTIONS, PRESET_DICTS } from "../admin-constants";
+import { LEVEL_COLORS, LEVEL_OPTIONS, PRESET_DICTS } from "../index";
 
 describe("LEVEL_COLORS", () => {
 	it("包含所有日志级别颜色映射", () => {

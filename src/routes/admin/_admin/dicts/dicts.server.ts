@@ -2,9 +2,9 @@
  * 字典管理路由服务层：路由级数据库操作
  */
 import { and, asc, eq, isNull } from "drizzle-orm";
+import { PRESET_DICTS } from "#/constants";
 import { db } from "#/db/index";
 import { dict, dictItem } from "#/db/schema";
-import { PRESET_DICTS } from "#/lib/constants/admin-constants";
 import type { DictItemRecord, DictRecord } from "#/services/dict/dict.server";
 import type { DictImportData, DictImportResult } from "./dicts.functions";
 

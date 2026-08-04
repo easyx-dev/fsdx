@@ -11,7 +11,7 @@ import { DictSelect } from "#/components/admin/DictSelect";
 import { DictTag } from "#/components/admin/DictTag";
 import { ProTable } from "#/components/admin/ProTable";
 import { TableOperate } from "#/components/admin/TableOperate";
-import type { SortOrder } from "#/lib/query/query-utils";
+import type { SortOrder } from "#/types/query";
 import {
 	createSFn,
 	deleteSFn,

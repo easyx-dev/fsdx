@@ -2,8 +2,8 @@
  * 编辑器类型预览标签：显示 EditorType 对应的中文名称
  */
 import { Tag } from "antd";
-import type { EditorType } from "#/lib/editor-types/editor-types";
-import { EDITOR_TYPE_LABELS } from "#/lib/editor-types/editor-types";
+import type { EditorType } from "#/constants/editor-types";
+import { EDITOR_TYPE_LABELS } from "#/constants/editor-types";
 
 interface EditorTypePreviewProps {
 	/** 编辑器类型值 */
