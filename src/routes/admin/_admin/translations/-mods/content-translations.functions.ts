@@ -15,7 +15,7 @@ import {
 	type TranslationImportResult,
 	upsertContentTranslation,
 } from "#/services/i18n/i18n.server";
-import { logOperation } from "#/services/operation-log/operation-log.server";
+import { logCrud } from "#/services/operation-log/operation-log.server";
 import {
 	deleteSchema,
 	formSchema,
@@ -38,11 +38,7 @@ export const saveSFn = createServerFn({ method: "POST" })
 		const result = await upsertContentTranslation(
 			data as Parameters<typeof upsertContentTranslation>[0],
 		);
-		logOperation({
-			operatorId: context.user.id,
-			operatorName: context.user.username,
-			module: "translation",
-			action: "update",
+		logCrud(context.user, "translation", "update", undefined, {
 			targetType: "content_translation",
 		});
 		return result;
@@ -53,14 +49,13 @@ export const deleteSFn = createServerFn({ method: "POST" })
 	.inputValidator(deleteSchema)
 	.handler(async ({ data, context }) => {
 		await deleteContentTranslation(data.id);
-		logOperation({
-			operatorId: context.user.id,
-			operatorName: context.user.username,
-			module: "translation",
-			action: "delete",
-			targetType: "content_translation",
-			targetId: data.id,
-		});
+		logCrud(
+			context.user,
+			"translation",
+			"delete",
+			{ id: data.id },
+			{ targetType: "content_translation" },
+		);
 		return { success: true };
 	});
 
@@ -94,11 +89,7 @@ export const importContentTranslationsSFn = createServerFn({ method: "POST" })
 			const result = await importContentTranslations(
 				data as ContentTranslationExportData,
 			);
-			logOperation({
-				operatorId: context.user.id,
-				operatorName: context.user.username,
-				module: "translation",
-				action: "import",
+			logCrud(context.user, "translation", "import", undefined, {
 				targetType: "content_translation",
 				detail: { created: result.created, updated: result.updated },
 			});

@@ -14,7 +14,7 @@ import {
 	getUITranslations,
 	upsertContentTranslation,
 } from "#/services/i18n/i18n.server";
-import { logOperation } from "#/services/operation-log/operation-log.server";
+import { logCrud } from "#/services/operation-log/operation-log.server";
 
 const localeSchema = z.enum(SUPPORTED_LOCALES).default(DEFAULT_LOCALE);
 
@@ -59,11 +59,7 @@ export const saveContentTranslationSFn = createServerFn({ method: "POST" })
 		const result = await upsertContentTranslation(
 			data as Parameters<typeof upsertContentTranslation>[0],
 		);
-		logOperation({
-			operatorId: context.user.id,
-			operatorName: context.user.username,
-			module: "translation",
-			action: "update",
+		logCrud(context.user, "translation", "update", undefined, {
 			targetType: "content_translation",
 		});
 		return result;

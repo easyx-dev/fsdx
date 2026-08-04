@@ -5,6 +5,7 @@
 import { and, eq, gte, ilike, lt, or, sql } from "drizzle-orm";
 import { db } from "#/db/index";
 import { event, presetEvent, presetProperty } from "#/db/schema";
+import { BatchWriter } from "#/lib/buffer/batch-writer";
 import { presetEventCache, presetPropertyCache } from "#/lib/cache/track.cache";
 import { logger } from "#/lib/logger/logger";
 import {
@@ -177,10 +178,6 @@ function isValidPlainObject(value: unknown, depth: number): boolean {
 // 内存缓冲
 // ═══════════════════════════════════════════════════
 
-const FLUSH_INTERVAL = 5000;
-const BATCH_SIZE = 100;
-const MAX_BUFFER_SIZE = 1000;
-
 interface EventBufferItem {
 	time: Date;
 	userId: string | null;
@@ -189,17 +186,10 @@ interface EventBufferItem {
 	properties: Record<string, unknown>;
 }
 
-const eventBuffer: EventBufferItem[] = [];
-let eventFlushTimer: ReturnType<typeof setInterval> | null = null;
-let eventFlushing = false;
-
-/** 批量写入数据库 */
-async function flushEventBuffer(source: string): Promise<void> {
-	if (eventBuffer.length === 0 || eventFlushing) return;
-	eventFlushing = true;
-
-	const batch = [...eventBuffer];
-	try {
+/** 埋点事件批量写入器：满 100 条或 5 秒定时刷新，上限 1000 */
+const eventWriter = new BatchWriter<EventBufferItem>({
+	logLabel: "埋点事件",
+	insertFn: async (batch) => {
 		await db.insert(event).values(
 			batch.map((item) => ({
 				time: item.time,
@@ -209,32 +199,8 @@ async function flushEventBuffer(source: string): Promise<void> {
 				properties: item.properties,
 			})),
 		);
-		eventBuffer.splice(0, batch.length);
-	} catch (err) {
-		logger.error(
-			{ error: (err as Error).message, count: batch.length },
-			`埋点事件批量写入失败 (${source})`,
-		);
-	} finally {
-		eventFlushing = false;
-	}
-}
-
-/** 启动定时刷新（惰性初始化） */
-function ensureEventFlushTimer(): void {
-	if (eventFlushTimer) return;
-	eventFlushTimer = setInterval(() => {
-		flushEventBuffer("timer");
-	}, FLUSH_INTERVAL);
-
-	if (
-		eventFlushTimer &&
-		typeof eventFlushTimer === "object" &&
-		"unref" in eventFlushTimer
-	) {
-		eventFlushTimer.unref();
-	}
-}
+	},
+});
 
 /**
  * 追加埋点事件到缓冲队列
@@ -304,30 +270,18 @@ export function trackEvent(input: TrackEventInput): void {
 }
 
 function pushToBuffer(input: TrackEventInput): void {
-	ensureEventFlushTimer();
-	if (eventBuffer.length >= MAX_BUFFER_SIZE) {
-		eventBuffer.shift();
-		logger.warn("埋点事件缓冲已满，丢弃最旧条目");
-	}
-	eventBuffer.push({
+	eventWriter.push({
 		time: new Date(input.time),
 		userId: input.userId ?? null,
 		sessionId: input.sessionId,
 		event: input.event,
 		properties: input.properties,
 	});
-	if (eventBuffer.length >= BATCH_SIZE) {
-		flushEventBuffer("batch");
-	}
 }
 
 /** 强制刷新缓冲（服务关闭前兜底） */
 export async function flushTrackEvents(): Promise<void> {
-	if (eventFlushTimer) {
-		clearInterval(eventFlushTimer);
-		eventFlushTimer = null;
-	}
-	await flushEventBuffer("shutdown");
+	await eventWriter.shutdown();
 }
 
 // ═══════════════════════════════════════════════════

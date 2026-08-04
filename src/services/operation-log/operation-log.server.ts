@@ -1,11 +1,13 @@
 /**
  * 操作日志服务层：内存缓冲批量写入 + 分页查询
  * logOperation 为 fire-and-forget 调用，5 秒或满 100 条时批量 INSERT
+ * CRUD 审计与外部系统调用日志使用独立缓冲，避免高频 API 日志挤压审计记录
  */
 import { and, eq, gte, ilike, lt, or } from "drizzle-orm";
 import { db } from "#/db/index";
-import { operationLog } from "#/db/schema";
-import { logger } from "#/lib/logger/logger";
+import { type OperatorType, operationLog } from "#/db/schema";
+import { BatchWriter } from "#/lib/buffer/batch-writer";
+import { getRequestOperator } from "#/lib/request-context/request-context";
 import {
 	buildSortClause,
 	executePaginatedQuery,
@@ -15,8 +17,10 @@ import type { PaginatedSortParams } from "#/types/query";
 
 /** 操作日志输入参数 */
 export interface OperationLogInput {
-	operatorId: string;
+	operatorId: string | null;
 	operatorName: string;
+	/** 操作者类型，默认 admin（兼容历史调用） */
+	operatorType?: OperatorType;
 	module: string;
 	action: string;
 	targetType: string;
@@ -46,77 +50,150 @@ export interface OperationLogQueryResult {
 // 内存缓冲
 // ═══════════════════════════════════════════════════
 
-const FLUSH_INTERVAL = 5000;
-const BATCH_SIZE = 100;
-const MAX_BUFFER_SIZE = 1000;
-
-const buffer: OperationLogInput[] = [];
-let flushTimer: ReturnType<typeof setInterval> | null = null;
-let flushing = false;
-
-/** 批量写入数据库 */
-async function flushBuffer(source: string): Promise<void> {
-	if (buffer.length === 0 || flushing) return;
-	flushing = true;
-
-	const batch = [...buffer];
-	try {
-		await db.insert(operationLog).values(
-			batch.map((item) => ({
-				operatorId: item.operatorId,
-				operatorName: item.operatorName,
-				module: item.module,
-				action: item.action,
-				targetType: item.targetType,
-				targetId: item.targetId ?? null,
-				targetName: item.targetName ?? null,
-				detail: item.detail ?? null,
-			})),
-		);
-		buffer.splice(0, batch.length);
-	} catch (err) {
-		logger.error(
-			{ error: (err as Error).message, count: batch.length },
-			`操作日志批量写入失败 (${source})`,
-		);
-	} finally {
-		flushing = false;
-	}
+/** 将 OperationLogInput 映射为数据库行 */
+function toRow(item: OperationLogInput) {
+	return {
+		operatorId: item.operatorId,
+		operatorName: item.operatorName,
+		operatorType: item.operatorType ?? "admin",
+		module: item.module,
+		action: item.action,
+		targetType: item.targetType,
+		targetId: item.targetId ?? null,
+		targetName: item.targetName ?? null,
+		detail: item.detail ?? null,
+	};
 }
 
-/** 启动定时刷新（惰性初始化，首次调用 logOperation 时触发） */
-function ensureTimer(): void {
-	if (flushTimer) return;
-	flushTimer = setInterval(() => {
-		flushBuffer("timer");
-	}, FLUSH_INTERVAL);
-
-	// 确保刷新计时器不会阻止进程退出
-	if (flushTimer && typeof flushTimer === "object" && "unref" in flushTimer) {
-		flushTimer.unref();
-	}
-}
+/** CRUD 审计日志缓冲（上限 1000，与外部调用日志隔离，互不挤压） */
+const opLogWriter = new BatchWriter<OperationLogInput>({
+	logLabel: "操作日志",
+	insertFn: async (batch) => {
+		await db.insert(operationLog).values(batch.map(toRow));
+	},
+});
 
 /** 追加操作日志到缓冲队列（同步返回，不阻塞业务） */
 export function logOperation(params: OperationLogInput): void {
-	ensureTimer();
-	if (buffer.length >= MAX_BUFFER_SIZE) {
-		buffer.shift();
-		logger.warn("操作日志缓冲已满，丢弃最旧条目");
-	}
-	buffer.push(params);
-	if (buffer.length >= BATCH_SIZE) {
-		flushBuffer("batch");
-	}
+	opLogWriter.push(params);
+}
+
+/** CRUD 审计日志的操作用户（结构化入参，避免依赖中间件类型） */
+export interface CrudLogOperator {
+	id: string;
+	username: string;
+}
+
+/** CRUD 审计日志目标 */
+export interface CrudLogTarget {
+	id?: string;
+	name?: string | null;
+}
+
+/**
+ * 写操作审计日志（fire-and-forget）
+ * 将 SFn handler 中重复的操作人/模块/targetType 装配收敛为一行调用：
+ * logCrud(context.user, "role", "create", { id: result.id, name: result.name })
+ */
+export function logCrud(
+	operator: CrudLogOperator,
+	module: string,
+	action: string,
+	target?: CrudLogTarget,
+	options?: {
+		targetType?: string;
+		detail?: Record<string, unknown>;
+		/** 操作者类型，默认 admin；客户端自助操作传 "client" */
+		operatorType?: OperatorType;
+	},
+): void {
+	logOperation({
+		operatorId: operator.id,
+		operatorName: operator.username,
+		operatorType: options?.operatorType,
+		module,
+		action,
+		targetType: options?.targetType ?? module,
+		targetId: target?.id,
+		targetName: target?.name ?? undefined,
+		detail: options?.detail,
+	});
 }
 
 /** 强制刷新缓冲（用于服务关闭前兜底） */
 export async function flushOperationLogs(): Promise<void> {
-	if (flushTimer) {
-		clearInterval(flushTimer);
-		flushTimer = null;
-	}
-	await flushBuffer("shutdown");
+	await Promise.all([opLogWriter.shutdown(), apiLogWriter.shutdown()]);
+}
+
+// ═══════════════════════════════════════════════════
+// 外部系统调用日志
+// ═══════════════════════════════════════════════════
+
+/** 外部系统标识 */
+export type ExternalSystem = "ncc" | "oa" | "crm" | "wecom";
+
+/** 外部系统调用日志输入参数 */
+export interface ExternalRequestLogInput {
+	/** 外部系统标识 */
+	system: ExternalSystem;
+	/** 请求类型：登录或业务请求 */
+	requestType: "login" | "business";
+	/** 接口路径 */
+	path: string;
+	/** HTTP 方法（CRM 有值） */
+	method?: string;
+	/** 请求耗时（毫秒） */
+	duration: number;
+	/** 是否成功 */
+	success: boolean;
+	/** 响应状态码 */
+	status?: number;
+	/** 响应体大小（字节） */
+	responseSize?: number;
+	/** 失败时的错误信息 */
+	error?: string;
+	/** 额外元数据（NCC 的 appcode/busiaction 等），不含请求/响应体 */
+	extra?: Record<string, unknown>;
+}
+
+/**
+ * 外部系统调用日志缓冲（独立于 CRUD 审计，上限 5000，避免高频 API 日志挤压审计记录）
+ */
+const apiLogWriter = new BatchWriter<OperationLogInput>({
+	logLabel: "外部调用日志",
+	maxBufferSize: 5000,
+	insertFn: async (batch) => {
+		await db.insert(operationLog).values(batch.map(toRow));
+	},
+});
+
+/**
+ * 记录外部系统调用（NCC / OA / CRM / wecom）到操作日志
+ * 操作者从 ALS 读取（鉴权中间件注入），无上下文记 system
+ * 响应体内容不入库，仅记录 responseSize
+ */
+export function logExternalRequest(input: ExternalRequestLogInput): void {
+	const op = getRequestOperator();
+	const isLogin = input.requestType === "login";
+	apiLogWriter.push({
+		operatorId: op.id,
+		operatorName: op.username ?? op.id ?? "system",
+		operatorType: op.type,
+		module: "external",
+		action: input.success ? "external_success" : "external_fail",
+		targetType: input.system,
+		targetId: input.path,
+		detail: {
+			requestType: isLogin ? "login" : "business",
+			path: input.path,
+			method: input.method ?? null,
+			duration: input.duration,
+			status: input.status ?? null,
+			responseSize: input.responseSize ?? null,
+			error: input.error ?? null,
+			extra: input.extra ?? null,
+		},
+	});
 }
 
 // ═══════════════════════════════════════════════════

@@ -23,7 +23,7 @@ import {
 /** 可序列化的操作日志条目 */
 interface OperationLogEntry {
 	id: string;
-	operatorId: string;
+	operatorId: string | null;
 	operatorName: string;
 	module: string;
 	action: string;

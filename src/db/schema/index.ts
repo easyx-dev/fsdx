@@ -8,7 +8,7 @@ export { dict, dictItem } from "./dict";
 export { event } from "./event";
 export { file } from "./file";
 export { news } from "./news";
-export { operationLog } from "./operation-log";
+export { type OperatorType, operationLog } from "./operation-log";
 export { presetEvent } from "./preset-event";
 export { presetProperty } from "./preset-property";
 export { role } from "./role";

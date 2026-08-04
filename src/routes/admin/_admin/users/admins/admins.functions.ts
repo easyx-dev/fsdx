@@ -4,7 +4,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { PERMISSIONS } from "#/lib/permissions/permissions";
 import { adminPermGuard } from "#/middleware/admin-auth";
-import { logOperation } from "#/services/operation-log/operation-log.server";
+import { logCrud } from "#/services/operation-log/operation-log.server";
 import { getRoleList as getRoleListService } from "#/services/role/role.server";
 import {
 	createSchema,
@@ -42,15 +42,13 @@ export const createSFn = createServerFn({ method: "POST" })
 	.inputValidator(createSchema)
 	.handler(async ({ data, context }) => {
 		const record = await createAdminUser(data as CreateAdminUserInput);
-		logOperation({
-			operatorId: context.user.id,
-			operatorName: context.user.username,
-			module: "admin",
-			action: "create",
-			targetType: "admin_user",
-			targetId: record.id,
-			targetName: record.username,
-		});
+		logCrud(
+			context.user,
+			"admin",
+			"create",
+			{ id: record.id, name: record.username },
+			{ targetType: "admin_user" },
+		);
 		return record;
 	});
 
@@ -60,15 +58,13 @@ export const updateSFn = createServerFn({ method: "POST" })
 	.inputValidator(updateSchema)
 	.handler(async ({ data, context }) => {
 		const result = await updateAdminUser(data.id, data as UpdateAdminUserInput);
-		logOperation({
-			operatorId: context.user.id,
-			operatorName: context.user.username,
-			module: "admin",
-			action: "update",
-			targetType: "admin_user",
-			targetId: data.id,
-			targetName: result?.username || data.id,
-		});
+		logCrud(
+			context.user,
+			"admin",
+			"update",
+			{ id: data.id, name: result?.username || data.id },
+			{ targetType: "admin_user" },
+		);
 		return result;
 	});
 
@@ -79,15 +75,13 @@ export const deleteSFn = createServerFn({ method: "POST" })
 	.handler(async ({ data, context }) => {
 		const existing = await getAdminUser(data.id);
 		const result = await deleteAdminUser(data.id, context.user.id);
-		logOperation({
-			operatorId: context.user.id,
-			operatorName: context.user.username,
-			module: "admin",
-			action: "delete",
-			targetType: "admin_user",
-			targetId: data.id,
-			targetName: existing?.username || data.id,
-		});
+		logCrud(
+			context.user,
+			"admin",
+			"delete",
+			{ id: data.id, name: existing?.username || data.id },
+			{ targetType: "admin_user" },
+		);
 		return result;
 	});
 
@@ -98,14 +92,12 @@ export const resetPwdSFn = createServerFn({ method: "POST" })
 	.handler(async ({ data, context }) => {
 		const existing = await getAdminUser(data.id);
 		const result = await resetAdminPassword(data.id, data.password);
-		logOperation({
-			operatorId: context.user.id,
-			operatorName: context.user.username,
-			module: "admin",
-			action: "reset_pwd",
-			targetType: "admin_user",
-			targetId: data.id,
-			targetName: existing?.username || data.id,
-		});
+		logCrud(
+			context.user,
+			"admin",
+			"reset_pwd",
+			{ id: data.id, name: existing?.username || data.id },
+			{ targetType: "admin_user" },
+		);
 		return result;
 	});

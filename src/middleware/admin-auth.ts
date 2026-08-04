@@ -11,6 +11,7 @@ import {
 	hasPermission,
 	type PermissionDef,
 } from "#/lib/permissions/permissions";
+import { runWithRequestContext } from "#/lib/request-context/request-context";
 
 /** 通过中间件注入 handler 的管理端鉴权上下文 */
 export interface AdminAuthContext {
@@ -76,18 +77,30 @@ export const adminAuthGuard = createMiddleware({
 		rolePermissions = (userRole?.permissions ?? []) as string[];
 	}
 
-	return next({
-		context: {
-			user: {
+	// 将操作者身份注入请求上下文（AsyncLocalStorage），供审计日志等下游读取
+	return runWithRequestContext(
+		{
+			operator: {
 				id: user.id,
 				username: user.username,
 				email: user.email,
-				userType: "admin" as const,
-				isRoot: user.isRoot,
+				type: "admin" as const,
 			},
-			rolePermissions,
-		} as AdminAuthContext,
-	});
+		},
+		() =>
+			next({
+				context: {
+					user: {
+						id: user.id,
+						username: user.username,
+						email: user.email,
+						userType: "admin" as const,
+						isRoot: user.isRoot,
+					},
+					rolePermissions,
+				} as AdminAuthContext,
+			}),
+	);
 });
 
 /**

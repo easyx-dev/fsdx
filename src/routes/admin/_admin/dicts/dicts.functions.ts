@@ -12,7 +12,7 @@ import {
 	getDictList,
 	loadDictCache,
 } from "#/services/dict/dict.server";
-import { logOperation } from "#/services/operation-log/operation-log.server";
+import { logCrud } from "#/services/operation-log/operation-log.server";
 import {
 	createDictSchema,
 	createItemSchema,
@@ -53,14 +53,9 @@ export const createDictSFn = createServerFn({ method: "POST" })
 	.inputValidator(createDictSchema)
 	.handler(async ({ data, context }) => {
 		const result = await createDict(data);
-		logOperation({
-			operatorId: context.user.id,
-			operatorName: context.user.username,
-			module: "dict",
-			action: "create",
-			targetType: "dict",
-			targetId: result.id,
-			targetName: result.name,
+		logCrud(context.user, "dict", "create", {
+			id: result.id,
+			name: result.name,
 		});
 		return { success: true };
 	});
@@ -75,14 +70,7 @@ export const updateDictSFn = createServerFn({ method: "POST" })
 		if (updated) {
 			await loadDictCache();
 		}
-		logOperation({
-			operatorId: context.user.id,
-			operatorName: context.user.username,
-			module: "dict",
-			action: "update",
-			targetType: "dict",
-			targetId: data.id,
-		});
+		logCrud(context.user, "dict", "update", { id: data.id });
 		return { success: true };
 	});
 
@@ -92,14 +80,7 @@ export const deleteDictSFn = createServerFn({ method: "POST" })
 	.inputValidator(idSchema)
 	.handler(async ({ data: { id }, context }) => {
 		await deleteDict(id);
-		logOperation({
-			operatorId: context.user.id,
-			operatorName: context.user.username,
-			module: "dict",
-			action: "delete",
-			targetType: "dict",
-			targetId: id,
-		});
+		logCrud(context.user, "dict", "delete", { id: id });
 		return { success: true };
 	});
 
@@ -110,15 +91,13 @@ export const createDictItemSFn = createServerFn({ method: "POST" })
 	.handler(async ({ data, context }) => {
 		const result = await createDictItemData(data);
 		await loadDictCache();
-		logOperation({
-			operatorId: context.user.id,
-			operatorName: context.user.username,
-			module: "dict",
-			action: "create",
-			targetType: "dict_item",
-			targetId: result.id,
-			targetName: `${data.dictSlug}:${data.label}`,
-		});
+		logCrud(
+			context.user,
+			"dict",
+			"create",
+			{ id: result.id, name: `${data.dictSlug}:${data.label}` },
+			{ targetType: "dict_item" },
+		);
 		return { success: true };
 	});
 
@@ -132,14 +111,13 @@ export const updateDictItemSFn = createServerFn({ method: "POST" })
 		if (updated) {
 			await loadDictCache();
 		}
-		logOperation({
-			operatorId: context.user.id,
-			operatorName: context.user.username,
-			module: "dict",
-			action: "update",
-			targetType: "dict_item",
-			targetId: data.id,
-		});
+		logCrud(
+			context.user,
+			"dict",
+			"update",
+			{ id: data.id },
+			{ targetType: "dict_item" },
+		);
 		return { success: true };
 	});
 
@@ -152,14 +130,13 @@ export const deleteDictItemSFn = createServerFn({ method: "POST" })
 		if (success) {
 			await loadDictCache();
 		}
-		logOperation({
-			operatorId: context.user.id,
-			operatorName: context.user.username,
-			module: "dict",
-			action: "delete",
-			targetType: "dict_item",
-			targetId: id,
-		});
+		logCrud(
+			context.user,
+			"dict",
+			"delete",
+			{ id: id },
+			{ targetType: "dict_item" },
+		);
 		return { success: true };
 	});
 
@@ -206,12 +183,7 @@ export const importDictsSFn = createServerFn({ method: "POST" })
 			),
 		};
 		const result = await importDicts(flat);
-		logOperation({
-			operatorId: context.user.id,
-			operatorName: context.user.username,
-			module: "dict",
-			action: "import",
-			targetType: "dict",
+		logCrud(context.user, "dict", "import", undefined, {
 			detail: {
 				dictsCreated: result.dictsCreated,
 				dictsUpdated: result.dictsUpdated,

@@ -6,7 +6,7 @@ import { z } from "zod";
 import { PERMISSIONS } from "#/lib/permissions/permissions";
 import { adminPermGuard } from "#/middleware/admin-auth";
 import { deleteFile, makePermanent } from "#/services/file/file.server";
-import { logOperation } from "#/services/operation-log/operation-log.server";
+import { logCrud } from "#/services/operation-log/operation-log.server";
 
 export const idSchema = z.object({ id: z.string().min(1) });
 
@@ -15,14 +15,7 @@ export const deleteFileSFn = createServerFn({ method: "POST" })
 	.inputValidator(idSchema)
 	.handler(async ({ data, context }) => {
 		await deleteFile(data.id);
-		logOperation({
-			operatorId: context.user.id,
-			operatorName: context.user.username,
-			module: "file",
-			action: "delete",
-			targetType: "file",
-			targetId: data.id,
-		});
+		logCrud(context.user, "file", "delete", { id: data.id });
 		return { success: true };
 	});
 
@@ -31,13 +24,6 @@ export const makePermanentSFn = createServerFn({ method: "POST" })
 	.inputValidator(idSchema)
 	.handler(async ({ data, context }) => {
 		await makePermanent(data.id);
-		logOperation({
-			operatorId: context.user.id,
-			operatorName: context.user.username,
-			module: "file",
-			action: "make_permanent",
-			targetType: "file",
-			targetId: data.id,
-		});
+		logCrud(context.user, "file", "make_permanent", { id: data.id });
 		return { success: true };
 	});

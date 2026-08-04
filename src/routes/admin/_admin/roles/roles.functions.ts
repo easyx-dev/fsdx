@@ -4,7 +4,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { PERMISSIONS } from "#/lib/permissions/permissions";
 import { adminPermGuard } from "#/middleware/admin-auth";
-import { logOperation } from "#/services/operation-log/operation-log.server";
+import { logCrud } from "#/services/operation-log/operation-log.server";
 import {
 	type CreateRoleInput,
 	createRole,
@@ -32,14 +32,9 @@ export const createRoleSFn = createServerFn({ method: "POST" })
 	.inputValidator(roleCreateSchema)
 	.handler(async ({ data, context }) => {
 		const result = await createRole(data as CreateRoleInput);
-		logOperation({
-			operatorId: context.user.id,
-			operatorName: context.user.username,
-			module: "role",
-			action: "create",
-			targetType: "role",
-			targetId: result.id,
-			targetName: result.name,
+		logCrud(context.user, "role", "create", {
+			id: result.id,
+			name: result.name,
 		});
 		return result;
 	});
@@ -50,14 +45,9 @@ export const updateRoleSFn = createServerFn({ method: "POST" })
 	.inputValidator(roleUpdateSchema)
 	.handler(async ({ data, context }) => {
 		const result = await updateRole(data.id, data as UpdateRoleInput);
-		logOperation({
-			operatorId: context.user.id,
-			operatorName: context.user.username,
-			module: "role",
-			action: "update",
-			targetType: "role",
-			targetId: data.id,
-			targetName: result?.name,
+		logCrud(context.user, "role", "update", {
+			id: data.id,
+			name: result?.name,
 		});
 		return result;
 	});
@@ -68,12 +58,5 @@ export const deleteRoleSFn = createServerFn({ method: "POST" })
 	.inputValidator(idSchema)
 	.handler(async ({ data, context }) => {
 		await deleteRole(data.id);
-		logOperation({
-			operatorId: context.user.id,
-			operatorName: context.user.username,
-			module: "role",
-			action: "delete",
-			targetType: "role",
-			targetId: data.id,
-		});
+		logCrud(context.user, "role", "delete", { id: data.id });
 	});

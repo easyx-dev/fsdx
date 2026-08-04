@@ -12,7 +12,7 @@ import { logger } from "#/lib/logger/logger";
 import { PERMISSIONS } from "#/lib/permissions/permissions";
 import { storage } from "#/lib/storage/storage";
 import { adminPermGuard } from "#/middleware/admin-auth";
-import { logOperation } from "#/services/operation-log/operation-log.server";
+import { logCrud } from "#/services/operation-log/operation-log.server";
 import { notDeleted } from "#/services/query/query-utils.server";
 import { getFileList, sha256, TEMP_EXPIRE_HOURS } from "./file.server";
 
@@ -61,16 +61,13 @@ export const uploadFileSFn = createServerFn({ method: "POST" })
 
 		if (existing) {
 			// 秒传：记录操作日志
-			logOperation({
-				operatorId: context.user.id,
-				operatorName: context.user.username,
-				module: "file",
-				action: "upload",
-				targetType: "file",
-				targetId: existing.id,
-				targetName: existing.originalName,
-				detail: { isDuplicated: true },
-			});
+			logCrud(
+				context.user,
+				"file",
+				"upload",
+				{ id: existing.id, name: existing.originalName },
+				{ detail: { isDuplicated: true } },
+			);
 
 			return {
 				success: true,
@@ -112,14 +109,9 @@ export const uploadFileSFn = createServerFn({ method: "POST" })
 
 		logger.info({ id: record.id, name: originalName }, "文件上传成功");
 
-		logOperation({
-			operatorId: context.user.id,
-			operatorName: context.user.username,
-			module: "file",
-			action: "upload",
-			targetType: "file",
-			targetId: record.id,
-			targetName: originalName,
+		logCrud(context.user, "file", "upload", {
+			id: record.id,
+			name: originalName,
 		});
 
 		return {

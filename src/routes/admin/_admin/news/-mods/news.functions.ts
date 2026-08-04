@@ -11,7 +11,7 @@ import {
 	getNewsById,
 	getNewsList,
 } from "#/services/news/news.server";
-import { logOperation } from "#/services/operation-log/operation-log.server";
+import { logCrud } from "#/services/operation-log/operation-log.server";
 import {
 	createNewsSchema,
 	exportSchema,
@@ -74,14 +74,9 @@ export const createNewsSFn = createServerFn({ method: "POST" })
 			sortOrder: data.sortOrder,
 			createdById: context.user.id,
 		});
-		logOperation({
-			operatorId: context.user.id,
-			operatorName: context.user.username,
-			module: "news",
-			action: "create",
-			targetType: "news",
-			targetId: record.id,
-			targetName: record.title,
+		logCrud(context.user, "news", "create", {
+			id: record.id,
+			name: record.title,
 		});
 		return record;
 	});
@@ -136,15 +131,7 @@ export const updateNewsSFn = createServerFn({ method: "POST" })
 
 		const record = await updateNewsRecord(data.id, updateData);
 
-		logOperation({
-			operatorId: context.user.id,
-			operatorName: context.user.username,
-			module: "news",
-			action: "update",
-			targetType: "news",
-			targetId: data.id,
-			targetName: data.title,
-		});
+		logCrud(context.user, "news", "update", { id: data.id, name: data.title });
 		return record ?? null;
 	});
 
@@ -155,14 +142,9 @@ export const deleteNewsSFn = createServerFn({ method: "POST" })
 	.handler(async ({ data: { id }, context }) => {
 		const newsRecord = await getNewsById(id);
 		await deleteNews(id);
-		logOperation({
-			operatorId: context.user.id,
-			operatorName: context.user.username,
-			module: "news",
-			action: "delete",
-			targetType: "news",
-			targetId: id,
-			targetName: newsRecord?.title ?? id,
+		logCrud(context.user, "news", "delete", {
+			id: id,
+			name: newsRecord?.title ?? id,
 		});
 		return { success: true };
 	});
@@ -174,14 +156,9 @@ export const changeStatusSFn = createServerFn({ method: "POST" })
 	.handler(async ({ data: { id, status }, context }) => {
 		const newsRecord = await getNewsById(id);
 		const result = await changeNewsStatus(id, status);
-		logOperation({
-			operatorId: context.user.id,
-			operatorName: context.user.username,
-			module: "news",
-			action: "change_status",
-			targetType: "news",
-			targetId: id,
-			targetName: newsRecord?.title || id,
+		logCrud(context.user, "news", "change_status", {
+			id: id,
+			name: newsRecord?.title || id,
 		});
 		return result;
 	});
@@ -201,14 +178,7 @@ export const importNewsSFn = createServerFn({ method: "POST" })
 			context.user.id,
 		);
 
-		logOperation({
-			operatorId: context.user.id,
-			operatorName: context.user.username,
-			module: "news",
-			action: "import",
-			targetType: "news",
-			detail: { created },
-		});
+		logCrud(context.user, "news", "import", undefined, { detail: { created } });
 		return { created, skipped };
 	});
 

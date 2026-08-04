@@ -12,7 +12,7 @@ import {
 	getConfigList,
 	updateConfig,
 } from "#/services/config/config.server";
-import { logOperation } from "#/services/operation-log/operation-log.server";
+import { logCrud } from "#/services/operation-log/operation-log.server";
 import {
 	configImportSchema,
 	createConfigSchema,
@@ -34,14 +34,9 @@ export const createConfigSFn = createServerFn({ method: "POST" })
 	.inputValidator(createConfigSchema)
 	.handler(async ({ data, context }) => {
 		const result = await createConfig(data);
-		logOperation({
-			operatorId: context.user.id,
-			operatorName: context.user.username,
-			module: "config",
-			action: "create",
-			targetType: "config",
-			targetId: result.id,
-			targetName: result.key,
+		logCrud(context.user, "config", "create", {
+			id: result.id,
+			name: result.key,
 		});
 		return { success: true };
 	});
@@ -53,14 +48,7 @@ export const updateConfigSFn = createServerFn({ method: "POST" })
 	.handler(async ({ data, context }) => {
 		const { id, ...rest } = data;
 		await updateConfig(id, rest);
-		logOperation({
-			operatorId: context.user.id,
-			operatorName: context.user.username,
-			module: "config",
-			action: "update",
-			targetType: "config",
-			targetId: data.id,
-		});
+		logCrud(context.user, "config", "update", { id: data.id });
 		return { success: true };
 	});
 
@@ -70,14 +58,7 @@ export const deleteConfigSFn = createServerFn({ method: "POST" })
 	.inputValidator(deleteConfigSchema)
 	.handler(async ({ data, context }) => {
 		await deleteConfig(data.id);
-		logOperation({
-			operatorId: context.user.id,
-			operatorName: context.user.username,
-			module: "config",
-			action: "delete",
-			targetType: "config",
-			targetId: data.id,
-		});
+		logCrud(context.user, "config", "delete", { id: data.id });
 		return { success: true };
 	});
 
@@ -112,12 +93,7 @@ export const importConfigsSFn = createServerFn({ method: "POST" })
 	.inputValidator(configImportSchema)
 	.handler(async ({ data, context }) => {
 		const result = await importConfigs(data);
-		logOperation({
-			operatorId: context.user.id,
-			operatorName: context.user.username,
-			module: "config",
-			action: "import",
-			targetType: "config",
+		logCrud(context.user, "config", "import", undefined, {
 			detail: {
 				created: result.created,
 				updated: result.updated,

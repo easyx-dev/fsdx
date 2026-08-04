@@ -4,7 +4,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { PERMISSIONS } from "#/lib/permissions/permissions";
 import { adminPermGuard } from "#/middleware/admin-auth";
-import { logOperation } from "#/services/operation-log/operation-log.server";
+import { logCrud } from "#/services/operation-log/operation-log.server";
 import {
 	createSchema,
 	idSchema,
@@ -36,15 +36,13 @@ export const createSFn = createServerFn({ method: "POST" })
 	.inputValidator(createSchema)
 	.handler(async ({ data, context }) => {
 		const record = await createClientUser(data as CreateClientUserInput);
-		logOperation({
-			operatorId: context.user.id,
-			operatorName: context.user.username,
-			module: "client",
-			action: "create",
-			targetType: "client_user",
-			targetId: record.id,
-			targetName: record.username,
-		});
+		logCrud(
+			context.user,
+			"client",
+			"create",
+			{ id: record.id, name: record.username },
+			{ targetType: "client_user" },
+		);
 		return record;
 	});
 
@@ -57,15 +55,13 @@ export const updateSFn = createServerFn({ method: "POST" })
 			data.id,
 			data as UpdateClientUserInput,
 		);
-		logOperation({
-			operatorId: context.user.id,
-			operatorName: context.user.username,
-			module: "client",
-			action: "update",
-			targetType: "client_user",
-			targetId: data.id,
-			targetName: result?.username || data.id,
-		});
+		logCrud(
+			context.user,
+			"client",
+			"update",
+			{ id: data.id, name: result?.username || data.id },
+			{ targetType: "client_user" },
+		);
 		return result;
 	});
 
@@ -76,15 +72,13 @@ export const deleteSFn = createServerFn({ method: "POST" })
 	.handler(async ({ data, context }) => {
 		const existing = await getClientUser(data.id);
 		const result = await deleteClientUser(data.id);
-		logOperation({
-			operatorId: context.user.id,
-			operatorName: context.user.username,
-			module: "client",
-			action: "delete",
-			targetType: "client_user",
-			targetId: data.id,
-			targetName: existing?.username || data.id,
-		});
+		logCrud(
+			context.user,
+			"client",
+			"delete",
+			{ id: data.id, name: existing?.username || data.id },
+			{ targetType: "client_user" },
+		);
 		return result;
 	});
 
@@ -95,14 +89,12 @@ export const resetPwdSFn = createServerFn({ method: "POST" })
 	.handler(async ({ data, context }) => {
 		const existing = await getClientUser(data.id);
 		const result = await resetClientPassword(data.id, data.password);
-		logOperation({
-			operatorId: context.user.id,
-			operatorName: context.user.username,
-			module: "client",
-			action: "reset_pwd",
-			targetType: "client_user",
-			targetId: data.id,
-			targetName: existing?.username || data.id,
-		});
+		logCrud(
+			context.user,
+			"client",
+			"reset_pwd",
+			{ id: data.id, name: existing?.username || data.id },
+			{ targetType: "client_user" },
+		);
 		return result;
 	});
