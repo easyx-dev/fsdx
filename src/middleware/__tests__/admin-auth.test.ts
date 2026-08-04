@@ -1,10 +1,24 @@
 /**
- * 管理端鉴权中间件测试：adminAuthGuard 和 adminPermGuard
+ * 管理端鉴权中间件测试：AdminAuthError + resolveAdminAuthContext 鉴权逻辑
  */
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { describe, expect, it } from "vitest";
+const { mockVerifyToken, mockGetAdminUserForAuth } = vi.hoisted(() => ({
+	mockVerifyToken: vi.fn(),
+	mockGetAdminUserForAuth: vi.fn(),
+}));
 
-import { type AdminAuthContext, AdminAuthError } from "#/middleware/admin-auth";
+vi.mock("#/lib/jwt/jwt", () => ({ verifyToken: mockVerifyToken }));
+
+vi.mock("#/services/admin-auth/admin-auth.server", () => ({
+	getAdminUserForAuth: mockGetAdminUserForAuth,
+}));
+
+import {
+	type AdminAuthContext,
+	AdminAuthError,
+	resolveAdminAuthContext,
+} from "#/middleware/admin-auth";
 
 describe("AdminAuthError", () => {
 	it("包含 statusCode 属性", () => {
@@ -51,5 +65,93 @@ describe("AdminAuthContext 类型", () => {
 		};
 		expect(ctx.user.isRoot).toBe(true);
 		expect(ctx.rolePermissions).toEqual(["**"]);
+	});
+});
+
+describe("resolveAdminAuthContext", () => {
+	beforeEach(() => {
+		vi.clearAllMocks();
+	});
+
+	it("无 token 时抛 401", async () => {
+		await expect(resolveAdminAuthContext(undefined)).rejects.toMatchObject({
+			statusCode: 401,
+		});
+		expect(mockVerifyToken).not.toHaveBeenCalled();
+	});
+
+	it("token 无效时抛 401", async () => {
+		mockVerifyToken.mockResolvedValue(null);
+		await expect(resolveAdminAuthContext("invalid")).rejects.toMatchObject({
+			statusCode: 401,
+		});
+	});
+
+	it("非 admin 类型 token 抛 403", async () => {
+		mockVerifyToken.mockResolvedValue({
+			userId: "client-1",
+			username: "client",
+			userType: "client",
+		});
+		await expect(resolveAdminAuthContext("client-token")).rejects.toMatchObject(
+			{
+				statusCode: 403,
+			},
+		);
+		expect(mockGetAdminUserForAuth).not.toHaveBeenCalled();
+	});
+
+	it("有效 admin token 返回用户上下文与权限", async () => {
+		mockVerifyToken.mockResolvedValue({
+			userId: "admin-1",
+			username: "admin",
+			userType: "admin",
+		});
+		mockGetAdminUserForAuth.mockResolvedValue({
+			success: true,
+			id: "admin-1",
+			username: "admin",
+			email: "admin@test.com",
+			isRoot: true,
+			rolePermissions: ["**"],
+		});
+
+		const ctx = await resolveAdminAuthContext("valid-token");
+		expect(ctx).toMatchObject({
+			user: { id: "admin-1", isRoot: true, userType: "admin" },
+			rolePermissions: ["**"],
+		});
+	});
+
+	it("用户不存在时抛 401", async () => {
+		mockVerifyToken.mockResolvedValue({
+			userId: "ghost",
+			username: "ghost",
+			userType: "admin",
+		});
+		mockGetAdminUserForAuth.mockResolvedValue({
+			success: false,
+			reason: "not_found",
+		});
+		await expect(resolveAdminAuthContext("ghost-token")).rejects.toMatchObject({
+			statusCode: 401,
+		});
+	});
+
+	it("用户被禁用时抛 403", async () => {
+		mockVerifyToken.mockResolvedValue({
+			userId: "disabled-1",
+			username: "disabled",
+			userType: "admin",
+		});
+		mockGetAdminUserForAuth.mockResolvedValue({
+			success: false,
+			reason: "disabled",
+		});
+		await expect(
+			resolveAdminAuthContext("disabled-token"),
+		).rejects.toMatchObject({
+			statusCode: 403,
+		});
 	});
 });

@@ -38,6 +38,10 @@ export class AdminAuthError extends Error {
  * 管理端鉴权核心逻辑：校验 token 并返回用户上下文
  * 不涉及 Cookie 读取，由中间件层传入
  * isRoot 用户自动拥有所有权限，不依赖角色表
+ *
+ * ⚠️ 注意：本函数及其调用的 guard 只能从服务端可达路径调用（SFn handler / Server Route / 其他 .server 模块）。
+ * 若从客户端可达的组件/hook 调用，会触发 import protection（.server 依赖泄漏到客户端构建）。
+ * 服务层采用动态 import，依赖树摇移除客户端动态 import 才不报错——不要在客户端上下文使用本函数。
  */
 export async function resolveAdminAuthContext(
 	token: string | undefined,
