@@ -26,7 +26,7 @@ export async function bootstrap() {
 	} catch (err) {
 		logger.warn(
 			{ err: (err as Error).message },
-			"数据库迁移执行失败，请手动执行 pnpm db:push 同步表结构",
+			"数据库迁移执行失败，请手动执行 pnpm db:migrate 同步表结构",
 		);
 	}
 
