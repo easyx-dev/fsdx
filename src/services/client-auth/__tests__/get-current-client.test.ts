@@ -42,7 +42,9 @@ const { mockCacheMethods } = vi.hoisted(() => {
 		},
 	};
 });
-vi.mock("#/lib/cache/cache", () => ({ clientUserCache: mockCacheMethods }));
+vi.mock("#/lib/cache/client-user.cache", () => ({
+	clientUserCache: mockCacheMethods,
+}));
 
 import { getCurrentClient } from "#/services/client-auth/client-auth.server";
 

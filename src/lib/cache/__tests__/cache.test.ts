@@ -3,7 +3,7 @@
  */
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { MemoryCache } from "#/lib/cache/cache";
+import { MemoryCache } from "#/lib/cache/core";
 
 describe("MemoryCache", () => {
 	let cache: MemoryCache<string>;
@@ -207,7 +207,7 @@ describe("MemoryCache", () => {
 describe("dictCache / configCache", () => {
 	it("dictCache 是 MemoryCache 实例且可正常读写", async () => {
 		// 通过动态导入获取实例（避免与其他测试共享状态）
-		const { dictCache } = await import("#/lib/cache/cache");
+		const { dictCache } = await import("#/lib/cache/dict.cache");
 		expect(dictCache).toBeInstanceOf(MemoryCache);
 		dictCache.set("test", { active: { label: "正常" } });
 		expect(dictCache.get("test")).toEqual({ active: { label: "正常" } });
@@ -215,7 +215,7 @@ describe("dictCache / configCache", () => {
 	});
 
 	it("configCache 是 MemoryCache 实例且可正常读写", async () => {
-		const { configCache } = await import("#/lib/cache/cache");
+		const { configCache } = await import("#/lib/cache/config.cache");
 		expect(configCache).toBeInstanceOf(MemoryCache);
 		const data = [{ id: "1", key: "test", value: "val", clientVisible: false }];
 		configCache.set("test", data);

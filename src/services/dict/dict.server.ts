@@ -5,7 +5,7 @@ import { asc, eq, isNull } from "drizzle-orm";
 import { PRESET_DICTS } from "#/constants";
 import { db } from "#/db/index";
 import { dict, dictItem } from "#/db/schema";
-import { dictCache } from "#/lib/cache/cache";
+import { dictCache } from "#/lib/cache/dict.cache";
 import { logger } from "#/lib/logger/logger";
 
 export type DictRecord = typeof dict.$inferSelect;

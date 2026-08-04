@@ -6,7 +6,7 @@ import { and, eq, inArray, like, or } from "drizzle-orm";
 import { EDITOR_TYPES, type EditorType } from "#/constants/editor-types";
 import { db } from "#/db/index";
 import { contentTranslation, uiTranslation } from "#/db/schema";
-import { uiTranslationCache } from "#/lib/cache/cache";
+import { uiTranslationCache } from "#/lib/cache/ui-translation.cache";
 import type { Locale } from "#/lib/i18n/i18n.types";
 import { DEFAULT_LOCALE } from "#/lib/i18n/i18n.types";
 import { logger } from "#/lib/logger/logger";

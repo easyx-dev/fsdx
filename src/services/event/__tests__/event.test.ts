@@ -27,7 +27,7 @@ const { mockPresetEventCache, mockPresetPropertyCache } = vi.hoisted(() => {
 	};
 });
 
-vi.mock("#/lib/cache/cache", () => ({
+vi.mock("#/lib/cache/track.cache", () => ({
 	presetEventCache: mockPresetEventCache,
 	presetPropertyCache: mockPresetPropertyCache,
 }));

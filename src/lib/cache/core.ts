@@ -1,5 +1,6 @@
 /**
- * 内存缓存模块：基于 Map 的简单缓存，用于字典和系统配置避免频繁查库
+ * 内存缓存核心：基于 Map 的带过期时间缓存类
+ * 具体缓存实例按模块拆分在 lib/cache/*.cache.ts
  */
 
 /** 缓存选项 */
@@ -91,62 +92,3 @@ export class MemoryCache<T = unknown> {
 		return count;
 	}
 }
-
-/** 字典条目缓存信息 */
-export interface DictItemCache {
-	label: string;
-	color?: string | null;
-}
-
-/** 字典缓存实例：key = dictSlug，value = { itemValue: { label, color } } */
-export const dictCache = new MemoryCache<Record<string, DictItemCache>>({
-	name: "dict",
-});
-
-/** 缓存的系统配置条目（按需扩展字段） */
-export interface CachedConfig {
-	id: string;
-	key: string;
-	value: string;
-	clientVisible: boolean;
-}
-
-/** 系统配置缓存实例：全量缓存配置列表，key 固定为 "all" */
-export const configCache = new MemoryCache<CachedConfig[]>({
-	name: "config",
-});
-
-/** UI 翻译缓存：key = locale，value = { 中文文本: 翻译 } */
-export const uiTranslationCache = new MemoryCache<Record<string, string>>({
-	name: "ui_translation",
-});
-
-/** 系统配置的 content_translation 翻译缓存：key = locale，value = { entityId: translatedValue } */
-export const configTranslationCache = new MemoryCache<Record<string, string>>({
-	name: "config_translation",
-});
-
-/** 缓存的客户端用户信息 */
-export interface CachedClientUser {
-	id: string;
-	username: string;
-	email: string;
-	avatar: string | null;
-	status: string;
-}
-
-/** 客户端用户缓存：key = userId，TTL 5 分钟避免频繁查库 */
-export const clientUserCache = new MemoryCache<CachedClientUser>({
-	name: "client_user",
-	defaultTTL: 5 * 60 * 1000,
-});
-
-/** 预设事件缓存：key = 事件名，value = true，无过期（随预设变更主动失效） */
-export const presetEventCache = new MemoryCache<boolean>({
-	name: "preset_event",
-});
-
-/** 预设属性缓存：key = 属性键，value = dataType，无过期（随预设变更主动失效） */
-export const presetPropertyCache = new MemoryCache<string>({
-	name: "preset_property",
-});

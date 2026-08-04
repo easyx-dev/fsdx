@@ -44,7 +44,7 @@ const { mockConfigTranslationCache } = vi.hoisted(() => {
 	};
 });
 
-vi.mock("#/lib/cache/cache", () => ({
+vi.mock("#/lib/cache/config.cache", () => ({
 	configCache: mockConfigCache,
 	configTranslationCache: mockConfigTranslationCache,
 }));

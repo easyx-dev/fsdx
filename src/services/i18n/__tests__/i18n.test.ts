@@ -24,7 +24,7 @@ const { mockCache } = vi.hoisted(() => {
 	};
 });
 
-vi.mock("#/lib/cache/cache", () => ({
+vi.mock("#/lib/cache/ui-translation.cache", () => ({
 	uiTranslationCache: mockCache,
 }));
 

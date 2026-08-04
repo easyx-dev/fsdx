@@ -5,7 +5,7 @@
 import { and, eq, gte, ilike, lt, or, sql } from "drizzle-orm";
 import { db } from "#/db/index";
 import { event, presetEvent, presetProperty } from "#/db/schema";
-import { presetEventCache, presetPropertyCache } from "#/lib/cache/cache";
+import { presetEventCache, presetPropertyCache } from "#/lib/cache/track.cache";
 import { logger } from "#/lib/logger/logger";
 import {
 	buildSortClause,

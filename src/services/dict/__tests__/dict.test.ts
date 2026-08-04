@@ -20,7 +20,7 @@ const { mockDictCache } = vi.hoisted(() => {
 		},
 	};
 });
-vi.mock("#/lib/cache/cache", () => ({ dictCache: mockDictCache }));
+vi.mock("#/lib/cache/dict.cache", () => ({ dictCache: mockDictCache }));
 
 const { mockDb } = vi.hoisted(() => {
 	const q = () => ({ findFirst: vi.fn(), findMany: vi.fn() });

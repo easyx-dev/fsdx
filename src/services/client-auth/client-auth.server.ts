@@ -6,7 +6,10 @@ import bcrypt from "bcryptjs";
 import { eq } from "drizzle-orm";
 import { db } from "#/db/index";
 import { clientUser } from "#/db/schema";
-import { type CachedClientUser, clientUserCache } from "#/lib/cache/cache";
+import {
+	type CachedClientUser,
+	clientUserCache,
+} from "#/lib/cache/client-user.cache";
 import { type JwtPayload, signToken, verifyToken } from "#/lib/jwt/jwt";
 import { logger } from "#/lib/logger/logger";
 import { verifyCaptcha } from "#/services/captcha/captcha.server";
