@@ -3,6 +3,7 @@
  * 顶栏由 AdminPageContent 组件在每个页面中提供
  */
 import {
+	BellOutlined,
 	EditOutlined,
 	LogoutOutlined,
 	MenuFoldOutlined,
@@ -11,10 +12,11 @@ import {
 	SunOutlined,
 } from "@ant-design/icons";
 import { Link, useLocation } from "@tanstack/react-router";
-import { Avatar, Button, Divider, Flex, Popover, Tooltip } from "antd";
+import { Avatar, Badge, Button, Divider, Flex, Popover, Tooltip } from "antd";
 import {
 	createContext,
 	type ReactNode,
+	useCallback,
 	useContext,
 	useEffect,
 	useState,
@@ -26,6 +28,7 @@ import type { ThemeMode } from "#/hooks/use-theme-mode";
 import { useAdminConfigStore } from "#/lib/global-store/admin-config-store";
 import { useAdminDictStore } from "#/lib/global-store/admin-dict-store";
 import { logoutSFn } from "#/services/admin-auth/admin-auth.functions";
+import { getAdminUnreadCountSFn } from "#/services/message/message.functions";
 
 /** Admin 主题 Context */
 interface AdminThemeContextType {
@@ -60,6 +63,29 @@ export function AdminLayout({ children }: { children: ReactNode }) {
 	const { user } = useAdminAuth();
 	const location = useLocation();
 	const currentPath = location.pathname;
+
+	/** 未读消息数（30 秒轮询） */
+	const [unreadCount, setUnreadCount] = useState(0);
+
+	/** 拉取未读消息数 */
+	const fetchUnreadCount = useCallback(async () => {
+		if (!user) return;
+		try {
+			setUnreadCount(await getAdminUnreadCountSFn());
+		} catch {
+			// 未读数为辅助信息，失败不打扰用户
+		}
+	}, [user]);
+
+	useEffect(() => {
+		if (!user) {
+			setUnreadCount(0);
+			return;
+		}
+		fetchUnreadCount();
+		const timer = setInterval(fetchUnreadCount, 30000);
+		return () => clearInterval(timer);
+	}, [user, fetchUnreadCount]);
 
 	const handleLogout = async () => {
 		await logoutSFn();
@@ -163,6 +189,14 @@ export function AdminLayout({ children }: { children: ReactNode }) {
 								onClick={cycleTheme}
 								icon={isDark ? <MoonOutlined /> : <SunOutlined />}
 							/>
+						</Tooltip>
+						{/* 消息中心铃铛（未读角标 + 跳转） */}
+						<Tooltip title="我的消息">
+							<Badge count={unreadCount} size="small">
+								<Link to="/admin/messages">
+									<Button type="text" icon={<BellOutlined />} />
+								</Link>
+							</Badge>
 						</Tooltip>
 					</div>
 

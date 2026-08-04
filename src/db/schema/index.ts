@@ -8,6 +8,11 @@ export { clientRole } from "./client-role";
 export { clientUser } from "./client-user";
 export { dict, dictItem } from "./dict";
 export { file } from "./file";
+export {
+	type MessageRecipientType,
+	type MessageStatus,
+	message,
+} from "./message";
 export { news } from "./news";
 export { type OperatorType, operationLog } from "./operation-log";
 export { systemConfig } from "./system-config";

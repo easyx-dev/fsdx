@@ -197,6 +197,32 @@ export const PERMISSIONS = {
 		"允许修改文件属性（如转为永久存储）",
 	),
 	FILE_DELETE: definePermission("file:delete", "删除文件", "允许删除文件"),
+	// 文件资源管理器
+	FILE_EXPLORER_VIEW: definePermission(
+		"file_explorer:view",
+		"浏览存储目录",
+		"允许浏览 STORAGE_DIR 目录结构",
+	),
+	FILE_EXPLORER_UPLOAD: definePermission(
+		"file_explorer:upload",
+		"上传文件",
+		"允许向存储目录上传文件",
+	),
+	FILE_EXPLORER_DELETE: definePermission(
+		"file_explorer:delete",
+		"删除条目",
+		"允许删除存储目录中的文件或目录",
+	),
+	FILE_EXPLORER_RENAME: definePermission(
+		"file_explorer:rename",
+		"重命名条目",
+		"允许重命名存储目录中的文件或目录",
+	),
+	FILE_EXPLORER_MKDIR: definePermission(
+		"file_explorer:mkdir",
+		"创建目录",
+		"允许在存储目录中创建子目录",
+	),
 	// 日志管理
 	LOG_VIEW: definePermission("log:view", "查看日志", "允许查询和查看系统日志"),
 	LOG_DOWNLOAD: definePermission(
@@ -225,6 +251,22 @@ export const PERMISSIONS = {
 		"track:manage",
 		"管理元数据",
 		"允许新增、编辑、删除元事件和元属性",
+	),
+	// 消息管理
+	MESSAGE_VIEW: definePermission(
+		"message:view",
+		"查看消息",
+		"允许查看全部用户消息列表",
+	),
+	MESSAGE_SEND: definePermission(
+		"message:send",
+		"发送消息",
+		"允许向管理端或客户端用户发送消息",
+	),
+	MESSAGE_DELETE: definePermission(
+		"message:delete",
+		"删除消息",
+		"允许删除任意用户消息",
 	),
 	// 翻译管理
 	TRANSLATION_VIEW: definePermission(

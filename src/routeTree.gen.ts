@@ -14,6 +14,7 @@ import { Route as AboutRouteImport } from './routes/about'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as RegisterIndexRouteImport } from './routes/register/index'
 import { Route as NewsIndexRouteImport } from './routes/news/index'
+import { Route as MessagesIndexRouteImport } from './routes/messages/index'
 import { Route as LoginIndexRouteImport } from './routes/login/index'
 import { Route as ForgotPasswordIndexRouteImport } from './routes/forgot-password/index'
 import { Route as NewsSlugRouteImport } from './routes/news/$slug'
@@ -24,18 +25,22 @@ import { Route as AdminForgotPasswordIndexRouteImport } from './routes/admin/for
 import { Route as AdminAdminIndexRouteImport } from './routes/admin/_admin/index'
 import { Route as AdminAdminOperationLogsIndexRouteImport } from './routes/admin/_admin/operation-logs/index'
 import { Route as AdminAdminNewsIndexRouteImport } from './routes/admin/_admin/news/index'
+import { Route as AdminAdminMessagesIndexRouteImport } from './routes/admin/_admin/messages/index'
 import { Route as AdminAdminLogsIndexRouteImport } from './routes/admin/_admin/logs/index'
 import { Route as AdminAdminFilesIndexRouteImport } from './routes/admin/_admin/files/index'
+import { Route as AdminAdminFileExplorerIndexRouteImport } from './routes/admin/_admin/file-explorer/index'
 import { Route as AdminAdminDictsIndexRouteImport } from './routes/admin/_admin/dicts/index'
 import { Route as AdminAdminConfigIndexRouteImport } from './routes/admin/_admin/config/index'
 import { Route as AdminAdminAdminRolesIndexRouteImport } from './routes/admin/_admin/admin-roles/index'
 import { Route as ApiDownloadLogIdRouteImport } from './routes/api/download/log.$id'
 import { Route as ApiDownloadFileIdRouteImport } from './routes/api/download/file.$id'
+import { Route as ApiDownloadFileExplorerSplatRouteImport } from './routes/api/download/file-explorer/$'
 import { Route as AdminAdminTranslationsUiRouteImport } from './routes/admin/_admin/translations/ui'
 import { Route as AdminAdminTranslationsContentRouteImport } from './routes/admin/_admin/translations/content'
 import { Route as AdminAdminTrackQueryRouteImport } from './routes/admin/_admin/track/query'
 import { Route as AdminAdminTrackAnalyticsRouteImport } from './routes/admin/_admin/track/analytics'
 import { Route as AdminAdminNewsCreateRouteImport } from './routes/admin/_admin/news/create'
+import { Route as AdminAdminMessagesManageRouteImport } from './routes/admin/_admin/messages/manage'
 import { Route as AdminAdminDemoUploadRouteImport } from './routes/admin/_admin/demo/upload'
 import { Route as AdminAdminDemoProTableRouteImport } from './routes/admin/_admin/demo/pro-table'
 import { Route as AdminAdminDemoEditorRouteImport } from './routes/admin/_admin/demo/editor'
@@ -69,6 +74,11 @@ const RegisterIndexRoute = RegisterIndexRouteImport.update({
 const NewsIndexRoute = NewsIndexRouteImport.update({
   id: '/news/',
   path: '/news/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MessagesIndexRoute = MessagesIndexRouteImport.update({
+  id: '/messages/',
+  path: '/messages/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LoginIndexRoute = LoginIndexRouteImport.update({
@@ -122,6 +132,11 @@ const AdminAdminNewsIndexRoute = AdminAdminNewsIndexRouteImport.update({
   path: '/news/',
   getParentRoute: () => AdminAdminRoute,
 } as any)
+const AdminAdminMessagesIndexRoute = AdminAdminMessagesIndexRouteImport.update({
+  id: '/messages/',
+  path: '/messages/',
+  getParentRoute: () => AdminAdminRoute,
+} as any)
 const AdminAdminLogsIndexRoute = AdminAdminLogsIndexRouteImport.update({
   id: '/logs/',
   path: '/logs/',
@@ -132,6 +147,12 @@ const AdminAdminFilesIndexRoute = AdminAdminFilesIndexRouteImport.update({
   path: '/files/',
   getParentRoute: () => AdminAdminRoute,
 } as any)
+const AdminAdminFileExplorerIndexRoute =
+  AdminAdminFileExplorerIndexRouteImport.update({
+    id: '/file-explorer/',
+    path: '/file-explorer/',
+    getParentRoute: () => AdminAdminRoute,
+  } as any)
 const AdminAdminDictsIndexRoute = AdminAdminDictsIndexRouteImport.update({
   id: '/dicts/',
   path: '/dicts/',
@@ -158,6 +179,12 @@ const ApiDownloadFileIdRoute = ApiDownloadFileIdRouteImport.update({
   path: '/api/download/file/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiDownloadFileExplorerSplatRoute =
+  ApiDownloadFileExplorerSplatRouteImport.update({
+    id: '/api/download/file-explorer/$',
+    path: '/api/download/file-explorer/$',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const AdminAdminTranslationsUiRoute =
   AdminAdminTranslationsUiRouteImport.update({
     id: '/translations/ui',
@@ -186,6 +213,12 @@ const AdminAdminNewsCreateRoute = AdminAdminNewsCreateRouteImport.update({
   path: '/news/create',
   getParentRoute: () => AdminAdminRoute,
 } as any)
+const AdminAdminMessagesManageRoute =
+  AdminAdminMessagesManageRouteImport.update({
+    id: '/messages/manage',
+    path: '/messages/manage',
+    getParentRoute: () => AdminAdminRoute,
+  } as any)
 const AdminAdminDemoUploadRoute = AdminAdminDemoUploadRouteImport.update({
   id: '/demo/upload',
   path: '/demo/upload',
@@ -243,6 +276,7 @@ export interface FileRoutesByFullPath {
   '/news/$slug': typeof NewsSlugRoute
   '/forgot-password/': typeof ForgotPasswordIndexRoute
   '/login/': typeof LoginIndexRoute
+  '/messages/': typeof MessagesIndexRoute
   '/news/': typeof NewsIndexRoute
   '/register/': typeof RegisterIndexRoute
   '/admin/': typeof AdminAdminIndexRoute
@@ -253,18 +287,22 @@ export interface FileRoutesByFullPath {
   '/admin/demo/editor': typeof AdminAdminDemoEditorRoute
   '/admin/demo/pro-table': typeof AdminAdminDemoProTableRoute
   '/admin/demo/upload': typeof AdminAdminDemoUploadRoute
+  '/admin/messages/manage': typeof AdminAdminMessagesManageRoute
   '/admin/news/create': typeof AdminAdminNewsCreateRoute
   '/admin/track/analytics': typeof AdminAdminTrackAnalyticsRoute
   '/admin/track/query': typeof AdminAdminTrackQueryRoute
   '/admin/translations/content': typeof AdminAdminTranslationsContentRoute
   '/admin/translations/ui': typeof AdminAdminTranslationsUiRoute
+  '/api/download/file-explorer/$': typeof ApiDownloadFileExplorerSplatRoute
   '/api/download/file/$id': typeof ApiDownloadFileIdRoute
   '/api/download/log/$id': typeof ApiDownloadLogIdRoute
   '/admin/admin-roles/': typeof AdminAdminAdminRolesIndexRoute
   '/admin/config/': typeof AdminAdminConfigIndexRoute
   '/admin/dicts/': typeof AdminAdminDictsIndexRoute
+  '/admin/file-explorer/': typeof AdminAdminFileExplorerIndexRoute
   '/admin/files/': typeof AdminAdminFilesIndexRoute
   '/admin/logs/': typeof AdminAdminLogsIndexRoute
+  '/admin/messages/': typeof AdminAdminMessagesIndexRoute
   '/admin/news/': typeof AdminAdminNewsIndexRoute
   '/admin/operation-logs/': typeof AdminAdminOperationLogsIndexRoute
   '/admin/news/$id/edit': typeof AdminAdminNewsIdEditRoute
@@ -280,6 +318,7 @@ export interface FileRoutesByTo {
   '/news/$slug': typeof NewsSlugRoute
   '/forgot-password': typeof ForgotPasswordIndexRoute
   '/login': typeof LoginIndexRoute
+  '/messages': typeof MessagesIndexRoute
   '/news': typeof NewsIndexRoute
   '/register': typeof RegisterIndexRoute
   '/admin/forgot-password': typeof AdminForgotPasswordIndexRoute
@@ -289,18 +328,22 @@ export interface FileRoutesByTo {
   '/admin/demo/editor': typeof AdminAdminDemoEditorRoute
   '/admin/demo/pro-table': typeof AdminAdminDemoProTableRoute
   '/admin/demo/upload': typeof AdminAdminDemoUploadRoute
+  '/admin/messages/manage': typeof AdminAdminMessagesManageRoute
   '/admin/news/create': typeof AdminAdminNewsCreateRoute
   '/admin/track/analytics': typeof AdminAdminTrackAnalyticsRoute
   '/admin/track/query': typeof AdminAdminTrackQueryRoute
   '/admin/translations/content': typeof AdminAdminTranslationsContentRoute
   '/admin/translations/ui': typeof AdminAdminTranslationsUiRoute
+  '/api/download/file-explorer/$': typeof ApiDownloadFileExplorerSplatRoute
   '/api/download/file/$id': typeof ApiDownloadFileIdRoute
   '/api/download/log/$id': typeof ApiDownloadLogIdRoute
   '/admin/admin-roles': typeof AdminAdminAdminRolesIndexRoute
   '/admin/config': typeof AdminAdminConfigIndexRoute
   '/admin/dicts': typeof AdminAdminDictsIndexRoute
+  '/admin/file-explorer': typeof AdminAdminFileExplorerIndexRoute
   '/admin/files': typeof AdminAdminFilesIndexRoute
   '/admin/logs': typeof AdminAdminLogsIndexRoute
+  '/admin/messages': typeof AdminAdminMessagesIndexRoute
   '/admin/news': typeof AdminAdminNewsIndexRoute
   '/admin/operation-logs': typeof AdminAdminOperationLogsIndexRoute
   '/admin/news/$id/edit': typeof AdminAdminNewsIdEditRoute
@@ -318,6 +361,7 @@ export interface FileRoutesById {
   '/news/$slug': typeof NewsSlugRoute
   '/forgot-password/': typeof ForgotPasswordIndexRoute
   '/login/': typeof LoginIndexRoute
+  '/messages/': typeof MessagesIndexRoute
   '/news/': typeof NewsIndexRoute
   '/register/': typeof RegisterIndexRoute
   '/admin/_admin/': typeof AdminAdminIndexRoute
@@ -328,18 +372,22 @@ export interface FileRoutesById {
   '/admin/_admin/demo/editor': typeof AdminAdminDemoEditorRoute
   '/admin/_admin/demo/pro-table': typeof AdminAdminDemoProTableRoute
   '/admin/_admin/demo/upload': typeof AdminAdminDemoUploadRoute
+  '/admin/_admin/messages/manage': typeof AdminAdminMessagesManageRoute
   '/admin/_admin/news/create': typeof AdminAdminNewsCreateRoute
   '/admin/_admin/track/analytics': typeof AdminAdminTrackAnalyticsRoute
   '/admin/_admin/track/query': typeof AdminAdminTrackQueryRoute
   '/admin/_admin/translations/content': typeof AdminAdminTranslationsContentRoute
   '/admin/_admin/translations/ui': typeof AdminAdminTranslationsUiRoute
+  '/api/download/file-explorer/$': typeof ApiDownloadFileExplorerSplatRoute
   '/api/download/file/$id': typeof ApiDownloadFileIdRoute
   '/api/download/log/$id': typeof ApiDownloadLogIdRoute
   '/admin/_admin/admin-roles/': typeof AdminAdminAdminRolesIndexRoute
   '/admin/_admin/config/': typeof AdminAdminConfigIndexRoute
   '/admin/_admin/dicts/': typeof AdminAdminDictsIndexRoute
+  '/admin/_admin/file-explorer/': typeof AdminAdminFileExplorerIndexRoute
   '/admin/_admin/files/': typeof AdminAdminFilesIndexRoute
   '/admin/_admin/logs/': typeof AdminAdminLogsIndexRoute
+  '/admin/_admin/messages/': typeof AdminAdminMessagesIndexRoute
   '/admin/_admin/news/': typeof AdminAdminNewsIndexRoute
   '/admin/_admin/operation-logs/': typeof AdminAdminOperationLogsIndexRoute
   '/admin/_admin/news/$id/edit': typeof AdminAdminNewsIdEditRoute
@@ -357,6 +405,7 @@ export interface FileRouteTypes {
     | '/news/$slug'
     | '/forgot-password/'
     | '/login/'
+    | '/messages/'
     | '/news/'
     | '/register/'
     | '/admin/'
@@ -367,18 +416,22 @@ export interface FileRouteTypes {
     | '/admin/demo/editor'
     | '/admin/demo/pro-table'
     | '/admin/demo/upload'
+    | '/admin/messages/manage'
     | '/admin/news/create'
     | '/admin/track/analytics'
     | '/admin/track/query'
     | '/admin/translations/content'
     | '/admin/translations/ui'
+    | '/api/download/file-explorer/$'
     | '/api/download/file/$id'
     | '/api/download/log/$id'
     | '/admin/admin-roles/'
     | '/admin/config/'
     | '/admin/dicts/'
+    | '/admin/file-explorer/'
     | '/admin/files/'
     | '/admin/logs/'
+    | '/admin/messages/'
     | '/admin/news/'
     | '/admin/operation-logs/'
     | '/admin/news/$id/edit'
@@ -394,6 +447,7 @@ export interface FileRouteTypes {
     | '/news/$slug'
     | '/forgot-password'
     | '/login'
+    | '/messages'
     | '/news'
     | '/register'
     | '/admin/forgot-password'
@@ -403,18 +457,22 @@ export interface FileRouteTypes {
     | '/admin/demo/editor'
     | '/admin/demo/pro-table'
     | '/admin/demo/upload'
+    | '/admin/messages/manage'
     | '/admin/news/create'
     | '/admin/track/analytics'
     | '/admin/track/query'
     | '/admin/translations/content'
     | '/admin/translations/ui'
+    | '/api/download/file-explorer/$'
     | '/api/download/file/$id'
     | '/api/download/log/$id'
     | '/admin/admin-roles'
     | '/admin/config'
     | '/admin/dicts'
+    | '/admin/file-explorer'
     | '/admin/files'
     | '/admin/logs'
+    | '/admin/messages'
     | '/admin/news'
     | '/admin/operation-logs'
     | '/admin/news/$id/edit'
@@ -431,6 +489,7 @@ export interface FileRouteTypes {
     | '/news/$slug'
     | '/forgot-password/'
     | '/login/'
+    | '/messages/'
     | '/news/'
     | '/register/'
     | '/admin/_admin/'
@@ -441,18 +500,22 @@ export interface FileRouteTypes {
     | '/admin/_admin/demo/editor'
     | '/admin/_admin/demo/pro-table'
     | '/admin/_admin/demo/upload'
+    | '/admin/_admin/messages/manage'
     | '/admin/_admin/news/create'
     | '/admin/_admin/track/analytics'
     | '/admin/_admin/track/query'
     | '/admin/_admin/translations/content'
     | '/admin/_admin/translations/ui'
+    | '/api/download/file-explorer/$'
     | '/api/download/file/$id'
     | '/api/download/log/$id'
     | '/admin/_admin/admin-roles/'
     | '/admin/_admin/config/'
     | '/admin/_admin/dicts/'
+    | '/admin/_admin/file-explorer/'
     | '/admin/_admin/files/'
     | '/admin/_admin/logs/'
+    | '/admin/_admin/messages/'
     | '/admin/_admin/news/'
     | '/admin/_admin/operation-logs/'
     | '/admin/_admin/news/$id/edit'
@@ -469,8 +532,10 @@ export interface RootRouteChildren {
   NewsSlugRoute: typeof NewsSlugRoute
   ForgotPasswordIndexRoute: typeof ForgotPasswordIndexRoute
   LoginIndexRoute: typeof LoginIndexRoute
+  MessagesIndexRoute: typeof MessagesIndexRoute
   NewsIndexRoute: typeof NewsIndexRoute
   RegisterIndexRoute: typeof RegisterIndexRoute
+  ApiDownloadFileExplorerSplatRoute: typeof ApiDownloadFileExplorerSplatRoute
   ApiDownloadFileIdRoute: typeof ApiDownloadFileIdRoute
   ApiDownloadLogIdRoute: typeof ApiDownloadLogIdRoute
 }
@@ -510,6 +575,13 @@ declare module '@tanstack/react-router' {
       path: '/news'
       fullPath: '/news/'
       preLoaderRoute: typeof NewsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/messages/': {
+      id: '/messages/'
+      path: '/messages'
+      fullPath: '/messages/'
+      preLoaderRoute: typeof MessagesIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/login/': {
@@ -582,6 +654,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminAdminNewsIndexRouteImport
       parentRoute: typeof AdminAdminRoute
     }
+    '/admin/_admin/messages/': {
+      id: '/admin/_admin/messages/'
+      path: '/messages'
+      fullPath: '/admin/messages/'
+      preLoaderRoute: typeof AdminAdminMessagesIndexRouteImport
+      parentRoute: typeof AdminAdminRoute
+    }
     '/admin/_admin/logs/': {
       id: '/admin/_admin/logs/'
       path: '/logs'
@@ -594,6 +673,13 @@ declare module '@tanstack/react-router' {
       path: '/files'
       fullPath: '/admin/files/'
       preLoaderRoute: typeof AdminAdminFilesIndexRouteImport
+      parentRoute: typeof AdminAdminRoute
+    }
+    '/admin/_admin/file-explorer/': {
+      id: '/admin/_admin/file-explorer/'
+      path: '/file-explorer'
+      fullPath: '/admin/file-explorer/'
+      preLoaderRoute: typeof AdminAdminFileExplorerIndexRouteImport
       parentRoute: typeof AdminAdminRoute
     }
     '/admin/_admin/dicts/': {
@@ -631,6 +717,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiDownloadFileIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/download/file-explorer/$': {
+      id: '/api/download/file-explorer/$'
+      path: '/api/download/file-explorer/$'
+      fullPath: '/api/download/file-explorer/$'
+      preLoaderRoute: typeof ApiDownloadFileExplorerSplatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/admin/_admin/translations/ui': {
       id: '/admin/_admin/translations/ui'
       path: '/translations/ui'
@@ -664,6 +757,13 @@ declare module '@tanstack/react-router' {
       path: '/news/create'
       fullPath: '/admin/news/create'
       preLoaderRoute: typeof AdminAdminNewsCreateRouteImport
+      parentRoute: typeof AdminAdminRoute
+    }
+    '/admin/_admin/messages/manage': {
+      id: '/admin/_admin/messages/manage'
+      path: '/messages/manage'
+      fullPath: '/admin/messages/manage'
+      preLoaderRoute: typeof AdminAdminMessagesManageRouteImport
       parentRoute: typeof AdminAdminRoute
     }
     '/admin/_admin/demo/upload': {
@@ -738,6 +838,7 @@ interface AdminAdminRouteChildren {
   AdminAdminDemoEditorRoute: typeof AdminAdminDemoEditorRoute
   AdminAdminDemoProTableRoute: typeof AdminAdminDemoProTableRoute
   AdminAdminDemoUploadRoute: typeof AdminAdminDemoUploadRoute
+  AdminAdminMessagesManageRoute: typeof AdminAdminMessagesManageRoute
   AdminAdminNewsCreateRoute: typeof AdminAdminNewsCreateRoute
   AdminAdminTrackAnalyticsRoute: typeof AdminAdminTrackAnalyticsRoute
   AdminAdminTrackQueryRoute: typeof AdminAdminTrackQueryRoute
@@ -746,8 +847,10 @@ interface AdminAdminRouteChildren {
   AdminAdminAdminRolesIndexRoute: typeof AdminAdminAdminRolesIndexRoute
   AdminAdminConfigIndexRoute: typeof AdminAdminConfigIndexRoute
   AdminAdminDictsIndexRoute: typeof AdminAdminDictsIndexRoute
+  AdminAdminFileExplorerIndexRoute: typeof AdminAdminFileExplorerIndexRoute
   AdminAdminFilesIndexRoute: typeof AdminAdminFilesIndexRoute
   AdminAdminLogsIndexRoute: typeof AdminAdminLogsIndexRoute
+  AdminAdminMessagesIndexRoute: typeof AdminAdminMessagesIndexRoute
   AdminAdminNewsIndexRoute: typeof AdminAdminNewsIndexRoute
   AdminAdminOperationLogsIndexRoute: typeof AdminAdminOperationLogsIndexRoute
   AdminAdminNewsIdEditRoute: typeof AdminAdminNewsIdEditRoute
@@ -763,6 +866,7 @@ const AdminAdminRouteChildren: AdminAdminRouteChildren = {
   AdminAdminDemoEditorRoute: AdminAdminDemoEditorRoute,
   AdminAdminDemoProTableRoute: AdminAdminDemoProTableRoute,
   AdminAdminDemoUploadRoute: AdminAdminDemoUploadRoute,
+  AdminAdminMessagesManageRoute: AdminAdminMessagesManageRoute,
   AdminAdminNewsCreateRoute: AdminAdminNewsCreateRoute,
   AdminAdminTrackAnalyticsRoute: AdminAdminTrackAnalyticsRoute,
   AdminAdminTrackQueryRoute: AdminAdminTrackQueryRoute,
@@ -771,8 +875,10 @@ const AdminAdminRouteChildren: AdminAdminRouteChildren = {
   AdminAdminAdminRolesIndexRoute: AdminAdminAdminRolesIndexRoute,
   AdminAdminConfigIndexRoute: AdminAdminConfigIndexRoute,
   AdminAdminDictsIndexRoute: AdminAdminDictsIndexRoute,
+  AdminAdminFileExplorerIndexRoute: AdminAdminFileExplorerIndexRoute,
   AdminAdminFilesIndexRoute: AdminAdminFilesIndexRoute,
   AdminAdminLogsIndexRoute: AdminAdminLogsIndexRoute,
+  AdminAdminMessagesIndexRoute: AdminAdminMessagesIndexRoute,
   AdminAdminNewsIndexRoute: AdminAdminNewsIndexRoute,
   AdminAdminOperationLogsIndexRoute: AdminAdminOperationLogsIndexRoute,
   AdminAdminNewsIdEditRoute: AdminAdminNewsIdEditRoute,
@@ -809,8 +915,10 @@ const rootRouteChildren: RootRouteChildren = {
   NewsSlugRoute: NewsSlugRoute,
   ForgotPasswordIndexRoute: ForgotPasswordIndexRoute,
   LoginIndexRoute: LoginIndexRoute,
+  MessagesIndexRoute: MessagesIndexRoute,
   NewsIndexRoute: NewsIndexRoute,
   RegisterIndexRoute: RegisterIndexRoute,
+  ApiDownloadFileExplorerSplatRoute: ApiDownloadFileExplorerSplatRoute,
   ApiDownloadFileIdRoute: ApiDownloadFileIdRoute,
   ApiDownloadLogIdRoute: ApiDownloadLogIdRoute,
 }

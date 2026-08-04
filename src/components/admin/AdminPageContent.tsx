@@ -5,7 +5,7 @@
 import type { ReactNode } from "react";
 
 interface AdminPageContentProps {
-	title: string;
+	title: ReactNode;
 	description?: string;
 	extra?: ReactNode;
 	children: ReactNode;

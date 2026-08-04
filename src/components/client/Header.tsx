@@ -4,7 +4,7 @@
  * 根据客户端登录状态显示用户名/退出或登录链接
  */
 import { ClientOnly, Link } from "@tanstack/react-router";
-import { LogOut, Menu, User, X } from "lucide-react";
+import { Bell, LogOut, Menu, User, X } from "lucide-react";
 import { useState } from "react";
 import { useClientAuth } from "#/components/client/ClientAuthProvider";
 import { Logo } from "#/components/Logo";
@@ -79,6 +79,13 @@ export default function Header() {
 					{/* 桌面端用户区 */}
 					{user ? (
 						<div className="hidden items-center gap-2 sm:flex">
+							<Link
+								to="/messages"
+								className="relative rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+								aria-label={t("消息中心")}
+							>
+								<Bell className="h-4 w-4" />
+							</Link>
 							<span className="flex items-center gap-1 text-sm text-muted-foreground">
 								<User className="h-4 w-4" />
 								{user.username}
