@@ -2,24 +2,24 @@
  * 管理端角色管理：CRUD 操作
  */
 import { and, eq, ilike, isNull, or } from "drizzle-orm";
+import type { z } from "zod";
 import { db } from "#/db/index";
 import { adminRole } from "#/db/schema";
+import type {
+	adminRoleCreateSchema,
+	adminRoleUpdateSchema,
+} from "./admin-role.schemas";
 
 export type AdminRoleRecord = typeof adminRole.$inferSelect;
 
-export interface CreateAdminRoleInput {
-	name: string;
-	slug: string;
-	permissions: string[];
-	description?: string;
-}
+/** 新建角色入参（schema 单一来源） */
+export type CreateAdminRoleInput = z.infer<typeof adminRoleCreateSchema>;
 
-export interface UpdateAdminRoleInput {
-	name?: string;
-	slug?: string;
-	permissions?: string[];
-	description?: string;
-}
+/** 更新角色入参（不含 id，id 由服务层独立参数传递） */
+export type UpdateAdminRoleInput = Omit<
+	z.infer<typeof adminRoleUpdateSchema>,
+	"id"
+>;
 
 /** 获取角色列表（支持关键词搜索） */
 export async function getAdminRoleList(keyword?: string) {

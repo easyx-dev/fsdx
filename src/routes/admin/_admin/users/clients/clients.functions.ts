@@ -13,14 +13,11 @@ import {
 	updateSchema,
 } from "./clients.schemas";
 import {
-	type ClientUserListParams,
-	type CreateClientUserInput,
 	createClientUser,
 	deleteClientUser,
 	getClientUser,
 	getClientUserList,
 	resetClientPassword,
-	type UpdateClientUserInput,
 	updateClientUser,
 } from "./clients.server";
 
@@ -28,14 +25,14 @@ import {
 export const getListSFn = createServerFn({ method: "GET" })
 	.middleware([adminPermGuard(PERMISSIONS.CLIENT_VIEW)])
 	.inputValidator(listSchema)
-	.handler(async ({ data }) => getClientUserList(data as ClientUserListParams));
+	.handler(async ({ data }) => getClientUserList(data));
 
 /** 新建客户端用户 */
 export const createSFn = createServerFn({ method: "POST" })
 	.middleware([adminPermGuard(PERMISSIONS.CLIENT_CREATE)])
 	.inputValidator(createSchema)
 	.handler(async ({ data, context }) => {
-		const record = await createClientUser(data as CreateClientUserInput);
+		const record = await createClientUser(data);
 		logCrud(
 			context.user,
 			"client",
@@ -51,10 +48,7 @@ export const updateSFn = createServerFn({ method: "POST" })
 	.middleware([adminPermGuard(PERMISSIONS.CLIENT_EDIT)])
 	.inputValidator(updateSchema)
 	.handler(async ({ data, context }) => {
-		const result = await updateClientUser(
-			data.id,
-			data as UpdateClientUserInput,
-		);
+		const result = await updateClientUser(data.id, data);
 		logCrud(
 			context.user,
 			"client",

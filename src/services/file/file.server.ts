@@ -1,7 +1,8 @@
 /**
  * 文件管理：服务端辅助函数（上传逻辑、存储、清理、列表、删除）
  */
-import { createHash } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
+import dayjs from "dayjs";
 import { and, eq, ilike, lt } from "drizzle-orm";
 import { db } from "#/db/index";
 import { file } from "#/db/schema";
@@ -145,4 +146,68 @@ export async function makePermanent(id: string): Promise<boolean> {
 		.where(eq(file.id, id));
 
 	return true;
+}
+
+/**
+ * 上传文件：SHA256 秒传检测 + 存储落盘 + 入库
+ * 返回记录及是否命中秒传
+ */
+export async function uploadFile(
+	buffer: Buffer,
+	originalName: string,
+	mimeType: string,
+	permanent: boolean,
+): Promise<{ record: FileRecord; isDuplicated: boolean }> {
+	const hash = sha256(buffer);
+
+	const existing = await db.query.file.findFirst({
+		where: and(
+			eq(file.sha256, hash),
+			eq(file.status, "permanent"),
+			notDeleted(file.deletedAt),
+		),
+	});
+
+	if (existing) {
+		return { record: existing, isDuplicated: true };
+	}
+
+	const ext = originalName.includes(".")
+		? originalName.slice(originalName.lastIndexOf("."))
+		: "";
+	const date = dayjs().format("YYYY-MM-DD");
+	const storedName = `${randomUUID()}${ext}`;
+	const path = `${date}/${storedName}`;
+
+	await storage.save(path, buffer);
+
+	const status = permanent ? ("permanent" as const) : ("temp" as const);
+	const expiredAt = permanent
+		? null
+		: new Date(Date.now() + TEMP_EXPIRE_HOURS * 3600 * 1000);
+	const [record] = await db
+		.insert(file)
+		.values({
+			sha256: hash,
+			originalName,
+			storedName,
+			mimeType,
+			size: buffer.length,
+			path,
+			status,
+			expiredAt,
+		})
+		.returning();
+
+	logger.info({ id: record.id, name: originalName }, "文件上传成功");
+	return { record, isDuplicated: false };
+}
+
+/** 查询文件原始文件名（供预览组件使用），不存在返回 null */
+export async function getFileInfo(id: string): Promise<string | null> {
+	const result = await db.query.file.findFirst({
+		where: and(eq(file.id, id), notDeleted(file.deletedAt)),
+		columns: { originalName: true },
+	});
+	return result?.originalName ?? null;
 }

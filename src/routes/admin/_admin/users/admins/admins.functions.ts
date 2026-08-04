@@ -14,14 +14,11 @@ import {
 	updateSchema,
 } from "./admins.schemas";
 import {
-	type AdminUserListParams,
-	type CreateAdminUserInput,
 	createAdminUser,
 	deleteAdminUser,
 	getAdminUser,
 	getAdminUserList,
 	resetAdminPassword,
-	type UpdateAdminUserInput,
 	updateAdminUser,
 } from "./admins.server";
 
@@ -34,14 +31,14 @@ export const getAdminRolesForSelectSFn = createServerFn({ method: "GET" })
 export const getListSFn = createServerFn({ method: "GET" })
 	.middleware([adminPermGuard(PERMISSIONS.ADMIN_VIEW)])
 	.inputValidator(listSchema)
-	.handler(async ({ data }) => getAdminUserList(data as AdminUserListParams));
+	.handler(async ({ data }) => getAdminUserList(data));
 
 /** 新建管理员 */
 export const createSFn = createServerFn({ method: "POST" })
 	.middleware([adminPermGuard(PERMISSIONS.ADMIN_CREATE)])
 	.inputValidator(createSchema)
 	.handler(async ({ data, context }) => {
-		const record = await createAdminUser(data as CreateAdminUserInput);
+		const record = await createAdminUser(data);
 		logCrud(
 			context.user,
 			"admin",
@@ -57,7 +54,7 @@ export const updateSFn = createServerFn({ method: "POST" })
 	.middleware([adminPermGuard(PERMISSIONS.ADMIN_EDIT)])
 	.inputValidator(updateSchema)
 	.handler(async ({ data, context }) => {
-		const result = await updateAdminUser(data.id, data as UpdateAdminUserInput);
+		const result = await updateAdminUser(data.id, data);
 		logCrud(
 			context.user,
 			"admin",

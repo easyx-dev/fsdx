@@ -14,9 +14,14 @@ const { mockGetContentTranslations } = vi.hoisted(() => {
 	};
 });
 
-vi.mock("#/services/i18n/i18n.server", () => ({
-	getContentTranslations: mockGetContentTranslations,
-}));
+vi.mock("#/services/i18n/i18n.server", async (importOriginal) => {
+	const actual =
+		await importOriginal<typeof import("#/services/i18n/i18n.server")>();
+	return {
+		...actual,
+		getContentTranslations: mockGetContentTranslations,
+	};
+});
 
 const { mockDb } = vi.hoisted(() => {
 	const q = () => ({ findFirst: vi.fn(), findMany: vi.fn() });

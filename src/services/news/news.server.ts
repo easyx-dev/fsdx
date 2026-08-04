@@ -29,7 +29,7 @@ export type NewsDetail = NewsRecord & { html: string };
 /**
  * 根据标题生成 slug：中文字符用时间戳后缀，ASCII 直接 slugify
  */
-function generateSlug(title: string): string {
+export function generateSlug(title: string): string {
 	const hasChinese = /[\u4e00-\u9fff]/.test(title);
 	if (hasChinese) {
 		return `news-${Date.now()}`;

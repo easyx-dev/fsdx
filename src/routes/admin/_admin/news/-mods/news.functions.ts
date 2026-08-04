@@ -31,21 +31,6 @@ import {
 	updateNewsRecord,
 } from "./news.server";
 
-/** 根据标题生成 slug */
-export function generateSlug(title: string): string {
-	const hasChinese = /[\u4e00-\u9fff]/.test(title);
-	if (hasChinese) return `news-${Date.now()}`;
-	return (
-		title
-			.toLowerCase()
-			.replace(/[^\w\s-]/g, "")
-			.replace(/\s+/g, "-")
-			.replace(/-+/g, "-")
-			.replace(/^-|-$/g, "")
-			.slice(0, 100) || `news-${Date.now()}`
-	);
-}
-
 /** 获取新闻列表（分页、筛选、排序） */
 export const getNewsListSFn = createServerFn({ method: "GET" })
 	.middleware([adminPermGuard(PERMISSIONS.NEWS_VIEW)])

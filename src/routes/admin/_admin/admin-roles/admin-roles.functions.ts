@@ -5,11 +5,9 @@ import { createServerFn } from "@tanstack/react-start";
 import { PERMISSIONS } from "#/lib/permissions/permissions";
 import { adminPermGuard } from "#/middleware/admin-auth";
 import {
-	type CreateAdminRoleInput,
 	createAdminRole,
 	deleteAdminRole,
 	getAdminRoleList,
-	type UpdateAdminRoleInput,
 	updateAdminRole,
 } from "#/services/admin-role/admin-role.server";
 import { logCrud } from "#/services/operation-log/operation-log.server";
@@ -31,7 +29,7 @@ export const createAdminRoleSFn = createServerFn({ method: "POST" })
 	.middleware([adminPermGuard(PERMISSIONS.ADMIN_ROLE_CREATE)])
 	.inputValidator(adminRoleCreateSchema)
 	.handler(async ({ data, context }) => {
-		const result = await createAdminRole(data as CreateAdminRoleInput);
+		const result = await createAdminRole(data);
 		logCrud(context.user, "admin_role", "create", {
 			id: result.id,
 			name: result.name,
@@ -44,7 +42,7 @@ export const updateAdminRoleSFn = createServerFn({ method: "POST" })
 	.middleware([adminPermGuard(PERMISSIONS.ADMIN_ROLE_EDIT)])
 	.inputValidator(adminRoleUpdateSchema)
 	.handler(async ({ data, context }) => {
-		const result = await updateAdminRole(data.id, data as UpdateAdminRoleInput);
+		const result = await updateAdminRole(data.id, data);
 		logCrud(context.user, "admin_role", "update", {
 			id: data.id,
 			name: result?.name,

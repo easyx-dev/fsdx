@@ -3,6 +3,7 @@
  */
 import bcrypt from "bcryptjs";
 import { and, eq, ilike, or } from "drizzle-orm";
+import type { z } from "zod";
 import { db } from "#/db/index";
 import { clientUser } from "#/db/schema";
 import { clearClientUserCache } from "#/services/client-auth/client-auth.server";
@@ -12,30 +13,21 @@ import {
 	notDeleted,
 	paginationOffset,
 } from "#/services/query/query-utils.server";
-import type { PaginatedSortParams } from "#/types/query";
+import type { createSchema, listSchema, updateSchema } from "./clients.schemas";
 
 export type ClientUserRecord = Omit<
 	typeof clientUser.$inferSelect,
 	"passwordHash" | "deletedAt"
 >;
 
-export interface CreateClientUserInput {
-	username: string;
-	email: string;
-	password: string;
-}
+/** 新建客户端用户入参（schema 单一来源） */
+export type CreateClientUserInput = z.infer<typeof createSchema>;
 
-export interface UpdateClientUserInput {
-	username?: string;
-	email?: string;
-	status?: string;
-	emailVerified?: boolean;
-}
+/** 更新客户端用户入参（不含 id，id 由服务层独立参数传递） */
+export type UpdateClientUserInput = Omit<z.infer<typeof updateSchema>, "id">;
 
 /** 客户端用户列表查询参数 */
-export interface ClientUserListParams extends PaginatedSortParams {
-	keyword?: string;
-}
+export type ClientUserListParams = z.infer<typeof listSchema>;
 
 const clientUserSafeCols = {
 	id: clientUser.id,

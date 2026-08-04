@@ -3,6 +3,7 @@
  */
 import bcrypt from "bcryptjs";
 import { and, eq, ilike, or } from "drizzle-orm";
+import type { z } from "zod";
 import { db } from "#/db/index";
 import { adminRole, adminUser } from "#/db/schema";
 import {
@@ -11,7 +12,7 @@ import {
 	notDeleted,
 	paginationOffset,
 } from "#/services/query/query-utils.server";
-import type { PaginatedSortParams } from "#/types/query";
+import type { createSchema, listSchema, updateSchema } from "./admins.schemas";
 
 export type AdminUserRecord = typeof adminUser.$inferSelect;
 
@@ -20,24 +21,14 @@ export interface AdminUserListItem extends AdminUserRecord {
 	roleName?: string | null;
 }
 
-export interface CreateAdminUserInput {
-	username: string;
-	email: string;
-	password: string;
-	adminRoleId: string;
-}
+/** 新建管理员入参（schema 单一来源） */
+export type CreateAdminUserInput = z.infer<typeof createSchema>;
 
-export interface UpdateAdminUserInput {
-	username?: string;
-	email?: string;
-	adminRoleId?: string;
-	status?: string;
-}
+/** 更新管理员入参（不含 id，id 由服务层独立参数传递） */
+export type UpdateAdminUserInput = Omit<z.infer<typeof updateSchema>, "id">;
 
 /** 管理员列表查询参数 */
-export interface AdminUserListParams extends PaginatedSortParams {
-	keyword?: string;
-}
+export type AdminUserListParams = z.infer<typeof listSchema>;
 
 /** 获取管理员列表（含角色名称，支持关键词搜索和排序） */
 export async function getAdminUserList(params?: AdminUserListParams) {

@@ -7,7 +7,7 @@ import { describe, expect, it, vi } from "vitest";
 process.env.JWT_SECRET = "test-jwt-secret-at-least-32-characters-long!!";
 process.env.DATABASE_URL = "postgres://localhost/test";
 vi.mock("#/lib/logger/logger", () => ({
-	logger: { error: vi.fn(), info: vi.fn(), warn: vi.fn() },
+	logger: { error: vi.fn(), info: vi.fn(), warn: vi.fn(), debug: vi.fn() },
 }));
 
 import { COOKIE_NAMES, signToken, verifyToken } from "#/lib/jwt/jwt";

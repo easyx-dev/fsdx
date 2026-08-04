@@ -27,7 +27,7 @@ vi.mock("#/services/captcha/captcha.server", () => ({
 }));
 vi.mock("#/lib/logger/logger", () => ({ logger: mockLogger }));
 
-import { resetAdminPassword } from "../forgot-password.functions";
+import { resetAdminPassword } from "../forgot-password.server";
 
 beforeEach(() => {
 	vi.clearAllMocks();
