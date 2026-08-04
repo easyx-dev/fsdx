@@ -4,13 +4,13 @@
 import { describe, expect, it } from "vitest";
 import { z } from "zod";
 import { analyticsQuerySchema } from "../analytics.functions";
-import { eventQuerySchema } from "../query.functions";
+import { trackEventQuerySchema } from "../query.functions";
 
 const trackEventSchema = z.object({
 	time: z.number(),
 	userId: z.string().optional(),
 	sessionId: z.string().min(1),
-	event: z.string().min(1).max(100),
+	name: z.string().min(1).max(100),
 	properties: z.record(z.string(), z.unknown()).default({}),
 });
 
@@ -19,7 +19,7 @@ describe("trackEventSchema", () => {
 		const result = trackEventSchema.safeParse({
 			time: 1700000000000,
 			sessionId: "abc123",
-			event: "PageView",
+			name: "PageView",
 		});
 		expect(result.success).toBe(true);
 		if (result.success) {
@@ -32,7 +32,7 @@ describe("trackEventSchema", () => {
 			time: 1700000000000,
 			userId: "user-1",
 			sessionId: "abc123",
-			event: "Click",
+			name: "Click",
 			properties: { page: "/home", button: "login" },
 		});
 		expect(result.success).toBe(true);
@@ -48,7 +48,7 @@ describe("trackEventSchema", () => {
 		const result = trackEventSchema.safeParse({
 			time: 1700000000000,
 			sessionId: "",
-			event: "PageView",
+			name: "PageView",
 		});
 		expect(result.success).toBe(false);
 	});
@@ -57,7 +57,7 @@ describe("trackEventSchema", () => {
 		const result = trackEventSchema.safeParse({
 			time: 1700000000000,
 			sessionId: "abc123",
-			event: "",
+			name: "",
 		});
 		expect(result.success).toBe(false);
 	});
@@ -66,7 +66,7 @@ describe("trackEventSchema", () => {
 		const result = trackEventSchema.safeParse({
 			time: 1700000000000,
 			sessionId: "abc123",
-			event: "a".repeat(101),
+			name: "a".repeat(101),
 		});
 		expect(result.success).toBe(false);
 	});
@@ -75,7 +75,7 @@ describe("trackEventSchema", () => {
 		const result = trackEventSchema.safeParse({
 			time: 1700000000000,
 			sessionId: "abc123",
-			event: "PageView",
+			name: "PageView",
 		});
 		expect(result.success).toBe(true);
 		if (result.success) {
@@ -84,15 +84,15 @@ describe("trackEventSchema", () => {
 	});
 });
 
-describe("eventQuerySchema", () => {
+describe("trackEventQuerySchema", () => {
 	it("空参数应通过校验", () => {
-		const result = eventQuerySchema.safeParse({});
+		const result = trackEventQuerySchema.safeParse({});
 		expect(result.success).toBe(true);
 	});
 
 	it("所有参数同时传入应通过校验", () => {
-		const result = eventQuerySchema.safeParse({
-			event: "PageView",
+		const result = trackEventQuerySchema.safeParse({
+			name: "PageView",
 			userId: "user-1",
 			sessionId: "abc123",
 			keyword: "login",
@@ -107,12 +107,12 @@ describe("eventQuerySchema", () => {
 	});
 
 	it("pageSize 超过 100 应校验失败", () => {
-		const result = eventQuerySchema.safeParse({ pageSize: 101 });
+		const result = trackEventQuerySchema.safeParse({ pageSize: 101 });
 		expect(result.success).toBe(false);
 	});
 
 	it("sortOrder 传入非法值应校验失败", () => {
-		const result = eventQuerySchema.safeParse({ sortOrder: "invalid" });
+		const result = trackEventQuerySchema.safeParse({ sortOrder: "invalid" });
 		expect(result.success).toBe(false);
 	});
 });

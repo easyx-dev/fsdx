@@ -1,7 +1,7 @@
 /**
  * 客户端埋点追踪 SDK：自动采集页面信息，通过 Server Function 上报事件到服务端
  */
-import { trackEventSFn } from "#/services/event/event.functions";
+import { trackEventSFn } from "#/services/track/track.functions";
 
 interface TrackConfig {
 	/** 是否自动采集 PageView 事件 */
@@ -154,7 +154,7 @@ export async function track(
 		time: Date.now(),
 		userId: state.userId || undefined,
 		sessionId: state.sessionId || getOrCreateSessionId(),
-		event: eventName,
+		name: eventName,
 		properties: { ...autoProps, ...properties },
 	};
 

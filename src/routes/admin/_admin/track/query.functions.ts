@@ -5,10 +5,13 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { PERMISSIONS } from "#/lib/permissions/permissions";
 import { adminPermGuard } from "#/middleware/admin-auth";
-import { getEventNames, searchEvents } from "#/services/event/event.server";
+import {
+	getTrackEventNames,
+	searchTrackEvents,
+} from "#/services/track/track.server";
 
-export const eventQuerySchema = z.object({
-	event: z.string().optional(),
+export const trackEventQuerySchema = z.object({
+	name: z.string().optional(),
 	userId: z.string().optional(),
 	sessionId: z.string().optional(),
 	keyword: z.string().optional(),
@@ -21,12 +24,12 @@ export const eventQuerySchema = z.object({
 });
 
 /** 分页查询埋点事件 */
-export const searchEventsSFn = createServerFn({ method: "GET" })
-	.middleware([adminPermGuard(PERMISSIONS.EVENT_QUERY)])
-	.inputValidator(eventQuerySchema)
-	.handler(async ({ data }) => searchEvents(data));
+export const searchTrackEventsSFn = createServerFn({ method: "GET" })
+	.middleware([adminPermGuard(PERMISSIONS.TRACK_QUERY)])
+	.inputValidator(trackEventQuerySchema)
+	.handler(async ({ data }) => searchTrackEvents(data));
 
 /** 获取已有的事件名称列表 */
-export const getEventNamesSFn = createServerFn({ method: "GET" })
-	.middleware([adminPermGuard(PERMISSIONS.EVENT_QUERY)])
-	.handler(async () => getEventNames());
+export const getTrackEventNamesSFn = createServerFn({ method: "GET" })
+	.middleware([adminPermGuard(PERMISSIONS.TRACK_QUERY)])
+	.handler(async () => getTrackEventNames());

@@ -110,23 +110,23 @@ export const NAV_GROUPS: NavGroup[] = [
 		label: "埋点分析",
 		items: [
 			{
-				key: "/admin/events/query",
+				key: "/admin/track/query",
 				label: "事件查询",
 				icon: <BarChartOutlined />,
 			},
 			{
-				key: "/admin/events/analytics",
+				key: "/admin/track/analytics",
 				label: "事件分析",
 				icon: <LineChartOutlined />,
 			},
 			{
-				key: "/admin/events/preset-events",
-				label: "预设事件",
+				key: "/admin/track/event-meta",
+				label: "元事件",
 				icon: <TableOutlined />,
 			},
 			{
-				key: "/admin/events/preset-properties",
-				label: "预设属性",
+				key: "/admin/track/property-meta",
+				label: "元属性",
 				icon: <StockOutlined />,
 			},
 		],

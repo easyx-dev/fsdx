@@ -5,15 +5,15 @@ import { runMigrations } from "#/db/migrate";
 import { logger } from "#/lib/logger/logger";
 import { ensurePresetConfigs } from "#/services/config/config.server";
 import { ensurePresetDicts } from "#/services/dict/dict.server";
+import { ensurePresetTranslations } from "#/services/i18n/i18n-seed";
+import { flushOperationLogs } from "#/services/operation-log/operation-log.server";
+import { registerAllTasks } from "#/services/tasks/tasks.server";
 import {
 	ensurePresetEvents,
 	ensurePresetProperties,
 	flushTrackEvents,
-	loadPresetCache,
-} from "#/services/event/event.server";
-import { ensurePresetTranslations } from "#/services/i18n/i18n-seed";
-import { flushOperationLogs } from "#/services/operation-log/operation-log.server";
-import { registerAllTasks } from "#/services/tasks/tasks.server";
+	loadTrackMetaCache,
+} from "#/services/track/track.server";
 
 /** 优雅关闭超时时间（毫秒），防止缓冲刷入挂起导致进程无法退出 */
 const GRACEFUL_SHUTDOWN_TIMEOUT = 10_000;
@@ -40,11 +40,11 @@ export async function bootstrap() {
 		logger.error({ err }, "预置翻译初始化失败");
 	});
 
-	// 事件预设 → 缓存加载有依赖链：先写 presetEvent/presetProperty，再加载缓存
+	// 事件预设 → 缓存加载有依赖链：先写 trackEventMeta/trackPropertyMeta，再加载缓存
 	void Promise.all([ensurePresetEvents(), ensurePresetProperties()])
-		.then(() => loadPresetCache())
+		.then(() => loadTrackMetaCache())
 		.catch((err) => {
-			logger.error({ err }, "预设事件/属性或缓存加载失败");
+			logger.error({ err }, "预置元事件/元属性或缓存加载失败");
 		});
 
 	// 注册定时任务

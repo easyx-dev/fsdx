@@ -3,14 +3,14 @@
  */
 import { describe, expect, it } from "vitest";
 import {
-	presetEventCreateSchema,
-	presetEventDeleteSchema,
-	presetEventUpdateSchema,
-} from "../preset-events.schemas";
+	eventMetaCreateSchema,
+	eventMetaDeleteSchema,
+	eventMetaUpdateSchema,
+} from "../event-meta.schemas";
 
-describe("presetEventCreateSchema", () => {
+describe("eventMetaCreateSchema", () => {
 	it("有效参数应通过校验", () => {
-		const result = presetEventCreateSchema.safeParse({
+		const result = eventMetaCreateSchema.safeParse({
 			name: "PageView",
 			label: "页面浏览",
 			category: "交互",
@@ -19,7 +19,7 @@ describe("presetEventCreateSchema", () => {
 	});
 
 	it("缺少 label 应校验失败", () => {
-		const result = presetEventCreateSchema.safeParse({
+		const result = eventMetaCreateSchema.safeParse({
 			name: "PageView",
 			category: "交互",
 		});
@@ -27,7 +27,7 @@ describe("presetEventCreateSchema", () => {
 	});
 
 	it("缺少 category 应校验失败", () => {
-		const result = presetEventCreateSchema.safeParse({
+		const result = eventMetaCreateSchema.safeParse({
 			name: "PageView",
 			label: "页面浏览",
 		});
@@ -35,7 +35,7 @@ describe("presetEventCreateSchema", () => {
 	});
 
 	it("name 超过 100 个字符应校验失败", () => {
-		const result = presetEventCreateSchema.safeParse({
+		const result = eventMetaCreateSchema.safeParse({
 			name: "a".repeat(101),
 			label: "页面浏览",
 			category: "交互",
@@ -44,9 +44,9 @@ describe("presetEventCreateSchema", () => {
 	});
 });
 
-describe("presetEventUpdateSchema", () => {
+describe("eventMetaUpdateSchema", () => {
 	it("仅更新 label 应通过校验", () => {
-		const result = presetEventUpdateSchema.safeParse({
+		const result = eventMetaUpdateSchema.safeParse({
 			name: "PageView",
 			label: "页面访问",
 		});
@@ -54,21 +54,21 @@ describe("presetEventUpdateSchema", () => {
 	});
 
 	it("缺少 name 应校验失败", () => {
-		const result = presetEventUpdateSchema.safeParse({
+		const result = eventMetaUpdateSchema.safeParse({
 			label: "页面访问",
 		});
 		expect(result.success).toBe(false);
 	});
 });
 
-describe("presetEventDeleteSchema", () => {
+describe("eventMetaDeleteSchema", () => {
 	it("有效参数应通过校验", () => {
-		const result = presetEventDeleteSchema.safeParse({ name: "PageView" });
+		const result = eventMetaDeleteSchema.safeParse({ name: "PageView" });
 		expect(result.success).toBe(true);
 	});
 
 	it("name 为空应校验失败", () => {
-		const result = presetEventDeleteSchema.safeParse({ name: "" });
+		const result = eventMetaDeleteSchema.safeParse({ name: "" });
 		expect(result.success).toBe(false);
 	});
 });

@@ -8,28 +8,30 @@ vi.mock("#/lib/logger/logger", () => ({
 	logger: { error: vi.fn(), info: vi.fn(), warn: vi.fn() },
 }));
 
-const { mockPresetEventCache, mockPresetPropertyCache } = vi.hoisted(() => {
-	const eventStore = new Map<string, boolean>();
-	const propertyStore = new Map<string, string>();
-	return {
-		mockPresetEventCache: {
-			clear: vi.fn(() => eventStore.clear()),
-			set: vi.fn((k: string, v: boolean) => eventStore.set(k, v)),
-			get: vi.fn((k: string) => eventStore.get(k)),
-			has: vi.fn((k: string) => eventStore.has(k)),
-		},
-		mockPresetPropertyCache: {
-			clear: vi.fn(() => propertyStore.clear()),
-			set: vi.fn((k: string, v: string) => propertyStore.set(k, v)),
-			get: vi.fn((k: string) => propertyStore.get(k)),
-			has: vi.fn((k: string) => propertyStore.has(k)),
-		},
-	};
-});
+const { mockTrackEventMetaCache, mockTrackPropertyMetaCache } = vi.hoisted(
+	() => {
+		const eventStore = new Map<string, boolean>();
+		const propertyStore = new Map<string, string>();
+		return {
+			mockTrackEventMetaCache: {
+				clear: vi.fn(() => eventStore.clear()),
+				set: vi.fn((k: string, v: boolean) => eventStore.set(k, v)),
+				get: vi.fn((k: string) => eventStore.get(k)),
+				has: vi.fn((k: string) => eventStore.has(k)),
+			},
+			mockTrackPropertyMetaCache: {
+				clear: vi.fn(() => propertyStore.clear()),
+				set: vi.fn((k: string, v: string) => propertyStore.set(k, v)),
+				get: vi.fn((k: string) => propertyStore.get(k)),
+				has: vi.fn((k: string) => propertyStore.has(k)),
+			},
+		};
+	},
+);
 
 vi.mock("#/lib/cache/track.cache", () => ({
-	presetEventCache: mockPresetEventCache,
-	presetPropertyCache: mockPresetPropertyCache,
+	trackEventMetaCache: mockTrackEventMetaCache,
+	trackPropertyMetaCache: mockTrackPropertyMetaCache,
 }));
 
 const { mockDb } = vi.hoisted(() => {
@@ -37,9 +39,9 @@ const { mockDb } = vi.hoisted(() => {
 	return {
 		mockDb: {
 			query: {
-				event: q(),
-				presetEvent: q(),
-				presetProperty: q(),
+				trackEvent: q(),
+				trackEventMeta: q(),
+				trackPropertyMeta: q(),
 				adminUser: q(),
 				clientUser: q(),
 				role: q(),
@@ -91,29 +93,29 @@ vi.mock("#/db", () => ({ db: mockDb }));
 
 // 所有 mock 之后导入被测模块
 import {
-	createPresetEvent,
-	createPresetProperty,
-	deletePresetEvent,
-	deletePresetProperty,
+	createTrackEventMeta,
+	createTrackPropertyMeta,
+	deleteTrackEventMeta,
+	deleteTrackPropertyMeta,
 	flushTrackEvents,
-	getEventNames,
-	getPresetEvent,
-	getPresetEventList,
-	getPresetProperty,
-	getPresetPropertyList,
-	loadPresetCache,
+	getTrackEventMeta,
+	getTrackEventMetaList,
+	getTrackEventNames,
+	getTrackPropertyMeta,
+	getTrackPropertyMetaList,
+	loadTrackMetaCache,
 	trackEvent,
-	updatePresetEvent,
-	updatePresetProperty,
-} from "../event.server";
+	updateTrackEventMeta,
+	updateTrackPropertyMeta,
+} from "../track.server";
 
 beforeEach(() => {
 	vi.clearAllMocks();
-	mockPresetEventCache.clear();
-	mockPresetPropertyCache.clear();
+	mockTrackEventMetaCache.clear();
+	mockTrackPropertyMetaCache.clear();
 });
 
-describe("loadPresetCache", () => {
+describe("loadTrackMetaCache", () => {
 	it("从数据库加载预设到缓存", async () => {
 		mockDb.select.mockReturnValueOnce({
 			from: vi.fn(() => Promise.resolve([{ name: "PageView" }])),
@@ -123,7 +125,7 @@ describe("loadPresetCache", () => {
 			from: vi.fn(() => Promise.resolve([{ key: "$ip", dataType: "string" }])),
 		} as any);
 
-		await loadPresetCache();
+		await loadTrackMetaCache();
 
 		expect(mockDb.select).toHaveBeenCalled();
 	});
@@ -135,24 +137,24 @@ describe("trackEvent", () => {
 			trackEvent({
 				time: Date.now(),
 				sessionId: "session-1",
-				event: "UnknownEvent",
+				name: "UnknownEvent",
 				properties: {},
 			}),
 		).not.toThrow();
 	});
 });
 
-describe("getEventNames", () => {
+describe("getTrackEventNames", () => {
 	it("返回事件名称列表", async () => {
 		mockDb.selectDistinct.mockReturnValue({
 			from: vi.fn(() => ({
 				orderBy: vi.fn(() =>
-					Promise.resolve([{ event: "PageView" }, { event: "Click" }]),
+					Promise.resolve([{ name: "PageView" }, { name: "Click" }]),
 				),
 			})),
 		} as any);
 
-		const names = await getEventNames();
+		const names = await getTrackEventNames();
 		expect(names).toEqual(["PageView", "Click"]);
 	});
 
@@ -163,13 +165,13 @@ describe("getEventNames", () => {
 			})),
 		} as any);
 
-		const names = await getEventNames();
+		const names = await getTrackEventNames();
 		expect(names).toEqual([]);
 	});
 });
 
-describe("预设事件管理", () => {
-	describe("getPresetEventList", () => {
+describe("元事件管理", () => {
+	describe("getTrackEventMetaList", () => {
 		it("返回预设事件列表", async () => {
 			mockDb.select.mockReturnValue({
 				from: vi.fn(() => ({
@@ -181,13 +183,13 @@ describe("预设事件管理", () => {
 				})),
 			} as any);
 
-			const list = await getPresetEventList();
+			const list = await getTrackEventMetaList();
 			expect(list).toHaveLength(1);
 			expect(list[0].name).toBe("PageView");
 		});
 	});
 
-	describe("getPresetEvent", () => {
+	describe("getTrackEventMeta", () => {
 		it("按名称获取预设事件", async () => {
 			mockDb.select.mockReturnValue({
 				from: vi.fn(() => ({
@@ -201,7 +203,7 @@ describe("预设事件管理", () => {
 				})),
 			} as any);
 
-			const event = await getPresetEvent("PageView");
+			const event = await getTrackEventMeta("PageView");
 			expect(event).not.toBeNull();
 			expect(event!.name).toBe("PageView");
 		});
@@ -215,12 +217,12 @@ describe("预设事件管理", () => {
 				})),
 			} as any);
 
-			const event = await getPresetEvent("NotFound");
+			const event = await getTrackEventMeta("NotFound");
 			expect(event).toBeNull();
 		});
 	});
 
-	describe("createPresetEvent", () => {
+	describe("createTrackEventMeta", () => {
 		it("创建预设事件并返回记录", async () => {
 			const mockReturning = vi.fn(() =>
 				Promise.resolve([
@@ -231,7 +233,7 @@ describe("预设事件管理", () => {
 				values: vi.fn(() => ({ returning: mockReturning })),
 			} as any);
 
-			const result = await createPresetEvent("Custom", {
+			const result = await createTrackEventMeta("Custom", {
 				label: "自定义",
 				category: "自定义类别",
 			});
@@ -240,7 +242,7 @@ describe("预设事件管理", () => {
 		});
 	});
 
-	describe("updatePresetEvent", () => {
+	describe("updateTrackEventMeta", () => {
 		it("更新不存在的预设事件返回 null", async () => {
 			mockDb.select.mockReturnValue({
 				from: vi.fn(() => ({
@@ -250,14 +252,14 @@ describe("预设事件管理", () => {
 				})),
 			} as any);
 
-			const result = await updatePresetEvent("NotFound", {
+			const result = await updateTrackEventMeta("NotFound", {
 				label: "新名称",
 			});
 			expect(result).toBeNull();
 		});
 	});
 
-	describe("deletePresetEvent", () => {
+	describe("deleteTrackEventMeta", () => {
 		it("预置事件不可删除返回 false", async () => {
 			mockDb.select.mockReturnValue({
 				from: vi.fn(() => ({
@@ -276,7 +278,7 @@ describe("预设事件管理", () => {
 				})),
 			} as any);
 
-			const result = await deletePresetEvent("PageView");
+			const result = await deleteTrackEventMeta("PageView");
 			expect(result).toBe(false);
 		});
 
@@ -289,14 +291,14 @@ describe("预设事件管理", () => {
 				})),
 			} as any);
 
-			const result = await deletePresetEvent("NotFound");
+			const result = await deleteTrackEventMeta("NotFound");
 			expect(result).toBe(false);
 		});
 	});
 });
 
-describe("预设属性管理", () => {
-	describe("getPresetPropertyList", () => {
+describe("元属性管理", () => {
+	describe("getTrackPropertyMetaList", () => {
 		it("返回预设属性列表", async () => {
 			mockDb.select.mockReturnValue({
 				from: vi.fn(() => ({
@@ -308,12 +310,12 @@ describe("预设属性管理", () => {
 				})),
 			} as any);
 
-			const list = await getPresetPropertyList();
+			const list = await getTrackPropertyMetaList();
 			expect(list).toHaveLength(1);
 		});
 	});
 
-	describe("getPresetProperty", () => {
+	describe("getTrackPropertyMeta", () => {
 		it("按 key 获取预设属性", async () => {
 			mockDb.select.mockReturnValue({
 				from: vi.fn(() => ({
@@ -327,7 +329,7 @@ describe("预设属性管理", () => {
 				})),
 			} as any);
 
-			const prop = await getPresetProperty("$ip");
+			const prop = await getTrackPropertyMeta("$ip");
 			expect(prop).not.toBeNull();
 		});
 
@@ -340,12 +342,12 @@ describe("预设属性管理", () => {
 				})),
 			} as any);
 
-			const prop = await getPresetProperty("$notfound");
+			const prop = await getTrackPropertyMeta("$notfound");
 			expect(prop).toBeNull();
 		});
 	});
 
-	describe("createPresetProperty", () => {
+	describe("createTrackPropertyMeta", () => {
 		it("创建预设属性默认 dataType 为 string", async () => {
 			const mockReturning = vi.fn(() =>
 				Promise.resolve([
@@ -356,14 +358,14 @@ describe("预设属性管理", () => {
 				values: vi.fn(() => ({ returning: mockReturning })),
 			} as any);
 
-			const result = await createPresetProperty("custom_key", {
+			const result = await createTrackPropertyMeta("custom_key", {
 				label: "自定义属性",
 			});
 			expect(result.key).toBe("custom_key");
 		});
 	});
 
-	describe("updatePresetProperty", () => {
+	describe("updateTrackPropertyMeta", () => {
 		it("更新不存在的属性返回 null", async () => {
 			mockDb.select.mockReturnValue({
 				from: vi.fn(() => ({
@@ -373,14 +375,14 @@ describe("预设属性管理", () => {
 				})),
 			} as any);
 
-			const result = await updatePresetProperty("notfound", {
+			const result = await updateTrackPropertyMeta("notfound", {
 				label: "新名称",
 			});
 			expect(result).toBeNull();
 		});
 	});
 
-	describe("deletePresetProperty", () => {
+	describe("deleteTrackPropertyMeta", () => {
 		it("预置属性不可删除返回 false", async () => {
 			mockDb.select.mockReturnValue({
 				from: vi.fn(() => ({
@@ -399,7 +401,7 @@ describe("预设属性管理", () => {
 				})),
 			} as any);
 
-			const result = await deletePresetProperty("$ip");
+			const result = await deleteTrackPropertyMeta("$ip");
 			expect(result).toBe(false);
 		});
 	});

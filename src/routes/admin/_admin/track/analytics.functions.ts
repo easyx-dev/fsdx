@@ -5,7 +5,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { PERMISSIONS } from "#/lib/permissions/permissions";
 import { adminPermGuard } from "#/middleware/admin-auth";
-import { getEventAnalytics } from "#/services/event/event.server";
+import { getTrackAnalytics } from "#/services/track/track.server";
 
 export const analyticsQuerySchema = z.object({
 	startDate: z.string().min(1),
@@ -14,7 +14,7 @@ export const analyticsQuerySchema = z.object({
 });
 
 /** 获取事件分析数据 */
-export const getEventAnalyticsSFn = createServerFn({ method: "GET" })
-	.middleware([adminPermGuard(PERMISSIONS.EVENT_QUERY)])
+export const getTrackAnalyticsSFn = createServerFn({ method: "GET" })
+	.middleware([adminPermGuard(PERMISSIONS.TRACK_QUERY)])
 	.inputValidator(analyticsQuerySchema)
-	.handler(async ({ data }) => getEventAnalytics(data));
+	.handler(async ({ data }) => getTrackAnalytics(data));

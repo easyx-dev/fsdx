@@ -20,12 +20,12 @@ import {
 import dayjs from "dayjs";
 import { useEffect, useRef, useState } from "react";
 import { AdminPageContent } from "#/components/admin/AdminPageContent";
-import type { AnalyticsResult } from "#/services/event/event.types";
-import { getEventAnalyticsSFn } from "./analytics.functions";
+import type { TrackAnalyticsResult as AnalyticsResult } from "#/services/track/track.types";
+import { getTrackAnalyticsSFn } from "./analytics.functions";
 
 const { RangePicker } = DatePicker;
 
-export const Route = createFileRoute("/admin/_admin/events/analytics")({
+export const Route = createFileRoute("/admin/_admin/track/analytics")({
 	component: EventAnalyticsPage,
 });
 
@@ -42,7 +42,7 @@ function EventAnalyticsPage() {
 	const fetchAnalytics = async () => {
 		setLoading(true);
 		try {
-			const result = await getEventAnalyticsSFn({
+			const result = await getTrackAnalyticsSFn({
 				data: {
 					startDate: dateRange[0].toISOString(),
 					endDate: dateRange[1].toISOString(),
@@ -84,7 +84,7 @@ function EventAnalyticsPage() {
 	const pieConfig = data?.eventDistribution?.length
 		? {
 				data: data.eventDistribution.map((d) => ({
-					type: d.event,
+					type: d.name,
 					value: d.count,
 				})),
 				angleField: "value",

@@ -22,28 +22,28 @@ import dayjs from "dayjs";
 import { useMemo, useState } from "react";
 import { AdminPageContent } from "#/components/admin/AdminPageContent";
 import {
-	getPresetEventsSFn,
-	getPresetPropertiesSFn,
-} from "#/services/event/event.functions";
+	getTrackEventMetaSFn,
+	getTrackPropertyMetaSFn,
+} from "#/services/track/track.functions";
 import type {
-	EventQueryResult,
-	EventRecord,
-	PresetPropertyRecord,
-} from "#/services/event/event.types";
+	TrackEventQueryResult,
+	TrackEventRecord,
+	TrackPropertyMetaRecord,
+} from "#/services/track/track.types";
 import type { SortOrder } from "#/types/query";
-import { getEventNamesSFn, searchEventsSFn } from "./query.functions";
+import { getTrackEventNamesSFn, searchTrackEventsSFn } from "./query.functions";
 
 const { RangePicker } = DatePicker;
 
-export const Route = createFileRoute("/admin/_admin/events/query")({
+export const Route = createFileRoute("/admin/_admin/track/query")({
 	component: EventListPage,
 	loader: async () => {
 		const [eventNames, presetEvents, presetProperties, result] =
 			await Promise.all([
-				getEventNamesSFn(),
-				getPresetEventsSFn().catch(() => []),
-				getPresetPropertiesSFn().catch(() => []),
-				searchEventsSFn({ data: {} }),
+				getTrackEventNamesSFn(),
+				getTrackEventMetaSFn().catch(() => []),
+				getTrackPropertyMetaSFn().catch(() => []),
+				searchTrackEventsSFn({ data: {} }),
 			]);
 		return { eventNames, presetEvents, presetProperties, result };
 	},
@@ -57,7 +57,7 @@ function EventListPage() {
 		result: initialResult,
 	} = Route.useLoaderData();
 
-	const [data, setData] = useState<EventQueryResult>(initialResult);
+	const [data, setData] = useState<TrackEventQueryResult>(initialResult);
 	const [eventNames] = useState<string[]>(initialEventNames);
 	const [loading, setLoading] = useState(false);
 
@@ -74,7 +74,7 @@ function EventListPage() {
 	const propertyLabelMap = useMemo(() => {
 		const map: Record<
 			string,
-			Pick<PresetPropertyRecord, "label" | "dataType">
+			Pick<TrackPropertyMetaRecord, "label" | "dataType">
 		> = {};
 		for (const p of presetProperties) {
 			map[p.key] = { label: p.label, dataType: p.dataType };
@@ -103,9 +103,9 @@ function EventListPage() {
 		try {
 			const field = sf !== undefined ? sf : sortField;
 			const order = so !== undefined ? so : sortOrder;
-			const result = await searchEventsSFn({
+			const result = await searchTrackEventsSFn({
 				data: {
-					event: filterEvent,
+					name: filterEvent,
 					keyword: filterKeyword || undefined,
 					startDate: filterDateRange?.[0]?.startOf("day").toISOString(),
 					endDate: filterDateRange?.[1]?.endOf("day").toISOString(),
@@ -154,8 +154,8 @@ function EventListPage() {
 			"触发时间",
 			"接收时间",
 		];
-		const rows = data.records.map((e: EventRecord) => [
-			e.event,
+		const rows = data.records.map((e: TrackEventRecord) => [
+			e.name,
 			e.userId ?? "-",
 			e.sessionId,
 			JSON.stringify(e.properties),
@@ -189,8 +189,8 @@ function EventListPage() {
 	const columns = [
 		{
 			title: "事件名称",
-			dataIndex: "event",
-			key: "event",
+			dataIndex: "name",
+			key: "name",
 			width: 140,
 			render: (v: string) => {
 				const label = eventLabelMap[v];

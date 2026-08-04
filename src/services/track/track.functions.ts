@@ -8,16 +8,16 @@ import { z } from "zod";
 import { PERMISSIONS } from "#/lib/permissions/permissions";
 import { adminPermGuard } from "#/middleware/admin-auth";
 import {
-	getPresetEventList,
-	getPresetPropertyList,
+	getTrackEventMetaList,
+	getTrackPropertyMetaList,
 	trackEvent,
-} from "./event.server";
+} from "./track.server";
 
 const trackEventSchema = z.object({
 	time: z.number(),
 	userId: z.string().optional(),
 	sessionId: z.string().min(1),
-	event: z.string().min(1).max(100),
+	name: z.string().min(1).max(100),
 	properties: z.record(z.string(), z.unknown()).default({}),
 });
 
@@ -48,12 +48,12 @@ export const trackEventSFn = createServerFn({ method: "POST" })
 		return { success: true };
 	});
 
-/** 获取预设事件列表（admin 多路由共享：preset-events 管理页 + 事件查询页） */
-export const getPresetEventsSFn = createServerFn({ method: "GET" })
-	.middleware([adminPermGuard(PERMISSIONS.EVENT_VIEW)])
-	.handler(async () => getPresetEventList());
+/** 获取元事件列表（admin 多路由共享：event-meta 管理页 + 事件查询页） */
+export const getTrackEventMetaSFn = createServerFn({ method: "GET" })
+	.middleware([adminPermGuard(PERMISSIONS.TRACK_VIEW)])
+	.handler(async () => getTrackEventMetaList());
 
-/** 获取预设属性列表（admin 多路由共享：preset-properties 管理页 + 事件查询页） */
-export const getPresetPropertiesSFn = createServerFn({ method: "GET" })
-	.middleware([adminPermGuard(PERMISSIONS.EVENT_VIEW)])
-	.handler(async () => getPresetPropertyList());
+/** 获取元属性列表（admin 多路由共享：property-meta 管理页 + 事件查询页） */
+export const getTrackPropertyMetaSFn = createServerFn({ method: "GET" })
+	.middleware([adminPermGuard(PERMISSIONS.TRACK_VIEW)])
+	.handler(async () => getTrackPropertyMetaList());

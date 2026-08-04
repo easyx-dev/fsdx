@@ -199,20 +199,20 @@ export const PERMISSIONS = {
 		"允许查看管理端首页统计信息",
 	),
 	// 埋点分析
-	EVENT_VIEW: definePermission(
-		"event:view",
-		"查看预设",
-		"允许查看预设事件和属性定义",
+	TRACK_VIEW: definePermission(
+		"track:view",
+		"查看元数据",
+		"允许查看元事件和元属性定义",
 	),
-	EVENT_QUERY: definePermission(
-		"event:query",
+	TRACK_QUERY: definePermission(
+		"track:query",
 		"查询分析",
 		"允许查询触发事件和查看分析图表",
 	),
-	EVENT_MANAGE: definePermission(
-		"event:manage",
-		"管理预设",
-		"允许新增、编辑、删除预设事件和属性",
+	TRACK_MANAGE: definePermission(
+		"track:manage",
+		"管理元数据",
+		"允许新增、编辑、删除元事件和元属性",
 	),
 	// 翻译管理
 	TRANSLATION_VIEW: definePermission(

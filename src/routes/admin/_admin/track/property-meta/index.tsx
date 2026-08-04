@@ -1,52 +1,55 @@
 /**
- * 预设事件管理页面：CRUD 预设事件定义
+ * 元属性管理页面：CRUD 元属性定义
  */
 import { PlusOutlined } from "@ant-design/icons";
 import { createFileRoute } from "@tanstack/react-router";
-import { Button, Form, Input, Modal, message, Tag } from "antd";
+import { Button, Form, Input, Modal, message, Select, Tag } from "antd";
 import { useState } from "react";
 import { AdminPageContent } from "#/components/admin/AdminPageContent";
 import { ProTable } from "#/components/admin/ProTable";
 import { TableOperate } from "#/components/admin/TableOperate";
-import { getPresetEventsSFn } from "#/services/event/event.functions";
-import type { PresetEventRecord } from "#/services/event/event.types";
+import { getTrackPropertyMetaSFn } from "#/services/track/track.functions";
+import type { TrackPropertyMetaRecord as PresetPropertyRecord } from "#/services/track/track.types";
 import {
-	createPresetEventSFn,
-	deletePresetEventSFn,
-	updatePresetEventSFn,
-} from "./preset-events.functions";
+	createPropertyMetaSFn,
+	deletePropertyMetaSFn,
+	PROPERTY_DATA_TYPES,
+	updatePropertyMetaSFn,
+} from "./property-meta.functions";
 
-export const Route = createFileRoute("/admin/_admin/events/preset-events/")({
-	component: PresetEventsPage,
-	loader: async () => getPresetEventsSFn(),
+export const Route = createFileRoute("/admin/_admin/track/property-meta/")({
+	component: PresetPropertiesPage,
+	loader: async () => getTrackPropertyMetaSFn(),
 });
 
-function PresetEventsPage() {
-	const initialEvents = Route.useLoaderData();
-	const [events, setEvents] = useState<PresetEventRecord[]>(initialEvents);
+function PresetPropertiesPage() {
+	const initialProperties = Route.useLoaderData();
+	const [properties, setProperties] =
+		useState<PresetPropertyRecord[]>(initialProperties);
 	const [modalOpen, setModalOpen] = useState(false);
-	const [editingEvent, setEditingEvent] = useState<PresetEventRecord | null>(
+	const [editingProp, setEditingProp] = useState<PresetPropertyRecord | null>(
 		null,
 	);
 	const [saving, setSaving] = useState(false);
 	const [form] = Form.useForm();
 
 	const refresh = async () => {
-		const data = await getPresetEventsSFn();
-		setEvents(data);
+		const data = await getTrackPropertyMetaSFn();
+		setProperties(data);
 	};
 
 	const handleCreate = () => {
-		setEditingEvent(null);
+		setEditingProp(null);
 		form.resetFields();
+		form.setFieldsValue({ dataType: "string" });
 		setModalOpen(true);
 	};
 
-	const handleEdit = (record: PresetEventRecord) => {
-		setEditingEvent(record);
+	const handleEdit = (record: PresetPropertyRecord) => {
+		setEditingProp(record);
 		form.setFieldsValue({
 			label: record.label,
-			category: record.category,
+			dataType: record.dataType,
 			description: record.description ?? "",
 		});
 		setModalOpen(true);
@@ -56,14 +59,14 @@ function PresetEventsPage() {
 		try {
 			const values = await form.validateFields();
 			setSaving(true);
-			if (editingEvent) {
-				await updatePresetEventSFn({
-					data: { name: editingEvent.name, ...values },
+			if (editingProp) {
+				await updatePropertyMetaSFn({
+					data: { key: editingProp.key, ...values },
 				});
-				message.success("预设事件已更新");
+				message.success("元属性已更新");
 			} else {
-				await createPresetEventSFn({ data: values });
-				message.success("预设事件已创建");
+				await createPropertyMetaSFn({ data: values });
+				message.success("元属性已创建");
 			}
 			setModalOpen(false);
 			await refresh();
@@ -78,14 +81,14 @@ function PresetEventsPage() {
 		}
 	};
 
-	const handleDelete = async (name: string) => {
+	const handleDelete = async (key: string) => {
 		try {
-			const result = await deletePresetEventSFn({ data: { name } });
+			const result = await deletePropertyMetaSFn({ data: { key } });
 			if (result) {
-				message.success("预设事件已删除");
+				message.success("元属性已删除");
 				await refresh();
 			} else {
-				message.error("预置事件不可删除");
+				message.error("预置属性不可删除");
 			}
 		} catch (err) {
 			message.error(err instanceof Error ? err.message : "删除失败");
@@ -94,10 +97,10 @@ function PresetEventsPage() {
 
 	const columns = [
 		{
-			title: "事件标识",
-			dataIndex: "name",
-			key: "name",
-			width: 150,
+			title: "属性键",
+			dataIndex: "key",
+			key: "key",
+			width: 160,
 			render: (v: string) => <code className="text-xs">{v}</code>,
 		},
 		{
@@ -107,10 +110,10 @@ function PresetEventsPage() {
 			width: 150,
 		},
 		{
-			title: "分类",
-			dataIndex: "category",
-			key: "category",
-			width: 120,
+			title: "数据类型",
+			dataIndex: "dataType",
+			key: "dataType",
+			width: 100,
 			render: (v: string) => <Tag>{v}</Tag>,
 		},
 		{
@@ -145,13 +148,13 @@ function PresetEventsPage() {
 			title: "操作",
 			key: "actions",
 			fixed: "right" as const,
-			render: (_: unknown, record: PresetEventRecord) => (
+			render: (_: unknown, record: PresetPropertyRecord) => (
 				<TableOperate>
 					<TableOperate.Edit onClick={() => handleEdit(record)} />
 					{!record.isPreset && (
 						<TableOperate.Delete
-							recordName="此预设事件"
-							onConfirm={() => handleDelete(record.name)}
+							recordName="此元属性"
+							onConfirm={() => handleDelete(record.key)}
 						/>
 					)}
 				</TableOperate>
@@ -161,24 +164,24 @@ function PresetEventsPage() {
 
 	return (
 		<AdminPageContent
-			title="预设事件管理"
-			description="管理系统预置和自定义的事件类型定义"
+			title="元属性管理"
+			description="管理系统预置和自定义的事件属性字段定义"
 			extra={
 				<Button type="primary" icon={<PlusOutlined />} onClick={handleCreate}>
-					新建事件
+					新建属性
 				</Button>
 			}
 		>
 			<ProTable
 				columns={columns}
-				dataSource={events}
-				rowKey="name"
+				dataSource={properties}
+				rowKey="key"
 				scroll={{ x: 1100 }}
-				locale={{ emptyText: "暂无预设事件" }}
+				locale={{ emptyText: "暂无元属性" }}
 			/>
 
 			<Modal
-				title={editingEvent ? "编辑预设事件" : "新建预设事件"}
+				title={editingProp ? "编辑元属性" : "新建元属性"}
 				open={modalOpen}
 				onCancel={() => setModalOpen(false)}
 				onOk={handleSubmit}
@@ -188,28 +191,29 @@ function PresetEventsPage() {
 			>
 				<Form form={form} layout="vertical" className="mt-4">
 					<Form.Item
-						name="name"
-						label="事件标识"
-						rules={[{ required: true, message: "请输入事件标识" }]}
+						name="key"
+						label="属性键"
+						rules={[{ required: true, message: "请输入属性键" }]}
 					>
-						<Input placeholder="如：PageView" disabled={!!editingEvent} />
+						<Input placeholder="如：page_name" disabled={!!editingProp} />
 					</Form.Item>
 					<Form.Item
 						name="label"
 						label="显示名称"
 						rules={[{ required: true, message: "请输入显示名称" }]}
 					>
-						<Input placeholder="如：页面浏览" />
+						<Input placeholder="如：页面名称" />
 					</Form.Item>
-					<Form.Item
-						name="category"
-						label="分类"
-						rules={[{ required: true, message: "请选择分类" }]}
-					>
-						<Input placeholder="如：页面交互" />
+					<Form.Item name="dataType" label="数据类型">
+						<Select
+							options={PROPERTY_DATA_TYPES.map((t) => ({
+								label: t.label,
+								value: t.value,
+							}))}
+						/>
 					</Form.Item>
 					<Form.Item name="description" label="描述">
-						<Input.TextArea rows={2} placeholder="事件描述（可选）" />
+						<Input.TextArea rows={2} placeholder="属性描述（可选）" />
 					</Form.Item>
 				</Form>
 			</Modal>

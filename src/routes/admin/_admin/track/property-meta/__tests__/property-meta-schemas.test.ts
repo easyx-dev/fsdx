@@ -3,14 +3,14 @@
  */
 import { describe, expect, it } from "vitest";
 import {
-	presetPropertyCreateSchema,
-	presetPropertyDeleteSchema,
-	presetPropertyUpdateSchema,
-} from "../preset-properties.schemas";
+	propertyMetaCreateSchema,
+	propertyMetaDeleteSchema,
+	propertyMetaUpdateSchema,
+} from "../property-meta.schemas";
 
-describe("presetPropertyCreateSchema", () => {
+describe("propertyMetaCreateSchema", () => {
 	it("有效参数应通过校验", () => {
-		const result = presetPropertyCreateSchema.safeParse({
+		const result = propertyMetaCreateSchema.safeParse({
 			key: "page_url",
 			label: "页面地址",
 		});
@@ -18,7 +18,7 @@ describe("presetPropertyCreateSchema", () => {
 	});
 
 	it("传入 dataType 应通过校验", () => {
-		const result = presetPropertyCreateSchema.safeParse({
+		const result = propertyMetaCreateSchema.safeParse({
 			key: "page_url",
 			label: "页面地址",
 			dataType: "string",
@@ -27,16 +27,16 @@ describe("presetPropertyCreateSchema", () => {
 	});
 
 	it("缺少 key 应校验失败", () => {
-		const result = presetPropertyCreateSchema.safeParse({
+		const result = propertyMetaCreateSchema.safeParse({
 			label: "页面地址",
 		});
 		expect(result.success).toBe(false);
 	});
 });
 
-describe("presetPropertyUpdateSchema", () => {
+describe("propertyMetaUpdateSchema", () => {
 	it("仅更新 label 应通过校验", () => {
-		const result = presetPropertyUpdateSchema.safeParse({
+		const result = propertyMetaUpdateSchema.safeParse({
 			key: "page_url",
 			label: "页面URL",
 		});
@@ -44,21 +44,21 @@ describe("presetPropertyUpdateSchema", () => {
 	});
 
 	it("缺少 key 应校验失败", () => {
-		const result = presetPropertyUpdateSchema.safeParse({
+		const result = propertyMetaUpdateSchema.safeParse({
 			label: "页面URL",
 		});
 		expect(result.success).toBe(false);
 	});
 });
 
-describe("presetPropertyDeleteSchema", () => {
+describe("propertyMetaDeleteSchema", () => {
 	it("有效参数应通过校验", () => {
-		const result = presetPropertyDeleteSchema.safeParse({ key: "page_url" });
+		const result = propertyMetaDeleteSchema.safeParse({ key: "page_url" });
 		expect(result.success).toBe(true);
 	});
 
 	it("key 为空应校验失败", () => {
-		const result = presetPropertyDeleteSchema.safeParse({ key: "" });
+		const result = propertyMetaDeleteSchema.safeParse({ key: "" });
 		expect(result.success).toBe(false);
 	});
 });

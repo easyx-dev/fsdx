@@ -9,7 +9,7 @@ const { mockTrackEventSFn } = vi.hoisted(() => ({
 }));
 
 // mock Server Function
-vi.mock("#/services/event/event.functions", () => ({
+vi.mock("#/services/track/track.functions", () => ({
 	trackEventSFn: mockTrackEventSFn,
 }));
 
@@ -105,7 +105,7 @@ describe("track SDK", () => {
 
 			expect(mockTrackEventSFn).toHaveBeenCalledTimes(1);
 			const callArgs = mockTrackEventSFn.mock.calls[0][0];
-			expect(callArgs.data.event).toBe("Click");
+			expect(callArgs.data.name).toBe("Click");
 			expect(callArgs.data.properties.url).toBe("https://example.com/page");
 			expect(callArgs.data.properties.referer).toBe("https://google.com");
 			expect(callArgs.data.properties.page_name).toBe("测试页面");
