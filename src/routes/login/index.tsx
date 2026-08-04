@@ -15,7 +15,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "#/components/ui/card";
 import { Input } from "#/components/ui/input";
 import { useTranslation } from "#/lib/i18n/i18n-context";
 import { track } from "#/lib/track/track";
-import { getCurrentClientSFn } from "#/server/client-auth/client-auth.functions";
+import { getCurrentClientSFn } from "#/services/client-auth/client-auth.functions";
 import { clientLoginSFn } from "./login.functions";
 
 function LoginError({ error }: { error: unknown }) {

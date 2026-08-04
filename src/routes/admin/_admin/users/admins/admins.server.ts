@@ -11,7 +11,7 @@ import {
 	executePaginatedQuery,
 	notDeleted,
 	paginationOffset,
-} from "#/server/query/query-utils.server";
+} from "#/services/query/query-utils.server";
 
 export type AdminUserRecord = typeof adminUser.$inferSelect;
 

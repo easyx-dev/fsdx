@@ -178,8 +178,8 @@ Server Function handler
 |------|------|
 | `src/lib/cache/cache.ts` | `MemoryCache<T>` 通用类 + 7 个缓存实例定义 |
 | `src/lib/cache/__tests__/cache.test.ts` | 缓存单元测试（225 行） |
-| `src/server/config/config.server.ts` | `loadConfigCache()` / 配置缓存管理 |
-| `src/server/dict/dict.server.ts` | `loadDictCache()` / 字典缓存管理 |
-| `src/server/i18n/i18n.server.ts` | UI 翻译缓存管理 |
-| `src/server/client-auth/client-auth.server.ts` | 客户端用户缓存使用 |
-| `src/server/event/event.server.ts` | 预设事件/属性缓存管理 |
+| `src/services/config/config.server.ts` | `loadConfigCache()` / 配置缓存管理 |
+| `src/services/dict/dict.server.ts` | `loadDictCache()` / 字典缓存管理 |
+| `src/services/i18n/i18n.server.ts` | UI 翻译缓存管理 |
+| `src/services/client-auth/client-auth.server.ts` | 客户端用户缓存使用 |
+| `src/services/event/event.server.ts` | 预设事件/属性缓存管理 |

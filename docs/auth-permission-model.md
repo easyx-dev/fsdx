@@ -604,13 +604,13 @@ const csrfMiddleware = createCsrfMiddleware({
 | `src/lib/jwt/jwt.ts` | JWT 签发/校验、Cookie 名称常量 |
 | `src/lib/permissions/permissions.ts` | 权限码常量定义、权限匹配算法 |
 | `src/middleware/admin-auth.ts` | adminAuthGuard / adminPermGuard 中间件 |
-| `src/server/admin-auth/admin-auth.server.ts` | 管理员登录、当前管理员查询 |
-| `src/server/client-auth/client-auth.server.ts` | 客户端登录、注册、当前用户查询（含缓存） |
-| `src/server/client-auth/client-auth.functions.ts` | 客户端认证 Server Function 包装器 |
-| `src/server/init/init.server.ts` | 系统初始化（checkInitStatus / initSystem） |
+| `src/services/admin-auth/admin-auth.server.ts` | 管理员登录、当前管理员查询 |
+| `src/services/client-auth/client-auth.server.ts` | 客户端登录、注册、当前用户查询（含缓存） |
+| `src/services/client-auth/client-auth.functions.ts` | 客户端认证 Server Function 包装器 |
+| `src/services/init/init.server.ts` | 系统初始化（checkInitStatus / initSystem） |
 | `src/routes/admin/_admin/users/admins/admins.server.ts` | 管理员 CRUD（含 root 禁用/删除拦截） |
 | `src/routes/admin/_admin/users/clients/clients.server.ts` | 客户端用户 CRUD |
-| `src/server/role/role.server.ts` | 角色 CRUD |
+| `src/services/role/role.server.ts` | 角色 CRUD |
 | `src/db/schema/admin-user.ts` | admin_user 表（含部分唯一索引） |
 | `src/db/schema/client-user.ts` | client_user 表 |
 | `src/db/schema/role.ts` | role 表（permissions JSONB） |

@@ -4,7 +4,7 @@
 import { eq } from "drizzle-orm";
 import { db } from "#/db/index";
 import { systemConfig } from "#/db/schema";
-import { loadConfigCache } from "#/server/config/config.server";
+import { loadConfigCache } from "#/services/config/config.server";
 import type { ConfigImportData, ConfigImportResult } from "./config.functions";
 
 /** 导入配置数据（按 key upsert） */

@@ -9,7 +9,7 @@ import {
 	LOCALE_COOKIE,
 	SUPPORTED_LOCALES,
 } from "#/lib/i18n/i18n.types";
-import { getNewsList, translateNewsRecords } from "#/server/news/news.server";
+import { getNewsList, translateNewsRecords } from "#/services/news/news.server";
 
 export const getLatestNewsSFn = createServerFn({ method: "GET" }).handler(
 	async () => {

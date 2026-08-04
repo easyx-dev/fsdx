@@ -216,7 +216,7 @@ logger.error/warn/info/debug
 
 ### 日志查询
 
-管理端 `/admin/logs` 页面通过 `src/server/logs/logs.server.ts` 提供：
+管理端 `/admin/logs` 页面通过 `src/services/logs/logs.server.ts` 提供：
 - `getLogDates()` — 列出所有日志文件日期
 - `searchLogs(query)` — 按关键词/级别/日期范围搜索
 - `getLogRawContent(date)` — 获取指定日期日志原始内容
@@ -357,13 +357,13 @@ GET /health → { "status": "ok", "uptime": 123.456 }
 | `src/bootstrap.ts` | 启动初始化 |
 | `src/hono-app.ts` | Hono 应用工厂 + 健康检查 |
 | `src/server.ts` | TanStack Start 服务端入口 |
-| `src/server/tasks/tasks.server.ts` | 定时任务注册 |
+| `src/services/tasks/tasks.server.ts` | 定时任务注册 |
 | `src/lib/scheduler/scheduler.ts` | 定时任务调度器 |
 | `src/lib/logger/logger.ts` | Pino 日志实例 |
 | `src/middleware/sf-error-logger.ts` | SF 错误日志中间件 |
 | `src/lib/storage/storage.ts` | 文件存储抽象层 |
-| `src/server/init/init.server.ts` | 系统初始化逻辑 |
-| `src/server/logs/logs.server.ts` | 日志文件查询 |
+| `src/services/init/init.server.ts` | 系统初始化逻辑 |
+| `src/services/logs/logs.server.ts` | 日志文件查询 |
 | `.env.example` | 环境变量模板 |
 | `.env.example` | compose .env 变量模板 |
 | `Dockerfile` | Docker 多阶段构建 |

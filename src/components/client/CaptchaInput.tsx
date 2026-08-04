@@ -11,7 +11,7 @@ import { Input } from "#/components/ui/input";
 import {
 	getImageCaptchaSFn,
 	sendCaptchaWithImageVerificationSFn,
-} from "#/server/captcha/captcha.functions";
+} from "#/services/captcha/captcha.functions";
 
 interface CaptchaInputProps {
 	/** 邮箱地址 */

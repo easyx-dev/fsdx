@@ -51,7 +51,7 @@ src/
 │   ├── sf-error-logger.ts          # SF 全局错误日志中间件（自动覆盖所有 SF）
 │   └── __tests__/
 │       └── admin-auth.test.ts
-├── server/                         # 服务端共享业务逻辑（仅放被多模块消费的代码）
+├── services/                       # 服务端共享业务逻辑（仅放被多模块消费的代码）
 │   ├── admin-auth/                 # 管理端认证（登录、当前用户查询）
 │   ├── captcha/                    # 验证码生成、发送、校验（admin + client 双端）
 │   ├── client-auth/                # 客户端认证（登录、注册、当前用户查询，含缓存）
@@ -140,7 +140,7 @@ src/
 
 ### 代码分层与就近原则
 
-代码应尽可能靠近其唯一消费者。仅被多方共享的模块才能放入 `src/server/`。
+代码应尽可能靠近其唯一消费者。仅被多方共享的模块才能放入 `src/services/`。
 
 #### SFn 放置规则
 
@@ -149,7 +149,7 @@ src/
 | 场景 | 位置 |
 |------|------|
 | 单路由模块使用 | 路由同目录 `<name>.functions.ts`（或 `-mods/<name>.functions.ts` 当符合 -mods/ 门槛时） |
-| 多路由/跨端/全局组件共享 | `src/server/<module>/<module>.functions.ts` |
+| 多路由/跨端/全局组件共享 | `src/services/<module>/<module>.functions.ts` |
 
 #### 服务层放置规则
 
@@ -157,16 +157,16 @@ src/
 |------|------|
 | 只被 1 个 SFn 消费且无独立单测 | 内联到 SFn handler 体 |
 | 只被 1 个路由模块消费 | 路由同目录 `<name>.server.ts` |
-| 被 ≥2 个消费者共享（路由、组件、bootstrap、定时任务等） | `src/server/<module>/` |
+| 被 ≥2 个消费者共享（路由、组件、bootstrap、定时任务等） | `src/services/<module>/` |
 
-#### `src/server/` 准入门槛
+#### `src/services/` 准入门槛
 
-一个模块留在 `src/server/` 必须满足以下至少一条：
+一个模块留在 `src/services/` 必须满足以下至少一条：
 - 被 ≥2 个不同路由/组件/模块消费
 - 被 bootstrap / 定时任务等非路由上下文调用
 - 被 admin 和 client 两端路由同时使用
 
-单路由模块私有的 `admin-user`、`client-user`、`stats` 等服务层已迁出 `src/server/`，统一放在 `routes/admin/_admin/` 对应目录下。
+单路由模块私有的 `admin-user`、`client-user`、`stats` 等服务层已迁出 `src/services/`，统一放在 `routes/admin/_admin/` 对应目录下。
 
 #### 路由目录结构示例
 
@@ -209,7 +209,7 @@ Server Function handler 体中直接调用 db 是安全的——SFn 始终在服
 ### 事件埋点系统
 
 - 客户端 SDK（`src/lib/track/track.ts`）自动采集 PageView，通过 `trackEventSFn` 上报
-- 服务端（`src/server/event/event.server.ts`）校验事件名/属性名/值类型后入内存缓冲
+- 服务端（`src/services/event/event.server.ts`）校验事件名/属性名/值类型后入内存缓冲
 - 缓冲策略：5 秒定时或满 100 条批量 INSERT，上限 1000 条
 - 预置 9 个事件类型（PageView、Click、FormSubmit、Search、Login、Register、Logout、Share、Scroll）和 16 个属性定义
 - 管理端支持事件查询、时间序列分析、事件分布、Top 页面统计
@@ -217,7 +217,7 @@ Server Function handler 体中直接调用 db 是安全的——SFn 始终在服
 
 ### 操作日志审计
 
-- `src/server/operation-log/operation-log.server.ts` 提供 `logOperation()` fire-and-forget 接口
+- `src/services/operation-log/operation-log.server.ts` 提供 `logOperation()` fire-and-forget 接口
 - 与事件埋点共享相同的缓冲写入策略（5 秒 / 100 条 / 上限 1000 条）
 - 记录操作人、模块、动作、目标类型/ID/名称、详情 JSON
 - 管理端 `/admin/operation-logs` 页面支持按模块/动作/关键词/日期范围查询
@@ -353,11 +353,11 @@ detail: jsonb(),
 
 | 缓存实例 | 所属模块 |
 |----------|----------|
-| `configCache` / `configTranslationCache` | `src/server/config/config.server.ts` |
-| `dictCache` | `src/server/dict/dict.server.ts` |
-| `uiTranslationCache` | `src/server/i18n/i18n.server.ts` |
-| `clientUserCache` | `src/server/client-auth/client-auth.server.ts` |
-| `presetEventCache` / `presetPropertyCache` | `src/server/event/event.server.ts` |
+| `configCache` / `configTranslationCache` | `src/services/config/config.server.ts` |
+| `dictCache` | `src/services/dict/dict.server.ts` |
+| `uiTranslationCache` | `src/services/i18n/i18n.server.ts` |
+| `clientUserCache` | `src/services/client-auth/client-auth.server.ts` |
+| `presetEventCache` / `presetPropertyCache` | `src/services/event/event.server.ts` |
 
 > 完整规则、懒加载模板、新增缓存步骤、违规自查清单 → 见 [cache](.agents/skills/cache/SKILL.md) skill。
 
@@ -367,7 +367,7 @@ detail: jsonb(),
 
 - 测试文件与被测模块同目录，放在 `__tests__/` 子目录下
 - 文件名：`<模块名>.test.ts`
-- 每个 `src/server/` 和 `src/lib/` 模块必须覆盖其所有导出函数的测试
+- 每个 `src/services/` 和 `src/lib/` 模块必须覆盖其所有导出函数的测试
 
 ```
 src/lib/permissions/
@@ -375,7 +375,7 @@ src/lib/permissions/
 └── __tests__/
     └── permissions.test.ts
 
-src/server/config/
+src/services/config/
 ├── config.server.ts
 └── __tests__/
     └── config.test.ts
@@ -398,7 +398,7 @@ src/server/config/
 - `src/routes/` 下所有 `createServerFn` 的 `inputValidator` zod schema 必须编写校验测试
 - 测试文件统一放在 `src/routes/__tests__/sf-schemas.test.ts`
 - schema 测试仅校验合法输入通过、非法输入失败，不涉及 handler 业务逻辑
-- 业务逻辑测试覆盖 `.server.ts` 文件中的导出函数（`src/server/` 和路由目录下的 `.server.ts` 均适用）
+- 业务逻辑测试覆盖 `.server.ts` 文件中的导出函数（`src/services/` 和路由目录下的 `.server.ts` 均适用）
 
 ## 组件约定
 

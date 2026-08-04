@@ -3,7 +3,7 @@
  */
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { type InitData, initSystem } from "#/server/init/init.server";
+import { type InitData, initSystem } from "#/services/init/init.server";
 
 export const initSchema = z
 	.object({

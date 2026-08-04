@@ -5,7 +5,7 @@ import { LockOutlined, UserOutlined } from "@ant-design/icons";
 import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
 import { Button, Form, Input, message } from "antd";
 import { useEffect, useState } from "react";
-import { checkInitStatusSFn } from "#/server/init/init.functions";
+import { checkInitStatusSFn } from "#/services/init/init.functions";
 import { adminLoginSFn } from "./login.functions";
 
 export const Route = createFileRoute("/admin/login/")({

@@ -5,7 +5,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { PERMISSIONS } from "#/lib/permissions/permissions";
 import { adminPermGuard } from "#/middleware/admin-auth";
-import { getEventAnalytics } from "#/server/event/event.server";
+import { getEventAnalytics } from "#/services/event/event.server";
 
 export const analyticsQuerySchema = z.object({
 	startDate: z.string().min(1),

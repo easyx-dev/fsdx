@@ -5,8 +5,8 @@ import { EyeOutlined } from "@ant-design/icons";
 import { Button, Image, Input, Modal, message, Space, Tag } from "antd";
 import type { ColumnsType } from "antd/es/table";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { getFileListSFn } from "#/server/file/file.functions";
-import type { FileRecord } from "#/server/file/file.server";
+import { getFileListSFn } from "#/services/file/file.functions";
+import type { FileRecord } from "#/services/file/file.server";
 import { ProTable } from "./ProTable";
 
 interface SelectFileModalProps {

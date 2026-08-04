@@ -12,7 +12,7 @@ vi.mock("openai", () => ({
 	}),
 }));
 
-vi.mock("#/server/config/config.server", () => ({
+vi.mock("#/services/config/config.server", () => ({
 	getConfig: vi.fn((key: string) => {
 		const map: Record<string, string> = {
 			ai_base_url: "https://api.openai.com/v1",

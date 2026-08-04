@@ -4,7 +4,7 @@
  */
 
 import { createFileRoute, redirect } from "@tanstack/react-router";
-import { getCurrentAdminSFn } from "#/server/admin-auth/admin-auth.functions";
+import { getCurrentAdminSFn } from "#/services/admin-auth/admin-auth.functions";
 
 export const Route = createFileRoute("/admin/_admin")({
 	ssr: false,

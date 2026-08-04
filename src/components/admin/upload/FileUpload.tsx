@@ -10,7 +10,7 @@ import {
 import type { UploadFile, UploadProps } from "antd";
 import { Button, Input, message, Space, Upload } from "antd";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { uploadFileSFn } from "#/server/file/file.functions";
+import { uploadFileSFn } from "#/services/file/file.functions";
 import { SelectFileModal } from "../SelectFileModal";
 import { renderUploadItem } from "./FileUploadRender";
 

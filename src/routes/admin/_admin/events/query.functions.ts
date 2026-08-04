@@ -5,7 +5,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { PERMISSIONS } from "#/lib/permissions/permissions";
 import { adminPermGuard } from "#/middleware/admin-auth";
-import { getEventNames, searchEvents } from "#/server/event/event.server";
+import { getEventNames, searchEvents } from "#/services/event/event.server";
 
 export const eventQuerySchema = z.object({
 	event: z.string().optional(),

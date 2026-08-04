@@ -14,8 +14,8 @@ import {
 	listContentTranslations,
 	type TranslationImportResult,
 	upsertContentTranslation,
-} from "#/server/i18n/i18n.server";
-import { logOperation } from "#/server/operation-log/operation-log.server";
+} from "#/services/i18n/i18n.server";
+import { logOperation } from "#/services/operation-log/operation-log.server";
 import {
 	deleteSchema,
 	formSchema,

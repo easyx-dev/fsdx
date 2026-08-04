@@ -27,8 +27,8 @@ import { useRef, useState } from "react";
 import { AdminPageContent } from "#/components/admin/AdminPageContent";
 import { ProTable } from "#/components/admin/ProTable";
 import { TableOperate } from "#/components/admin/TableOperate";
-import { getFileListSFn, uploadFileSFn } from "#/server/file/file.functions";
-import type { FileRecord } from "#/server/file/file.server";
+import { getFileListSFn, uploadFileSFn } from "#/services/file/file.functions";
+import type { FileRecord } from "#/services/file/file.server";
 import { deleteFileSFn, makePermanentSFn } from "./files.functions";
 
 /** 格式化文件大小 */

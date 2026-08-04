@@ -3,17 +3,17 @@
  */
 import { runMigrations } from "#/db/migrate";
 import { logger } from "#/lib/logger/logger";
-import { ensurePresetConfigs } from "#/server/config/config.server";
-import { ensurePresetDicts } from "#/server/dict/dict.server";
+import { ensurePresetConfigs } from "#/services/config/config.server";
+import { ensurePresetDicts } from "#/services/dict/dict.server";
 import {
 	ensurePresetEvents,
 	ensurePresetProperties,
 	flushTrackEvents,
 	loadPresetCache,
-} from "#/server/event/event.server";
-import { ensurePresetTranslations } from "#/server/i18n/i18n-seed";
-import { flushOperationLogs } from "#/server/operation-log/operation-log.server";
-import { registerAllTasks } from "#/server/tasks/tasks.server";
+} from "#/services/event/event.server";
+import { ensurePresetTranslations } from "#/services/i18n/i18n-seed";
+import { flushOperationLogs } from "#/services/operation-log/operation-log.server";
+import { registerAllTasks } from "#/services/tasks/tasks.server";
 
 /** 优雅关闭超时时间（毫秒），防止缓冲刷入挂起导致进程无法退出 */
 const GRACEFUL_SHUTDOWN_TIMEOUT = 10_000;

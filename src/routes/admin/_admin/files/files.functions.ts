@@ -5,8 +5,8 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { PERMISSIONS } from "#/lib/permissions/permissions";
 import { adminPermGuard } from "#/middleware/admin-auth";
-import { deleteFile, makePermanent } from "#/server/file/file.server";
-import { logOperation } from "#/server/operation-log/operation-log.server";
+import { deleteFile, makePermanent } from "#/services/file/file.server";
+import { logOperation } from "#/services/operation-log/operation-log.server";
 
 export const idSchema = z.object({ id: z.string().min(1) });
 

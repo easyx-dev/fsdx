@@ -27,7 +27,7 @@ description: >
 
 需要共享的类型/Zod Schema？
 ├── 与特定路由绑定 → 放在路由的 -mods/ 目录下（如 -mods/news.schemas.ts）
-└── 全局可用 → 放在 src/server/<module>/ 下（如 config.types.ts）
+└── 全局可用 → 放在 src/services/<module>/ 下（如 config.types.ts）
 ```
 
 ## SFn 后缀规则
@@ -61,8 +61,8 @@ import {
   getProductList,
   getProductById,
   deleteProduct,
-} from "#/server/product/product.server";
-import { logOperation } from "#/server/operation-log/operation-log.server";
+} from "#/services/product/product.server";
+import { logOperation } from "#/services/operation-log/operation-log.server";
 
 // ── Zod Schema ──
 const listSchema = z.object({
@@ -113,8 +113,8 @@ import {
   createProduct,
   getProductById,
   updateProduct,
-} from "#/server/product/product.server";
-import { logOperation } from "#/server/operation-log/operation-log.server";
+} from "#/services/product/product.server";
+import { logOperation } from "#/services/operation-log/operation-log.server";
 import {
   createProductSchema,
   getProductSchema,
@@ -168,10 +168,10 @@ export const updateProductSFn = createServerFn({ method: "POST" })
 
 ### 全局 .functions.ts SFn（跨页面功能）
 
-仅当 SFn 需要被多个路由复用、且不属于表单操作时才放在 `src/server/<module>/<module>.functions.ts`。典型场景：导出。
+仅当 SFn 需要被多个路由复用、且不属于表单操作时才放在 `src/services/<module>/<module>.functions.ts`。典型场景：导出。
 
 ```ts
-// src/server/product/product.functions.ts
+// src/services/product/product.functions.ts
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { toCsv, toJson } from "#/lib/export/export.utils";
@@ -198,7 +198,7 @@ export const exportProductsSFn = createServerFn({ method: "GET" })
 
 ## 目录组织规则
 
-`src/lib/` 和 `src/server/` 下**禁止**直接放置文件，所有模块必须组织到独立子目录中：
+`src/lib/` 和 `src/services/` 下**禁止**直接放置文件，所有模块必须组织到独立子目录中：
 
 - `lib/permissions/permissions.ts`（✅ 正确）
 - `lib/permissions.ts`（❌ 错误）

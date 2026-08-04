@@ -4,7 +4,7 @@
  */
 import { message } from "antd";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { uploadFileSFn } from "#/server/file/file.functions";
+import { uploadFileSFn } from "#/services/file/file.functions";
 import { SelectFileModal } from "../SelectFileModal";
 import { PhotoWall } from "./PhotoWall";
 

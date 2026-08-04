@@ -14,8 +14,8 @@ import { ClientAuthProvider } from "#/components/client/ClientAuthProvider";
 import { AdminRootDocument, SSRRootDocument } from "#/components/Document";
 import { GlobalStoreProvider } from "#/lib/global-store/global-store";
 import type { Locale } from "#/lib/i18n/i18n.types";
-import { getVisibleConfigsSFn } from "#/server/config/config.functions";
-import { getLocaleBundleSFn } from "#/server/i18n/i18n.functions";
+import { getVisibleConfigsSFn } from "#/services/config/config.functions";
+import { getLocaleBundleSFn } from "#/services/i18n/i18n.functions";
 
 export const Route = createRootRouteWithContext<{
 	locale: Locale;

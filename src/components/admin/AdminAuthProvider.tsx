@@ -10,8 +10,8 @@ import {
 	useEffect,
 	useState,
 } from "react";
-import { getCurrentAdminSFn } from "#/server/admin-auth/admin-auth.functions";
-import type { AdminUser } from "#/server/admin-auth/admin-auth.types";
+import { getCurrentAdminSFn } from "#/services/admin-auth/admin-auth.functions";
+import type { AdminUser } from "#/services/admin-auth/admin-auth.types";
 
 interface AdminAuthContextType {
 	/** 当前登录管理员，null 表示未登录 */

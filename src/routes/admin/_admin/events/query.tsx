@@ -25,12 +25,12 @@ import type { SortOrder } from "#/lib/query/query-utils";
 import {
 	getPresetEventsSFn,
 	getPresetPropertiesSFn,
-} from "#/server/event/event.functions";
+} from "#/services/event/event.functions";
 import type {
 	EventQueryResult,
 	EventRecord,
 	PresetPropertyRecord,
-} from "#/server/event/event.types";
+} from "#/services/event/event.types";
 import { getEventNamesSFn, searchEventsSFn } from "./query.functions";
 
 const { RangePicker } = DatePicker;

@@ -12,7 +12,7 @@ vi.mock("nodemailer", () => ({
 	})),
 }));
 
-vi.mock("#/server/config/config.server", () => ({
+vi.mock("#/services/config/config.server", () => ({
 	getConfig: vi.fn((key: string) => {
 		const map: Record<string, string> = {
 			smtp_host: "smtp.test.com",

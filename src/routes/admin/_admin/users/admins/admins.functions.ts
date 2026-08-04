@@ -4,8 +4,8 @@
 import { createServerFn } from "@tanstack/react-start";
 import { PERMISSIONS } from "#/lib/permissions/permissions";
 import { adminPermGuard } from "#/middleware/admin-auth";
-import { logOperation } from "#/server/operation-log/operation-log.server";
-import { getRoleList as getRoleListService } from "#/server/role/role.server";
+import { logOperation } from "#/services/operation-log/operation-log.server";
+import { getRoleList as getRoleListService } from "#/services/role/role.server";
 import {
 	createSchema,
 	idSchema,

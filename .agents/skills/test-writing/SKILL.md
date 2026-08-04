@@ -11,7 +11,7 @@ description: >
 
 | 被测模块位置 | 测试类型 | Mock 需求 | 测试文件位置 |
 |-------------|---------|----------|-------------|
-| `src/server/*/*.server.ts` | Service 测试 | 需 mock DB | `src/server/<module>/__tests__/<module>.test.ts` |
+| `src/services/*/*.server.ts` | Service 测试 | 需 mock DB | `src/services/<module>/__tests__/<module>.test.ts` |
 | `src/lib/*/`（纯逻辑） | 纯逻辑测试 | 无需 mock | `src/lib/<module>/__tests__/<module>.test.ts` |
 | 路由 SFn schema | Schema 测试 | 无需 mock | `src/routes/__tests__/sf-schemas.test.ts` |
 | `src/middleware/` | 中间件类型测试 | 无需 mock | `src/middleware/__tests__/<module>.test.ts` |
@@ -40,7 +40,7 @@ const { mockGetContentTranslations } = vi.hoisted(() => {
 });
 
 // 外部服务 mock（使用 hoisted 值）
-vi.mock("#/server/i18n/i18n.server", () => ({
+vi.mock("#/services/i18n/i18n.server", () => ({
   getContentTranslations: mockGetContentTranslations,
 }));
 
@@ -84,7 +84,7 @@ import {
   createProduct,
   updateProduct,
   deleteProduct,
-} from "#/server/product/product.server";
+} from "#/services/product/product.server";
 
 // ═══════════════════════════════════════════════════
 // 测试夹具

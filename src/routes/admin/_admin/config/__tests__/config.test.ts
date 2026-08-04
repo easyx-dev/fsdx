@@ -20,7 +20,7 @@ const { mockDb, mockLoadConfigCache, mockFindFirst } = vi.hoisted(() => {
 });
 
 vi.mock("#/db/index", () => ({ db: mockDb }));
-vi.mock("#/server/config/config.server", () => ({
+vi.mock("#/services/config/config.server", () => ({
 	loadConfigCache: mockLoadConfigCache,
 }));
 

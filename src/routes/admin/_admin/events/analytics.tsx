@@ -20,7 +20,7 @@ import {
 import dayjs from "dayjs";
 import { useEffect, useRef, useState } from "react";
 import { AdminPageContent } from "#/components/admin/AdminPageContent";
-import type { AnalyticsResult } from "#/server/event/event.types";
+import type { AnalyticsResult } from "#/services/event/event.types";
 import { getEventAnalyticsSFn } from "./analytics.functions";
 
 const { RangePicker } = DatePicker;

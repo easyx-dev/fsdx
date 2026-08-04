@@ -3,7 +3,7 @@
  */
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { clientRegister } from "#/server/client-auth/client-auth.server";
+import { clientRegister } from "#/services/client-auth/client-auth.server";
 
 export const registerSchema = z.object({
 	username: z.string().min(1, "用户名不能为空").max(50),

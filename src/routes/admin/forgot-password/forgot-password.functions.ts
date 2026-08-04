@@ -8,7 +8,7 @@ import { z } from "zod";
 import { db } from "#/db/index";
 import { adminUser } from "#/db/schema";
 import { logger } from "#/lib/logger/logger";
-import { verifyCaptcha } from "#/server/captcha/captcha.server";
+import { verifyCaptcha } from "#/services/captcha/captcha.server";
 
 export const resetPwdSchema = z
 	.object({

@@ -29,10 +29,10 @@ const {
 
 vi.mock("#/db/index", () => ({ db: mockDb }));
 vi.mock("bcryptjs", () => ({ default: mockBcrypt }));
-vi.mock("#/server/captcha/captcha.server", () => ({
+vi.mock("#/services/captcha/captcha.server", () => ({
 	verifyCaptcha: mockVerifyCaptcha,
 }));
-vi.mock("#/server/client-auth/client-auth.server", () => ({
+vi.mock("#/services/client-auth/client-auth.server", () => ({
 	clearClientUserCache: mockClearClientUserCache,
 }));
 vi.mock("#/lib/logger/logger", () => ({ logger: mockLogger }));

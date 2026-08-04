@@ -27,7 +27,7 @@ import { ProTable } from "#/components/admin/ProTable";
 import { TableOperate } from "#/components/admin/TableOperate";
 import type { EditorType } from "#/lib/editor-types/editor-types";
 import { downloadFile } from "#/lib/export/export.utils";
-import type { ConfigRecord } from "#/server/config/config.server";
+import type { ConfigRecord } from "#/services/config/config.server";
 import {
 	createConfigSFn,
 	deleteConfigSFn,

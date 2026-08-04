@@ -13,7 +13,7 @@ import {
 } from "#/components/ui/card";
 import { useTranslation } from "#/lib/i18n/i18n-context";
 import { formatDate } from "#/lib/utils/format-date";
-import type { NewsRecord } from "#/server/news/news.server";
+import type { NewsRecord } from "#/services/news/news.server";
 import { getLatestNewsSFn } from "./index.functions";
 
 export const Route = createFileRoute("/")({

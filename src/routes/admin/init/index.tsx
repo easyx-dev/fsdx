@@ -26,7 +26,7 @@ import { useEffect, useState } from "react";
 import type { z } from "zod";
 import { AutofillBlocker } from "#/components/AutofillBlocker";
 import { JsonImportButton } from "#/components/admin/JsonImportButton";
-import { checkInitStatusSFn } from "#/server/init/init.functions";
+import { checkInitStatusSFn } from "#/services/init/init.functions";
 import { type initSchema, initSFn } from "./init.functions";
 
 export const Route = createFileRoute("/admin/init/")({

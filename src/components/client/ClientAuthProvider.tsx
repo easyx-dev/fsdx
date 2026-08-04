@@ -13,8 +13,8 @@ import {
 import {
 	clientLogoutSFn,
 	getCurrentClientSFn,
-} from "#/server/client-auth/client-auth.functions";
-import type { ClientUser } from "#/server/client-auth/client-auth.types";
+} from "#/services/client-auth/client-auth.functions";
+import type { ClientUser } from "#/services/client-auth/client-auth.types";
 
 interface ClientAuthContextType {
 	/** 当前登录用户，null 表示未登录 */

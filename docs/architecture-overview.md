@@ -44,7 +44,7 @@
 │  └────────────────────────┼──────────────────────────────────┘     │
 │                           │                                        │
 │  ┌────────────────────────▼──────────────────────────────────┐    │
-│  │              服务层 (src/server/)                           │    │
+│  │              服务层 (src/services/)                           │    │
 │  │  admin-auth / captcha / client-auth / config               │    │
 │  │  dict / event / file / i18n / init / logs                   │    │
 │  │  news / operation-log / query / role / tasks                │    │
@@ -82,7 +82,7 @@
 每个服务端模块遵循三层分离原则：
 
 ```
-src/server/{module}/
+src/services/{module}/
 ├── {module}.server.ts      # 服务层：纯业务逻辑，可被 .functions.ts 和 其他 .server.ts 引用
 ├── {module}.functions.ts   # SFn 包装层：createServerFn + inputValidator + 鉴权中间件
 └── {module}.schemas.ts     # zod schema 定义
@@ -181,8 +181,8 @@ Fire-and-forget 调用
 ```
 
 应用场景：
-- **事件埋点** (`trackEvent()`) — `src/server/event/event.server.ts`
-- **操作日志** (`logOperation()`) — `src/server/operation-log/operation-log.server.ts`
+- **事件埋点** (`trackEvent()`) — `src/services/event/event.server.ts`
+- **操作日志** (`logOperation()`) — `src/services/operation-log/operation-log.server.ts`
 
 ## 数据流全景
 
@@ -211,12 +211,12 @@ Fire-and-forget 调用
 | 目录 | 定位 | 可导入方 | 特殊规则 |
 |------|------|----------|----------|
 | `src/lib/` | 无业务逻辑的基础库 | 全部 | 纯函数/工具类 |
-| `src/server/` | 服务端业务逻辑 | routes/, server/ 自身 | `.server.ts` 禁止使用 `SFn` 后缀 |
+| `src/services/` | 服务端业务逻辑 | routes/, services/ 自身 | `.server.ts` 禁止使用 `SFn` 后缀 |
 | `src/routes/` | 路由页面 + SFn 包装 | — | SFn 必须用 `.inputValidator(zod)` |
 | `src/middleware/` | 请求级中间件 | start.ts, routes/ | — |
 | `src/components/` | React 组件 | 全部 | admin/ 用 antd, client/ 用 shadcn/ui |
-| `src/db/` | 数据库 Schema | server/ | 客户端禁止导入 (importProtection) |
-| `src/lib/cache/` | 内存缓存 | server/ | 服务端单例 |
+| `src/db/` | 数据库 Schema | services/ | 客户端禁止导入 (importProtection) |
+| `src/lib/cache/` | 内存缓存 | services/ | 服务端单例 |
 
 ## 关键文件索引
 

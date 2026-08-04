@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## [Unreleased]
+
+### Refactor
+
+- 将服务端共享业务逻辑目录 `src/server/` 重命名为 `src/services/`，import 别名同步更新为 `#/services/`
+
 ## [1.0.0] - 2026-06-23
 
 ### Features

@@ -6,7 +6,7 @@
 import { Input, InputNumber, message } from "antd";
 import { lazy, Suspense, useEffect, useState } from "react";
 import { RichEditor } from "#/components/admin/RichEditor";
-import { getFileInfoSFn } from "#/server/file/file.functions";
+import { getFileInfoSFn } from "#/services/file/file.functions";
 
 const CodeEditor = lazy(() =>
 	import("#/components/admin/CodeEditor").then((mod) => ({

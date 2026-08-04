@@ -11,8 +11,8 @@ import {
 	deleteConfig,
 	getConfigList,
 	updateConfig,
-} from "#/server/config/config.server";
-import { logOperation } from "#/server/operation-log/operation-log.server";
+} from "#/services/config/config.server";
+import { logOperation } from "#/services/operation-log/operation-log.server";
 import {
 	configImportSchema,
 	createConfigSchema,

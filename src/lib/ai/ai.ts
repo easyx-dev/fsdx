@@ -3,7 +3,7 @@
  */
 import OpenAI from "openai";
 import { logger } from "#/lib/logger/logger";
-import { getConfig } from "#/server/config/config.server";
+import { getConfig } from "#/services/config/config.server";
 
 /** 聊天消息 */
 export interface ChatMessage {

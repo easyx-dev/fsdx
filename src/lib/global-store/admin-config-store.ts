@@ -3,7 +3,7 @@
  * 进入 admin 时一次性加载客户端可见配置，供全局组件读取
  */
 import { create } from "zustand";
-import { getVisibleConfigsSFn } from "#/server/config/config.functions";
+import { getVisibleConfigsSFn } from "#/services/config/config.functions";
 
 interface AdminConfigState {
 	config: Record<string, string>;

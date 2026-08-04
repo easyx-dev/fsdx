@@ -8,7 +8,7 @@ import { adminPermGuard } from "#/middleware/admin-auth";
 import {
 	getLogDates as getLogDatesService,
 	searchLogs as searchLogsService,
-} from "#/server/logs/logs.server";
+} from "#/services/logs/logs.server";
 
 export const searchLogsSchema = z.object({
 	startDate: z.string().optional(),

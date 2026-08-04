@@ -13,7 +13,7 @@ import {
 	PERMISSION_META,
 	type PermissionCode,
 } from "#/lib/permissions/permissions";
-import type { RoleRecord } from "#/server/role/role.server";
+import type { RoleRecord } from "#/services/role/role.server";
 import {
 	createRoleSFn,
 	deleteRoleSFn,

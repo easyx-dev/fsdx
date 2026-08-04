@@ -7,12 +7,12 @@ import { Button, Form, Input, Modal, message } from "antd";
 import type React from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { z } from "zod";
-import { getCurrentAdminSFn } from "#/server/admin-auth/admin-auth.functions";
+import { getCurrentAdminSFn } from "#/services/admin-auth/admin-auth.functions";
 import {
 	getImageCaptchaSFn,
 	sendCaptchaWithImageVerificationSFn,
-} from "#/server/captcha/captcha.functions";
-import { checkInitStatusSFn } from "#/server/init/init.functions";
+} from "#/services/captcha/captcha.functions";
+import { checkInitStatusSFn } from "#/services/init/init.functions";
 import { type resetPwdSchema, resetPwdSFn } from "./forgot-password.functions";
 
 export const Route = createFileRoute("/admin/forgot-password/")({

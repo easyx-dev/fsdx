@@ -5,7 +5,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { setCookie } from "@tanstack/react-start/server";
 import { z } from "zod";
 import { COOKIE_NAMES } from "#/lib/jwt/jwt";
-import { adminLogin } from "#/server/admin-auth/admin-auth.server";
+import { adminLogin } from "#/services/admin-auth/admin-auth.server";
 
 export const loginSchema = z.object({
 	username: z.string().min(1, "用户名不能为空").max(50),

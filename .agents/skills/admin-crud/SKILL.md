@@ -37,14 +37,14 @@ description: >
 | 1 | `src/db/schema/<module-name>.ts` | Drizzle 表定义 | [db-schema](../db-schema/SKILL.md) |
 | 2 | `src/db/schema/index.ts` | 追加 export | — |
 | 3 | `src/lib/permissions/permissions.ts` | 追加权限码 | [permission](../permission/SKILL.md) |
-| 4 | `src/server/<module-name>/<module-name>.server.ts` | 服务层 helper | — |
+| 4 | `src/services/<module-name>/<module-name>.server.ts` | 服务层 helper | — |
 | 5 | `src/routes/admin/_admin/<module-name>/-mods/<module-name>.schemas.ts` | Zod Schema | — |
 | 6 | `src/routes/admin/_admin/<module-name>/-mods/<module-name>.functions.ts` | SFn 包装器 | [server-function](../server-function/SKILL.md) |
 | 7 | `src/routes/admin/_admin/<module-name>/-mods/<ModuleName>Form.tsx` | antd Form 组件 | — |
 | 8 | `src/routes/admin/_admin/<module-name>/index.tsx` | 列表页 | — |
 | 9 | `src/routes/admin/_admin/<module-name>/create.tsx` | 创建页 | — |
 | 10 | `src/routes/admin/_admin/<module-name>/$id/edit.tsx` | 编辑页 | — |
-| 11 | `src/server/<module-name>/__tests__/<module-name>.test.ts` | 服务层测试 | [test-writing](../test-writing/SKILL.md) |
+| 11 | `src/services/<module-name>/__tests__/<module-name>.test.ts` | 服务层测试 | [test-writing](../test-writing/SKILL.md) |
 | 12 | `src/routes/__tests__/sf-schemas.test.ts` | 追加 Schema 测试 | [test-writing](../test-writing/SKILL.md) |
 
 ---
@@ -145,7 +145,7 @@ PRODUCT_DELETE: definePermission(
 
 ## Step 4：创建服务层
 
-创建 `src/server/<module-name>/<module-name>.server.ts`。提供纯 DB 操作函数，不包含 `createServerFn`。
+创建 `src/services/<module-name>/<module-name>.server.ts`。提供纯 DB 操作函数，不包含 `createServerFn`。
 
 ```ts
 /**
@@ -160,7 +160,7 @@ import {
   executePaginatedQuery,
   notDeleted,
   paginationOffset,
-} from "#/server/query/query-utils.server";
+} from "#/services/query/query-utils.server";
 
 export type ProductRecord = typeof product.$inferSelect;
 
@@ -321,12 +321,12 @@ export const updateProductSchema = z.object({
 import { createServerFn } from "@tanstack/react-start";
 import { PERMISSIONS } from "#/lib/permissions/permissions";
 import { adminPermGuard } from "#/middleware/admin-auth";
-import { logOperation } from "#/server/operation-log/operation-log.server";
+import { logOperation } from "#/services/operation-log/operation-log.server";
 import {
   createProduct,
   getProductById,
   updateProduct,
-} from "#/server/product/product.server";
+} from "#/services/product/product.server";
 import {
   createProductSchema,
   getProductSchema,
@@ -557,13 +557,13 @@ import { ProTable } from "#/components/admin/ProTable";
 import { TableOperate } from "#/components/admin/TableOperate";
 import { PERMISSIONS } from "#/lib/permissions/permissions";
 import { adminPermGuard } from "#/middleware/admin-auth";
-import type { ProductRecord } from "#/server/product/product.server";
+import type { ProductRecord } from "#/services/product/product.server";
 import {
   deleteProduct,
   getProductById,
   getProductList,
-} from "#/server/product/product.server";
-import { logOperation } from "#/server/operation-log/operation-log.server";
+} from "#/services/product/product.server";
+import { logOperation } from "#/services/operation-log/operation-log.server";
 import { ProductForm } from "./-mods/ProductForm";
 
 // ═══ Zod Schema ═══
@@ -859,7 +859,7 @@ function ProductEditPage() {
 
 ### 服务层测试
 
-创建 `src/server/<module-name>/__tests__/<module-name>.test.ts`，使用三段式 mock 模式。需覆盖：
+创建 `src/services/<module-name>/__tests__/<module-name>.test.ts`，使用三段式 mock 模式。需覆盖：
 - `getProductList`：正常返回、空列表、按状态筛选
 - `createProduct`：成功创建、名称重复
 - `updateProduct`：成功更新、记录不存在

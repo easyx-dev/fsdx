@@ -10,8 +10,8 @@ import {
 	deleteNews,
 	getNewsById,
 	getNewsList,
-} from "#/server/news/news.server";
-import { logOperation } from "#/server/operation-log/operation-log.server";
+} from "#/services/news/news.server";
+import { logOperation } from "#/services/operation-log/operation-log.server";
 import {
 	createNewsSchema,
 	exportSchema,

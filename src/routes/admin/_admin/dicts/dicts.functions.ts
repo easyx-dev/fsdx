@@ -11,8 +11,8 @@ import {
 	deleteDict,
 	getDictList,
 	loadDictCache,
-} from "#/server/dict/dict.server";
-import { logOperation } from "#/server/operation-log/operation-log.server";
+} from "#/services/dict/dict.server";
+import { logOperation } from "#/services/operation-log/operation-log.server";
 import {
 	createDictSchema,
 	createItemSchema,

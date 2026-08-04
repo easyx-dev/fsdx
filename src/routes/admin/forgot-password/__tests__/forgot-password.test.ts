@@ -22,7 +22,7 @@ const { mockDb, mockBcrypt, mockVerifyCaptcha, mockLogger } = vi.hoisted(() => {
 
 vi.mock("#/db/index", () => ({ db: mockDb }));
 vi.mock("bcryptjs", () => ({ default: mockBcrypt }));
-vi.mock("#/server/captcha/captcha.server", () => ({
+vi.mock("#/services/captcha/captcha.server", () => ({
 	verifyCaptcha: mockVerifyCaptcha,
 }));
 vi.mock("#/lib/logger/logger", () => ({ logger: mockLogger }));

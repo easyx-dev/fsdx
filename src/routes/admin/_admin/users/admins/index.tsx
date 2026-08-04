@@ -370,4 +370,4 @@ function AdminsPage() {
 	);
 }
 
-import type { RoleRecord } from "#/server/role/role.server";
+import type { RoleRecord } from "#/services/role/role.server";

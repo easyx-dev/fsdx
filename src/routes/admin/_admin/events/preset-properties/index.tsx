@@ -8,8 +8,8 @@ import { useState } from "react";
 import { AdminPageContent } from "#/components/admin/AdminPageContent";
 import { ProTable } from "#/components/admin/ProTable";
 import { TableOperate } from "#/components/admin/TableOperate";
-import { getPresetPropertiesSFn } from "#/server/event/event.functions";
-import type { PresetPropertyRecord } from "#/server/event/event.types";
+import { getPresetPropertiesSFn } from "#/services/event/event.functions";
+import type { PresetPropertyRecord } from "#/services/event/event.types";
 import {
 	createPresetPropertySFn,
 	deletePresetPropertySFn,

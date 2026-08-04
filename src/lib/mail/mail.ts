@@ -3,7 +3,7 @@
  */
 import { createTransport, type Transporter } from "nodemailer";
 import { logger } from "#/lib/logger/logger";
-import { getConfig as getSystemConfig } from "#/server/config/config.server";
+import { getConfig as getSystemConfig } from "#/services/config/config.server";
 
 /** 邮件发送参数 */
 export interface SendMailOptions {

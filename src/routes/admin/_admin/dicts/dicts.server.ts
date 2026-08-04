@@ -5,7 +5,7 @@ import { and, asc, eq, isNull } from "drizzle-orm";
 import { db } from "#/db/index";
 import { dict, dictItem } from "#/db/schema";
 import { PRESET_DICTS } from "#/lib/constants/admin-constants";
-import type { DictItemRecord, DictRecord } from "#/server/dict/dict.server";
+import type { DictItemRecord, DictRecord } from "#/services/dict/dict.server";
 import type { DictImportData, DictImportResult } from "./dicts.functions";
 
 /** 获取字典条目列表 */

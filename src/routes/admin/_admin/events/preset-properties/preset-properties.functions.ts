@@ -8,7 +8,7 @@ import {
 	createPresetProperty,
 	deletePresetProperty,
 	updatePresetProperty,
-} from "#/server/event/event.server";
+} from "#/services/event/event.server";
 import {
 	presetPropertyCreateSchema,
 	presetPropertyDeleteSchema,

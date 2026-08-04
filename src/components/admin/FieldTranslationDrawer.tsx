@@ -15,7 +15,7 @@ import {
 	aiTranslateFieldSFn,
 	getFieldTranslationsSFn,
 	saveContentTranslationSFn,
-} from "#/server/i18n/i18n.functions";
+} from "#/services/i18n/i18n.functions";
 
 /** 可翻译字段定义 */
 export interface TranslatableField {

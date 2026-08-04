@@ -5,8 +5,8 @@ import { and, desc, eq, inArray, ne } from "drizzle-orm";
 import { db } from "#/db/index";
 import { news } from "#/db/schema";
 import { toCsv, toJson } from "#/lib/export/export.utils";
-import type { NewsRecord } from "#/server/news/news.server";
-import { notDeleted } from "#/server/query/query-utils.server";
+import type { NewsRecord } from "#/services/news/news.server";
+import { notDeleted } from "#/services/query/query-utils.server";
 import { generateSlug } from "./news.functions";
 
 const MAX_RECOMMENDED = 5;

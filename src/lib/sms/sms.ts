@@ -4,7 +4,7 @@
 import Dysmsapi20170525, { SendSmsRequest } from "@alicloud/dysmsapi20170525";
 import * as $OpenApi from "@alicloud/openapi-client";
 import { logger } from "#/lib/logger/logger";
-import { getConfig } from "#/server/config/config.server";
+import { getConfig } from "#/services/config/config.server";
 
 /** 短信服务商标识 */
 export type SmsProvider = "aliyun";

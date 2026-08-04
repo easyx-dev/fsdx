@@ -8,7 +8,7 @@ import { adminPermGuard } from "#/middleware/admin-auth";
 import {
 	getOperationLogModules,
 	searchOperationLogs,
-} from "#/server/operation-log/operation-log.server";
+} from "#/services/operation-log/operation-log.server";
 
 /** JSON 可序列化的递归值类型 */
 export type JsonValue =

@@ -8,8 +8,8 @@ import { z } from "zod";
 import { db } from "#/db/index";
 import { clientUser } from "#/db/schema";
 import { logger } from "#/lib/logger/logger";
-import { verifyCaptcha } from "#/server/captcha/captcha.server";
-import { clearClientUserCache } from "#/server/client-auth/client-auth.server";
+import { verifyCaptcha } from "#/services/captcha/captcha.server";
+import { clearClientUserCache } from "#/services/client-auth/client-auth.server";
 
 export const forgotPasswordSchema = z
 	.object({

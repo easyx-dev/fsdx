@@ -8,7 +8,7 @@ import {
 	createPresetEvent,
 	deletePresetEvent,
 	updatePresetEvent,
-} from "#/server/event/event.server";
+} from "#/services/event/event.server";
 import {
 	presetEventCreateSchema,
 	presetEventDeleteSchema,

@@ -213,9 +213,9 @@ flowchart TD
 | 文件 | 职责 |
 |------|------|
 | `src/lib/track/track.ts` | 客户端埋点 SDK |
-| `src/server/event/event.server.ts` | 服务端：校验、缓冲、查询、分析、预设管理 |
-| `src/server/event/event.functions.ts` | Server Function 包装器 |
-| `src/server/event/event.types.ts` | 类型定义 |
+| `src/services/event/event.server.ts` | 服务端：校验、缓冲、查询、分析、预设管理 |
+| `src/services/event/event.functions.ts` | Server Function 包装器 |
+| `src/services/event/event.types.ts` | 类型定义 |
 | `src/db/schema/event.ts` | event 表 Schema |
 | `src/db/schema/preset-event.ts` | preset_event 表 Schema |
 | `src/db/schema/preset-property.ts` | preset_property 表 Schema |

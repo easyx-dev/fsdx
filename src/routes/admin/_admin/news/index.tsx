@@ -19,7 +19,7 @@ import { TableOperate } from "#/components/admin/TableOperate";
 import { downloadFile } from "#/lib/export/export.utils";
 import { useAdminDictStore } from "#/lib/global-store/admin-dict-store";
 import { formatDateTime } from "#/lib/utils/format-date";
-import type { NewsRecord } from "#/server/news/news.server";
+import type { NewsRecord } from "#/services/news/news.server";
 import { NewsForm } from "./-mods/NewsForm";
 import {
 	changeStatusSFn,

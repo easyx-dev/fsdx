@@ -9,7 +9,7 @@ const { mockTrackEventSFn } = vi.hoisted(() => ({
 }));
 
 // mock Server Function
-vi.mock("#/server/event/event.functions", () => ({
+vi.mock("#/services/event/event.functions", () => ({
 	trackEventSFn: mockTrackEventSFn,
 }));
 

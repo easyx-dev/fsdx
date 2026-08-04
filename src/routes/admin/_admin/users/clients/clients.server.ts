@@ -6,13 +6,13 @@ import { and, eq, ilike, or } from "drizzle-orm";
 import { db } from "#/db/index";
 import { clientUser } from "#/db/schema";
 import type { PaginatedSortParams } from "#/lib/query/query-utils";
-import { clearClientUserCache } from "#/server/client-auth/client-auth.server";
+import { clearClientUserCache } from "#/services/client-auth/client-auth.server";
 import {
 	buildSortClause,
 	executePaginatedQuery,
 	notDeleted,
 	paginationOffset,
-} from "#/server/query/query-utils.server";
+} from "#/services/query/query-utils.server";
 
 export type ClientUserRecord = Omit<
 	typeof clientUser.$inferSelect,

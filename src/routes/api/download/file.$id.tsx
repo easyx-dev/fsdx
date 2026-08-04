@@ -3,7 +3,7 @@
  */
 import { Readable } from "node:stream";
 import { createFileRoute } from "@tanstack/react-router";
-import { readFileContent } from "#/server/file/file.server";
+import { readFileContent } from "#/services/file/file.server";
 
 export const Route = createFileRoute("/api/download/file/$id")({
 	server: {

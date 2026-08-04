@@ -9,7 +9,7 @@ import {
 	getNewsList,
 	translateNewsRecord,
 	translateNewsRecords,
-} from "#/server/news/news.server";
+} from "#/services/news/news.server";
 
 /** 前台新闻列表分页 */
 export const publishedNewsSchema = z.object({

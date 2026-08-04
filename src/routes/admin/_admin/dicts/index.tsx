@@ -39,7 +39,7 @@ import { ProTable } from "#/components/admin/ProTable";
 import { PRESET_DICTS } from "#/lib/constants/admin-constants";
 import type { EditorType } from "#/lib/editor-types/editor-types";
 import { downloadFile } from "#/lib/export/export.utils";
-import type { DictItemRecord, DictRecord } from "#/server/dict/dict.server";
+import type { DictItemRecord, DictRecord } from "#/services/dict/dict.server";
 import {
 	createDictItemSFn,
 	createDictSFn,

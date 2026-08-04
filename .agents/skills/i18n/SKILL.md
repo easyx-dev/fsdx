@@ -60,9 +60,9 @@ export const LOCALE_COOKIE = "lang";
 | `src/lib/i18n/i18n-context.tsx` | React Context Provider + `useTranslation` / `useLocale` hooks |
 | `src/lib/global-store/global-store.tsx` | GlobalStore：组合 locale + translations 并注入 I18nProvider |
 | `src/middleware/locale-middleware.ts` | 请求级语言检测中间件 |
-| `src/server/i18n/i18n.server.ts` | 翻译查询与维护的核心逻辑 |
-| `src/server/i18n/i18n.functions.ts` | Server Function 包装器（含权限守卫） |
-| `src/server/i18n/i18n-seed.ts` | 预设英文 UI 翻译种子数据（每次启动增量写入） |
+| `src/services/i18n/i18n.server.ts` | 翻译查询与维护的核心逻辑 |
+| `src/services/i18n/i18n.functions.ts` | Server Function 包装器（含权限守卫） |
+| `src/services/i18n/i18n-seed.ts` | 预设英文 UI 翻译种子数据（每次启动增量写入） |
 | `src/db/schema/translation.ts` | 数据库表定义 |
 | `src/components/admin/FieldTranslationDrawer.tsx` | 实体字段翻译编辑抽屉 |
 
@@ -168,7 +168,7 @@ const { t } = useTranslation();
 
 ### Step 2：在种子数据中添加翻译
 
-编辑 `src/server/i18n/i18n-seed.ts`，在 `SEED_EN` 数组中追加：
+编辑 `src/services/i18n/i18n-seed.ts`，在 `SEED_EN` 数组中追加：
 
 ```ts
 { locale: "en", key: "提交", value: "Submit" },
@@ -219,7 +219,7 @@ const NEWS_TRANSLATABLE_FIELDS = [
 
 ### Step 2：服务端添加翻译函数
 
-实体翻译的核心 API 在 `src/server/i18n/i18n.server.ts` 中：
+实体翻译的核心 API 在 `src/services/i18n/i18n.server.ts` 中：
 
 | API | 说明 |
 |-----|------|
@@ -229,8 +229,8 @@ const NEWS_TRANSLATABLE_FIELDS = [
 | `applyTranslations(records, translationsMap)` | 批量合并，内部按 `record.id` 查找对应翻译 |
 
 ```ts
-// src/server/news/news.server.ts
-import { applyTranslations, getContentTranslations } from "#/server/i18n/i18n.server";
+// src/services/news/news.server.ts
+import { applyTranslations, getContentTranslations } from "#/services/i18n/i18n.server";
 
 /** 对单条记录应用 content_translation 翻译 */
 export async function translateNewsRecord(
@@ -354,7 +354,7 @@ export const uiTranslationCache = new MemoryCache<Record<string, string>>({
 
 1. `src/lib/i18n/i18n.types.ts` — `SUPPORTED_LOCALES` 数组追加 `"ja"`
 2. `src/components/admin/FieldTranslationDrawer.tsx` — `LOCALE_LABELS` 追加语言标签
-3. `src/server/i18n/i18n-seed.ts` — 为新语言添加 `SEED_XX` 数组并追加到 `SEED_DATA`
+3. `src/services/i18n/i18n-seed.ts` — 为新语言添加 `SEED_XX` 数组并追加到 `SEED_DATA`
 4. 管理端翻译页面自动支持新语言（语言选择器基于 `SUPPORTED_LOCALES` 渲染）
 
 ## 常见任务速查

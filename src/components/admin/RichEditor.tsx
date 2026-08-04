@@ -12,7 +12,7 @@ import type {
 } from "@wangeditor/editor";
 import { Editor, Toolbar } from "@wangeditor/editor-for-react";
 import { useEffect, useMemo, useState } from "react";
-import { uploadFileSFn } from "#/server/file/file.functions";
+import { uploadFileSFn } from "#/services/file/file.functions";
 
 interface Props {
 	value?: string;
