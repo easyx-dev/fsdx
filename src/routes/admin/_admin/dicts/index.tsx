@@ -22,7 +22,6 @@ import {
 	Input,
 	InputNumber,
 	Modal,
-	message,
 	Popconfirm,
 	Row,
 	Space,
@@ -36,6 +35,7 @@ import { EditorTypes } from "#/components/admin/editor-type";
 import { FieldTranslationDrawer } from "#/components/admin/FieldTranslationDrawer";
 import { JsonImportButton } from "#/components/admin/JsonImportButton";
 import { ProTable } from "#/components/admin/ProTable";
+import { message } from "#/components/antd-static";
 import { PRESET_DICTS } from "#/constants";
 import type { EditorType } from "#/constants/editor-types";
 import { downloadFile } from "#/lib/export/export.utils";

@@ -3,7 +3,7 @@
  */
 import { KeyOutlined, PlusOutlined, SearchOutlined } from "@ant-design/icons";
 import { createFileRoute } from "@tanstack/react-router";
-import { Button, Form, Input, Modal, message, Switch, Tag } from "antd";
+import { Button, Form, Input, Modal, Switch, Tag } from "antd";
 import { useState } from "react";
 import { AutofillBlocker } from "#/components/AutofillBlocker";
 import { AdminPageContent } from "#/components/admin/AdminPageContent";
@@ -11,6 +11,7 @@ import { DictSelect } from "#/components/admin/DictSelect";
 import { DictTag } from "#/components/admin/DictTag";
 import { ProTable } from "#/components/admin/ProTable";
 import { TableOperate } from "#/components/admin/TableOperate";
+import { message } from "#/components/antd-static";
 import type { SortOrder } from "#/types/query";
 import {
 	createSFn,

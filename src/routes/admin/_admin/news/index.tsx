@@ -7,7 +7,7 @@ import {
 	PlusOutlined,
 } from "@ant-design/icons";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Button, Drawer, Image, message, Segmented, Space, Tag } from "antd";
+import { Button, Drawer, Image, Segmented, Space, Tag } from "antd";
 import dayjs from "dayjs";
 import { useMemo, useState } from "react";
 import { AdminPageContent } from "#/components/admin/AdminPageContent";
@@ -16,6 +16,7 @@ import { FieldTranslationDrawer } from "#/components/admin/FieldTranslationDrawe
 import { JsonImportButton } from "#/components/admin/JsonImportButton";
 import { ProTable } from "#/components/admin/ProTable";
 import { TableOperate } from "#/components/admin/TableOperate";
+import { message } from "#/components/antd-static";
 import { downloadFile } from "#/lib/export/export.utils";
 import { useAdminDictStore } from "#/lib/global-store/admin-dict-store";
 import type { NewsRecord } from "#/services/news/news.server";

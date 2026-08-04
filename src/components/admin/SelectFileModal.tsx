@@ -2,9 +2,10 @@
  * 文件库选择弹窗：从已上传文件中选取，支持搜索、筛选、预览、单选/多选、分页
  */
 import { EyeOutlined } from "@ant-design/icons";
-import { Button, Image, Input, Modal, message, Space, Tag } from "antd";
+import { Button, Image, Input, Modal, Space, Tag } from "antd";
 import type { ColumnsType } from "antd/es/table";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { message } from "#/components/antd-static";
 import { getFileListSFn } from "#/services/file/file.functions";
 import type { FileRecord } from "#/services/file/file.server";
 import { ProTable } from "./ProTable";

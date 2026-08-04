@@ -2,8 +2,9 @@
  * 图片上传组件（照片墙）：支持单/多图上传、拖拽排序、从文件库选择、画廊预览
  * value / onChange 兼容 antd Form.Item 直接注入
  */
-import { message } from "antd";
+
 import { useCallback, useEffect, useRef, useState } from "react";
+import { message } from "#/components/antd-static";
 import { uploadFileSFn } from "#/services/file/file.functions";
 import { SelectFileModal } from "../SelectFileModal";
 import { PhotoWall } from "./PhotoWall";

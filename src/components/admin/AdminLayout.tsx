@@ -11,16 +11,7 @@ import {
 	SunOutlined,
 } from "@ant-design/icons";
 import { Link, useLocation } from "@tanstack/react-router";
-import {
-	Avatar,
-	Button,
-	Divider,
-	Flex,
-	message,
-	notification,
-	Popover,
-	Tooltip,
-} from "antd";
+import { Avatar, Button, Divider, Flex, Popover, Tooltip } from "antd";
 import {
 	createContext,
 	type ReactNode,
@@ -80,12 +71,6 @@ export function AdminLayout({ children }: { children: ReactNode }) {
 		const idx = THEME_CYCLE.indexOf(mode);
 		setMode(THEME_CYCLE[(idx + 1) % THEME_CYCLE.length]);
 	};
-
-	// 设置全局 message / notification 默认 duration 为 5s
-	useEffect(() => {
-		message.config({ duration: 5 });
-		notification.config({ duration: 5 });
-	}, []);
 
 	// 进入 admin 时一次性加载全部字典到 zustand store
 	useEffect(() => {

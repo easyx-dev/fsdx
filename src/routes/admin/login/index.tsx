@@ -3,8 +3,9 @@
  */
 import { LockOutlined, UserOutlined } from "@ant-design/icons";
 import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
-import { Button, Form, Input, message } from "antd";
-import { useEffect, useState } from "react";
+import { Button, Form, Input } from "antd";
+import { useState } from "react";
+import { message } from "#/components/antd-static";
 import { checkInitStatusSFn } from "#/services/init/init.functions";
 import { adminLoginSFn } from "./login.functions";
 
@@ -22,11 +23,6 @@ function AdminLoginPage() {
 	const navigate = useNavigate();
 	const [form] = Form.useForm();
 	const [loading, setLoading] = useState(false);
-
-	// 设置 message 默认 duration 为 5s
-	useEffect(() => {
-		message.config({ duration: 5 });
-	}, []);
 
 	const handleSubmit = async (values: {
 		username: string;

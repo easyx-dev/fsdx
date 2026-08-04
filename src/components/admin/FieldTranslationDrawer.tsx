@@ -2,9 +2,10 @@
  * 字段翻译抽屉组件：在实体表格中为字段提供国际化翻译编辑入口
  */
 import { RobotOutlined, TranslationOutlined } from "@ant-design/icons";
-import { Button, Card, Drawer, message, Tabs, Tooltip } from "antd";
+import { Button, Card, Drawer, Tabs, Tooltip } from "antd";
 import { useCallback, useEffect, useId, useState } from "react";
 import { EditorTypes } from "#/components/admin/editor-type";
+import { message } from "#/components/antd-static";
 import type { EditorType } from "#/constants/editor-types";
 import {
 	DEFAULT_LOCALE,

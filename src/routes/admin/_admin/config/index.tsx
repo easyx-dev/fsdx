@@ -3,17 +3,7 @@
  */
 import { DownloadOutlined, PlusOutlined } from "@ant-design/icons";
 import { createFileRoute, useRouter } from "@tanstack/react-router";
-import {
-	Button,
-	Card,
-	Flex,
-	Form,
-	Input,
-	Modal,
-	message,
-	Space,
-	Switch,
-} from "antd";
+import { Button, Card, Flex, Form, Input, Modal, Space, Switch } from "antd";
 import dayjs from "dayjs";
 import { useMemo, useState } from "react";
 import { AdminPageContent } from "#/components/admin/AdminPageContent";
@@ -25,6 +15,7 @@ import {
 import { JsonImportButton } from "#/components/admin/JsonImportButton";
 import { ProTable } from "#/components/admin/ProTable";
 import { TableOperate } from "#/components/admin/TableOperate";
+import { message } from "#/components/antd-static";
 import type { EditorType } from "#/constants/editor-types";
 import { downloadFile } from "#/lib/export/export.utils";
 import type { ConfigRecord } from "#/services/config/config.server";

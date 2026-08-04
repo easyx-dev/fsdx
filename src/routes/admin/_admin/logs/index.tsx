@@ -14,7 +14,6 @@ import {
 	DatePicker,
 	Form,
 	Input,
-	message,
 	Select,
 	Space,
 	Tag,
@@ -25,6 +24,7 @@ import dayjs from "dayjs";
 import { useState } from "react";
 import { AdminPageContent } from "#/components/admin/AdminPageContent";
 import { ProTable } from "#/components/admin/ProTable";
+import { message } from "#/components/antd-static";
 import { LEVEL_COLORS, LEVEL_OPTIONS } from "#/constants";
 import type { LogEntry, LogQueryResult } from "#/services/logs/logs.server";
 import { getDatesSFn, searchLogsSFn } from "./logs.functions";

@@ -10,9 +10,10 @@
  */
 import { DeleteOutlined, EditOutlined } from "@ant-design/icons";
 import { Link } from "@tanstack/react-router";
-import { Button, message, Popconfirm, Space } from "antd";
+import { Button, Popconfirm, Space } from "antd";
 import type { ReactNode } from "react";
 import { useState } from "react";
+import { message } from "#/components/antd-static";
 
 /** Edit 子组件 Props */
 interface EditProps {

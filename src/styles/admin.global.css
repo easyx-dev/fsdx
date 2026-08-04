@@ -1,3 +1,6 @@
+/* 层顺序预声明：antd 组件样式由 StyleProvider layer 注入 @layer antd */
+@layer theme, base, antd, components, utilities;
+
 @import 'tailwindcss';
 @plugin '@tailwindcss/typography';
 
@@ -126,37 +129,48 @@ html,
   min-height: 100%;
 }
 
-body {
-  margin: 0;
-  font-family: var(--font-sans);
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+@layer base {
+  body {
+    margin: 0;
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  a {
+    color: var(--primary);
+    text-underline-offset: 2px;
+  }
+
+  a:hover {
+    opacity: 0.8;
+  }
+
+  code {
+    font-size: 0.9em;
+    border: 1px solid var(--border);
+    background: var(--muted);
+    border-radius: 7px;
+    padding: 2px 7px;
+  }
+
+  pre code {
+    border: 0;
+    background: transparent;
+    padding: 0;
+    border-radius: 0;
+    font-size: inherit;
+    color: inherit;
+  }
 }
 
-a {
-  color: var(--primary);
-  text-underline-offset: 2px;
-}
-
-a:hover {
-  opacity: 0.8;
-}
-
-code {
-  font-size: 0.9em;
-  border: 1px solid var(--border);
-  background: var(--muted);
-  border-radius: 7px;
-  padding: 2px 7px;
-}
-
-pre code {
-  border: 0;
-  background: transparent;
-  padding: 0;
-  border-radius: 0;
-  font-size: inherit;
-  color: inherit;
+/* antd reset（@layer antd）会持续把未显式着色的裸 a 覆盖为 antd 链接蓝，
+   此处在 antd 之后、utilities 之前重建语义色，保证浮动层触发时样式稳定 */
+@layer components {
+  a {
+    color: var(--primary);
+    text-underline-offset: 2px;
+  }
 }
 
 @layer base {

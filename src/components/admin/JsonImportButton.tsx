@@ -4,9 +4,10 @@
  */
 import { UploadOutlined } from "@ant-design/icons";
 import type { ButtonProps } from "antd";
-import { Button, Modal, message, Space, Upload } from "antd";
+import { Button, Modal, Space, Upload } from "antd";
 import { useState } from "react";
 import { CodeEditor } from "#/components/admin/CodeEditor";
+import { message } from "#/components/antd-static";
 
 export interface JsonImportButtonProps extends ButtonProps {
 	/** Modal 标题，默认 "导入 JSON" */

@@ -3,16 +3,15 @@
  */
 import { PlusOutlined, SearchOutlined } from "@ant-design/icons";
 import { createFileRoute } from "@tanstack/react-router";
-import { Button, Form, Input, Modal, message, Popover, Tag } from "antd";
+import { Button, Form, Input, Modal } from "antd";
 import { useState } from "react";
 import { AdminPageContent } from "#/components/admin/AdminPageContent";
 import { PermissionSelector } from "#/components/admin/PermissionSelector";
+import { PermissionTags } from "#/components/admin/PermissionTags";
 import { ProTable } from "#/components/admin/ProTable";
 import { TableOperate } from "#/components/admin/TableOperate";
-import {
-	PERMISSION_META,
-	type PermissionCode,
-} from "#/lib/permissions/permissions";
+import { message } from "#/components/antd-static";
+import { PERMISSION_META } from "#/lib/permissions/permissions";
 import type { AdminRoleRecord } from "#/services/admin-role/admin-role.server";
 import {
 	createAdminRoleSFn,
@@ -127,63 +126,9 @@ function AdminRolesPage() {
 			dataIndex: "permissions",
 			key: "permissions",
 			width: 280,
-			render: (perms: string[]) => {
-				const format = (code: string) => {
-					if (code.endsWith(":*")) {
-						const group = code.slice(0, -2);
-						return `${group}(*)`;
-					}
-					return PERMISSION_META[code as PermissionCode]?.name ?? code;
-				};
-				const wildcards = perms.filter((p) => p.endsWith(":*")).sort();
-				const individuals = perms.filter((p) => !p.endsWith(":*")).sort();
-				const sorted = [...wildcards, ...individuals];
-				const visible = sorted.slice(0, 2);
-				const overflow = perms.length - 2;
-				if (perms.length === 0) {
-					return <span className="text-muted-foreground text-xs">无权限</span>;
-				}
-				const tagList = visible.map((code) => (
-					<Tag
-						key={code}
-						color={code.endsWith(":*") ? "green" : "blue"}
-						className="text-xs"
-					>
-						{format(code)}
-					</Tag>
-				));
-				if (overflow > 0) {
-					tagList.push(
-						<Tag key="overflow" className="text-xs">
-							+{overflow}
-						</Tag>,
-					);
-				}
-				if (overflow > 0) {
-					return (
-						<Popover
-							content={
-								<div className="flex flex-wrap gap-1 max-w-xs">
-									{sorted.map((code) => (
-										<Tag
-											key={code}
-											color={code.endsWith(":*") ? "green" : "blue"}
-											className="text-xs"
-										>
-											{format(code)}
-										</Tag>
-									))}
-								</div>
-							}
-						>
-							<div className="flex flex-wrap gap-1 cursor-pointer">
-								{tagList}
-							</div>
-						</Popover>
-					);
-				}
-				return <div className="flex flex-wrap gap-1">{tagList}</div>;
-			},
+			render: (perms: string[]) => (
+				<PermissionTags permissions={perms} meta={PERMISSION_META} />
+			),
 		},
 		{
 			title: "描述",

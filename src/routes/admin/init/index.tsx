@@ -18,14 +18,14 @@ import {
 	Form,
 	Input,
 	InputNumber,
-	message,
 	Space,
 	Switch,
 } from "antd";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import type { z } from "zod";
 import { AutofillBlocker } from "#/components/AutofillBlocker";
 import { JsonImportButton } from "#/components/admin/JsonImportButton";
+import { message } from "#/components/antd-static";
 import { checkInitStatusSFn } from "#/services/init/init.functions";
 import { type initSchema, initSFn } from "./init.functions";
 
@@ -46,10 +46,6 @@ function AdminInitPage() {
 	const [aiExpanded, setAiExpanded] = useState(false);
 	const [smsExpanded, setSmsExpanded] = useState(false);
 
-	// 设置 message 默认 duration 为 5s
-	useEffect(() => {
-		message.config({ duration: 5 });
-	}, []);
 	const handleSubmit = async (values: z.infer<typeof initSchema>) => {
 		setLoading(true);
 		try {

@@ -10,7 +10,6 @@ import {
 	Card,
 	Col,
 	DatePicker,
-	message,
 	Row,
 	Select,
 	Space,
@@ -20,6 +19,7 @@ import {
 import dayjs from "dayjs";
 import { useEffect, useRef, useState } from "react";
 import { AdminPageContent } from "#/components/admin/AdminPageContent";
+import { message } from "#/components/antd-static";
 import type { TrackAnalyticsResult as AnalyticsResult } from "#/services/track/track.types";
 import { getTrackAnalyticsSFn } from "./analytics.functions";
 

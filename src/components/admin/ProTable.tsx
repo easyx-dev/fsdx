@@ -5,10 +5,11 @@
  */
 import { CopyOutlined } from "@ant-design/icons";
 import type { TableProps, TooltipProps } from "antd";
-import { Button, message, Table, Tooltip } from "antd";
+import { Button, Table, Tooltip } from "antd";
 import type { ColumnsType, ColumnType } from "antd/es/table";
 import dayjs from "dayjs";
 import { useMemo } from "react";
+import { message } from "#/components/antd-static";
 
 /** 扩展的 ellipsis 类型：支持 boolean 和自定义 Tooltip */
 type ProEllipsis = boolean | { showTitle?: boolean; tooltip?: TooltipProps };

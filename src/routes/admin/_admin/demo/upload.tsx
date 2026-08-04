@@ -2,10 +2,11 @@
  * 上传组件演示页面：展示 ImageUpload 和 FileUpload 各种使用场景
  */
 import { createFileRoute } from "@tanstack/react-router";
-import { Button, Card, Divider, Form, message, Space } from "antd";
+import { Button, Card, Divider, Form, Space } from "antd";
 import { useState } from "react";
 import { AdminPageContent } from "#/components/admin/AdminPageContent";
 import { FileUpload, ImageUpload } from "#/components/admin/upload";
+import { message } from "#/components/antd-static";
 
 export const Route = createFileRoute("/admin/_admin/demo/upload")({
 	component: UploadDemoPage,

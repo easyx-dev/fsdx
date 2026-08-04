@@ -9,7 +9,6 @@ import {
 	Form,
 	Input,
 	InputNumber,
-	message,
 	Select,
 	Slider,
 	Space,
@@ -19,6 +18,7 @@ import {
 import { useState } from "react";
 import type { z } from "zod";
 import { AdminPageContent } from "#/components/admin/AdminPageContent";
+import { message } from "#/components/antd-static";
 import { type aiTestSchema, aiTestSFn } from "./ai.functions";
 
 const { Text, Paragraph } = Typography;

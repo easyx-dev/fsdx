@@ -11,7 +11,6 @@ import {
 	Button,
 	DatePicker,
 	Input,
-	message,
 	Select,
 	Space,
 	Table,
@@ -21,6 +20,7 @@ import {
 import dayjs from "dayjs";
 import { useMemo, useState } from "react";
 import { AdminPageContent } from "#/components/admin/AdminPageContent";
+import { message } from "#/components/antd-static";
 import {
 	getTrackEventMetaSFn,
 	getTrackPropertyMetaSFn,

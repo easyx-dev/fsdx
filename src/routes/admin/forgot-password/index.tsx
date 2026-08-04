@@ -3,10 +3,11 @@
  */
 import { LockOutlined, MailOutlined, ReloadOutlined } from "@ant-design/icons";
 import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
-import { Button, Form, Input, Modal, message } from "antd";
+import { Button, Form, Input, Modal } from "antd";
 import type React from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { z } from "zod";
+import { message } from "#/components/antd-static";
 import { getCurrentAdminSFn } from "#/services/admin-auth/admin-auth.functions";
 import {
 	getImageCaptchaSFn,
@@ -50,10 +51,6 @@ function AdminForgotPasswordPage() {
 		const timer = setInterval(() => setCountdown((c) => c - 1), 1000);
 		return () => clearInterval(timer);
 	}, [countdown]);
-
-	useEffect(() => {
-		message.config({ duration: 5 });
-	}, []);
 
 	/** 刷新图片验证码 */
 	const refreshCaptcha = useCallback(() => {
