@@ -10,7 +10,6 @@ import {
 	hasClientPermission,
 } from "#/lib/permissions/client-permissions";
 import { runWithRequestContext } from "#/lib/request-context/request-context";
-import { getClientUserForAuth } from "#/services/client-auth/client-auth.server";
 
 /** 通过中间件注入 handler 的客户端用户上下文 */
 export interface ClientAuthContext {
@@ -47,6 +46,10 @@ async function resolveClientAuthContext(
 		throw new ClientAuthError("无效的用户身份", 401);
 	}
 
+	// 动态 import 服务层：中间件仅服务端执行，客户端 RPC stub 不加载 .server 依赖
+	const { getClientUserForAuth } = await import(
+		"#/services/client-auth/client-auth.server"
+	);
 	const result = await getClientUserForAuth(payload.userId);
 	if (!result.success) {
 		if (result.reason === "not_found") {

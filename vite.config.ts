@@ -13,8 +13,7 @@ const config = defineConfig({
 		tailwindcss(),
 		tanstackStart({
 			router: {
-				routeFileIgnorePattern:
-					"(__tests__|.*\\.(functions|schemas|server)\\.ts)",
+				routeFileIgnorePattern: "\\.(functions|server|schemas)\\.ts$|__tests__",
 			},
 			importProtection: {
 				client: {

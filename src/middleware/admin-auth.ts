@@ -10,7 +10,6 @@ import {
 	type PermissionDef,
 } from "#/lib/permissions/permissions";
 import { runWithRequestContext } from "#/lib/request-context/request-context";
-import { getAdminUserForAuth } from "#/services/admin-auth/admin-auth.server";
 
 /** 通过中间件注入 handler 的管理端鉴权上下文 */
 export interface AdminAuthContext {
@@ -56,6 +55,10 @@ export async function resolveAdminAuthContext(
 		throw new AdminAuthError("无权访问管理端", 403);
 	}
 
+	// 动态 import 服务层：中间件仅服务端执行，客户端 RPC stub 不加载 .server 依赖
+	const { getAdminUserForAuth } = await import(
+		"#/services/admin-auth/admin-auth.server"
+	);
 	const result = await getAdminUserForAuth(jwtPayload.userId);
 	if (!result.success) {
 		if (result.reason === "not_found") {
