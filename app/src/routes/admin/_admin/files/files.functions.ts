@@ -1,0 +1,29 @@
+/**
+ * 文件管理 Server Function
+ */
+import { createServerFn } from "@tanstack/react-start";
+import { z } from "zod";
+import { PERMISSIONS } from "#/constants/permissions/permissions";
+import { adminPermGuard } from "#/middleware/admin-auth";
+import { deleteFile, makePermanent } from "#/services/file/file.server";
+import { logCrud } from "#/services/operation-log/operation-log.server";
+
+export const idSchema = z.object({ id: z.string().min(1) });
+
+export const deleteFileSFn = createServerFn({ method: "POST" })
+	.middleware([adminPermGuard(PERMISSIONS.FILE_DELETE)])
+	.inputValidator(idSchema)
+	.handler(async ({ data, context }) => {
+		await deleteFile(data.id);
+		logCrud(context.user, "file", "delete", { id: data.id });
+		return { success: true };
+	});
+
+export const makePermanentSFn = createServerFn({ method: "POST" })
+	.middleware([adminPermGuard(PERMISSIONS.FILE_EDIT)])
+	.inputValidator(idSchema)
+	.handler(async ({ data, context }) => {
+		await makePermanent(data.id);
+		logCrud(context.user, "file", "make_permanent", { id: data.id });
+		return { success: true };
+	});

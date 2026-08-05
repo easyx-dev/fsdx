@@ -1,0 +1,42 @@
+{
+  "name": "@fsdx/ui-spa",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./antd-static": "./src/antd-static/index.tsx",
+    "./table-operate": "./src/table-operate.tsx",
+    "./pro-table": "./src/pro-table.tsx",
+    "./permission-tags": "./src/permission-tags.tsx",
+    "./json-import-button": "./src/json-import-button.tsx",
+    "./code-editor": "./src/code-editor.tsx",
+    "./ms-input": "./src/ms-input.tsx",
+    "./admin-page-content": "./src/admin-page-content.tsx",
+    "./upload/file-upload-render": "./src/upload/FileUploadRender.tsx",
+    "./upload/photo-wall": "./src/upload/PhotoWall.tsx",
+    "./sfn-helpers": "./src/sfn-helpers.ts"
+  },
+  "scripts": {
+    "check": "tsc --noEmit && biome check",
+    "format": "biome format",
+    "lint": "biome lint",
+    "lint:fix": "biome check --write"
+  },
+  "dependencies": {
+    "@fsdx/core": "workspace:*",
+    "@monaco-editor/react": "^4.7.0"
+  },
+  "peerDependencies": {
+    "@ant-design/icons": "^6",
+    "@tanstack/react-router": "^1",
+    "antd": "^6",
+    "dayjs": "^1",
+    "monaco-editor": "^0.55",
+    "react": "^19",
+    "react-dom": "^19"
+  },
+  "devDependencies": {
+    "@types/react": "^19.2.16",
+    "@types/react-dom": "^19.2.3"
+  }
+}

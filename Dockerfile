@@ -10,12 +10,16 @@ ENV PNPM_HOME=/tmp/pnpm-home
 RUN npm install -g pnpm@11
 
 COPY pnpm-lock.yaml package.json pnpm-workspace.yaml .npmrc ./
+COPY app/package.json ./app/package.json
+COPY packages/core/package.json ./packages/core/package.json
+COPY packages/ui-ssr/package.json ./packages/ui-ssr/package.json
+COPY packages/ui-spa/package.json ./packages/ui-spa/package.json
 
 RUN pnpm install --frozen-lockfile --store-dir /tmp/pnpm-store --config.package-import-method=copy
 
 COPY . .
 
-RUN pnpm build
+RUN pnpm --filter @fsdx/web build
 
 # 运行阶段
 FROM node:24-alpine AS runner
@@ -24,9 +28,9 @@ WORKDIR /app
 
 RUN addgroup -g 1001 -S nodejs && adduser -S nodejs -u 1001
 
-COPY --from=builder --chown=nodejs:nodejs /app/.output ./.output
-COPY --from=builder --chown=nodejs:nodejs /app/package.json ./package.json
-COPY --from=builder --chown=nodejs:nodejs /app/drizzle ./drizzle
+COPY --from=builder --chown=nodejs:nodejs /app/app/.output ./.output
+COPY --from=builder --chown=nodejs:nodejs /app/app/package.json ./package.json
+COPY --from=builder --chown=nodejs:nodejs /app/app/drizzle ./drizzle
 
 RUN mkdir -p data && chown nodejs:nodejs /app/data
 

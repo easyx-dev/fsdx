@@ -4,6 +4,17 @@
 
 ### Breaking Changes
 
+- **Monorepo 重构**：单仓库单应用 → 单仓库多包（pnpm workspace）
+  - 目录迁移：`src/` 整体移入 `app/src/`（`@fsdx/web`），根 `package.json` 改为 `--filter` 编排壳；`server.ts`/`public/`/`drizzle/`/配置文件移入 `app/`
+  - 新增 `@fsdx/core`（subpath exports，`pure/` 同构 + `node/` 仅服务端）：ms / export / cache-core / match-permission / error-utils / i18n-types / i18n-config / cn / logger / jwt / storage / captcha / batch-writer / request-context / scheduler / ai / mail / sms
+  - 新增 `@fsdx/ui-ssr`（shadcn button/card/badge/input/textarea + AutofillBlocker）与 `@fsdx/ui-spa`（antd 基础组件，antd 为 peerDependency）
+  - logger 改 `createLogger` 工厂：app 保留 `#/lib/logger/logger` 单例壳，27 处引用零改动；jwt 改 `createJwt` 工厂 + app 惰性单例壳，`COOKIE_NAMES` 迁至 `src/constants/cookie-names.ts`
+  - ai/mail/sms 改 `initX` 依赖注入（bootstrap 注入 `getConfig` + logger），未 init 直接调用抛错；scheduler 改 `setSchedulerLogger`
+  - `matchPermission` 迁入 core；`OperatorType` 迁入 core request-context，`db/schema/operation-log.ts` re-export；`log-reader.ts` 就近迁至 `services/logs/`
+  - antd-static 迁入 ui-spa，app 保留 `#/components/antd-static` 壳 re-export；Tailwind 经 `@source` 扫描 ui 包源码类名
+
+### Refactor
+
 - **埋点模块重构为神策简化模型（track 命名体系）**：表/服务/路由/权限码统一更名
   - 表：`event`→`track_event`（列 `event`→`name`）、`preset_event`→`track_event_meta`、`preset_property`→`track_property_meta`，Schema 合并为 `src/db/schema/track.ts`
   - 服务：`src/services/event/`→`src/services/track/`，`trackEvent()` 增加 per-session 频控（60 条/分钟）与时间钳制（过去 1 天 ~ 未来 5 分钟）

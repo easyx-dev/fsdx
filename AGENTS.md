@@ -7,111 +7,71 @@
 
 ## 工程结构
 
+单仓库多包（pnpm workspace），`app/` 为应用包，`packages/*` 为被源码直引的库包。
+
 ```
-src/
-├── bootstrap.ts                    # 服务启动初始化（env 加载、预置数据、定时任务、优雅关闭）
-├── hono-app.ts                     # Hono 应用工厂（/health 路由）
-├── server.ts                       # TanStack Start 服务端入口
-├── components/
-│   ├── admin/                      # 管理端专用组件（AdminLayout、AdminPageContent、AdminProvider、ProTable、TableOperate、RichEditor、AdminAuthProvider、CodeEditor、DictSelect、DictTag、FieldTranslationDrawer、JsonImportButton、PermissionSelector、PermissionTags、useCrudPage、sfn-helpers、MSInput、antd-static/、editor-type/、nav-config、upload/ 等）
-│   ├── antd-static/                # antd 静态方法桥接（message/modal/notification 经 App.useApp 捕获）
-│   ├── client/                     # 客户端前台专用组件（Header、Footer、CaptchaInput、ClientAuthProvider、ThemeToggle）
-│   ├── ui/                         # shadcn/ui 基础组件（button、input、textarea、badge、card）
-│   ├── AutofillBlocker.tsx         # 浏览器自动填充阻止组件
-│   ├── Document.tsx                # 根布局（AdminRootDocument / SSRRootDocument）
-│   ├── ErrorFallback.tsx           # 全局错误处理
-│   └── Logo.tsx                    # Logo 组件
-├── constants/                      # 项目级常量（日志级别、编辑器类型等）
-├── db/
-│   ├── index.ts                    # Drizzle 客户端实例化
-│   └── schema/                     # 数据库表定义（按模块拆分，17 张表）
-├── hooks/
-│   ├── use-sfn-call.ts             # SFn 调用 hook（safeSfnCall 薄封装）
-│   └── use-theme-mode.ts           # 主题模式 hook
-├── lib/                            # 基础库（无业务逻辑）
-│   ├── buffer/                     # 通用批量缓冲写入器（event/operation-log 复用）
-│   ├── cache/                      # 内存缓存（core.ts 类 + 按模块 *.cache.ts 实例）
-│   ├── ai/                         # AI 调用（翻译、聊天等）
-│   ├── captcha/                    # 验证码生成工具（字体、路径、选项管理）
-│   ├── export/                     # 导出工具
-│   ├── global-store/               # 全局状态（locale、翻译、系统配置）
-│   ├── i18n/                       # 国际化客户端（i18next 实例、Context Provider、hooks）
-│   ├── jwt/                        # JWT 签发与校验（jose）
-│   ├── logger/                     # pino 日志 + 管理端日志文件查询
-│   ├── mail/                       # 邮件发送
-│   ├── ms/                         # 毫秒时间转换（vercel/ms 移植）
-│   ├── permissions/                # 权限码常量（管理端 + 客户端 client-permissions.ts）
-│   ├── request-context/            # 请求级上下文（AsyncLocalStorage，承载操作者身份）
-│   ├── scheduler/                  # 定时任务调度（cron）
-│   ├── sms/                        # 短信发送
-│   ├── storage/                    # 文件存储抽象层（本地实现）
-│   ├── track/                      # 客户端埋点追踪 SDK
-│   └── utils/                      # 通用工具函数（cn）
-├── middleware/
-│   ├── admin-auth.ts               # 管理端鉴权（resolveAdminAuthContext + adminPermGuard + adminPermRouteGuard）
-│   ├── client-auth.ts              # 客户端鉴权（clientAuthGuard + clientPermGuard）
-│   ├── api-auth.ts                 # API 路由鉴权（复用 resolveAdminAuthContext）
-│   ├── locale-middleware.ts        # 请求级语言检测中间件
-│   ├── sf-error-logger.ts          # SF 全局错误日志中间件（自动覆盖所有 SF）
-│   └── __tests__/
-│       └── admin-auth.test.ts
-├── services/                       # 服务端共享业务逻辑（仅放被多模块消费的代码）
-│   ├── admin-auth/                 # 管理端认证（登录、getAdminUserForAuth 带缓存）
-│   ├── admin-role/                 # 管理端角色管理（admin_role 表，含 schemas 单一来源）
-│   ├── captcha/                    # 验证码生成、发送、校验（admin + client 双端）
-│   ├── client-auth/                # 客户端认证（登录、注册、getClientUserForAuth 带缓存）
-│   ├── config/                     # 系统配置管理 + 缓存（getConfig 被 ai/mail/sms/i18n 调用）
-│   ├── dict/                       # 字典管理 + 缓存（页面 + bootstrap + DictTag/DictSelect 组件）
-│   ├── file/                       # 文件管理（上传逻辑、清理、列表、删除；files 页 + 3 组件）
-│   ├── file-explorer/              # 文件资源管理器（STORAGE_DIR 目录浏览，路径穿越防护 + 写保护）
-│   ├── i18n/                       # 国际化服务端（翻译查询、维护、种子数据）
-│   ├── init/                       # 系统初始化（bootstrap + admin 初始化 + 双端角色种子）
-│   ├── logs/                       # 日志查询（admin 日志页 + api/download）
-│   ├── message/                    # 通用消息（recipientType + recipientId 定位接收者，双端共用）
-│   ├── news/                       # 新闻共享（admin CRUD + 客户端 SSR 路由）
-│   ├── operation-log/              # 操作日志（BatchWriter 缓冲 + logCrud + logExternalRequest）
-│   ├── query/                      # 服务端查询工具（分页、排序、防注入）
-│   ├── tasks/                      # 定时任务注册
-│   └── track/                      # 埋点事件（神策简化模型，频控 + 时间钳制 + BatchWriter 缓冲）
-├── routes/
-│   ├── __root.tsx                  # 根布局（HTML shell）
-│   ├── index.tsx                   # 前台首页（Hero + 最新新闻 SSR）
-│   ├── about.tsx                   # 关于页面
-│   ├── login/                      # 客户端登录（目录路由）
-│   ├── register/                   # 客户端注册（目录路由）
-│   ├── forgot-password/            # 客户端忘记密码（目录路由）
-│   ├── news/                       # 新闻列表 + 详情（SSR）
-│   ├── api/download/               # 文件/日志下载路由
-│   ├── admin.tsx                   # 管理端入口
-│   └── admin/                      # 管理端页面
-│       ├── login/                  # 管理员登录（目录路由）
-│       ├── init/                   # 系统初始化（目录路由）
-│       ├── forgot-password/        # 管理端忘记密码（目录路由）
-│       └── _admin/                 # 受保护管理端页面
-│           ├── index.tsx           # 仪表盘
-│           ├── news/               # 新闻 CRUD（保留 -mods/）
-│           ├── dicts/              # 字典管理
-│           ├── config/             # 系统配置
-│           ├── files/              # 文件管理
-│           ├── file-explorer/      # 文件资源管理器
-│           ├── admin-roles/        # 管理端角色管理
-│           ├── users/              # 用户管理（admins + clients）
-│           ├── messages/           # 管理端消息中心（收件箱 + 消息管理）
-│           ├── logs/               # 日志查询
-│           ├── operation-logs/     # 操作日志
-│           ├── translations/       # 翻译管理（保留 -mods/）
-│           ├── track/              # 埋点管理（query/analytics/event-meta/property-meta）
-│           └── demo/               # 演示功能
-├── routes/
-│   └── messages/                   # 客户端消息中心（shadcn/ui SSR）
-├── router.tsx                      # TanStack Router 实例
-├── start.ts                        # TanStack Start 入口配置（locale + CSRF + SF 错误日志中间件）
-├── styles/                         # 全局样式（@layer theme, base, antd, components, utilities）
-├── test-utils/                     # 测试工具（db-mock 等）
-├── types/                          # 全局类型定义（query.ts）
-├── utils/                          # 纯工具函数（cn）
-└── validators/                     # 共享 zod schema（common.schemas.ts）
+app/                          # @fsdx/web —— 应用 package（业务代码 + 运行时配置）
+├── package.json              # imports #/* → ./src/*
+├── vite.config.ts / vitest.config.ts / drizzle.config.ts / tsconfig.json
+├── drizzle/                  # 迁移文件（17 张表基线）
+├── server.ts                 # Nitro server entry（bootstrap + Hono 工厂）
+├── public/                   # 静态资源
+└── src/
+    ├── bootstrap.ts          # 服务启动初始化（init 注入、预置数据、定时任务、优雅关闭）
+    ├── hono-app.ts           # Hono 应用工厂（/health 路由）
+    ├── server.ts             # TanStack Start 服务端入口
+    ├── components/
+    │   ├── admin/            # 业务组件（AdminLayout、AdminProvider、DictSelect、RichEditor、FieldTranslationDrawer、PermissionSelector、SelectFileModal、useCrudPage、sfn-helpers、editor-type/、upload/ 等）
+    │   ├── antd-static/      # antd 静态方法桥接壳（re-export @fsdx/ui-spa/antd-static）
+    │   ├── client/           # 前台业务组件（Header、Footer、ClientAuthProvider、CaptchaInput、ThemeToggle）
+    │   ├── global-store/     # React store（global-store + admin-config-store + admin-dict-store）
+    │   ├── i18n-context.tsx  # 国际化 React Context（createI18nInstance 在 @fsdx/core/i18n-config）
+    │   ├── track/            # 客户端埋点 SDK（依赖 track SFn）
+    │   ├── Document.tsx      # 根布局（AdminRootDocument / SSRRootDocument）
+    │   ├── ErrorFallback.tsx # 全局错误处理
+    │   └── Logo.tsx          # Logo 组件（依赖 public 静态资源）
+    ├── constants/            # 项目级常量（cookie-names.ts、editor-types.ts、permissions/ 权限码等）
+    ├── db/                   # Drizzle 客户端 + schema（17 张表）
+    ├── hooks/                # use-sfn-call、use-theme-mode
+    ├── lib/                  # 仅基础设施单例壳（其余基础库在 packages/core）
+    │   ├── logger/logger.ts  # logger 单例壳（createLogger 在 @fsdx/core/logger）
+    │   └── jwt/jwt.ts        # jwt 单例（createJwt 在 @fsdx/core/jwt）
+    ├── middleware/           # admin-auth / client-auth / api-auth / locale / sf-error-logger
+    ├── services/             # 服务端共享业务逻辑（config/dict/file/news/track/...）
+    │   └── logs/log-reader.ts    # 日志文件查询（就近归属 services/logs）
+    ├── routes/               # 前台 + /admin 全部路由页面与 SFn
+    ├── router.tsx / start.ts / styles/ / test-utils/ / types/ / validators/
+    └── utils/                # 纯工具（cn 已迁 @fsdx/core/cn）
+
+packages/
+├── core/                     # @fsdx/core —— 纯逻辑库（subpath exports，无根桶）
+│   └── src/
+│       ├── pure/             # 同构安全，客户端可引用
+│       │   ├── ms/  export/  # 时间转换 / CSV-JSON 序列化
+│       │   ├── cache-core.ts match-permission.ts error-utils.ts
+│       │   ├── i18n-types.ts i18n-config.ts cn.ts
+│       │   └── __tests__/
+│       └── node/             # 仅服务端（客户端 import-protection 保障）
+│           ├── logger.ts jwt.ts batch-writer.ts request-context.ts scheduler.ts
+│           ├── ai.ts mail.ts sms.ts
+│           ├── storage/  captcha/
+│           └── __tests__/
+├── ui-ssr/                   # @fsdx/ui-ssr —— shadcn 基础组件 + AutofillBlocker
+│   └── src/components/{ui/*,autofill-blocker.tsx}
+└── ui-spa/                   # @fsdx/ui-spa —— antd 管理端基础组件（antd 为 peerDependency）
+    └── src/{antd-static/,table-operate.tsx,pro-table.tsx,code-editor.tsx,ms-input.tsx,...}
 ```
+
+`#/*`、`@/*` 别名仅在 app 内生效（`#/*` → `./src/*`）。跨包引用一律使用 `@fsdx/*` subpath import。
+
+### 包边界约定
+
+- **core 分两层**：`@fsdx/core/*` subpath 指向 `pure/`（同构）或 `node/`（服务端）。客户端组件禁止引用 `node/` 子路径；core 内不得出现 `#/services`、`#/db`、`#/routes` 反向引用
+- **core 零全局单例**：`@fsdx/core/logger` 只导出 `createLogger` 工厂，应用级 `logger` 单例由 app 的 `src/lib/logger/logger.ts` 提供（全库 27 处 `#/lib/logger/logger` 引用零改动）；`@fsdx/core/jwt` 同理，`createJwt` + app 惰性单例壳
+- **有外部配置依赖的模块用 init 注入**：`@fsdx/core/ai|mail|sms` 提供 `initAi/initMail/initSms`，bootstrap 注入 `getConfig` 回调与 logger；未 init 直接调用抛错（fail-fast）；`scheduler` 用 `setSchedulerLogger` 注入
+- **antd 单实例**：`@fsdx/ui-spa` 将 antd 声明为 peerDependency，app 提供唯一实例；`antd-static` 桥接在 app `<App>` 上下文内工作，app 保留 `#/components/antd-static` 壳 re-export
+- **UI token 宿主注入**：ui 包组件只写 tailwind 类名，颜色 token 由 app 的 `global.css` 定义；app 的 Tailwind 通过 `@source "../../packages/ui-ssr/src"`（及 ui-spa）扫描包源码类名
+- **新增共享逻辑**：纯函数/类入 `@fsdx/core`，shadcn 组件入 `@fsdx/ui-ssr`，antd 组件入 `@fsdx/ui-spa`，业务逻辑留在 `app/src`
 
 ## 技术栈
 
@@ -252,7 +212,7 @@ Server Function handler 体中直接调用 db 是安全的——SFn 始终在服
 
 ### 环境变量
 
-- 环境变量文件位于项目根目录（`.env`、`.env.example`），通过 Vite 内置 env 加载机制注入 `process.env`
+- 环境变量文件位于 `app/` 下（`app/.env`、`app/.env.example`），Vite 以 app 为 root 加载并注入 `process.env`；`.env` 不入库，模板见 `app/.env.example`
 - 应用代码通过 `process.env` 直接读取
 - SMTP 邮件配置已迁移至系统配置表，不再通过环境变量管理
 
@@ -385,19 +345,19 @@ detail: jsonb(),
 
 ### 内存缓存约定
 
-- `src/lib/cache/*.cache.ts` 中的每个缓存实例只能在唯一一个服务端模块中直接操作，禁止跨模块 import 缓存实例
+- 每个缓存实例文件就近存放在其所属服务端模块目录（`services/<module>/<module>.cache.ts`），实例只能在唯一一个服务端模块中直接操作，禁止跨模块 import 缓存实例
 - 外部模块通过所属模块的导出函数访问缓存数据
 - 读缓存函数必须实现懒加载模式：cache miss → 查库 → 写缓存 → 返回
-- `MemoryCache` 泛型类在 `src/lib/cache/core.ts`，实例按模块拆分在 `*.cache.ts` 独立文件
+- `MemoryCache` 泛型类在 `@fsdx/core/cache-core`，实例按模块拆分在 `<module>.cache.ts` 独立文件
 
-| 缓存实例 | 所属模块 |
-|----------|----------|
-| `configCache` / `configTranslationCache` | `src/services/config/config.server.ts` |
-| `dictCache` | `src/services/dict/dict.server.ts` |
-| `uiTranslationCache` | `src/services/i18n/i18n.server.ts` |
-| `clientUserCache` | `src/services/client-auth/client-auth.server.ts` |
-| `adminUserCache` | `src/services/admin-auth/admin-auth.server.ts` |
-| `trackEventMetaCache` / `trackPropertyMetaCache` | `src/services/track/track.server.ts` |
+| 缓存实例 | 实例文件 | 所属模块 |
+|----------|----------|----------|
+| `configCache` / `configTranslationCache` | `services/config/config.cache.ts` | `services/config/config.server.ts` |
+| `dictCache` | `services/dict/dict.cache.ts` | `services/dict/dict.server.ts` |
+| `uiTranslationCache` | `services/i18n/ui-translation.cache.ts` | `services/i18n/i18n.server.ts` |
+| `clientUserCache` | `services/client-auth/client-user.cache.ts` | `services/client-auth/client-auth.server.ts` |
+| `adminUserCache` | `services/admin-auth/admin-user.cache.ts` | `services/admin-auth/admin-auth.server.ts` |
+| `trackEventMetaCache` / `trackPropertyMetaCache` | `services/track/track.cache.ts` | `services/track/track.server.ts` |
 
 > 完整规则、懒加载模板、新增缓存步骤、违规自查清单 → 见 [cache](.agents/skills/cache/SKILL.md) skill。
 
@@ -472,19 +432,20 @@ src/services/config/
 
 ## 命令
 
+根 `package.json` 统一编排，内部用 `pnpm --filter` 调度到 `@fsdx/web`；`check`/`test`/`format`/`lint` 通过 `pnpm -r` 覆盖全部包（core / ui-ssr / ui-spa / app）。
+
 | 命令 | 说明 |
 |------|------|
-| `pnpm dev` | 启动开发服务器（端口 3000） |
-| `pnpm build` | 生产构建 |
+| `pnpm dev` | 启动开发服务器（端口 3000，`--filter @fsdx/web`） |
+| `pnpm build` | 生产构建 app |
 | `pnpm preview` | 预览生产构建 |
-| `pnpm check` | TypeScript 类型检查 + Biome 代码规范检查 |
-| `pnpm format` | Biome 代码格式化 |
-| `pnpm lint` | Biome 代码检查并自动修复 |
-| `pnpm test` | 运行 Vitest 测试 |
-| `pnpm db:generate` | 生成数据库迁移文件 |
-| `pnpm db:migrate` | 运行数据库迁移 |
-| `pnpm db:studio` | 启动 Drizzle Studio |
-| `pnpm db:pull` | 从数据库拉取 Schema |
+| `pnpm check` | 全部包 tsc --noEmit + Biome 检查 |
+| `pnpm format` | 全部包 Biome 格式化 |
+| `pnpm lint` / `pnpm lint:fix` | 全部包 Biome 检查 / 自动修复 |
+| `pnpm test` | 全部包 Vitest 测试（app + core） |
+| `pnpm db:generate` / `pnpm db:migrate` / `pnpm db:pull` / `pnpm db:studio` | app 数据库迁移流程 |
+| `pnpm --filter @fsdx/core test` | 仅 core 包测试 |
+| `pnpm changeset` | 生成 changeset（仅库包版本管理） |
 
 ## 开发边界
 

@@ -1,0 +1,35 @@
+/**
+ * 定时任务注册：在服务启动时调用
+ */
+
+import { registerTask } from "@fsdx/core/scheduler";
+import { logger } from "#/lib/logger/logger";
+import { cleanExpiredFiles } from "#/services/file/file.server";
+import { cleanExpiredLogs } from "#/services/logs/logs-cleanup.server";
+
+/** 注册所有定时任务 */
+export function registerAllTasks(): void {
+	// 每小时清理过期临时文件
+	registerTask({
+		name: "清理过期临时文件",
+		cronExpression: "0 * * * *",
+		handler: async () => {
+			const count = await cleanExpiredFiles();
+			if (count > 0) {
+				logger.info({ count }, "已清理过期临时文件");
+			}
+		},
+	});
+
+	// 每天凌晨 3 点清理 30 天前的日志文件
+	registerTask({
+		name: "清理过期日志文件",
+		cronExpression: "0 3 * * *",
+		handler: async () => {
+			const count = await cleanExpiredLogs();
+			if (count > 0) {
+				logger.info({ count }, "已清理过期日志文件");
+			}
+		},
+	});
+}

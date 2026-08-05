@@ -1,3 +1,7 @@
+packages:
+  - app
+  - "packages/*"
+
 allowBuilds:
   '@alicloud/openapi-core': false
   es5-ext: true

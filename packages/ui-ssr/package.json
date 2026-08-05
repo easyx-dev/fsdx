@@ -1,0 +1,39 @@
+{
+  "name": "@fsdx/ui-ssr",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./ui/button": "./src/components/ui/button.tsx",
+    "./ui/card": "./src/components/ui/card.tsx",
+    "./ui/badge": "./src/components/ui/badge.tsx",
+    "./ui/input": "./src/components/ui/input.tsx",
+    "./ui/textarea": "./src/components/ui/textarea.tsx",
+    "./autofill-blocker": "./src/components/autofill-blocker.tsx",
+    "./theme-toggle": "./src/components/theme-toggle.tsx",
+    "./use-theme-mode": "./src/hooks/use-theme-mode.ts"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "check": "tsc --noEmit && biome check",
+    "format": "biome format",
+    "lint": "biome lint",
+    "lint:fix": "biome check --write"
+  },
+  "dependencies": {
+    "@fsdx/core": "workspace:*",
+    "@radix-ui/react-slot": "^1.2.5",
+    "class-variance-authority": "^0.7.1"
+  },
+  "peerDependencies": {
+    "react": "^19"
+  },
+  "devDependencies": {
+    "@testing-library/dom": "^10.4.1",
+    "@testing-library/react": "^16.3.2",
+    "@types/react": "^19.2.16",
+    "@types/react-dom": "^19.2.3",
+    "jsdom": "^28.1.0",
+    "vitest": "^4.1.8"
+  }
+}
