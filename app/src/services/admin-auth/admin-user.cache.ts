@@ -10,7 +10,7 @@ export interface CachedAdminUser {
 	email: string;
 	avatar: string | null;
 	isRoot: boolean;
-	adminRoleId: string | null;
+	adminRoleIds: string[];
 	status: string;
 }
 

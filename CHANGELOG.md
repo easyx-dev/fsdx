@@ -4,6 +4,11 @@
 
 ### Breaking Changes
 
+- **单人多角色改造（双端 RBAC）**：`admin_user.role_id` / `client_user.client_role_id` 单角色外键 → `admin_role_ids` / `client_role_ids`（jsonb string[]，多角色权限取并集）
+  - 迁移 `0001_curious_maximus.sql`：新增 jsonb 数组列并回填旧单角色数据后删除旧列
+  - 管理员/客户端用户管理页角色字段改多选；新增 `/admin/client-roles` 客户端角色管理页（含 `client-role:view/create/edit/delete` 权限码与菜单项）
+  - `AdminUser.roleName` → `roleNames: string[]`；`getAdminRolePermissions` / `getClientRolePermissions` 改为按角色 id 数组合并权限
+
 - **Monorepo 重构**：单仓库单应用 → 单仓库多包（pnpm workspace）
   - 目录迁移：`src/` 整体移入 `app/src/`（`@fsdx/web`），根 `package.json` 改为 `--filter` 编排壳；`server.ts`/`public/`/`drizzle/`/配置文件移入 `app/`
   - 新增 `@fsdx/core`（subpath exports，`pure/` 同构 + `node/` 仅服务端）：ms / export / cache-core / match-permission / error-utils / i18n-types / i18n-config / cn / logger / jwt / storage / captcha / batch-writer / request-context / scheduler / ai / mail / sms

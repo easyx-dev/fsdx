@@ -10,7 +10,7 @@ export interface CachedClientUser {
 	username: string;
 	email: string;
 	avatar: string | null;
-	clientRoleId: string | null;
+	clientRoleIds: string[];
 	status: string;
 }
 

@@ -19,16 +19,16 @@ import {
 	clientUserCache,
 } from "#/services/client-auth/client-user.cache";
 
-/** 查询客户端角色权限列表（未分配角色时返回空） */
+/** 合并多个客户端角色的权限并去重（未分配角色时返回空数组） */
 async function getClientRolePermissions(
-	clientRoleId: string | null,
+	clientRoleIds: string[],
 ): Promise<string[]> {
-	if (!clientRoleId) return [];
-	const roleRecord = await db.query.clientRole.findFirst({
-		where: (t, { eq: e, isNull: n }) =>
-			and(e(t.id, clientRoleId), n(t.deletedAt)),
+	if (clientRoleIds.length === 0) return [];
+	const roles = await db.query.clientRole.findMany({
+		where: (t, { isNull: n, inArray: ia }) =>
+			and(ia(t.id, clientRoleIds), n(t.deletedAt)),
 	});
-	return (roleRecord?.permissions as string[]) ?? [];
+	return [...new Set(roles.flatMap((r) => (r.permissions as string[]) ?? []))];
 }
 
 /**
@@ -104,7 +104,7 @@ export async function clientRegister(
 		email,
 		passwordHash,
 		emailVerified: true,
-		clientRoleId: normalRole?.id ?? null,
+		clientRoleIds: normalRole ? [normalRole.id] : [],
 	});
 
 	logger.info({ username }, "客户端用户注册成功");
@@ -147,7 +147,7 @@ export async function getCurrentClient(
 		username: user.username,
 		email: user.email,
 		avatar: user.avatar,
-		clientRoleId: user.clientRoleId ?? null,
+		clientRoleIds: user.clientRoleIds,
 		status: user.status,
 	};
 	clientUserCache.set(jwtPayload.userId, cacheEntry);
@@ -181,7 +181,7 @@ export async function getClientUserForAuth(userId: string): Promise<
 		if (cached.status !== "active") {
 			return { success: false, reason: "disabled" };
 		}
-		const permissions = await getClientRolePermissions(cached.clientRoleId);
+		const permissions = await getClientRolePermissions(cached.clientRoleIds);
 		return {
 			success: true,
 			id: cached.id,
@@ -201,16 +201,14 @@ export async function getClientUserForAuth(userId: string): Promise<
 		username: user.username,
 		email: user.email,
 		avatar: user.avatar,
-		clientRoleId: user.clientRoleId ?? null,
+		clientRoleIds: user.clientRoleIds,
 		status: user.status,
 	};
 	clientUserCache.set(userId, cacheEntry);
 
 	if (user.status !== "active") return { success: false, reason: "disabled" };
 
-	const rolePermissions = await getClientRolePermissions(
-		user.clientRoleId ?? null,
-	);
+	const rolePermissions = await getClientRolePermissions(user.clientRoleIds);
 	return {
 		success: true,
 		id: user.id,

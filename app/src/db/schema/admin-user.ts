@@ -5,13 +5,13 @@
 import { sql } from "drizzle-orm";
 import {
 	boolean,
+	jsonb,
 	pgTable,
 	timestamp,
 	uniqueIndex,
 	uuid,
 	varchar,
 } from "drizzle-orm/pg-core";
-import { adminRole } from "./admin-role";
 
 export const adminUser = pgTable(
 	"admin_user",
@@ -21,8 +21,9 @@ export const adminUser = pgTable(
 		email: varchar({ length: 255 }).unique().notNull(),
 		passwordHash: varchar("password_hash", { length: 255 }).notNull(),
 		avatar: varchar({ length: 500 }),
-		adminRoleId: uuid("admin_role_id")
-			.references(() => adminRole.id)
+		adminRoleIds: jsonb("admin_role_ids")
+			.$type<string[]>()
+			.default([])
 			.notNull(),
 		isRoot: boolean("is_root").default(false).notNull(),
 		status: varchar({ length: 20 }).default("active").notNull(),

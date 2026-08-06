@@ -69,6 +69,11 @@ export const NAV_GROUPS: NavGroup[] = [
 				label: "角色管理",
 				icon: <AppstoreOutlined />,
 			},
+			{
+				key: "/admin/client-roles",
+				label: "客户端角色",
+				icon: <SafetyOutlined />,
+			},
 		],
 	},
 	{

@@ -31,6 +31,7 @@ import { Route as AdminAdminFilesIndexRouteImport } from './routes/admin/_admin/
 import { Route as AdminAdminFileExplorerIndexRouteImport } from './routes/admin/_admin/file-explorer/index'
 import { Route as AdminAdminDictsIndexRouteImport } from './routes/admin/_admin/dicts/index'
 import { Route as AdminAdminConfigIndexRouteImport } from './routes/admin/_admin/config/index'
+import { Route as AdminAdminClientRolesIndexRouteImport } from './routes/admin/_admin/client-roles/index'
 import { Route as AdminAdminAdminRolesIndexRouteImport } from './routes/admin/_admin/admin-roles/index'
 import { Route as ApiDownloadLogIdRouteImport } from './routes/api/download/log.$id'
 import { Route as ApiDownloadFileIdRouteImport } from './routes/api/download/file.$id'
@@ -163,6 +164,12 @@ const AdminAdminConfigIndexRoute = AdminAdminConfigIndexRouteImport.update({
   path: '/config/',
   getParentRoute: () => AdminAdminRoute,
 } as any)
+const AdminAdminClientRolesIndexRoute =
+  AdminAdminClientRolesIndexRouteImport.update({
+    id: '/client-roles/',
+    path: '/client-roles/',
+    getParentRoute: () => AdminAdminRoute,
+  } as any)
 const AdminAdminAdminRolesIndexRoute =
   AdminAdminAdminRolesIndexRouteImport.update({
     id: '/admin-roles/',
@@ -297,6 +304,7 @@ export interface FileRoutesByFullPath {
   '/api/download/file/$id': typeof ApiDownloadFileIdRoute
   '/api/download/log/$id': typeof ApiDownloadLogIdRoute
   '/admin/admin-roles/': typeof AdminAdminAdminRolesIndexRoute
+  '/admin/client-roles/': typeof AdminAdminClientRolesIndexRoute
   '/admin/config/': typeof AdminAdminConfigIndexRoute
   '/admin/dicts/': typeof AdminAdminDictsIndexRoute
   '/admin/file-explorer/': typeof AdminAdminFileExplorerIndexRoute
@@ -338,6 +346,7 @@ export interface FileRoutesByTo {
   '/api/download/file/$id': typeof ApiDownloadFileIdRoute
   '/api/download/log/$id': typeof ApiDownloadLogIdRoute
   '/admin/admin-roles': typeof AdminAdminAdminRolesIndexRoute
+  '/admin/client-roles': typeof AdminAdminClientRolesIndexRoute
   '/admin/config': typeof AdminAdminConfigIndexRoute
   '/admin/dicts': typeof AdminAdminDictsIndexRoute
   '/admin/file-explorer': typeof AdminAdminFileExplorerIndexRoute
@@ -382,6 +391,7 @@ export interface FileRoutesById {
   '/api/download/file/$id': typeof ApiDownloadFileIdRoute
   '/api/download/log/$id': typeof ApiDownloadLogIdRoute
   '/admin/_admin/admin-roles/': typeof AdminAdminAdminRolesIndexRoute
+  '/admin/_admin/client-roles/': typeof AdminAdminClientRolesIndexRoute
   '/admin/_admin/config/': typeof AdminAdminConfigIndexRoute
   '/admin/_admin/dicts/': typeof AdminAdminDictsIndexRoute
   '/admin/_admin/file-explorer/': typeof AdminAdminFileExplorerIndexRoute
@@ -426,6 +436,7 @@ export interface FileRouteTypes {
     | '/api/download/file/$id'
     | '/api/download/log/$id'
     | '/admin/admin-roles/'
+    | '/admin/client-roles/'
     | '/admin/config/'
     | '/admin/dicts/'
     | '/admin/file-explorer/'
@@ -467,6 +478,7 @@ export interface FileRouteTypes {
     | '/api/download/file/$id'
     | '/api/download/log/$id'
     | '/admin/admin-roles'
+    | '/admin/client-roles'
     | '/admin/config'
     | '/admin/dicts'
     | '/admin/file-explorer'
@@ -510,6 +522,7 @@ export interface FileRouteTypes {
     | '/api/download/file/$id'
     | '/api/download/log/$id'
     | '/admin/_admin/admin-roles/'
+    | '/admin/_admin/client-roles/'
     | '/admin/_admin/config/'
     | '/admin/_admin/dicts/'
     | '/admin/_admin/file-explorer/'
@@ -696,6 +709,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminAdminConfigIndexRouteImport
       parentRoute: typeof AdminAdminRoute
     }
+    '/admin/_admin/client-roles/': {
+      id: '/admin/_admin/client-roles/'
+      path: '/client-roles'
+      fullPath: '/admin/client-roles/'
+      preLoaderRoute: typeof AdminAdminClientRolesIndexRouteImport
+      parentRoute: typeof AdminAdminRoute
+    }
     '/admin/_admin/admin-roles/': {
       id: '/admin/_admin/admin-roles/'
       path: '/admin-roles'
@@ -845,6 +865,7 @@ interface AdminAdminRouteChildren {
   AdminAdminTranslationsContentRoute: typeof AdminAdminTranslationsContentRoute
   AdminAdminTranslationsUiRoute: typeof AdminAdminTranslationsUiRoute
   AdminAdminAdminRolesIndexRoute: typeof AdminAdminAdminRolesIndexRoute
+  AdminAdminClientRolesIndexRoute: typeof AdminAdminClientRolesIndexRoute
   AdminAdminConfigIndexRoute: typeof AdminAdminConfigIndexRoute
   AdminAdminDictsIndexRoute: typeof AdminAdminDictsIndexRoute
   AdminAdminFileExplorerIndexRoute: typeof AdminAdminFileExplorerIndexRoute
@@ -873,6 +894,7 @@ const AdminAdminRouteChildren: AdminAdminRouteChildren = {
   AdminAdminTranslationsContentRoute: AdminAdminTranslationsContentRoute,
   AdminAdminTranslationsUiRoute: AdminAdminTranslationsUiRoute,
   AdminAdminAdminRolesIndexRoute: AdminAdminAdminRolesIndexRoute,
+  AdminAdminClientRolesIndexRoute: AdminAdminClientRolesIndexRoute,
   AdminAdminConfigIndexRoute: AdminAdminConfigIndexRoute,
   AdminAdminDictsIndexRoute: AdminAdminDictsIndexRoute,
   AdminAdminFileExplorerIndexRoute: AdminAdminFileExplorerIndexRoute,

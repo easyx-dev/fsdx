@@ -21,6 +21,7 @@ const { mockDb } = vi.hoisted(() => {
 		mockDb: {
 			query: {
 				clientUser: q(),
+				clientRole: q(),
 			},
 			$count: vi.fn(),
 			select: vi.fn(() => ({
@@ -64,6 +65,7 @@ describe("getClientUserList", () => {
 			id: "u1",
 			username: "user1",
 			email: "user1@test.com",
+			clientRoleIds: ["cr-1"],
 			status: "active",
 			emailVerified: false,
 			createdAt: new Date("2024-01-01"),
@@ -72,6 +74,7 @@ describe("getClientUserList", () => {
 			id: "u2",
 			username: "user2",
 			email: "user2@test.com",
+			clientRoleIds: [],
 			status: "active",
 			emailVerified: true,
 			createdAt: new Date("2024-01-02"),
@@ -90,11 +93,17 @@ describe("getClientUserList", () => {
 				})),
 			})),
 		});
+		mockDb.query.clientRole.findMany.mockResolvedValue([
+			{ id: "cr-1", name: "会员" },
+		]);
 		mockDb.$count.mockResolvedValue(2);
 
 		const result = await getClientUserList({ page: 1, pageSize: 20 });
 
-		expect(result.records).toEqual(mockRows);
+		expect(result.records).toEqual([
+			{ ...mockRows[0], roleNames: ["会员"] },
+			{ ...mockRows[1], roleNames: [] },
+		]);
 		expect(result.total).toBe(2);
 		expect(result.page).toBe(1);
 		expect(result.pageSize).toBe(20);
@@ -112,6 +121,9 @@ describe("getClientUserList", () => {
 				})),
 			})),
 		});
+		mockDb.query.clientRole.findMany.mockResolvedValue([
+			{ id: "cr-1", name: "会员" },
+		]);
 		mockDb.$count.mockResolvedValue(1);
 
 		const result = await getClientUserList({
@@ -262,6 +274,17 @@ describe("updateClientUser", () => {
 		const result = await updateClientUser("u1", { emailVerified: true });
 
 		expect(result).toEqual(mockRecord);
+	});
+
+	it("更新角色为无效角色时抛出错误", async () => {
+		mockDb.query.clientRole.findMany.mockResolvedValue([
+			{ id: "cr-1", name: "会员" },
+		]);
+
+		await expect(
+			updateClientUser("u1", { clientRoleIds: ["cr-ghost"] }),
+		).rejects.toThrow("存在无效或已删除的角色");
+		expect(mockDb.update).not.toHaveBeenCalled();
 	});
 });
 

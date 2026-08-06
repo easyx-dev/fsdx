@@ -17,6 +17,7 @@ export const createSchema = z.object({
 	username: z.string().min(1).max(50),
 	email: z.string().email().max(255),
 	password: z.string().min(6).max(100),
+	clientRoleIds: z.array(z.string().min(1)).optional(),
 });
 
 /** 更新客户端用户 */
@@ -26,6 +27,7 @@ export const updateSchema = z.object({
 	email: z.string().email().max(255).optional(),
 	status: z.string().optional(),
 	emailVerified: z.boolean().optional(),
+	clientRoleIds: z.array(z.string().min(1)).optional(),
 });
 
 /** 通过 id 获取/删除单条客户端用户 */

@@ -260,7 +260,11 @@ export function AdminLayout({ children }: { children: ReactNode }) {
 											{user.username}
 										</div>
 										<div className="truncate text-xs text-muted-foreground">
-											{user.isRoot ? "超级管理员" : (user.roleName ?? "管理员")}
+											{user.isRoot
+												? "超级管理员"
+												: (user.roleNames?.length ?? 0) > 0
+													? (user.roleNames ?? []).join("、")
+													: "管理员"}
 										</div>
 									</div>
 								)}

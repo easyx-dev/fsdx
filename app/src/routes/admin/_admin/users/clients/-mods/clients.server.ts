@@ -20,6 +20,11 @@ export type ClientUserRecord = Omit<
 	"passwordHash" | "deletedAt"
 >;
 
+/** 客户端用户列表项（含角色名称数组） */
+export interface ClientUserListItem extends ClientUserRecord {
+	roleNames: string[];
+}
+
 /** 新建客户端用户入参（schema 单一来源） */
 export type CreateClientUserInput = z.infer<typeof createSchema>;
 
@@ -34,13 +39,36 @@ const clientUserSafeCols = {
 	username: clientUser.username,
 	email: clientUser.email,
 	avatar: clientUser.avatar,
-	clientRoleId: clientUser.clientRoleId,
+	clientRoleIds: clientUser.clientRoleIds,
 	status: clientUser.status,
 	emailVerified: clientUser.emailVerified,
 	lastLoginAt: clientUser.lastLoginAt,
 	createdAt: clientUser.createdAt,
 	updatedAt: clientUser.updatedAt,
 };
+
+/** 批量查询客户端角色 id 到名称的映射 */
+async function getRoleNameMap(roleIds: string[]): Promise<Map<string, string>> {
+	const roles = await db.query.clientRole.findMany({
+		where: (t, { inArray: ia, isNull: n }) =>
+			and(ia(t.id, roleIds), n(t.deletedAt)),
+	});
+	return new Map(roles.map((r) => [r.id, r.name]));
+}
+
+/** 校验客户端角色 id 均存在且未软删除，防止写入失效角色 */
+async function assertClientRolesExist(roleIds: string[]): Promise<void> {
+	if (roleIds.length === 0) return;
+	const roles = await db.query.clientRole.findMany({
+		where: (t, { inArray: ia, isNull: n }) =>
+			and(ia(t.id, roleIds), n(t.deletedAt)),
+	});
+	const found = new Set(roles.map((r) => r.id));
+	const invalid = roleIds.filter((id) => !found.has(id));
+	if (invalid.length > 0) {
+		throw new Error("存在无效或已删除的角色");
+	}
+}
 
 /** 获取客户端用户列表（支持关键词搜索和排序，排除 password_hash 敏感字段） */
 export async function getClientUserList(params?: ClientUserListParams) {
@@ -76,7 +104,7 @@ export async function getClientUserList(params?: ClientUserListParams) {
 		"createdAt",
 	);
 
-	return executePaginatedQuery(
+	const result = await executePaginatedQuery(
 		db
 			.select(clientUserSafeCols)
 			.from(clientUser)
@@ -93,6 +121,19 @@ export async function getClientUserList(params?: ClientUserListParams) {
 		page,
 		pageSize,
 	);
+
+	const roleIds = [...new Set(result.records.flatMap((r) => r.clientRoleIds))];
+	const roleNameMap = await getRoleNameMap(roleIds);
+
+	return {
+		...result,
+		records: result.records.map((r) => ({
+			...r,
+			roleNames: r.clientRoleIds
+				.map((id) => roleNameMap.get(id))
+				.filter((name): name is string => !!name),
+		})),
+	};
 }
 
 /** 获取单个客户端用户 */
@@ -104,6 +145,8 @@ export async function getClientUser(id: string) {
 
 /** 创建客户端用户 */
 export async function createClientUser(input: CreateClientUserInput) {
+	const roleIds = input.clientRoleIds ?? [];
+	await assertClientRolesExist(roleIds);
 	const passwordHash = await bcrypt.hash(input.password, 12);
 	const [record] = await db
 		.insert(clientUser)
@@ -112,6 +155,7 @@ export async function createClientUser(input: CreateClientUserInput) {
 			email: input.email,
 			passwordHash,
 			status: "active",
+			clientRoleIds: roleIds,
 		})
 		.returning();
 	return record;
@@ -128,6 +172,10 @@ export async function updateClientUser(
 	if (input.status !== undefined) setData.status = input.status;
 	if (input.emailVerified !== undefined)
 		setData.emailVerified = input.emailVerified;
+	if (input.clientRoleIds !== undefined) {
+		await assertClientRolesExist(input.clientRoleIds);
+		setData.clientRoleIds = input.clientRoleIds;
+	}
 
 	const [record] = await db
 		.update(clientUser)
@@ -135,8 +183,8 @@ export async function updateClientUser(
 		.where(and(eq(clientUser.id, id), notDeleted(clientUser.deletedAt)))
 		.returning();
 	if (record) {
-		// 状态变更时清除缓存，避免返回已禁用的用户
-		if (input.status !== undefined) {
+		// 状态或角色分配变更时清除缓存，避免返回已禁用用户或过期角色列表
+		if (input.status !== undefined || input.clientRoleIds !== undefined) {
 			clearClientUserCache(id);
 		}
 	}

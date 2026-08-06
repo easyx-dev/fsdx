@@ -17,7 +17,7 @@ export const createSchema = z.object({
 	username: z.string().min(1).max(50),
 	email: z.string().email().max(255),
 	password: z.string().min(6).max(100),
-	adminRoleId: z.string().min(1),
+	adminRoleIds: z.array(z.string().min(1)).min(1, "至少分配一个角色"),
 });
 
 /** 更新管理员 */
@@ -25,7 +25,10 @@ export const updateSchema = z.object({
 	id: z.string().min(1),
 	username: z.string().min(1).max(50).optional(),
 	email: z.string().email().max(255).optional(),
-	adminRoleId: z.string().optional(),
+	adminRoleIds: z
+		.array(z.string().min(1))
+		.min(1, "至少分配一个角色")
+		.optional(),
 	status: z.string().optional(),
 });
 

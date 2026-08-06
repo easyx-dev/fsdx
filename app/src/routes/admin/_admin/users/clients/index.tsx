@@ -7,39 +7,50 @@ import { ProTable } from "@fsdx/ui-spa/pro-table";
 import { TableOperate } from "@fsdx/ui-spa/table-operate";
 import { AutofillBlocker } from "@fsdx/ui-ssr/autofill-blocker";
 import { createFileRoute } from "@tanstack/react-router";
-import { Button, Form, Input, Modal, Switch, Tag } from "antd";
+import { Button, Form, Input, Modal, Select, Switch, Tag } from "antd";
 import type { ChangeEvent } from "react";
 import { useState } from "react";
 import { DictSelect } from "#/components/admin/DictSelect";
 import { DictTag } from "#/components/admin/DictTag";
 import { message } from "#/components/antd-static";
+import type { ClientRoleRecord } from "#/services/client-role/client-role.server";
 import type { SortOrder } from "#/types/query";
 import {
 	createSFn,
 	deleteSFn,
+	getClientRolesForSelectSFn,
 	getListSFn,
 	resetPwdSFn,
 	updateSFn,
 } from "./-mods/clients.functions";
-import type { ClientUserRecord } from "./-mods/clients.server";
+import type { ClientUserListItem } from "./-mods/clients.server";
 
 // ─── Route & Component ──────────────────────────────────────────────
 
 export const Route = createFileRoute("/admin/_admin/users/clients/")({
 	component: ClientsPage,
-	loader: async () => getListSFn({ data: { page: 1, pageSize: 20 } }),
+	loader: async () => {
+		const [result, roles] = await Promise.all([
+			getListSFn({ data: { page: 1, pageSize: 20 } }),
+			getClientRolesForSelectSFn(),
+		]);
+		return { result, roles };
+	},
 });
 
 function ClientsPage() {
 	const initial = Route.useLoaderData();
-	const [data, setData] = useState(initial);
+	const [data, setData] = useState(initial.result);
+	const [roles] = useState<ClientRoleRecord[]>(initial.roles);
 	const [keyword, setKeyword] = useState("");
 	const [page, setPage] = useState(1);
 	const [sortField, setSortField] = useState<string | undefined>();
 	const [sortOrder, setSortOrder] = useState<SortOrder | undefined>();
 	const [modalOpen, setModalOpen] = useState(false);
 	const [pwdModalOpen, setPwdModalOpen] = useState(false);
-	const [editingUser, setEditingUser] = useState<ClientUserRecord | null>(null);
+	const [editingUser, setEditingUser] = useState<ClientUserListItem | null>(
+		null,
+	);
 	const [saving, setSaving] = useState(false);
 	const [form] = Form.useForm();
 	const [pwdForm] = Form.useForm();
@@ -77,11 +88,12 @@ function ClientsPage() {
 		setModalOpen(true);
 	};
 
-	const handleEdit = (record: ClientUserRecord) => {
+	const handleEdit = (record: ClientUserListItem) => {
 		setEditingUser(record);
 		form.setFieldsValue({
 			username: record.username,
 			email: record.email,
+			clientRoleIds: record.clientRoleIds,
 			status: record.status,
 			emailVerified: record.emailVerified,
 		});
@@ -124,7 +136,7 @@ function ClientsPage() {
 		}
 	};
 
-	const handleResetPwd = (record: ClientUserRecord) => {
+	const handleResetPwd = (record: ClientUserListItem) => {
 		setEditingUser(record);
 		pwdForm.resetFields();
 		setPwdModalOpen(true);
@@ -170,6 +182,24 @@ function ClientsPage() {
 				v ? <Tag color="green">已验证</Tag> : <Tag color="default">未验证</Tag>,
 		},
 		{
+			title: "角色",
+			dataIndex: "roleNames",
+			key: "roleNames",
+			width: 160,
+			render: (_: unknown, record: ClientUserListItem) =>
+				record.roleNames.length > 0 ? (
+					<div className="flex flex-wrap gap-1">
+						{record.roleNames.map((name) => (
+							<Tag key={name} color="blue">
+								{name}
+							</Tag>
+						))}
+					</div>
+				) : (
+					<span>—</span>
+				),
+		},
+		{
 			title: "状态",
 			dataIndex: "status",
 			key: "status",
@@ -203,7 +233,7 @@ function ClientsPage() {
 			title: "操作",
 			key: "actions",
 			fixed: "right" as const,
-			render: (_: unknown, record: ClientUserRecord) => (
+			render: (_: unknown, record: ClientUserListItem) => (
 				<TableOperate>
 					<TableOperate.Edit onClick={() => handleEdit(record)} />
 					<TableOperate.Custom>
@@ -295,6 +325,16 @@ function ClientsPage() {
 						]}
 					>
 						<Input placeholder="user@example.com" />
+					</Form.Item>
+					<Form.Item name="clientRoleIds" label="角色">
+						<Select
+							mode="multiple"
+							placeholder="选择角色（可多选）"
+							options={roles.map((r) => ({
+								label: r.name,
+								value: r.id,
+							}))}
+						/>
 					</Form.Item>
 					{!editingUser && (
 						<Form.Item

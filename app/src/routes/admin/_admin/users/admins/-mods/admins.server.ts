@@ -5,7 +5,8 @@ import bcrypt from "bcryptjs";
 import { and, eq, ilike, or } from "drizzle-orm";
 import type { z } from "zod";
 import { db } from "#/db/index";
-import { adminRole, adminUser } from "#/db/schema";
+import { adminUser } from "#/db/schema";
+import { clearAdminUserCache } from "#/services/admin-auth/admin-auth.server";
 import {
 	buildSortClause,
 	executePaginatedQuery,
@@ -16,9 +17,9 @@ import type { createSchema, listSchema, updateSchema } from "./admins.schemas";
 
 export type AdminUserRecord = typeof adminUser.$inferSelect;
 
-/** 管理员列表项（含角色名称） */
+/** 管理员列表项（含角色名称数组） */
 export interface AdminUserListItem extends AdminUserRecord {
-	roleName?: string | null;
+	roleNames: string[];
 }
 
 /** 新建管理员入参（schema 单一来源） */
@@ -29,6 +30,29 @@ export type UpdateAdminUserInput = Omit<z.infer<typeof updateSchema>, "id">;
 
 /** 管理员列表查询参数 */
 export type AdminUserListParams = z.infer<typeof listSchema>;
+
+/** 批量查询角色 id 到名称的映射 */
+async function getRoleNameMap(roleIds: string[]): Promise<Map<string, string>> {
+	const roles = await db.query.adminRole.findMany({
+		where: (t, { inArray: ia, isNull: n }) =>
+			and(ia(t.id, roleIds), n(t.deletedAt)),
+	});
+	return new Map(roles.map((r) => [r.id, r.name]));
+}
+
+/** 校验角色 id 均存在且未软删除，防止写入失效角色 */
+async function assertAdminRolesExist(roleIds: string[]): Promise<void> {
+	if (roleIds.length === 0) return;
+	const roles = await db.query.adminRole.findMany({
+		where: (t, { inArray: ia, isNull: n }) =>
+			and(ia(t.id, roleIds), n(t.deletedAt)),
+	});
+	const found = new Set(roles.map((r) => r.id));
+	const invalid = roleIds.filter((id) => !found.has(id));
+	if (invalid.length > 0) {
+		throw new Error("存在无效或已删除的角色");
+	}
+}
 
 /** 获取管理员列表（含角色名称，支持关键词搜索和排序） */
 export async function getAdminUserList(params?: AdminUserListParams) {
@@ -65,14 +89,14 @@ export async function getAdminUserList(params?: AdminUserListParams) {
 		"createdAt",
 	);
 
-	return executePaginatedQuery(
+	const result = await executePaginatedQuery(
 		db
 			.select({
 				id: adminUser.id,
 				username: adminUser.username,
 				email: adminUser.email,
 				avatar: adminUser.avatar,
-				adminRoleId: adminUser.adminRoleId,
+				adminRoleIds: adminUser.adminRoleIds,
 				isRoot: adminUser.isRoot,
 				status: adminUser.status,
 				lastLoginAt: adminUser.lastLoginAt,
@@ -80,10 +104,8 @@ export async function getAdminUserList(params?: AdminUserListParams) {
 				updatedAt: adminUser.updatedAt,
 				deletedAt: adminUser.deletedAt,
 				passwordHash: adminUser.passwordHash,
-				roleName: adminRole.name,
 			})
 			.from(adminUser)
-			.leftJoin(adminRole, eq(adminUser.adminRoleId, adminRole.id))
 			.where(and(...conditions))
 			.orderBy(direction)
 			.limit(pageSize)
@@ -97,6 +119,19 @@ export async function getAdminUserList(params?: AdminUserListParams) {
 		page,
 		pageSize,
 	);
+
+	const roleIds = [...new Set(result.records.flatMap((r) => r.adminRoleIds))];
+	const roleNameMap = await getRoleNameMap(roleIds);
+
+	return {
+		...result,
+		records: result.records.map((r) => ({
+			...r,
+			roleNames: r.adminRoleIds
+				.map((id) => roleNameMap.get(id))
+				.filter((name): name is string => !!name),
+		})),
+	};
 }
 
 /** 获取单个管理员 */
@@ -108,6 +143,7 @@ export async function getAdminUser(id: string) {
 
 /** 创建管理员 */
 export async function createAdminUser(input: CreateAdminUserInput) {
+	await assertAdminRolesExist(input.adminRoleIds);
 	const passwordHash = await bcrypt.hash(input.password, 12);
 	const [record] = await db
 		.insert(adminUser)
@@ -115,7 +151,7 @@ export async function createAdminUser(input: CreateAdminUserInput) {
 			username: input.username,
 			email: input.email,
 			passwordHash,
-			adminRoleId: input.adminRoleId,
+			adminRoleIds: input.adminRoleIds,
 			status: "active",
 		})
 		.returning();
@@ -134,7 +170,10 @@ export async function updateAdminUser(id: string, input: UpdateAdminUserInput) {
 	}
 
 	if (input.email !== undefined) setData.email = input.email;
-	if (input.adminRoleId !== undefined) setData.adminRoleId = input.adminRoleId;
+	if (input.adminRoleIds !== undefined) {
+		await assertAdminRolesExist(input.adminRoleIds);
+		setData.adminRoleIds = input.adminRoleIds;
+	}
 	if (input.status !== undefined) setData.status = input.status;
 
 	const [record] = await db
@@ -142,6 +181,12 @@ export async function updateAdminUser(id: string, input: UpdateAdminUserInput) {
 		.set(setData)
 		.where(and(eq(adminUser.id, id), notDeleted(adminUser.deletedAt)))
 		.returning();
+	if (record) {
+		// 角色分配变更时清除缓存，避免鉴权读到过期角色列表
+		if (input.adminRoleIds !== undefined || input.status !== undefined) {
+			clearAdminUserCache(id);
+		}
+	}
 	return record;
 }
 
@@ -159,6 +204,8 @@ export async function deleteAdminUser(
 		.update(adminUser)
 		.set({ deletedAt: new Date() })
 		.where(eq(adminUser.id, id));
+	// 清除缓存，避免软删除的管理员在 TTL 内仍保持登录态
+	clearAdminUserCache(id);
 	return true;
 }
 

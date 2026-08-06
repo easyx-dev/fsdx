@@ -89,11 +89,11 @@ SMTP 邮件配置从数据库读取而非环境变量，通过此缓存获取。
 | 属性 | 值 |
 |------|-----|
 | Key | `userId` |
-| Value | `{ id, username, email, avatar, clientRoleId, status }` |
+| Value | `{ id, username, email, avatar, clientRoleIds, status }` |
 | TTL | **5 分钟** |
 
 用于减少 `getCurrentClient()` / `getClientUserForAuth()` 的数据库查询频率。缓存失效场景：
-- 管理员修改客户端用户状态 → 主动 `clientUserCache.delete(userId)`
+- 管理员修改客户端用户状态或角色分配 → 主动 `clientUserCache.delete(userId)`
 - 管理员删除客户端用户 → 主动清除
 - TTL 自然过期
 
@@ -102,7 +102,7 @@ SMTP 邮件配置从数据库读取而非环境变量，通过此缓存获取。
 | 属性 | 值 |
 |------|-----|
 | Key | `userId` |
-| Value | `{ id, username, email, avatar, isRoot, adminRoleId, status }` |
+| Value | `{ id, username, email, avatar, isRoot, adminRoleIds, status }` |
 | TTL | **5 分钟** |
 
 用于减少 `getAdminUserForAuth()`（鉴权中间件核心调用）的数据库查询频率。isRoot 用户命中缓存后直接返回 `["**"]` 权限，不查角色表。

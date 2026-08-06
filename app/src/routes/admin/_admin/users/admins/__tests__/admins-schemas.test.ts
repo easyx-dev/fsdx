@@ -29,23 +29,34 @@ describe("listSchema", () => {
 });
 
 describe("createSchema", () => {
-	it("合法输入通过", () => {
+	it("合法输入通过（多角色数组）", () => {
 		expect(
 			createSchema.safeParse({
 				username: "admin",
 				email: "admin@example.com",
 				password: "123456",
-				adminRoleId: "r-1",
+				adminRoleIds: ["r-1", "r-2"],
 			}).success,
 		).toBe(true);
 	});
 
-	it("缺少 adminRoleId 失败", () => {
+	it("缺少 adminRoleIds 失败", () => {
 		expect(
 			createSchema.safeParse({
 				username: "admin",
 				email: "admin@example.com",
 				password: "123456",
+			}).success,
+		).toBe(false);
+	});
+
+	it("空角色数组失败", () => {
+		expect(
+			createSchema.safeParse({
+				username: "admin",
+				email: "admin@example.com",
+				password: "123456",
+				adminRoleIds: [],
 			}).success,
 		).toBe(false);
 	});
@@ -56,7 +67,7 @@ describe("createSchema", () => {
 				username: "admin",
 				email: "bad",
 				password: "123456",
-				adminRoleId: "r-1",
+				adminRoleIds: ["r-1"],
 			}).success,
 		).toBe(false);
 	});
@@ -70,6 +81,24 @@ describe("updateSchema", () => {
 				status: "disabled",
 			}).success,
 		).toBe(true);
+	});
+
+	it("角色数组更新通过", () => {
+		expect(
+			updateSchema.safeParse({
+				id: "u-1",
+				adminRoleIds: ["r-1", "r-2"],
+			}).success,
+		).toBe(true);
+	});
+
+	it("更新时空角色数组失败", () => {
+		expect(
+			updateSchema.safeParse({
+				id: "u-1",
+				adminRoleIds: [],
+			}).success,
+		).toBe(false);
 	});
 
 	it("缺少 id 失败", () => {

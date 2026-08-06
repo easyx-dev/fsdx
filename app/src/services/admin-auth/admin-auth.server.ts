@@ -17,16 +17,16 @@ import {
 	type CachedAdminUser,
 } from "#/services/admin-auth/admin-user.cache";
 
-/** 查询管理端角色权限列表（未分配角色时返回空） */
+/** 合并多个角色的权限并去重（未分配角色时返回空数组） */
 async function getAdminRolePermissions(
-	adminRoleId: string | null,
+	adminRoleIds: string[],
 ): Promise<string[]> {
-	if (!adminRoleId) return [];
-	const roleRecord = await db.query.adminRole.findFirst({
-		where: (t, { eq: e, isNull: n }) =>
-			and(e(t.id, adminRoleId), n(t.deletedAt)),
+	if (adminRoleIds.length === 0) return [];
+	const roles = await db.query.adminRole.findMany({
+		where: (t, { isNull: n, inArray: ia }) =>
+			and(ia(t.id, adminRoleIds), n(t.deletedAt)),
 	});
-	return (roleRecord?.permissions as string[]) ?? [];
+	return [...new Set(roles.flatMap((r) => (r.permissions as string[]) ?? []))];
 }
 
 /**
@@ -87,12 +87,12 @@ export async function getCurrentAdmin(
 	});
 	if (!user || user.deletedAt || user.status !== "active") return null;
 
-	let roleName: string | undefined;
+	let roleNames: string[] = [];
 	if (!user.isRoot) {
-		const roleRecord = await db.query.adminRole.findFirst({
-			where: (t, { eq: e }) => e(t.id, user.adminRoleId),
+		const roles = await db.query.adminRole.findMany({
+			where: (t, { inArray: ia }) => ia(t.id, user.adminRoleIds),
 		});
-		roleName = roleRecord?.name ?? undefined;
+		roleNames = roles.map((r) => r.name);
 	}
 
 	return {
@@ -101,7 +101,7 @@ export async function getCurrentAdmin(
 		email: user.email,
 		avatar: user.avatar,
 		isRoot: user.isRoot,
-		roleName,
+		roleNames,
 		userType: "admin",
 	};
 }
@@ -136,7 +136,7 @@ export async function getAdminUserForAuth(userId: string): Promise<
 				rolePermissions: ["**"],
 			};
 		}
-		const permissions = await getAdminRolePermissions(cached.adminRoleId);
+		const permissions = await getAdminRolePermissions(cached.adminRoleIds);
 		return {
 			success: true,
 			id: cached.id,
@@ -158,7 +158,7 @@ export async function getAdminUserForAuth(userId: string): Promise<
 		email: user.email,
 		avatar: user.avatar,
 		isRoot: user.isRoot,
-		adminRoleId: user.adminRoleId,
+		adminRoleIds: user.adminRoleIds,
 		status: user.status,
 	};
 	adminUserCache.set(userId, cacheEntry);
@@ -169,7 +169,7 @@ export async function getAdminUserForAuth(userId: string): Promise<
 	if (user.isRoot) {
 		rolePermissions = ["**"];
 	} else {
-		rolePermissions = await getAdminRolePermissions(user.adminRoleId);
+		rolePermissions = await getAdminRolePermissions(user.adminRoleIds);
 	}
 
 	return {

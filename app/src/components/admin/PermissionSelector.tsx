@@ -8,22 +8,29 @@ import { Checkbox } from "antd";
 import type { CheckboxChangeEvent } from "antd/es/checkbox";
 import type { ColumnsType } from "antd/es/table";
 import { useMemo } from "react";
-import {
-	ADMIN_PERMISSIONS_BY_GROUP,
-	type AdminPermissionDef,
-} from "#/permissions/admin-permissions";
+import { ADMIN_PERMISSIONS_BY_GROUP } from "#/permissions/admin-permissions";
+
+/** 权限定义的结构化形状（管理端与客户端权限字面量均可赋值） */
+interface PermissionOption {
+	code: string;
+	name: string;
+	desc: string;
+	group: string;
+}
 
 interface GroupRow {
 	key: string;
 	group: string;
-	permissions: AdminPermissionDef[];
+	permissions: readonly PermissionOption[];
 	isGroupSelected: boolean;
-	selectedIndividuals: AdminPermissionDef[];
+	selectedIndividuals: PermissionOption[];
 }
 
 interface PermissionSelectorProps {
 	value?: string[];
 	onChange?: (value: string[]) => void;
+	/** 权限分组映射，默认使用管理端权限分组；客户端角色页面传入客户端权限分组 */
+	groups?: Record<string, readonly PermissionOption[]>;
 }
 
 /** 构建分组通配符 */
@@ -38,16 +45,17 @@ function wildcard(group: string) {
 export function PermissionSelector({
 	value = [],
 	onChange,
+	groups = ADMIN_PERMISSIONS_BY_GROUP,
 }: PermissionSelectorProps) {
 	const groupData = useMemo<GroupRow[]>(() => {
-		return Object.entries(ADMIN_PERMISSIONS_BY_GROUP).map(([group, perms]) => ({
+		return Object.entries(groups).map(([group, perms]) => ({
 			key: group,
 			group,
 			permissions: perms,
 			isGroupSelected: value.includes(wildcard(group)),
 			selectedIndividuals: perms.filter((p) => value.includes(p.code)),
 		}));
-	}, [value]);
+	}, [value, groups]);
 
 	/** 切换分组全选 */
 	const handleGroupToggle = (group: string, checked: boolean) => {
@@ -60,7 +68,7 @@ export function PermissionSelector({
 
 	/** 处理单个权限码勾选变化 */
 	const handleIndividualsChange = (group: string, checkedValues: string[]) => {
-		const allCodes = ADMIN_PERMISSIONS_BY_GROUP[group].map((p) => p.code);
+		const allCodes = groups[group].map((p) => p.code);
 		// 移除当前分组的通配符和所有该组的权限码
 		const newValue = value.filter((v) => !v.startsWith(`${group}:`));
 		if (checkedValues.length === allCodes.length) {
@@ -94,7 +102,7 @@ export function PermissionSelector({
 		{
 			title: "权限码",
 			dataIndex: "permissions",
-			render: (perms: AdminPermissionDef[], record) => {
+			render: (perms: readonly PermissionOption[], record) => {
 				const allCodes = perms.map((p) => p.code);
 				const checkedValues = record.isGroupSelected
 					? allCodes

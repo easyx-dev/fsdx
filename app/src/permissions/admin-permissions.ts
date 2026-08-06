@@ -120,6 +120,27 @@ export const ADMIN_PERMISSIONS = {
 		"删除角色",
 		"允许删除角色",
 	),
+	// 客户端角色管理
+	CLIENT_ROLE_VIEW: definePermission(
+		"client-role:view",
+		"查看客户端角色",
+		"允许查看客户端角色列表",
+	),
+	CLIENT_ROLE_CREATE: definePermission(
+		"client-role:create",
+		"创建客户端角色",
+		"允许创建新的客户端角色",
+	),
+	CLIENT_ROLE_EDIT: definePermission(
+		"client-role:edit",
+		"编辑客户端角色",
+		"允许编辑客户端角色信息和权限分配",
+	),
+	CLIENT_ROLE_DELETE: definePermission(
+		"client-role:delete",
+		"删除客户端角色",
+		"允许删除客户端角色",
+	),
 	// 字典管理
 	DICT_VIEW: definePermission(
 		"dict:view",

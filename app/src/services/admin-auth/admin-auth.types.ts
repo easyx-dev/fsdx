@@ -9,7 +9,7 @@ export interface AdminUser {
 	email: string;
 	avatar?: string | null;
 	isRoot: boolean;
-	roleName?: string;
+	roleNames?: string[];
 	userType: "admin";
 }
 

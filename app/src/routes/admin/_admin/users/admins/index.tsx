@@ -93,7 +93,7 @@ function AdminsPage() {
 		form.setFieldsValue({
 			username: record.username,
 			email: record.email,
-			adminRoleId: record.adminRoleId,
+			adminRoleIds: record.adminRoleIds,
 			status: record.status,
 		});
 		setModalOpen(true);
@@ -172,18 +172,25 @@ function AdminsPage() {
 		},
 		{
 			title: "角色",
-			dataIndex: "roleName",
-			key: "roleName",
-			width: 120,
-			render: (_: unknown, record: AdminUserListItem) => (
-				<span>
-					{record.isRoot ? (
-						<Tag color="red">超级管理员</Tag>
-					) : (
-						(record.roleName ?? "—")
-					)}
-				</span>
-			),
+			dataIndex: "roleNames",
+			key: "roleNames",
+			width: 180,
+			render: (_: unknown, record: AdminUserListItem) =>
+				record.isRoot ? (
+					<Tag color="red">超级管理员</Tag>
+				) : (
+					<div className="flex flex-wrap gap-1">
+						{record.roleNames.length > 0 ? (
+							record.roleNames.map((name) => (
+								<Tag key={name} color="blue">
+									{name}
+								</Tag>
+							))
+						) : (
+							<span>—</span>
+						)}
+					</div>
+				),
 		},
 		{
 			title: "状态",
@@ -328,12 +335,13 @@ function AdminsPage() {
 						</Form.Item>
 					)}
 					<Form.Item
-						name="adminRoleId"
+						name="adminRoleIds"
 						label="角色"
-						rules={[{ required: true, message: "请选择角色" }]}
+						rules={[{ required: true, message: "请至少选择一个角色" }]}
 					>
 						<Select
-							placeholder="选择角色"
+							mode="multiple"
+							placeholder="选择角色（可多选）"
 							options={roles.map((r) => ({
 								label: r.name,
 								value: r.id,

@@ -39,6 +39,17 @@ describe("createSchema", () => {
 		).toBe(true);
 	});
 
+	it("带 clientRoleIds 通过", () => {
+		expect(
+			createSchema.safeParse({
+				username: "user",
+				email: "user@example.com",
+				password: "123456",
+				clientRoleIds: ["r-1", "r-2"],
+			}).success,
+		).toBe(true);
+	});
+
 	it("密码不足 6 位失败", () => {
 		expect(
 			createSchema.safeParse({
@@ -56,6 +67,15 @@ describe("updateSchema", () => {
 			updateSchema.safeParse({
 				id: "u-1",
 				emailVerified: true,
+			}).success,
+		).toBe(true);
+	});
+
+	it("角色数组更新通过", () => {
+		expect(
+			updateSchema.safeParse({
+				id: "u-1",
+				clientRoleIds: ["r-1"],
 			}).success,
 		).toBe(true);
 	});

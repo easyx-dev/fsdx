@@ -133,7 +133,7 @@ export async function initSystem(data: InitData): Promise<{
 				username: admin.username,
 				email: admin.email,
 				passwordHash,
-				adminRoleId: effectiveRole.id,
+				adminRoleIds: [effectiveRole.id],
 				isRoot: true,
 				status: "active",
 			})

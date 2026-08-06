@@ -69,13 +69,14 @@ describe("getCurrentAdmin", () => {
 			username: "admin",
 			email: "admin@t.com",
 			isRoot: false,
-			adminRoleId: "role-1",
+			adminRoleIds: ["role-1"],
 			status: "active",
 			deletedAt: null,
 		});
-		mockDb.query.adminRole.findFirst.mockResolvedValue({
-			name: "编辑者",
-		});
+		mockDb.query.adminRole.findMany.mockResolvedValue([
+			{ name: "编辑者" },
+			{ name: "审核者" },
+		]);
 
 		const result = await getCurrentAdmin("valid-token");
 		expect(result).toMatchObject({
@@ -84,7 +85,7 @@ describe("getCurrentAdmin", () => {
 			email: "admin@t.com",
 			userType: "admin",
 			isRoot: false,
-			roleName: "编辑者",
+			roleNames: ["编辑者", "审核者"],
 		});
 	});
 

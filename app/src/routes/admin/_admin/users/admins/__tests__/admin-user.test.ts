@@ -11,7 +11,7 @@ vi.mock("#/lib/logger/logger", () => ({
 const { mockBcryptHash, mockDb, mockListRows } = vi.hoisted(() => {
 	const mockListRowsFn = vi.fn().mockResolvedValue([]);
 	const mockListCountFn = vi.fn().mockResolvedValue([{ count: "0" }]);
-	const q = () => ({ findFirst: vi.fn() });
+	const q = () => ({ findFirst: vi.fn(), findMany: vi.fn() });
 
 	return {
 		mockBcryptHash: vi.fn().mockResolvedValue("$2a$12$hashedpassword"),
@@ -30,16 +30,13 @@ const { mockBcryptHash, mockDb, mockListRows } = vi.hoisted(() => {
 			$count: vi.fn(),
 			select: vi.fn(() => ({
 				from: vi.fn(() => ({
-					leftJoin: vi.fn(() => ({
-						where: vi.fn(() => ({
-							orderBy: vi.fn(() => ({
-								limit: vi.fn(() => ({
-									offset: mockListRowsFn,
-								})),
+					where: vi.fn(() => ({
+						orderBy: vi.fn(() => ({
+							limit: vi.fn(() => ({
+								offset: mockListRowsFn,
 							})),
 						})),
 					})),
-					where: mockListCountFn,
 				})),
 			})),
 			insert: vi.fn(() => ({
@@ -81,21 +78,27 @@ describe("getAdminUserList", () => {
 				id: "1",
 				username: "admin",
 				email: "admin@test.com",
-				roleName: "超级管理员",
+				adminRoleIds: ["role-1"],
 			},
 			{
 				id: "2",
 				username: "editor",
 				email: "editor@test.com",
-				roleName: "编辑",
+				adminRoleIds: ["role-1"],
 			},
 		];
 		mockListRows.mockResolvedValue(mockUsers);
+		mockDb.query.adminRole.findMany.mockResolvedValue([
+			{ id: "role-1", name: "编辑者" },
+		]);
 		mockDb.$count.mockResolvedValue(5);
 
 		const result = await getAdminUserList();
 
-		expect(result.records).toEqual(mockUsers);
+		expect(result.records).toEqual([
+			{ ...mockUsers[0], roleNames: ["编辑者"] },
+			{ ...mockUsers[1], roleNames: ["编辑者"] },
+		]);
 		expect(result.total).toBe(5);
 		expect(result.page).toBe(1);
 		expect(result.pageSize).toBe(20);
@@ -151,13 +154,16 @@ describe("createAdminUser", () => {
 			username: "newadmin",
 			email: "new@test.com",
 			password: "plainpassword",
-			adminRoleId: "role-1",
+			adminRoleIds: ["role-1"],
 		};
 		const createdUser = {
 			id: "2",
 			username: "newadmin",
 			email: "new@test.com",
 		};
+		mockDb.query.adminRole.findMany.mockResolvedValue([
+			{ id: "role-1", name: "管理员" },
+		]);
 		mockDb.insert.mockReturnValue({
 			values: vi.fn(() => ({
 				returning: vi.fn().mockResolvedValue([createdUser]),
@@ -169,6 +175,23 @@ describe("createAdminUser", () => {
 		expect(result).toEqual(createdUser);
 		expect(mockBcryptHash).toHaveBeenCalledWith("plainpassword", 12);
 		expect(mockDb.insert).toHaveBeenCalled();
+	});
+
+	it("角色不存在时抛出错误", async () => {
+		const input = {
+			username: "newadmin",
+			email: "new@test.com",
+			password: "plainpassword",
+			adminRoleIds: ["role-1", "role-ghost"],
+		};
+		mockDb.query.adminRole.findMany.mockResolvedValue([
+			{ id: "role-1", name: "管理员" },
+		]);
+
+		await expect(createAdminUser(input)).rejects.toThrow(
+			"存在无效或已删除的角色",
+		);
+		expect(mockDb.insert).not.toHaveBeenCalled();
 	});
 });
 
@@ -204,6 +227,17 @@ describe("updateAdminUser", () => {
 		const result = await updateAdminUser("notfound", { username: "x" });
 
 		expect(result).toBeUndefined();
+	});
+
+	it("更新角色为无效角色时抛出错误", async () => {
+		mockDb.query.adminRole.findMany.mockResolvedValue([
+			{ id: "role-1", name: "管理员" },
+		]);
+
+		await expect(
+			updateAdminUser("1", { adminRoleIds: ["role-ghost"] }),
+		).rejects.toThrow("存在无效或已删除的角色");
+		expect(mockDb.update).not.toHaveBeenCalled();
 	});
 });
 
