@@ -5,7 +5,7 @@ import { describe, expect, it } from "vitest";
 import {
 	newsSlugSchema,
 	publishedNewsSchema,
-} from "#/routes/news/news.functions";
+} from "#/routes/news/-mods/news.functions";
 
 describe("publishedNewsSchema（前台新闻列表分页）", () => {
 	it("无参数使用默认值", () => {

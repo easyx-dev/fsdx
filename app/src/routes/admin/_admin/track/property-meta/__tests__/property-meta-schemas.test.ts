@@ -6,7 +6,7 @@ import {
 	propertyMetaCreateSchema,
 	propertyMetaDeleteSchema,
 	propertyMetaUpdateSchema,
-} from "../property-meta.schemas";
+} from "../-mods/property-meta.schemas";
 
 describe("propertyMetaCreateSchema", () => {
 	it("有效参数应通过校验", () => {

@@ -8,6 +8,7 @@ import { TableOperate } from "@fsdx/ui-spa/table-operate";
 import { AutofillBlocker } from "@fsdx/ui-ssr/autofill-blocker";
 import { createFileRoute } from "@tanstack/react-router";
 import { Button, Form, Input, Modal, Switch, Tag } from "antd";
+import type { ChangeEvent } from "react";
 import { useState } from "react";
 import { DictSelect } from "#/components/admin/DictSelect";
 import { DictTag } from "#/components/admin/DictTag";
@@ -19,8 +20,8 @@ import {
 	getListSFn,
 	resetPwdSFn,
 	updateSFn,
-} from "./clients.functions";
-import type { ClientUserRecord } from "./clients.server";
+} from "./-mods/clients.functions";
+import type { ClientUserRecord } from "./-mods/clients.server";
 
 // ─── Route & Component ──────────────────────────────────────────────
 
@@ -238,7 +239,9 @@ function ClientsPage() {
 				<Input
 					placeholder="搜索用户名或邮箱..."
 					value={keyword}
-					onChange={(e) => setKeyword(e.target.value)}
+					onChange={(e: ChangeEvent<HTMLInputElement>) =>
+						setKeyword(e.target.value)
+					}
 					onPressEnter={handleSearch}
 					allowClear
 					style={{ width: 260 }}
@@ -308,7 +311,8 @@ function ClientsPage() {
 					{editingUser && (
 						<>
 							<Form.Item name="status" label="状态">
-								<DictSelect dictSlug="user_status" />
+								{/* role 为 antd 6.4.3 SelectProps 声明缺陷（Pick 使其成为必填），待官方修复后可移除 */}
+								<DictSelect dictSlug="user_status" role="combobox" />
 							</Form.Item>
 							<Form.Item
 								name="emailVerified"

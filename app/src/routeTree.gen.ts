@@ -9,12 +9,12 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as MessagesRouteImport } from './routes/messages'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as RegisterIndexRouteImport } from './routes/register/index'
 import { Route as NewsIndexRouteImport } from './routes/news/index'
-import { Route as MessagesIndexRouteImport } from './routes/messages/index'
 import { Route as LoginIndexRouteImport } from './routes/login/index'
 import { Route as ForgotPasswordIndexRouteImport } from './routes/forgot-password/index'
 import { Route as NewsSlugRouteImport } from './routes/news/$slug'
@@ -51,6 +51,11 @@ import { Route as AdminAdminTrackPropertyMetaIndexRouteImport } from './routes/a
 import { Route as AdminAdminTrackEventMetaIndexRouteImport } from './routes/admin/_admin/track/event-meta/index'
 import { Route as AdminAdminNewsIdEditRouteImport } from './routes/admin/_admin/news/$id/edit'
 
+const MessagesRoute = MessagesRouteImport.update({
+  id: '/messages',
+  path: '/messages',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AdminRoute = AdminRouteImport.update({
   id: '/admin',
   path: '/admin',
@@ -74,11 +79,6 @@ const RegisterIndexRoute = RegisterIndexRouteImport.update({
 const NewsIndexRoute = NewsIndexRouteImport.update({
   id: '/news/',
   path: '/news/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const MessagesIndexRoute = MessagesIndexRouteImport.update({
-  id: '/messages/',
-  path: '/messages/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LoginIndexRoute = LoginIndexRouteImport.update({
@@ -273,10 +273,10 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/admin': typeof AdminRouteWithChildren
+  '/messages': typeof MessagesRoute
   '/news/$slug': typeof NewsSlugRoute
   '/forgot-password/': typeof ForgotPasswordIndexRoute
   '/login/': typeof LoginIndexRoute
-  '/messages/': typeof MessagesIndexRoute
   '/news/': typeof NewsIndexRoute
   '/register/': typeof RegisterIndexRoute
   '/admin/': typeof AdminAdminIndexRoute
@@ -315,10 +315,10 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/admin': typeof AdminAdminIndexRoute
+  '/messages': typeof MessagesRoute
   '/news/$slug': typeof NewsSlugRoute
   '/forgot-password': typeof ForgotPasswordIndexRoute
   '/login': typeof LoginIndexRoute
-  '/messages': typeof MessagesIndexRoute
   '/news': typeof NewsIndexRoute
   '/register': typeof RegisterIndexRoute
   '/admin/forgot-password': typeof AdminForgotPasswordIndexRoute
@@ -357,11 +357,11 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/admin': typeof AdminRouteWithChildren
+  '/messages': typeof MessagesRoute
   '/admin/_admin': typeof AdminAdminRouteWithChildren
   '/news/$slug': typeof NewsSlugRoute
   '/forgot-password/': typeof ForgotPasswordIndexRoute
   '/login/': typeof LoginIndexRoute
-  '/messages/': typeof MessagesIndexRoute
   '/news/': typeof NewsIndexRoute
   '/register/': typeof RegisterIndexRoute
   '/admin/_admin/': typeof AdminAdminIndexRoute
@@ -402,10 +402,10 @@ export interface FileRouteTypes {
     | '/'
     | '/about'
     | '/admin'
+    | '/messages'
     | '/news/$slug'
     | '/forgot-password/'
     | '/login/'
-    | '/messages/'
     | '/news/'
     | '/register/'
     | '/admin/'
@@ -444,10 +444,10 @@ export interface FileRouteTypes {
     | '/'
     | '/about'
     | '/admin'
+    | '/messages'
     | '/news/$slug'
     | '/forgot-password'
     | '/login'
-    | '/messages'
     | '/news'
     | '/register'
     | '/admin/forgot-password'
@@ -485,11 +485,11 @@ export interface FileRouteTypes {
     | '/'
     | '/about'
     | '/admin'
+    | '/messages'
     | '/admin/_admin'
     | '/news/$slug'
     | '/forgot-password/'
     | '/login/'
-    | '/messages/'
     | '/news/'
     | '/register/'
     | '/admin/_admin/'
@@ -529,10 +529,10 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AboutRoute: typeof AboutRoute
   AdminRoute: typeof AdminRouteWithChildren
+  MessagesRoute: typeof MessagesRoute
   NewsSlugRoute: typeof NewsSlugRoute
   ForgotPasswordIndexRoute: typeof ForgotPasswordIndexRoute
   LoginIndexRoute: typeof LoginIndexRoute
-  MessagesIndexRoute: typeof MessagesIndexRoute
   NewsIndexRoute: typeof NewsIndexRoute
   RegisterIndexRoute: typeof RegisterIndexRoute
   ApiDownloadFileExplorerSplatRoute: typeof ApiDownloadFileExplorerSplatRoute
@@ -542,6 +542,13 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/messages': {
+      id: '/messages'
+      path: '/messages'
+      fullPath: '/messages'
+      preLoaderRoute: typeof MessagesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/admin': {
       id: '/admin'
       path: '/admin'
@@ -575,13 +582,6 @@ declare module '@tanstack/react-router' {
       path: '/news'
       fullPath: '/news/'
       preLoaderRoute: typeof NewsIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/messages/': {
-      id: '/messages/'
-      path: '/messages'
-      fullPath: '/messages/'
-      preLoaderRoute: typeof MessagesIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/login/': {
@@ -912,10 +912,10 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AboutRoute: AboutRoute,
   AdminRoute: AdminRouteWithChildren,
+  MessagesRoute: MessagesRoute,
   NewsSlugRoute: NewsSlugRoute,
   ForgotPasswordIndexRoute: ForgotPasswordIndexRoute,
   LoginIndexRoute: LoginIndexRoute,
-  MessagesIndexRoute: MessagesIndexRoute,
   NewsIndexRoute: NewsIndexRoute,
   RegisterIndexRoute: RegisterIndexRoute,
   ApiDownloadFileExplorerSplatRoute: ApiDownloadFileExplorerSplatRoute,

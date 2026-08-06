@@ -18,7 +18,7 @@ import { CaptchaInput } from "#/components/client/CaptchaInput";
 import { useTranslation } from "#/components/i18n-context";
 import { track } from "#/components/track/track";
 import { getCurrentClientSFn } from "#/services/client-auth/client-auth.functions";
-import { clientRegisterSFn } from "./register.functions";
+import { clientRegisterSFn } from "./-mods/register.functions";
 
 function RegisterError({ error }: { error: unknown }) {
 	return (
@@ -175,7 +175,7 @@ function ClientRegisterPage() {
 											{t("邮箱验证码")}
 										</label>
 										<form.Subscribe selector={(state) => state.values.email}>
-											{(email) => (
+											{(email: string) => (
 												<CaptchaInput
 													email={email}
 													value={field.state.value}
@@ -233,7 +233,7 @@ function ClientRegisterPage() {
 							<form.Subscribe
 								selector={(state) => [state.canSubmit, state.isSubmitting]}
 							>
-								{([canSubmit, isSubmitting]) => (
+								{([canSubmit, isSubmitting]: [boolean, boolean]) => (
 									<Button
 										type="submit"
 										disabled={!canSubmit}

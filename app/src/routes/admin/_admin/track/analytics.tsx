@@ -21,7 +21,7 @@ import dayjs from "dayjs";
 import { useEffect, useRef, useState } from "react";
 import { message } from "#/components/antd-static";
 import type { TrackAnalyticsResult as AnalyticsResult } from "#/services/track/track.types";
-import { getTrackAnalyticsSFn } from "./analytics.functions";
+import { getTrackAnalyticsSFn } from "./-mods/analytics.functions";
 
 const { RangePicker } = DatePicker;
 
@@ -120,7 +120,7 @@ function EventAnalyticsPage() {
 				<Space>
 					<Select
 						value={granularity}
-						onChange={(v) => setGranularity(v)}
+						onChange={(v: "hour" | "day") => setGranularity(v)}
 						options={[
 							{ label: "按小时", value: "hour" },
 							{ label: "按天", value: "day" },
@@ -129,7 +129,9 @@ function EventAnalyticsPage() {
 					/>
 					<RangePicker
 						value={dateRange}
-						onChange={(v) => v && setDateRange(v as [dayjs.Dayjs, dayjs.Dayjs])}
+						onChange={(v: [dayjs.Dayjs | null, dayjs.Dayjs | null] | null) =>
+							v && setDateRange(v as [dayjs.Dayjs, dayjs.Dayjs])
+						}
 					/>
 					<Button
 						type="primary"

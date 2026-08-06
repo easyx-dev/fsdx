@@ -3,7 +3,7 @@
  */
 import { describe, expect, it } from "vitest";
 import { z } from "zod";
-import { idSchema } from "../files.functions";
+import { idSchema } from "../-mods/files.functions";
 
 const fileListSchema = z.object({
 	status: z.string().optional(),

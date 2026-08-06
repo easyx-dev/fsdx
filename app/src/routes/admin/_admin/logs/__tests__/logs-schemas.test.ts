@@ -2,7 +2,7 @@
  * 日志 Schema 验证测试
  */
 import { describe, expect, it } from "vitest";
-import { searchLogsSchema } from "../logs.functions";
+import { searchLogsSchema } from "../-mods/logs.functions";
 
 describe("searchLogsSchema", () => {
 	it("空参数应通过校验", () => {

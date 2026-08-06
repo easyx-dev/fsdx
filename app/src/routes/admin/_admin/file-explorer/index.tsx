@@ -24,6 +24,7 @@ import {
 	Typography,
 	Upload,
 } from "antd";
+import type { ChangeEvent } from "react";
 import { useCallback, useState } from "react";
 import { message } from "#/components/antd-static";
 import {
@@ -537,7 +538,9 @@ function FileExplorerPage() {
 				<Input
 					placeholder="请输入目录名称"
 					value={mkdirName}
-					onChange={(e) => setMkdirName(e.target.value)}
+					onChange={(e: ChangeEvent<HTMLInputElement>) =>
+						setMkdirName(e.target.value)
+					}
 					onPressEnter={handleMkdir}
 				/>
 			</Modal>
@@ -561,7 +564,9 @@ function FileExplorerPage() {
 				<Input
 					placeholder="请输入新名称"
 					value={renameNewName}
-					onChange={(e) => setRenameNewName(e.target.value)}
+					onChange={(e: ChangeEvent<HTMLInputElement>) =>
+						setRenameNewName(e.target.value)
+					}
 					onPressEnter={handleRename}
 				/>
 			</Modal>

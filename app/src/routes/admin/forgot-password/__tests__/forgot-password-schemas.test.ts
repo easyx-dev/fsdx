@@ -2,7 +2,7 @@
  * 管理员忘记密码 Schema 验证测试
  */
 import { describe, expect, it } from "vitest";
-import { resetPwdSchema } from "#/routes/admin/forgot-password/forgot-password.functions";
+import { resetPwdSchema } from "#/routes/admin/forgot-password/-mods/forgot-password.functions";
 
 describe("resetPwdSchema（管理员忘记密码）", () => {
 	it("合法输入校验通过", () => {

@@ -256,7 +256,7 @@ function AdminInboxPage() {
 									current={page}
 									pageSize={PAGE_SIZE}
 									total={total}
-									onChange={(p) => setPage(p)}
+									onChange={(p: number) => setPage(p)}
 									showSizeChanger={false}
 								/>
 							</div>

@@ -3,8 +3,8 @@
  */
 import { describe, expect, it } from "vitest";
 import { z } from "zod";
-import { analyticsQuerySchema } from "../analytics.functions";
-import { trackEventQuerySchema } from "../query.functions";
+import { analyticsQuerySchema } from "../-mods/analytics.functions";
+import { trackEventQuerySchema } from "../-mods/query.functions";
 
 const trackEventSchema = z.object({
 	time: z.number(),

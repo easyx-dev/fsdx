@@ -3,7 +3,7 @@
  */
 
 import { describe, expect, it } from "vitest";
-import { mapDateField } from "../operation-logs.functions";
+import { mapDateField } from "../-mods/operation-logs.functions";
 
 describe("mapDateField", () => {
 	it("Date 类型转为 ISO 字符串", () => {

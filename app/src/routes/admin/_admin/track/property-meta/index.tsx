@@ -16,7 +16,7 @@ import {
 	deletePropertyMetaSFn,
 	PROPERTY_DATA_TYPES,
 	updatePropertyMetaSFn,
-} from "./property-meta.functions";
+} from "./-mods/property-meta.functions";
 
 export const Route = createFileRoute("/admin/_admin/track/property-meta/")({
 	component: PresetPropertiesPage,

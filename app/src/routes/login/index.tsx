@@ -16,7 +16,7 @@ import { toast } from "sonner";
 import { useTranslation } from "#/components/i18n-context";
 import { track } from "#/components/track/track";
 import { getCurrentClientSFn } from "#/services/client-auth/client-auth.functions";
-import { clientLoginSFn } from "./login.functions";
+import { clientLoginSFn } from "./-mods/login.functions";
 
 function LoginError({ error }: { error: unknown }) {
 	return (
@@ -143,7 +143,7 @@ function ClientLoginPage() {
 							<form.Subscribe
 								selector={(state) => [state.canSubmit, state.isSubmitting]}
 							>
-								{([canSubmit, isSubmitting]) => (
+								{([canSubmit, isSubmitting]: [boolean, boolean]) => (
 									<Button
 										type="submit"
 										disabled={!canSubmit}

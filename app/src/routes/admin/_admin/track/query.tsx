@@ -19,6 +19,7 @@ import {
 	Tooltip,
 } from "antd";
 import dayjs from "dayjs";
+import type { ChangeEvent } from "react";
 import { useMemo, useState } from "react";
 import { message } from "#/components/antd-static";
 import {
@@ -31,7 +32,10 @@ import type {
 	TrackPropertyMetaRecord,
 } from "#/services/track/track.types";
 import type { SortOrder } from "#/types/query";
-import { getTrackEventNamesSFn, searchTrackEventsSFn } from "./query.functions";
+import {
+	getTrackEventNamesSFn,
+	searchTrackEventsSFn,
+} from "./-mods/query.functions";
 
 const { RangePicker } = DatePicker;
 
@@ -272,7 +276,7 @@ function EventListPage() {
 				<Select
 					placeholder="事件名称"
 					value={filterEvent}
-					onChange={(v) => {
+					onChange={(v: string | undefined) => {
 						setFilterEvent(v);
 					}}
 					allowClear
@@ -285,7 +289,9 @@ function EventListPage() {
 				<Input
 					placeholder="关键词搜索（事件/属性）"
 					value={filterKeyword}
-					onChange={(e) => setFilterKeyword(e.target.value)}
+					onChange={(e: ChangeEvent<HTMLInputElement>) =>
+						setFilterKeyword(e.target.value)
+					}
 					onPressEnter={handleSearch}
 					allowClear
 					style={{ width: 240 }}
@@ -293,7 +299,7 @@ function EventListPage() {
 				/>
 				<RangePicker
 					value={filterDateRange}
-					onChange={(v) => {
+					onChange={(v: [dayjs.Dayjs | null, dayjs.Dayjs | null] | null) => {
 						setFilterDateRange(v as [dayjs.Dayjs, dayjs.Dayjs] | null);
 					}}
 					showTime={false}
@@ -313,8 +319,9 @@ function EventListPage() {
 				onChange={handleTableChange}
 				locale={{ emptyText: "暂无事件数据" }}
 				expandable={{
-					rowExpandable: (record) => Object.keys(record.properties).length > 0,
-					expandedRowRender: (record) => {
+					rowExpandable: (record: TrackEventRecord) =>
+						Object.keys(record.properties).length > 0,
+					expandedRowRender: (record: TrackEventRecord) => {
 						const entries = Object.entries(record.properties);
 						return (
 							<div className="grid grid-cols-1 gap-2 py-2 pl-12 pr-4 sm:grid-cols-2 xl:grid-cols-3">
@@ -358,7 +365,7 @@ function EventListPage() {
 					total: data.total,
 					onChange: handlePageChange,
 					showSizeChanger: false,
-					showTotal: (total) => `共 ${total} 条`,
+					showTotal: (total: number) => `共 ${total} 条`,
 				}}
 			/>
 		</AdminPageContent>

@@ -8,6 +8,7 @@ import { ProTable } from "@fsdx/ui-spa/pro-table";
 import { TableOperate } from "@fsdx/ui-spa/table-operate";
 import { createFileRoute } from "@tanstack/react-router";
 import { Button, Form, Input, Modal } from "antd";
+import type { ChangeEvent } from "react";
 import { useState } from "react";
 import { PermissionSelector } from "#/components/admin/PermissionSelector";
 import { message } from "#/components/antd-static";
@@ -18,7 +19,7 @@ import {
 	deleteAdminRoleSFn,
 	getAdminRolesSFn,
 	updateAdminRoleSFn,
-} from "./admin-roles.functions";
+} from "./-mods/admin-roles.functions";
 
 // ─── Route & Component ──────────────────────────────────────────────
 
@@ -182,7 +183,9 @@ function AdminRolesPage() {
 				<Input
 					placeholder="搜索角色名称或标识..."
 					value={keyword}
-					onChange={(e) => setKeyword(e.target.value)}
+					onChange={(e: ChangeEvent<HTMLInputElement>) =>
+						setKeyword(e.target.value)
+					}
 					onPressEnter={handleSearch}
 					allowClear
 					style={{ width: 260 }}

@@ -2,7 +2,7 @@
  * 客户端忘记密码 Schema 验证测试
  */
 import { describe, expect, it } from "vitest";
-import { forgotPasswordSchema } from "#/routes/forgot-password/forgot-password.functions";
+import { forgotPasswordSchema } from "#/routes/forgot-password/-mods/forgot-password.functions";
 
 describe("forgotPasswordSchema（客户端忘记密码）", () => {
 	it("合法输入校验通过", () => {

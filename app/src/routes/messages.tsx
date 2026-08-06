@@ -19,7 +19,7 @@ import {
 } from "#/services/message/message.functions";
 import type { MessageRecord } from "#/services/message/message.server";
 
-export const Route = createFileRoute("/messages/")({
+export const Route = createFileRoute("/messages")({
 	beforeLoad: async () => {
 		const user = await getCurrentClientSFn();
 		if (!user) throw redirect({ to: "/login" });

@@ -211,6 +211,9 @@ export function NewsForm({ id, onSuccess, onError, onCancel }: NewsFormProps) {
 					<DictSelect
 						dictSlug="news_status"
 						excludeValues={!isEdit ? ["archived"] : undefined}
+						// antd 6.4.3 SelectProps 声明缺陷：BaseSelectProps 通过
+						// Pick<HTMLAttributes, "role"> 使 role 变成必填，此处临时绕过
+						role="combobox"
 					/>
 				</Form.Item>
 

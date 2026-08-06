@@ -2,7 +2,7 @@
  * 客户端登录 Schema 验证测试
  */
 import { describe, expect, it } from "vitest";
-import { loginSchema } from "#/routes/login/login.functions";
+import { loginSchema } from "#/routes/login/-mods/login.functions";
 
 describe("loginSchema（客户端登录）", () => {
 	it("合法输入校验通过", () => {

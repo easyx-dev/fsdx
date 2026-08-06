@@ -11,6 +11,7 @@ import { TableOperate } from "@fsdx/ui-spa/table-operate";
 import { createFileRoute } from "@tanstack/react-router";
 import { Button, Form, Input, Modal, Select, Space, Tag } from "antd";
 import dayjs from "dayjs";
+import type { ChangeEvent } from "react";
 import { useCallback, useEffect, useState } from "react";
 import { EditorTypes } from "#/components/admin/editor-type";
 import { message } from "#/components/antd-static";
@@ -232,8 +233,10 @@ function UITranslationPage() {
 						allowClear
 						style={{ width: 260 }}
 						value={filterKeyword}
-						onChange={(e) => setFilterKeyword(e.target.value)}
-						onSearch={(v) => {
+						onChange={(e: ChangeEvent<HTMLInputElement>) =>
+							setFilterKeyword(e.target.value)
+						}
+						onSearch={(v: string) => {
 							setFilterKeyword(v);
 							setDebouncedKeyword(v);
 						}}
@@ -243,7 +246,7 @@ function UITranslationPage() {
 						allowClear
 						style={{ width: 120 }}
 						value={filterLocale}
-						onChange={(v) => setFilterLocale(v)}
+						onChange={(v: string | undefined) => setFilterLocale(v)}
 						options={SUPPORTED_LOCALES.map((l) => ({
 							label: l.toUpperCase(),
 							value: l,

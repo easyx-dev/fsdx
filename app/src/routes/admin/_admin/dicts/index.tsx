@@ -33,6 +33,7 @@ import {
 	Tag,
 } from "antd";
 import dayjs from "dayjs";
+import type { MouseEvent } from "react";
 import { useState } from "react";
 import { EditorTypes } from "#/components/admin/editor-type";
 import { FieldTranslationDrawer } from "#/components/admin/FieldTranslationDrawer";
@@ -51,7 +52,7 @@ import {
 	importDictsSFn,
 	updateDictItemSFn,
 	updateDictSFn,
-} from "./dicts.functions";
+} from "./-mods/dicts.functions";
 
 /** 字典条目可翻译字段定义 */
 const DICT_ITEM_TRANSLATABLE_FIELDS = [
@@ -265,7 +266,7 @@ function DictsPage() {
 					className="w-full"
 					min={0}
 					value={val}
-					onChange={(v) => {
+					onChange={(v: number | null) => {
 						if (v != null && v !== val) {
 							handleInlineUpdate(record.id, { sortOrder: v });
 						}
@@ -284,7 +285,7 @@ function DictsPage() {
 					checked={val === "active"}
 					checkedChildren="启用"
 					unCheckedChildren="禁用"
-					onChange={(checked) => {
+					onChange={(checked: boolean) => {
 						handleInlineUpdate(record.id, {
 							status: checked ? "active" : "disabled",
 						});
@@ -448,7 +449,7 @@ function DictsPage() {
 												type="link"
 												size="small"
 												icon={<EditOutlined />}
-												onClick={(e) => {
+												onClick={(e: MouseEvent<HTMLElement>) => {
 													e.stopPropagation();
 													openDictModal(record);
 												}}
@@ -456,18 +457,22 @@ function DictsPage() {
 											{!isPresetDict(record.slug) && (
 												<Popconfirm
 													title="确定删除该字典及所有条目？"
-													onConfirm={(e) => {
+													onConfirm={(e?: MouseEvent<HTMLElement>) => {
 														e?.stopPropagation();
 														handleDeleteDict(record.id);
 													}}
-													onCancel={(e) => e?.stopPropagation()}
+													onCancel={(e?: MouseEvent<HTMLElement>) =>
+														e?.stopPropagation()
+													}
 												>
 													<Button
 														type="link"
 														size="small"
 														danger
 														icon={<DeleteOutlined />}
-														onClick={(e) => e.stopPropagation()}
+														onClick={(e: MouseEvent<HTMLElement>) =>
+															e.stopPropagation()
+														}
 													/>
 												</Popconfirm>
 											)}

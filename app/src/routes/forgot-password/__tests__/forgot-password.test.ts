@@ -37,7 +37,7 @@ vi.mock("#/services/client-auth/client-auth.server", () => ({
 }));
 vi.mock("#/lib/logger/logger", () => ({ logger: mockLogger }));
 
-import { resetClientPassword } from "../forgot-password.server";
+import { resetClientPassword } from "../-mods/forgot-password.server";
 
 beforeEach(() => {
 	vi.clearAllMocks();

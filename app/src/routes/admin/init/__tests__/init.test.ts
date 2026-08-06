@@ -3,8 +3,8 @@
  */
 import { describe, expect, it } from "vitest";
 import type { z } from "zod";
-import type { initSchema } from "../init.functions";
-import { buildInitData } from "../init.functions";
+import type { initSchema } from "../-mods/init.functions";
+import { buildInitData } from "../-mods/init.functions";
 
 type InitInput = z.infer<typeof initSchema>;
 

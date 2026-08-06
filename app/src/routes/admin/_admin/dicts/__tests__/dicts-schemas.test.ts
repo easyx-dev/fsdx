@@ -10,7 +10,7 @@ import {
 	idSchema,
 	updateDictSchema,
 	updateItemSchema,
-} from "../dicts.schemas";
+} from "../-mods/dicts.schemas";
 
 describe("dictSlugSchema", () => {
 	it("有效 slug 通过", () => {

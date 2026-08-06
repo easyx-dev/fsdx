@@ -2,7 +2,7 @@
  * 系统初始化 Schema 验证测试
  */
 import { describe, expect, it } from "vitest";
-import { initSchema } from "#/routes/admin/init/init.functions";
+import { initSchema } from "#/routes/admin/init/-mods/init.functions";
 
 describe("initSchema（系统初始化）", () => {
 	it("合法基础输入校验通过（含默认 siteName）", () => {

@@ -17,7 +17,7 @@ import { toast } from "sonner";
 import { CaptchaInput } from "#/components/client/CaptchaInput";
 import { useTranslation } from "#/components/i18n-context";
 import { getCurrentClientSFn } from "#/services/client-auth/client-auth.functions";
-import { resetPwdSFn } from "./forgot-password.functions";
+import { resetPwdSFn } from "./-mods/forgot-password.functions";
 
 function ForgotPasswordError({ error }: { error: unknown }) {
 	return (
@@ -141,7 +141,7 @@ function ForgotPasswordPage() {
 											{t("邮箱验证码")}
 										</label>
 										<form.Subscribe selector={(state) => state.values.email}>
-											{(email) => (
+											{(email: string) => (
 												<CaptchaInput
 													email={email}
 													value={field.state.value}
@@ -232,7 +232,7 @@ function ForgotPasswordPage() {
 							<form.Subscribe
 								selector={(state) => [state.canSubmit, state.isSubmitting]}
 							>
-								{([canSubmit, isSubmitting]) => (
+								{([canSubmit, isSubmitting]: [boolean, boolean]) => (
 									<Button
 										type="submit"
 										disabled={!canSubmit}

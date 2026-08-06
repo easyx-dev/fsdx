@@ -2,7 +2,7 @@
  * 管理员登录 Schema 验证测试
  */
 import { describe, expect, it } from "vitest";
-import { loginSchema } from "#/routes/admin/login/login.functions";
+import { loginSchema } from "#/routes/admin/login/-mods/login.functions";
 
 describe("loginSchema（管理员登录）", () => {
 	it("合法输入校验通过", () => {

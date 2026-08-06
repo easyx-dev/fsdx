@@ -10,6 +10,7 @@ import { TableOperate } from "@fsdx/ui-spa/table-operate";
 import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { Button, Card, Flex, Form, Input, Modal, Space, Switch } from "antd";
 import dayjs from "dayjs";
+import type { ChangeEvent } from "react";
 import { useMemo, useState } from "react";
 import { EditorTypes } from "#/components/admin/editor-type";
 import {
@@ -26,7 +27,7 @@ import {
 	getConfigListSFn,
 	importConfigsSFn,
 	updateConfigSFn,
-} from "./config.functions";
+} from "./-mods/config.functions";
 
 const UNGROUPED_KEY = "__ungrouped__";
 
@@ -371,7 +372,9 @@ function ConfigPage() {
 								size="small"
 								style={{ width: 200 }}
 								value={searchText}
-								onChange={(e) => setSearchText(e.target.value)}
+								onChange={(e: ChangeEvent<HTMLInputElement>) =>
+									setSearchText(e.target.value)
+								}
 							/>
 						</Space>
 					}

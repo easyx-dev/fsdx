@@ -29,7 +29,7 @@ import { useRef, useState } from "react";
 import { message } from "#/components/antd-static";
 import { getFileListSFn, uploadFileSFn } from "#/services/file/file.functions";
 import type { FileRecord } from "#/services/file/file.server";
-import { deleteFileSFn, makePermanentSFn } from "./files.functions";
+import { deleteFileSFn, makePermanentSFn } from "./-mods/files.functions";
 
 /** 格式化文件大小 */
 function formatSize(bytes: number): string {
@@ -318,7 +318,7 @@ function FilesPage() {
 						{ label: "永久", value: "permanent" },
 					]}
 					value={filter}
-					onChange={(value) => {
+					onChange={(value: string | number) => {
 						handleFilterChange(value as string);
 					}}
 				/>

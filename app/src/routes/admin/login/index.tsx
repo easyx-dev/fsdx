@@ -7,7 +7,7 @@ import { Button, Form, Input } from "antd";
 import { useState } from "react";
 import { message } from "#/components/antd-static";
 import { checkInitStatusSFn } from "#/services/init/init.functions";
-import { adminLoginSFn } from "./login.functions";
+import { adminLoginSFn } from "./-mods/login.functions";
 
 export const Route = createFileRoute("/admin/login/")({
 	beforeLoad: async () => {

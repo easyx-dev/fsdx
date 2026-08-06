@@ -7,7 +7,7 @@ import {
 	createConfigSchema,
 	deleteConfigSchema,
 	updateConfigSchema,
-} from "../config.schemas";
+} from "../-mods/config.schemas";
 
 describe("createConfigSchema", () => {
 	it("合法输入通过", () => {

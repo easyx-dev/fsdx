@@ -14,7 +14,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import dayjs from "dayjs";
 import { useTranslation } from "#/components/i18n-context";
 import type { NewsRecord } from "#/services/news/news.server";
-import { getPublishedNewsSFn } from "./news.functions";
+import { getPublishedNewsSFn } from "./-mods/news.functions";
 
 export const Route = createFileRoute("/news/")({
 	component: NewsListPage,

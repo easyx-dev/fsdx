@@ -2,7 +2,7 @@
  * 操作日志 Schema 验证测试
  */
 import { describe, expect, it } from "vitest";
-import { searchOperationLogsSchema } from "../operation-logs.functions";
+import { searchOperationLogsSchema } from "../-mods/operation-logs.functions";
 
 describe("searchOperationLogsSchema", () => {
 	it("空参数应通过校验", () => {

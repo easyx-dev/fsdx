@@ -317,7 +317,7 @@ function MessageManagePage() {
 					current: page,
 					pageSize: PAGE_SIZE,
 					showSizeChanger: false,
-					showTotal: (total, range) =>
+					showTotal: (total: number, range: [number, number]) =>
 						`第 ${range[0]}-${range[1]} 条，共 ${total} 条`,
 					onChange: (p: number) => doSearch(p),
 				}}
@@ -360,7 +360,7 @@ function MessageManagePage() {
 							placeholder="输入用户名或邮箱搜索，可多选"
 							options={recipientOptions}
 							loading={recipientSearching}
-							onSearch={(value) => fetchRecipients(value)}
+							onSearch={(value: string) => fetchRecipients(value)}
 							notFoundContent={recipientSearching ? null : "未找到匹配用户"}
 							filterOption={false}
 							showSearch

@@ -19,7 +19,7 @@ import {
 import { useState } from "react";
 import type { z } from "zod";
 import { message } from "#/components/antd-static";
-import { type aiTestSchema, aiTestSFn } from "./ai.functions";
+import { type aiTestSchema, aiTestSFn } from "./-mods/ai.functions";
 
 const { Text, Paragraph } = Typography;
 

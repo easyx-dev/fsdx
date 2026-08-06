@@ -3,7 +3,7 @@
  */
 import { describe, expect, it } from "vitest";
 import { z } from "zod";
-import { registerSchema } from "#/routes/register/register.functions";
+import { registerSchema } from "#/routes/register/-mods/register.functions";
 
 const sendCaptchaSchema = z.object({
 	email: z.string().email(),

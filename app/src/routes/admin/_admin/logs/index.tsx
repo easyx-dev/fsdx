@@ -27,7 +27,7 @@ import { useState } from "react";
 import { message } from "#/components/antd-static";
 import { LEVEL_COLORS, LEVEL_OPTIONS } from "#/constants";
 import type { LogEntry, LogQueryResult } from "#/services/logs/logs.server";
-import { getDatesSFn, searchLogsSFn } from "./logs.functions";
+import { getDatesSFn, searchLogsSFn } from "./-mods/logs.functions";
 
 /** 将日志时间戳转为本地化时间字符串 */
 function formatTime(entry: LogEntry): string {

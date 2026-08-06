@@ -52,7 +52,7 @@ import {
 	getClientUserList,
 	resetClientPassword,
 	updateClientUser,
-} from "#/routes/admin/_admin/users/clients/clients.server";
+} from "#/routes/admin/_admin/users/clients/-mods/clients.server";
 
 beforeEach(() => {
 	vi.clearAllMocks();

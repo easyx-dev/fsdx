@@ -15,7 +15,7 @@ import {
 	createEventMetaSFn,
 	deleteEventMetaSFn,
 	updateEventMetaSFn,
-} from "./event-meta.functions";
+} from "./-mods/event-meta.functions";
 
 export const Route = createFileRoute("/admin/_admin/track/event-meta/")({
 	component: PresetEventsPage,

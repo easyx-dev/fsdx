@@ -13,6 +13,7 @@ import { ProTable } from "@fsdx/ui-spa/pro-table";
 import { TableOperate } from "@fsdx/ui-spa/table-operate";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Button, Drawer, Image, Segmented, Space, Tag } from "antd";
+import type { SegmentedValue } from "antd/es/segmented";
 import dayjs from "dayjs";
 import { useMemo, useState } from "react";
 import { DictTag } from "#/components/admin/DictTag";
@@ -341,7 +342,7 @@ function NewsListPage() {
 				<Segmented
 					options={segmentedOptions}
 					value={filter}
-					onChange={(value) => {
+					onChange={(value: SegmentedValue) => {
 						setFilter(value as string);
 						refresh(value as string);
 					}}

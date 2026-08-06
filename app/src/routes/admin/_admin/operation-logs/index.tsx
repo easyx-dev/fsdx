@@ -19,7 +19,7 @@ import {
 	getOperationLogModulesSFn,
 	type JsonValue,
 	searchOperationLogsSFn,
-} from "./operation-logs.functions";
+} from "./-mods/operation-logs.functions";
 
 /** 可序列化的操作日志条目 */
 interface OperationLogEntry {

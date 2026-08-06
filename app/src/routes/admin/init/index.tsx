@@ -27,7 +27,7 @@ import { useState } from "react";
 import type { z } from "zod";
 import { message } from "#/components/antd-static";
 import { checkInitStatusSFn } from "#/services/init/init.functions";
-import { type initSchema, initSFn } from "./init.functions";
+import { type initSchema, initSFn } from "./-mods/init.functions";
 
 export const Route = createFileRoute("/admin/init/")({
 	beforeLoad: async () => {
