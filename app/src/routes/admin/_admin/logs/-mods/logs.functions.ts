@@ -4,7 +4,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { adminPermGuard } from "#/middleware/admin-auth";
-import { PERMISSIONS } from "#/permissions/permissions";
+import { ADMIN_PERMISSIONS } from "#/permissions/admin-permissions";
 import {
 	getLogDates as getLogDatesService,
 	searchLogs as searchLogsService,
@@ -20,14 +20,14 @@ export const searchLogsSchema = z.object({
 });
 
 export const searchLogsSFn = createServerFn({ method: "GET" })
-	.middleware([adminPermGuard(PERMISSIONS.LOG_VIEW)])
+	.middleware([adminPermGuard(ADMIN_PERMISSIONS.LOG_VIEW)])
 	.inputValidator(searchLogsSchema)
 	.handler(async ({ data }) => {
 		return searchLogsService(data);
 	});
 
 export const getDatesSFn = createServerFn({ method: "GET" })
-	.middleware([adminPermGuard(PERMISSIONS.LOG_VIEW)])
+	.middleware([adminPermGuard(ADMIN_PERMISSIONS.LOG_VIEW)])
 	.handler(async () => {
 		return getLogDatesService();
 	});

@@ -4,7 +4,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { adminPermGuard } from "#/middleware/admin-auth";
-import { PERMISSIONS } from "#/permissions/permissions";
+import { ADMIN_PERMISSIONS } from "#/permissions/admin-permissions";
 import { logCrud } from "#/services/operation-log/operation-log.server";
 import { getFileInfo, getFileList, uploadFile } from "./file.server";
 
@@ -21,13 +21,13 @@ export const fileListSchema = z.object({
 
 /** 获取文件列表（分页、筛选、搜索、排序） */
 export const getFileListSFn = createServerFn({ method: "GET" })
-	.middleware([adminPermGuard(PERMISSIONS.FILE_VIEW)])
+	.middleware([adminPermGuard(ADMIN_PERMISSIONS.FILE_VIEW)])
 	.inputValidator(fileListSchema)
 	.handler(async ({ data }) => getFileList(data));
 
 /** 上传文件（支持 SHA256 秒传） */
 export const uploadFileSFn = createServerFn({ method: "POST" })
-	.middleware([adminPermGuard(PERMISSIONS.FILE_UPLOAD)])
+	.middleware([adminPermGuard(ADMIN_PERMISSIONS.FILE_UPLOAD)])
 	.inputValidator((data: unknown) => {
 		if (!(data instanceof FormData)) throw new Error("Expected FormData");
 		const f = data.get("file");
@@ -65,6 +65,6 @@ export const uploadFileSFn = createServerFn({ method: "POST" })
 
 /** 根据文件 ID 查询原始文件名（供预览组件使用） */
 export const getFileInfoSFn = createServerFn({ method: "GET" })
-	.middleware([adminPermGuard(PERMISSIONS.FILE_VIEW)])
+	.middleware([adminPermGuard(ADMIN_PERMISSIONS.FILE_VIEW)])
 	.inputValidator(z.object({ id: z.string() }))
 	.handler(async ({ data }) => getFileInfo(data.id));

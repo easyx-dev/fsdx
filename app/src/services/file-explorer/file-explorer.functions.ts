@@ -3,7 +3,7 @@
  */
 import { createServerFn } from "@tanstack/react-start";
 import { adminPermGuard } from "#/middleware/admin-auth";
-import { PERMISSIONS } from "#/permissions/permissions";
+import { ADMIN_PERMISSIONS } from "#/permissions/admin-permissions";
 import { logCrud } from "#/services/operation-log/operation-log.server";
 import {
 	renameSchema,
@@ -21,7 +21,7 @@ import {
 
 /** 获取目录全量信息（内容 + 面包屑 + 写保护状态） */
 export const listDirectorySFn = createServerFn({ method: "GET" })
-	.middleware([adminPermGuard(PERMISSIONS.FILE_EXPLORER_VIEW)])
+	.middleware([adminPermGuard(ADMIN_PERMISSIONS.FILE_EXPLORER_VIEW)])
 	.inputValidator(subPathSchema)
 	.handler(async ({ data }) => {
 		return getDirectoryInfo(data.subPath);
@@ -29,7 +29,7 @@ export const listDirectorySFn = createServerFn({ method: "GET" })
 
 /** 获取文本文件内容 */
 export const getTextContentSFn = createServerFn({ method: "GET" })
-	.middleware([adminPermGuard(PERMISSIONS.FILE_EXPLORER_VIEW)])
+	.middleware([adminPermGuard(ADMIN_PERMISSIONS.FILE_EXPLORER_VIEW)])
 	.inputValidator(subPathSchema)
 	.handler(async ({ data }) => {
 		return getTextContent(data.subPath);
@@ -37,11 +37,11 @@ export const getTextContentSFn = createServerFn({ method: "GET" })
 
 /** 创建子目录 */
 export const createDirectorySFn = createServerFn({ method: "POST" })
-	.middleware([adminPermGuard(PERMISSIONS.FILE_EXPLORER_MKDIR)])
+	.middleware([adminPermGuard(ADMIN_PERMISSIONS.FILE_EXPLORER_MKDIR)])
 	.inputValidator(subPathAndNameSchema)
 	.handler(async ({ data, context }) => {
 		await createDirectory(data.subPath, data.name);
-		logCrud(context.user, "file_explorer", "mkdir", {
+		logCrud(context.user, "file-explorer", "mkdir", {
 			id: `${data.subPath ? `${data.subPath}/` : ""}${data.name}`,
 			name: data.name,
 		});
@@ -50,11 +50,11 @@ export const createDirectorySFn = createServerFn({ method: "POST" })
 
 /** 重命名文件或目录 */
 export const renameEntrySFn = createServerFn({ method: "POST" })
-	.middleware([adminPermGuard(PERMISSIONS.FILE_EXPLORER_RENAME)])
+	.middleware([adminPermGuard(ADMIN_PERMISSIONS.FILE_EXPLORER_RENAME)])
 	.inputValidator(renameSchema)
 	.handler(async ({ data, context }) => {
 		const result = await renameEntry(data.subPath, data.newName);
-		logCrud(context.user, "file_explorer", "rename", {
+		logCrud(context.user, "file-explorer", "rename", {
 			id: data.subPath,
 			name: result.oldName,
 		});
@@ -63,11 +63,11 @@ export const renameEntrySFn = createServerFn({ method: "POST" })
 
 /** 删除文件或空目录 */
 export const deleteEntrySFn = createServerFn({ method: "POST" })
-	.middleware([adminPermGuard(PERMISSIONS.FILE_EXPLORER_DELETE)])
+	.middleware([adminPermGuard(ADMIN_PERMISSIONS.FILE_EXPLORER_DELETE)])
 	.inputValidator(subPathSchema)
 	.handler(async ({ data, context }) => {
 		const result = await deleteEntry(data.subPath);
-		logCrud(context.user, "file_explorer", "delete", {
+		logCrud(context.user, "file-explorer", "delete", {
 			id: data.subPath,
 			name: result.deletedName,
 		});
@@ -76,7 +76,7 @@ export const deleteEntrySFn = createServerFn({ method: "POST" })
 
 /** 上传文件到当前目录 */
 export const uploadFileSFn = createServerFn({ method: "POST" })
-	.middleware([adminPermGuard(PERMISSIONS.FILE_EXPLORER_UPLOAD)])
+	.middleware([adminPermGuard(ADMIN_PERMISSIONS.FILE_EXPLORER_UPLOAD)])
 	.inputValidator((data: unknown) => {
 		if (!(data instanceof FormData)) throw new Error("Expected FormData");
 		const f = data.get("file");
@@ -87,7 +87,7 @@ export const uploadFileSFn = createServerFn({ method: "POST" })
 	.handler(async ({ data: { file: fileField, subPath }, context }) => {
 		const buffer = Buffer.from(await fileField.arrayBuffer());
 		await saveUploadedFile(subPath, fileField.name, buffer);
-		logCrud(context.user, "file_explorer", "upload", {
+		logCrud(context.user, "file-explorer", "upload", {
 			id: subPath,
 			name: fileField.name,
 		});

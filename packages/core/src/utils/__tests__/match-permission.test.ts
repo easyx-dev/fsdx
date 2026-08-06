@@ -12,7 +12,7 @@ describe("matchPermission", () => {
 			expect(matchPermission(["**"], "news:view")).toBe(true);
 			expect(matchPermission(["**"], "admin:delete")).toBe(true);
 			expect(matchPermission(["**"], "dashboard:view")).toBe(true);
-			expect(matchPermission(["**"], "dict:create_item")).toBe(true);
+			expect(matchPermission(["**"], "dict:create-item")).toBe(true);
 		});
 
 		it("** 在数组任一位置均生效", () => {
@@ -37,11 +37,11 @@ describe("matchPermission", () => {
 			expect(matchPermission(perms, "news:publish")).toBe(true);
 		});
 
-		it("dict:* 匹配含下划线的 dict:create_item 等权限", () => {
+		it("dict:* 匹配含连字符的 dict:create-item 等权限", () => {
 			const perms = ["dict:*"];
-			expect(matchPermission(perms, "dict:create_item")).toBe(true);
-			expect(matchPermission(perms, "dict:edit_item")).toBe(true);
-			expect(matchPermission(perms, "dict:delete_item")).toBe(true);
+			expect(matchPermission(perms, "dict:create-item")).toBe(true);
+			expect(matchPermission(perms, "dict:edit-item")).toBe(true);
+			expect(matchPermission(perms, "dict:delete-item")).toBe(true);
 		});
 
 		it("news:* 不匹配其他分组权限", () => {

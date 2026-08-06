@@ -8,7 +8,10 @@ import { createMiddleware } from "@tanstack/react-start";
 import { getCookie } from "@tanstack/react-start/server";
 import { COOKIE_NAMES } from "#/constants/cookie-names";
 import { jwt } from "#/lib/jwt/jwt";
-import { hasPermission, type PermissionDef } from "#/permissions/permissions";
+import {
+	type AdminPermissionDef,
+	hasAdminPermission,
+} from "#/permissions/admin-permissions";
 
 /** 通过中间件注入 handler 的管理端鉴权上下文 */
 export interface AdminAuthContext {
@@ -107,11 +110,11 @@ export const adminAuthGuard = createMiddleware().server(async ({ next }) => {
  * 直接调用 resolveAdminAuthContext 完成登录校验和权限校验
  * Server Function 和 Server Route 通用
  */
-export function adminPermGuard(required: PermissionDef) {
+export function adminPermGuard(required: AdminPermissionDef) {
 	return createMiddleware().server(async ({ next }) => {
 		const token = getCookie(COOKIE_NAMES.ADMIN_TOKEN);
 		const ctx = await resolveAdminAuthContext(token);
-		if (!hasPermission(ctx.rolePermissions, required)) {
+		if (!hasAdminPermission(ctx.rolePermissions, required)) {
 			throw new AdminAuthError("权限不足", 403);
 		}
 		return runWithRequestContext(
@@ -132,7 +135,7 @@ export function adminPermGuard(required: PermissionDef) {
  * Server Route 专用权限守卫
  * 组合 adminPermGuard，捕获 AdminAuthError 转为对应 HTTP 状态码 JSON，避免中间件抛错被框架统一转 500
  */
-export function adminPermRouteGuard(required: PermissionDef) {
+export function adminPermRouteGuard(required: AdminPermissionDef) {
 	const guard = adminPermGuard(required);
 	return createMiddleware()
 		.middleware([guard])

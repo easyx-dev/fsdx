@@ -4,7 +4,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { adminAuthGuard, adminPermGuard } from "#/middleware/admin-auth";
 import { clientAuthGuard } from "#/middleware/client-auth";
-import { PERMISSIONS } from "#/permissions/permissions";
+import { ADMIN_PERMISSIONS } from "#/permissions/admin-permissions";
 import { logCrud } from "#/services/operation-log/operation-log.server";
 import {
 	adminMessageListSchema,
@@ -143,7 +143,7 @@ export const deleteAdminMessageSFn = createServerFn({ method: "POST" })
 
 /** 全量分页查询所有用户消息 */
 export const listAllMessagesSFn = createServerFn({ method: "GET" })
-	.middleware([adminPermGuard(PERMISSIONS.MESSAGE_VIEW)])
+	.middleware([adminPermGuard(ADMIN_PERMISSIONS.MESSAGE_VIEW)])
 	.inputValidator(adminMessageListSchema)
 	.handler(async ({ data }) =>
 		listMessages({
@@ -158,7 +158,7 @@ export const listAllMessagesSFn = createServerFn({ method: "GET" })
 
 /** 向用户批量发送消息 */
 export const sendMessageSFn = createServerFn({ method: "POST" })
-	.middleware([adminPermGuard(PERMISSIONS.MESSAGE_SEND)])
+	.middleware([adminPermGuard(ADMIN_PERMISSIONS.MESSAGE_SEND)])
 	.inputValidator(sendMessageSchema)
 	.handler(async ({ data, context }) => {
 		const count = await sendMessages({ ...data });
@@ -179,7 +179,7 @@ export const sendMessageSFn = createServerFn({ method: "POST" })
 
 /** 强制删除任意消息 */
 export const deleteAnyMessageSFn = createServerFn({ method: "POST" })
-	.middleware([adminPermGuard(PERMISSIONS.MESSAGE_DELETE)])
+	.middleware([adminPermGuard(ADMIN_PERMISSIONS.MESSAGE_DELETE)])
 	.inputValidator(messageIdSchema)
 	.handler(async ({ data, context }) => {
 		const ok = await deleteMessageById(data.id);
@@ -189,6 +189,6 @@ export const deleteAnyMessageSFn = createServerFn({ method: "POST" })
 
 /** 搜索消息接收者（发送消息表单的选择器数据源） */
 export const searchRecipientsSFn = createServerFn({ method: "GET" })
-	.middleware([adminPermGuard(PERMISSIONS.MESSAGE_SEND)])
+	.middleware([adminPermGuard(ADMIN_PERMISSIONS.MESSAGE_SEND)])
 	.inputValidator(searchRecipientsSchema)
 	.handler(async ({ data }) => searchRecipients(data));

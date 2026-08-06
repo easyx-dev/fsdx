@@ -36,7 +36,7 @@ description: >
 |---|------|------|-----------|
 | 1 | `src/db/schema/<module-name>.ts` | Drizzle 表定义 | [db-schema](../db-schema/SKILL.md) |
 | 2 | `src/db/schema/index.ts` | 追加 export | — |
-| 3 | `src/permissions/permissions.ts` | 追加权限码 | [permission](../permission/SKILL.md) |
+| 3 | `src/permissions/admin-permissions.ts` | 追加权限码 | [permission](../permission/SKILL.md) |
 | 4 | `src/services/<module-name>/<module-name>.server.ts` | 服务层 helper | — |
 | 5 | `src/routes/admin/_admin/<module-name>/-mods/<module-name>.schemas.ts` | Zod Schema | — |
 | 6 | `src/routes/admin/_admin/<module-name>/-mods/<module-name>.functions.ts` | SFn 包装器 | [server-function](../server-function/SKILL.md) |
@@ -115,7 +115,7 @@ export { product } from "./product";
 
 > 详细规范参考 [permission](../permission/SKILL.md)
 
-编辑 `src/permissions/permissions.ts`，在 `PERMISSIONS` 对象中追加：
+编辑 `src/permissions/admin-permissions.ts`，在 `ADMIN_PERMISSIONS` 对象中追加：
 
 ```ts
 // 产品管理
@@ -319,7 +319,7 @@ export const updateProductSchema = z.object({
  * <实体中文名>表单 SFn 包装器
  */
 import { createServerFn } from "@tanstack/react-start";
-import { PERMISSIONS } from "#/permissions/permissions";
+import { ADMIN_PERMISSIONS } from "#/permissions/admin-permissions";
 import { adminPermGuard } from "#/middleware/admin-auth";
 import { logOperation } from "#/services/operation-log/operation-log.server";
 import {
@@ -334,14 +334,14 @@ import {
 } from "./product.schemas";
 
 export const getProductByIdSFn = createServerFn({ method: "GET" })
-  .middleware([adminPermGuard(PERMISSIONS.PRODUCT_VIEW)])
+  .middleware([adminPermGuard(ADMIN_PERMISSIONS.PRODUCT_VIEW)])
   .inputValidator(getProductSchema)
   .handler(async ({ data: { id } }) => {
     return getProductById(id);
   });
 
 export const createProductSFn = createServerFn({ method: "POST" })
-  .middleware([adminPermGuard(PERMISSIONS.PRODUCT_CREATE)])
+  .middleware([adminPermGuard(ADMIN_PERMISSIONS.PRODUCT_CREATE)])
   .inputValidator(createProductSchema)
   .handler(async ({ data, context }) => {
     const record = await createProduct({
@@ -361,7 +361,7 @@ export const createProductSFn = createServerFn({ method: "POST" })
   });
 
 export const updateProductSFn = createServerFn({ method: "POST" })
-  .middleware([adminPermGuard(PERMISSIONS.PRODUCT_EDIT)])
+  .middleware([adminPermGuard(ADMIN_PERMISSIONS.PRODUCT_EDIT)])
   .inputValidator(updateProductSchema)
   .handler(async ({ data, context }) => {
     const record = await updateProduct(data.id, { ...data });
@@ -555,7 +555,7 @@ import { z } from "zod";
 import { AdminPageContent } from "#/components/admin/AdminPageContent";
 import { ProTable } from "#/components/admin/ProTable";
 import { TableOperate } from "#/components/admin/TableOperate";
-import { PERMISSIONS } from "#/permissions/permissions";
+import { ADMIN_PERMISSIONS } from "#/permissions/admin-permissions";
 import { adminPermGuard } from "#/middleware/admin-auth";
 import type { ProductRecord } from "#/services/product/product.server";
 import {
@@ -577,14 +577,14 @@ const idSchema = z.object({ id: z.string().min(1) });
 
 // ═══ 内联 SFn ═══
 const getProductListSFn = createServerFn({ method: "GET" })
-  .middleware([adminPermGuard(PERMISSIONS.PRODUCT_VIEW)])
+  .middleware([adminPermGuard(ADMIN_PERMISSIONS.PRODUCT_VIEW)])
   .inputValidator(listSchema)
   .handler(async ({ data: { status, page = 1, sortField, sortOrder } }) => {
     return getProductList({ status, page, pageSize: 20, sortField, sortOrder });
   });
 
 const deleteProductSFn = createServerFn({ method: "POST" })
-  .middleware([adminPermGuard(PERMISSIONS.PRODUCT_DELETE)])
+  .middleware([adminPermGuard(ADMIN_PERMISSIONS.PRODUCT_DELETE)])
   .inputValidator(idSchema)
   .handler(async ({ data: { id }, context }) => {
     const record = await getProductById(id);

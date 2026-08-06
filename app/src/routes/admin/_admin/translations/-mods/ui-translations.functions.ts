@@ -6,7 +6,7 @@ import { toJson } from "@fsdx/core/export";
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { adminPermGuard } from "#/middleware/admin-auth";
-import { PERMISSIONS } from "#/permissions/permissions";
+import { ADMIN_PERMISSIONS } from "#/permissions/admin-permissions";
 import {
 	deleteUITranslation,
 	getAllUITranslationsForExport,
@@ -24,14 +24,14 @@ import {
 } from "./ui-translations.schemas";
 
 export const getListSFn = createServerFn({ method: "GET" })
-	.middleware([adminPermGuard(PERMISSIONS.TRANSLATION_VIEW)])
+	.middleware([adminPermGuard(ADMIN_PERMISSIONS.TRANSLATION_VIEW)])
 	.inputValidator(getListSchema)
 	.handler(async ({ data }) =>
 		listUITranslations(data as Parameters<typeof listUITranslations>[0]),
 	);
 
 export const saveSFn = createServerFn({ method: "POST" })
-	.middleware([adminPermGuard(PERMISSIONS.TRANSLATION_MANAGE)])
+	.middleware([adminPermGuard(ADMIN_PERMISSIONS.TRANSLATION_MANAGE)])
 	.inputValidator(formSchema)
 	.handler(async ({ data, context }) => {
 		const result = await upsertUITranslation(
@@ -44,7 +44,7 @@ export const saveSFn = createServerFn({ method: "POST" })
 	});
 
 export const deleteSFn = createServerFn({ method: "POST" })
-	.middleware([adminPermGuard(PERMISSIONS.TRANSLATION_MANAGE)])
+	.middleware([adminPermGuard(ADMIN_PERMISSIONS.TRANSLATION_MANAGE)])
 	.inputValidator(deleteSchema)
 	.handler(async ({ data, context }) => {
 		await deleteUITranslation(data.id);
@@ -59,14 +59,14 @@ export const deleteSFn = createServerFn({ method: "POST" })
 	});
 
 export const exportUITranslationsSFn = createServerFn({ method: "GET" })
-	.middleware([adminPermGuard(PERMISSIONS.TRANSLATION_EXPORT)])
+	.middleware([adminPermGuard(ADMIN_PERMISSIONS.TRANSLATION_EXPORT)])
 	.handler(async () => {
 		const translations = await getAllUITranslationsForExport();
 		return toJson({ translations });
 	});
 
 export const importUITranslationsSFn = createServerFn({ method: "POST" })
-	.middleware([adminPermGuard(PERMISSIONS.TRANSLATION_IMPORT)])
+	.middleware([adminPermGuard(ADMIN_PERMISSIONS.TRANSLATION_IMPORT)])
 	.inputValidator(
 		z.object({
 			data: z.object({

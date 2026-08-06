@@ -3,7 +3,7 @@
  */
 import { createServerFn } from "@tanstack/react-start";
 import { adminPermGuard } from "#/middleware/admin-auth";
-import { PERMISSIONS } from "#/permissions/permissions";
+import { ADMIN_PERMISSIONS } from "#/permissions/admin-permissions";
 import { getAdminRoleList } from "#/services/admin-role/admin-role.server";
 import { logCrud } from "#/services/operation-log/operation-log.server";
 import {
@@ -24,18 +24,18 @@ import {
 
 /** 获取角色下拉列表 */
 export const getAdminRolesForSelectSFn = createServerFn({ method: "GET" })
-	.middleware([adminPermGuard(PERMISSIONS.ADMIN_VIEW)])
+	.middleware([adminPermGuard(ADMIN_PERMISSIONS.ADMIN_VIEW)])
 	.handler(async () => getAdminRoleList());
 
 /** 获取管理员列表（分页、筛选、排序） */
 export const getListSFn = createServerFn({ method: "GET" })
-	.middleware([adminPermGuard(PERMISSIONS.ADMIN_VIEW)])
+	.middleware([adminPermGuard(ADMIN_PERMISSIONS.ADMIN_VIEW)])
 	.inputValidator(listSchema)
 	.handler(async ({ data }) => getAdminUserList(data));
 
 /** 新建管理员 */
 export const createSFn = createServerFn({ method: "POST" })
-	.middleware([adminPermGuard(PERMISSIONS.ADMIN_CREATE)])
+	.middleware([adminPermGuard(ADMIN_PERMISSIONS.ADMIN_CREATE)])
 	.inputValidator(createSchema)
 	.handler(async ({ data, context }) => {
 		const record = await createAdminUser(data);
@@ -51,7 +51,7 @@ export const createSFn = createServerFn({ method: "POST" })
 
 /** 更新管理员 */
 export const updateSFn = createServerFn({ method: "POST" })
-	.middleware([adminPermGuard(PERMISSIONS.ADMIN_EDIT)])
+	.middleware([adminPermGuard(ADMIN_PERMISSIONS.ADMIN_EDIT)])
 	.inputValidator(updateSchema)
 	.handler(async ({ data, context }) => {
 		const result = await updateAdminUser(data.id, data);
@@ -67,7 +67,7 @@ export const updateSFn = createServerFn({ method: "POST" })
 
 /** 删除管理员（软删除） */
 export const deleteSFn = createServerFn({ method: "POST" })
-	.middleware([adminPermGuard(PERMISSIONS.ADMIN_DELETE)])
+	.middleware([adminPermGuard(ADMIN_PERMISSIONS.ADMIN_DELETE)])
 	.inputValidator(idSchema)
 	.handler(async ({ data, context }) => {
 		const existing = await getAdminUser(data.id);
@@ -84,7 +84,7 @@ export const deleteSFn = createServerFn({ method: "POST" })
 
 /** 重置管理员密码 */
 export const resetPwdSFn = createServerFn({ method: "POST" })
-	.middleware([adminPermGuard(PERMISSIONS.ADMIN_EDIT)])
+	.middleware([adminPermGuard(ADMIN_PERMISSIONS.ADMIN_EDIT)])
 	.inputValidator(resetPwdSchema)
 	.handler(async ({ data, context }) => {
 		const existing = await getAdminUser(data.id);

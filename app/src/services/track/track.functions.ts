@@ -6,7 +6,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { getRequestHeader, getRequestIP } from "@tanstack/react-start/server";
 import { z } from "zod";
 import { adminPermGuard } from "#/middleware/admin-auth";
-import { PERMISSIONS } from "#/permissions/permissions";
+import { ADMIN_PERMISSIONS } from "#/permissions/admin-permissions";
 import {
 	getTrackEventMetaList,
 	getTrackPropertyMetaList,
@@ -50,10 +50,10 @@ export const trackEventSFn = createServerFn({ method: "POST" })
 
 /** 获取元事件列表（admin 多路由共享：event-meta 管理页 + 事件查询页） */
 export const getTrackEventMetaSFn = createServerFn({ method: "GET" })
-	.middleware([adminPermGuard(PERMISSIONS.TRACK_VIEW)])
+	.middleware([adminPermGuard(ADMIN_PERMISSIONS.TRACK_VIEW)])
 	.handler(async () => getTrackEventMetaList());
 
 /** 获取元属性列表（admin 多路由共享：property-meta 管理页 + 事件查询页） */
 export const getTrackPropertyMetaSFn = createServerFn({ method: "GET" })
-	.middleware([adminPermGuard(PERMISSIONS.TRACK_VIEW)])
+	.middleware([adminPermGuard(ADMIN_PERMISSIONS.TRACK_VIEW)])
 	.handler(async () => getTrackPropertyMetaList());

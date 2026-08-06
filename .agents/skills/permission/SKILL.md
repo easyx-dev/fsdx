@@ -22,10 +22,10 @@ admin_user ──► role ──► permissions（jsonb string[]）
 - **普通管理员**：通过 `role_id` 关联角色，角色的 `permissions` 字段（jsonb）存储权限码数组
 - **权限匹配优先级**：`**`（超级通配符）→ 精确匹配 → `group:*`（分组通配符）
 
-## PermissionDef 数据结构
+## AdminPermissionDef 数据结构
 
 ```ts
-// src/permissions/permissions.ts
+// src/permissions/admin-permissions.ts
 {
   code: "news:view",   // 权限码，格式 {module}:{action}
   name: "查看新闻",     // 中文名称，在角色编辑页面展示
@@ -34,16 +34,16 @@ admin_user ──► role ──► permissions（jsonb string[]）
 }
 ```
 
-`group` 字段用于管理端角色编辑页面的分组展示（基于 `PERMISSIONS_BY_GROUP`）。
+`group` 字段用于管理端角色编辑页面的分组展示（基于 `ADMIN_PERMISSIONS_BY_GROUP`）。
 
 ## 新增权限码完整流程
 
 ### Step 1：在 `permissions.ts` 中添加权限码
 
-编辑 `src/permissions/permissions.ts`，在 `PERMISSIONS` 对象中按模块分组追加：
+编辑 `src/permissions/admin-permissions.ts`，在 `ADMIN_PERMISSIONS` 对象中按模块分组追加：
 
 ```ts
-export const PERMISSIONS = {
+export const ADMIN_PERMISSIONS = {
   // ... 已有权限码 ...
 
   // 产品管理
@@ -75,37 +75,37 @@ export const PERMISSIONS = {
 > 详细规范参考 [server-function](../server-function/SKILL.md)
 
 ```ts
-import { PERMISSIONS } from "#/permissions/permissions";
+import { ADMIN_PERMISSIONS } from "#/permissions/admin-permissions";
 import { adminPermGuard } from "#/middleware/admin-auth";
 
 export const getProductListSFn = createServerFn({ method: "GET" })
-  .middleware([adminPermGuard(PERMISSIONS.PRODUCT_VIEW)])
+  .middleware([adminPermGuard(ADMIN_PERMISSIONS.PRODUCT_VIEW)])
   .inputValidator(listSchema)
   .handler(async ({ data }) => { /* ... */ });
 
 export const createProductSFn = createServerFn({ method: "POST" })
-  .middleware([adminPermGuard(PERMISSIONS.PRODUCT_CREATE)])
+  .middleware([adminPermGuard(ADMIN_PERMISSIONS.PRODUCT_CREATE)])
   .inputValidator(createSchema)
   .handler(async ({ data, context }) => { /* ... */ });
 ```
 
 ### Step 3：角色编辑页面自动生效
 
-管理端角色编辑页面（`/admin/roles`）基于 `PERMISSIONS_BY_GROUP` 自动渲染所有权限码的复选框，无需手动添加 UI。新增的权限码会自动出现在对应分组下。
+管理端角色编辑页面（`/admin/roles`）基于 `ADMIN_PERMISSIONS_BY_GROUP` 自动渲染所有权限码的复选框，无需手动添加 UI。新增的权限码会自动出现在对应分组下。
 
 ### Step 4：UI 条件渲染（可选）
 
 如果需要在管理端页面中根据权限控制按钮显隐：
 
 ```tsx
-import { hasPermission, PERMISSIONS } from "#/permissions/permissions";
+import { hasAdminPermission, ADMIN_PERMISSIONS } from "#/permissions/admin-permissions";
 
 function AdminPage() {
   const { rolePermissions } = useAdminAuth();
 
   return (
     <>
-      {hasPermission(rolePermissions, PERMISSIONS.PRODUCT_CREATE) && (
+      {hasAdminPermission(rolePermissions, ADMIN_PERMISSIONS.PRODUCT_CREATE) && (
         <Button type="primary">新建产品</Button>
       )}
     </>
@@ -134,7 +134,7 @@ function AdminPage() {
 ## 权限匹配逻辑
 
 ```ts
-// src/permissions/permissions.ts — matchPermission()
+// src/permissions/admin-permissions.ts — matchPermission()
 // 优先级：** → 精确匹配 → group:*
 
 // 1. ** 超级通配符（root 用户）
@@ -156,21 +156,21 @@ matchPermission(rolePermissions, "admin:view");  // ❌ false（不同分组）
 
 | 函数 | 签名 | 使用场景 |
 |------|------|---------|
-| `hasPermission` | `(rolePermissions, required) => boolean` | 检查单个权限 |
-| `hasAnyPermission` | `(rolePermissions, required[]) => boolean` | 检查是否拥有**任一**权限 |
-| `hasAllPermissions` | `(rolePermissions, required[]) => boolean` | 检查是否拥有**全部**权限 |
+| `hasAdminPermission` | `(rolePermissions, required) => boolean` | 检查单个权限 |
+| `hasAnyAdminPermission` | `(rolePermissions, required[]) => boolean` | 检查是否拥有**任一**权限 |
+| `hasAllAdminPermissions` | `(rolePermissions, required[]) => boolean` | 检查是否拥有**全部**权限 |
 
 ```ts
 // 单个按钮：任一权限
-{hasAnyPermission(rolePermissions, [
-  PERMISSIONS.PRODUCT_EDIT,
-  PERMISSIONS.PRODUCT_DELETE,
+{hasAnyAdminPermission(rolePermissions, [
+  ADMIN_PERMISSIONS.PRODUCT_EDIT,
+  ADMIN_PERMISSIONS.PRODUCT_DELETE,
 ]) && <Button>操作</Button>}
 
 // 批量操作：全部权限
-{hasAllPermissions(rolePermissions, [
-  PERMISSIONS.PRODUCT_EDIT,
-  PERMISSIONS.PRODUCT_DELETE,
+{hasAllAdminPermissions(rolePermissions, [
+  ADMIN_PERMISSIONS.PRODUCT_EDIT,
+  ADMIN_PERMISSIONS.PRODUCT_DELETE,
 ]) && <Button>批量删除</Button>}
 ```
 
@@ -178,7 +178,7 @@ matchPermission(rolePermissions, "admin:view");  // ❌ false（不同分组）
 
 | 中间件 | 校验内容 | 使用场景 |
 |--------|---------|---------|
-| `adminPermGuard(PERMISSIONS.XXX)` | 登录 + 指定权限 | **所有管理端 SFn**（推荐） |
+| `adminPermGuard(ADMIN_PERMISSIONS.XXX)` | 登录 + 指定权限 | **所有管理端 SFn**（推荐） |
 | `adminAuthGuard` | 仅登录 | 极少数不需要权限校验的接口 |
 
 `adminPermGuard` 内部已组合 `adminAuthGuard`，无需重复加登录校验。
@@ -187,13 +187,13 @@ matchPermission(rolePermissions, "admin:view");  // ❌ false（不同分组）
 
 ```ts
 import {
-  PERMISSION_META,      // Record<string, PermissionDef>
-  ALL_PERMISSIONS,      // PermissionCode[]
-  PERMISSIONS_BY_GROUP, // Record<string, PermissionDef[]>
-} from "#/permissions/permissions";
+  ADMIN_PERMISSION_META,      // Record<string, AdminPermissionDef>
+  ALL_ADMIN_PERMISSIONS,      // AdminPermissionCode[]
+  ADMIN_PERMISSIONS_BY_GROUP, // Record<string, AdminPermissionDef[]>
+} from "#/permissions/admin-permissions";
 
 // 在角色编辑页面获取权限分组列表
-Object.entries(PERMISSIONS_BY_GROUP).map(([group, permissions]) => (
+Object.entries(ADMIN_PERMISSIONS_BY_GROUP).map(([group, permissions]) => (
   <Checkbox.Group
     options={permissions.map((p) => ({ label: p.name, value: p.code }))}
   />

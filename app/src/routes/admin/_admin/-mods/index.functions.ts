@@ -3,7 +3,7 @@
  */
 import { createServerFn } from "@tanstack/react-start";
 import { adminPermGuard } from "#/middleware/admin-auth";
-import { PERMISSIONS } from "#/permissions/permissions";
+import { ADMIN_PERMISSIONS } from "#/permissions/admin-permissions";
 import { getStats } from "./index.server";
 
 export interface DashboardStats {
@@ -15,7 +15,7 @@ export interface DashboardStats {
 }
 
 export const getStatsSFn = createServerFn({ method: "GET" })
-	.middleware([adminPermGuard(PERMISSIONS.DASHBOARD_VIEW)])
+	.middleware([adminPermGuard(ADMIN_PERMISSIONS.DASHBOARD_VIEW)])
 	.handler(async () => {
 		return getStats();
 	});

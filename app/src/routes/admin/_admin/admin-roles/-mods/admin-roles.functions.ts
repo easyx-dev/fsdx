@@ -3,7 +3,7 @@
  */
 import { createServerFn } from "@tanstack/react-start";
 import { adminPermGuard } from "#/middleware/admin-auth";
-import { PERMISSIONS } from "#/permissions/permissions";
+import { ADMIN_PERMISSIONS } from "#/permissions/admin-permissions";
 import {
 	createAdminRole,
 	deleteAdminRole,
@@ -20,17 +20,17 @@ import {
 
 /** 获取角色列表 */
 export const getAdminRolesSFn = createServerFn({ method: "GET" })
-	.middleware([adminPermGuard(PERMISSIONS.ADMIN_ROLE_VIEW)])
+	.middleware([adminPermGuard(ADMIN_PERMISSIONS.ADMIN_ROLE_VIEW)])
 	.inputValidator(adminRoleListSchema)
 	.handler(async ({ data }) => getAdminRoleList(data.keyword));
 
 /** 创建角色 */
 export const createAdminRoleSFn = createServerFn({ method: "POST" })
-	.middleware([adminPermGuard(PERMISSIONS.ADMIN_ROLE_CREATE)])
+	.middleware([adminPermGuard(ADMIN_PERMISSIONS.ADMIN_ROLE_CREATE)])
 	.inputValidator(adminRoleCreateSchema)
 	.handler(async ({ data, context }) => {
 		const result = await createAdminRole(data);
-		logCrud(context.user, "admin_role", "create", {
+		logCrud(context.user, "admin-role", "create", {
 			id: result.id,
 			name: result.name,
 		});
@@ -39,11 +39,11 @@ export const createAdminRoleSFn = createServerFn({ method: "POST" })
 
 /** 更新角色 */
 export const updateAdminRoleSFn = createServerFn({ method: "POST" })
-	.middleware([adminPermGuard(PERMISSIONS.ADMIN_ROLE_EDIT)])
+	.middleware([adminPermGuard(ADMIN_PERMISSIONS.ADMIN_ROLE_EDIT)])
 	.inputValidator(adminRoleUpdateSchema)
 	.handler(async ({ data, context }) => {
 		const result = await updateAdminRole(data.id, data);
-		logCrud(context.user, "admin_role", "update", {
+		logCrud(context.user, "admin-role", "update", {
 			id: data.id,
 			name: result?.name,
 		});
@@ -52,9 +52,9 @@ export const updateAdminRoleSFn = createServerFn({ method: "POST" })
 
 /** 删除角色 */
 export const deleteAdminRoleSFn = createServerFn({ method: "POST" })
-	.middleware([adminPermGuard(PERMISSIONS.ADMIN_ROLE_DELETE)])
+	.middleware([adminPermGuard(ADMIN_PERMISSIONS.ADMIN_ROLE_DELETE)])
 	.inputValidator(idSchema)
 	.handler(async ({ data, context }) => {
 		await deleteAdminRole(data.id);
-		logCrud(context.user, "admin_role", "delete", { id: data.id });
+		logCrud(context.user, "admin-role", "delete", { id: data.id });
 	});

@@ -5,12 +5,12 @@
 import { Readable } from "node:stream";
 import { createFileRoute } from "@tanstack/react-router";
 import { adminPermRouteGuard } from "#/middleware/admin-auth";
-import { PERMISSIONS } from "#/permissions/permissions";
+import { ADMIN_PERMISSIONS } from "#/permissions/admin-permissions";
 import { createFileReadStream } from "#/services/file-explorer/file-explorer.server";
 
 export const Route = createFileRoute("/api/download/file-explorer/$")({
 	server: {
-		middleware: [adminPermRouteGuard(PERMISSIONS.FILE_EXPLORER_VIEW)],
+		middleware: [adminPermRouteGuard(ADMIN_PERMISSIONS.FILE_EXPLORER_VIEW)],
 		handlers: {
 			GET: async ({ params }) => {
 				try {

@@ -4,7 +4,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { adminPermGuard } from "#/middleware/admin-auth";
-import { PERMISSIONS } from "#/permissions/permissions";
+import { ADMIN_PERMISSIONS } from "#/permissions/admin-permissions";
 import { getTrackAnalytics } from "#/services/track/track.server";
 
 export const analyticsQuerySchema = z.object({
@@ -15,6 +15,6 @@ export const analyticsQuerySchema = z.object({
 
 /** 获取事件分析数据 */
 export const getTrackAnalyticsSFn = createServerFn({ method: "GET" })
-	.middleware([adminPermGuard(PERMISSIONS.TRACK_QUERY)])
+	.middleware([adminPermGuard(ADMIN_PERMISSIONS.TRACK_QUERY)])
 	.inputValidator(analyticsQuerySchema)
 	.handler(async ({ data }) => getTrackAnalytics(data));

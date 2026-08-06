@@ -8,7 +8,7 @@ import { DEFAULT_LOCALE, SUPPORTED_LOCALES } from "@fsdx/core/i18n-types";
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { adminPermGuard } from "#/middleware/admin-auth";
-import { PERMISSIONS } from "#/permissions/permissions";
+import { ADMIN_PERMISSIONS } from "#/permissions/admin-permissions";
 import { getConfig } from "#/services/config/config.server";
 import {
 	getFieldTranslations,
@@ -30,7 +30,7 @@ export const getLocaleBundleSFn = createServerFn({ method: "GET" }).handler(
 
 /** 获取某实体某字段的所有语言翻译（抽屉用） */
 export const getFieldTranslationsSFn = createServerFn({ method: "GET" })
-	.middleware([adminPermGuard(PERMISSIONS.TRANSLATION_VIEW)])
+	.middleware([adminPermGuard(ADMIN_PERMISSIONS.TRANSLATION_VIEW)])
 	.inputValidator(
 		z.object({
 			entityType: z.string(),
@@ -44,7 +44,7 @@ export const getFieldTranslationsSFn = createServerFn({ method: "GET" })
 
 /** 实体翻译创建/更新 */
 export const saveContentTranslationSFn = createServerFn({ method: "POST" })
-	.middleware([adminPermGuard(PERMISSIONS.TRANSLATION_MANAGE)])
+	.middleware([adminPermGuard(ADMIN_PERMISSIONS.TRANSLATION_MANAGE)])
 	.inputValidator(
 		z.object({
 			id: z.string().optional(),
@@ -70,7 +70,7 @@ export const saveContentTranslationSFn = createServerFn({ method: "POST" })
 
 /** AI 翻译字段内容（使用 fast 模型） */
 export const aiTranslateFieldSFn = createServerFn({ method: "POST" })
-	.middleware([adminPermGuard(PERMISSIONS.TRANSLATION_MANAGE)])
+	.middleware([adminPermGuard(ADMIN_PERMISSIONS.TRANSLATION_MANAGE)])
 	.inputValidator(
 		z.object({
 			sourceText: z.string().min(1, "源文本不能为空"),

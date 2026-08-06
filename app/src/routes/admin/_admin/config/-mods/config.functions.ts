@@ -5,7 +5,7 @@
 import { toJson } from "@fsdx/core/export";
 import { createServerFn } from "@tanstack/react-start";
 import { adminPermGuard } from "#/middleware/admin-auth";
-import { PERMISSIONS } from "#/permissions/permissions";
+import { ADMIN_PERMISSIONS } from "#/permissions/admin-permissions";
 import {
 	createConfig,
 	deleteConfig,
@@ -23,14 +23,14 @@ import { importConfigs } from "./config.server";
 
 /** 获取配置列表 */
 export const getConfigListSFn = createServerFn({ method: "GET" })
-	.middleware([adminPermGuard(PERMISSIONS.CONFIG_VIEW)])
+	.middleware([adminPermGuard(ADMIN_PERMISSIONS.CONFIG_VIEW)])
 	.handler(async () => {
 		return getConfigList();
 	});
 
 /** 创建配置 */
 export const createConfigSFn = createServerFn({ method: "POST" })
-	.middleware([adminPermGuard(PERMISSIONS.CONFIG_CREATE)])
+	.middleware([adminPermGuard(ADMIN_PERMISSIONS.CONFIG_CREATE)])
 	.inputValidator(createConfigSchema)
 	.handler(async ({ data, context }) => {
 		const result = await createConfig(data);
@@ -43,7 +43,7 @@ export const createConfigSFn = createServerFn({ method: "POST" })
 
 /** 更新配置 */
 export const updateConfigSFn = createServerFn({ method: "POST" })
-	.middleware([adminPermGuard(PERMISSIONS.CONFIG_EDIT)])
+	.middleware([adminPermGuard(ADMIN_PERMISSIONS.CONFIG_EDIT)])
 	.inputValidator(updateConfigSchema)
 	.handler(async ({ data, context }) => {
 		const { id, ...rest } = data;
@@ -54,7 +54,7 @@ export const updateConfigSFn = createServerFn({ method: "POST" })
 
 /** 删除配置 */
 export const deleteConfigSFn = createServerFn({ method: "POST" })
-	.middleware([adminPermGuard(PERMISSIONS.CONFIG_DELETE)])
+	.middleware([adminPermGuard(ADMIN_PERMISSIONS.CONFIG_DELETE)])
 	.inputValidator(deleteConfigSchema)
 	.handler(async ({ data, context }) => {
 		await deleteConfig(data.id);
@@ -64,7 +64,7 @@ export const deleteConfigSFn = createServerFn({ method: "POST" })
 
 /** 导出配置数据（JSON） */
 export const exportConfigsSFn = createServerFn({ method: "GET" })
-	.middleware([adminPermGuard(PERMISSIONS.CONFIG_EXPORT)])
+	.middleware([adminPermGuard(ADMIN_PERMISSIONS.CONFIG_EXPORT)])
 	.handler(async () => {
 		const configs = await getConfigList();
 		return toJson({ configs });
@@ -89,7 +89,7 @@ export interface ConfigImportResult {
 
 /** 导入配置数据（JSON） */
 export const importConfigsSFn = createServerFn({ method: "POST" })
-	.middleware([adminPermGuard(PERMISSIONS.CONFIG_IMPORT)])
+	.middleware([adminPermGuard(ADMIN_PERMISSIONS.CONFIG_IMPORT)])
 	.inputValidator(configImportSchema)
 	.handler(async ({ data, context }) => {
 		const result = await importConfigs(data);

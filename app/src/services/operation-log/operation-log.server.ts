@@ -96,7 +96,7 @@ export interface CrudLogTarget {
 /**
  * 写操作审计日志（fire-and-forget）
  * 将 SFn handler 中重复的操作人/模块/targetType 装配收敛为一行调用：
- * logCrud(context.user, "role", "create", { id: result.id, name: result.name })
+ * logCrud(context.user, "admin-role", "create", { id: result.id, name: result.name })
  */
 export function logCrud(
 	operator: CrudLogOperator,

@@ -4,7 +4,7 @@
 import { Readable } from "node:stream";
 import { createFileRoute } from "@tanstack/react-router";
 import { ApiAuthError, verifyAdminPerm } from "#/middleware/api-auth";
-import { PERMISSIONS } from "#/permissions/permissions";
+import { ADMIN_PERMISSIONS } from "#/permissions/admin-permissions";
 import { getLogRawContent } from "#/services/logs/logs.server";
 
 export const Route = createFileRoute("/api/download/log/$id")({
@@ -12,7 +12,7 @@ export const Route = createFileRoute("/api/download/log/$id")({
 		handlers: {
 			GET: async ({ params }) => {
 				try {
-					await verifyAdminPerm(PERMISSIONS.LOG_DOWNLOAD);
+					await verifyAdminPerm(ADMIN_PERMISSIONS.LOG_DOWNLOAD);
 				} catch (err) {
 					if (err instanceof ApiAuthError) {
 						return new Response(JSON.stringify({ error: err.message }), {

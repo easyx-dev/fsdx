@@ -6,7 +6,7 @@ import { type ChatMessage, deepChat, fastChat } from "@fsdx/core/ai";
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { adminPermGuard } from "#/middleware/admin-auth";
-import { PERMISSIONS } from "#/permissions/permissions";
+import { ADMIN_PERMISSIONS } from "#/permissions/admin-permissions";
 
 export const aiTestSchema = z.object({
 	modelType: z.enum(["deep", "fast"]),
@@ -17,7 +17,7 @@ export const aiTestSchema = z.object({
 });
 
 export const aiTestSFn = createServerFn({ method: "POST" })
-	.middleware([adminPermGuard(PERMISSIONS.AI_TEST)])
+	.middleware([adminPermGuard(ADMIN_PERMISSIONS.AI_TEST)])
 	.inputValidator(aiTestSchema)
 	.handler(async ({ data }) => {
 		const messages: ChatMessage[] = [];

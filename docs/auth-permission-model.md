@@ -262,12 +262,14 @@ sequenceDiagram
 | `admin` | `view`, `create`, `edit`, `delete` |
 | `client` | `view`, `create`, `edit`, `delete` |
 | `admin-role` | `view`, `create`, `edit`, `delete` |
-| `dict` | `view`, `create`, `edit`, `delete`, `create_item`, `edit_item`, `delete_item`, `export`, `import` |
+| `dict` | `view`, `create`, `edit`, `delete`, `create-item`, `edit-item`, `delete-item`, `export`, `import` |
 | `config` | `view`, `create`, `edit`, `delete`, `export`, `import` |
 | `file` | `view`, `upload`, `edit`, `delete` |
+| `file-explorer` | `view`, `upload`, `delete`, `rename`, `mkdir` |
 | `log` | `view`, `download` |
 | `dashboard` | `view` |
-| `event` | `view`, `query`, `manage` |
+| `track` | `view`, `query`, `manage` |
+| `message` | `view`, `send`, `delete` |
 | `translation` | `view`, `manage`, `export`, `import` |
 | `ai` | `test` |
 
@@ -296,9 +298,9 @@ flowchart TD
 
 关键函数：
 - `matchPermission(rolePermissions, requiredCode)` — 核心匹配逻辑
-- `hasPermission(rolePermissions, PermissionDef)` — 单个权限校验
-- `hasAnyPermission(rolePermissions, PermissionDef[])` — 任意满足（OR）
-- `hasAllPermissions(rolePermissions, PermissionDef[])` — 全部满足（AND）
+- `hasAdminPermission(rolePermissions, AdminPermissionDef)` — 单个权限校验
+- `hasAnyAdminPermission(rolePermissions, AdminPermissionDef[])` — 任意满足（OR）
+- `hasAllAdminPermissions(rolePermissions, AdminPermissionDef[])` — 全部满足（AND）
 
 ### 角色-用户-权限关系
 
@@ -351,7 +353,7 @@ flowchart TD
     CSRF --> Locale
     Locale --> PermGuard
     PermGuard -->|".middleware([adminAuthGuard])"| AuthGuard
-    AuthGuard -->|"注入 AdminAuthContext"| PermCheck{"hasPermission()"}
+    AuthGuard -->|"注入 AdminAuthContext"| PermCheck{"hasAdminPermission()"}
     PermCheck -->|"✅ 有权限"| Handler
     PermCheck -->|"❌ 无权限"| Error403["throw AdminAuthError('权限不足', 403)"]
 
@@ -421,7 +423,7 @@ createMiddleware({ type: "function" })
   // 第二步：校验指定权限
   .server(async (opts) => {
     const ctx = opts.context as AdminAuthContext;
-    if (!hasPermission(ctx.rolePermissions, required)) {
+    if (!hasAdminPermission(ctx.rolePermissions, required)) {
       throw new AdminAuthError("权限不足", 403);
     }
     return opts.next();
@@ -438,7 +440,7 @@ export const myFn = createServerFn({ method: "GET" })
 
 // 需登录 + 特定权限
 export const deleteNewsFn = createServerFn({ method: "POST" })
-  .middleware([adminPermGuard(PERMISSIONS.NEWS_DELETE)])
+  .middleware([adminPermGuard(ADMIN_PERMISSIONS.NEWS_DELETE)])
   .handler(async () => { ... });
 ```
 
@@ -602,7 +604,7 @@ const csrfMiddleware = createCsrfMiddleware({
 | 文件 | 职责 |
 |------|------|
 | `src/lib/jwt/jwt.ts` | JWT 签发/校验、Cookie 名称常量 |
-| `src/permissions/permissions.ts` | 权限码常量定义、权限匹配算法 |
+| `src/permissions/admin-permissions.ts` | 权限码常量定义、权限匹配算法 |
 | `src/middleware/admin-auth.ts` | adminAuthGuard / adminPermGuard 中间件 |
 | `src/services/admin-auth/admin-auth.server.ts` | 管理员登录、当前管理员查询 |
 | `src/services/client-auth/client-auth.server.ts` | 客户端登录、注册、当前用户查询（含缓存） |

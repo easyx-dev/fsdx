@@ -4,14 +4,14 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { adminPermGuard } from "#/middleware/admin-auth";
-import { PERMISSIONS } from "#/permissions/permissions";
+import { ADMIN_PERMISSIONS } from "#/permissions/admin-permissions";
 import { deleteFile, makePermanent } from "#/services/file/file.server";
 import { logCrud } from "#/services/operation-log/operation-log.server";
 
 export const idSchema = z.object({ id: z.string().min(1) });
 
 export const deleteFileSFn = createServerFn({ method: "POST" })
-	.middleware([adminPermGuard(PERMISSIONS.FILE_DELETE)])
+	.middleware([adminPermGuard(ADMIN_PERMISSIONS.FILE_DELETE)])
 	.inputValidator(idSchema)
 	.handler(async ({ data, context }) => {
 		await deleteFile(data.id);
@@ -20,7 +20,7 @@ export const deleteFileSFn = createServerFn({ method: "POST" })
 	});
 
 export const makePermanentSFn = createServerFn({ method: "POST" })
-	.middleware([adminPermGuard(PERMISSIONS.FILE_EDIT)])
+	.middleware([adminPermGuard(ADMIN_PERMISSIONS.FILE_EDIT)])
 	.inputValidator(idSchema)
 	.handler(async ({ data, context }) => {
 		await makePermanent(data.id);

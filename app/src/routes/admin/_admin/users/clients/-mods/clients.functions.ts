@@ -3,7 +3,7 @@
  */
 import { createServerFn } from "@tanstack/react-start";
 import { adminPermGuard } from "#/middleware/admin-auth";
-import { PERMISSIONS } from "#/permissions/permissions";
+import { ADMIN_PERMISSIONS } from "#/permissions/admin-permissions";
 import { logCrud } from "#/services/operation-log/operation-log.server";
 import {
 	createSchema,
@@ -23,13 +23,13 @@ import {
 
 /** 获取客户端用户列表（分页、筛选、排序） */
 export const getListSFn = createServerFn({ method: "GET" })
-	.middleware([adminPermGuard(PERMISSIONS.CLIENT_VIEW)])
+	.middleware([adminPermGuard(ADMIN_PERMISSIONS.CLIENT_VIEW)])
 	.inputValidator(listSchema)
 	.handler(async ({ data }) => getClientUserList(data));
 
 /** 新建客户端用户 */
 export const createSFn = createServerFn({ method: "POST" })
-	.middleware([adminPermGuard(PERMISSIONS.CLIENT_CREATE)])
+	.middleware([adminPermGuard(ADMIN_PERMISSIONS.CLIENT_CREATE)])
 	.inputValidator(createSchema)
 	.handler(async ({ data, context }) => {
 		const record = await createClientUser(data);
@@ -45,7 +45,7 @@ export const createSFn = createServerFn({ method: "POST" })
 
 /** 更新客户端用户信息 */
 export const updateSFn = createServerFn({ method: "POST" })
-	.middleware([adminPermGuard(PERMISSIONS.CLIENT_EDIT)])
+	.middleware([adminPermGuard(ADMIN_PERMISSIONS.CLIENT_EDIT)])
 	.inputValidator(updateSchema)
 	.handler(async ({ data, context }) => {
 		const result = await updateClientUser(data.id, data);
@@ -61,7 +61,7 @@ export const updateSFn = createServerFn({ method: "POST" })
 
 /** 删除客户端用户（软删除） */
 export const deleteSFn = createServerFn({ method: "POST" })
-	.middleware([adminPermGuard(PERMISSIONS.CLIENT_DELETE)])
+	.middleware([adminPermGuard(ADMIN_PERMISSIONS.CLIENT_DELETE)])
 	.inputValidator(idSchema)
 	.handler(async ({ data, context }) => {
 		const existing = await getClientUser(data.id);
@@ -78,7 +78,7 @@ export const deleteSFn = createServerFn({ method: "POST" })
 
 /** 重置客户端用户密码 */
 export const resetPwdSFn = createServerFn({ method: "POST" })
-	.middleware([adminPermGuard(PERMISSIONS.CLIENT_EDIT)])
+	.middleware([adminPermGuard(ADMIN_PERMISSIONS.CLIENT_EDIT)])
 	.inputValidator(resetPwdSchema)
 	.handler(async ({ data, context }) => {
 		const existing = await getClientUser(data.id);

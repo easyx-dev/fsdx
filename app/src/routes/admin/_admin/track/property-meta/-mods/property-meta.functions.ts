@@ -3,7 +3,7 @@
  */
 import { createServerFn } from "@tanstack/react-start";
 import { adminPermGuard } from "#/middleware/admin-auth";
-import { PERMISSIONS } from "#/permissions/permissions";
+import { ADMIN_PERMISSIONS } from "#/permissions/admin-permissions";
 import {
 	createTrackPropertyMeta,
 	deleteTrackPropertyMeta,
@@ -27,7 +27,7 @@ export const PROPERTY_DATA_TYPES = [
 
 /** 创建元属性 */
 export const createPropertyMetaSFn = createServerFn({ method: "POST" })
-	.middleware([adminPermGuard(PERMISSIONS.TRACK_MANAGE)])
+	.middleware([adminPermGuard(ADMIN_PERMISSIONS.TRACK_MANAGE)])
 	.inputValidator(propertyMetaCreateSchema)
 	.handler(async ({ data }) => {
 		const { key, ...input } = data;
@@ -36,7 +36,7 @@ export const createPropertyMetaSFn = createServerFn({ method: "POST" })
 
 /** 更新元属性 */
 export const updatePropertyMetaSFn = createServerFn({ method: "POST" })
-	.middleware([adminPermGuard(PERMISSIONS.TRACK_MANAGE)])
+	.middleware([adminPermGuard(ADMIN_PERMISSIONS.TRACK_MANAGE)])
 	.inputValidator(propertyMetaUpdateSchema)
 	.handler(async ({ data }) => {
 		const { key, ...input } = data;
@@ -45,6 +45,6 @@ export const updatePropertyMetaSFn = createServerFn({ method: "POST" })
 
 /** 删除元属性 */
 export const deletePropertyMetaSFn = createServerFn({ method: "POST" })
-	.middleware([adminPermGuard(PERMISSIONS.TRACK_MANAGE)])
+	.middleware([adminPermGuard(ADMIN_PERMISSIONS.TRACK_MANAGE)])
 	.inputValidator(propertyMetaDeleteSchema)
 	.handler(async ({ data }) => deleteTrackPropertyMeta(data.key));

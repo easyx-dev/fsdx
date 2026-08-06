@@ -316,9 +316,9 @@ import { FieldTranslationDrawer } from "#/components/admin/FieldTranslationDrawe
 
 ### 权限码
 
-`src/permissions/permissions.ts` 中定义：
-- `PERMISSIONS.TRANSLATION_VIEW` — `translation:view`
-- `PERMISSIONS.TRANSLATION_MANAGE` — `translation:manage`
+`src/permissions/admin-permissions.ts` 中定义：
+- `ADMIN_PERMISSIONS.TRANSLATION_VIEW` — `translation:view`
+- `ADMIN_PERMISSIONS.TRANSLATION_MANAGE` — `translation:manage`
 
 ## 缓存机制
 

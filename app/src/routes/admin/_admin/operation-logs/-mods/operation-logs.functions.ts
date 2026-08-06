@@ -4,7 +4,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { adminPermGuard } from "#/middleware/admin-auth";
-import { PERMISSIONS } from "#/permissions/permissions";
+import { ADMIN_PERMISSIONS } from "#/permissions/admin-permissions";
 import {
 	getOperationLogModules,
 	searchOperationLogs,
@@ -38,7 +38,7 @@ export const searchOperationLogsSchema = z.object({
 
 /** 分页查询操作日志 */
 export const searchOperationLogsSFn = createServerFn({ method: "GET" })
-	.middleware([adminPermGuard(PERMISSIONS.LOG_VIEW)])
+	.middleware([adminPermGuard(ADMIN_PERMISSIONS.LOG_VIEW)])
 	.inputValidator(searchOperationLogsSchema)
 	.handler(async ({ data }) => {
 		const result = await searchOperationLogs(data);
@@ -63,7 +63,7 @@ export const searchOperationLogsSFn = createServerFn({ method: "GET" })
 
 /** 获取操作模块列表 */
 export const getOperationLogModulesSFn = createServerFn({ method: "GET" })
-	.middleware([adminPermGuard(PERMISSIONS.LOG_VIEW)])
+	.middleware([adminPermGuard(ADMIN_PERMISSIONS.LOG_VIEW)])
 	.handler(async () => {
 		return getOperationLogModules();
 	});

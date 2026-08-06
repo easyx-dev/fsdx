@@ -55,6 +55,9 @@
 ### Refactor
 
 - **权限模块迁至顶层 `src/permissions/`**：权限码从 `src/constants/permissions/` 提升为顶层领域模块（与 `src/db/` 同级），30 处 `#/constants/permissions/*` 引用改为 `#/permissions/*`，同步更新 AGENTS.md 与 skill 文档路径
+- **权限命名全对称（破坏性重构）**：`permissions.ts` → `admin-permissions.ts`，符号全量加 `Admin` 前缀（`PERMISSIONS`→`ADMIN_PERMISSIONS`、`PermissionDef`→`AdminPermissionDef`、`hasPermission`→`hasAdminPermission` 等），与 `client-permissions.ts` 的 `Client*` 命名对齐
+- **权限码分隔符规范化**：`file_explorer:*`→`file-explorer:*`、`dict:*_item`→`dict:*-item`；审计模块名 `file_explorer`/`admin_role` 同步为 kebab（`operation_log.module` 数据格式变更）
+- **组件命名规范化**：`components/admin/nav-config.tsx` → `NavConfig.tsx`
 
 ## [1.0.0] - 2026-06-23
 

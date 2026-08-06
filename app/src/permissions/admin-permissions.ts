@@ -7,7 +7,7 @@ import { matchPermission } from "@fsdx/core/match-permission";
 
 /**
  * 创建权限码常量
- * 返回值即权限的完整定义对象，直接作为 adminPermGuard / hasPermission 的入参
+ * 返回值即权限的完整定义对象，直接作为 adminPermGuard / hasAdminPermission 的入参
  */
 function definePermission<C extends string, N extends string, D extends string>(
 	code: C,
@@ -20,7 +20,7 @@ function definePermission<C extends string, N extends string, D extends string>(
 
 // ─── 权限码常量 ───
 
-export const PERMISSIONS = {
+export const ADMIN_PERMISSIONS = {
 	// 新闻管理
 	NEWS_VIEW: definePermission(
 		"news:view",
@@ -134,17 +134,17 @@ export const PERMISSIONS = {
 	DICT_EDIT: definePermission("dict:edit", "编辑字典", "允许编辑字典类型信息"),
 	DICT_DELETE: definePermission("dict:delete", "删除字典", "允许删除字典类型"),
 	DICT_CREATE_ITEM: definePermission(
-		"dict:create_item",
+		"dict:create-item",
 		"创建字典条目",
 		"允许在字典中新增条目",
 	),
 	DICT_EDIT_ITEM: definePermission(
-		"dict:edit_item",
+		"dict:edit-item",
 		"编辑字典条目",
 		"允许编辑字典条目内容",
 	),
 	DICT_DELETE_ITEM: definePermission(
-		"dict:delete_item",
+		"dict:delete-item",
 		"删除字典条目",
 		"允许删除字典条目",
 	),
@@ -200,27 +200,27 @@ export const PERMISSIONS = {
 	FILE_DELETE: definePermission("file:delete", "删除文件", "允许删除文件"),
 	// 文件资源管理器
 	FILE_EXPLORER_VIEW: definePermission(
-		"file_explorer:view",
+		"file-explorer:view",
 		"浏览存储目录",
 		"允许浏览 STORAGE_DIR 目录结构",
 	),
 	FILE_EXPLORER_UPLOAD: definePermission(
-		"file_explorer:upload",
+		"file-explorer:upload",
 		"上传文件",
 		"允许向存储目录上传文件",
 	),
 	FILE_EXPLORER_DELETE: definePermission(
-		"file_explorer:delete",
+		"file-explorer:delete",
 		"删除条目",
 		"允许删除存储目录中的文件或目录",
 	),
 	FILE_EXPLORER_RENAME: definePermission(
-		"file_explorer:rename",
+		"file-explorer:rename",
 		"重命名条目",
 		"允许重命名存储目录中的文件或目录",
 	),
 	FILE_EXPLORER_MKDIR: definePermission(
-		"file_explorer:mkdir",
+		"file-explorer:mkdir",
 		"创建目录",
 		"允许在存储目录中创建子目录",
 	),
@@ -303,25 +303,28 @@ export const PERMISSIONS = {
 // ─── 权限匹配 ───
 
 /** 权限完整定义对象类型 */
-export type PermissionDef = (typeof PERMISSIONS)[keyof typeof PERMISSIONS];
+export type AdminPermissionDef =
+	(typeof ADMIN_PERMISSIONS)[keyof typeof ADMIN_PERMISSIONS];
 
 /** 权限码字符串类型 */
-export type PermissionCode = PermissionDef["code"];
+export type AdminPermissionCode = AdminPermissionDef["code"];
 
-/** 所有权限码的元数据映射（从 PERMISSIONS 自动派生） */
-export const PERMISSION_META: Record<PermissionCode, PermissionDef> =
-	Object.fromEntries(
-		Object.values(PERMISSIONS).map((d) => [d.code, d]),
-	) as Record<PermissionCode, PermissionDef>;
+/** 所有权限码的元数据映射（从 ADMIN_PERMISSIONS 自动派生） */
+export const ADMIN_PERMISSION_META: Record<
+	AdminPermissionCode,
+	AdminPermissionDef
+> = Object.fromEntries(
+	Object.values(ADMIN_PERMISSIONS).map((d) => [d.code, d]),
+) as Record<AdminPermissionCode, AdminPermissionDef>;
 
 /** 所有权限码列表 */
-export const ALL_PERMISSIONS: PermissionCode[] = Object.values(PERMISSIONS).map(
-	(d) => d.code,
-);
+export const ALL_ADMIN_PERMISSIONS: AdminPermissionCode[] = Object.values(
+	ADMIN_PERMISSIONS,
+).map((d) => d.code);
 
-/** 按分组归类的权限列表（从 PERMISSIONS 自动派生） */
-export const PERMISSIONS_BY_GROUP: Record<string, PermissionDef[]> =
-	Object.values(PERMISSIONS).reduce<Record<string, PermissionDef[]>>(
+/** 按分组归类的权限列表（从 ADMIN_PERMISSIONS 自动派生） */
+export const ADMIN_PERMISSIONS_BY_GROUP: Record<string, AdminPermissionDef[]> =
+	Object.values(ADMIN_PERMISSIONS).reduce<Record<string, AdminPermissionDef[]>>(
 		(acc, d) => {
 			const list = acc[d.group] ?? [];
 			list.push(d);
@@ -334,9 +337,9 @@ export const PERMISSIONS_BY_GROUP: Record<string, PermissionDef[]> =
 /**
  * 检查角色是否拥有指定权限
  */
-export function hasPermission(
+export function hasAdminPermission(
 	rolePermissions: string[],
-	required: PermissionDef,
+	required: AdminPermissionDef,
 ): boolean {
 	return matchPermission(rolePermissions, required.code);
 }
@@ -344,9 +347,9 @@ export function hasPermission(
 /**
  * 检查角色是否拥有任一权限
  */
-export function hasAnyPermission(
+export function hasAnyAdminPermission(
 	rolePermissions: string[],
-	required: PermissionDef[],
+	required: AdminPermissionDef[],
 ): boolean {
 	return required.some((p) => matchPermission(rolePermissions, p.code));
 }
@@ -354,9 +357,9 @@ export function hasAnyPermission(
 /**
  * 检查角色是否拥有全部权限
  */
-export function hasAllPermissions(
+export function hasAllAdminPermissions(
 	rolePermissions: string[],
-	required: PermissionDef[],
+	required: AdminPermissionDef[],
 ): boolean {
 	return required.every((p) => matchPermission(rolePermissions, p.code));
 }

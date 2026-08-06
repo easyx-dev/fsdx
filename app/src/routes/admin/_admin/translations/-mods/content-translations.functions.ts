@@ -6,7 +6,7 @@ import { toJson } from "@fsdx/core/export";
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { adminPermGuard } from "#/middleware/admin-auth";
-import { PERMISSIONS } from "#/permissions/permissions";
+import { ADMIN_PERMISSIONS } from "#/permissions/admin-permissions";
 import {
 	type ContentTranslationExportData,
 	deleteContentTranslation,
@@ -24,7 +24,7 @@ import {
 } from "./content-translations.schemas";
 
 export const getListSFn = createServerFn({ method: "GET" })
-	.middleware([adminPermGuard(PERMISSIONS.TRANSLATION_VIEW)])
+	.middleware([adminPermGuard(ADMIN_PERMISSIONS.TRANSLATION_VIEW)])
 	.inputValidator(getListSchema)
 	.handler(async ({ data }) =>
 		listContentTranslations(
@@ -33,7 +33,7 @@ export const getListSFn = createServerFn({ method: "GET" })
 	);
 
 export const saveSFn = createServerFn({ method: "POST" })
-	.middleware([adminPermGuard(PERMISSIONS.TRANSLATION_MANAGE)])
+	.middleware([adminPermGuard(ADMIN_PERMISSIONS.TRANSLATION_MANAGE)])
 	.inputValidator(formSchema)
 	.handler(async ({ data, context }) => {
 		const result = await upsertContentTranslation(
@@ -46,7 +46,7 @@ export const saveSFn = createServerFn({ method: "POST" })
 	});
 
 export const deleteSFn = createServerFn({ method: "POST" })
-	.middleware([adminPermGuard(PERMISSIONS.TRANSLATION_MANAGE)])
+	.middleware([adminPermGuard(ADMIN_PERMISSIONS.TRANSLATION_MANAGE)])
 	.inputValidator(deleteSchema)
 	.handler(async ({ data, context }) => {
 		await deleteContentTranslation(data.id);
@@ -61,14 +61,14 @@ export const deleteSFn = createServerFn({ method: "POST" })
 	});
 
 export const exportContentTranslationsSFn = createServerFn({ method: "GET" })
-	.middleware([adminPermGuard(PERMISSIONS.TRANSLATION_EXPORT)])
+	.middleware([adminPermGuard(ADMIN_PERMISSIONS.TRANSLATION_EXPORT)])
 	.handler(async () => {
 		const translations = await getAllContentTranslationsForExport();
 		return toJson({ translations });
 	});
 
 export const importContentTranslationsSFn = createServerFn({ method: "POST" })
-	.middleware([adminPermGuard(PERMISSIONS.TRANSLATION_IMPORT)])
+	.middleware([adminPermGuard(ADMIN_PERMISSIONS.TRANSLATION_IMPORT)])
 	.inputValidator(
 		z.object({
 			data: z.object({

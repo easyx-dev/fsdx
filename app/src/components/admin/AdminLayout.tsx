@@ -23,7 +23,7 @@ import {
 	useState,
 } from "react";
 import { useAdminAuth } from "#/components/admin/AdminAuthProvider";
-import { NAV_GROUPS } from "#/components/admin/nav-config";
+import { NAV_GROUPS } from "#/components/admin/NavConfig";
 import { useAdminConfigStore } from "#/components/global-store/admin-config-store";
 import { useAdminDictStore } from "#/components/global-store/admin-dict-store";
 import { Logo } from "#/components/Logo";

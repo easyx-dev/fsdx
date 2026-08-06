@@ -5,7 +5,10 @@
  */
 import { getCookie } from "@tanstack/react-start/server";
 import { COOKIE_NAMES } from "#/constants/cookie-names";
-import { hasPermission, type PermissionDef } from "#/permissions/permissions";
+import {
+	type AdminPermissionDef,
+	hasAdminPermission,
+} from "#/permissions/admin-permissions";
 import { AdminAuthError, resolveAdminAuthContext } from "./admin-auth";
 
 /** API 路由鉴权错误（兼容旧调用方，继承 AdminAuthError 语义） */
@@ -44,9 +47,11 @@ export async function verifyAdminAuth(): Promise<{
  * 验证管理端 API 请求的登录状态并校验指定权限
  * 内部组合 verifyAdminAuth，先验证登录再校验权限
  */
-export async function verifyAdminPerm(required: PermissionDef): Promise<void> {
+export async function verifyAdminPerm(
+	required: AdminPermissionDef,
+): Promise<void> {
 	const { rolePermissions } = await verifyAdminAuth();
-	if (!hasPermission(rolePermissions, required)) {
+	if (!hasAdminPermission(rolePermissions, required)) {
 		throw new ApiAuthError("权限不足", 403);
 	}
 }

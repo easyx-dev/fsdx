@@ -4,7 +4,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { adminPermGuard } from "#/middleware/admin-auth";
-import { PERMISSIONS } from "#/permissions/permissions";
+import { ADMIN_PERMISSIONS } from "#/permissions/admin-permissions";
 import {
 	getTrackEventNames,
 	searchTrackEvents,
@@ -25,11 +25,11 @@ export const trackEventQuerySchema = z.object({
 
 /** 分页查询埋点事件 */
 export const searchTrackEventsSFn = createServerFn({ method: "GET" })
-	.middleware([adminPermGuard(PERMISSIONS.TRACK_QUERY)])
+	.middleware([adminPermGuard(ADMIN_PERMISSIONS.TRACK_QUERY)])
 	.inputValidator(trackEventQuerySchema)
 	.handler(async ({ data }) => searchTrackEvents(data));
 
 /** 获取已有的事件名称列表 */
 export const getTrackEventNamesSFn = createServerFn({ method: "GET" })
-	.middleware([adminPermGuard(PERMISSIONS.TRACK_QUERY)])
+	.middleware([adminPermGuard(ADMIN_PERMISSIONS.TRACK_QUERY)])
 	.handler(async () => getTrackEventNames());

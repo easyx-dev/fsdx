@@ -71,7 +71,7 @@ export function createNews(input: CreateNewsInput) { ... }
 ```ts
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { PERMISSIONS } from "#/permissions/permissions";
+import { ADMIN_PERMISSIONS } from "#/permissions/admin-permissions";
 import { adminPermGuard } from "#/middleware/admin-auth";
 import {
   getProductList,
@@ -92,14 +92,14 @@ const idSchema = z.object({ id: z.string().min(1) });
 
 // ── SFn 定义 ──
 const getProductListSFn = createServerFn({ method: "GET" })
-  .middleware([adminPermGuard(PERMISSIONS.PRODUCT_VIEW)])
+  .middleware([adminPermGuard(ADMIN_PERMISSIONS.PRODUCT_VIEW)])
   .inputValidator(listSchema)
   .handler(async ({ data: { status, page = 1, sortField, sortOrder } }) => {
     return getProductList({ status, page, pageSize: 20, sortField, sortOrder });
   });
 
 const deleteProductSFn = createServerFn({ method: "POST" })
-  .middleware([adminPermGuard(PERMISSIONS.PRODUCT_DELETE)])
+  .middleware([adminPermGuard(ADMIN_PERMISSIONS.PRODUCT_DELETE)])
   .inputValidator(idSchema)
   .handler(async ({ data: { id }, context }) => {
     const record = await getProductById(id);
@@ -115,7 +115,7 @@ const deleteProductSFn = createServerFn({ method: "POST" })
 
 ```ts
 import { createServerFn } from "@tanstack/react-start";
-import { PERMISSIONS } from "#/permissions/permissions";
+import { ADMIN_PERMISSIONS } from "#/permissions/admin-permissions";
 import { adminPermGuard } from "#/middleware/admin-auth";
 import {
   createProduct,
@@ -130,14 +130,14 @@ import {
 } from "./product.schemas";
 
 export const getProductByIdSFn = createServerFn({ method: "GET" })
-  .middleware([adminPermGuard(PERMISSIONS.PRODUCT_VIEW)])
+  .middleware([adminPermGuard(ADMIN_PERMISSIONS.PRODUCT_VIEW)])
   .inputValidator(getProductSchema)
   .handler(async ({ data: { id } }) => {
     return getProductById(id);
   });
 
 export const createProductSFn = createServerFn({ method: "POST" })
-  .middleware([adminPermGuard(PERMISSIONS.PRODUCT_CREATE)])
+  .middleware([adminPermGuard(ADMIN_PERMISSIONS.PRODUCT_CREATE)])
   .inputValidator(createProductSchema)
   .handler(async ({ data, context }) => {
     const record = await createProduct({
@@ -149,7 +149,7 @@ export const createProductSFn = createServerFn({ method: "POST" })
   });
 
 export const updateProductSFn = createServerFn({ method: "POST" })
-  .middleware([adminPermGuard(PERMISSIONS.PRODUCT_EDIT)])
+  .middleware([adminPermGuard(ADMIN_PERMISSIONS.PRODUCT_EDIT)])
   .inputValidator(updateProductSchema)
   .handler(async ({ data, context }) => {
     const record = await updateProduct(data.id, { ...data });
@@ -167,14 +167,14 @@ export const updateProductSFn = createServerFn({ method: "POST" })
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { toCsv, toJson } from "#/lib/export/export.utils";
-import { PERMISSIONS } from "#/permissions/permissions";
+import { ADMIN_PERMISSIONS } from "#/permissions/admin-permissions";
 import { adminPermGuard } from "#/middleware/admin-auth";
 import { getAllProductsForExport, PRODUCT_EXPORT_COLUMNS } from "./product.server";
 
 const exportSchema = z.object({ format: z.enum(["csv", "json"]) });
 
 export const exportProductsSFn = createServerFn({ method: "GET" })
-  .middleware([adminPermGuard(PERMISSIONS.PRODUCT_EXPORT)])
+  .middleware([adminPermGuard(ADMIN_PERMISSIONS.PRODUCT_EXPORT)])
   .inputValidator(exportSchema)
   .handler(async ({ data: { format } }) => {
     const records = await getAllProductsForExport();
@@ -192,9 +192,9 @@ export const exportProductsSFn = createServerFn({ method: "GET" })
 
 `src/lib/` 和 `src/services/` 下**禁止**直接放置文件，所有模块必须组织到独立子目录中：
 
-- `permissions/permissions.ts`（✅ 正确）
-- `permissions.ts`（❌ 错误）
-- 子目录内文件名与目录名对应（如 `permissions/permissions.ts`）
+- `news/news.server.ts`（✅ 正确）
+- `news.ts`（❌ 错误）
+- 子目录内文件名与目录名对应（如 `news/news.server.ts`）
 
 混合 barrel（同时导出类型和运行时值）应拆分：类型走 `.types.ts`，运行时值走 `.server.ts` 或 `.functions.ts`。
 

@@ -363,9 +363,9 @@ detail: jsonb(),
 
 ```
 src/permissions/
-├── permissions.ts
+├── admin-permissions.ts
 └── __tests__/
-    └── permissions.test.ts
+    └── admin-permissions.test.ts
 
 src/services/config/
 ├── config.server.ts
