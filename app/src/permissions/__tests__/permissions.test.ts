@@ -10,7 +10,7 @@ import {
 	hasAnyPermission,
 	hasPermission,
 	PERMISSIONS,
-} from "#/constants/permissions/permissions";
+} from "#/permissions/permissions";
 
 // ─── PermissionDef 辅助工具 ───
 

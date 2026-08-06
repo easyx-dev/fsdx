@@ -2,8 +2,8 @@
  * 新闻路由共享 Server Function
  */
 import { createServerFn } from "@tanstack/react-start";
-import { PERMISSIONS } from "#/constants/permissions/permissions";
 import { adminPermGuard } from "#/middleware/admin-auth";
+import { PERMISSIONS } from "#/permissions/permissions";
 import {
 	changeNewsStatus,
 	createNews,

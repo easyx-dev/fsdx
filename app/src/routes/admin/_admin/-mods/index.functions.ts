@@ -2,8 +2,8 @@
  * 仪表盘 Server Function
  */
 import { createServerFn } from "@tanstack/react-start";
-import { PERMISSIONS } from "#/constants/permissions/permissions";
 import { adminPermGuard } from "#/middleware/admin-auth";
+import { PERMISSIONS } from "#/permissions/permissions";
 import { getStats } from "./index.server";
 
 export interface DashboardStats {

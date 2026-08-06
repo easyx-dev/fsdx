@@ -3,8 +3,8 @@
  */
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { PERMISSIONS } from "#/constants/permissions/permissions";
 import { adminPermGuard } from "#/middleware/admin-auth";
+import { PERMISSIONS } from "#/permissions/permissions";
 import {
 	getTrackEventNames,
 	searchTrackEvents,

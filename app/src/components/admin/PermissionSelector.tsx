@@ -11,7 +11,7 @@ import { useMemo } from "react";
 import {
 	PERMISSIONS_BY_GROUP,
 	type PermissionDef,
-} from "#/constants/permissions/permissions";
+} from "#/permissions/permissions";
 
 interface GroupRow {
 	key: string;

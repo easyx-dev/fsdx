@@ -7,8 +7,8 @@ import type { Locale } from "@fsdx/core/i18n-types";
 import { DEFAULT_LOCALE, SUPPORTED_LOCALES } from "@fsdx/core/i18n-types";
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { PERMISSIONS } from "#/constants/permissions/permissions";
 import { adminPermGuard } from "#/middleware/admin-auth";
+import { PERMISSIONS } from "#/permissions/permissions";
 import { getConfig } from "#/services/config/config.server";
 import {
 	getFieldTranslations,

@@ -36,7 +36,7 @@ description: >
 |---|------|------|-----------|
 | 1 | `src/db/schema/<module-name>.ts` | Drizzle 表定义 | [db-schema](../db-schema/SKILL.md) |
 | 2 | `src/db/schema/index.ts` | 追加 export | — |
-| 3 | `src/lib/permissions/permissions.ts` | 追加权限码 | [permission](../permission/SKILL.md) |
+| 3 | `src/permissions/permissions.ts` | 追加权限码 | [permission](../permission/SKILL.md) |
 | 4 | `src/services/<module-name>/<module-name>.server.ts` | 服务层 helper | — |
 | 5 | `src/routes/admin/_admin/<module-name>/-mods/<module-name>.schemas.ts` | Zod Schema | — |
 | 6 | `src/routes/admin/_admin/<module-name>/-mods/<module-name>.functions.ts` | SFn 包装器 | [server-function](../server-function/SKILL.md) |
@@ -115,7 +115,7 @@ export { product } from "./product";
 
 > 详细规范参考 [permission](../permission/SKILL.md)
 
-编辑 `src/lib/permissions/permissions.ts`，在 `PERMISSIONS` 对象中追加：
+编辑 `src/permissions/permissions.ts`，在 `PERMISSIONS` 对象中追加：
 
 ```ts
 // 产品管理
@@ -319,7 +319,7 @@ export const updateProductSchema = z.object({
  * <实体中文名>表单 SFn 包装器
  */
 import { createServerFn } from "@tanstack/react-start";
-import { PERMISSIONS } from "#/lib/permissions/permissions";
+import { PERMISSIONS } from "#/permissions/permissions";
 import { adminPermGuard } from "#/middleware/admin-auth";
 import { logOperation } from "#/services/operation-log/operation-log.server";
 import {
@@ -555,7 +555,7 @@ import { z } from "zod";
 import { AdminPageContent } from "#/components/admin/AdminPageContent";
 import { ProTable } from "#/components/admin/ProTable";
 import { TableOperate } from "#/components/admin/TableOperate";
-import { PERMISSIONS } from "#/lib/permissions/permissions";
+import { PERMISSIONS } from "#/permissions/permissions";
 import { adminPermGuard } from "#/middleware/admin-auth";
 import type { ProductRecord } from "#/services/product/product.server";
 import {

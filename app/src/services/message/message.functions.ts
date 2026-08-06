@@ -2,9 +2,9 @@
  * 消息 Server Functions：客户端自助 + 管理端个人收件箱 + 管理端消息管理
  */
 import { createServerFn } from "@tanstack/react-start";
-import { PERMISSIONS } from "#/constants/permissions/permissions";
 import { adminAuthGuard, adminPermGuard } from "#/middleware/admin-auth";
 import { clientAuthGuard } from "#/middleware/client-auth";
+import { PERMISSIONS } from "#/permissions/permissions";
 import { logCrud } from "#/services/operation-log/operation-log.server";
 import {
 	adminMessageListSchema,

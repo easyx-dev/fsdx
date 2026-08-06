@@ -5,10 +5,7 @@
  */
 import { getCookie } from "@tanstack/react-start/server";
 import { COOKIE_NAMES } from "#/constants/cookie-names";
-import {
-	hasPermission,
-	type PermissionDef,
-} from "#/constants/permissions/permissions";
+import { hasPermission, type PermissionDef } from "#/permissions/permissions";
 import { AdminAuthError, resolveAdminAuthContext } from "./admin-auth";
 
 /** API 路由鉴权错误（兼容旧调用方，继承 AdminAuthError 语义） */

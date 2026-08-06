@@ -25,7 +25,7 @@ admin_user ──► role ──► permissions（jsonb string[]）
 ## PermissionDef 数据结构
 
 ```ts
-// src/lib/permissions/permissions.ts
+// src/permissions/permissions.ts
 {
   code: "news:view",   // 权限码，格式 {module}:{action}
   name: "查看新闻",     // 中文名称，在角色编辑页面展示
@@ -40,7 +40,7 @@ admin_user ──► role ──► permissions（jsonb string[]）
 
 ### Step 1：在 `permissions.ts` 中添加权限码
 
-编辑 `src/lib/permissions/permissions.ts`，在 `PERMISSIONS` 对象中按模块分组追加：
+编辑 `src/permissions/permissions.ts`，在 `PERMISSIONS` 对象中按模块分组追加：
 
 ```ts
 export const PERMISSIONS = {
@@ -75,7 +75,7 @@ export const PERMISSIONS = {
 > 详细规范参考 [server-function](../server-function/SKILL.md)
 
 ```ts
-import { PERMISSIONS } from "#/lib/permissions/permissions";
+import { PERMISSIONS } from "#/permissions/permissions";
 import { adminPermGuard } from "#/middleware/admin-auth";
 
 export const getProductListSFn = createServerFn({ method: "GET" })
@@ -98,7 +98,7 @@ export const createProductSFn = createServerFn({ method: "POST" })
 如果需要在管理端页面中根据权限控制按钮显隐：
 
 ```tsx
-import { hasPermission, PERMISSIONS } from "#/lib/permissions/permissions";
+import { hasPermission, PERMISSIONS } from "#/permissions/permissions";
 
 function AdminPage() {
   const { rolePermissions } = useAdminAuth();
@@ -134,7 +134,7 @@ function AdminPage() {
 ## 权限匹配逻辑
 
 ```ts
-// src/lib/permissions/permissions.ts — matchPermission()
+// src/permissions/permissions.ts — matchPermission()
 // 优先级：** → 精确匹配 → group:*
 
 // 1. ** 超级通配符（root 用户）
@@ -190,7 +190,7 @@ import {
   PERMISSION_META,      // Record<string, PermissionDef>
   ALL_PERMISSIONS,      // PermissionCode[]
   PERMISSIONS_BY_GROUP, // Record<string, PermissionDef[]>
-} from "#/lib/permissions/permissions";
+} from "#/permissions/permissions";
 
 // 在角色编辑页面获取权限分组列表
 Object.entries(PERMISSIONS_BY_GROUP).map(([group, permissions]) => (

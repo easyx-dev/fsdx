@@ -7,11 +7,8 @@ import { runWithRequestContext } from "@fsdx/core/request-context";
 import { createMiddleware } from "@tanstack/react-start";
 import { getCookie } from "@tanstack/react-start/server";
 import { COOKIE_NAMES } from "#/constants/cookie-names";
-import {
-	hasPermission,
-	type PermissionDef,
-} from "#/constants/permissions/permissions";
 import { jwt } from "#/lib/jwt/jwt";
+import { hasPermission, type PermissionDef } from "#/permissions/permissions";
 
 /** 通过中间件注入 handler 的管理端鉴权上下文 */
 export interface AdminAuthContext {

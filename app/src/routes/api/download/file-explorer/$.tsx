@@ -4,8 +4,8 @@
  */
 import { Readable } from "node:stream";
 import { createFileRoute } from "@tanstack/react-router";
-import { PERMISSIONS } from "#/constants/permissions/permissions";
 import { adminPermRouteGuard } from "#/middleware/admin-auth";
+import { PERMISSIONS } from "#/permissions/permissions";
 import { createFileReadStream } from "#/services/file-explorer/file-explorer.server";
 
 export const Route = createFileRoute("/api/download/file-explorer/$")({

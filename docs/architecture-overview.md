@@ -52,7 +52,7 @@
 │                           │                                        │
 │  ┌────────────────────────▼──────────────────────────────────┐    │
 │  │              基础库 (src/lib/)                              │    │
-│  │  cache / jwt / permissions / logger / scheduler / storage  │    │
+│  │  cache / jwt / logger / scheduler / storage  │    │
 │  │  ai / mail / sms / i18n / captcha / track / query / utils    │    │
 │  └────────────────────────┬──────────────────────────────────┘    │
 │                           │                                        │

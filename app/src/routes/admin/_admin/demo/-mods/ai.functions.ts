@@ -5,8 +5,8 @@
 import { type ChatMessage, deepChat, fastChat } from "@fsdx/core/ai";
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { PERMISSIONS } from "#/constants/permissions/permissions";
 import { adminPermGuard } from "#/middleware/admin-auth";
+import { PERMISSIONS } from "#/permissions/permissions";
 
 export const aiTestSchema = z.object({
 	modelType: z.enum(["deep", "fast"]),

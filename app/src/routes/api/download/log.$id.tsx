@@ -3,8 +3,8 @@
  */
 import { Readable } from "node:stream";
 import { createFileRoute } from "@tanstack/react-router";
-import { PERMISSIONS } from "#/constants/permissions/permissions";
 import { ApiAuthError, verifyAdminPerm } from "#/middleware/api-auth";
+import { PERMISSIONS } from "#/permissions/permissions";
 import { getLogRawContent } from "#/services/logs/logs.server";
 
 export const Route = createFileRoute("/api/download/log/$id")({

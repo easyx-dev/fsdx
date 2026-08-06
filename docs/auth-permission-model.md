@@ -602,7 +602,7 @@ const csrfMiddleware = createCsrfMiddleware({
 | 文件 | 职责 |
 |------|------|
 | `src/lib/jwt/jwt.ts` | JWT 签发/校验、Cookie 名称常量 |
-| `src/lib/permissions/permissions.ts` | 权限码常量定义、权限匹配算法 |
+| `src/permissions/permissions.ts` | 权限码常量定义、权限匹配算法 |
 | `src/middleware/admin-auth.ts` | adminAuthGuard / adminPermGuard 中间件 |
 | `src/services/admin-auth/admin-auth.server.ts` | 管理员登录、当前管理员查询 |
 | `src/services/client-auth/client-auth.server.ts` | 客户端登录、注册、当前用户查询（含缓存） |

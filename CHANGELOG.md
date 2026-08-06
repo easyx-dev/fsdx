@@ -52,6 +52,10 @@
 - Vitest 测试（79 个测试文件，822 条测试）
 - 迁移流程：`pnpm db:generate` + `pnpm db:migrate`（bootstrap 启动自动执行）
 
+### Refactor
+
+- **权限模块迁至顶层 `src/permissions/`**：权限码从 `src/constants/permissions/` 提升为顶层领域模块（与 `src/db/` 同级），30 处 `#/constants/permissions/*` 引用改为 `#/permissions/*`，同步更新 AGENTS.md 与 skill 文档路径
+
 ## [1.0.0] - 2026-06-23
 
 ### Features

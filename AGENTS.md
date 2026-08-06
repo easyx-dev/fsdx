@@ -30,8 +30,9 @@ app/                          # @fsdx/web —— 应用 package（业务代码 +
     │   ├── Document.tsx      # 根布局（AdminRootDocument / SSRRootDocument）
     │   ├── ErrorFallback.tsx # 全局错误处理
     │   └── Logo.tsx          # Logo 组件（依赖 public 静态资源）
-    ├── constants/            # 项目级常量（cookie-names.ts、editor-types.ts、permissions/ 权限码等）
+    ├── constants/            # 项目级常量（cookie-names.ts、editor-types.ts 等）
     ├── db/                   # Drizzle 客户端 + schema（17 张表）
+    ├── permissions/          # RBAC 权限码常量与匹配（admin + client 双端）
     ├── hooks/                # use-sfn-call、use-theme-mode
     ├── lib/                  # 仅基础设施单例壳（其余基础库在 packages/core）
     │   ├── logger/logger.ts  # logger 单例壳（createLogger 在 @fsdx/core/logger）
@@ -171,7 +172,7 @@ Server Function handler 体中直接调用 db 是安全的——SFn 始终在服
 - 中间件不直接访问数据库，用户查询与权限解析委托服务层（`admin-auth.server.ts` / `client-auth.server.ts`）
 - 路由 `beforeLoad` 中通过 Server Function 调用 `getCurrentAdminSFn` 获取当前用户信息
 - 客户端前台同样支持 RBAC，使用 `src/middleware/client-auth.ts` 的 `clientAuthGuard`（仅认证）/ `clientPermGuard`（认证 + 权限码）
-- 客户端权限码定义在 `src/lib/permissions/client-permissions.ts`（当前为空集合，业务模块扩展时填充）
+- 客户端权限码定义在 `src/permissions/client-permissions.ts`（当前为空集合，业务模块扩展时填充）
 
 ### CSRF 保护
 - `src/start.ts` 通过 `createCsrfMiddleware` 显式注册 CSRF 中间件
@@ -361,7 +362,7 @@ detail: jsonb(),
 - 每个 `src/services/` 和 `src/lib/` 模块必须覆盖其所有导出函数的测试
 
 ```
-src/lib/permissions/
+src/permissions/
 ├── permissions.ts
 └── __tests__/
     └── permissions.test.ts

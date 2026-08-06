@@ -71,7 +71,7 @@ export function createNews(input: CreateNewsInput) { ... }
 ```ts
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { PERMISSIONS } from "#/lib/permissions/permissions";
+import { PERMISSIONS } from "#/permissions/permissions";
 import { adminPermGuard } from "#/middleware/admin-auth";
 import {
   getProductList,
@@ -115,7 +115,7 @@ const deleteProductSFn = createServerFn({ method: "POST" })
 
 ```ts
 import { createServerFn } from "@tanstack/react-start";
-import { PERMISSIONS } from "#/lib/permissions/permissions";
+import { PERMISSIONS } from "#/permissions/permissions";
 import { adminPermGuard } from "#/middleware/admin-auth";
 import {
   createProduct,
@@ -167,7 +167,7 @@ export const updateProductSFn = createServerFn({ method: "POST" })
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { toCsv, toJson } from "#/lib/export/export.utils";
-import { PERMISSIONS } from "#/lib/permissions/permissions";
+import { PERMISSIONS } from "#/permissions/permissions";
 import { adminPermGuard } from "#/middleware/admin-auth";
 import { getAllProductsForExport, PRODUCT_EXPORT_COLUMNS } from "./product.server";
 
@@ -192,8 +192,8 @@ export const exportProductsSFn = createServerFn({ method: "GET" })
 
 `src/lib/` 和 `src/services/` 下**禁止**直接放置文件，所有模块必须组织到独立子目录中：
 
-- `lib/permissions/permissions.ts`（✅ 正确）
-- `lib/permissions.ts`（❌ 错误）
+- `permissions/permissions.ts`（✅ 正确）
+- `permissions.ts`（❌ 错误）
 - 子目录内文件名与目录名对应（如 `permissions/permissions.ts`）
 
 混合 barrel（同时导出类型和运行时值）应拆分：类型走 `.types.ts`，运行时值走 `.server.ts` 或 `.functions.ts`。

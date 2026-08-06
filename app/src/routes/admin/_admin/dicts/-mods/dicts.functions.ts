@@ -4,8 +4,8 @@
 
 import { toJson } from "@fsdx/core/export";
 import { createServerFn } from "@tanstack/react-start";
-import { PERMISSIONS } from "#/constants/permissions/permissions";
 import { adminPermGuard } from "#/middleware/admin-auth";
+import { PERMISSIONS } from "#/permissions/permissions";
 import {
 	createDict,
 	deleteDict,

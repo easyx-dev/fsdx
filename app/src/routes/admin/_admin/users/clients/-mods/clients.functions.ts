@@ -2,8 +2,8 @@
  * 客户端用户路由共享 Server Function
  */
 import { createServerFn } from "@tanstack/react-start";
-import { PERMISSIONS } from "#/constants/permissions/permissions";
 import { adminPermGuard } from "#/middleware/admin-auth";
+import { PERMISSIONS } from "#/permissions/permissions";
 import { logCrud } from "#/services/operation-log/operation-log.server";
 import {
 	createSchema,

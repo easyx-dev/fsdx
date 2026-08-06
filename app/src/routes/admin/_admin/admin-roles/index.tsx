@@ -12,7 +12,7 @@ import type { ChangeEvent } from "react";
 import { useState } from "react";
 import { PermissionSelector } from "#/components/admin/PermissionSelector";
 import { message } from "#/components/antd-static";
-import { PERMISSION_META } from "#/constants/permissions/permissions";
+import { PERMISSION_META } from "#/permissions/permissions";
 import type { AdminRoleRecord } from "#/services/admin-role/admin-role.server";
 import {
 	createAdminRoleSFn,
