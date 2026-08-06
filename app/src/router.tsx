@@ -1,4 +1,5 @@
 import { DEFAULT_LOCALE } from "@fsdx/core/i18n-types";
+import type { ErrorComponentProps } from "@tanstack/react-router";
 import { createRouter } from "@tanstack/react-router";
 import {
 	DefaultErrorFallback,
@@ -12,7 +13,7 @@ export function getRouter() {
 		scrollRestoration: true,
 		defaultPreload: "intent",
 		defaultPreloadStaleTime: 0,
-		defaultErrorComponent: ({ error, reset }) => (
+		defaultErrorComponent: ({ error, reset }: ErrorComponentProps) => (
 			<DefaultErrorFallback error={error} reset={reset} />
 		),
 		defaultNotFoundComponent: () => {

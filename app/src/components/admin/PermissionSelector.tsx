@@ -5,6 +5,7 @@
 
 import { ProTable } from "@fsdx/ui-spa/pro-table";
 import { Checkbox } from "antd";
+import type { CheckboxChangeEvent } from "antd/es/checkbox";
 import type { ColumnsType } from "antd/es/table";
 import { useMemo } from "react";
 import {
@@ -82,7 +83,9 @@ export function PermissionSelector({
 					indeterminate={
 						!record.isGroupSelected && record.selectedIndividuals.length > 0
 					}
-					onChange={(e) => handleGroupToggle(group as string, e.target.checked)}
+					onChange={(e: CheckboxChangeEvent) =>
+						handleGroupToggle(group as string, e.target.checked)
+					}
 				>
 					{group}
 				</Checkbox>
@@ -100,8 +103,8 @@ export function PermissionSelector({
 				return (
 					<Checkbox.Group
 						value={checkedValues}
-						onChange={(vals) =>
-							handleIndividualsChange(record.group, vals as string[])
+						onChange={(vals: string[]) =>
+							handleIndividualsChange(record.group, vals)
 						}
 						options={perms.map((p) => ({
 							label: `${p.name} (${p.code})`,

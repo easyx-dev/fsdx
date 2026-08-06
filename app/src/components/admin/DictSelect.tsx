@@ -4,6 +4,7 @@
  */
 import type { SelectProps } from "antd";
 import { Button, Divider, Flex, Select } from "antd";
+import type { ReactNode } from "react";
 import { useMemo } from "react";
 import { useAdminDictStore } from "#/components/global-store/admin-dict-store";
 
@@ -34,7 +35,7 @@ export function DictSelect({
 			{...rest}
 			options={options}
 			loading={loading}
-			popupRender={(menu) => {
+			popupRender={(menu: ReactNode) => {
 				return (
 					<>
 						{menu}

@@ -10,6 +10,7 @@ import {
 import { renderUploadItem } from "@fsdx/ui-spa/upload/file-upload-render";
 import type { UploadFile, UploadProps } from "antd";
 import { Button, Input, Space, Upload } from "antd";
+import type { MouseEvent } from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { message } from "#/components/antd-static";
 import { uploadFileSFn } from "#/services/file/file.functions";
@@ -41,6 +42,10 @@ function idToUploadFile(id: string): UploadFile {
 		name: id,
 		status: "done",
 		url: `/api/download/file/${id}`,
+		// antd 6.4.3 声明缺陷：UploadFile 从 AriaAttributes 继承了必填的
+		// aria-label / aria-labelledby，实际运行时不需要，此处补空串绕过
+		"aria-label": "",
+		"aria-labelledby": "",
 	};
 }
 
@@ -343,7 +348,7 @@ export function FileUpload({
 						<Button
 							icon={<FolderOpenOutlined />}
 							disabled={disabled}
-							onClick={(e) => {
+							onClick={(e: MouseEvent<HTMLElement>) => {
 								e.stopPropagation();
 								setSelectModalOpen(true);
 							}}

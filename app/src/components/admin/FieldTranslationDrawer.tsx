@@ -8,6 +8,7 @@ import {
 	SUPPORTED_LOCALES,
 } from "@fsdx/core/i18n-types";
 import { Button, Card, Drawer, Tabs, Tooltip } from "antd";
+import type { MouseEvent } from "react";
 import { useCallback, useEffect, useId, useState } from "react";
 import { EditorTypes } from "#/components/admin/editor-type";
 import { message } from "#/components/antd-static";
@@ -162,7 +163,7 @@ export function FieldTranslationDrawer({
 					<TranslationOutlined
 						style={{ cursor: "pointer" }}
 						className={`hover:opacity-80 ml-1 ${gradientId}`}
-						onClick={(e) => {
+						onClick={(e: MouseEvent<HTMLSpanElement>) => {
 							e.stopPropagation();
 							setOpen(true);
 						}}
@@ -201,7 +202,7 @@ export function FieldTranslationDrawer({
 			>
 				<Tabs
 					activeKey={activeTab}
-					onChange={(key) => {
+					onChange={(key: string) => {
 						setActiveTab(key);
 						if (!translations[key]) loadTranslations(key);
 					}}

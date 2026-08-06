@@ -4,6 +4,7 @@
  * value / onChange 兼容 antd Form.Item 注入
  */
 import { Input, InputNumber } from "antd";
+import type { ChangeEvent } from "react";
 import { lazy, Suspense, useEffect, useState } from "react";
 import { RichEditor } from "#/components/admin/RichEditor";
 import { message } from "#/components/antd-static";
@@ -221,7 +222,9 @@ export function Editor({
 				<Input
 					id={id}
 					value={value as string}
-					onChange={(e) => onChange?.(e.target.value)}
+					onChange={(e: ChangeEvent<HTMLInputElement>) =>
+						onChange?.(e.target.value)
+					}
 					placeholder={placeholder}
 					disabled={disabled}
 				/>
@@ -232,7 +235,9 @@ export function Editor({
 				<Input.TextArea
 					id={id}
 					value={value as string}
-					onChange={(e) => onChange?.(e.target.value)}
+					onChange={(e: ChangeEvent<HTMLTextAreaElement>) =>
+						onChange?.(e.target.value)
+					}
 					rows={rows}
 					placeholder={placeholder}
 					disabled={disabled}
@@ -244,7 +249,7 @@ export function Editor({
 				<InputNumber
 					id={id}
 					value={value as number}
-					onChange={(v) => onChange?.(v ?? 0)}
+					onChange={(v: number | null) => onChange?.(v ?? 0)}
 					min={min}
 					max={max}
 					step={step}
