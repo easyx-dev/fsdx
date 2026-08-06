@@ -21,7 +21,7 @@ app/                          # @fsdx/web —— 应用 package（业务代码 +
     ├── hono-app.ts           # Hono 应用工厂（/health 路由）
     ├── server.ts             # TanStack Start 服务端入口
     ├── components/
-    │   ├── admin/            # 业务组件（AdminLayout、AdminProvider、DictSelect、RichEditor、FieldTranslationDrawer、PermissionSelector、SelectFileModal、useCrudPage、sfn-helpers、editor-type/、upload/ 等）
+    │   ├── admin/            # 业务组件（AdminLayout、AdminProvider、DictSelect、RichEditor、FieldTranslationDrawer、PermissionSelector、SelectFileModal、sfn-helpers、editor-type/、upload/ 等）
     │   ├── antd-static/      # antd 静态方法桥接壳（re-export @fsdx/ui-spa/antd-static）
     │   ├── client/           # 前台业务组件（Header、Footer、ClientAuthProvider、CaptchaInput、ThemeToggle）
     │   ├── global-store/     # React store（global-store + admin-config-store + admin-dict-store）
@@ -46,12 +46,13 @@ app/                          # @fsdx/web —— 应用 package（业务代码 +
 packages/
 ├── core/                     # @fsdx/core —— 纯逻辑库（subpath exports，无根桶）
 │   └── src/
-│       ├── pure/             # 同构安全，客户端可引用
+│       ├── utils/            # 同构纯工具，客户端可引用
 │       │   ├── ms/  export/  # 时间转换 / CSV-JSON 序列化
-│       │   ├── cache-core.ts match-permission.ts error-utils.ts
-│       │   ├── i18n-types.ts i18n-config.ts cn.ts
+│       │   ├── match-permission.ts error-utils.ts cn.ts
 │       │   └── __tests__/
-│       └── node/             # 仅服务端（客户端 import-protection 保障）
+│       ├── i18n/             # 同构国际化（i18n-types.ts i18n-config.ts）
+│       ├── cache/            # 缓存抽象（cache-core.ts MemoryCache，预留 redis 适配）
+│       └── infra/            # 仅服务端基础设施（客户端 import-protection 保障）
 │           ├── logger.ts jwt.ts batch-writer.ts request-context.ts scheduler.ts
 │           ├── ai.ts mail.ts sms.ts
 │           ├── storage/  captcha/
@@ -59,14 +60,14 @@ packages/
 ├── ui-ssr/                   # @fsdx/ui-ssr —— shadcn 基础组件 + AutofillBlocker
 │   └── src/components/{ui/*,autofill-blocker.tsx}
 └── ui-spa/                   # @fsdx/ui-spa —— antd 管理端基础组件（antd 为 peerDependency）
-    └── src/{antd-static/,table-operate.tsx,pro-table.tsx,code-editor.tsx,ms-input.tsx,...}
+    └── src/{antd-static/,table-operate.tsx,pro-table.tsx,code-editor.tsx,rich-editor.tsx,ms-input.tsx,upload/,...}
 ```
 
-`#/*`、`@/*` 别名仅在 app 内生效（`#/*` → `./src/*`）。跨包引用一律使用 `@fsdx/*` subpath import。
+`#/*` 别名仅在 app 内生效（`#/*` → `./src/*`）。跨包引用一律使用 `@fsdx/*` subpath import。
 
 ### 包边界约定
 
-- **core 分两层**：`@fsdx/core/*` subpath 指向 `pure/`（同构）或 `node/`（服务端）。客户端组件禁止引用 `node/` 子路径；core 内不得出现 `#/services`、`#/db`、`#/routes` 反向引用
+- **core 按职责分层**：`@fsdx/core/*` subpath 由 `package.json` exports 扁平映射到 `utils/`、`i18n/`、`cache/`（同构）或 `infra/`（服务端）。**注意**：core 的服务端保护依赖 `vite.config.ts` 的 import-protection（按 npm 包名拦截 bcryptjs/drizzle-orm/openai）+ 目录约定，而非 `.server.*` 文件名后缀；客户端组件禁止引用 `infra/` 对应模块。core 内不得出现 `#/services`、`#/db`、`#/routes` 反向引用
 - **core 零全局单例**：`@fsdx/core/logger` 只导出 `createLogger` 工厂，应用级 `logger` 单例由 app 的 `src/lib/logger/logger.ts` 提供（全库 27 处 `#/lib/logger/logger` 引用零改动）；`@fsdx/core/jwt` 同理，`createJwt` + app 惰性单例壳
 - **有外部配置依赖的模块用 init 注入**：`@fsdx/core/ai|mail|sms` 提供 `initAi/initMail/initSms`，bootstrap 注入 `getConfig` 回调与 logger；未 init 直接调用抛错（fail-fast）；`scheduler` 用 `setSchedulerLogger` 注入
 - **antd 单实例**：`@fsdx/ui-spa` 将 antd 声明为 peerDependency，app 提供唯一实例；`antd-static` 桥接在 app `<App>` 上下文内工作，app 保留 `#/components/antd-static` 壳 re-export
@@ -120,8 +121,10 @@ packages/
 
 | 场景 | 位置 |
 |------|------|
-| 单路由模块使用 | 路由同目录 `<name>.functions.ts`（或 `-mods/<name>.functions.ts` 当符合 -mods/ 门槛时） |
+| 单路由模块使用 | 路由目录 `-mods/<name>.functions.ts` |
 | 多路由/跨端/全局组件共享 | `src/services/<module>/<module>.functions.ts` |
+
+> Server Route 例外：`src/routes/api/` 下的文件下载/流式响应路由（如 `api/download/file.$id.tsx`）允许在 `.tsx` 内通过 `server.handlers` 直接写服务端 handler 并引用 `.server.ts`，这是 TanStack Start Server Route 的合法形态，与 SFn 是两套并存范式。
 
 #### 服务层放置规则
 
@@ -210,6 +213,13 @@ Server Function handler 体中直接调用 db 是安全的——SFn 始终在服
 - `vite.config.ts` 额外配置：客户端禁止导入 `bcryptjs`、`drizzle-orm` 和 `openai`（防止服务端包泄漏）
 - type-only import（`import type` / `export type`）不触发保护，因为运行时被擦除
 
+### antd 6 类型补丁
+
+- antd 6.4.3 的复合组件（`Card`、`Image`）用 `interface X extends typeof 组件` / `interface X extends React.FC` 挂载静态子组件，在 TS 6 + React 19 下丢失调用签名，JSX 使用处报 `TS2604/TS2786: cannot be used as a JSX component`
+- 通过模块增补修复：`app/src/types/antd-fix.d.ts`（app 生效）与 `packages/ui-spa/src/antd-fix.d.ts`（ui-spa 包内 tsc 自检生效），将 Card/Image 重声明为「组件本体交叉子组件」交叉类型
+- 另有个别 antd 6.4.3 声明缺陷靠调用处绕过并在代码注释标明：`Select`/`DictSelect` 的 `role` 必填（补 `role="combobox"`）、`UploadFile` 的 aria 字段必填
+- antd 官方修复这些声明缺陷后，两个 `antd-fix.d.ts` 与调用处的绕过注释可整体移除
+
 ### 环境变量
 
 - 环境变量文件位于 `app/` 下（`app/.env`、`app/.env.example`），Vite 以 app 为 root 加载并注入 `process.env`；`.env` 不入库，模板见 `app/.env.example`
@@ -233,41 +243,27 @@ Server Function handler 体中直接调用 db 是安全的——SFn 始终在服
 
 ### 路由目录组织
 
-路由目录本身就是天然的分组容器。`-mods/` 仅在 companion 文件足够多、需要和页面/子路由做视觉分隔时引入。
+路由目录本身就是天然的分组容器。**非路由文件（companion）一律放入 `-mods/` 子目录**，与路由页面（`.tsx`）在视觉上彻底分离。
 
 #### 决策表
 
 | 条件 | 结构 | 示例 |
 |------|------|------|
-| 无 companion 文件 | 平级 `.tsx` | `about.tsx` |
-| 有 companion 文件（≤2 个） | 目录路由 + companion 平级 | `login/index.tsx` + `login/login.functions.ts` |
-| ≥3 companion 文件 **且** 有子路由 | 目录路由 + `-mods/` | `news/index.tsx` + `news/-mods/news.functions.ts` + `news/create.tsx` |
+| 无 companion 文件 | 平级 `.tsx` | `about.tsx`、`messages.tsx` |
+| 有 companion 文件 | 目录路由 + `-mods/` 收纳 companion | `login/index.tsx` + `login/-mods/login.functions.ts` |
 
-#### 目录路由
+#### 目录路由与 -mods/
 
-如果一个路由有自己的 companion 文件（`.functions.ts` / `.schemas.ts` / `.server.ts`），则将 `.tsx` 转为目录路由 `xxx/index.tsx`，companion 文件放在同目录下：
+一个路由拥有自己的 companion 文件（`.functions.ts` / `.schemas.ts` / `.server.ts` / 路由级组件）时，将 `.tsx` 转为目录路由 `xxx/index.tsx`，**所有 companion 统一放入 `xxx/-mods/`**（哪怕只有 1 个）：
 
 ```
-# 简单模块（≤2 个 companion）
+# 单 companion：同样入 -mods/
 src/routes/login/
 ├── index.tsx
-└── login.functions.ts
+└── -mods/
+    └── login.functions.ts
 
-src/routes/admin/_admin/config/
-├── index.tsx
-├── config.functions.ts
-└── config.schemas.ts
-```
-
-#### -mods/ 使用门槛
-
-仅当同时满足以下条件时才引入 `-mods/`：
-
-1. 路由目录下有 ≥3 个 companion 文件（`.functions.ts` / `.schemas.ts` / `.server.ts` / 组件等）
-2. 路由目录下存在子路由页面（`index.tsx` / `create.tsx` / `$id/edit.tsx` 等），companion 文件混在一起难以分辨
-
-```
-# ✓ 正确：3 companion + 3 页面文件，需要 -mods/ 分隔
+# 多 companion + 子路由页面
 src/routes/admin/_admin/news/
 ├── index.tsx
 ├── create.tsx
@@ -275,24 +271,19 @@ src/routes/admin/_admin/news/
 └── -mods/
     ├── news.functions.ts
     ├── news.schemas.ts
+    ├── news.server.ts
     └── NewsForm.tsx
-
-# ✓ 正确：4 companion + 2 页面文件，需要 -mods/ 分隔
-src/routes/admin/_admin/translations/
-├── ui.tsx
-├── content.tsx
-└── -mods/
-    ├── ui-translations.functions.ts
-    ├── ui-translations.schemas.ts
-    ├── content-translations.functions.ts
-    └── content-translations.schemas.ts
-
-# ✗ 错误：只有 1 个 companion，无需 -mods/
-src/routes/admin/_admin/files/
-├── index.tsx
-└── -mods/                   ← 应改为 files/files.functions.ts
-    └── files.functions.ts
 ```
+
+#### -mods/ 内部约定
+
+- **逻辑文件**用 `模块名.类型.ts` 命名：`news.functions.ts`、`news.schemas.ts`、`news.server.ts`
+- **路由级组件**用 PascalCase 命名：`NewsForm.tsx`、`NewsStatusTag.tsx`，与逻辑文件靠命名风格天然区分
+- `-mods/` 内**不再嵌套子目录**；组件数量过多（>6 个）时优先考虑拆子路由，而非在 -mods 里再分层
+
+#### 例外：首页 companion 保持平级
+
+TanStack 文件路由中 `index/index.tsx` 会把首页路径从 `/` 变成 `/index`，因此**首页不能目录化**。前台首页保持 `src/routes/index.tsx` + `src/routes/index.functions.ts` 平级，不引入 `index/` 目录与 `-mods/`。
 
 ### 数据库
 
