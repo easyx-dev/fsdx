@@ -42,7 +42,7 @@ export function renderUploadItem(
 				size="small"
 				danger
 				icon={<DeleteOutlined />}
-				onClick={(e) => {
+				onClick={(e: React.MouseEvent<HTMLElement>) => {
 					e.stopPropagation();
 					actions.remove();
 				}}

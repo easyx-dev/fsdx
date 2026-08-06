@@ -188,7 +188,7 @@ function processColumns<T extends Record<string, any>>(
 								size="small"
 								icon={<CopyOutlined />}
 								style={{ flexShrink: 0 }}
-								onClick={(e) => {
+								onClick={(e: React.MouseEvent<HTMLElement>) => {
 									e.stopPropagation();
 									navigator.clipboard
 										.writeText(copyText)

@@ -183,7 +183,7 @@ export function PhotoWall({
 									background: "rgba(255,77,79,0.7)",
 									borderRadius: 4,
 								}}
-								onClick={(e) => {
+								onClick={(e: React.MouseEvent<HTMLElement>) => {
 									e.stopPropagation();
 									onRemove(index);
 								}}

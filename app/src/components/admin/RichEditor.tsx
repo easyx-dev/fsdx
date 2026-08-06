@@ -1,17 +1,12 @@
 /**
- * 基于 wangEditor v5 的富文本编辑器组件
- * 支持文本样式 / 标题 / 列表 / 对齐 / 表格 / 链接 / 图片上传 / 代码块
+ * 富文本编辑器（app 业务壳）
+ * 纯组件逻辑在 @fsdx/ui-spa/rich-editor，此处注入项目统一的文件上传实现
  * value / onChange 兼容 antd Form.Item 直接注入
  */
-import "@wangeditor/editor/dist/css/style.css";
 
-import type {
-	IDomEditor,
-	IEditorConfig,
-	IToolbarConfig,
-} from "@wangeditor/editor";
-import { Editor, Toolbar } from "@wangeditor/editor-for-react";
-import { useEffect, useMemo, useState } from "react";
+import { RichEditor as RichEditorBase } from "@fsdx/ui-spa/rich-editor";
+import { useCallback } from "react";
+import { message } from "#/components/antd-static";
 import { uploadFileSFn } from "#/services/file/file.functions";
 
 interface Props {
@@ -20,70 +15,29 @@ interface Props {
 }
 
 export function RichEditor({ value = "", onChange }: Props) {
-	const [editor, setEditor] = useState<IDomEditor | null>(null);
-
-	/** 工具栏配置 */
-	const toolbarConfig: Partial<IToolbarConfig> = useMemo(
-		() => ({
-			excludeKeys: ["group-video", "fullScreen"],
-		}),
-		[],
-	);
-
-	/** 编辑器配置：图片上传 + 占位文字 */
-	const editorConfig: Partial<IEditorConfig> = useMemo(
-		() => ({
-			placeholder: "开始写作...",
-			MENU_CONF: {
-				uploadImage: {
-					async customUpload(file: File, insertFn: (url: string) => void) {
-						try {
-							const fd = new FormData();
-							fd.append("file", file);
-							fd.append("permanent", "true");
-							const result = await uploadFileSFn({ data: fd });
-							if (result?.data?.id) {
-								insertFn(`/api/download/file/${result.data.id}`);
-							}
-						} catch {
-							// 上传失败静默忽略
-						}
-					},
-				},
-			},
-		}),
-		[],
-	);
-
-	// 组件销毁时销毁编辑器
-	useEffect(() => {
-		return () => {
-			if (editor) {
-				editor.destroy();
-				setEditor(null);
+	/** 注入统一上传：写入文件库并返回下载地址；失败时提示用户并向上抛出 */
+	const uploadImage = useCallback(async (file: File): Promise<string> => {
+		const fd = new FormData();
+		fd.append("file", file);
+		fd.append("permanent", "true");
+		try {
+			const result = await uploadFileSFn({ data: fd });
+			if (!result?.data?.id) {
+				throw new Error("上传未返回文件标识");
 			}
-		};
-	}, [editor]);
+			return `/api/download/file/${result.data.id}`;
+		} catch (err) {
+			const reason = err instanceof Error ? err.message : "未知原因";
+			message.error(`图片上传失败：${reason}`);
+			throw err;
+		}
+	}, []);
 
 	return (
-		<div
-			className="flex flex-col rounded-md border border-zinc-200 dark:border-zinc-700"
-			style={{ zIndex: 100 }}
-		>
-			<Toolbar
-				editor={editor}
-				defaultConfig={toolbarConfig}
-				mode="default"
-				className="border-b border-zinc-200 dark:border-zinc-700 [&_.w-e-toolbar]:!rounded-md"
-			/>
-			<Editor
-				defaultConfig={editorConfig}
-				value={value}
-				onCreated={setEditor}
-				onChange={(ed) => onChange?.(ed.getHtml())}
-				mode="default"
-				className="[&_.w-e-text-container]:min-h-[300px] [&_.w-e-text-container]:rounded-b-md"
-			/>
-		</div>
+		<RichEditorBase
+			value={value}
+			onChange={onChange}
+			uploadImage={uploadImage}
+		/>
 	);
 }

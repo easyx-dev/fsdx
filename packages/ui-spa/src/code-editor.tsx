@@ -38,7 +38,7 @@ export function CodeEditor({
 				language={language}
 				value={value}
 				theme={isDark ? "vs-dark" : "light"}
-				onChange={(val) => onChange?.(val ?? "")}
+				onChange={(val: string | undefined) => onChange?.(val ?? "")}
 				loading={
 					<div className="flex items-center justify-center h-full text-zinc-400 text-sm">
 						编辑器加载中...

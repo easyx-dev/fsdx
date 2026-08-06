@@ -10,6 +10,7 @@
     "./permission-tags": "./src/permission-tags.tsx",
     "./json-import-button": "./src/json-import-button.tsx",
     "./code-editor": "./src/code-editor.tsx",
+    "./rich-editor": "./src/rich-editor.tsx",
     "./ms-input": "./src/ms-input.tsx",
     "./admin-page-content": "./src/admin-page-content.tsx",
     "./upload/file-upload-render": "./src/upload/FileUploadRender.tsx",
@@ -29,6 +30,8 @@
   "peerDependencies": {
     "@ant-design/icons": "^6",
     "@tanstack/react-router": "^1",
+    "@wangeditor/editor": "^5.1.23",
+    "@wangeditor/editor-for-react": "^1.0.6",
     "antd": "^6",
     "dayjs": "^1",
     "monaco-editor": "^0.55",
@@ -37,6 +40,8 @@
   },
   "devDependencies": {
     "@types/react": "^19.2.16",
-    "@types/react-dom": "^19.2.3"
+    "@types/react-dom": "^19.2.3",
+    "@wangeditor/editor": "^5.1.23",
+    "@wangeditor/editor-for-react": "^1.0.6"
   }
 }

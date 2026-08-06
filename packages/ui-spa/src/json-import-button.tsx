@@ -3,11 +3,14 @@
  * 继承 antd Button 全部属性，通过 onImport 回调传出 JSON 字符串
  */
 import { UploadOutlined } from "@ant-design/icons";
-import type { ButtonProps } from "antd";
+import type { ButtonProps, UploadProps } from "antd";
 import { Button, Modal, Space, Upload } from "antd";
 import { useState } from "react";
 import { message } from "./antd-static";
 import { CodeEditor } from "./code-editor";
+
+/** beforeUpload 回调的文件参数类型（取自 antd UploadProps，避免深路径导入内部类型） */
+type BeforeUploadFile = Parameters<NonNullable<UploadProps["beforeUpload"]>>[0];
 
 export interface JsonImportButtonProps extends ButtonProps {
 	/** Modal 标题，默认 "导入 JSON" */
@@ -83,7 +86,7 @@ export function JsonImportButton({
 				<Upload.Dragger
 					accept=".json"
 					showUploadList={false}
-					beforeUpload={(file) => {
+					beforeUpload={(file: BeforeUploadFile) => {
 						const reader = new FileReader();
 						reader.onload = (e) => {
 							try {
