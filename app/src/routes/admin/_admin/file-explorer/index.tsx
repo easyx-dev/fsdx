@@ -3,27 +3,15 @@
  */
 import {
 	CloudUploadOutlined,
-	FileOutlined,
 	FolderAddOutlined,
-	FolderOutlined,
 	ReloadOutlined,
 } from "@ant-design/icons";
 import { message } from "@fsdx/ui-spa/antd-static";
 import { safeSfnCall } from "@fsdx/ui-spa/sfn-helpers";
-import { ProTable, TableOperate } from "@fsdx/ui-spa/table";
+import { ProTable } from "@fsdx/ui-spa/table";
 import { createFileRoute } from "@tanstack/react-router";
 import type { UploadProps } from "antd";
-import {
-	Breadcrumb,
-	Button,
-	Input,
-	Modal,
-	Space,
-	Tooltip,
-	Typography,
-	Upload,
-} from "antd";
-import type { ChangeEvent } from "react";
+import { Breadcrumb, Button, Space, Tooltip, Upload } from "antd";
 import { useCallback, useState } from "react";
 import { AdminPageContent } from "#/components/admin";
 import {
@@ -34,86 +22,10 @@ import {
 	renameEntrySFn,
 	uploadFileSFn,
 } from "#/services/file-explorer/file-explorer.functions";
-import type {
-	FsEntry,
-	ListDirectoryResult,
-} from "#/services/file-explorer/file-explorer.server";
-
-/** 面包屑项类型 */
-interface BreadcrumbItem {
-	label: string;
-	path: string;
-}
-
-/** 目录数据（含面包屑和写保护状态） */
-interface DirData extends ListDirectoryResult {
-	breadcrumb: BreadcrumbItem[];
-	writeProtected: boolean;
-}
-
-/** 文本文件扩展名列表 */
-const TEXT_EXTENSIONS = new Set([
-	"txt",
-	"md",
-	"json",
-	"xml",
-	"yaml",
-	"yml",
-	"log",
-	"csv",
-	"js",
-	"ts",
-	"tsx",
-	"jsx",
-	"css",
-	"html",
-	"htm",
-	"sh",
-	"bash",
-	"zsh",
-	"py",
-	"rb",
-	"go",
-	"rs",
-	"java",
-	"c",
-	"cpp",
-	"h",
-	"hpp",
-	"ini",
-	"toml",
-	"cfg",
-	"conf",
-	"env",
-	"gitignore",
-	"sql",
-	"graphql",
-	"vue",
-	"svelte",
-	"less",
-	"scss",
-	"sass",
-]);
-
-/** 格式化文件大小 */
-function formatSize(bytes: number): string {
-	if (bytes < 1024) return `${bytes} B`;
-	if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-	if (bytes < 1024 * 1024 * 1024)
-		return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-	return `${(bytes / (1024 * 1024 * 1024)).toFixed(2)} GB`;
-}
-
-/** 判断是否为文本文件 */
-function isTextFile(name: string): boolean {
-	const ext = name.split(".").pop()?.toLowerCase() ?? "";
-	return TEXT_EXTENSIONS.has(ext);
-}
-
-/** 构建条目的子路径 */
-function entryPath(parentPath: string, name: string): string {
-	return parentPath ? `${parentPath}/${name}` : name;
-}
+import type { FsEntry } from "#/services/file-explorer/file-explorer.server";
+import { MkdirModal, PreviewModal, RenameModal } from "./-mods/FileModals";
+import { fileExplorerColumns } from "./-mods/fileExplorerColumns";
+import { type DirData, entryPath } from "./-mods/fileExplorerUtils";
 
 export const Route = createFileRoute("/admin/_admin/file-explorer/")({
 	component: FileExplorerPage,
@@ -292,136 +204,18 @@ function FileExplorerPage() {
 		[currentPath, refreshDir],
 	);
 
-	/** 表格列定义 */
-	const columns = [
-		{
-			title: "名称",
-			dataIndex: "name",
-			key: "name",
-			render: (_: unknown, record: FsEntry) => (
-				<div
-					style={{
-						display: "flex",
-						alignItems: "center",
-						gap: 10,
-						cursor: record.type === "directory" ? "pointer" : "default",
-						padding: "2px 0",
-					}}
-					onClick={
-						record.type === "directory"
-							? () => navigateTo(entryPath(currentPath, record.name))
-							: undefined
-					}
-				>
-					{record.type === "directory" ? (
-						<FolderOutlined
-							style={{ color: "#faad14", fontSize: 18, flexShrink: 0 }}
-						/>
-					) : (
-						<FileOutlined
-							style={{ color: "var(--s-primary)", fontSize: 16, flexShrink: 0 }}
-						/>
-					)}
-					<Typography.Text
-						ellipsis={{ tooltip: record.name }}
-						style={{
-							color: record.type === "directory" ? "#1a1a2e" : "#4a4a4a",
-							fontWeight: record.type === "directory" ? 500 : 400,
-						}}
-					>
-						{record.name}
-					</Typography.Text>
-				</div>
-			),
+	const columns = fileExplorerColumns({
+		currentPath,
+		writeProtected: data.writeProtected,
+		onNavigate: navigateTo,
+		onPreview: handlePreview,
+		onRename: (record) => {
+			setRenameTarget(record);
+			setRenameNewName(record.name);
+			setRenameOpen(true);
 		},
-		{
-			title: "大小",
-			dataIndex: "size",
-			key: "size",
-			width: 150,
-			align: "right" as const,
-			sorter: (a: FsEntry, b: FsEntry) => a.size - b.size,
-			render: (_: unknown, record: FsEntry) => (
-				<span style={{ color: "#8c8c8c", fontSize: 13 }}>
-					{record.type === "directory" ? "-" : formatSize(record.size)}
-				</span>
-			),
-		},
-		{
-			title: "修改时间",
-			dataIndex: "mtime",
-			key: "mtime",
-			width: 180,
-			sorter: (a: FsEntry, b: FsEntry) =>
-				new Date(a.mtime).getTime() - new Date(b.mtime).getTime(),
-			valueType: "dateTime",
-		},
-		{
-			title: "操作",
-			key: "actions",
-			width: 240,
-			fixed: "right" as const,
-			render: (_: unknown, record: FsEntry) => {
-				const isWriteLocked = data.writeProtected;
-
-				return (
-					<TableOperate>
-						{record.type === "file" && isTextFile(record.name) && (
-							<TableOperate.Custom>
-								<Button
-									type="link"
-									size="small"
-									onClick={() => handlePreview(record)}
-								>
-									预览
-								</Button>
-							</TableOperate.Custom>
-						)}
-						{record.type === "file" && (
-							<TableOperate.Custom>
-								<Button
-									type="link"
-									size="small"
-									onClick={() => {
-										window.open(
-											`/api/download/file-explorer/${encodeURIComponent(entryPath(currentPath, record.name))}`,
-											"_blank",
-											"noreferrer",
-										);
-									}}
-								>
-									下载
-								</Button>
-							</TableOperate.Custom>
-						)}
-						{!isWriteLocked && (
-							<TableOperate.Custom>
-								<Button
-									type="link"
-									size="small"
-									onClick={() => {
-										setRenameTarget(record);
-										setRenameNewName(record.name);
-										setRenameOpen(true);
-									}}
-								>
-									重命名
-								</Button>
-							</TableOperate.Custom>
-						)}
-						{!isWriteLocked && (
-							<TableOperate.Delete
-								recordName={record.name}
-								onConfirm={async () => {
-									await handleDelete(record);
-								}}
-							/>
-						)}
-					</TableOperate>
-				);
-			},
-		},
-	];
+		onDelete: handleDelete,
+	});
 
 	/** 工具栏 */
 	const dirCount = data.entries.filter((e) => e.type === "directory").length;
@@ -519,95 +313,41 @@ function FileExplorerPage() {
 				bordered
 			/>
 
-			{/* 新建目录 Modal */}
-			<Modal
+			<MkdirModal
 				open={mkdirOpen}
-				title="新建目录"
-				okText="创建"
-				cancelText="取消"
-				confirmLoading={mkdirLoading}
+				value={mkdirName}
+				loading={mkdirLoading}
+				onChange={setMkdirName}
 				onOk={handleMkdir}
 				onCancel={() => {
 					setMkdirOpen(false);
 					setMkdirName("");
 				}}
-				destroyOnClose
-				styles={{ body: { paddingBottom: 8 } }}
-			>
-				<Input
-					placeholder="请输入目录名称"
-					value={mkdirName}
-					onChange={(e: ChangeEvent<HTMLInputElement>) =>
-						setMkdirName(e.target.value)
-					}
-					onPressEnter={handleMkdir}
-				/>
-			</Modal>
+			/>
 
-			{/* 重命名 Modal */}
-			<Modal
+			<RenameModal
 				open={renameOpen}
-				title="重命名"
-				okText="确认"
-				cancelText="取消"
-				confirmLoading={renameLoading}
+				value={renameNewName}
+				loading={renameLoading}
+				onChange={setRenameNewName}
 				onOk={handleRename}
 				onCancel={() => {
 					setRenameOpen(false);
 					setRenameTarget(null);
 					setRenameNewName("");
 				}}
-				destroyOnClose
-				styles={{ body: { paddingBottom: 8 } }}
-			>
-				<Input
-					placeholder="请输入新名称"
-					value={renameNewName}
-					onChange={(e: ChangeEvent<HTMLInputElement>) =>
-						setRenameNewName(e.target.value)
-					}
-					onPressEnter={handleRename}
-				/>
-			</Modal>
+			/>
 
-			{/* 文本预览 Modal */}
-			<Modal
+			<PreviewModal
 				open={previewOpen}
 				title={previewTitle}
-				footer={null}
-				width="75%"
+				content={previewContent}
+				loading={previewLoading}
 				onCancel={() => {
 					setPreviewOpen(false);
 					setPreviewContent("");
 				}}
-				destroyOnClose
-				styles={{ body: { padding: 0 } }}
-			>
-				{previewLoading ? (
-					<div style={{ textAlign: "center", padding: 60, color: "#8c8c8c" }}>
-						加载中...
-					</div>
-				) : (
-					<pre
-						style={{
-							maxHeight: "72vh",
-							overflow: "auto",
-							background: "#1e1e1e",
-							color: "#d4d4d4",
-							padding: 20,
-							fontSize: 13,
-							lineHeight: 1.7,
-							margin: 0,
-							borderRadius: "0 0 0 0",
-							whiteSpace: "pre-wrap",
-							wordBreak: "break-all",
-							fontFamily: "'SF Mono', 'Cascadia Code', 'Consolas', monospace",
-						}}
-					>
-						{previewContent}
-					</pre>
-				)}
-			</Modal>
+			/>
 		</AdminPageContent>
 	);
 }

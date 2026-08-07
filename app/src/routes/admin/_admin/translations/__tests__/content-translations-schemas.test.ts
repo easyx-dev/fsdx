@@ -2,12 +2,12 @@
  * 实体翻译 Schema 验证测试
  */
 import { describe, expect, it } from "vitest";
-import { importContentTranslationsSchema } from "../content-translations.functions";
+import { importContentTranslationsSchema } from "../-mods/content-translations.functions";
 import {
 	deleteSchema,
 	formSchema,
 	getListSchema,
-} from "../content-translations.schemas";
+} from "../-mods/content-translations.schemas";
 
 describe("getListSchema", () => {
 	it("空参数应通过校验", () => {

@@ -5,20 +5,15 @@ import { DownloadOutlined, PlusOutlined } from "@ant-design/icons";
 import { downloadFile } from "@fsdx/core/export";
 import { message } from "@fsdx/ui-spa/antd-static";
 import { JsonImportButton } from "@fsdx/ui-spa/json-import-button";
-import { ProTable, TableOperate } from "@fsdx/ui-spa/table";
+import { ProTable } from "@fsdx/ui-spa/table";
 import { createFileRoute, useRouter } from "@tanstack/react-router";
-import { Button, Card, Flex, Form, Input, Modal, Space, Switch } from "antd";
+import { Button, Card, Flex, Form, Input, Space } from "antd";
 import dayjs from "dayjs";
 import type { ChangeEvent } from "react";
 import { useMemo, useState } from "react";
-import {
-	AdminPageContent,
-	EditorTypes,
-	FieldTranslationDrawer,
-	type TranslatableField,
-} from "#/components/admin";
-import type { EditorType } from "#/constants/editor-types";
+import { AdminPageContent } from "#/components/admin";
 import type { ConfigRecord } from "#/services/config/config.server";
+import { ConfigFormModal } from "./-mods/ConfigFormModal";
 import {
 	createConfigSFn,
 	deleteConfigSFn,
@@ -27,13 +22,9 @@ import {
 	importConfigsSFn,
 	updateConfigSFn,
 } from "./-mods/config.functions";
+import { configColumns } from "./-mods/configColumns";
 
 const UNGROUPED_KEY = "__ungrouped__";
-
-/** 系统配置可翻译字段定义 */
-const CONFIG_TRANSLATABLE_FIELDS: TranslatableField[] = [
-	{ name: "value", label: "配置值", valueType: "text" },
-];
 
 export const Route = createFileRoute("/admin/_admin/config/")({
 	component: ConfigPage,
@@ -49,9 +40,6 @@ function ConfigPage() {
 	const [modalOpen, setModalOpen] = useState(false);
 	const [editing, setEditing] = useState<ConfigRecord | null>(null);
 	const [form] = Form.useForm();
-	const watchedValueType = Form.useWatch("valueType", form) as
-		| EditorType
-		| undefined;
 
 	/** 从配置数据中提取分组列表 */
 	const groups = useMemo(() => {
@@ -165,97 +153,10 @@ function ConfigPage() {
 		message.success("导出完成");
 	};
 
-	/** 配置项表格列定义 */
-	const configColumns = [
-		{
-			title: "配置键",
-			dataIndex: "key",
-			key: "key",
-			width: 240,
-			render: (key: string) => (
-				<code className="text-xs text-primary">{key}</code>
-			),
-		},
-		{
-			title: "配置值",
-			dataIndex: "value",
-			key: "value",
-			width: 180,
-			ellipsis: true,
-		},
-		{
-			title: "值类型",
-			dataIndex: "valueType",
-			key: "valueType",
-			width: 130,
-			render: (val: string | null) => (
-				<EditorTypes.Preview valueType={val} fallback="Text" />
-			),
-		},
-		{
-			title: "分组",
-			dataIndex: "groupName",
-			key: "groupName",
-			width: 120,
-			render: (val: string | null) => val || "未分组",
-		},
-		{
-			title: "客户端可见",
-			dataIndex: "clientVisible",
-			key: "clientVisible",
-			width: 100,
-			render: (val: boolean) => (val ? "是" : "否"),
-		},
-		{
-			title: "描述",
-			dataIndex: "description",
-			key: "description",
-			ellipsis: true,
-			width: 180,
-			render: (desc: string | null) => desc || "—",
-		},
-		{
-			title: "创建时间",
-			dataIndex: "createdAt",
-			key: "createdAt",
-			width: 185,
-			valueType: "dateTime",
-		},
-		{
-			title: "更新时间",
-			dataIndex: "updatedAt",
-			key: "updatedAt",
-			width: 185,
-			valueType: "dateTime",
-		},
-		{
-			title: "操作",
-			key: "actions",
-			fixed: "right" as const,
-			render: (_: unknown, record: ConfigRecord) => {
-				const showTranslation = record.clientVisible === true;
-				return (
-					<TableOperate>
-						<TableOperate.Edit onClick={() => openModal(record)} />
-						<TableOperate.Delete
-							recordName="该配置"
-							onConfirm={() => handleDelete(record.id)}
-						/>
-						{showTranslation && (
-							<TableOperate.Custom>
-								<FieldTranslationDrawer
-									entityType="system_config"
-									entityId={record.id}
-									fields={CONFIG_TRANSLATABLE_FIELDS}
-									originalValues={{ value: record.value }}
-								/>
-							</TableOperate.Custom>
-						)}
-					</TableOperate>
-				);
-			},
-		},
-	];
+	const configColumnsDef = configColumns({
+		onEdit: openModal,
+		onDelete: handleDelete,
+	});
 
 	const activeGroupName =
 		!selectedGroup || selectedGroup === "全部"
@@ -384,7 +285,7 @@ function ConfigPage() {
 				>
 					<ProTable
 						dataSource={filteredConfigs}
-						columns={configColumns}
+						columns={configColumnsDef}
 						scroll={{ x: 1500 }}
 						rowKey="id"
 						size="small"
@@ -394,79 +295,13 @@ function ConfigPage() {
 				</Card>
 			</Flex>
 
-			<Modal
-				title={editing ? "编辑配置" : "新建配置"}
+			<ConfigFormModal
 				open={modalOpen}
+				editing={editing}
+				form={form}
 				onCancel={closeModal}
-				footer={null}
-				destroyOnHidden
-			>
-				<Form
-					form={form}
-					layout="vertical"
-					onFinish={handleSubmit}
-					className="mt-4"
-				>
-					<Form.Item
-						name="key"
-						label="配置键"
-						rules={[
-							{ required: true, message: "请输入配置键" },
-							{ max: 100, message: "配置键不能超过100个字符" },
-						]}
-					>
-						<Input
-							disabled={!!editing}
-							placeholder="配置键"
-							style={{ fontFamily: "monospace" }}
-						/>
-					</Form.Item>
-					<Form.Item name="valueType" label="值类型">
-						<EditorTypes.Select allowClear placeholder="默认文本" />
-					</Form.Item>
-					{watchedValueType ? (
-						<Form.Item
-							name="value"
-							label="配置值"
-							rules={[{ required: true, message: "请输入配置值" }]}
-						>
-							<EditorTypes.Editor
-								type={watchedValueType}
-								placeholder="配置值"
-							/>
-						</Form.Item>
-					) : (
-						<Form.Item
-							name="value"
-							label="配置值"
-							rules={[{ required: true, message: "请输入配置值" }]}
-						>
-							<Input.TextArea rows={4} placeholder="配置值" />
-						</Form.Item>
-					)}
-					<Form.Item name="groupName" label="配置分组">
-						<Input placeholder="分组（可选，为空归入未分组）" />
-					</Form.Item>
-					<Form.Item
-						name="clientVisible"
-						label="客户端可见"
-						valuePropName="checked"
-					>
-						<Switch />
-					</Form.Item>
-					<Form.Item name="description" label="描述">
-						<Input.TextArea rows={2} placeholder="描述（可选）" />
-					</Form.Item>
-					<Form.Item className="mb-0 text-right">
-						<Space>
-							<Button onClick={closeModal}>取消</Button>
-							<Button type="primary" htmlType="submit">
-								{editing ? "保存" : "创建"}
-							</Button>
-						</Space>
-					</Form.Item>
-				</Form>
-			</Modal>
+				onSubmit={handleSubmit}
+			/>
 		</AdminPageContent>
 	);
 }

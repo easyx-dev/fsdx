@@ -10,7 +10,7 @@ import {
 import { createFileRoute } from "@tanstack/react-router";
 import { Card, Col, Row, Statistic } from "antd";
 import { AdminPageContent } from "#/components/admin";
-import { getStatsSFn } from "./-mods/index.functions";
+import { getStatsSFn } from "./-mods/dashboard.functions";
 
 export const Route = createFileRoute("/admin/_admin/")({
 	component: Dashboard,

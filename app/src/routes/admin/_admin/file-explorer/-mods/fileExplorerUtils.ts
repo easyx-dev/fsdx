@@ -1,0 +1,80 @@
+/**
+ * 资源管理器纯工具与共享类型
+ */
+import type { ListDirectoryResult } from "#/services/file-explorer/file-explorer.server";
+
+/** 面包屑项类型 */
+export interface BreadcrumbItem {
+	label: string;
+	path: string;
+}
+
+/** 目录数据（含面包屑和写保护状态） */
+export interface DirData extends ListDirectoryResult {
+	breadcrumb: BreadcrumbItem[];
+	writeProtected: boolean;
+}
+
+/** 文本文件扩展名列表 */
+export const TEXT_EXTENSIONS = new Set([
+	"txt",
+	"md",
+	"json",
+	"xml",
+	"yaml",
+	"yml",
+	"log",
+	"csv",
+	"js",
+	"ts",
+	"tsx",
+	"jsx",
+	"css",
+	"html",
+	"htm",
+	"sh",
+	"bash",
+	"zsh",
+	"py",
+	"rb",
+	"go",
+	"rs",
+	"java",
+	"c",
+	"cpp",
+	"h",
+	"hpp",
+	"ini",
+	"toml",
+	"cfg",
+	"conf",
+	"env",
+	"gitignore",
+	"sql",
+	"graphql",
+	"vue",
+	"svelte",
+	"less",
+	"scss",
+	"sass",
+]);
+
+/** 格式化文件大小 */
+export function formatSize(bytes: number): string {
+	if (bytes < 1024) return `${bytes} B`;
+	if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+	if (bytes < 1024 * 1024 * 1024)
+		return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+	return `${(bytes / (1024 * 1024 * 1024)).toFixed(2)} GB`;
+}
+
+/** 判断是否为文本文件 */
+export function isTextFile(name: string): boolean {
+	const ext = name.split(".").pop()?.toLowerCase() ?? "";
+	return TEXT_EXTENSIONS.has(ext);
+}
+
+/** 构建条目的子路径 */
+export function entryPath(parentPath: string, name: string): string {
+	return parentPath ? `${parentPath}/${name}` : name;
+}

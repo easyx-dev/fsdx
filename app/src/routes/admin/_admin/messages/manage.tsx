@@ -7,10 +7,8 @@ import {
 	SendOutlined,
 } from "@ant-design/icons";
 import { message } from "@fsdx/ui-spa/antd-static";
-import { TableOperate } from "@fsdx/ui-spa/table";
 import { createFileRoute } from "@tanstack/react-router";
-import { Button, Form, Input, Modal, Radio, Select, Table, Tag } from "antd";
-import dayjs from "dayjs";
+import { Button, Form, Input, Select, Table } from "antd";
 import { useCallback, useEffect, useState } from "react";
 import { AdminPageContent } from "#/components/admin";
 import {
@@ -23,36 +21,14 @@ import type {
 	MessageWithRecipient,
 	RecipientOption,
 } from "#/services/message/message.server";
+import { messageManageColumns } from "./-mods/messageManageColumns";
+import { SendMessageModal } from "./-mods/SendMessageModal";
+
 export const Route = createFileRoute("/admin/_admin/messages/manage")({
 	component: MessageManagePage,
 });
 
 const PAGE_SIZE = 20;
-
-/** 接收者类型展示映射 */
-const RECIPIENT_TYPE_LABELS: Record<string, string> = {
-	admin: "管理端",
-	client: "客户端",
-};
-
-/** 接收者类型 Tag 颜色 */
-const RECIPIENT_TYPE_COLORS: Record<string, string> = {
-	admin: "purple",
-	client: "cyan",
-};
-
-/** 消息状态 Tag 颜色 */
-const STATUS_COLORS: Record<string, string> = {
-	unread: "red",
-	read: "default",
-};
-
-/** 消息类型展示映射 */
-const TYPE_LABELS: Record<string, string> = {
-	system: "系统",
-	ppt: "PPT",
-	task: "任务",
-};
 
 interface MessageManageFormValues {
 	recipientType?: "admin" | "client";
@@ -185,66 +161,7 @@ function MessageManagePage() {
 		}
 	};
 
-	const columns = [
-		{
-			title: "接收者",
-			dataIndex: "recipientName",
-			key: "recipientName",
-			width: 200,
-			render: (name: string, record: MessageWithRecipient) => (
-				<>
-					<Tag color={RECIPIENT_TYPE_COLORS[record.recipientType]}>
-						{RECIPIENT_TYPE_LABELS[record.recipientType]}
-					</Tag>
-					{name}
-				</>
-			),
-		},
-		{
-			title: "标题",
-			dataIndex: "title",
-			key: "title",
-			ellipsis: true,
-		},
-		{
-			title: "类型",
-			dataIndex: "type",
-			key: "type",
-			width: 90,
-			render: (v: string) => TYPE_LABELS[v] ?? v,
-		},
-		{
-			title: "状态",
-			dataIndex: "status",
-			key: "status",
-			width: 90,
-			render: (v: string) => (
-				<Tag color={STATUS_COLORS[v] ?? "default"}>
-					{v === "unread" ? "未读" : "已读"}
-				</Tag>
-			),
-		},
-		{
-			title: "时间",
-			dataIndex: "createdAt",
-			key: "createdAt",
-			width: 180,
-			render: (v: string) => dayjs(v).format("YYYY-MM-DD HH:mm"),
-		},
-		{
-			title: "操作",
-			key: "action",
-			width: 100,
-			render: (_: unknown, record: MessageWithRecipient) => (
-				<TableOperate>
-					<TableOperate.Delete
-						recordName="该消息"
-						onConfirm={() => handleDelete(record.id)}
-					/>
-				</TableOperate>
-			),
-		},
-	];
+	const columns = messageManageColumns({ onDelete: handleDelete });
 
 	return (
 		<AdminPageContent
@@ -324,77 +241,17 @@ function MessageManagePage() {
 			/>
 
 			{/* 发送消息弹窗 */}
-			<Modal
-				title="发送消息"
+			<SendMessageModal
 				open={sendOpen}
+				sending={sending}
+				form={sendForm}
+				recipientOptions={recipientOptions}
+				recipientSearching={recipientSearching}
+				onRecipientTypeChange={handleRecipientTypeChange}
+				onRecipientSearch={(keyword: string) => fetchRecipients(keyword)}
 				onOk={handleSend}
 				onCancel={() => setSendOpen(false)}
-				confirmLoading={sending}
-				okText="发送"
-				cancelText="取消"
-				width={520}
-			>
-				<Form
-					form={sendForm}
-					layout="vertical"
-					initialValues={{ recipientType: "client" }}
-				>
-					<Form.Item
-						name="recipientType"
-						label="接收者类型"
-						rules={[{ required: true, message: "请选择接收者类型" }]}
-					>
-						<Radio.Group onChange={handleRecipientTypeChange}>
-							<Radio value="client">客户端用户</Radio>
-							<Radio value="admin">管理端用户</Radio>
-						</Radio.Group>
-					</Form.Item>
-
-					<Form.Item
-						name="recipientIds"
-						label="接收者"
-						rules={[{ required: true, message: "请选择接收者" }]}
-					>
-						<Select
-							mode="multiple"
-							placeholder="输入用户名或邮箱搜索，可多选"
-							options={recipientOptions}
-							loading={recipientSearching}
-							onSearch={(value: string) => fetchRecipients(value)}
-							notFoundContent={recipientSearching ? null : "未找到匹配用户"}
-							filterOption={false}
-							showSearch
-							optionFilterProp="label"
-							style={{ width: "100%" }}
-						/>
-					</Form.Item>
-
-					<Form.Item
-						name="title"
-						label="标题"
-						rules={[{ required: true, message: "请输入标题" }]}
-					>
-						<Input placeholder="消息标题（必填）" maxLength={200} />
-					</Form.Item>
-
-					<Form.Item name="content" label="内容">
-						<Input.TextArea
-							rows={3}
-							placeholder="消息内容（选填）"
-							maxLength={2000}
-							showCount
-						/>
-					</Form.Item>
-
-					<Form.Item name="type" label="消息类型">
-						<Input placeholder="如 system / ppt / task（默认 system）" />
-					</Form.Item>
-
-					<Form.Item name="relatedLink" label="相关链接">
-						<Input placeholder="跳转链接（选填）" />
-					</Form.Item>
-				</Form>
-			</Modal>
+			/>
 		</AdminPageContent>
 	);
 }

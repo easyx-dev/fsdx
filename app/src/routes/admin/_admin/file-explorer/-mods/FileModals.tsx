@@ -1,0 +1,143 @@
+/**
+ * 资源管理器弹窗：新建目录、重命名、文本预览
+ */
+import { Input, Modal } from "antd";
+import type { ChangeEvent } from "react";
+
+interface MkdirModalProps {
+	open: boolean;
+	value: string;
+	loading: boolean;
+	onChange: (value: string) => void;
+	onOk: () => void;
+	onCancel: () => void;
+}
+
+/** 新建目录弹窗 */
+export function MkdirModal({
+	open,
+	value,
+	loading,
+	onChange,
+	onOk,
+	onCancel,
+}: MkdirModalProps) {
+	return (
+		<Modal
+			open={open}
+			title="新建目录"
+			okText="创建"
+			cancelText="取消"
+			confirmLoading={loading}
+			onOk={onOk}
+			onCancel={onCancel}
+			destroyOnClose
+			styles={{ body: { paddingBottom: 8 } }}
+		>
+			<Input
+				placeholder="请输入目录名称"
+				value={value}
+				onChange={(e: ChangeEvent<HTMLInputElement>) =>
+					onChange(e.target.value)
+				}
+				onPressEnter={onOk}
+			/>
+		</Modal>
+	);
+}
+
+interface RenameModalProps {
+	open: boolean;
+	value: string;
+	loading: boolean;
+	onChange: (value: string) => void;
+	onOk: () => void;
+	onCancel: () => void;
+}
+
+/** 重命名弹窗 */
+export function RenameModal({
+	open,
+	value,
+	loading,
+	onChange,
+	onOk,
+	onCancel,
+}: RenameModalProps) {
+	return (
+		<Modal
+			open={open}
+			title="重命名"
+			okText="确认"
+			cancelText="取消"
+			confirmLoading={loading}
+			onOk={onOk}
+			onCancel={onCancel}
+			destroyOnClose
+			styles={{ body: { paddingBottom: 8 } }}
+		>
+			<Input
+				placeholder="请输入新名称"
+				value={value}
+				onChange={(e: ChangeEvent<HTMLInputElement>) =>
+					onChange(e.target.value)
+				}
+				onPressEnter={onOk}
+			/>
+		</Modal>
+	);
+}
+
+interface PreviewModalProps {
+	open: boolean;
+	title: string;
+	content: string;
+	loading: boolean;
+	onCancel: () => void;
+}
+
+/** 文本文件内容预览弹窗 */
+export function PreviewModal({
+	open,
+	title,
+	content,
+	loading,
+	onCancel,
+}: PreviewModalProps) {
+	return (
+		<Modal
+			open={open}
+			title={title}
+			footer={null}
+			width="75%"
+			onCancel={onCancel}
+			destroyOnClose
+			styles={{ body: { padding: 0 } }}
+		>
+			{loading ? (
+				<div style={{ textAlign: "center", padding: 60, color: "#8c8c8c" }}>
+					加载中...
+				</div>
+			) : (
+				<pre
+					style={{
+						maxHeight: "72vh",
+						overflow: "auto",
+						background: "#1e1e1e",
+						color: "#d4d4d4",
+						padding: 20,
+						fontSize: 13,
+						lineHeight: 1.7,
+						margin: 0,
+						borderRadius: "0 0 0 0",
+						whiteSpace: "pre-wrap",
+						wordBreak: "break-all",
+						fontFamily: "'SF Mono', 'Cascadia Code', 'Consolas', monospace",
+					}}
+				>
+					{content}
+				</pre>
+			)}
+		</Modal>
+	);
+}

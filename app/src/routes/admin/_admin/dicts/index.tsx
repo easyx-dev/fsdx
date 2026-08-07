@@ -2,47 +2,21 @@
  * 字典管理页面：字典类型 + 条目 CRUD（antd）
  */
 
-import {
-	CaretDownOutlined,
-	CaretUpOutlined,
-	DeleteOutlined,
-	DownloadOutlined,
-	EditOutlined,
-	PlusOutlined,
-} from "@ant-design/icons";
+import { DownloadOutlined, PlusOutlined } from "@ant-design/icons";
 import { downloadFile } from "@fsdx/core/export";
 import { message } from "@fsdx/ui-spa/antd-static";
 import { JsonImportButton } from "@fsdx/ui-spa/json-import-button";
 import { ProTable } from "@fsdx/ui-spa/table";
 import { createFileRoute, useRouter } from "@tanstack/react-router";
-import {
-	Button,
-	Card,
-	Col,
-	ColorPicker,
-	Divider,
-	Flex,
-	Form,
-	Input,
-	InputNumber,
-	Modal,
-	Popconfirm,
-	Row,
-	Space,
-	Switch,
-	Tag,
-} from "antd";
+import { Button, Card, Flex, Form, Space } from "antd";
 import dayjs from "dayjs";
-import type { MouseEvent } from "react";
 import { useState } from "react";
-import {
-	AdminPageContent,
-	EditorTypes,
-	FieldTranslationDrawer,
-} from "#/components/admin";
-import { PRESET_DICTS } from "#/constants";
-import type { EditorType } from "#/constants/editor-types";
+import { AdminPageContent } from "#/components/admin";
 import type { DictItemRecord, DictRecord } from "#/services/dict/dict.server";
+import { DictFormModal } from "./-mods/DictFormModal";
+import { DictItemFormModal } from "./-mods/DictItemFormModal";
+import { DictListPanel } from "./-mods/DictListPanel";
+import { dictItemColumns } from "./-mods/dictColumns";
 import {
 	createDictItemSFn,
 	createDictSFn,
@@ -55,11 +29,7 @@ import {
 	updateDictItemSFn,
 	updateDictSFn,
 } from "./-mods/dicts.functions";
-
-/** 字典条目可翻译字段定义 */
-const DICT_ITEM_TRANSLATABLE_FIELDS = [
-	{ name: "label", label: "标签", valueType: "input" as const },
-];
+import { isPresetDict } from "./-mods/dictUtils";
 
 export const Route = createFileRoute("/admin/_admin/dicts/")({
 	component: DictsPage,
@@ -79,9 +49,6 @@ function DictsPage() {
 	const [advancedExpanded, setAdvancedExpanded] = useState(false);
 	const [dictForm] = Form.useForm();
 	const [itemForm] = Form.useForm();
-	const watchedExtraType = Form.useWatch("extraType", itemForm) as
-		| EditorType
-		| undefined;
 
 	const refreshItems = async (dictSlug: string) => {
 		const data = await getDictItemsSFn({ data: { dictSlug } });
@@ -247,121 +214,15 @@ function DictsPage() {
 		downloadFile(json, `dicts_export_${timestamp}.json`, "application/json");
 		message.success("导出完成");
 	};
+
 	/** 字典条目表格列定义 */
-	const itemColumns = [
-		{ title: "标签", dataIndex: "label", key: "label", width: 120 },
-		{
-			title: "值",
-			dataIndex: "value",
-			key: "value",
-			width: 180,
-			render: (val: string) => <code className="text-xs">{val}</code>,
-		},
-		{
-			title: "排序",
-			dataIndex: "sortOrder",
-			key: "sortOrder",
-			width: 120,
-			render: (val: number, record: DictItemRecord) => (
-				<InputNumber
-					size="small"
-					className="w-full"
-					min={0}
-					value={val}
-					onChange={(v: number | null) => {
-						if (v != null && v !== val) {
-							handleInlineUpdate(record.id, { sortOrder: v });
-						}
-					}}
-				/>
-			),
-		},
-		{
-			title: "状态",
-			dataIndex: "status",
-			key: "status",
-			width: 80,
-			render: (val: string, record: DictItemRecord) => (
-				<Switch
-					size="small"
-					checked={val === "active"}
-					checkedChildren="启用"
-					unCheckedChildren="禁用"
-					onChange={(checked: boolean) => {
-						handleInlineUpdate(record.id, {
-							status: checked ? "active" : "disabled",
-						});
-					}}
-				/>
-			),
-		},
-		{
-			title: "额外类型",
-			dataIndex: "extraType",
-			key: "extraType",
-			width: 110,
-			render: (val: string | null) => <EditorTypes.Preview valueType={val} />,
-		},
-		{
-			title: "额外值",
-			dataIndex: "extra",
-			key: "extra",
-			width: 120,
-			ellipsis: true,
-			render: (val: string | null) => val || "—",
-		},
-		{
-			title: "颜色",
-			dataIndex: "color",
-			key: "color",
-			width: 80,
-			render: (val: string | null) =>
-				val ? <Tag color={val}>{val}</Tag> : "—",
-		},
-		{
-			title: "创建时间",
-			dataIndex: "createdAt",
-			key: "createdAt",
-			width: 185,
-			valueType: "dateTime",
-		},
-		{
-			title: "更新时间",
-			dataIndex: "updatedAt",
-			key: "updatedAt",
-			width: 185,
-			valueType: "dateTime",
-		},
-		{
-			title: "操作",
-			key: "actions",
-			fixed: "right" as const,
-			render: (_: unknown, record: DictItemRecord) => (
-				<TableOperate>
-					<TableOperate.Edit onClick={() => openItemModal(record)} />
-					<TableOperate.Custom>
-						<FieldTranslationDrawer
-							entityType="dict_item"
-							entityId={record.id}
-							fields={DICT_ITEM_TRANSLATABLE_FIELDS}
-							originalValues={{ label: record.label ?? "" }}
-						/>
-					</TableOperate.Custom>
-					{!isPresetDict(record.dictSlug) && (
-						<TableOperate.Delete
-							recordName="该条目"
-							onConfirm={() => handleDeleteItem(record.id)}
-						/>
-					)}
-				</TableOperate>
-			),
-		},
-	];
+	const itemColumns = dictItemColumns({
+		onInlineUpdate: handleInlineUpdate,
+		onEdit: openItemModal,
+		onDelete: handleDeleteItem,
+	});
 
 	const selectedDict = dictList.find((d) => d.slug === selectedDictSlug);
-
-	const isPresetDict = (slug: string) =>
-		PRESET_DICTS.some((d) => d.slug === slug);
 
 	return (
 		<AdminPageContent
@@ -393,98 +254,14 @@ function DictsPage() {
 			}
 		>
 			<Flex gap={20}>
-				<Card
-					size="small"
-					classNames={{
-						root: "flex-[0_0_200px]",
-					}}
-					title="字典类型"
-					extra={
-						<Button
-							type="primary"
-							size="small"
-							icon={<PlusOutlined />}
-							onClick={() => openDictModal()}
-						>
-							新建字典
-						</Button>
-					}
-					styles={{ body: { padding: 0 } }}
-				>
-					{dictList.length === 0 ? (
-						<div className="p-4 text-center text-muted-foreground text-sm">
-							暂无字典
-						</div>
-					) : (
-						<div className="divide-y divide-border">
-							{dictList.map((record) => {
-								const isActive = selectedDictSlug === record.slug;
-								return (
-									<div
-										key={record.id}
-										className={`flex items-center justify-between px-3 py-2.5 cursor-pointer transition-colors hover:bg-accent ${
-											isActive ? "bg-primary-bg" : ""
-										}`}
-										onClick={() => handleSelectDict(record.slug)}
-									>
-										<div className="flex items-center gap-2 min-w-0">
-											{isActive && (
-												<span className="w-1 h-6 rounded-full bg-primary flex-shrink-0" />
-											)}
-											<div className="min-w-0">
-												<div
-													className={
-														isActive
-															? "font-semibold text-primary truncate"
-															: "truncate"
-													}
-												>
-													{record.name}
-												</div>
-												<div className="text-xs text-muted-foreground truncate">
-													{record.slug}
-												</div>
-											</div>
-										</div>
-										<Space size={4} className="flex-shrink-0 ml-2">
-											<Button
-												type="link"
-												size="small"
-												icon={<EditOutlined />}
-												onClick={(e: MouseEvent<HTMLElement>) => {
-													e.stopPropagation();
-													openDictModal(record);
-												}}
-											/>
-											{!isPresetDict(record.slug) && (
-												<Popconfirm
-													title="确定删除该字典及所有条目？"
-													onConfirm={(e?: MouseEvent<HTMLElement>) => {
-														e?.stopPropagation();
-														handleDeleteDict(record.id);
-													}}
-													onCancel={(e?: MouseEvent<HTMLElement>) =>
-														e?.stopPropagation()
-													}
-												>
-													<Button
-														type="link"
-														size="small"
-														danger
-														icon={<DeleteOutlined />}
-														onClick={(e: MouseEvent<HTMLElement>) =>
-															e.stopPropagation()
-														}
-													/>
-												</Popconfirm>
-											)}
-										</Space>
-									</div>
-								);
-							})}
-						</div>
-					)}
-				</Card>
+				<DictListPanel
+					dicts={dictList}
+					selectedSlug={selectedDictSlug}
+					onSelect={handleSelectDict}
+					onCreate={() => openDictModal()}
+					onEdit={openDictModal}
+					onDelete={(record) => handleDeleteDict(record.id)}
+				/>
 				<Card
 					size="small"
 					classNames={{
@@ -534,151 +311,25 @@ function DictsPage() {
 				</Card>
 			</Flex>
 
-			{/* 字典创建/编辑弹窗 */}
-			<Modal
-				title={editingDict ? "编辑字典" : "新建字典"}
+			<DictFormModal
 				open={dictModalOpen}
+				editing={editingDict}
+				form={dictForm}
+				slugDisabled={!!editingDict && isPresetDict(editingDict.slug)}
 				onCancel={closeDictModal}
-				footer={null}
-				destroyOnHidden
-			>
-				<Form form={dictForm} layout="vertical" onFinish={handleDictSubmit}>
-					<Form.Item
-						name="name"
-						label="名称"
-						rules={[{ required: true, message: "请输入字典名称" }]}
-					>
-						<Input placeholder="字典名称" />
-					</Form.Item>
-					<Form.Item
-						name="slug"
-						label="标识 (slug)"
-						rules={[{ required: true, message: "请输入字典标识" }]}
-					>
-						<Input
-							placeholder="唯一标识"
-							disabled={!!editingDict && isPresetDict(editingDict.slug)}
-						/>
-					</Form.Item>
-					<Form.Item name="description" label="描述">
-						<Input.TextArea rows={2} placeholder="字典描述（可选）" />
-					</Form.Item>
-					<Form.Item className="mb-0 text-right">
-						<Space>
-							<Button onClick={closeDictModal}>取消</Button>
-							<Button type="primary" htmlType="submit">
-								{editingDict ? "保存" : "创建"}
-							</Button>
-						</Space>
-					</Form.Item>
-				</Form>
-			</Modal>
+				onSubmit={handleDictSubmit}
+			/>
 
-			{/* 条目创建/编辑弹窗 */}
-			<Modal
-				title={editingItem ? "编辑条目" : "新建条目"}
+			<DictItemFormModal
 				open={itemModalOpen}
+				editing={editingItem}
+				form={itemForm}
+				valueDisabled={!!editingItem && isPresetDict(editingItem.dictSlug)}
+				advancedExpanded={advancedExpanded}
+				onToggleAdvanced={() => setAdvancedExpanded(!advancedExpanded)}
 				onCancel={closeItemModal}
-				footer={null}
-				width={advancedExpanded ? 720 : 520}
-				destroyOnHidden
-			>
-				<Form
-					form={itemForm}
-					layout="vertical"
-					onFinish={handleItemSubmit}
-					initialValues={{ sortOrder: 0 }}
-				>
-					<Form.Item
-						name="label"
-						label="标签"
-						rules={[{ required: true, message: "请输入标签" }]}
-					>
-						<Input placeholder="显示名称" />
-					</Form.Item>
-					<Form.Item
-						name="value"
-						label="值"
-						rules={[{ required: true, message: "请输入值" }]}
-					>
-						<Input
-							placeholder="存储值"
-							disabled={!!editingItem && isPresetDict(editingItem.dictSlug)}
-						/>
-					</Form.Item>
-					<Divider plain style={{ margin: "8px 0 12px" }}>
-						<Button
-							type="link"
-							size="small"
-							className="px-0 text-xs"
-							icon={
-								advancedExpanded ? <CaretUpOutlined /> : <CaretDownOutlined />
-							}
-							onClick={() => setAdvancedExpanded(!advancedExpanded)}
-						>
-							高级配置
-						</Button>
-					</Divider>
-					{advancedExpanded && (
-						<>
-							<Row gutter={16}>
-								<Col span={12}>
-									<Form.Item name="sortOrder" label="排序">
-										<InputNumber
-											className="w-full"
-											min={0}
-											placeholder="排序序号"
-										/>
-									</Form.Item>
-								</Col>
-								<Col span={12}>
-									<Form.Item
-										name="color"
-										label="颜色"
-										getValueFromEvent={(
-											color: { toHexString?: () => string } | string,
-										) =>
-											typeof color === "string"
-												? color
-												: (color?.toHexString?.() ?? undefined)
-										}
-									>
-										<ColorPicker allowClear format="hex" />
-									</Form.Item>
-								</Col>
-							</Row>
-							<Form.Item name="extraType" label="额外类型">
-								<EditorTypes.Select allowClear />
-							</Form.Item>
-							{watchedExtraType ? (
-								<Form.Item name="extra" label="额外值">
-									<EditorTypes.Editor
-										type={watchedExtraType}
-										placeholder="额外扩展值"
-									/>
-								</Form.Item>
-							) : (
-								<Form.Item name="extra" label="额外值">
-									<Input.TextArea
-										rows={3}
-										placeholder="额外扩展值（选择额外类型后可切换编辑器）"
-									/>
-								</Form.Item>
-							)}
-						</>
-					)}
-					<Form.Item className="mb-0 text-right">
-						<Space>
-							<Button onClick={closeItemModal}>取消</Button>
-							<Button type="primary" htmlType="submit">
-								{editingItem ? "保存" : "创建"}
-							</Button>
-						</Space>
-					</Form.Item>
-				</Form>
-			</Modal>
+				onSubmit={handleItemSubmit}
+			/>
 		</AdminPageContent>
 	);
 }
-
-import { TableOperate } from "@fsdx/ui-spa/table";

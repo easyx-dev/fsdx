@@ -45,7 +45,7 @@ description: >
 | 9 | `src/routes/admin/_admin/<module-name>/create.tsx` | 创建页 | — |
 | 10 | `src/routes/admin/_admin/<module-name>/$id/edit.tsx` | 编辑页 | — |
 | 11 | `src/services/<module-name>/__tests__/<module-name>.test.ts` | 服务层测试 | [test-writing](../test-writing/SKILL.md) |
-| 12 | 路由 `-mods/__tests__/`（schema 就近测试） | 追加 Schema 测试 | [test-writing](../test-writing/SKILL.md) |
+| 12 | 路由目录 `__tests__/`（schema 就近测试） | 追加 Schema 测试 | [test-writing](../test-writing/SKILL.md) |
 
 ---
 
@@ -867,7 +867,7 @@ function ProductEditPage() {
 
 ### Schema 测试
 
-在路由目录 `-mods/__tests__/` 下为 `createProductSchema` 和 `updateProductSchema` 编写就近校验测试（合法通过、字段缺失、字段非法值）。schema 需在 `.functions.ts` / `.schemas.ts` 导出，测试直接 import 真实对象，禁止本地复制副本。
+在路由目录 `__tests__/` 下为 `createProductSchema` 和 `updateProductSchema` 编写就近校验测试（合法通过、字段缺失、字段非法值）。schema 需在 `.functions.ts` / `.schemas.ts` 导出，测试直接 import 真实对象，禁止本地复制副本。
 
 ## 验证清单
 

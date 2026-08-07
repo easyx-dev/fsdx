@@ -2,12 +2,12 @@
  * UI 翻译 Schema 验证测试
  */
 import { describe, expect, it } from "vitest";
-import { importUITranslationsSchema } from "../ui-translations.functions";
+import { importUITranslationsSchema } from "../-mods/ui-translations.functions";
 import {
 	deleteSchema,
 	formSchema,
 	getListSchema,
-} from "../ui-translations.schemas";
+} from "../-mods/ui-translations.schemas";
 
 describe("getListSchema", () => {
 	it("空参数应通过校验", () => {

@@ -43,6 +43,16 @@
   - 弱断言修复：`buildSortClause` / `notDeleted` 补语义断言（防排序注入）、file 状态筛选、i18n upsert 分支、config getConfigList
   - 测试约定对齐：schema 测试就近放置（路由/模块 `__tests__/`），移除集中 `sf-schemas.test.ts` 约定（AGENTS.md 与 skills 同步）
 
+- **路由目录组织优化**：
+  - 测试目录统一：admin news / translations 的路由层测试自 `-mods/__tests__/` 迁至路由目录 `__tests__/`（对齐 AGENTS.md「schema 就近放置」约定，admin-crud skill 同步改为路由目录表述）
+  - 仪表盘 companion 重命名：`_admin/-mods/index.functions.ts` / `index.server.ts` → `dashboard.functions.ts` / `dashboard.server.ts`，消除 `index` 通用命名
+  - 超限页面拆分（均入对应 `-mods/`）：
+    - `dicts`：抽 `DictFormModal` / `DictItemFormModal` / `DictListPanel` / `dictColumns` / `dictUtils`（684 → 335 行）
+    - `file-explorer`：抽 `FileModals`（新建/重命名/预览）/ `fileExplorerColumns` / `fileExplorerUtils`（613 → 353 行）
+    - `config`：抽 `ConfigFormModal` / `configColumns`（472 → 307 行）
+    - `news`：抽 `newsColumns`（405 → 217 行）
+    - `messages/manage`：抽 `SendMessageModal` / `messageManageColumns`（400 → 253 行）
+
 ### 依赖升级
 
 - **major 版本升级（批次 C）**：

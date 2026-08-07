@@ -4,7 +4,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { adminPermGuard } from "#/middleware/admin-auth";
 import { ADMIN_PERMISSIONS } from "#/permissions/admin-permissions";
-import { getStats } from "./index.server";
+import { getStats } from "./dashboard.server";
 
 export interface DashboardStats {
 	newsTotal: number;
