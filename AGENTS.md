@@ -215,12 +215,11 @@ Server Function handler 体中直接调用 db 是安全的——SFn 始终在服
 - `vite.config.ts` 额外配置：客户端禁止导入 `bcryptjs`、`drizzle-orm` 和 `openai`（防止服务端包泄漏）
 - type-only import（`import type` / `export type`）不触发保护，因为运行时被擦除
 
-### antd 6 类型补丁
+### antd 6 类型补丁（已移除）
 
 - antd 6.4.3 的复合组件（`Card`、`Image`）用 `interface X extends typeof 组件` / `interface X extends React.FC` 挂载静态子组件，在 TS 6 + React 19 下丢失调用签名，JSX 使用处报 `TS2604/TS2786: cannot be used as a JSX component`
-- 通过模块增补修复：`app/src/types/antd-fix.d.ts`（app 生效）与 `packages/ui-spa/src/antd-fix.d.ts`（ui-spa 包内 tsc 自检生效），将 Card/Image 重声明为「组件本体交叉子组件」交叉类型
-- 另有个别 antd 6.4.3 声明缺陷靠调用处绕过并在代码注释标明：`Select`/`DictSelect` 的 `role` 必填（补 `role="combobox"`）、`UploadFile` 的 aria 字段必填
-- antd 官方修复这些声明缺陷后，两个 `antd-fix.d.ts` 与调用处的绕过注释可整体移除
+- 历史上通过模块增补 `app/src/types/antd-fix.d.ts` 与 `packages/ui-spa/src/antd-fix.d.ts` 修复，并在调用处用 `role="combobox"`、`UploadFile` aria 空串绕过个别声明缺陷
+- **antd ≥ 6.5.3 已官方修复上述声明缺陷**，升级后补丁文件与绕过注释已整体移除；若未来 antd 再次引入此类声明缺陷，优先升级而非打补丁
 
 ### 环境变量
 

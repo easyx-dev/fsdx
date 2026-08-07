@@ -28,18 +28,18 @@
     "@monaco-editor/react": "^4.7.0"
   },
   "peerDependencies": {
-    "@ant-design/icons": "^6",
-    "@tanstack/react-router": "^1",
+    "@ant-design/icons": "^6.3.2",
+    "@tanstack/react-router": "^1.170.21",
     "@wangeditor/editor": "^5.1.23",
     "@wangeditor/editor-for-react": "^1.0.6",
-    "antd": "^6",
+    "antd": "^6.5.3",
     "dayjs": "^1",
-    "monaco-editor": "^0.55",
-    "react": "^19",
-    "react-dom": "^19"
+    "monaco-editor": "^0.56",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8"
   },
   "devDependencies": {
-    "@types/react": "^19.2.16",
+    "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.3",
     "@wangeditor/editor": "^5.1.23",
     "@wangeditor/editor-for-react": "^1.0.6"

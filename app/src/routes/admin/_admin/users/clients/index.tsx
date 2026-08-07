@@ -351,8 +351,7 @@ function ClientsPage() {
 					{editingUser && (
 						<>
 							<Form.Item name="status" label="状态">
-								{/* role 为 antd 6.4.3 SelectProps 声明缺陷（Pick 使其成为必填），待官方修复后可移除 */}
-								<DictSelect dictSlug="user_status" role="combobox" />
+								<DictSelect dictSlug="user_status" />
 							</Form.Item>
 							<Form.Item
 								name="emailVerified"

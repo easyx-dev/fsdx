@@ -42,10 +42,6 @@ function idToUploadFile(id: string): UploadFile {
 		name: id,
 		status: "done",
 		url: `/api/download/file/${id}`,
-		// antd 6.4.3 声明缺陷：UploadFile 从 AriaAttributes 继承了必填的
-		// aria-label / aria-labelledby，实际运行时不需要，此处补空串绕过
-		"aria-label": "",
-		"aria-labelledby": "",
 	};
 }
 

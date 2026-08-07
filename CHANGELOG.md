@@ -2,6 +2,17 @@
 
 ## [Unreleased]
 
+### 依赖升级
+
+- **批量升级 patch + minor 依赖（29 个）**：
+  - TanStack 全家桶：react-router 1.170.21、react-start 1.168.38、router-plugin 1.168.26、react-form/react-form-start 1.33.3、router-devtools 1.167.1、react-devtools 0.10.9、devtools-vite 0.8.3
+  - React 生态：react/react-dom 19.2.8、@types/react 19.2.18、@vitejs/plugin-react 6.0.5、vite 8.2.1
+  - antd 生态：antd 6.5.3、@ant-design/icons 6.3.2
+  - 核心库：i18next 26.3.6、react-i18next 17.0.11、jose 6.2.8、hono 4.13.0、@hono/node-server 2.1.0、pg 8.22.0、dompurify 3.4.13、isomorphic-dompurify 3.22.0、@alicloud/dysmsapi20170525 4.6.0
+  - 构建/工具：tailwindcss 4.3.3、vitest 4.1.10、tsx 4.23.9、monaco-editor 0.56.0、nitro 260610-beta、@radix-ui/react-slot 1.3.3、@types/pg 8.20.4、@types/nodemailer 8.0.1
+- **antd 6.5.3 已官方修复 Card/Image 复合组件 JSX 声明缺陷**：删除 `app/src/types/antd-fix.d.ts` 与 `packages/ui-spa/src/antd-fix.d.ts`，移除 `Select`/`DictSelect` 的 `role="combobox"` 及 `UploadFile` aria 空串等绕过
+- **workspace peer 对齐单实例**：ui-spa/ui-ssr 的 `react`/`react-dom` peer 收紧至 `^19.2.8`，ui-spa 的 `antd`/`@ant-design/icons`/`@tanstack/react-router`/`monaco-editor` peer 同步对齐 app 实际版本
+
 ### Breaking Changes
 
 - **单人多角色改造（双端 RBAC）**：`admin_user.role_id` / `client_user.client_role_id` 单角色外键 → `admin_role_ids` / `client_role_ids`（jsonb string[]，多角色权限取并集）
