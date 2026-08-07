@@ -2,7 +2,6 @@
  * AI 模型测试页面：支持深度思考与快速模型调用测试
  */
 import { RobotOutlined, SendOutlined } from "@ant-design/icons";
-import { AdminPageContent } from "@fsdx/ui-spa/admin-page-content";
 import { createFileRoute } from "@tanstack/react-router";
 import {
 	Button,
@@ -18,6 +17,7 @@ import {
 } from "antd";
 import { useState } from "react";
 import type { z } from "zod";
+import { AdminPageContent } from "#/components/admin/AdminPageContent";
 import { message } from "#/components/antd-static";
 import { type aiTestSchema, aiTestSFn } from "./-mods/ai.functions";
 

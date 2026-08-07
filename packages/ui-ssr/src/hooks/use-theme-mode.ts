@@ -1,10 +1,10 @@
 /**
  * 统一主题模式管理 hook
- * 基于 useSyncExternalStore 将 localStorage 中的主题模式/家族作为共享外部状态，
+ * 基于 useSyncExternalStore 将 localStorage 中的主题模式作为共享外部状态，
  * 保证同一 storageKey 的多个调用点（ThemeToggle / AdminLayout）实时同步，
  * 并支持跨标签页与操作系统主题变化联动。
- * 主题由「家族（配色） × 明暗」组合为具名主题，data-theme 承载完整主题名
- * （家族与 storageKey 配置见 app 的 theme/themes.ts 注册表）。
+ * 每个端对应一个主题预设（亮/暗两档具名主题），data-theme 承载完整主题名
+ * （预设定义见 app 的 theme/themes.ts）。
  */
 import { useCallback, useEffect, useSyncExternalStore } from "react";
 
@@ -17,25 +17,12 @@ export interface ThemeScheme {
 	antdColorPrimary: string;
 }
 
-/** 主题家族：一套配色（如棕色/蓝灰/绿色），含亮暗两档 */
-export interface ThemeFamily {
-	/** 家族标识，如 brown */
-	id: string;
-	/** 家族显示名 */
-	label: string;
+/** 主题预设：一端（管理端/前台）的明暗两档主题 */
+export interface ThemePreset {
+	/** localStorage 明暗模式键名 */
+	storageKey: string;
 	light: ThemeScheme;
 	dark: ThemeScheme;
-}
-
-/** 主题侧：一端（管理端/前台）的明暗模式 + 可选家族列表 */
-export interface ThemeSide {
-	/** localStorage 明暗模式键名 */
-	storageKeyMode: string;
-	/** localStorage 家族键名 */
-	storageKeyFamily: string;
-	/** 默认家族 id */
-	defaultFamilyId: string;
-	families: ThemeFamily[];
 }
 
 /** 主题明暗模式 */
@@ -55,18 +42,7 @@ function getStoredMode(key: string): ThemeMode {
 	return "auto";
 }
 
-/** 从 localStorage 读取保存的主题家族 id（非法值回退默认家族） */
-function getStoredFamilyId(side: ThemeSide): string {
-	try {
-		const stored = localStorage.getItem(side.storageKeyFamily);
-		if (side.families.some((f) => f.id === stored)) return stored as string;
-	} catch {
-		/* SSR 环境忽略 */
-	}
-	return side.defaultFamilyId;
-}
-
-/** 模块级监听器集合：同一页面内所有 hook 实例共享，setMode/setFamilyId 时统一通知 */
+/** 模块级监听器集合：同一页面内所有 hook 实例共享，setMode 时统一通知 */
 const listeners = new Set<() => void>();
 
 function notifyThemeChange() {
@@ -75,16 +51,12 @@ function notifyThemeChange() {
 
 /**
  * 订阅主题变化：同页实例通知 + storage 事件（跨标签页）。
- * storage 回调仅关注本侧主题键，避免同源其他键的写入触发无关重渲染。
+ * storage 回调仅关注本端主题键，避免同源其他键的写入触发无关重渲染。
  */
-function subscribeTheme(side: ThemeSide, callback: () => void) {
+function subscribeTheme(preset: ThemePreset, callback: () => void) {
 	listeners.add(callback);
 	const onStorage = (event: StorageEvent) => {
-		if (
-			event.key === null ||
-			event.key === side.storageKeyMode ||
-			event.key === side.storageKeyFamily
-		) {
+		if (event.key === null || event.key === preset.storageKey) {
 			callback();
 		}
 	};
@@ -106,45 +78,31 @@ function getMediaSnapshot() {
 	return window.matchMedia(DARK_MEDIA_QUERY).matches;
 }
 
-/** 按 id 解析家族：未知 id 回退默认家族 */
-function resolveFamily(side: ThemeSide, familyId: string): ThemeFamily {
-	return (
-		side.families.find((f) => f.id === familyId) ??
-		side.families.find((f) => f.id === side.defaultFamilyId) ??
-		side.families[0]
-	);
-}
-
 /**
  * 应用主题到 DOM：两端统一使用 data-theme 属性（值为完整主题名，见主题注册表）。
- * 主题名由 themes.ts 注册表与 global.css 主题块共同约定，变更需两处同步。
+ * 主题名由 themes.ts 注册表与 global.css 主题块共同约定。
  */
 function applyThemeToDom(
 	mode: ThemeMode,
-	family: ThemeFamily,
+	preset: ThemePreset,
 	prefersDark: boolean,
 ) {
 	const resolvedDark = mode === "auto" ? prefersDark : mode === "dark";
-	const scheme = resolvedDark ? family.dark : family.light;
+	const scheme = resolvedDark ? preset.dark : preset.light;
 	document.documentElement.setAttribute("data-theme", scheme.dataTheme);
 	document.documentElement.style.colorScheme = resolvedDark ? "dark" : "light";
 }
 
 /**
  * 统一主题模式 hook
- * @param side 主题侧配置（storageKey / 家族列表，见 app 的 theme/themes.ts）
- * @returns mode 明暗三态、familyId 当前家族、scheme 当前主题方案（含 dataTheme 与 antd 主色）
+ * @param preset 主题预设（storageKey + 亮暗两档，见 app 的 theme/themes.ts）
+ * @returns mode 明暗三态、scheme 当前主题方案（含 dataTheme 与 antd 主色）
  */
-export function useThemeMode(side: ThemeSide) {
+export function useThemeMode(preset: ThemePreset) {
 	const mode = useSyncExternalStore(
-		(cb) => subscribeTheme(side, cb),
-		() => getStoredMode(side.storageKeyMode),
+		(cb) => subscribeTheme(preset, cb),
+		() => getStoredMode(preset.storageKey),
 		() => "auto" as ThemeMode,
-	);
-	const familyId = useSyncExternalStore(
-		(cb) => subscribeTheme(side, cb),
-		() => getStoredFamilyId(side),
-		() => side.defaultFamilyId,
 	);
 	const prefersDark = useSyncExternalStore(
 		subscribeMedia,
@@ -152,30 +110,16 @@ export function useThemeMode(side: ThemeSide) {
 		() => false,
 	);
 
-	const family = resolveFamily(side, familyId);
-
 	const setMode = useCallback(
 		(newMode: ThemeMode) => {
 			try {
-				localStorage.setItem(side.storageKeyMode, newMode);
+				localStorage.setItem(preset.storageKey, newMode);
 			} catch {
 				/* ignore */
 			}
 			notifyThemeChange();
 		},
-		[side.storageKeyMode],
-	);
-
-	const setFamilyId = useCallback(
-		(newFamilyId: string) => {
-			try {
-				localStorage.setItem(side.storageKeyFamily, newFamilyId);
-			} catch {
-				/* ignore */
-			}
-			notifyThemeChange();
-		},
-		[side.storageKeyFamily],
+		[preset.storageKey],
 	);
 
 	// 同步主题到 DOM：多实例应用同一值是幂等操作。
@@ -184,14 +128,14 @@ export function useThemeMode(side: ThemeSide) {
 	// 短暂覆盖 Document init 脚本已设置好的首帧主题（管理端包在 ClientOnly 内不受影响）。
 	useEffect(() => {
 		applyThemeToDom(
-			getStoredMode(side.storageKeyMode),
-			resolveFamily(side, getStoredFamilyId(side)),
+			getStoredMode(preset.storageKey),
+			preset,
 			window.matchMedia(DARK_MEDIA_QUERY).matches,
 		);
-	}, [mode, familyId, prefersDark, side]);
+	}, [mode, prefersDark, preset]);
 
 	const isDark = mode === "auto" ? prefersDark : mode === "dark";
-	const scheme: ThemeScheme = isDark ? family.dark : family.light;
+	const scheme: ThemeScheme = isDark ? preset.dark : preset.light;
 
-	return { mode, setMode, familyId, setFamilyId, isDark, scheme, family };
+	return { mode, setMode, isDark, scheme };
 }

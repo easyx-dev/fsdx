@@ -8,7 +8,6 @@ import {
 	FolderOutlined,
 	ReloadOutlined,
 } from "@ant-design/icons";
-import { AdminPageContent } from "@fsdx/ui-spa/admin-page-content";
 import { ProTable } from "@fsdx/ui-spa/pro-table";
 import { safeSfnCall } from "@fsdx/ui-spa/sfn-helpers";
 import { TableOperate } from "@fsdx/ui-spa/table-operate";
@@ -26,6 +25,7 @@ import {
 } from "antd";
 import type { ChangeEvent } from "react";
 import { useCallback, useState } from "react";
+import { AdminPageContent } from "#/components/admin/AdminPageContent";
 import { message } from "#/components/antd-static";
 import {
 	createDirectorySFn,

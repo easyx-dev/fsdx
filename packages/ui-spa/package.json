@@ -12,7 +12,6 @@
     "./code-editor": "./src/code-editor.tsx",
     "./rich-editor": "./src/rich-editor.tsx",
     "./ms-input": "./src/ms-input.tsx",
-    "./admin-page-content": "./src/admin-page-content.tsx",
     "./upload/file-upload-render": "./src/upload/FileUploadRender.tsx",
     "./upload/photo-wall": "./src/upload/PhotoWall.tsx",
     "./sfn-helpers": "./src/sfn-helpers.ts"

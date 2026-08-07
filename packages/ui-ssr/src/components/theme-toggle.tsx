@@ -1,16 +1,16 @@
 /**
  * 前台主题切换按钮：三态循环（亮/暗/跟随系统）
- * 需传入主题侧配置（家族与 storageKey，见 app 的 theme/themes.ts）
+ * 需传入主题预设（storageKey 与亮暗两档，见 app 的 theme/themes.ts）
  */
-import { type ThemeSide, useThemeMode } from "../hooks/use-theme-mode";
+import { type ThemePreset, useThemeMode } from "../hooks/use-theme-mode";
 
 interface ThemeToggleProps {
-	/** 主题侧配置（CLIENT_SIDE） */
-	side: ThemeSide;
+	/** 主题预设（CLIENT_THEME） */
+	preset: ThemePreset;
 }
 
-export default function ThemeToggle({ side }: ThemeToggleProps) {
-	const { mode, setMode } = useThemeMode(side);
+export default function ThemeToggle({ preset }: ThemeToggleProps) {
+	const { mode, setMode } = useThemeMode(preset);
 
 	function toggleMode() {
 		const nextMode =

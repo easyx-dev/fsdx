@@ -2,7 +2,7 @@
  * 根路由 Document 外壳：分离 Admin（客户端渲染）与前台（SSR + 国际化）
  */
 
-import type { ThemeSide } from "@fsdx/ui-ssr/use-theme-mode";
+import type { ThemePreset } from "@fsdx/ui-ssr/use-theme-mode";
 import { ClientOnly, HeadContent, Scripts } from "@tanstack/react-router";
 import { useEffect, useRef } from "react";
 import { Toaster } from "sonner";
@@ -18,7 +18,7 @@ import {
 } from "#/components/track/track";
 import adminGlobalCss from "#/styles/admin.global.css?url";
 import ssrGlobalCss from "#/styles/ssr.global.css?inline";
-import { ADMIN_SIDE, buildFamilyMapJson, CLIENT_SIDE } from "#/theme/themes";
+import { ADMIN_THEME, CLIENT_THEME } from "#/theme/themes";
 import { AdminProvider } from "./admin/AdminProvider";
 
 // 内联层声明锁定级联层顺序：若全局 CSS <link> 加载失败（混合/陈旧部署 404），antd 运行时注入的
@@ -27,16 +27,15 @@ const LAYER_ORDER_STYLE =
 	"@layer properties, theme, base, antd, components, utilities;";
 
 /**
- * 生成主题 init 脚本：家族映射与 storageKey 均从 themes.ts 注册表推导，
- * 避免脚本与注册表手工双写导致新增/重命名家族时首帧主题静默失效。
+ * 生成主题 init 脚本：storageKey 与 dataTheme 均从 themes.ts 注册表推导，
+ * 避免脚本与注册表手工双写导致首帧主题静默失效。
  */
-function buildThemeInitScript(side: ThemeSide): string {
-	const familyMap = buildFamilyMapJson(side);
-	return `(function(){try{var m=localStorage.getItem('${side.storageKeyMode}')||'auto';m=(m==='light'||m==='dark'||m==='auto')?m:'auto';var f=localStorage.getItem('${side.storageKeyFamily}')||'${side.defaultFamilyId}';var fam=${familyMap}[f]||${familyMap}['${side.defaultFamilyId}'];var d=m==='auto'?window.matchMedia('(prefers-color-scheme: dark)').matches:m==='dark';var r=document.documentElement;r.setAttribute('data-theme',fam+(d?'-dark':'-light'));r.style.colorScheme=d?'dark':'light'}catch(e){}})();`;
+function buildThemeInitScript(preset: ThemePreset): string {
+	return `(function(){try{var m=localStorage.getItem('${preset.storageKey}')||'auto';m=(m==='light'||m==='dark'||m==='auto')?m:'auto';var d=m==='auto'?window.matchMedia('(prefers-color-scheme: dark)').matches:m==='dark';var r=document.documentElement;r.setAttribute('data-theme',d?'${preset.dark.dataTheme}':'${preset.light.dataTheme}');r.style.colorScheme=d?'dark':'light'}catch(e){}})();`;
 }
 
-const ADMIN_THEME_INIT_SCRIPT = buildThemeInitScript(ADMIN_SIDE);
-const CLIENT_THEME_INIT_SCRIPT = buildThemeInitScript(CLIENT_SIDE);
+const ADMIN_THEME_INIT_SCRIPT = buildThemeInitScript(ADMIN_THEME);
+const CLIENT_THEME_INIT_SCRIPT = buildThemeInitScript(CLIENT_THEME);
 
 interface SSRRootDocumentProps {
 	children: React.ReactNode;

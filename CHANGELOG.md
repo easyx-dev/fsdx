@@ -64,15 +64,16 @@
 ### Refactor
 
 - **主题体系重构（对齐 bom-easy）**：
-  - 具名主题注册表 `app/src/theme/themes.ts`：主题由「家族（配色）× 明暗」组合，`data-theme` 承载完整主题名；管理端提供棕（默认 `#795548`）/蓝灰/绿三家族，前台中性灰单家族
-  - CSS 令牌链路：新增 `shared-tokens.css` 共享中性令牌（`--t-*`），两端口 `--t-brand-*` 品牌色阶 → `--s-*` 语义令牌 → `@theme` 映射；`@custom-variant dark (&:is([data-theme$="-dark"] *))` 统一暗色变体，废弃 `.dark` class 双轨
-  - `use-theme-mode` 重写为 `useSyncExternalStore`（跨标签页 + 系统主题联动），签名改为 `useThemeMode(side)`，新增 `familyId/setFamilyId`
-  - 管理端品牌色由绿 `#00b96b` 换棕 `#795548`（暗色 `#a1887f`），antd `colorPrimary` 从注册表读取并随家族切换；`borderRadius: 0` 直角风格，Tailwind radius 全 0（保留 `rounded-full`）
-  - 管理端侧边栏主题按钮升级为主题设置 Popover：配色家族（棕/蓝灰/绿）+ 明暗 Segmented（亮/暗/跟随系统）
-  - `AdminRootDocument` 补齐主题 init 脚本（修复首屏闪烁），两个 `<head>` 增加内联 `@layer` 顺序声明；init 脚本由 `themes.ts` 注册表经 `buildFamilyMapJson` 生成，杜绝脚本与注册表手工双写漂移
+  - 具名主题注册表 `app/src/theme/themes.ts`：每个端一个主题预设（`ThemePreset`），`data-theme` 承载完整主题名（如 `admin-brown-light`）；管理端棕 `#795548`、前台中性灰
+  - CSS 令牌链路：新增 `shared-tokens.css` 共享中性令牌（`--t-*`），两端 `--t-brand-*` 品牌色阶 → `--s-*` 语义令牌 → `@theme` 映射；`@custom-variant dark (&:is([data-theme$="-dark"] *))` 统一暗色变体，废弃 `.dark` class 双轨
+  - `use-theme-mode` 重写为 `useSyncExternalStore`（跨标签页 + 系统主题联动），签名改为 `useThemeMode(preset)`，返回 `scheme`（dataTheme + antd 主色）
+  - 管理端品牌色由绿 `#00b96b` 换棕 `#795548`（暗色 `#a1887f`），antd `colorPrimary`/`colorInfo` 从注册表读取（`colorInfo` 派生 Link 链接色）；`borderRadius: 0` 直角风格，Tailwind radius 全 0（保留 `rounded-full`）
+  - 管理端侧边栏主题按钮保持三态循环（亮/暗/跟随系统）
+  - `AdminRootDocument` 补齐主题 init 脚本（修复首屏闪烁），两个 `<head>` 增加内联 `@layer` 顺序声明；init 脚本由 `themes.ts` 注册表推导 storageKey 与 dataTheme，杜绝脚本与注册表手工双写漂移
   - `use-theme-mode` 的 DOM 应用改为直接读取 localStorage/媒体查询最新值（规避 SSR 水合首帧用服务端快照覆盖主题），`storage` 监听按主题键过滤
   - 硬编码颜色清理：`#1677ff`→`var(--s-primary)`、`zinc/blue/gray`→语义令牌类；Monaco 暗色检测改 `data-theme` 判断；内联非零圆角归零
   - 管理端 logo/favicon 蓝 `#1677ff`→棕 `#795548`；前台 storageKey `theme`→`client-theme`
+- **AdminPageContent 挪回 app**：布局组件（标题栏 + 内容区）自 `@fsdx/ui-spa` 迁至 `app/src/components/admin/AdminPageContent.tsx`，26 处路由页面导入改 `#/components/admin/AdminPageContent`，ui-spa 移除对应导出；标题栏定高改 CSS 变量 `--admin-header-height`，内容区高度按 `calc(100vh - var(--admin-header-height))` 计算内部滚动，便于子元素按已知高度布局
 
 
 ### Refactor

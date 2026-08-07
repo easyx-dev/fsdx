@@ -11,7 +11,6 @@ import {
 	PlusOutlined,
 } from "@ant-design/icons";
 import { downloadFile } from "@fsdx/core/export";
-import { AdminPageContent } from "@fsdx/ui-spa/admin-page-content";
 import { JsonImportButton } from "@fsdx/ui-spa/json-import-button";
 import { ProTable } from "@fsdx/ui-spa/pro-table";
 import { createFileRoute, useRouter } from "@tanstack/react-router";
@@ -35,6 +34,7 @@ import {
 import dayjs from "dayjs";
 import type { MouseEvent } from "react";
 import { useState } from "react";
+import { AdminPageContent } from "#/components/admin/AdminPageContent";
 import { EditorTypes } from "#/components/admin/editor-type";
 import { FieldTranslationDrawer } from "#/components/admin/FieldTranslationDrawer";
 import { message } from "#/components/antd-static";

@@ -6,12 +6,12 @@ import {
 	SearchOutlined,
 	SendOutlined,
 } from "@ant-design/icons";
-import { AdminPageContent } from "@fsdx/ui-spa/admin-page-content";
 import { TableOperate } from "@fsdx/ui-spa/table-operate";
 import { createFileRoute } from "@tanstack/react-router";
 import { Button, Form, Input, Modal, Radio, Select, Table, Tag } from "antd";
 import dayjs from "dayjs";
 import { useCallback, useEffect, useState } from "react";
+import { AdminPageContent } from "#/components/admin/AdminPageContent";
 import { message } from "#/components/antd-static";
 import {
 	deleteAnyMessageSFn,

@@ -19,8 +19,11 @@ export function AdminPageContent({
 }: AdminPageContentProps) {
 	return (
 		<div className="flex flex-1 flex-col overflow-hidden">
-			{/* 吸顶标题栏 */}
-			<div className="sticky top-0 z-10 flex h-14 shrink-0 items-center border-b border-border bg-background px-5">
+			{/* 标题栏：定高，高度由 CSS 变量 --admin-header-height 提供 */}
+			<div
+				className="z-10 flex shrink-0 items-center border-b border-border bg-background px-5"
+				style={{ height: "var(--admin-header-height)" }}
+			>
 				<div className="flex min-w-0 flex-1 items-center justify-between gap-4">
 					<div className="min-w-0">
 						<h1 className="text-base font-semibold text-foreground">{title}</h1>
@@ -35,8 +38,13 @@ export function AdminPageContent({
 					)}
 				</div>
 			</div>
-			{/* 内容区 */}
-			<div className="flex-1 overflow-auto p-5">{children}</div>
+			{/* 内容区：高度 = 视口 - 标题栏高，内部滚动，便于子元素按已知高度布局 */}
+			<div
+				className="overflow-auto p-5"
+				style={{ height: "calc(100vh - var(--admin-header-height))" }}
+			>
+				{children}
+			</div>
 		</div>
 	);
 }

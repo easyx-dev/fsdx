@@ -3,12 +3,12 @@
  * 展示 valueType、renderText、renderCopyableText、ellipsis Tooltip、copyable 等特性
  */
 
-import { AdminPageContent } from "@fsdx/ui-spa/admin-page-content";
 import type { ProColumnType } from "@fsdx/ui-spa/pro-table";
 import { ProTable } from "@fsdx/ui-spa/pro-table";
 import { createFileRoute } from "@tanstack/react-router";
 import { Tag } from "antd";
 import { useMemo } from "react";
+import { AdminPageContent } from "#/components/admin/AdminPageContent";
 
 export const Route = createFileRoute("/admin/_admin/demo/pro-table")({
 	component: ProTableDemoPage,

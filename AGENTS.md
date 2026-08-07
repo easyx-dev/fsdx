@@ -34,7 +34,7 @@ app/                          # @fsdx/web —— 应用 package（业务代码 +
     ├── db/                   # Drizzle 客户端 + schema（17 张表）
     ├── permissions/          # RBAC 权限码常量与匹配（admin + client 双端）
     ├── hooks/                # use-sfn-call（use-theme-mode 在 packages/ui-ssr，主题注册表见 theme/）
-    ├── theme/                # 主题注册表（themes.ts：家族 × 明暗，单一事实来源）
+    ├── theme/                # 主题注册表（themes.ts：各端亮暗主题预设，单一事实来源）
     ├── lib/                  # 仅基础设施单例壳（其余基础库在 packages/core）
     │   ├── logger/logger.ts  # logger 单例壳（createLogger 在 @fsdx/core/logger）
     │   └── jwt/jwt.ts        # jwt 单例（createJwt 在 @fsdx/core/jwt）
@@ -413,10 +413,10 @@ src/services/config/
 
 - **圆角**：项目为直角风格，圆角统一归零——antd 令牌 `borderRadius: 0`（antd 6 派生圆角自动归零），Tailwind 侧 `rounded`/`rounded-sm/md/lg/xl` 均为 0；仅圆形元素（头像、徽章、未读红点、加载圈）可用 `rounded-full`。内联 `borderRadius` 一律写 `0`，禁止使用 4/6/8 等非零圆角
 - **颜色**：统一使用语义令牌类（`primary` / `primary-bg` / `primary-fg` / `foreground` / `foreground-secondary` / `foreground-tertiary` / `background` / `background-secondary` / `border` / `divider` / `accent`），禁止硬编码色值；令牌链路为 `--t-*` 基础令牌（中性令牌共享于 `shared-tokens.css`，品牌色阶 `--t-brand-*` 各端独立）→ `--s-*` 语义令牌 → `@theme` 映射，定义见两个 global.css
-- **主题机制**：主题由「家族（配色）× 明暗」组合为具名主题，`data-theme` 属性承载完整主题名（如 `admin-brown-dark`），两端共用 `@custom-variant dark (&:is([data-theme$="-dark"] *))` 暗色变体；主题注册表在 `app/src/theme/themes.ts`（单一事实来源，antd `colorPrimary` 与 CSS `--s-primary` 同色，需双写）。**新增主题家族步骤**：① 对应 global.css 增加 `[data-theme="<family>-<scheme>"]` 变量块（亮/暗各自覆盖差异项）→ ② `themes.ts` 对应 ThemeSide.families 注册条目（主题切换 UI 自动出现）→ ③ `Document.tsx` 内联 init 脚本同步家族映射
-- **双主题**：前台与管理端各自独立明暗主题（`client-theme` / `admin-theme` 两个 storageKey），管理端另有 `admin-theme-family` 家族键；两端均为 `data-theme` 驱动，所有颜色必须走语义令牌以保证暗色自适应
-- **品牌色**：管理端默认棕色 `#795548`（`ADMIN_SIDE`，暗色 `#a1887f`），可选蓝灰 `#607d8b` / 绿 `#00b96b`；前台为中性灰（`CLIENT_SIDE` 单家族，主色「文字即主色」）。antd `colorPrimary` 与 `colorInfo` 均由各端 ConfigProvider 从注册表读取（`colorInfo` 派生 Link/链接色），与对应 `--s-primary` 保持一致
-- **主题切换**：管理端侧边栏主题按钮为 Popover（配色家族 + 明暗 Segmented），通过 `useAdminTheme()` 的 `familyId/setFamilyId` 切换，`localStorage` 持久化
+- **主题机制**：每个端对应一个主题预设（`ThemePreset`，见 `app/src/theme/themes.ts` 单一事实来源），`data-theme` 属性承载完整主题名（如 `admin-brown-light`），两端共用 `@custom-variant dark (&:is([data-theme$="-dark"] *))` 暗色变体；antd `colorPrimary` 与 CSS `--s-primary` 同色，需双写。`Document.tsx` 内联 init 脚本从注册表推导 storageKey 与 dataTheme，禁止手工双写
+- **双主题**：前台与管理端各自独立明暗主题（`client-theme` / `admin-theme` 两个 storageKey），三态（亮/暗/跟随系统）持久化于 localStorage；两端均为 `data-theme` 驱动，所有颜色必须走语义令牌以保证暗色自适应
+- **品牌色**：管理端为棕色 `#795548`（`ADMIN_THEME`，暗色 `#a1887f`）；前台为中性灰（`CLIENT_THEME`，主色「文字即主色」）。antd `colorPrimary` 与 `colorInfo` 均由各端 ConfigProvider 从注册表读取（`colorInfo` 派生 Link/链接色），与对应 `--s-primary` 保持一致
+- **主题切换**：管理端侧边栏主题按钮三态循环（亮/暗/跟随系统），通过 `useAdminTheme()` 的 `setMode` 切换；前台 `ThemeToggle` 同理
 
 ### 表格操作列
 

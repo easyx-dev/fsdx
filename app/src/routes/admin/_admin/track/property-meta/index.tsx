@@ -2,12 +2,12 @@
  * 元属性管理页面：CRUD 元属性定义
  */
 import { PlusOutlined } from "@ant-design/icons";
-import { AdminPageContent } from "@fsdx/ui-spa/admin-page-content";
 import { ProTable } from "@fsdx/ui-spa/pro-table";
 import { TableOperate } from "@fsdx/ui-spa/table-operate";
 import { createFileRoute } from "@tanstack/react-router";
 import { Button, Form, Input, Modal, Select, Tag } from "antd";
 import { useState } from "react";
+import { AdminPageContent } from "#/components/admin/AdminPageContent";
 import { message } from "#/components/antd-static";
 import { getTrackPropertyMetaSFn } from "#/services/track/track.functions";
 import type { TrackPropertyMetaRecord as PresetPropertyRecord } from "#/services/track/track.types";

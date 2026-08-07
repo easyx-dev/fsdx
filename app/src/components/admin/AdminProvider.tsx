@@ -9,7 +9,7 @@ import zhCN from "antd/locale/zh_CN";
 import { useMemo } from "react";
 import { AdminLayout, AdminThemeContext } from "#/components/admin/AdminLayout";
 import { AntdStaticBridge } from "#/components/antd-static";
-import { ADMIN_SIDE } from "#/theme/themes";
+import { ADMIN_THEME } from "#/theme/themes";
 import { AdminAuthProvider } from "./AdminAuthProvider";
 
 export function AdminProvider({ children }: { children: React.ReactNode }) {
@@ -21,12 +21,11 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
 		pathname === "/admin/forgot-password";
 	const isAdmin = pathname.startsWith("/admin");
 
-	const { mode, setMode, familyId, setFamilyId, isDark, scheme } =
-		useThemeMode(ADMIN_SIDE);
+	const { mode, setMode, isDark, scheme } = useThemeMode(ADMIN_THEME);
 
 	const ctxValue = useMemo(
-		() => ({ mode, setMode, familyId, setFamilyId, isDark }),
-		[mode, setMode, familyId, setFamilyId, isDark],
+		() => ({ mode, setMode, isDark }),
+		[mode, setMode, isDark],
 	);
 
 	return (
@@ -36,7 +35,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
 					locale={zhCN}
 					theme={{
 						token: {
-							// 品牌主色：随主题家族切换（棕/蓝灰/绿，见主题注册表）
+							// 品牌主色：随明暗切换（棕亮/棕暗，见主题注册表）
 							colorPrimary: scheme.antdColorPrimary,
 							colorInfo: scheme.antdColorPrimary,
 							// 直角风格：antd 6 borderRadius 归零，派生圆角自动归零

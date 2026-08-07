@@ -17,7 +17,7 @@
 @custom-variant dark (&:is([data-theme$="-dark"] *));
 
 /* ========================================
- * 品牌色阶（管理端）：棕 / 蓝灰 / 绿 三个家族
+ * 品牌色阶（管理端：棕色）
  * 命名前缀 —t 表示基础令牌，不随主题变化；亮暗主题在此之上派生语义变量
  * ======================================== */
 :root {
@@ -31,34 +31,16 @@
 	--t-brand-brown-700: #5d4037;
 	--t-brand-brown-800: #4e342e;
 	--t-brand-brown-900: #3e2723;
+}
 
-	--t-brand-bluegrey-50: #eceff1;
-	--t-brand-bluegrey-100: #cfd8dc;
-	--t-brand-bluegrey-200: #b0bec5;
-	--t-brand-bluegrey-300: #90a4ae;
-	--t-brand-bluegrey-400: #78909c;
-	--t-brand-bluegrey-500: #607d8b;
-	--t-brand-bluegrey-600: #546e7a;
-	--t-brand-bluegrey-700: #455a64;
-	--t-brand-bluegrey-800: #37474f;
-	--t-brand-bluegrey-900: #263238;
-
-	--t-brand-green-50: #e6f9f0;
-	--t-brand-green-100: #b3f0d1;
-	--t-brand-green-200: #80e7b3;
-	--t-brand-green-300: #4dde94;
-	--t-brand-green-400: #26d57c;
-	--t-brand-green-500: #00b96b;
-	--t-brand-green-600: #009a56;
-	--t-brand-green-700: #007c43;
-	--t-brand-green-800: #005e31;
-	--t-brand-green-900: #004020;
+/* 布局令牌：管理端页面标题栏定高，内容区按 calc(100vh - var(--admin-header-height)) 计算 */
+:root {
+	--admin-header-height: 3.5rem;
 }
 
 /* ========================================
- * 语义变量（Semantic Tokens）— 亮色公共
+ * 语义变量（Semantic Tokens）— 亮色
  * 命名前缀 —s 表示语义变量，随主题切换变化。
- * 默认品牌为棕色；蓝灰/绿家族仅覆盖差异项（后置同名变量生效）。
  * :root 兜底默认亮色，保证初始 HTML 无 data-theme（如错误页）时正常渲染。
  * ======================================== */
 :root,
@@ -107,32 +89,8 @@
 	--s-sidebar-ring: var(--t-brand-brown-500);
 }
 
-/* 亮色家族覆盖：蓝灰 */
-[data-theme="admin-bluegrey-light"] {
-	--s-primary: var(--t-brand-bluegrey-500);
-	--s-primary-hover: var(--t-brand-bluegrey-400);
-	--s-primary-active: var(--t-brand-bluegrey-600);
-	--s-primary-bg: var(--t-brand-bluegrey-50);
-	--s-text-link: var(--t-brand-bluegrey-600);
-	--s-ring: var(--t-brand-bluegrey-500);
-	--s-sidebar-primary: var(--t-brand-bluegrey-500);
-	--s-sidebar-ring: var(--t-brand-bluegrey-500);
-}
-
-/* 亮色家族覆盖：绿 */
-[data-theme="admin-green-light"] {
-	--s-primary: var(--t-brand-green-500);
-	--s-primary-hover: var(--t-brand-green-400);
-	--s-primary-active: var(--t-brand-green-600);
-	--s-primary-bg: var(--t-brand-green-50);
-	--s-text-link: var(--t-brand-green-600);
-	--s-ring: var(--t-brand-green-500);
-	--s-sidebar-primary: var(--t-brand-green-500);
-	--s-sidebar-ring: var(--t-brand-green-500);
-}
-
 /* ========================================
- * 语义变量 — 暗色公共（默认品牌棕）
+ * 语义变量 — 暗色
  * ======================================== */
 [data-theme$="-dark"] {
 	--s-primary: var(--t-brand-brown-300);
@@ -176,30 +134,6 @@
 	--s-sidebar-accent-foreground: rgba(255, 255, 255, 0.92);
 	--s-sidebar-border: rgba(255, 255, 255, 0.08);
 	--s-sidebar-ring: var(--t-brand-brown-300);
-}
-
-/* 暗色家族覆盖：蓝灰 */
-[data-theme="admin-bluegrey-dark"] {
-	--s-primary: var(--t-brand-bluegrey-300);
-	--s-primary-hover: var(--t-brand-bluegrey-200);
-	--s-primary-active: var(--t-brand-bluegrey-400);
-	--s-primary-bg: rgba(144, 164, 174, 0.15);
-	--s-text-link: var(--t-brand-bluegrey-200);
-	--s-ring: var(--t-brand-bluegrey-300);
-	--s-sidebar-primary: var(--t-brand-bluegrey-300);
-	--s-sidebar-ring: var(--t-brand-bluegrey-300);
-}
-
-/* 暗色家族覆盖：绿 */
-[data-theme="admin-green-dark"] {
-	--s-primary: var(--t-brand-green-400);
-	--s-primary-hover: var(--t-brand-green-300);
-	--s-primary-active: var(--t-brand-green-500);
-	--s-primary-bg: rgba(0, 185, 107, 0.15);
-	--s-text-link: var(--t-brand-green-300);
-	--s-ring: var(--t-brand-green-400);
-	--s-sidebar-primary: var(--t-brand-green-400);
-	--s-sidebar-ring: var(--t-brand-green-400);
 }
 
 /* ========================================

@@ -2,7 +2,6 @@
  * 客户端用户管理页面：CRUD + 状态管理 + 密码重置
  */
 import { KeyOutlined, PlusOutlined, SearchOutlined } from "@ant-design/icons";
-import { AdminPageContent } from "@fsdx/ui-spa/admin-page-content";
 import { ProTable } from "@fsdx/ui-spa/pro-table";
 import { TableOperate } from "@fsdx/ui-spa/table-operate";
 import { AutofillBlocker } from "@fsdx/ui-ssr/autofill-blocker";
@@ -10,6 +9,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { Button, Form, Input, Modal, Select, Switch, Tag } from "antd";
 import type { ChangeEvent } from "react";
 import { useState } from "react";
+import { AdminPageContent } from "#/components/admin/AdminPageContent";
 import { DictSelect } from "#/components/admin/DictSelect";
 import { DictTag } from "#/components/admin/DictTag";
 import { message } from "#/components/antd-static";

@@ -2,8 +2,8 @@
  * 编辑新闻页面
  */
 
-import { AdminPageContent } from "@fsdx/ui-spa/admin-page-content";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { AdminPageContent } from "#/components/admin/AdminPageContent";
 import { message } from "#/components/antd-static";
 import { NewsForm } from "../-mods/NewsForm";
 

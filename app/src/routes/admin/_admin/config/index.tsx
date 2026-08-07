@@ -3,7 +3,6 @@
  */
 import { DownloadOutlined, PlusOutlined } from "@ant-design/icons";
 import { downloadFile } from "@fsdx/core/export";
-import { AdminPageContent } from "@fsdx/ui-spa/admin-page-content";
 import { JsonImportButton } from "@fsdx/ui-spa/json-import-button";
 import { ProTable } from "@fsdx/ui-spa/pro-table";
 import { TableOperate } from "@fsdx/ui-spa/table-operate";
@@ -12,6 +11,7 @@ import { Button, Card, Flex, Form, Input, Modal, Space, Switch } from "antd";
 import dayjs from "dayjs";
 import type { ChangeEvent } from "react";
 import { useMemo, useState } from "react";
+import { AdminPageContent } from "#/components/admin/AdminPageContent";
 import { EditorTypes } from "#/components/admin/editor-type";
 import {
 	FieldTranslationDrawer,

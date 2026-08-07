@@ -7,7 +7,6 @@ import {
 	PlusOutlined,
 } from "@ant-design/icons";
 import { downloadFile } from "@fsdx/core/export";
-import { AdminPageContent } from "@fsdx/ui-spa/admin-page-content";
 import { JsonImportButton } from "@fsdx/ui-spa/json-import-button";
 import { ProTable } from "@fsdx/ui-spa/pro-table";
 import { TableOperate } from "@fsdx/ui-spa/table-operate";
@@ -16,6 +15,7 @@ import { Button, Drawer, Image, Segmented, Space, Tag } from "antd";
 import type { SegmentedValue } from "antd/es/segmented";
 import dayjs from "dayjs";
 import { useMemo, useState } from "react";
+import { AdminPageContent } from "#/components/admin/AdminPageContent";
 import { DictTag } from "#/components/admin/DictTag";
 import { FieldTranslationDrawer } from "#/components/admin/FieldTranslationDrawer";
 import { message } from "#/components/antd-static";

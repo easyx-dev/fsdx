@@ -8,7 +8,6 @@ import {
 	EyeOutlined,
 	SwapOutlined,
 } from "@ant-design/icons";
-import { AdminPageContent } from "@fsdx/ui-spa/admin-page-content";
 import { ProTable } from "@fsdx/ui-spa/pro-table";
 import { TableOperate } from "@fsdx/ui-spa/table-operate";
 import { createFileRoute, useRouter } from "@tanstack/react-router";
@@ -26,6 +25,7 @@ import {
 	Upload,
 } from "antd";
 import { useRef, useState } from "react";
+import { AdminPageContent } from "#/components/admin/AdminPageContent";
 import { message } from "#/components/antd-static";
 import { getFileListSFn, uploadFileSFn } from "#/services/file/file.functions";
 import type { FileRecord } from "#/services/file/file.server";

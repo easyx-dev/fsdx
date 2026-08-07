@@ -3,10 +3,10 @@
  * 展示各编辑器类型在编辑和预览模式下的效果
  */
 
-import { AdminPageContent } from "@fsdx/ui-spa/admin-page-content";
 import { createFileRoute } from "@tanstack/react-router";
 import { Card, Space, Switch, Typography } from "antd";
 import { useState } from "react";
+import { AdminPageContent } from "#/components/admin/AdminPageContent";
 import { EditorTypes } from "#/components/admin/editor-type";
 import {
 	EDITOR_TYPE_LABELS,
