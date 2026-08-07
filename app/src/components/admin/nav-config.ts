@@ -5,19 +5,22 @@
 
 import {
 	AppstoreOutlined,
+	AuditOutlined,
 	BarChartOutlined,
 	BookOutlined,
 	CloudUploadOutlined,
 	DashboardOutlined,
 	ExperimentOutlined,
+	FileSearchOutlined,
 	FileTextOutlined,
 	FolderOpenOutlined,
+	GlobalOutlined,
 	HistoryOutlined,
+	IdcardOutlined,
 	LineChartOutlined,
 	MessageOutlined,
 	ReadOutlined,
 	RobotOutlined,
-	SafetyOutlined,
 	SettingOutlined,
 	StockOutlined,
 	TableOutlined,
@@ -37,6 +40,8 @@ interface NavItem {
 interface NavGroup {
 	label: string;
 	items: NavItem[];
+	/** 首次访问时是否默认折叠（未写入折叠偏好前生效） */
+	defaultCollapsed?: boolean;
 }
 
 export const NAV_GROUPS: NavGroup[] = [
@@ -49,74 +54,49 @@ export const NAV_GROUPS: NavGroup[] = [
 		items: [{ key: "/admin/news", label: "新闻管理", icon: ReadOutlined }],
 	},
 	{
-		label: "用户管理",
+		label: "用户与权限",
 		items: [
-			{
-				key: "/admin/users/admins",
-				label: "管理员",
-				icon: SafetyOutlined,
-			},
-			{
-				key: "/admin/users/clients",
-				label: "客户端用户",
-				icon: TeamOutlined,
-			},
-		],
-	},
-	{
-		label: "权限管理",
-		items: [
+			{ key: "/admin/users/admins", label: "管理员", icon: IdcardOutlined },
+			{ key: "/admin/users/clients", label: "客户端用户", icon: TeamOutlined },
 			{
 				key: "/admin/admin-roles",
-				label: "角色管理",
+				label: "管理端角色",
 				icon: AppstoreOutlined,
 			},
 			{
 				key: "/admin/client-roles",
 				label: "客户端角色",
-				icon: SafetyOutlined,
+				icon: AuditOutlined,
+			},
+		],
+	},
+	{
+		label: "文件管理",
+		items: [
+			{ key: "/admin/files", label: "文件管理", icon: FolderOpenOutlined },
+			{
+				key: "/admin/file-explorer",
+				label: "目录浏览",
+				icon: FileSearchOutlined,
 			},
 		],
 	},
 	{
 		label: "系统管理",
 		items: [
+			{ key: "/admin/config", label: "系统配置", icon: SettingOutlined },
 			{ key: "/admin/dicts", label: "字典管理", icon: BookOutlined },
-			{
-				key: "/admin/config",
-				label: "系统配置",
-				icon: SettingOutlined,
-			},
-			{
-				key: "/admin/files",
-				label: "文件管理",
-				icon: FolderOpenOutlined,
-			},
-			{
-				key: "/admin/file-explorer",
-				label: "文件资源管理器",
-				icon: FolderOpenOutlined,
-			},
 			{
 				key: "/admin/messages/manage",
 				label: "消息管理",
 				icon: MessageOutlined,
 			},
-			{
-				key: "/admin/operation-logs",
-				label: "操作日志",
-				icon: HistoryOutlined,
-			},
-			{
-				key: "/admin/logs",
-				label: "日志查询",
-				icon: FileTextOutlined,
-			},
-			{
-				key: "/admin/translations/ui",
-				label: "UI 翻译",
-				icon: TranslationOutlined,
-			},
+		],
+	},
+	{
+		label: "国际化",
+		items: [
+			{ key: "/admin/translations/ui", label: "UI 翻译", icon: GlobalOutlined },
 			{
 				key: "/admin/translations/content",
 				label: "实体翻译",
@@ -125,23 +105,26 @@ export const NAV_GROUPS: NavGroup[] = [
 		],
 	},
 	{
-		label: "埋点分析",
+		label: "日志审计",
 		items: [
 			{
-				key: "/admin/track/query",
-				label: "事件查询",
-				icon: BarChartOutlined,
+				key: "/admin/operation-logs",
+				label: "操作日志",
+				icon: HistoryOutlined,
 			},
+			{ key: "/admin/logs", label: "运行日志", icon: FileTextOutlined },
+		],
+	},
+	{
+		label: "埋点分析",
+		items: [
+			{ key: "/admin/track/query", label: "事件查询", icon: BarChartOutlined },
 			{
 				key: "/admin/track/analytics",
 				label: "事件分析",
 				icon: LineChartOutlined,
 			},
-			{
-				key: "/admin/track/event-meta",
-				label: "元事件",
-				icon: TableOutlined,
-			},
+			{ key: "/admin/track/event-meta", label: "元事件", icon: TableOutlined },
 			{
 				key: "/admin/track/property-meta",
 				label: "元属性",
@@ -151,17 +134,14 @@ export const NAV_GROUPS: NavGroup[] = [
 	},
 	{
 		label: "测试页",
+		defaultCollapsed: true,
 		items: [
 			{
 				key: "/admin/demo/editor",
 				label: "编辑器演示",
 				icon: ExperimentOutlined,
 			},
-			{
-				key: "/admin/demo/ai",
-				label: "AI 测试",
-				icon: RobotOutlined,
-			},
+			{ key: "/admin/demo/ai", label: "AI 测试", icon: RobotOutlined },
 			{
 				key: "/admin/demo/pro-table",
 				label: "ProTable 演示",

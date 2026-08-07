@@ -15,7 +15,7 @@
 - **管理端侧边栏菜单优化**：
   - `nav-config.ts` 重新组合分组：合并「用户管理 + 权限管理」为「用户与权限」，文件类、翻译类、日志类各自独立成组，解决原「系统管理」9 项杂物袋问题
   - 菜单命名对齐：角色管理 → 管理端角色（与客户端角色对称）、文件资源管理器 → 目录浏览、日志查询 → 运行日志；同组内重复图标差异化（IdcardOutlined/AuditOutlined/FileSearchOutlined/GlobalOutlined）
-  - 菜单渲染自 AdminLayout 抽至 `admin-nav.tsx`（`SidebarNav` + `useNavCollapse`）：分组支持折叠（CSS grid 0fr↔1fr 动画），折叠状态持久化到 localStorage（key `admin-nav-collapsed-groups`），路由切换自动展开包含激活项的分组，侧边栏图标模式下强制展开全部分组
+  - 菜单渲染自 AdminLayout 抽至 `AdminNav.tsx`（`AdminNav` + `useNavCollapse`）：分组支持折叠（CSS grid 0fr↔1fr 动画），折叠状态持久化到 localStorage（key `admin-nav-collapsed-groups`），路由切换自动展开包含激活项的分组，侧边栏图标模式下强制展开全部分组
   - 滚动条样式统一：`admin.global.css` 新增 `--s-scrollbar-thumb` 语义令牌（亮暗自适应）与 `.scrollbar-thin` 类，应用于侧边栏导航与 `AdminPageContent` 内容区
 
 ### Refactor

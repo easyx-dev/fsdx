@@ -5,6 +5,7 @@
 export { AdminAuthProvider, useAdminAuth } from "./AdminAuthProvider";
 export { AdminLayout } from "./AdminLayout";
 export { AdminLogo } from "./AdminLogo";
+export { AdminNav } from "./AdminNav";
 export { AdminPageContent } from "./AdminPageContent";
 export { AdminProvider } from "./AdminProvider";
 export { AdminThemeContext, useAdminTheme } from "./admin-theme";

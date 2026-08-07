@@ -40,7 +40,7 @@ export function AdminPageContent({
 			</div>
 			{/* 内容区：高度 = 视口 - 标题栏高，内部滚动，便于子元素按已知高度布局 */}
 			<div
-				className="overflow-auto p-5"
+				className="scrollbar-thin overflow-auto p-5"
 				style={{ height: "calc(100vh - var(--admin-header-height))" }}
 			>
 				{children}

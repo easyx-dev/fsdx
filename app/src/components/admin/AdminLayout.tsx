@@ -19,7 +19,7 @@ import { logoutSFn } from "#/services/admin-auth/admin-auth.functions";
 import { getAdminUnreadCountSFn } from "#/services/message/message.functions";
 import { useAdminAuth } from "./AdminAuthProvider";
 import { AdminLogo } from "./AdminLogo";
-import { SidebarNav } from "./admin-nav";
+import { AdminNav } from "./AdminNav";
 import { useAdminTheme } from "./admin-theme";
 import { useAdminConfigStore } from "./stores/admin-config-store";
 import { useAdminDictStore } from "./stores/admin-dict-store";
@@ -102,7 +102,7 @@ export function AdminLayout({ children }: { children: ReactNode }) {
 				</div>
 
 				{/* 导航菜单 */}
-				<SidebarNav collapsed={collapsed} />
+				<AdminNav collapsed={collapsed} />
 
 				{/* 底部操作区 */}
 				<div className="shrink-0 border-t border-border px-2 py-3">

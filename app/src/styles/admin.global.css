@@ -87,6 +87,10 @@
 	--s-sidebar-accent-foreground: var(--t-neutral-800);
 	--s-sidebar-border: var(--t-neutral-200);
 	--s-sidebar-ring: var(--t-brand-brown-500);
+
+	/* 滚动条：细窄 + 中性灰 thumb */
+	--s-scrollbar-thumb: var(--t-neutral-300);
+	--s-scrollbar-thumb-hover: var(--t-neutral-400);
 }
 
 /* ========================================
@@ -134,6 +138,10 @@
 	--s-sidebar-accent-foreground: rgba(255, 255, 255, 0.92);
 	--s-sidebar-border: rgba(255, 255, 255, 0.08);
 	--s-sidebar-ring: var(--t-brand-brown-300);
+
+	/* 滚动条：细窄 + 白色低透明度 thumb */
+	--s-scrollbar-thumb: rgba(255, 255, 255, 0.2);
+	--s-scrollbar-thumb-hover: rgba(255, 255, 255, 0.32);
 }
 
 /* ========================================
@@ -277,4 +285,27 @@
 .compact-dragger .ant-upload-drag .ant-upload-text {
 	margin: 0 !important;
 	font-size: 14px;
+}
+
+/* 细窄滚动条：语义色 thumb、透明 track、直角风格，hover 加深。
+ * 用于侧边栏导航与页面内容区，保证全站滚动条样式一致 */
+.scrollbar-thin {
+	scrollbar-width: thin;
+	scrollbar-color: var(--s-scrollbar-thumb) transparent;
+}
+.scrollbar-thin::-webkit-scrollbar {
+	width: 6px;
+	height: 6px;
+}
+.scrollbar-thin::-webkit-scrollbar-track {
+	background: transparent;
+}
+.scrollbar-thin::-webkit-scrollbar-thumb {
+	background-color: var(--s-scrollbar-thumb);
+}
+.scrollbar-thin::-webkit-scrollbar-thumb:hover {
+	background-color: var(--s-scrollbar-thumb-hover);
+}
+.scrollbar-thin::-webkit-scrollbar-corner {
+	background: transparent;
 }
