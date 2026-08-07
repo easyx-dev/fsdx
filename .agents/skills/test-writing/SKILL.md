@@ -13,7 +13,7 @@ description: >
 |-------------|---------|----------|-------------|
 | `src/services/*/*.server.ts` | Service 测试 | 需 mock DB | `src/services/<module>/__tests__/<module>.test.ts` |
 | `src/lib/*/`（纯逻辑） | 纯逻辑测试 | 无需 mock | `src/lib/<module>/__tests__/<module>.test.ts` |
-| 路由 SFn schema | Schema 测试 | 无需 mock | `src/routes/__tests__/sf-schemas.test.ts` |
+| 路由 SFn schema | Schema 测试 | 无需 mock | 就近：路由 `__tests__/` 或 schema 定义模块 `__tests__/` |
 | `src/middleware/` | 中间件类型测试 | 无需 mock | `src/middleware/__tests__/<module>.test.ts` |
 
 **判断标准**：被测模块 import 了 `#/db` 或任何 `.server.ts` → Service 测试（需 mock）。
@@ -235,20 +235,14 @@ describe("createProduct", () => {
 
 ## Schema 测试模板
 
-路由 SFn 的 Zod Schema 统一在 `src/routes/__tests__/sf-schemas.test.ts` 中测试：
+路由 SFn 的 Zod Schema 测试就近放置：路由层 schema 测试在对应路由 `__tests__/` 目录，services 层共享 schema 测试在对应模块 `__tests__/` 目录。**优先 import 真实 schema 对象**（源文件需导出），禁止本地复制副本导致测试与真实 schema 漂移。
 
 ```ts
 import { describe, expect, it } from "vitest";
-import { z } from "zod";
 
-// 从路由文件中复制 schema 定义
-const productCreateSchema = z.object({
-  name: z.string().min(1).max(200),
-  description: z.string().optional(),
-  status: z.enum(["active", "inactive"]).default("active"),
-  isPublished: z.boolean().default(false),
-  sortOrder: z.number().int().optional(),
-});
+// 从路由文件导入真实 schema（源文件需导出），而非复制定义
+import { productCreateSchema } from "...-mods/product.functions";
+import { z } from "zod";
 
 describe("产品 Schema 校验", () => {
   describe("productCreateSchema", () => {

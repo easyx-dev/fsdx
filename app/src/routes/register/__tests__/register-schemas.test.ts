@@ -2,14 +2,8 @@
  * 客户端注册 Schema 验证测试
  */
 import { describe, expect, it } from "vitest";
-import { z } from "zod";
 import { registerSchema } from "#/routes/register/-mods/register.functions";
-
-const sendCaptchaSchema = z.object({
-	email: z.string().email(),
-	imageToken: z.string().min(1),
-	imageCode: z.string().min(1),
-});
+import { sendCaptchaWithImageSchema } from "#/services/captcha/captcha.functions";
 
 describe("registerSchema（客户端注册）", () => {
 	it("合法注册输入校验通过", () => {
@@ -57,10 +51,10 @@ describe("registerSchema（客户端注册）", () => {
 	});
 });
 
-describe("sendCaptchaSchema（发送验证码）", () => {
+describe("sendCaptchaWithImageSchema（发送验证码）", () => {
 	it("合法输入通过", () => {
 		expect(
-			sendCaptchaSchema.safeParse({
+			sendCaptchaWithImageSchema.safeParse({
 				email: "u@t.com",
 				imageToken: "token-123",
 				imageCode: "ABCD",
@@ -70,7 +64,7 @@ describe("sendCaptchaSchema（发送验证码）", () => {
 
 	it("非法邮箱失败", () => {
 		expect(
-			sendCaptchaSchema.safeParse({
+			sendCaptchaWithImageSchema.safeParse({
 				email: "not-email",
 				imageToken: "token-123",
 				imageCode: "ABCD",
@@ -80,7 +74,7 @@ describe("sendCaptchaSchema（发送验证码）", () => {
 
 	it("缺少 imageToken 失败", () => {
 		expect(
-			sendCaptchaSchema.safeParse({
+			sendCaptchaWithImageSchema.safeParse({
 				email: "u@t.com",
 				imageCode: "ABCD",
 			}).success,
@@ -89,7 +83,7 @@ describe("sendCaptchaSchema（发送验证码）", () => {
 
 	it("缺少 imageCode 失败", () => {
 		expect(
-			sendCaptchaSchema.safeParse({
+			sendCaptchaWithImageSchema.safeParse({
 				email: "u@t.com",
 				imageToken: "token-123",
 			}).success,

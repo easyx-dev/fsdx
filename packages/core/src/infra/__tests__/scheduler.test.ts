@@ -14,13 +14,17 @@ const mockLogger = {
 	fatal: vi.fn(),
 } as unknown as Logger;
 
-const { mockCronStop } = vi.hoisted(() => ({
+const { mockCronStop, capturedOnTicks } = vi.hoisted(() => ({
 	mockCronStop: vi.fn(),
+	capturedOnTicks: [] as Array<() => void>,
 }));
 
 vi.mock("cron", () => ({
 	CronJob: {
-		from: vi.fn(() => ({ stop: mockCronStop })),
+		from: vi.fn((opts: { onTick: () => void }) => {
+			capturedOnTicks.push(opts.onTick);
+			return { stop: mockCronStop };
+		}),
 	},
 	CronTime: {
 		validateCronExpression: vi.fn((expr: string) => ({
@@ -45,6 +49,7 @@ describe("registerTask", () => {
 
 	beforeEach(() => {
 		vi.clearAllMocks();
+		capturedOnTicks.length = 0;
 		setSchedulerLogger(mockLogger);
 		stopAllTasks();
 	});
@@ -89,7 +94,7 @@ describe("registerTask", () => {
 		expect(mockCronFrom).toHaveBeenCalledTimes(1);
 	});
 
-	it("runOnInit 立即执行 handler", () => {
+	it("runOnInit 时模拟 CronJob 立即执行 handler", async () => {
 		const handler = vi.fn().mockResolvedValue(undefined);
 		registerTask({
 			name: "init-task",
@@ -97,19 +102,37 @@ describe("registerTask", () => {
 			handler,
 			runOnInit: true,
 		});
-		// runOnInit 传给 CronJob.from，handler 在 CronJob.from 的 options 中
+		// runOnInit 标志透传给 CronJob
 		expect(mockCronFrom).toHaveBeenCalledWith(
 			expect.objectContaining({ runOnInit: true, name: "init-task" }),
 		);
+		// 模拟 CronJob 在 runOnInit 时调用 onTick
+		capturedOnTicks[0]();
+		await vi.waitFor(() => expect(handler).toHaveBeenCalledTimes(1));
+		await vi.waitFor(() =>
+			expect(mockLogger.info).toHaveBeenCalledWith(
+				expect.anything(),
+				"定时任务执行完成",
+			),
+		);
 	});
 
-	it("handler 异常不中断注册", () => {
+	it("handler 异常被捕获并记录错误日志，不影响注册", async () => {
 		const handler = vi.fn().mockRejectedValue(new Error("失败"));
 		registerTask({
 			name: "error-task",
 			cronExpression: "0 * * * *",
 			handler,
 		});
+		expect(getTaskNames()).toContain("error-task");
+		// 模拟 CronJob 触发 onTick，handler 抛错被 catch
+		capturedOnTicks[0]();
+		await vi.waitFor(() =>
+			expect(mockLogger.error).toHaveBeenCalledWith(
+				expect.anything(),
+				"定时任务执行失败",
+			),
+		);
 		expect(getTaskNames()).toContain("error-task");
 	});
 });

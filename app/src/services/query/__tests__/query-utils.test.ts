@@ -2,6 +2,7 @@
  * 通用查询工具测试：软删除条件、分页、排序、分页执行
  */
 
+import { sql } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
 import {
 	buildSortClause,
@@ -42,22 +43,53 @@ describe("paginationOffset", () => {
 	});
 });
 
+/** 递归提取 drizzle SQL 对象中的 SQL 文本，用于语义断言 */
+function sqlString(value: unknown): string {
+	const out: string[] = [];
+	const walk = (node: unknown) => {
+		if (Array.isArray(node)) {
+			for (const item of node) walk(item);
+			return;
+		}
+		if (node === null || typeof node !== "object") {
+			if (typeof node === "string") out.push(node);
+			return;
+		}
+		const obj = node as Record<string, unknown>;
+		if (Array.isArray(obj.queryChunks)) {
+			for (const chunk of obj.queryChunks) walk(chunk);
+			return;
+		}
+		if (Array.isArray(obj.value)) {
+			for (const v of obj.value) walk(v);
+			return;
+		}
+		for (const v of Object.values(obj)) walk(v);
+	};
+	walk(value);
+	return out.join("").toLowerCase();
+}
+
 describe("notDeleted", () => {
-	it("返回非空的 SQL 条件对象", () => {
-		const result = notDeleted({ name: "deleted_at" });
-		expect(result).toBeDefined();
+	it("生成 is null 的软删除条件", () => {
+		const result = notDeleted(sql`deleted_at`);
+		const s = sqlString(result);
+		expect(s).toContain("deleted_at");
+		expect(s).toContain("is null");
 	});
 });
 
 describe("buildSortClause", () => {
 	const fieldMap = {
-		createdAt: { name: "created_at" },
-		updatedAt: { name: "updated_at" },
+		createdAt: sql`created_at`,
+		updatedAt: sql`updated_at`,
 	};
 
 	it("未指定 sortField 时使用默认字段降序", () => {
 		const result = buildSortClause(fieldMap, undefined, undefined, "createdAt");
-		expect(result).toBeDefined();
+		const s = sqlString(result);
+		expect(s).toContain("created_at");
+		expect(s).toContain("desc");
 	});
 
 	it("指定升序排序", () => {
@@ -67,27 +99,34 @@ describe("buildSortClause", () => {
 			"ascend",
 			"createdAt",
 		);
-		expect(result).toBeDefined();
+		const s = sqlString(result);
+		expect(s).toContain("created_at");
+		expect(s).toContain("asc");
 	});
 
-	it("指定降序排序", () => {
+	it("指定降序排序并映射到对应字段", () => {
 		const result = buildSortClause(
 			fieldMap,
-			"createdAt",
+			"updatedAt",
 			"descend",
 			"createdAt",
 		);
-		expect(result).toBeDefined();
+		const s = sqlString(result);
+		expect(s).toContain("updated_at");
+		expect(s).toContain("desc");
 	});
 
-	it("非法 sortField 回退到默认字段", () => {
+	it("非法 sortField 回退到默认字段，防止注入", () => {
 		const result = buildSortClause(
 			fieldMap,
-			"injectedField",
-			"ascend" as any,
+			"injectedField;DROP TABLE x",
+			"ascend",
 			"createdAt",
 		);
-		expect(result).toBeDefined();
+		const s = sqlString(result);
+		expect(s).toContain("created_at");
+		expect(s).not.toContain("injectedfield");
+		expect(s).toContain("asc");
 	});
 });
 

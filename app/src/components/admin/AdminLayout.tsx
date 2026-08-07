@@ -12,23 +12,17 @@ import {
 	SunOutlined,
 } from "@ant-design/icons";
 import type { ThemeMode } from "@fsdx/ui-ssr/theme";
-import { Link, useLocation } from "@tanstack/react-router";
+import { Link } from "@tanstack/react-router";
 import { Avatar, Badge, Button, Divider, Flex, Popover, Tooltip } from "antd";
 import { type ReactNode, useCallback, useEffect, useState } from "react";
 import { logoutSFn } from "#/services/admin-auth/admin-auth.functions";
 import { getAdminUnreadCountSFn } from "#/services/message/message.functions";
-import { AdminLogo } from "./AdminLogo";
 import { useAdminAuth } from "./AdminAuthProvider";
+import { AdminLogo } from "./AdminLogo";
+import { SidebarNav } from "./admin-nav";
 import { useAdminTheme } from "./admin-theme";
-import { NAV_GROUPS } from "./nav-config";
 import { useAdminConfigStore } from "./stores/admin-config-store";
 import { useAdminDictStore } from "./stores/admin-dict-store";
-
-/** 判断当前路径是否匹配菜单项 */
-function isActive(itemKey: string, currentPath: string): boolean {
-	if (itemKey === "/admin") return currentPath === "/admin";
-	return currentPath === itemKey || currentPath.startsWith(`${itemKey}/`);
-}
 
 /** 主题模式循环顺序 */
 const THEME_CYCLE: ThemeMode[] = ["light", "dark", "auto"];
@@ -37,8 +31,6 @@ export function AdminLayout({ children }: { children: ReactNode }) {
 	const [collapsed, setCollapsed] = useState(false);
 	const { mode, setMode, isDark } = useAdminTheme();
 	const { user } = useAdminAuth();
-	const location = useLocation();
-	const currentPath = location.pathname;
 
 	/** 未读消息数（30 秒轮询） */
 	const [unreadCount, setUnreadCount] = useState(0);
@@ -110,39 +102,7 @@ export function AdminLayout({ children }: { children: ReactNode }) {
 				</div>
 
 				{/* 导航菜单 */}
-				<nav className="flex-1 overflow-y-auto overflow-x-hidden py-2">
-					{NAV_GROUPS.map((group) => (
-						<div key={group.label} className="mb-1">
-							{!collapsed && (
-								<div className="px-4 pt-3 pb-1.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-									{group.label}
-								</div>
-							)}
-							{group.items.map((item) => {
-								const active = isActive(item.key, currentPath);
-								return (
-									<Link
-										key={item.key}
-										to={item.key}
-										title={collapsed ? item.label : undefined}
-										className={`mx-2 my-0.5 flex items-center gap-3 px-3 py-2 text-sm transition-colors ${
-											active
-												? "bg-sidebar-accent text-sidebar-primary font-medium border-l-[3px] border-l-sidebar-primary"
-												: "text-sidebar-foreground hover:bg-sidebar-accent/60 hover:text-sidebar-accent-foreground border-l-[3px] border-l-transparent"
-										} ${collapsed ? "justify-center px-0" : ""}`}
-									>
-										<span className="flex shrink-0 items-center justify-center text-base">
-											<item.icon />
-										</span>
-										{!collapsed && (
-											<span className="truncate">{item.label}</span>
-										)}
-									</Link>
-								);
-							})}
-						</div>
-					))}
-				</nav>
+				<SidebarNav collapsed={collapsed} />
 
 				{/* 底部操作区 */}
 				<div className="shrink-0 border-t border-border px-2 py-3">

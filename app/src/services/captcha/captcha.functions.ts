@@ -9,8 +9,8 @@ import {
 	verifyImageCaptcha,
 } from "./captcha.server";
 
-/** 图片验证码校验 + 发送邮箱验证码入参 */
-const sendCaptchaWithImageSchema = z.object({
+/** 图片验证码校验 + 发送邮箱验证码入参（测试共用） */
+export const sendCaptchaWithImageSchema = z.object({
 	email: z.string().email("邮箱格式不正确"),
 	imageToken: z.string().min(1, "图片验证码标识缺失"),
 	imageCode: z.string().min(1, "请输入图片验证码"),

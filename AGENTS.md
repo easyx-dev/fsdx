@@ -392,7 +392,7 @@ src/services/config/
 ### 路由层 Server Function 测试
 
 - `src/routes/` 下所有 `createServerFn` 的 `inputValidator` zod schema 必须编写校验测试
-- 测试文件统一放在 `src/routes/__tests__/sf-schemas.test.ts`
+- schema 测试就近放置：路由层 schema 测试放在对应路由 `__tests__/` 目录，services 层共享 schema 测试放在对应模块 `__tests__/` 目录（遵循就近原则，避免集中文件与模块目录重复维护）
 - schema 测试仅校验合法输入通过、非法输入失败，不涉及 handler 业务逻辑
 - 业务逻辑测试覆盖 `.server.ts` 文件中的导出函数（`src/services/` 和路由目录下的 `.server.ts` 均适用）
 

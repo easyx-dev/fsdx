@@ -67,24 +67,25 @@ export const exportContentTranslationsSFn = createServerFn({ method: "GET" })
 		return toJson({ translations });
 	});
 
+/** 实体翻译导入入参 schema（测试共用） */
+export const importContentTranslationsSchema = z.object({
+	data: z.object({
+		translations: z.array(
+			z.object({
+				entityType: z.string().min(1),
+				entityId: z.string().min(1),
+				fieldName: z.string().min(1),
+				locale: z.string().min(1),
+				value: z.string().min(1),
+				valueType: z.string().optional(),
+			}),
+		),
+	}),
+});
+
 export const importContentTranslationsSFn = createServerFn({ method: "POST" })
 	.middleware([adminPermGuard(ADMIN_PERMISSIONS.TRANSLATION_IMPORT)])
-	.inputValidator(
-		z.object({
-			data: z.object({
-				translations: z.array(
-					z.object({
-						entityType: z.string().min(1),
-						entityId: z.string().min(1),
-						fieldName: z.string().min(1),
-						locale: z.string().min(1),
-						value: z.string().min(1),
-						valueType: z.string().optional(),
-					}),
-				),
-			}),
-		}),
-	)
+	.inputValidator(importContentTranslationsSchema)
 	.handler(
 		async ({ data: { data }, context }): Promise<TranslationImportResult> => {
 			const result = await importContentTranslations(

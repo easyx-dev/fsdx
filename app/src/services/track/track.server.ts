@@ -159,6 +159,13 @@ function invalidateTrackMetaCache(): void {
 	trackMetaCacheLoaded = false;
 }
 
+/** 测试专用：重置元数据缓存加载状态与内容，隔离用例间缓存状态 */
+export function resetTrackMetaCacheForTest(): void {
+	trackMetaCacheLoaded = false;
+	trackEventMetaCache.clear();
+	trackPropertyMetaCache.clear();
+}
+
 /** 导出缓存加载函数供启动流程预加载 */
 export async function loadTrackMetaCache(): Promise<void> {
 	await ensureTrackMetaCache();

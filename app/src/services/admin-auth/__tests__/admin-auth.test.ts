@@ -26,6 +26,7 @@ const { mockDb } = vi.hoisted(() => {
 		mockDb: {
 			query: {
 				adminUser: _queryFns(),
+				adminRole: _queryFns(),
 				clientUser: _queryFns(),
 				role: _queryFns(),
 				news: _queryFns(),
@@ -50,7 +51,11 @@ const { mockDb } = vi.hoisted(() => {
 vi.mock("#/db", () => ({ db: mockDb }));
 
 import bcrypt from "bcryptjs";
-import { adminLogin } from "#/services/admin-auth/admin-auth.server";
+import {
+	adminLogin,
+	getAdminUserForAuth,
+} from "#/services/admin-auth/admin-auth.server";
+import { adminUserCache } from "#/services/admin-auth/admin-user.cache";
 
 describe("adminLogin", () => {
 	const mockUser = {
@@ -127,5 +132,124 @@ describe("adminLogin", () => {
 		await adminLogin("admin", "pw");
 
 		expect(mockDb.update).toHaveBeenCalled();
+	});
+});
+
+describe("getAdminUserForAuth", () => {
+	const cachedUser = {
+		id: "admin-1",
+		username: "admin",
+		email: "admin@test.com",
+		avatar: null,
+		isRoot: false,
+		adminRoleIds: ["role-1"],
+		status: "active",
+	};
+
+	beforeEach(() => {
+		vi.clearAllMocks();
+		adminUserCache.clear();
+	});
+
+	it("缓存命中且未启用时返回 disabled", async () => {
+		adminUserCache.set("admin-1", { ...cachedUser, status: "disabled" });
+
+		const result = await getAdminUserForAuth("admin-1");
+
+		expect(result).toEqual({ success: false, reason: "disabled" });
+		expect(mockDb.query.adminUser.findFirst).not.toHaveBeenCalled();
+	});
+
+	it("缓存命中且是 root 用户时返回通配权限", async () => {
+		adminUserCache.set("admin-1", { ...cachedUser, isRoot: true });
+
+		const result = await getAdminUserForAuth("admin-1");
+
+		expect(result.success).toBe(true);
+		if (result.success) {
+			expect(result.isRoot).toBe(true);
+			expect(result.rolePermissions).toEqual(["**"]);
+		}
+		expect(mockDb.query.adminRole.findMany).not.toHaveBeenCalled();
+	});
+
+	it("缓存命中且非 root 时合并角色权限并去重", async () => {
+		adminUserCache.set("admin-1", cachedUser);
+		mockDb.query.adminRole.findMany.mockResolvedValue([
+			{ id: "role-1", permissions: ["news:view", "news:create"] },
+			{ id: "role-2", permissions: ["news:view", "dict:view"] },
+		]);
+
+		const result = await getAdminUserForAuth("admin-1");
+
+		expect(result.success).toBe(true);
+		if (result.success) {
+			expect(result.rolePermissions).toEqual([
+				"news:view",
+				"news:create",
+				"dict:view",
+			]);
+		}
+	});
+
+	it("缓存命中且无角色时权限为空数组", async () => {
+		adminUserCache.set("admin-1", { ...cachedUser, adminRoleIds: [] });
+
+		const result = await getAdminUserForAuth("admin-1");
+
+		expect(result.success).toBe(true);
+		if (result.success) {
+			expect(result.rolePermissions).toEqual([]);
+		}
+		expect(mockDb.query.adminRole.findMany).not.toHaveBeenCalled();
+	});
+
+	it("缓存未命中且用户不存在时返回 not_found", async () => {
+		mockDb.query.adminUser.findFirst.mockResolvedValue(undefined);
+
+		const result = await getAdminUserForAuth("ghost");
+
+		expect(result).toEqual({ success: false, reason: "not_found" });
+	});
+
+	it("缓存未命中且用户未启用时返回 disabled", async () => {
+		mockDb.query.adminUser.findFirst.mockResolvedValue({
+			...cachedUser,
+			status: "disabled",
+		});
+
+		const result = await getAdminUserForAuth("admin-1");
+
+		expect(result).toEqual({ success: false, reason: "disabled" });
+	});
+
+	it("缓存未命中且是 root 用户时返回通配权限并写入缓存", async () => {
+		mockDb.query.adminUser.findFirst.mockResolvedValue({
+			...cachedUser,
+			isRoot: true,
+		});
+
+		const result = await getAdminUserForAuth("admin-1");
+
+		expect(result.success).toBe(true);
+		if (result.success) {
+			expect(result.rolePermissions).toEqual(["**"]);
+		}
+		expect(adminUserCache.has("admin-1")).toBe(true);
+		expect(mockDb.query.adminRole.findMany).not.toHaveBeenCalled();
+	});
+
+	it("缓存未命中且非 root 时查询角色合并权限", async () => {
+		mockDb.query.adminUser.findFirst.mockResolvedValue(cachedUser);
+		mockDb.query.adminRole.findMany.mockResolvedValue([
+			{ id: "role-1", permissions: ["news:view"] },
+		]);
+
+		const result = await getAdminUserForAuth("admin-1");
+
+		expect(result.success).toBe(true);
+		if (result.success) {
+			expect(result.rolePermissions).toEqual(["news:view"]);
+		}
 	});
 });

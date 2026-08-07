@@ -2,6 +2,7 @@
  * 实体翻译 Schema 验证测试
  */
 import { describe, expect, it } from "vitest";
+import { importContentTranslationsSchema } from "../content-translations.functions";
 import {
 	deleteSchema,
 	formSchema,
@@ -75,5 +76,47 @@ describe("deleteSchema", () => {
 	it("有效参数应通过校验", () => {
 		const result = deleteSchema.safeParse({ id: "uuid-1" });
 		expect(result.success).toBe(true);
+	});
+});
+
+describe("importContentTranslationsSchema", () => {
+	const base = {
+		data: {
+			translations: [
+				{
+					entityType: "news",
+					entityId: "n-1",
+					fieldName: "title",
+					locale: "en",
+					value: "Hello",
+				},
+			],
+		},
+	};
+
+	it("合法导入数据应通过校验", () => {
+		expect(importContentTranslationsSchema.safeParse(base).success).toBe(true);
+	});
+
+	it("缺少 entityId 应校验失败", () => {
+		expect(
+			importContentTranslationsSchema.safeParse({
+				data: {
+					translations: [
+						{
+							entityType: "news",
+							entityId: "",
+							fieldName: "title",
+							locale: "en",
+							value: "Hello",
+						},
+					],
+				},
+			}).success,
+		).toBe(false);
+	});
+
+	it("缺少 data 字段应校验失败", () => {
+		expect(importContentTranslationsSchema.safeParse({}).success).toBe(false);
 	});
 });

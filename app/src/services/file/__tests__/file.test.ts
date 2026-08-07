@@ -35,7 +35,7 @@ const { mockDb } = vi.hoisted(() => {
 				captchaCode: q(),
 			},
 			$count: vi.fn(),
-			select: vi.fn(() => ({ from: vi.fn(() => ({ where: vi.fn() })) })),
+			select: vi.fn(() => ({})) as any,
 			insert: vi.fn(() => ({ values: vi.fn(() => ({ returning: vi.fn() })) })),
 			update: vi.fn(() => ({ set: vi.fn(() => ({ where: vi.fn() })) })),
 			delete: vi.fn(() => ({ where: vi.fn() })),
@@ -47,11 +47,13 @@ vi.mock("#/db", () => ({ db: mockDb }));
 import {
 	cleanExpiredFiles,
 	deleteFile,
+	getFileInfo,
 	getFileList,
 	makePermanent,
 	readFileContent,
 	sha256,
 	TEMP_EXPIRE_HOURS,
+	uploadFile,
 } from "#/services/file/file.server";
 
 const fileRecord = {
@@ -174,26 +176,59 @@ describe("getFileList", () => {
 		expect(result.pageSize).toBe(20);
 	});
 
-	it("按状态筛选文件列表", async () => {
-		mockDb.select.mockReturnValue({
-			from: vi.fn(() => ({
-				where: vi.fn(() => ({
-					orderBy: vi.fn(() => ({
-						limit: vi.fn(() => ({
-							offset: vi.fn().mockResolvedValue([fileRecord]),
-						})),
-					})),
+	it("按状态筛选文件列表（where 条件包含筛选值）", async () => {
+		const whereMock = vi.fn((_condition: unknown) => ({
+			orderBy: vi.fn(() => ({
+				limit: vi.fn(() => ({
+					offset: vi.fn().mockResolvedValue([fileRecord]),
 				})),
 			})),
+		}));
+		mockDb.select.mockReturnValue({
+			from: vi.fn(() => ({ where: whereMock })),
 		});
 		mockDb.$count.mockResolvedValue(1);
 
 		const result = await getFileList({ status: "permanent" });
 		expect(result.records).toHaveLength(1);
-		expect(result.records[0].status).toBe("temp");
 		expect(result.total).toBe(1);
+		// 筛选行为：where 条件中应包含状态筛选值（而非仅软删除条件）
+		expect(whereMock).toHaveBeenCalled();
+		const whereArg = whereMock.mock.calls[0][0] as unknown;
+		expect(extractSqlText(whereArg)).toContain("permanent");
 	});
 });
+
+/** 递归提取 drizzle SQL 对象的 SQL 文本 */
+function extractSqlText(value: unknown): string {
+	const out: string[] = [];
+	const seen = new WeakSet<object>();
+	const walk = (node: unknown): void => {
+		if (Array.isArray(node)) {
+			for (const item of node) walk(item);
+			return;
+		}
+		if (node === null || typeof node !== "object") {
+			if (typeof node === "string") out.push(node);
+			return;
+		}
+		// 防止 drizzle SQL 内部循环引用导致栈溢出
+		if (seen.has(node)) return;
+		seen.add(node);
+		const obj = node as Record<string, unknown>;
+		if (Array.isArray(obj.queryChunks)) {
+			for (const chunk of obj.queryChunks) walk(chunk);
+			return;
+		}
+		if (Array.isArray(obj.value)) {
+			for (const v of obj.value) walk(v);
+			return;
+		}
+		for (const v of Object.values(obj)) walk(v);
+	};
+	walk(value);
+	return out.join("").toLowerCase();
+}
 
 describe("deleteFile", () => {
 	beforeEach(() => vi.clearAllMocks());
@@ -225,5 +260,123 @@ describe("makePermanent", () => {
 describe("TEMP_EXPIRE_HOURS", () => {
 	it("默认值为 168 小时（7 天）", () => {
 		expect(TEMP_EXPIRE_HOURS).toBe(168);
+	});
+});
+
+describe("uploadFile", () => {
+	const buffer = Buffer.from("上传文件内容");
+	const insertRecord = {
+		...fileRecord,
+		id: "f-new",
+		status: "temp" as const,
+		expiredAt: new Date(),
+	};
+
+	beforeEach(() => vi.clearAllMocks());
+
+	it("SHA256 命中已存在的永久文件时返回秒传结果", async () => {
+		mockDb.query.file.findFirst.mockResolvedValue(fileRecord);
+
+		const result = await uploadFile(buffer, "测试.txt", "text/plain", true);
+
+		expect(result.isDuplicated).toBe(true);
+		expect(result.record.id).toBe("f-1");
+		expect(mockStorage.save).not.toHaveBeenCalled();
+		expect(mockDb.insert).not.toHaveBeenCalled();
+	});
+
+	it("永久上传：落盘、入库状态为 permanent 且无过期时间", async () => {
+		mockDb.query.file.findFirst.mockResolvedValue(undefined);
+		const valuesMock = vi.fn((_data: unknown) => ({
+			returning: vi.fn(() => Promise.resolve([insertRecord])),
+		}));
+		mockDb.insert.mockReturnValue({ values: valuesMock } as any);
+		mockStorage.save.mockResolvedValue(undefined);
+
+		const result = await uploadFile(buffer, "测试.txt", "text/plain", true);
+
+		expect(result.isDuplicated).toBe(false);
+		expect(mockStorage.save).toHaveBeenCalledTimes(1);
+		const values = valuesMock.mock.calls[0][0] as Record<string, unknown>;
+		expect(values).toMatchObject({
+			originalName: "测试.txt",
+			mimeType: "text/plain",
+			size: buffer.length,
+			status: "permanent",
+			expiredAt: null,
+		});
+	});
+
+	it("临时上传：入库状态为 temp 且设置 7 天过期时间", async () => {
+		mockDb.query.file.findFirst.mockResolvedValue(undefined);
+		const valuesMock = vi.fn((_data: unknown) => ({
+			returning: vi.fn(() => Promise.resolve([insertRecord])),
+		}));
+		mockDb.insert.mockReturnValue({ values: valuesMock } as any);
+		mockStorage.save.mockResolvedValue(undefined);
+
+		const before = Date.now();
+		await uploadFile(buffer, "测试.txt", "text/plain", false);
+		const after = Date.now();
+
+		const values = valuesMock.mock.calls[0][0] as Record<string, unknown>;
+		expect(values.status).toBe("temp");
+		const expiredAt = values.expiredAt as Date;
+		expect(expiredAt.getTime()).toBeGreaterThanOrEqual(
+			before + TEMP_EXPIRE_HOURS * 3600 * 1000,
+		);
+		expect(expiredAt.getTime()).toBeLessThanOrEqual(
+			after + TEMP_EXPIRE_HOURS * 3600 * 1000,
+		);
+	});
+
+	it("保留原始文件扩展名并写入存储路径", async () => {
+		mockDb.query.file.findFirst.mockResolvedValue(undefined);
+		const valuesMock = vi.fn((_data: unknown) => ({
+			returning: vi.fn(() => Promise.resolve([insertRecord])),
+		}));
+		mockDb.insert.mockReturnValue({ values: valuesMock } as any);
+		mockStorage.save.mockResolvedValue(undefined);
+
+		await uploadFile(buffer, "文档.pdf", "application/pdf", true);
+
+		const values = valuesMock.mock.calls[0][0] as Record<string, unknown>;
+		expect(values.storedName).toMatch(/^[0-9a-f-]{36}\.pdf$/);
+		expect(values.path).toMatch(/^\d{4}-\d{2}-\d{2}\/[0-9a-f-]{36}\.pdf$/);
+		expect(mockStorage.save).toHaveBeenCalledWith(values.path, buffer);
+	});
+
+	it("无扩展名文件存储时不追加后缀", async () => {
+		mockDb.query.file.findFirst.mockResolvedValue(undefined);
+		const valuesMock = vi.fn((_data: unknown) => ({
+			returning: vi.fn(() => Promise.resolve([insertRecord])),
+		}));
+		mockDb.insert.mockReturnValue({ values: valuesMock } as any);
+		mockStorage.save.mockResolvedValue(undefined);
+
+		await uploadFile(buffer, "README", "text/plain", true);
+
+		const values = valuesMock.mock.calls[0][0] as Record<string, unknown>;
+		expect(values.storedName).toMatch(/^[0-9a-f-]{36}$/);
+	});
+});
+
+describe("getFileInfo", () => {
+	beforeEach(() => vi.clearAllMocks());
+
+	it("文件存在时返回原始文件名", async () => {
+		mockDb.query.file.findFirst.mockResolvedValue({
+			originalName: "报告.xlsx",
+		});
+
+		const name = await getFileInfo("f-1");
+		expect(name).toBe("报告.xlsx");
+	});
+
+	it("文件不存在时返回 null", async () => {
+		mockDb.query.file.findFirst.mockResolvedValue(undefined);
+
+		const name = await getFileInfo("不存在");
+		expect(name).toBeNull();
 	});
 });

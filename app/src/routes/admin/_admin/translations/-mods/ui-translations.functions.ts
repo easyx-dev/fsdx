@@ -65,22 +65,23 @@ export const exportUITranslationsSFn = createServerFn({ method: "GET" })
 		return toJson({ translations });
 	});
 
+/** UI 翻译导入入参 schema（测试共用） */
+export const importUITranslationsSchema = z.object({
+	data: z.object({
+		translations: z.array(
+			z.object({
+				locale: z.string().min(1),
+				key: z.string().min(1),
+				value: z.string().min(1),
+				valueType: z.string().optional(),
+			}),
+		),
+	}),
+});
+
 export const importUITranslationsSFn = createServerFn({ method: "POST" })
 	.middleware([adminPermGuard(ADMIN_PERMISSIONS.TRANSLATION_IMPORT)])
-	.inputValidator(
-		z.object({
-			data: z.object({
-				translations: z.array(
-					z.object({
-						locale: z.string().min(1),
-						key: z.string().min(1),
-						value: z.string().min(1),
-						valueType: z.string().optional(),
-					}),
-				),
-			}),
-		}),
-	)
+	.inputValidator(importUITranslationsSchema)
 	.handler(
 		async ({ data: { data }, context }): Promise<TranslationImportResult> => {
 			const result = await importUiTranslations(

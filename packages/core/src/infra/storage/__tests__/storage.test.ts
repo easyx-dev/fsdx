@@ -9,8 +9,6 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { LocalStorageAdapter, type StorageAdapter } from "../storage";
 
 process.env.STORAGE_DIR = ".tmp";
-process.env.DATABASE_URL = "";
-process.env.JWT_SECRET = "test-secret-at-least-32-chars!!";
 
 describe("LocalStorageAdapter", () => {
 	let adapter: LocalStorageAdapter;

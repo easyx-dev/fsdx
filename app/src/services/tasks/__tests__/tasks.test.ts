@@ -1,45 +1,78 @@
 /**
- * 定时任务注册测试：验证 registerAllTasks 注册正确任务
+ * 定时任务注册测试：验证注册配置正确且 handler 逻辑真实执行
  */
 
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const { mockRegisterTask } = vi.hoisted(() => ({ mockRegisterTask: vi.fn() }));
 vi.mock("@fsdx/core/scheduler", () => ({
 	registerTask: mockRegisterTask,
 }));
 
-vi.mock("#/lib/logger/logger", () => ({
-	logger: { error: vi.fn(), info: vi.fn(), warn: vi.fn() },
+const { mockCleanExpiredFiles, mockCleanExpiredLogs } = vi.hoisted(() => ({
+	mockCleanExpiredFiles: vi.fn(),
+	mockCleanExpiredLogs: vi.fn(),
 }));
 
 vi.mock("#/services/file/file.server", () => ({
-	cleanExpiredFiles: vi.fn().mockResolvedValue(0),
+	cleanExpiredFiles: mockCleanExpiredFiles,
 }));
 
 vi.mock("#/services/logs/logs-cleanup.server", () => ({
-	cleanExpiredLogs: vi.fn().mockResolvedValue(0),
+	cleanExpiredLogs: mockCleanExpiredLogs,
+}));
+
+const { mockLoggerInfo } = vi.hoisted(() => ({ mockLoggerInfo: vi.fn() }));
+vi.mock("#/lib/logger/logger", () => ({
+	logger: { error: vi.fn(), info: mockLoggerInfo, warn: vi.fn() },
 }));
 
 import { registerAllTasks } from "#/services/tasks/tasks.server";
 
 describe("registerAllTasks", () => {
-	it("注册两个定时任务", () => {
+	beforeEach(() => {
+		vi.clearAllMocks();
+	});
+
+	it("注册两个清理定时任务且配置正确", () => {
 		registerAllTasks();
 		expect(mockRegisterTask).toHaveBeenCalledTimes(2);
-	});
-	it("第一个任务是清理过期临时文件", () => {
-		registerAllTasks();
 		const calls = mockRegisterTask.mock.calls;
-		const cleanupTask = calls[0][0];
-		expect(cleanupTask.name).toBe("清理过期临时文件");
-		expect(cleanupTask.cronExpression).toBe("0 * * * *");
+		expect(calls[0][0].name).toBe("清理过期临时文件");
+		expect(calls[0][0].cronExpression).toBe("0 * * * *");
+		expect(calls[1][0].name).toBe("清理过期日志文件");
+		expect(calls[1][0].cronExpression).toBe("0 3 * * *");
 	});
-	it("第二个任务是清理过期日志文件", () => {
+
+	it("清理到过期文件时记录清理日志", async () => {
+		mockCleanExpiredFiles.mockResolvedValue(3);
+		mockCleanExpiredLogs.mockResolvedValue(0);
 		registerAllTasks();
-		const calls = mockRegisterTask.mock.calls;
-		const logTask = calls[1][0];
-		expect(logTask.name).toBe("清理过期日志文件");
-		expect(logTask.cronExpression).toBe("0 3 * * *");
+		await mockRegisterTask.mock.calls[0][0].handler();
+		expect(mockCleanExpiredFiles).toHaveBeenCalledTimes(1);
+		expect(mockLoggerInfo).toHaveBeenCalledWith(
+			{ count: 3 },
+			"已清理过期临时文件",
+		);
+	});
+
+	it("没有过期文件时不记录清理日志", async () => {
+		mockCleanExpiredFiles.mockResolvedValue(0);
+		registerAllTasks();
+		await mockRegisterTask.mock.calls[0][0].handler();
+		expect(mockCleanExpiredFiles).toHaveBeenCalledTimes(1);
+		expect(mockLoggerInfo).not.toHaveBeenCalled();
+	});
+
+	it("过期日志清理任务 handler 正常执行", async () => {
+		mockCleanExpiredFiles.mockResolvedValue(0);
+		mockCleanExpiredLogs.mockResolvedValue(2);
+		registerAllTasks();
+		await mockRegisterTask.mock.calls[1][0].handler();
+		expect(mockCleanExpiredLogs).toHaveBeenCalledTimes(1);
+		expect(mockLoggerInfo).toHaveBeenCalledWith(
+			{ count: 2 },
+			"已清理过期日志文件",
+		);
 	});
 });

@@ -30,15 +30,6 @@ vi.mock("#/services/i18n/ui-translation.cache", () => ({
 
 const { mockDb } = vi.hoisted(() => {
 	const q = () => ({ findFirst: vi.fn(), findMany: vi.fn() });
-	const selectObj = {
-		from: vi.fn(() => ({
-			where: vi.fn(() => ({
-				orderBy: vi.fn(() => ({
-					limit: vi.fn(() => ({ offset: vi.fn() })),
-				})),
-			})),
-		})),
-	};
 	return {
 		mockDb: {
 			query: {
@@ -55,10 +46,13 @@ const { mockDb } = vi.hoisted(() => {
 				news: q(),
 			},
 			$count: vi.fn(),
-			select: vi.fn(() => selectObj),
+			select: vi.fn(() => ({})) as any,
 			insert: vi.fn(() => ({ values: vi.fn() })),
 			update: vi.fn(() => ({ set: vi.fn(() => ({ where: vi.fn() })) })),
 			delete: vi.fn(() => ({ where: vi.fn() })),
+			transaction: vi.fn(async (cb: (tx: unknown) => Promise<unknown>) =>
+				cb(mockDb),
+			),
 		},
 	};
 });
@@ -67,12 +61,21 @@ vi.mock("#/db", () => ({ db: mockDb }));
 import {
 	deleteContentTranslation,
 	deleteUITranslation,
+	getAllContentTranslationsForExport,
+	getAllUITranslationsForExport,
 	getFieldTranslations,
+	getUITranslations,
+	importContentTranslations,
+	importUiTranslations,
 	listContentTranslations,
 	listUITranslations,
+	loadUITranslations,
+	refreshUITranslationCache,
 	upsertContentTranslation,
 	upsertUITranslation,
 } from "#/services/i18n/i18n.server";
+
+beforeEach(() => vi.clearAllMocks());
 
 const uiRecord = {
 	id: "u-1",
@@ -131,6 +134,8 @@ describe("upsertUITranslation", () => {
 			value: "Value",
 		});
 		expect(result.success).toBe(true);
+		expect(mockDb.insert).toHaveBeenCalled();
+		expect(mockDb.update).not.toHaveBeenCalled();
 	});
 	it("更新已有 UI 翻译", async () => {
 		mockDb.query.uiTranslation.findFirst.mockResolvedValue(uiRecord);
@@ -144,6 +149,8 @@ describe("upsertUITranslation", () => {
 			value: "Updated",
 		});
 		expect(result.success).toBe(true);
+		expect(mockDb.update).toHaveBeenCalled();
+		expect(mockDb.insert).not.toHaveBeenCalled();
 	});
 });
 
@@ -197,6 +204,8 @@ describe("upsertContentTranslation", () => {
 			value: "Hello",
 		});
 		expect(result.success).toBe(true);
+		expect(mockDb.insert).toHaveBeenCalled();
+		expect(mockDb.update).not.toHaveBeenCalled();
 	});
 	it("更新已有实体翻译", async () => {
 		mockDb.query.contentTranslation.findFirst.mockResolvedValue(ctRecord);
@@ -209,6 +218,8 @@ describe("upsertContentTranslation", () => {
 			value: "Updated",
 		});
 		expect(result.success).toBe(true);
+		expect(mockDb.update).toHaveBeenCalled();
+		expect(mockDb.insert).not.toHaveBeenCalled();
 	});
 });
 
@@ -228,5 +239,213 @@ describe("getFieldTranslations", () => {
 		const result = await getFieldTranslations("news", "n-1", "title");
 		expect(result).toHaveProperty("en");
 		expect(result.en.value).toBe("Hello World");
+	});
+});
+
+describe("loadUITranslations", () => {
+	it("从数据库加载指定语言并组装为键值映射", async () => {
+		mockDb.select.mockReturnValue({
+			from: vi.fn(() => ({
+				where: vi
+					.fn()
+					.mockResolvedValue([
+						uiRecord,
+						{ ...uiRecord, id: "u-2", key: "home.sub", value: "Sub" },
+					]),
+			})),
+		});
+
+		const result = await loadUITranslations("en");
+
+		expect(result).toEqual({ "home.title": "Welcome", "home.sub": "Sub" });
+	});
+
+	it("无翻译时返回空对象", async () => {
+		mockDb.select.mockReturnValue({
+			from: vi.fn(() => ({ where: vi.fn().mockResolvedValue([]) })),
+		});
+
+		const result = await loadUITranslations("zh");
+		expect(result).toEqual({});
+	});
+});
+
+describe("getUITranslations", () => {
+	it("缓存命中时直接返回", async () => {
+		mockCache.get.mockReturnValue({ "home.title": "Welcome" });
+
+		const result = await getUITranslations("en");
+
+		expect(result).toEqual({ "home.title": "Welcome" });
+		expect(mockDb.select).not.toHaveBeenCalled();
+	});
+
+	it("缓存未命中时加载并写入缓存", async () => {
+		mockCache.get.mockReturnValue(undefined);
+		mockDb.select.mockReturnValue({
+			from: vi.fn(() => ({ where: vi.fn().mockResolvedValue([uiRecord]) })),
+		});
+
+		const result = await getUITranslations("en");
+
+		expect(result).toEqual({ "home.title": "Welcome" });
+		expect(mockCache.set).toHaveBeenCalledWith("en", {
+			"home.title": "Welcome",
+		});
+	});
+});
+
+describe("refreshUITranslationCache", () => {
+	it("指定语言时删除该语言缓存并重新加载", async () => {
+		mockDb.select.mockReturnValue({
+			from: vi.fn(() => ({ where: vi.fn().mockResolvedValue([uiRecord]) })),
+		});
+
+		await refreshUITranslationCache("en");
+
+		expect(mockCache.delete).toHaveBeenCalledWith("en");
+		expect(mockCache.set).toHaveBeenCalled();
+	});
+
+	it("不指定语言时清空全部缓存", async () => {
+		mockCache.keys.mockReturnValue(["en", "zh"]);
+
+		await refreshUITranslationCache();
+
+		expect(mockCache.delete).toHaveBeenCalledTimes(2);
+		expect(mockDb.select).not.toHaveBeenCalled();
+	});
+});
+
+describe("getAllUITranslationsForExport", () => {
+	it("返回排序后的全部 UI 翻译", async () => {
+		mockDb.select.mockReturnValue({
+			from: vi.fn(() => ({
+				orderBy: vi.fn(() => Promise.resolve([uiRecord])),
+			})),
+		});
+
+		const result = await getAllUITranslationsForExport();
+
+		expect(result).toEqual([
+			{ locale: "en", key: "home.title", value: "Welcome", valueType: "input" },
+		]);
+	});
+});
+
+describe("importUiTranslations", () => {
+	beforeEach(() => vi.clearAllMocks());
+
+	it("逐个 upsert 并统计创建与更新数量", async () => {
+		mockDb.query.uiTranslation.findFirst
+			.mockResolvedValueOnce(uiRecord)
+			.mockResolvedValueOnce(undefined);
+		mockDb.select.mockReturnValue({
+			from: vi.fn(() => ({ where: vi.fn().mockResolvedValue([]) })),
+		});
+
+		const result = await importUiTranslations({
+			translations: [
+				{ locale: "en", key: "home.title", value: "New", valueType: "input" },
+				{ locale: "zh", key: "new.key", value: "新", valueType: "input" },
+			],
+		});
+
+		expect(result).toEqual({ created: 1, updated: 1 });
+	});
+
+	it("非法的 valueType 回退到 input", async () => {
+		mockDb.query.uiTranslation.findFirst.mockResolvedValue(undefined);
+		mockDb.select.mockReturnValue({
+			from: vi.fn(() => ({ where: vi.fn().mockResolvedValue([]) })),
+		});
+		const valuesMock = vi.fn();
+		mockDb.insert.mockReturnValue({ values: valuesMock });
+
+		await importUiTranslations({
+			translations: [
+				{ locale: "en", key: "k", value: "v", valueType: "bad-type" },
+			],
+		});
+
+		expect(valuesMock.mock.calls[0][0].valueType).toBe("input");
+	});
+});
+
+describe("getAllContentTranslationsForExport", () => {
+	it("返回排序后的全部实体翻译", async () => {
+		mockDb.select.mockReturnValue({
+			from: vi.fn(() => ({
+				orderBy: vi.fn(() => Promise.resolve([ctRecord])),
+			})),
+		});
+
+		const result = await getAllContentTranslationsForExport();
+
+		expect(result).toEqual([
+			{
+				entityType: "news",
+				entityId: "n-1",
+				fieldName: "title",
+				locale: "en",
+				value: "Hello World",
+				valueType: "text",
+			},
+		]);
+	});
+});
+
+describe("importContentTranslations", () => {
+	beforeEach(() => vi.clearAllMocks());
+
+	it("在事务中逐个 upsert 并统计数量", async () => {
+		mockDb.query.contentTranslation.findFirst
+			.mockResolvedValueOnce(ctRecord)
+			.mockResolvedValueOnce(undefined);
+
+		const result = await importContentTranslations({
+			translations: [
+				{
+					entityType: "news",
+					entityId: "n-1",
+					fieldName: "title",
+					locale: "en",
+					value: "Updated",
+					valueType: "text",
+				},
+				{
+					entityType: "news",
+					entityId: "n-2",
+					fieldName: "title",
+					locale: "zh",
+					value: "标题",
+					valueType: "text",
+				},
+			],
+		});
+
+		expect(result).toEqual({ created: 1, updated: 1 });
+		expect(mockDb.transaction).toHaveBeenCalledTimes(1);
+	});
+
+	it("非法的 valueType 回退到 text", async () => {
+		mockDb.query.contentTranslation.findFirst.mockResolvedValue(undefined);
+		const valuesMock = vi.fn();
+		mockDb.insert.mockReturnValue({ values: valuesMock });
+
+		await importContentTranslations({
+			translations: [
+				{
+					entityType: "news",
+					entityId: "n-1",
+					fieldName: "title",
+					locale: "en",
+					value: "x",
+					valueType: "bad-type",
+				},
+			],
+		});
+
+		expect(valuesMock.mock.calls[0][0].valueType).toBe("text");
 	});
 });

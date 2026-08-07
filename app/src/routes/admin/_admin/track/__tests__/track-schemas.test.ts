@@ -2,17 +2,9 @@
  * 埋点事件 Schema 验证测试
  */
 import { describe, expect, it } from "vitest";
-import { z } from "zod";
+import { trackEventSchema } from "#/services/track/track.functions";
 import { analyticsQuerySchema } from "../-mods/analytics.functions";
 import { trackEventQuerySchema } from "../-mods/query.functions";
-
-const trackEventSchema = z.object({
-	time: z.number(),
-	userId: z.string().optional(),
-	sessionId: z.string().min(1),
-	name: z.string().min(1).max(100),
-	properties: z.record(z.string(), z.unknown()).default({}),
-});
 
 describe("trackEventSchema", () => {
 	it("最小有效参数应通过校验", () => {

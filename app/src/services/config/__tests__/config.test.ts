@@ -3,7 +3,7 @@
  * configCache 为全量列表缓存，getConfig / getVisibleConfigRows 均从缓存读取
  */
 
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("#/lib/logger/logger", () => ({
 	logger: { error: vi.fn(), info: vi.fn(), warn: vi.fn() },
@@ -86,6 +86,9 @@ import {
 	getConfigTranslations,
 	getVisibleConfigRows,
 	loadConfigCache,
+	refreshConfigTranslationCache,
+	updateConfig,
+	upsertConfig,
 } from "#/services/config/config.server";
 
 describe("loadConfigCache", () => {
@@ -183,13 +186,29 @@ describe("getConfig", () => {
 
 describe("getConfigList", () => {
 	it("返回配置列表", async () => {
+		const configRows = [{ id: "c-1", key: "site_name", value: "FSDX" }];
 		mockDb.select.mockReturnValue({
 			from: vi.fn(() => ({
-				where: vi.fn(() => ({ orderBy: vi.fn().mockResolvedValue([]) })),
+				where: vi.fn(() => ({
+					orderBy: vi.fn().mockResolvedValue(configRows),
+				})),
 			})),
 		});
 		const result = await getConfigList();
-		expect(Array.isArray(result)).toBe(true);
+		expect(result).toHaveLength(1);
+		expect(result[0].key).toBe("site_name");
+	});
+
+	it("无配置时返回空数组", async () => {
+		mockDb.select.mockReturnValue({
+			from: vi.fn(() => ({
+				where: vi.fn(() => ({
+					orderBy: vi.fn().mockResolvedValue([]),
+				})),
+			})),
+		});
+		const result = await getConfigList();
+		expect(result).toEqual([]);
 	});
 });
 
@@ -298,5 +317,115 @@ describe("getConfigTranslations", () => {
 		expect(mockConfigTranslationCache.set).toHaveBeenCalledWith("en", {
 			"c-1": "FSDX EN",
 		});
+	});
+});
+
+describe("upsertConfig", () => {
+	beforeEach(() => vi.clearAllMocks());
+
+	it("key 已存在时更新配置并保留未传字段", async () => {
+		mockDb.query.systemConfig.findFirst.mockResolvedValue({
+			id: "c-1",
+			key: "site_name",
+			value: "old",
+			clientVisible: true,
+			valueType: "input",
+			groupName: "站点设置",
+			description: "站点名称",
+		});
+		mockDb.select.mockReturnValue({
+			from: vi.fn(() => ({ where: vi.fn().mockResolvedValue([]) })),
+		});
+		const setMock = vi.fn((_data: unknown) => ({ where: vi.fn() }));
+		mockDb.update.mockReturnValue({ set: setMock } as any);
+
+		await upsertConfig("site_name", "新值");
+
+		expect(mockDb.insert).not.toHaveBeenCalled();
+		// 更新 payload：仅覆盖传入字段，其余保留原值
+		const payload = setMock.mock.calls[0][0] as Record<string, unknown>;
+		expect(payload.value).toBe("新值");
+		expect(payload.clientVisible).toBe(true);
+		expect(payload.valueType).toBe("input");
+		expect(payload.groupName).toBe("站点设置");
+	});
+
+	it("key 不存在时插入新配置", async () => {
+		mockDb.query.systemConfig.findFirst.mockResolvedValue(undefined);
+		mockDb.select.mockReturnValue({
+			from: vi.fn(() => ({ where: vi.fn().mockResolvedValue([]) })),
+		});
+		const valuesMock = vi.fn();
+		mockDb.insert.mockReturnValue({ values: valuesMock });
+
+		await upsertConfig("new_key", "val");
+
+		expect(valuesMock).toHaveBeenCalled();
+		expect(mockDb.update).not.toHaveBeenCalled();
+	});
+});
+
+describe("updateConfig", () => {
+	beforeEach(() => vi.clearAllMocks());
+
+	it("更新存在的配置返回记录并刷新缓存", async () => {
+		mockDb.update.mockReturnValue({
+			set: vi.fn(() => ({
+				where: vi.fn(() => ({
+					returning: vi
+						.fn()
+						.mockResolvedValue([{ id: "c-1", key: "k", value: "new" }]),
+				})),
+			})),
+		});
+		mockDb.select.mockReturnValue({
+			from: vi.fn(() => ({ where: vi.fn().mockResolvedValue([]) })),
+		});
+
+		const result = await updateConfig("c-1", { value: "new" });
+
+		expect(result).not.toBeNull();
+		expect(result!.value).toBe("new");
+		expect(mockConfigCache.set).toHaveBeenCalled();
+	});
+
+	it("不存在的配置返回 null 且不刷新缓存", async () => {
+		mockDb.update.mockReturnValue({
+			set: vi.fn(() => ({
+				where: vi.fn(() => ({
+					returning: vi.fn().mockResolvedValue([]),
+				})),
+			})),
+		});
+
+		const result = await updateConfig("ghost", { value: "x" });
+
+		expect(result).toBeNull();
+		expect(mockDb.select).not.toHaveBeenCalled();
+	});
+});
+
+describe("refreshConfigTranslationCache", () => {
+	beforeEach(() => vi.clearAllMocks());
+
+	it("指定语言时删除缓存并重新加载", async () => {
+		mockConfigTranslationCache.get.mockReturnValueOnce(undefined);
+		mockDb.select.mockReturnValue({
+			from: vi.fn(() => ({ where: vi.fn().mockResolvedValue([]) })),
+		});
+
+		await refreshConfigTranslationCache("en");
+
+		expect(mockConfigTranslationCache.delete).toHaveBeenCalledWith("en");
+		expect(mockConfigTranslationCache.set).toHaveBeenCalled();
+	});
+
+	it("不指定语言时清空全部缓存", async () => {
+		mockConfigTranslationCache.keys.mockReturnValue(["en", "zh"]);
+
+		await refreshConfigTranslationCache();
+
+		expect(mockConfigTranslationCache.delete).toHaveBeenCalledTimes(2);
+		expect(mockDb.select).not.toHaveBeenCalled();
 	});
 });

@@ -13,7 +13,8 @@ import {
 	trackEvent,
 } from "./track.server";
 
-const trackEventSchema = z.object({
+/** 埋点事件上报入参 schema（客户端 SDK 与测试共用） */
+export const trackEventSchema = z.object({
 	time: z.number(),
 	userId: z.string().optional(),
 	sessionId: z.string().min(1),

@@ -2,6 +2,7 @@
  * UI 翻译 Schema 验证测试
  */
 import { describe, expect, it } from "vitest";
+import { importUITranslationsSchema } from "../ui-translations.functions";
 import {
 	deleteSchema,
 	formSchema,
@@ -63,5 +64,36 @@ describe("deleteSchema", () => {
 	it("有效参数应通过校验", () => {
 		const result = deleteSchema.safeParse({ id: "uuid-1" });
 		expect(result.success).toBe(true);
+	});
+});
+
+describe("importUITranslationsSchema", () => {
+	const base = {
+		data: {
+			translations: [{ locale: "en", key: "home.title", value: "Home" }],
+		},
+	};
+
+	it("合法导入数据应通过校验", () => {
+		expect(importUITranslationsSchema.safeParse(base).success).toBe(true);
+	});
+
+	it("缺少 data 字段应校验失败", () => {
+		expect(importUITranslationsSchema.safeParse({}).success).toBe(false);
+	});
+
+	it("空 translations 数组应通过校验", () => {
+		expect(
+			importUITranslationsSchema.safeParse({ data: { translations: [] } })
+				.success,
+		).toBe(true);
+	});
+
+	it("value 为空应校验失败", () => {
+		expect(
+			importUITranslationsSchema.safeParse({
+				data: { translations: [{ locale: "en", key: "k", value: "" }] },
+			}).success,
+		).toBe(false);
 	});
 });

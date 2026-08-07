@@ -38,15 +38,23 @@ function setupThemeColorMeta() {
 	document.head.appendChild(meta);
 }
 
-function setupMatchMedia(matches = false) {
+/** 可触发的 matchMedia mock：支持手动模拟系统偏好变化 */
+function setupMatchMedia(initialMatches = false) {
+	const mq = {
+		matches: initialMatches,
+		handlers: new Set<() => void>(),
+		addEventListener: vi.fn((_type: string, cb: () => void) => {
+			mq.handlers.add(cb);
+		}),
+		removeEventListener: vi.fn((_type: string, cb: () => void) => {
+			mq.handlers.delete(cb);
+		}),
+	};
 	Object.defineProperty(window, "matchMedia", {
 		writable: true,
-		value: vi.fn().mockImplementation(() => ({
-			matches,
-			addEventListener: vi.fn(),
-			removeEventListener: vi.fn(),
-		})),
+		value: vi.fn().mockImplementation(() => mq),
 	});
+	return mq;
 }
 
 describe("useThemeMode", () => {
@@ -132,5 +140,72 @@ describe("useThemeMode", () => {
 			result.current.setMode("dark");
 		});
 		expect(result.current.mode).toBe("dark");
+	});
+
+	it("auto 模式跟随系统暗色偏好", () => {
+		setupMatchMedia(true);
+
+		const { result } = renderHook(() => useThemeMode(TEST_PRESET));
+
+		expect(result.current.mode).toBe("auto");
+		expect(result.current.isDark).toBe(true);
+		expect(result.current.scheme.dataTheme).toBe("admin-brown-dark");
+	});
+
+	it("系统偏好变化时 auto 模式实时联动", () => {
+		const mq = setupMatchMedia(false);
+		const { result } = renderHook(() => useThemeMode(TEST_PRESET));
+		expect(result.current.isDark).toBe(false);
+
+		// 模拟操作系统切换到暗色
+		mq.matches = true;
+		act(() => {
+			mq.handlers.forEach((cb) => {
+				cb();
+			});
+		});
+
+		expect(result.current.isDark).toBe(true);
+		expect(result.current.scheme.dataTheme).toBe("admin-brown-dark");
+	});
+
+	it("storage 事件同步其他标签页的主题切换", () => {
+		const { result } = renderHook(() => useThemeMode(TEST_PRESET));
+
+		act(() => {
+			localStorage.setItem("test-theme", "dark");
+			window.dispatchEvent(new StorageEvent("storage", { key: "test-theme" }));
+		});
+
+		expect(result.current.mode).toBe("dark");
+		expect(result.current.isDark).toBe(true);
+	});
+
+	it("忽略无关 storage 键的写入", () => {
+		const { result } = renderHook(() => useThemeMode(TEST_PRESET));
+
+		act(() => {
+			localStorage.setItem("test-theme", "dark");
+			window.dispatchEvent(new StorageEvent("storage", { key: "other-key" }));
+		});
+
+		expect(result.current.mode).toBe("auto");
+	});
+
+	it("卸载时移除 matchMedia 监听", () => {
+		const mq = setupMatchMedia(false);
+		const { unmount } = renderHook(() => useThemeMode(TEST_PRESET));
+
+		expect(mq.addEventListener).toHaveBeenCalled();
+		unmount();
+		expect(mq.removeEventListener).toHaveBeenCalled();
+	});
+
+	it("localStorage 存有非法值时回退为 auto", () => {
+		localStorage.setItem("test-theme", "invalid-value");
+
+		const { result } = renderHook(() => useThemeMode(TEST_PRESET));
+
+		expect(result.current.mode).toBe("auto");
 	});
 });

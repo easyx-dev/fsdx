@@ -25,7 +25,6 @@ vi.mock("#/services/i18n/i18n.server", async (importOriginal) => {
 
 const { mockDb } = vi.hoisted(() => {
 	const q = () => ({ findFirst: vi.fn(), findMany: vi.fn() });
-	const selectObj = { from: vi.fn(() => ({ where: vi.fn() })) };
 	return {
 		mockDb: {
 			query: {
@@ -40,12 +39,11 @@ const { mockDb } = vi.hoisted(() => {
 				captchaCode: q(),
 			},
 			$count: vi.fn(),
-			select: vi.fn(() => selectObj),
+			select: vi.fn(() => ({})) as any,
 			insert: vi.fn(() => ({ values: vi.fn(() => ({ returning: vi.fn() })) })),
 			update: vi.fn(() => ({ set: vi.fn(() => ({ where: vi.fn() })) })),
 			delete: vi.fn(() => ({ where: vi.fn() })),
 		},
-		selectObj,
 	};
 });
 vi.mock("#/db", () => ({ db: mockDb }));
@@ -54,6 +52,7 @@ import {
 	changeNewsStatus,
 	createNews,
 	deleteNews,
+	generateSlug,
 	getNewsById,
 	getNewsBySlug,
 	getNewsList,
@@ -209,6 +208,122 @@ describe("renderContent", () => {
 		expect(result!.html).toContain("<p>Hello</p>");
 	});
 });
+describe("generateSlug", () => {
+	it("中文标题使用时间戳后缀", () => {
+		const slug = generateSlug("新闻标题");
+		expect(slug).toMatch(/^news-\d{13}$/);
+	});
+
+	it("ASCII 标题转为 kebab-case", () => {
+		expect(generateSlug("Hello World News")).toBe("hello-world-news");
+	});
+
+	it("去除非法字符并压缩连字符", () => {
+		expect(generateSlug("  Foo!!  Bar??  ")).toBe("foo-bar");
+	});
+
+	it("超长标题截断到 100 字符", () => {
+		const slug = generateSlug("a".repeat(150));
+		expect(slug).toHaveLength(100);
+	});
+
+	it("全部为非法字符时回退为时间戳 slug", () => {
+		expect(generateSlug("!!!")).toMatch(/^news-\d{13}$/);
+	});
+});
+
+describe("createNews 分支", () => {
+	beforeEach(() => vi.clearAllMocks());
+
+	it("达到推荐上限时抛错", async () => {
+		mockDb.$count.mockResolvedValue(5);
+
+		await expect(
+			createNews({ title: "新新闻", isRecommended: true }),
+		).rejects.toThrow("最多推荐 5 条新闻");
+	});
+
+	it("slug 冲突时自动追加数字后缀", async () => {
+		mockDb.$count.mockResolvedValue(0);
+		mockDb.query.news.findFirst
+			.mockResolvedValueOnce({ id: "n-x", slug: "test-news" })
+			.mockResolvedValueOnce(undefined);
+		const valuesMock = vi.fn((_data: unknown) => ({
+			returning: vi
+				.fn()
+				.mockResolvedValue([{ ...newsRecord, slug: "test-news-1" }]),
+		}));
+		mockDb.insert.mockReturnValue({ values: valuesMock } as any);
+
+		await createNews({ title: "新新闻", slug: "test-news" });
+
+		const values = valuesMock.mock.calls[0][0] as { slug: string };
+		expect(values.slug).toBe("test-news-1");
+	});
+
+	it("发布状态且未传 publishedAt 时自动填充当前时间", async () => {
+		mockDb.query.news.findFirst.mockResolvedValue(undefined);
+		const valuesMock = vi.fn((_data: unknown) => ({
+			returning: vi
+				.fn()
+				.mockResolvedValue([{ ...newsRecord, status: "published" }]),
+		}));
+		mockDb.insert.mockReturnValue({ values: valuesMock } as any);
+		const before = Date.now();
+
+		await createNews({ title: "新新闻", status: "published" });
+
+		const values = valuesMock.mock.calls[0][0] as { publishedAt: Date | null };
+		expect(values.publishedAt).toBeInstanceOf(Date);
+		expect((values.publishedAt as Date).getTime()).toBeGreaterThanOrEqual(
+			before - 1000,
+		);
+	});
+});
+
+describe("changeNewsStatus", () => {
+	beforeEach(() => vi.clearAllMocks());
+
+	it("首次发布时自动填充 publishedAt", async () => {
+		mockDb.query.news.findFirst.mockResolvedValue({
+			...newsRecord,
+			publishedAt: null,
+		});
+		const setMock = vi.fn((_data: unknown) => ({ where: vi.fn() }));
+		mockDb.update.mockReturnValue({ set: setMock } as any);
+
+		await changeNewsStatus("n-1", "published");
+
+		const updateData = setMock.mock.calls[0][0] as { publishedAt?: Date };
+		expect(updateData.publishedAt).toBeInstanceOf(Date);
+	});
+
+	it("已发布过的新闻不重复设置 publishedAt", async () => {
+		mockDb.query.news.findFirst.mockResolvedValue({
+			...newsRecord,
+			publishedAt: new Date(),
+		});
+		const setMock = vi.fn((_data: unknown) => ({ where: vi.fn() }));
+		mockDb.update.mockReturnValue({ set: setMock } as any);
+
+		await changeNewsStatus("n-1", "published");
+
+		const updateData = setMock.mock.calls[0][0] as { publishedAt?: Date };
+		expect(updateData.publishedAt).toBeUndefined();
+	});
+
+	it("非发布状态不查询现有记录", async () => {
+		const setMock = vi.fn((_data: unknown) => ({ where: vi.fn() }));
+		mockDb.update.mockReturnValue({ set: setMock } as any);
+
+		await changeNewsStatus("n-1", "archived");
+
+		expect(mockDb.query.news.findFirst).not.toHaveBeenCalled();
+		const updateData = setMock.mock.calls[0][0] as { status: string };
+		expect(updateData.status).toBe("archived");
+	});
+});
+
 describe("translateNewsRecord", () => {
 	beforeEach(() => vi.clearAllMocks());
 

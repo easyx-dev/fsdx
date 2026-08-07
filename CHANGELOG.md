@@ -12,6 +12,11 @@
   - `Logo` 组件拆分 `ClientLogo`（前台）/ `AdminLogo`（管理端）并统一改为内联 SVG：前台 `currentColor` + `text-foreground` 随明暗主题自动取前景色，解决深灰 `logo.svg` 在暗色下不可见；管理端 fill 取 `--s-primary`、F 取 `--s-primary-fg`，随亮暗品牌色自动切换，替代固定棕色的 `logo-admin.svg`
   - `favicon.svg` 保留供亮色模式、新增 `favicon-dark.svg`（前台暗色主色 `#f5f5f5`），前台 head 双 favicon 按 `prefers-color-scheme` 切换
   - 删除不再引用的 `logo.svg`、`logo-admin.svg` 与无消费方的 `drizzle.svg` 死资源
+- **管理端侧边栏菜单优化**：
+  - `nav-config.ts` 重新组合分组：合并「用户管理 + 权限管理」为「用户与权限」，文件类、翻译类、日志类各自独立成组，解决原「系统管理」9 项杂物袋问题
+  - 菜单命名对齐：角色管理 → 管理端角色（与客户端角色对称）、文件资源管理器 → 目录浏览、日志查询 → 运行日志；同组内重复图标差异化（IdcardOutlined/AuditOutlined/FileSearchOutlined/GlobalOutlined）
+  - 菜单渲染自 AdminLayout 抽至 `admin-nav.tsx`（`SidebarNav` + `useNavCollapse`）：分组支持折叠（CSS grid 0fr↔1fr 动画），折叠状态持久化到 localStorage（key `admin-nav-collapsed-groups`），路由切换自动展开包含激活项的分组，侧边栏图标模式下强制展开全部分组
+  - 滚动条样式统一：`admin.global.css` 新增 `--s-scrollbar-thumb` 语义令牌（亮暗自适应）与 `.scrollbar-thin` 类，应用于侧边栏导航与 `AdminPageContent` 内容区
 
 ### Refactor
 
@@ -28,6 +33,15 @@
   - ui-ssr exports 收敛：`./ui`（shadcn 五件套）、`./theme`（ThemeToggle + useThemeMode）、`./form`（AutofillBlocker + ImageCaptchaModal），`use-theme-mode` 测试随迁 `theme/__tests__/`
   - FileUpload / ImageUpload / SelectFileModal 迁入 ui-spa，上传与文件库查询改 SFn 回调注入；app 保留同名薄壳接 `uploadFileSFn`/`getFileListSFn`，删除 app `SelectFileModal.tsx`
   - 前台图片验证码弹窗迁入 ui-ssr `ImageCaptchaModal`（SFn/错误/消息回调注入 + 内置 SVG 刷新图标），CaptchaInput 改薄壳，ui-ssr 不新增 sonner/lucide-react 依赖
+
+- **单元测试查漏补缺**：
+  - 修复 3 处假测试：track / files / register 的 schema 测试本地复制副本 → 改为导出真实 schema 并 import（`trackEventSchema`、`sendCaptchaWithImageSchema` 新增导出，translations import schema 提取命名导出）
+  - 修复 `tasks.test.ts` 死 mock 与用例顺序依赖，改为真实执行 handler 覆盖清理分支；精简 ms 模块重复测试（index/parse-strict 收敛为分发与代表性用例）；清理 storage 测试无关环境变量
+  - 补齐核心缺口：`getAdminUserForAuth` / `getClientUserForAuth`（鉴权 RBAC 解析）、track 上报校验链路（频控/事件名校验/属性类型/时间钳制）、`uploadFile`、file-explorer 写保护全路径、i18n 缓存与导入导出、log-reader 真实文件读取、图片验证码与短信发送、config/dict/news 分支
+  - 补齐 4 组 schema 测试（message / client-role / file-explorer / translations import），track 新增测试专用 `resetTrackMetaCacheForTest` 重置缓存状态
+  - core 包新增 logger / jwt / ch-to-path 测试，scheduler onTick 真实执行修复假覆盖；ui-ssr 补 use-theme-mode 系统偏好联动与跨标签页同步、新增 theme-toggle 三态测试
+  - 弱断言修复：`buildSortClause` / `notDeleted` 补语义断言（防排序注入）、file 状态筛选、i18n upsert 分支、config getConfigList
+  - 测试约定对齐：schema 测试就近放置（路由/模块 `__tests__/`），移除集中 `sf-schemas.test.ts` 约定（AGENTS.md 与 skills 同步）
 
 ### 依赖升级
 
