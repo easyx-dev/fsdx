@@ -16,14 +16,22 @@
     "db:generate": "pnpm --filter @fsdx/web db:generate",
     "db:migrate": "pnpm --filter @fsdx/web db:migrate",
     "db:pull": "pnpm --filter @fsdx/web db:pull",
-    "db:studio": "pnpm --filter @fsdx/web db:studio",
-    "changeset": "changeset",
-    "version": "changeset version",
-    "release": "changeset publish"
+    "db:studio": "pnpm --filter @fsdx/web db:studio"
+  },
+  "dependencies": {
+    "i18next": "^26.3.6",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8"
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.7",
-    "@changesets/cli": "^2.29.3",
-    "typescript": "^7.0.2"
+    "@testing-library/dom": "^10.4.1",
+    "@testing-library/react": "^16.3.2",
+    "@types/node": "^24.13.3",
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.3",
+    "jsdom": "^30.0.1",
+    "typescript": "^7.0.2",
+    "vitest": "^4.1.10"
   }
 }

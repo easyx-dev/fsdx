@@ -34,13 +34,9 @@
     "@wangeditor/editor-for-react": "^1.0.6",
     "antd": "^6.5.3",
     "dayjs": "^1",
-    "monaco-editor": "^0.56",
-    "react": "^19.2.8",
-    "react-dom": "^19.2.8"
+    "monaco-editor": "^0.56"
   },
   "devDependencies": {
-    "@types/react": "^19.2.18",
-    "@types/react-dom": "^19.2.3",
     "@wangeditor/editor": "^5.1.23",
     "@wangeditor/editor-for-react": "^1.0.6"
   }

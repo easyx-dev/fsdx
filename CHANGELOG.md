@@ -20,6 +20,12 @@
   - 构建/工具：tailwindcss 4.3.3、vitest 4.1.10、tsx 4.23.9、monaco-editor 0.56.0、nitro 260610-beta、@radix-ui/react-slot 1.3.3、@types/pg 8.20.4、@types/nodemailer 8.0.1
 - **antd 6.5.3 已官方修复 Card/Image 复合组件 JSX 声明缺陷**：删除 `app/src/types/antd-fix.d.ts` 与 `packages/ui-spa/src/antd-fix.d.ts`，移除 `Select`/`DictSelect` 的 `role="combobox"` 及 `UploadFile` aria 空串等绕过
 - **workspace peer 对齐单实例**：ui-spa/ui-ssr 的 `react`/`react-dom` peer 收紧至 `^19.2.8`，ui-spa 的 `antd`/`@ant-design/icons`/`@tanstack/react-router`/`monaco-editor` peer 同步对齐 app 实际版本
+- **共享依赖上移根 package.json**（私有 monorepo，版本统一在根管理）：
+  - `dependencies`：`react`/`react-dom`/`i18next`（app + ui 包 / core 多包直接使用）；`devDependencies`：共享工具链 `vitest`/`@types/react*`/`@types/node`/`@testing-library/*`/`jsdom`
+  - app 删除 16 个冗余声明（`pino`/`jose`/`openai` 等仅经 `@fsdx/core` 间接使用，不直接 import）
+  - core/ui-ssr/ui-spa 移除 `react`/`react-dom` peer 声明，单实例由根 `node_modules` 唯一副本保证（依赖根 hoisting 隐式解析）
+  - ui-spa 保留 `antd`/`@ant-design/icons`/`@tanstack/react-router`/`monaco-editor`/`@wangeditor/*`/`dayjs` peer（单实例约束不变）
+- **移除 changeset 工具链**：库包全部 `private: true` 不发布，删除根 `changeset`/`version`/`release` 脚本、`@changesets/cli` 依赖与 `.changeset/` 目录
 
 ### Breaking Changes
 
