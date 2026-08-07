@@ -4,6 +4,14 @@
 
 ### 依赖升级
 
+- **major 版本升级（批次 C）**：
+  - **typescript 6→7.0.2**：原生 Go 移植编译器（约 10x 加速），仅使用 CLI `tsc --noEmit` 无程序化 API 依赖，tsconfig 无已弃用选项（bundler 解析/显式 types/无 baseUrl）零适配，app 全量 tsc 降至约 1s
+  - **openai 6→7.4.0**：要求 Node 22+（运行时 v24 满足），`ai.ts` 调用无需改动
+  - **nodemailer 8→9.0.4**：破坏性变更仅涉远程内容 TLS 校验与 `NoAuth`→`ENOAUTH` 错误码，`mail.ts` 不受影响（@types/nodemailer 保持 8.x 兼容）
+  - **lucide-react 0.577→1.29.0**：1.x 为 0.x 重编号，peer 兼容 React 19，所用图标名全部保留
+  - **jsdom 28→30.0.1**：3 处 `@vitest-environment jsdom` 测试验证通过
+  - **@types/node 22→24**：对齐 node v24 运行时（非 26，避免超前类型）
+  - **@biomejs/biome 2.4.5→2.5.7**：新规则自动修复（`organizeImports` 导出排序、`useOptionalChain` 5 处语义等价变换），schema 同步 2.5.7
 - **批量升级 patch + minor 依赖（29 个）**：
   - TanStack 全家桶：react-router 1.170.21、react-start 1.168.38、router-plugin 1.168.26、react-form/react-form-start 1.33.3、router-devtools 1.167.1、react-devtools 0.10.9、devtools-vite 0.8.3
   - React 生态：react/react-dom 19.2.8、@types/react 19.2.18、@vitejs/plugin-react 6.0.5、vite 8.2.1
