@@ -29,7 +29,7 @@ export default function ThemeToggle({ preset }: ThemeToggleProps) {
 			onClick={toggleMode}
 			aria-label={label}
 			title={label}
-			className="rounded-full border border-border bg-background px-3 py-1.5 text-sm font-medium text-foreground transition hover:bg-accent"
+			className="flex h-8 items-center border border-border bg-background px-3 text-sm font-medium text-foreground transition hover:bg-accent"
 		>
 			{mode === "auto" ? "Auto" : mode === "dark" ? "Dark" : "Light"}
 		</button>

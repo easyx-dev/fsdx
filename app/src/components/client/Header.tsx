@@ -9,7 +9,7 @@ import { Button } from "@fsdx/ui-ssr/ui";
 import { ClientOnly, Link } from "@tanstack/react-router";
 import { Bell, LogOut, Menu, User, X } from "lucide-react";
 import { useState } from "react";
-import { useClientAuth, ClientLogo } from "#/components/client";
+import { ClientLogo, useClientAuth } from "#/components/client";
 import { useGlobalStore, useTranslation } from "#/components/providers";
 import { track } from "#/lib/track/track";
 import { CLIENT_THEME } from "#/theme/themes";
@@ -35,14 +35,19 @@ export function Header() {
 
 	return (
 		<header className="sticky top-0 z-50 border-b border-border bg-background/80 px-4 backdrop-blur-lg">
-			<nav className="mx-auto flex max-w-5xl items-center justify-between py-3">
-				{/* Logo */}
-				<Link to="/" className="flex shrink-0 items-center gap-2 no-underline">
-					<ClientLogo height={32} />
-					<span className="text-base font-semibold text-foreground">
-						{siteName}
-					</span>
-				</Link>
+			<nav className="mx-auto flex max-w-5xl items-center py-3">
+				{/* Logo（左栏等宽，内容靠左） */}
+				<div className="flex min-w-0 flex-1 items-center">
+					<Link
+						to="/"
+						className="flex shrink-0 items-center gap-2 no-underline"
+					>
+						<ClientLogo height={32} />
+						<span className="truncate text-base font-semibold text-foreground">
+							{siteName}
+						</span>
+					</Link>
+				</div>
 
 				{/* 桌面端导航 */}
 				<div className="hidden items-center gap-1 text-sm font-medium sm:flex sm:gap-4">
@@ -58,8 +63,8 @@ export function Header() {
 					))}
 				</div>
 
-				{/* 右侧操作区 */}
-				<div className="flex items-center gap-1 sm:gap-2">
+				{/* 右侧操作区（右栏等宽，内容靠右） */}
+				<div className="flex min-w-0 flex-1 items-center justify-end gap-1 sm:gap-2">
 					{/* 语言切换按钮 */}
 					<ClientOnly>
 						<Button
@@ -81,7 +86,7 @@ export function Header() {
 						<div className="hidden items-center gap-2 sm:flex">
 							<Link
 								to="/messages"
-								className="relative rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+								className="relative flex h-8 items-center rounded-md p-2 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
 								aria-label={t("消息中心")}
 							>
 								<Bell className="h-4 w-4" />
