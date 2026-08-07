@@ -9,7 +9,7 @@ import { Button, Table, Tooltip } from "antd";
 import type { ColumnsType, ColumnType } from "antd/es/table";
 import dayjs from "dayjs";
 import { useMemo } from "react";
-import { message } from "./antd-static";
+import { message } from "../antd-static";
 
 /** 扩展的 ellipsis 类型：支持 boolean 和自定义 Tooltip */
 type ProEllipsis = boolean | { showTitle?: boolean; tooltip?: TooltipProps };

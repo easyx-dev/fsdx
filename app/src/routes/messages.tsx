@@ -3,9 +3,14 @@
  * 列表分页展示消息，支持标记已读/删除
  */
 
-import { Badge } from "@fsdx/ui-ssr/ui/badge";
-import { Button } from "@fsdx/ui-ssr/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@fsdx/ui-ssr/ui/card";
+import {
+	Badge,
+	Button,
+	Card,
+	CardContent,
+	CardHeader,
+	CardTitle,
+} from "@fsdx/ui-ssr/ui";
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { useCallback, useState } from "react";
 import { toast } from "sonner";

@@ -12,7 +12,7 @@ import { RichEditor } from "#/components/admin/RichEditor";
 import { getFileInfoSFn } from "#/services/file/file.functions";
 
 const CodeEditor = lazy(() =>
-	import("@fsdx/ui-spa/code-editor").then((mod) => ({
+	import("@fsdx/ui-spa/editor").then((mod) => ({
 		default: mod.CodeEditor,
 	})),
 );

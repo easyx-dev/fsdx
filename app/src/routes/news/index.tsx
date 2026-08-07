@@ -2,14 +2,14 @@
  * 新闻列表页（SSR）：分页展示已发布新闻
  */
 
-import { Badge } from "@fsdx/ui-ssr/ui/badge";
 import {
+	Badge,
 	Card,
 	CardContent,
 	CardDescription,
 	CardHeader,
 	CardTitle,
-} from "@fsdx/ui-ssr/ui/card";
+} from "@fsdx/ui-ssr/ui";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import dayjs from "dayjs";
 import { useTranslation } from "#/components/i18n-context";

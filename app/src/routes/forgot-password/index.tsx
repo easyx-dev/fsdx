@@ -3,9 +3,14 @@
  * 通过邮箱验证码重置密码
  */
 
-import { Button } from "@fsdx/ui-ssr/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@fsdx/ui-ssr/ui/card";
-import { Input } from "@fsdx/ui-ssr/ui/input";
+import {
+	Button,
+	Card,
+	CardContent,
+	CardHeader,
+	CardTitle,
+	Input,
+} from "@fsdx/ui-ssr/ui";
 import { useForm } from "@tanstack/react-form";
 import {
 	createFileRoute,

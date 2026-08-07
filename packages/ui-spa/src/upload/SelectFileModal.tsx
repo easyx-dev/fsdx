@@ -1,14 +1,36 @@
 /**
- * 文件库选择弹窗：从已上传文件中选取，支持搜索、筛选、预览、单选/多选、分页
+ * 文件库选择弹窗（基础组件）：从已上传文件中选取，支持搜索、筛选、预览、单选/多选、分页
+ * 文件列表查询经 fetchFiles 回调注入，由宿主决定数据来源；下载地址经 downloadUrl 回调注入
  */
 import { EyeOutlined } from "@ant-design/icons";
-import { message } from "@fsdx/ui-spa/antd-static";
-import { ProTable } from "@fsdx/ui-spa/pro-table";
 import { Button, Image, Input, Modal, Space, Tag } from "antd";
 import type { ColumnsType } from "antd/es/table";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { getFileListSFn } from "#/services/file/file.functions";
-import type { FileRecord } from "#/services/file/file.server";
+import { message } from "../antd-static";
+import { ProTable, TableOperate } from "../table";
+
+/** 可选择的文件条目（宿主查询结果的扁平结构，与业务 db 类型解耦） */
+export interface SelectableFile {
+	id: string;
+	originalName: string;
+	size: number;
+	mimeType: string;
+	status: string;
+	createdAt: string | Date | null;
+}
+
+/** 文件列表查询参数 */
+export interface FetchFilesParams {
+	keyword?: string;
+	mimePrefix?: string;
+	page: number;
+	pageSize: number;
+}
+
+/** 文件列表查询回调，返回分页结果 */
+export type FetchFiles = (
+	params: FetchFilesParams,
+) => Promise<{ records: SelectableFile[]; total: number }>;
 
 interface SelectFileModalProps {
 	/** 弹窗是否可见 */
@@ -23,10 +45,14 @@ interface SelectFileModalProps {
 	accept?: string;
 	/** 最大选择数量，多选模式下生效 */
 	maxCount?: number;
+	/** 文件列表查询回调（宿主注入，如对接 getFileListSFn） */
+	fetchFiles: FetchFiles;
+	/** 根据文件 ID 生成下载/预览地址（宿主注入） */
+	downloadUrl: (id: string) => string;
 }
 
 /** 将 accept 值转为 mimeType 前缀（如 "image/*" → "image/"） */
-function acceptToMimePrefix(accept?: string): string | undefined {
+export function acceptToMimePrefix(accept?: string): string | undefined {
 	if (!accept) return undefined;
 	if (accept === "image/*") return "image/";
 	if (accept.endsWith("/*")) return accept.replace("/*", "/");
@@ -34,7 +60,7 @@ function acceptToMimePrefix(accept?: string): string | undefined {
 }
 
 /** 格式化文件大小 */
-function formatSize(bytes: number): string {
+export function formatSize(bytes: number): string {
 	if (bytes < 1024) return `${bytes} B`;
 	if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
 	return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
@@ -47,34 +73,34 @@ export function SelectFileModal({
 	multiple = false,
 	accept,
 	maxCount,
+	fetchFiles,
+	downloadUrl,
 }: SelectFileModalProps) {
 	const pageSize = 50;
 	const [loading, setLoading] = useState(false);
-	const [records, setRecords] = useState<FileRecord[]>([]);
+	const [records, setRecords] = useState<SelectableFile[]>([]);
 	const [total, setTotal] = useState(0);
 	const [page, setPage] = useState(1);
 	const [keyword, setKeyword] = useState("");
 	const [selectedRowKeys, setSelectedRowKeys] = useState<string[]>([]);
-	const [previewFile, setPreviewFile] = useState<FileRecord | null>(null);
+	const [previewFile, setPreviewFile] = useState<SelectableFile | null>(null);
 	const keywordRef = useRef(keyword);
 	keywordRef.current = keyword;
 
 	const mimePrefix = acceptToMimePrefix(accept);
 
 	/** 加载文件列表（服务端分页） */
-	const fetchFiles = useCallback(
+	const loadFiles = useCallback(
 		async (params?: { page?: number; keyword?: string }) => {
 			setLoading(true);
 			try {
 				const kw = params?.keyword ?? keywordRef.current;
 				const pg = params?.page ?? 1;
-				const result = await getFileListSFn({
-					data: {
-						keyword: kw || undefined,
-						mimePrefix,
-						page: pg,
-						pageSize,
-					},
+				const result = await fetchFiles({
+					keyword: kw || undefined,
+					mimePrefix,
+					page: pg,
+					pageSize,
 				});
 				setRecords(result.records ?? []);
 				setTotal(result.total);
@@ -85,7 +111,7 @@ export function SelectFileModal({
 				setLoading(false);
 			}
 		},
-		[mimePrefix],
+		[mimePrefix, fetchFiles],
 	);
 
 	useEffect(() => {
@@ -93,11 +119,11 @@ export function SelectFileModal({
 			setPage(1);
 			setKeyword("");
 			setSelectedRowKeys([]);
-			fetchFiles({ page: 1, keyword: "" });
+			loadFiles({ page: 1, keyword: "" });
 		}
-	}, [open, fetchFiles]);
+	}, [open, loadFiles]);
 
-	const columns: ColumnsType<FileRecord> = [
+	const columns: ColumnsType<SelectableFile> = [
 		{
 			title: "文件名",
 			dataIndex: "originalName",
@@ -109,14 +135,14 @@ export function SelectFileModal({
 			dataIndex: "size",
 			key: "size",
 			width: 100,
-			render: (_: unknown, r: FileRecord) => formatSize(r.size),
+			render: (_: unknown, r: SelectableFile) => formatSize(r.size),
 		},
 		{
 			title: "状态",
 			dataIndex: "status",
 			key: "status",
 			width: 80,
-			render: (_: unknown, r: FileRecord) =>
+			render: (_: unknown, r: SelectableFile) =>
 				r.status === "permanent" ? (
 					<Tag color="green">永久</Tag>
 				) : (
@@ -128,14 +154,14 @@ export function SelectFileModal({
 			dataIndex: "createdAt",
 			key: "createdAt",
 			width: 180,
-			render: (_: unknown, r: FileRecord) =>
+			render: (_: unknown, r: SelectableFile) =>
 				r.createdAt ? new Date(r.createdAt).toLocaleString("zh-CN") : "-",
 		},
 		{
 			title: "操作",
 			key: "actions",
 			width: 80,
-			render: (_: unknown, r: FileRecord) =>
+			render: (_: unknown, r: SelectableFile) =>
 				r.mimeType.startsWith("image/") ? (
 					<TableOperate>
 						<TableOperate.Custom>
@@ -156,12 +182,12 @@ export function SelectFileModal({
 	const handleSearch = (value: string) => {
 		setKeyword(value);
 		setPage(1);
-		fetchFiles({ keyword: value, page: 1 });
+		loadFiles({ keyword: value, page: 1 });
 	};
 
 	const handlePageChange = (p: number) => {
 		setPage(p);
-		fetchFiles({ page: p });
+		loadFiles({ page: p });
 	};
 
 	const handleConfirm = () => {
@@ -194,7 +220,7 @@ export function SelectFileModal({
 					style={{ width: 300 }}
 				/>
 			</div>
-			<ProTable<FileRecord>
+			<ProTable<SelectableFile>
 				rowKey="id"
 				onRow={(record) => ({
 					onClick: () => {
@@ -264,7 +290,7 @@ export function SelectFileModal({
 				>
 					<Image
 						preview={false}
-						src={`/api/download/file/${previewFile.id}`}
+						src={downloadUrl(previewFile.id)}
 						alt={previewFile.originalName}
 						style={{ maxWidth: "70vw", maxHeight: "70vh" }}
 					/>
@@ -273,5 +299,3 @@ export function SelectFileModal({
 		</Modal>
 	);
 }
-
-import { TableOperate } from "@fsdx/ui-spa/table-operate";

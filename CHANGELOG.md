@@ -2,6 +2,14 @@
 
 ## [Unreleased]
 
+### Refactor
+
+- **ui 包按域分桶导出 + app 上传/验证码组件抽离**：
+  - ui-spa exports 收敛：`./table`（ProTable + TableOperate）、`./editor`（CodeEditor + RichEditor）、`./upload`（文件/图片上传 + 文件库弹窗），删除逐文件导出；`json-import-button` 内部改引 `./editor`
+  - ui-ssr exports 收敛：`./ui`（shadcn 五件套）、`./theme`（ThemeToggle + useThemeMode）、`./form`（AutofillBlocker + ImageCaptchaModal），`use-theme-mode` 测试随迁 `theme/__tests__/`
+  - FileUpload / ImageUpload / SelectFileModal 迁入 ui-spa，上传与文件库查询改 SFn 回调注入；app 保留同名薄壳接 `uploadFileSFn`/`getFileListSFn`，删除 app `SelectFileModal.tsx`
+  - 前台图片验证码弹窗迁入 ui-ssr `ImageCaptchaModal`（SFn/错误/消息回调注入 + 内置 SVG 刷新图标），CaptchaInput 改薄壳，ui-ssr 不新增 sonner/lucide-react 依赖
+
 ### 依赖升级
 
 - **major 版本升级（批次 C）**：

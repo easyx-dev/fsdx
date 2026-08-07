@@ -4,14 +4,9 @@
   "private": true,
   "type": "module",
   "exports": {
-    "./ui/button": "./src/components/ui/button.tsx",
-    "./ui/card": "./src/components/ui/card.tsx",
-    "./ui/badge": "./src/components/ui/badge.tsx",
-    "./ui/input": "./src/components/ui/input.tsx",
-    "./ui/textarea": "./src/components/ui/textarea.tsx",
-    "./autofill-blocker": "./src/components/autofill-blocker.tsx",
-    "./theme-toggle": "./src/components/theme-toggle.tsx",
-    "./use-theme-mode": "./src/hooks/use-theme-mode.ts"
+    "./ui": "./src/components/ui/index.ts",
+    "./theme": "./src/components/theme/index.ts",
+    "./form": "./src/components/form/index.ts"
   },
   "scripts": {
     "test": "vitest run",

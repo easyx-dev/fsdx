@@ -11,7 +11,7 @@ import {
 	MoonOutlined,
 	SunOutlined,
 } from "@ant-design/icons";
-import type { ThemeMode } from "@fsdx/ui-ssr/use-theme-mode";
+import type { ThemeMode } from "@fsdx/ui-ssr/theme";
 import { Link, useLocation } from "@tanstack/react-router";
 import { Avatar, Badge, Button, Divider, Flex, Popover, Tooltip } from "antd";
 import {

@@ -2,7 +2,7 @@
  * 新闻详情页（SSR）
  */
 
-import { Button } from "@fsdx/ui-ssr/ui/button";
+import { Button } from "@fsdx/ui-ssr/ui";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import dayjs from "dayjs";
 import { ArrowLeft, ChevronRight, Home } from "lucide-react";

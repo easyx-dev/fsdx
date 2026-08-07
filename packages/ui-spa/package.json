@@ -5,15 +5,12 @@
   "type": "module",
   "exports": {
     "./antd-static": "./src/antd-static/index.tsx",
-    "./table-operate": "./src/table-operate.tsx",
-    "./pro-table": "./src/pro-table.tsx",
+    "./table": "./src/table/index.ts",
+    "./upload": "./src/upload/index.ts",
+    "./editor": "./src/editor/index.ts",
     "./permission-tags": "./src/permission-tags.tsx",
     "./json-import-button": "./src/json-import-button.tsx",
-    "./code-editor": "./src/code-editor.tsx",
-    "./rich-editor": "./src/rich-editor.tsx",
     "./ms-input": "./src/ms-input.tsx",
-    "./upload/file-upload-render": "./src/upload/FileUploadRender.tsx",
-    "./upload/photo-wall": "./src/upload/PhotoWall.tsx",
     "./sfn-helpers": "./src/sfn-helpers.ts"
   },
   "scripts": {

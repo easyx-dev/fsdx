@@ -1,11 +1,11 @@
 /**
  * 富文本编辑器（app 业务壳）
- * 纯组件逻辑在 @fsdx/ui-spa/rich-editor，此处注入项目统一的文件上传实现
+ * 纯组件逻辑在 @fsdx/ui-spa/editor，此处注入项目统一的文件上传实现
  * value / onChange 兼容 antd Form.Item 直接注入
  */
 
 import { message } from "@fsdx/ui-spa/antd-static";
-import { RichEditor as RichEditorBase } from "@fsdx/ui-spa/rich-editor";
+import { RichEditor as RichEditorBase } from "@fsdx/ui-spa/editor";
 import { useCallback } from "react";
 import { uploadFileSFn } from "#/services/file/file.functions";
 

@@ -9,9 +9,8 @@ import {
 	ReloadOutlined,
 } from "@ant-design/icons";
 import { message } from "@fsdx/ui-spa/antd-static";
-import { ProTable } from "@fsdx/ui-spa/pro-table";
 import { safeSfnCall } from "@fsdx/ui-spa/sfn-helpers";
-import { TableOperate } from "@fsdx/ui-spa/table-operate";
+import { ProTable, TableOperate } from "@fsdx/ui-spa/table";
 import { createFileRoute } from "@tanstack/react-router";
 import type { UploadProps } from "antd";
 import {

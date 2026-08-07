@@ -3,8 +3,7 @@
  */
 import { PlusOutlined } from "@ant-design/icons";
 import { message } from "@fsdx/ui-spa/antd-static";
-import { ProTable } from "@fsdx/ui-spa/pro-table";
-import { TableOperate } from "@fsdx/ui-spa/table-operate";
+import { ProTable, TableOperate } from "@fsdx/ui-spa/table";
 import { createFileRoute } from "@tanstack/react-router";
 import { Button, Form, Input, Modal, Select, Tag } from "antd";
 import { useState } from "react";

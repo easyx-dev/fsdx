@@ -7,7 +7,7 @@ import {
 	SendOutlined,
 } from "@ant-design/icons";
 import { message } from "@fsdx/ui-spa/antd-static";
-import { TableOperate } from "@fsdx/ui-spa/table-operate";
+import { TableOperate } from "@fsdx/ui-spa/table";
 import { createFileRoute } from "@tanstack/react-router";
 import { Button, Form, Input, Modal, Radio, Select, Table, Tag } from "antd";
 import dayjs from "dayjs";

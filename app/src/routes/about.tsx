@@ -2,7 +2,7 @@
  * 关于页面
  */
 
-import { Card, CardContent, CardHeader, CardTitle } from "@fsdx/ui-ssr/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@fsdx/ui-ssr/ui";
 import { createFileRoute } from "@tanstack/react-router";
 import { useTranslation } from "#/components/i18n-context";
 

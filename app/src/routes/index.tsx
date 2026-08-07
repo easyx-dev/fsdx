@@ -2,14 +2,14 @@
  * 前台首页：Hero 营销区 + 最新新闻区块
  */
 
-import { Button } from "@fsdx/ui-ssr/ui/button";
 import {
+	Button,
 	Card,
 	CardContent,
 	CardDescription,
 	CardHeader,
 	CardTitle,
-} from "@fsdx/ui-ssr/ui/card";
+} from "@fsdx/ui-ssr/ui";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import dayjs from "dayjs";
 import { ArrowRight } from "lucide-react";

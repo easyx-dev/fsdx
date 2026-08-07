@@ -9,8 +9,7 @@ import {
 	SwapOutlined,
 } from "@ant-design/icons";
 import { message } from "@fsdx/ui-spa/antd-static";
-import { ProTable } from "@fsdx/ui-spa/pro-table";
-import { TableOperate } from "@fsdx/ui-spa/table-operate";
+import { ProTable, TableOperate } from "@fsdx/ui-spa/table";
 import { createFileRoute, useRouter } from "@tanstack/react-router";
 import type { UploadProps } from "antd";
 import {

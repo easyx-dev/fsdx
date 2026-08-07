@@ -1,12 +1,11 @@
 /**
- * 邮箱验证码组件：验证码输入 + 获取验证码按钮（弹窗图片验证码）
- * 点击获取验证码时弹出模态框展示图片验证码，错误信息在模态框内显示
+ * 邮箱验证码组件（app 业务壳）：验证码输入 + 获取验证码按钮（弹窗图片验证码）
+ * 图片验证码弹窗在 @fsdx/ui-ssr/form，此处注入项目 SFn 与消息回调
  */
 
-import { Button } from "@fsdx/ui-ssr/ui/button";
-import { Input } from "@fsdx/ui-ssr/ui/input";
-import { RefreshCw } from "lucide-react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { ImageCaptchaModal } from "@fsdx/ui-ssr/form";
+import { Button, Input } from "@fsdx/ui-ssr/ui";
+import { useCallback, useState } from "react";
 import { toast } from "sonner";
 import {
 	getImageCaptchaSFn,
@@ -30,121 +29,24 @@ export function CaptchaInput({
 	onChange,
 	onMessage,
 }: CaptchaInputProps) {
-	const [svg, setSvg] = useState("");
-	const [imageToken, setImageToken] = useState("");
-	const [imageCode, setImageCode] = useState("");
-	const [isLoadingSvg, setIsLoadingSvg] = useState(false);
-	const [isSending, setIsSending] = useState(false);
-	const [modalError, setModalError] = useState("");
+	const [modalOpen, setModalOpen] = useState(false);
 
-	// 模态框状态：mounted 控制 DOM 存在，visible 控制动画
-	const [modalMounted, setModalMounted] = useState(false);
-	const [modalVisible, setModalVisible] = useState(false);
-	const imageInputRef = useRef<HTMLInputElement>(null);
-
-	/** 刷新图片验证码 */
-	const refresh = useCallback(() => {
-		setIsLoadingSvg(true);
-		setModalError("");
-		getImageCaptchaSFn()
-			.then((result) => {
-				setSvg(result.svg);
-				setImageToken(result.token);
-				setImageCode("");
-				setIsLoadingSvg(false);
-			})
-			.catch(() => {
-				setIsLoadingSvg(false);
-				toast.error("验证码加载失败，请稍后重试");
-			});
+	/** 获取图片验证码（svg + token） */
+	const getCaptcha = useCallback(async () => {
+		return getImageCaptchaSFn();
 	}, []);
 
-	/** 打开模态框 */
-	const openModal = useCallback(() => {
-		setModalError("");
-		setModalMounted(true);
-		requestAnimationFrame(() => {
-			setModalVisible(true);
-		});
-		refresh();
-	}, [refresh]);
-
-	/** 关闭模态框 */
-	const closeModal = useCallback(() => {
-		setModalVisible(false);
-		setTimeout(() => setModalMounted(false), 200);
-	}, []);
-
-	// 模态框打开时自动聚焦输入框
-	useEffect(() => {
-		if (modalVisible && imageInputRef.current) {
-			imageInputRef.current.focus();
-		}
-	}, [modalVisible]);
-
-	// Esc 键关闭模态框
-	useEffect(() => {
-		if (!modalVisible) return;
-		const handleKeyDown = (e: KeyboardEvent) => {
-			if (e.key === "Escape") {
-				closeModal();
+	/** 校验图片验证码并发送邮箱验证码 */
+	const verify = useCallback(
+		async (token: string, code: string) => {
+			if (!email) {
+				return { success: false, message: "请先输入邮箱" };
 			}
-		};
-		document.addEventListener("keydown", handleKeyDown);
-		return () => document.removeEventListener("keydown", handleKeyDown);
-	}, [modalVisible, closeModal]);
-
-	// 模态框打开时锁定 body 滚动
-	useEffect(() => {
-		if (!modalMounted) return;
-		const { overflow } = document.body.style;
-		document.body.style.overflow = "hidden";
-		return () => {
-			document.body.style.overflow = overflow;
-		};
-	}, [modalMounted]);
-
-	/** 确定：校验图片验证码并发送邮箱验证码 */
-	const handleConfirm = useCallback(async () => {
-		if (!email) {
-			setModalError("请先输入邮箱");
-			return;
-		}
-		if (!imageCode) {
-			setModalError("请输入图片验证码");
-			return;
-		}
-		setModalError("");
-		setIsSending(true);
-		onMessage("验证中...");
-		try {
-			const result = await sendCaptchaWithImageVerificationSFn({
-				data: { email, imageToken, imageCode },
+			return sendCaptchaWithImageVerificationSFn({
+				data: { email, imageToken: token, imageCode: code },
 			});
-			if (result.success) {
-				onMessage(result.message);
-				closeModal();
-			} else {
-				setModalError(result.message);
-				refresh();
-			}
-		} catch {
-			setModalError("请求失败");
-			refresh();
-		} finally {
-			setIsSending(false);
-		}
-	}, [email, imageToken, imageCode, onMessage, refresh, closeModal]);
-
-	/** 在图片验证码输入框中按 Enter 直接提交 */
-	const handleImageKeyDown = useCallback(
-		(e: React.KeyboardEvent<HTMLInputElement>) => {
-			if (e.key === "Enter") {
-				e.preventDefault();
-				handleConfirm();
-			}
 		},
-		[handleConfirm],
+		[email],
 	);
 
 	return (
@@ -165,96 +67,21 @@ export function CaptchaInput({
 					type="button"
 					variant="outline"
 					className="shrink-0"
-					disabled={isSending}
-					onClick={openModal}
+					onClick={() => setModalOpen(true)}
 				>
-					{isSending ? "发送中..." : "获取验证码"}
+					获取验证码
 				</Button>
 			</div>
 
-			{/* 图片验证码模态框 */}
-			{modalMounted && (
-				<div
-					className="fixed inset-0 z-50 flex items-center justify-center transition-colors duration-200"
-					style={{
-						backgroundColor: modalVisible ? "rgba(0,0,0,0.5)" : "rgba(0,0,0,0)",
-					}}
-					onClick={closeModal}
-				>
-					<div
-						className="relative mx-4 w-full max-w-sm rounded-lg border bg-card p-6 shadow-lg transition-all duration-200"
-						style={{
-							opacity: modalVisible ? 1 : 0,
-							transform: modalVisible ? "scale(1)" : "scale(0.95)",
-						}}
-						onClick={(e) => e.stopPropagation()}
-					>
-						<h3 className="mb-4 text-center text-sm font-medium">
-							请输入图片验证码
-						</h3>
-
-						{/* 错误信息 */}
-						{modalError ? (
-							<div className="mb-4 rounded-md bg-destructive/10 px-3 py-2 text-center text-xs text-destructive">
-								{modalError}
-							</div>
-						) : null}
-
-						<div className="mb-4 flex items-center gap-2">
-							<div
-								className="flex h-10 w-[120px] cursor-pointer items-center justify-center overflow-hidden rounded-md border bg-background"
-								onClick={refresh}
-								title="点击刷新图片验证码"
-								dangerouslySetInnerHTML={{ __html: svg }}
-							/>
-							<Button
-								type="button"
-								variant="ghost"
-								size="icon"
-								className="h-9 w-9 shrink-0"
-								disabled={isLoadingSvg}
-								onClick={refresh}
-								title="刷新图片验证码"
-							>
-								<RefreshCw
-									className={`h-4 w-4 ${isLoadingSvg ? "animate-spin" : ""}`}
-								/>
-							</Button>
-							<Input
-								ref={imageInputRef}
-								type="text"
-								value={imageCode}
-								onChange={(e) => setImageCode(e.target.value)}
-								onKeyDown={handleImageKeyDown}
-								placeholder="图片验证码"
-								maxLength={4}
-								className="flex-1"
-								autoComplete="off"
-								aria-label="图片验证码"
-							/>
-						</div>
-						<div className="flex gap-2">
-							<Button
-								type="button"
-								className="flex-1"
-								disabled={!imageCode || isSending}
-								onClick={handleConfirm}
-							>
-								{isSending ? "验证中..." : "确定"}
-							</Button>
-							<Button
-								type="button"
-								variant="outline"
-								className="flex-1"
-								disabled={isSending}
-								onClick={closeModal}
-							>
-								取消
-							</Button>
-						</div>
-					</div>
-				</div>
-			)}
+			{/* 图片验证码弹窗 */}
+			<ImageCaptchaModal
+				open={modalOpen}
+				onClose={() => setModalOpen(false)}
+				getCaptcha={getCaptcha}
+				verify={verify}
+				onError={(msg) => toast.error(msg)}
+				onMessage={onMessage}
+			/>
 		</>
 	);
 }

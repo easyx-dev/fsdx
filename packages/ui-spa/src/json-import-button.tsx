@@ -7,7 +7,7 @@ import type { ButtonProps, UploadProps } from "antd";
 import { Button, Modal, Space, Upload } from "antd";
 import { useState } from "react";
 import { message } from "./antd-static";
-import { CodeEditor } from "./code-editor";
+import { CodeEditor } from "./editor";
 
 /** beforeUpload 回调的文件参数类型（取自 antd UploadProps，避免深路径导入内部类型） */
 type BeforeUploadFile = Parameters<NonNullable<UploadProps["beforeUpload"]>>[0];

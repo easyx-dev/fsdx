@@ -9,8 +9,7 @@ import {
 import { downloadFile } from "@fsdx/core/export";
 import { message } from "@fsdx/ui-spa/antd-static";
 import { JsonImportButton } from "@fsdx/ui-spa/json-import-button";
-import { ProTable } from "@fsdx/ui-spa/pro-table";
-import { TableOperate } from "@fsdx/ui-spa/table-operate";
+import { ProTable, TableOperate } from "@fsdx/ui-spa/table";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Button, Drawer, Image, Segmented, Space, Tag } from "antd";
 import type { SegmentedValue } from "antd/es/segmented";

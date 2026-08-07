@@ -2,7 +2,7 @@
  * 根路由 Document 外壳：分离 Admin（客户端渲染）与前台（SSR + 国际化）
  */
 
-import type { ThemePreset } from "@fsdx/ui-ssr/use-theme-mode";
+import type { ThemePreset } from "@fsdx/ui-ssr/theme";
 import { ClientOnly, HeadContent, Scripts } from "@tanstack/react-router";
 import { useEffect, useRef } from "react";
 import { Toaster } from "sonner";

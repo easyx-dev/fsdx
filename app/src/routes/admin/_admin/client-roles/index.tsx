@@ -4,8 +4,7 @@
 import { PlusOutlined, SearchOutlined } from "@ant-design/icons";
 import { message } from "@fsdx/ui-spa/antd-static";
 import { PermissionTags } from "@fsdx/ui-spa/permission-tags";
-import { ProTable } from "@fsdx/ui-spa/pro-table";
-import { TableOperate } from "@fsdx/ui-spa/table-operate";
+import { ProTable, TableOperate } from "@fsdx/ui-spa/table";
 import { createFileRoute } from "@tanstack/react-router";
 import { Button, Form, Input, Modal } from "antd";
 import type { ChangeEvent } from "react";

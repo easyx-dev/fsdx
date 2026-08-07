@@ -4,8 +4,8 @@
  * 根据客户端登录状态显示用户名/退出或登录链接
  */
 
-import ThemeToggle from "@fsdx/ui-ssr/theme-toggle";
-import { Button } from "@fsdx/ui-ssr/ui/button";
+import { ThemeToggle } from "@fsdx/ui-ssr/theme";
+import { Button } from "@fsdx/ui-ssr/ui";
 import { ClientOnly, Link } from "@tanstack/react-router";
 import { Bell, LogOut, Menu, User, X } from "lucide-react";
 import { useState } from "react";

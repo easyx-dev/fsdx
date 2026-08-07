@@ -3,7 +3,7 @@
  * 选择分组时自动写入 group:* 通配符，选择单个权限时写入具体权限码
  */
 
-import { ProTable } from "@fsdx/ui-spa/pro-table";
+import { ProTable } from "@fsdx/ui-spa/table";
 import { Checkbox } from "antd";
 import type { CheckboxChangeEvent } from "antd/es/checkbox";
 import type { ColumnsType } from "antd/es/table";

@@ -3,8 +3,8 @@
  * 展示 valueType、renderText、renderCopyableText、ellipsis Tooltip、copyable 等特性
  */
 
-import type { ProColumnType } from "@fsdx/ui-spa/pro-table";
-import { ProTable } from "@fsdx/ui-spa/pro-table";
+import type { ProColumnType } from "@fsdx/ui-spa/table";
+import { ProTable } from "@fsdx/ui-spa/table";
 import { createFileRoute } from "@tanstack/react-router";
 import { Tag } from "antd";
 import { useMemo } from "react";

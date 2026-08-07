@@ -3,9 +3,8 @@
  */
 import { KeyOutlined, PlusOutlined, SearchOutlined } from "@ant-design/icons";
 import { message } from "@fsdx/ui-spa/antd-static";
-import { ProTable } from "@fsdx/ui-spa/pro-table";
-import { TableOperate } from "@fsdx/ui-spa/table-operate";
-import { AutofillBlocker } from "@fsdx/ui-ssr/autofill-blocker";
+import { ProTable, TableOperate } from "@fsdx/ui-spa/table";
+import { AutofillBlocker } from "@fsdx/ui-ssr/form";
 import { createFileRoute } from "@tanstack/react-router";
 import { Button, Form, Input, Modal, Select, Tag } from "antd";
 import type { ChangeEvent } from "react";

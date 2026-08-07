@@ -5,7 +5,7 @@
  * 注意：antd 的 colorPrimary 需要真实色值，必须与 CSS 中对应 `--s-primary` 保持同色。
  * Document.tsx 内联 init 脚本从注册表推导 storageKey 与 dataTheme，避免手工双写漂移。
  */
-import type { ThemePreset } from "@fsdx/ui-ssr/use-theme-mode";
+import type { ThemePreset } from "@fsdx/ui-ssr/theme";
 
 /** 管理端主题预设：棕色品牌 */
 export const ADMIN_THEME: ThemePreset = {

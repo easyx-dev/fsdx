@@ -12,7 +12,7 @@ import {
 } from "@ant-design/icons";
 import { message } from "@fsdx/ui-spa/antd-static";
 import { JsonImportButton } from "@fsdx/ui-spa/json-import-button";
-import { AutofillBlocker } from "@fsdx/ui-ssr/autofill-blocker";
+import { AutofillBlocker } from "@fsdx/ui-ssr/form";
 import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
 import {
 	Alert,

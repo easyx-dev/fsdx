@@ -2,7 +2,7 @@
  * 前台主题切换按钮：三态循环（亮/暗/跟随系统）
  * 需传入主题预设（storageKey 与亮暗两档，见 app 的 theme/themes.ts）
  */
-import { type ThemePreset, useThemeMode } from "../hooks/use-theme-mode";
+import { type ThemePreset, useThemeMode } from "./use-theme-mode";
 
 interface ThemeToggleProps {
 	/** 主题预设（CLIENT_THEME） */
