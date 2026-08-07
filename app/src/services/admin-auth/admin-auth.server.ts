@@ -83,7 +83,8 @@ export async function getCurrentAdmin(
 	if (!jwtPayload || jwtPayload.userType !== "admin") return null;
 
 	const user = await db.query.adminUser.findFirst({
-		where: (t, { eq }) => eq(t.id, jwtPayload.userId),
+		where: (t, { eq: e, isNull: n }) =>
+			and(e(t.id, jwtPayload.userId), n(t.deletedAt)),
 	});
 	if (!user || user.deletedAt || user.status !== "active") return null;
 

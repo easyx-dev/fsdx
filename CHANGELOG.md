@@ -20,6 +20,12 @@
 
 ### Refactor
 
+- **用户/认证/日志/操作日志向 bom-easy 对齐**：
+  - 中间件：新增 `clientPermRouteGuard`（客户端 Server Route 权限守卫，捕获 `ClientAuthError` 转状态码 JSON）；`/api/download/log/$id` 改用 `adminPermRouteGuard` 中间件，删除 `api-auth.ts`（`verifyAdminPerm`/`ApiAuthError`），`sf-error-logger` 同步移除 `ApiAuthError` 分支
+  - 操作日志：`logExternalRequest()` 落库字段语义对齐——`module`=外部系统标识（调用方传入）、`action`=`login`/`request`（按请求类型）、`targetType`=接口来源类型（默认 `openapi`，调用方可指定）、`targetName`=接口路径，`detail` 含 system/success 并展开 extra
+  - 鉴权：`getCurrentAdmin`/`getCurrentClient` 将未删除约束下沉到 SQL 层（`and(eq, isNull)`），保留 JS 侧防御校验；管理员找回密码重置后补 `clearAdminUserCache`
+  - 基础设施：`sanitizeError()` 递归脱敏 `error.cause`（含非 Error 对象，防敏感字段透传 + 循环/深度防护）
+  - 测试补强：操作日志 `logCrud`/`logExternalRequest` 覆盖（默认 admin、ALS 上下文、system 兜底），admin/client `getCurrent*` 的 where 条件哨兵断言（EQ + ISNULL 防 `&&` 吞条件）
 - **埋点模块重构为神策简化模型（track 命名体系）**：表/服务/路由/权限码统一更名
   - 表：`event`→`track_event`（列 `event`→`name`）、`preset_event`→`track_event_meta`、`preset_property`→`track_property_meta`，Schema 合并为 `src/db/schema/track.ts`
   - 服务：`src/services/event/`→`src/services/track/`，`trackEvent()` 增加 per-session 频控（60 条/分钟）与时间钳制（过去 1 天 ~ 未来 5 分钟）
@@ -50,6 +56,11 @@
 - **文件资源管理器（file-explorer）**：`STORAGE_DIR` 目录浏览 + 路径穿越防护 + 写保护 + `/admin/file-explorer` 页面 + `/api/download/file-explorer/*` 下载路由 + `file_explorer:*` 权限
 - **lib/ms + MSInput**：vercel/ms 移植（parse/parseStrict/format/ms）+ 4 个测试文件 + antd 时长输入组件
 - 修复既有测试失败：jwt 测试 logger mock 缺 `debug`；news 测试 i18n.server mock 缺 `applyTranslations`（改用 `importOriginal`）
+
+### Fix
+
+- **中间件 import-protection 告警**：`resolveAdminAuthContext`/`resolveClientAuthContext` 下沉到 `middleware/*.server.ts`，中间件 guard 在 `.server()` 回调内动态导入；客户端构建剥离回调后不再残留 `.server` 依赖（此前 admin 侧因函数被 export 无法被死代码消除而告警）
+- **AdminRootDocument `<title>` 告警**：`{siteName} 管理后台` 两个 children 改为模板字符串，消除 React title 数组警告
 
 ### Infrastructure
 

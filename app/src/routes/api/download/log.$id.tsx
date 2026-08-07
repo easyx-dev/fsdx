@@ -3,26 +3,15 @@
  */
 import { Readable } from "node:stream";
 import { createFileRoute } from "@tanstack/react-router";
-import { ApiAuthError, verifyAdminPerm } from "#/middleware/api-auth";
+import { adminPermRouteGuard } from "#/middleware/admin-auth";
 import { ADMIN_PERMISSIONS } from "#/permissions/admin-permissions";
 import { getLogRawContent } from "#/services/logs/logs.server";
 
 export const Route = createFileRoute("/api/download/log/$id")({
 	server: {
+		middleware: [adminPermRouteGuard(ADMIN_PERMISSIONS.LOG_DOWNLOAD)],
 		handlers: {
 			GET: async ({ params }) => {
-				try {
-					await verifyAdminPerm(ADMIN_PERMISSIONS.LOG_DOWNLOAD);
-				} catch (err) {
-					if (err instanceof ApiAuthError) {
-						return new Response(JSON.stringify({ error: err.message }), {
-							status: err.statusCode,
-							headers: { "Content-Type": "application/json" },
-						});
-					}
-					throw err;
-				}
-
 				const content = await getLogRawContent(params.id);
 				if (!content) {
 					return new Response("File not found", { status: 404 });

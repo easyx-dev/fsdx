@@ -6,6 +6,7 @@ import { eq } from "drizzle-orm";
 import { db } from "#/db/index";
 import { adminUser } from "#/db/schema";
 import { logger } from "#/lib/logger/logger";
+import { clearAdminUserCache } from "#/services/admin-auth/admin-auth.server";
 import { verifyCaptcha } from "#/services/captcha/captcha.server";
 
 /**
@@ -39,6 +40,8 @@ export async function resetAdminPassword(
 		.update(adminUser)
 		.set({ passwordHash, updatedAt: new Date() })
 		.where(eq(adminUser.id, user.id));
+
+	clearAdminUserCache(user.id);
 
 	logger.info({ userId: user.id }, "管理员密码已重置");
 	return { success: true, message: "密码重置成功，请使用新密码登录" };

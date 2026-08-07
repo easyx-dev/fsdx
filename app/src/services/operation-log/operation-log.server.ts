@@ -132,18 +132,17 @@ export async function flushOperationLogs(): Promise<void> {
 // 外部系统调用日志
 // ═══════════════════════════════════════════════════
 
-/** 外部系统标识 */
-export type ExternalSystem = "ncc" | "oa" | "crm" | "wecom";
-
 /** 外部系统调用日志输入参数 */
 export interface ExternalRequestLogInput {
-	/** 外部系统标识 */
-	system: ExternalSystem;
+	/** 外部系统标识（调用方自行传入自身系统代号） */
+	system: string;
 	/** 请求类型：登录或业务请求 */
 	requestType: "login" | "business";
 	/** 接口路径 */
 	path: string;
-	/** HTTP 方法（CRM 有值） */
+	/** 目标类型（接口来源类型），默认 openapi（通用外部接口），调用方可指定 */
+	targetType?: string;
+	/** HTTP 方法 */
 	method?: string;
 	/** 请求耗时（毫秒） */
 	duration: number;
@@ -155,7 +154,7 @@ export interface ExternalRequestLogInput {
 	responseSize?: number;
 	/** 失败时的错误信息 */
 	error?: string;
-	/** 额外元数据（NCC 的 appcode/busiaction 等），不含请求/响应体 */
+	/** 额外元数据（接口代号/业务标识等），不含请求/响应体 */
 	extra?: Record<string, unknown>;
 }
 
@@ -172,7 +171,7 @@ const apiLogWriter = new BatchWriter<OperationLogInput>({
 });
 
 /**
- * 记录外部系统调用（NCC / OA / CRM / wecom）到操作日志
+ * 记录外部系统调用到操作日志
  * 操作者从 ALS 读取（鉴权中间件注入），无上下文记 system
  * 响应体内容不入库，仅记录 responseSize
  */
@@ -183,19 +182,22 @@ export function logExternalRequest(input: ExternalRequestLogInput): void {
 		operatorId: op.id,
 		operatorName: op.username ?? op.id ?? "system",
 		operatorType: op.type,
-		module: "external",
-		action: input.success ? "external_success" : "external_fail",
-		targetType: input.system,
-		targetId: input.path,
+		module: input.system,
+		action: isLogin ? "login" : "request",
+		targetType: input.targetType ?? "openapi",
+		targetName: input.path,
 		detail: {
-			requestType: isLogin ? "login" : "business",
+			// 先展开 extra，再写显式字段，避免 extra 中同名键覆盖路径/耗时/结果等元数据
+			...input.extra,
+			system: input.system,
+			requestType: input.requestType,
 			path: input.path,
-			method: input.method ?? null,
+			method: input.method,
 			duration: input.duration,
-			status: input.status ?? null,
-			responseSize: input.responseSize ?? null,
-			error: input.error ?? null,
-			extra: input.extra ?? null,
+			success: input.success,
+			status: input.status,
+			responseSize: input.responseSize,
+			error: input.error,
 		},
 	});
 }

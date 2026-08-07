@@ -7,7 +7,7 @@ vi.mock("#/lib/logger/logger", () => ({
 	logger: { error: vi.fn(), info: vi.fn(), warn: vi.fn() },
 }));
 
-const { mockDb } = vi.hoisted(() => {
+const { mockDb, mockInsertValues } = vi.hoisted(() => {
 	const insertBuilder = {
 		values: vi.fn(),
 	};
@@ -34,13 +34,18 @@ const { mockDb } = vi.hoisted(() => {
 			})),
 			$count: vi.fn(),
 		},
+		mockInsertValues: insertBuilder.values,
 	};
 });
 
 vi.mock("#/db", () => ({ db: mockDb }));
 
+import { runWithRequestContext } from "@fsdx/core/request-context";
 import {
+	flushOperationLogs,
 	getOperationLogModules,
+	logCrud,
+	logExternalRequest,
 	logOperation,
 	searchOperationLogs,
 } from "#/services/operation-log/operation-log.server";
@@ -158,5 +163,160 @@ describe("getOperationLogModules", () => {
 
 		const modules = await getOperationLogModules();
 		expect(modules).toEqual(["news", "dict"]);
+	});
+});
+
+describe("logCrud", () => {
+	beforeEach(async () => {
+		vi.clearAllMocks();
+		// 清空缓冲：opLogWriter 为模块级单例，前序 describe 未 flush 的残留行会污染本组断言
+		await flushOperationLogs();
+	});
+
+	/** 触发缓冲刷入并返回 insert values 收到的行 */
+	async function flushAndGetRows() {
+		await flushOperationLogs();
+		return mockInsertValues.mock.calls.at(-1)?.[0] as
+			| Record<string, unknown>[]
+			| undefined;
+	}
+
+	it("未指定 operatorType 时默认 admin", async () => {
+		logCrud({ id: "crud-op-1", username: "admin" }, "news", "create", {
+			id: "n1",
+			name: "标题",
+		});
+		const rows = await flushAndGetRows();
+		expect(rows![0]).toMatchObject({
+			operatorId: "crud-op-1",
+			operatorName: "admin",
+			operatorType: "admin",
+			module: "news",
+			action: "create",
+			targetType: "news",
+		});
+	});
+
+	it("客户端自助操作可指定操作者类型 client", async () => {
+		logCrud(
+			{ id: "u-1", username: "张三" },
+			"client",
+			"create_api_key",
+			{ id: "u-1", name: "报表脚本" },
+			{ operatorType: "client" },
+		);
+		const rows = await flushAndGetRows();
+		expect(rows![0]).toMatchObject({
+			operatorId: "u-1",
+			operatorName: "张三",
+			operatorType: "client",
+			module: "client",
+			action: "create_api_key",
+		});
+	});
+});
+
+describe("logExternalRequest", () => {
+	beforeEach(async () => {
+		vi.clearAllMocks();
+		// 清空缓冲：opLogWriter/apiLogWriter 为模块级单例，避免跨 describe 残留行污染断言
+		await flushOperationLogs();
+	});
+
+	/** 触发缓冲刷入并返回 insert values 收到的行 */
+	async function flushAndGetRows() {
+		await flushOperationLogs();
+		return mockInsertValues.mock.calls.at(-1)?.[0] as
+			| Record<string, unknown>[]
+			| undefined;
+	}
+
+	it("无 ALS 上下文时记为 system", async () => {
+		logExternalRequest({
+			system: "external",
+			requestType: "login",
+			path: "/api/token/",
+			duration: 50,
+			success: true,
+		});
+		const rows = await flushAndGetRows();
+		expect(rows).toBeDefined();
+		expect(rows![0]).toMatchObject({
+			operatorId: null,
+			operatorName: "system",
+			operatorType: "system",
+			module: "external",
+			action: "login",
+			targetType: "openapi",
+			targetName: "/api/token/",
+		});
+	});
+
+	it("ALS 上下文内自动读取操作者，targetType 可指定", async () => {
+		runWithRequestContext(
+			{
+				operator: {
+					id: "admin-1",
+					username: "张三",
+					email: null,
+					type: "admin",
+				},
+			},
+			() => {
+				logExternalRequest({
+					system: "integration",
+					requestType: "business",
+					path: "/rest/data/query",
+					method: "GET",
+					duration: 200,
+					success: false,
+					error: "timeout",
+					targetType: "rest_api",
+					extra: { apiCode: "scm" },
+				});
+			},
+		);
+		const rows = await flushAndGetRows();
+		expect(rows).toBeDefined();
+		expect(rows![0]).toMatchObject({
+			operatorId: "admin-1",
+			operatorName: "张三",
+			operatorType: "admin",
+			module: "integration",
+			action: "request",
+			targetType: "rest_api",
+		});
+		expect(rows![0].detail).toMatchObject({
+			system: "integration",
+			requestType: "business",
+			path: "/rest/data/query",
+			method: "GET",
+			success: false,
+			error: "timeout",
+			apiCode: "scm",
+		});
+	});
+
+	it("login 请求 action 为 login，business 请求 action 为 request", async () => {
+		logExternalRequest({
+			system: "external",
+			requestType: "login",
+			path: "login",
+			duration: 10,
+			success: true,
+		});
+		logExternalRequest({
+			system: "external",
+			requestType: "business",
+			path: "/api/test",
+			duration: 10,
+			success: true,
+		});
+		const rows = await flushAndGetRows();
+		expect(rows).toBeDefined();
+		expect(rows).toHaveLength(2);
+		expect(rows![0].action).toBe("login");
+		expect(rows![1].action).toBe("request");
+		expect(rows![0].targetType).toBe("openapi");
 	});
 });

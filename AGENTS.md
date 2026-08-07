@@ -37,7 +37,7 @@ app/                          # @fsdx/web —— 应用 package（业务代码 +
     ├── lib/                  # 仅基础设施单例壳（其余基础库在 packages/core）
     │   ├── logger/logger.ts  # logger 单例壳（createLogger 在 @fsdx/core/logger）
     │   └── jwt/jwt.ts        # jwt 单例（createJwt 在 @fsdx/core/jwt）
-    ├── middleware/           # admin-auth / client-auth / api-auth / locale / sf-error-logger
+    ├── middleware/           # admin-auth / client-auth / locale / sf-error-logger
     ├── services/             # 服务端共享业务逻辑（config/dict/file/news/track/...）
     │   └── logs/log-reader.ts    # 日志文件查询（就近归属 services/logs）
     ├── routes/               # 前台 + /admin 全部路由页面与 SFn
@@ -171,7 +171,7 @@ Server Function handler 体中直接调用 db 是安全的——SFn 始终在服
 - Root 管理员自动拥有 `**` 权限，无需查询角色表
 - 中间件不直接访问数据库，用户查询与权限解析委托服务层（`admin-auth.server.ts` / `client-auth.server.ts`）
 - 路由 `beforeLoad` 中通过 Server Function 调用 `getCurrentAdminSFn` 获取当前用户信息
-- 客户端前台同样支持 RBAC，使用 `src/middleware/client-auth.ts` 的 `clientAuthGuard`（仅认证）/ `clientPermGuard`（认证 + 权限码）
+- 客户端前台同样支持 RBAC，使用 `src/middleware/client-auth.ts` 的 `clientAuthGuard`（仅认证）/ `clientPermGuard`（认证 + 权限码）/ `clientPermRouteGuard`（Server Route 专用）
 - 客户端权限码定义在 `src/permissions/client-permissions.ts`（当前为空集合，业务模块扩展时填充）
 
 ### CSRF 保护
@@ -204,6 +204,7 @@ Server Function handler 体中直接调用 db 是安全的——SFn 始终在服
 - 记录操作人（ID + 类型 + 名称）、模块、动作、目标类型/ID/名称、详情 JSON
 - `operation_log.operator_type` 列区分 admin / client / system；`operator_id` 无外键
 - 操作者身份经 `src/lib/request-context/`（AsyncLocalStorage）由鉴权中间件注入，`logExternalRequest()` 从 ALS 读取
+- `logExternalRequest()` 落库字段语义：`module` = 外部系统标识（调用方传入自身系统代号），`action` = `login` / `request`（按请求类型），`targetType` = 接口来源类型（默认 `openapi`，调用方可指定），`targetName` = 接口路径，`detail` 含系统/路径/方法/耗时/成功与否等元数据（不含请求响应体）
 - 管理端 `/admin/operation-logs` 页面支持按模块/动作/关键词/日期范围查询
 - 进程退出时自动刷新缓冲（SIGTERM / SIGINT）
 

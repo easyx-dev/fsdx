@@ -89,7 +89,7 @@ export function AdminRootDocument({
 	return (
 		<html lang="zh-CN" suppressHydrationWarning>
 			<head>
-				<title>{siteName} 管理后台</title>
+				<title>{`${siteName} 管理后台`}</title>
 				<HeadContent />
 				<link rel="stylesheet" href={adminGlobalCss} />
 				<link rel="icon" type="image/svg+xml" href="/favicon-admin.svg" />

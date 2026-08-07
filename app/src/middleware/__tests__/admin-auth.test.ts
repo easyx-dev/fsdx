@@ -14,11 +14,8 @@ vi.mock("#/services/admin-auth/admin-auth.server", () => ({
 	getAdminUserForAuth: mockGetAdminUserForAuth,
 }));
 
-import {
-	type AdminAuthContext,
-	AdminAuthError,
-	resolveAdminAuthContext,
-} from "#/middleware/admin-auth";
+import { type AdminAuthContext, AdminAuthError } from "#/middleware/admin-auth";
+import { resolveAdminAuthContext } from "#/middleware/admin-auth.server";
 
 describe("AdminAuthError", () => {
 	it("包含 statusCode 属性", () => {

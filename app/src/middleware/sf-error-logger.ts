@@ -8,7 +8,6 @@ import { sanitizeError } from "@fsdx/core/error-utils";
 import { createMiddleware } from "@tanstack/react-start";
 import { logger } from "#/lib/logger/logger";
 import { AdminAuthError } from "#/middleware/admin-auth";
-import { ApiAuthError } from "#/middleware/api-auth";
 import { ClientAuthError } from "#/middleware/client-auth";
 
 export const sfErrorLogger = createMiddleware({ type: "function" }).server(
@@ -28,11 +27,7 @@ export const sfErrorLogger = createMiddleware({ type: "function" }).server(
 		} catch (error) {
 			const duration = Date.now() - startTime;
 
-			if (
-				error instanceof AdminAuthError ||
-				error instanceof ApiAuthError ||
-				error instanceof ClientAuthError
-			) {
+			if (error instanceof AdminAuthError || error instanceof ClientAuthError) {
 				// 鉴权失败：warn 级别（预期行为，但需审计记录）
 				logger.warn(
 					{

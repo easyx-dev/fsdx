@@ -59,6 +59,8 @@ const ACTION_COLORS: Record<string, string> = {
 	import: "purple",
 	upload: "geekblue",
 	make_permanent: "lime",
+	login: "cyan",
+	request: "geekblue",
 };
 
 /** 模块中文名映射 */
@@ -85,6 +87,8 @@ const ACTION_LABELS: Record<string, string> = {
 	import: "导入",
 	upload: "上传",
 	make_permanent: "转为永久",
+	login: "登录",
+	request: "外部请求",
 };
 
 export const Route = createFileRoute("/admin/_admin/operation-logs/")({
