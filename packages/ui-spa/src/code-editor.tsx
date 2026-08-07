@@ -27,11 +27,11 @@ export function CodeEditor({
 }: CodeEditorProps) {
 	const isDark =
 		typeof document !== "undefined" &&
-		document.documentElement.classList.contains("dark");
+		document.documentElement.dataset.theme?.endsWith("-dark") === true;
 
 	return (
 		<div
-			className={`h-[300px] rounded-md border border-zinc-200 dark:border-zinc-700 overflow-hidden ${className}`}
+			className={`h-[300px] rounded-md border border-border overflow-hidden ${className}`}
 		>
 			<Editor
 				height="100%"
@@ -40,7 +40,7 @@ export function CodeEditor({
 				theme={isDark ? "vs-dark" : "light"}
 				onChange={(val: string | undefined) => onChange?.(val ?? "")}
 				loading={
-					<div className="flex items-center justify-center h-full text-zinc-400 text-sm">
+					<div className="flex items-center justify-center h-full text-muted-foreground text-sm">
 						编辑器加载中...
 					</div>
 				}

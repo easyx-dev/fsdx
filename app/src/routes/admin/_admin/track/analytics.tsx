@@ -165,7 +165,7 @@ function EventAnalyticsPage() {
 							{trendConfig ? (
 								<Line {...trendConfig} />
 							) : (
-								<div className="flex items-center justify-center h-[300px] text-gray-400">
+								<div className="flex items-center justify-center h-[300px] text-muted-foreground">
 									暂无数据
 								</div>
 							)}
@@ -178,7 +178,7 @@ function EventAnalyticsPage() {
 									{pieConfig ? (
 										<Pie {...pieConfig} />
 									) : (
-										<div className="flex items-center justify-center h-[300px] text-gray-400">
+										<div className="flex items-center justify-center h-[300px] text-muted-foreground">
 											暂无数据
 										</div>
 									)}
@@ -189,7 +189,7 @@ function EventAnalyticsPage() {
 									{barConfig ? (
 										<Column {...barConfig} />
 									) : (
-										<div className="flex items-center justify-center h-[300px] text-gray-400">
+										<div className="flex items-center justify-center h-[300px] text-muted-foreground">
 											暂无数据
 										</div>
 									)}
@@ -199,7 +199,7 @@ function EventAnalyticsPage() {
 					</>
 				)}
 				{!data && !loading && (
-					<div className="flex items-center justify-center h-[400px] text-gray-400">
+					<div className="flex items-center justify-center h-[400px] text-muted-foreground">
 						请选择时间范围后点击查询
 					</div>
 				)}

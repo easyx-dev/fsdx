@@ -60,7 +60,7 @@ export interface EditorProps {
 /** CodeEditor 加载中的占位 */
 function EditorLoading() {
 	return (
-		<div className="flex items-center justify-center h-[300px] rounded-md border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 text-zinc-400 text-sm">
+		<div className="flex items-center justify-center h-[300px] rounded-md border border-border bg-background-secondary text-muted-foreground text-sm">
 			编辑器加载中...
 		</div>
 	);
@@ -106,15 +106,15 @@ function FilePreview({ fileId }: { fileId: string }) {
 
 	const href = `/api/download/file/${fileId}`;
 	return (
-		<div className="rounded-md border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 px-3 py-2 text-sm min-h-[40px] flex items-center">
+		<div className="rounded-md border border-border bg-background-secondary px-3 py-2 text-sm min-h-[40px] flex items-center">
 			{loading ? (
-				<span className="text-zinc-400">加载中...</span>
+				<span className="text-muted-foreground">加载中...</span>
 			) : (
 				<a
 					href={href}
 					target="_blank"
 					rel="noopener noreferrer"
-					className="text-blue-600 dark:text-blue-400 underline truncate"
+					className="text-primary underline truncate"
 				>
 					{fileName || fileId}
 				</a>
@@ -155,20 +155,20 @@ function PreviewContent({
 		case "rich":
 			return (
 				<div
-					className="prose prose-sm dark:prose-invert max-w-none rounded-md border border-zinc-200 dark:border-zinc-700 p-4 min-h-[120px]"
+					className="prose prose-sm dark:prose-invert max-w-none rounded-md border border-border p-4 min-h-[120px]"
 					dangerouslySetInnerHTML={{ __html: value }}
 				/>
 			);
 		case "text":
 			return (
-				<pre className="rounded-md border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 p-4 min-h-[80px] text-sm whitespace-pre-wrap break-words">
-					{value || <span className="text-zinc-400">—</span>}
+				<pre className="rounded-md border border-border bg-background-secondary p-4 min-h-[80px] text-sm whitespace-pre-wrap break-words">
+					{value || <span className="text-muted-foreground">—</span>}
 				</pre>
 			);
 		case "image": {
 			const src = value ? `/api/download/file/${value}` : "";
 			return (
-				<div className="rounded-md border border-zinc-200 dark:border-zinc-700 p-2 min-h-[80px] flex items-center justify-center bg-zinc-50 dark:bg-zinc-800">
+				<div className="rounded-md border border-border p-2 min-h-[80px] flex items-center justify-center bg-background-secondary">
 					{value ? (
 						<img
 							src={src}
@@ -176,7 +176,7 @@ function PreviewContent({
 							className="max-h-[200px] max-w-full object-contain rounded"
 						/>
 					) : (
-						<span className="text-zinc-400 text-sm">—</span>
+						<span className="text-muted-foreground text-sm">—</span>
 					)}
 				</div>
 			);
@@ -185,8 +185,8 @@ function PreviewContent({
 			return <FilePreview fileId={value} />;
 		default:
 			return (
-				<div className="rounded-md border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 px-3 py-2 text-sm min-h-[40px]">
-					{value || <span className="text-zinc-400">—</span>}
+				<div className="rounded-md border border-border bg-background-secondary px-3 py-2 text-sm min-h-[40px]">
+					{value || <span className="text-muted-foreground">—</span>}
 				</div>
 			);
 	}
@@ -293,7 +293,7 @@ export function Editor({
 			return (
 				<Suspense
 					fallback={
-						<div className="flex items-center justify-center h-[120px] rounded-md border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 text-zinc-400 text-sm">
+						<div className="flex items-center justify-center h-[120px] rounded-md border border-border bg-background-secondary text-muted-foreground text-sm">
 							上传组件加载中...
 						</div>
 					}
@@ -311,7 +311,7 @@ export function Editor({
 			return (
 				<Suspense
 					fallback={
-						<div className="flex items-center justify-center h-[120px] rounded-md border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 text-zinc-400 text-sm">
+						<div className="flex items-center justify-center h-[120px] rounded-md border border-border bg-background-secondary text-muted-foreground text-sm">
 							上传组件加载中...
 						</div>
 					}

@@ -174,7 +174,7 @@ function ConfigPage() {
 			key: "key",
 			width: 240,
 			render: (key: string) => (
-				<code className="text-xs text-blue-600 dark:text-blue-400">{key}</code>
+				<code className="text-xs text-primary">{key}</code>
 			),
 		},
 		{
@@ -319,8 +319,8 @@ function ConfigPage() {
 								return (
 									<div
 										key={record.key}
-										className={`flex items-center px-3 py-2.5 cursor-pointer transition-colors hover:bg-gray-50 dark:hover:bg-gray-800/50 ${
-											isActive ? "bg-blue-50/80 dark:bg-blue-950/40" : ""
+										className={`flex items-center px-3 py-2.5 cursor-pointer transition-colors hover:bg-accent ${
+											isActive ? "bg-primary-bg" : ""
 										}`}
 										onClick={() =>
 											setSelectedGroup(
@@ -330,13 +330,13 @@ function ConfigPage() {
 									>
 										<div className="flex items-center gap-2 min-w-0">
 											{isActive && (
-												<span className="w-1 h-6 rounded-full bg-blue-500 flex-shrink-0" />
+												<span className="w-1 h-6 rounded-full bg-primary flex-shrink-0" />
 											)}
 											<div className="min-w-0">
 												<div
 													className={
 														isActive
-															? "font-semibold text-blue-600 dark:text-blue-400 truncate"
+															? "font-semibold text-primary truncate"
 															: "truncate"
 													}
 												>

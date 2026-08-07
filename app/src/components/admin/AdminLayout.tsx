@@ -13,7 +13,16 @@ import {
 } from "@ant-design/icons";
 import type { ThemeMode } from "@fsdx/ui-ssr/use-theme-mode";
 import { Link, useLocation } from "@tanstack/react-router";
-import { Avatar, Badge, Button, Divider, Flex, Popover, Tooltip } from "antd";
+import {
+	Avatar,
+	Badge,
+	Button,
+	Divider,
+	Flex,
+	Popover,
+	Segmented,
+	Tooltip,
+} from "antd";
 import {
 	createContext,
 	type ReactNode,
@@ -29,11 +38,15 @@ import { useAdminDictStore } from "#/components/global-store/admin-dict-store";
 import { Logo } from "#/components/Logo";
 import { logoutSFn } from "#/services/admin-auth/admin-auth.functions";
 import { getAdminUnreadCountSFn } from "#/services/message/message.functions";
+import { ADMIN_SIDE } from "#/theme/themes";
 
 /** Admin 主题 Context */
 interface AdminThemeContextType {
 	mode: ThemeMode;
 	setMode: (mode: ThemeMode) => void;
+	/** 当前主题家族 id（棕/蓝灰/绿） */
+	familyId: string;
+	setFamilyId: (familyId: string) => void;
 	/** 当前是否为暗色模式（水合完成前为 false） */
 	isDark: boolean;
 }
@@ -54,12 +67,9 @@ function isActive(itemKey: string, currentPath: string): boolean {
 	return currentPath === itemKey || currentPath.startsWith(`${itemKey}/`);
 }
 
-/** 主题模式循环顺序 */
-const THEME_CYCLE: ThemeMode[] = ["light", "dark", "auto"];
-
 export function AdminLayout({ children }: { children: ReactNode }) {
 	const [collapsed, setCollapsed] = useState(false);
-	const { mode, setMode, isDark } = useAdminTheme();
+	const { mode, setMode, familyId, setFamilyId, isDark } = useAdminTheme();
 	const { user } = useAdminAuth();
 	const location = useLocation();
 	const currentPath = location.pathname;
@@ -90,12 +100,6 @@ export function AdminLayout({ children }: { children: ReactNode }) {
 	const handleLogout = async () => {
 		await logoutSFn();
 		window.location.href = "/admin/login";
-	};
-
-	/** 循环切换主题模式 */
-	const cycleTheme = () => {
-		const idx = THEME_CYCLE.indexOf(mode);
-		setMode(THEME_CYCLE[(idx + 1) % THEME_CYCLE.length]);
 	};
 
 	// 进入 admin 时一次性加载全部字典到 zustand store
@@ -181,15 +185,60 @@ export function AdminLayout({ children }: { children: ReactNode }) {
 								icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
 							/>
 						</Tooltip>
-						<Tooltip
-							title={`当前：${mode === "light" ? "亮色" : mode === "dark" ? "暗色" : "跟随系统"}`}
+						{/* 主题设置：配色家族 + 明暗模式 */}
+						<Popover
+							trigger="click"
+							placement="rightBottom"
+							content={
+								<div className="w-64 space-y-4">
+									<div>
+										<div className="mb-2 text-xs font-semibold text-muted-foreground">
+											主题配色
+										</div>
+										<div className="flex gap-2">
+											{ADMIN_SIDE.families.map((f) => {
+												const active = f.id === familyId;
+												return (
+													<button
+														key={f.id}
+														type="button"
+														title={f.label}
+														onClick={() => setFamilyId(f.id)}
+														className={`flex h-8 flex-1 items-center justify-center rounded border text-xs transition-colors ${
+															active
+																? "border-primary bg-primary-bg font-medium text-primary"
+																: "border-border text-muted-foreground hover:bg-accent"
+														}`}
+													>
+														{f.label}
+													</button>
+												);
+											})}
+										</div>
+									</div>
+									<div>
+										<div className="mb-2 text-xs font-semibold text-muted-foreground">
+											明暗模式
+										</div>
+										<Segmented
+											block
+											value={mode}
+											onChange={(value) => setMode(value as ThemeMode)}
+											options={[
+												{ label: "亮色", value: "light" },
+												{ label: "暗色", value: "dark" },
+												{ label: "跟随系统", value: "auto" },
+											]}
+										/>
+									</div>
+								</div>
+							}
 						>
 							<Button
 								type="text"
-								onClick={cycleTheme}
 								icon={isDark ? <MoonOutlined /> : <SunOutlined />}
 							/>
-						</Tooltip>
+						</Popover>
 						{/* 消息中心铃铛（未读角标 + 跳转） */}
 						<Tooltip title="我的消息">
 							<Badge count={unreadCount} size="small">

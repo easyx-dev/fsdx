@@ -141,7 +141,7 @@ function NewsListPage() {
 						src={`/api/download/file/${record.coverImageId}`}
 						width={60}
 						height={40}
-						style={{ objectFit: "cover", borderRadius: 4 }}
+						style={{ objectFit: "cover", borderRadius: 0 }}
 					/>
 				);
 			},

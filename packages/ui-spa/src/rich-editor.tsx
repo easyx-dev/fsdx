@@ -77,14 +77,14 @@ export function RichEditor({
 
 	return (
 		<div
-			className="flex flex-col rounded-md border border-zinc-200 dark:border-zinc-700"
+			className="flex flex-col rounded-md border border-border"
 			style={{ zIndex: 100 }}
 		>
 			<Toolbar
 				editor={editor}
 				defaultConfig={toolbarConfig}
 				mode="default"
-				className="border-b border-zinc-200 dark:border-zinc-700 [&_.w-e-toolbar]:!rounded-md"
+				className="border-b border-border [&_.w-e-toolbar]:!rounded-md"
 			/>
 			<Editor
 				defaultConfig={editorConfig}

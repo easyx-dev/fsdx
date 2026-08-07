@@ -2,6 +2,7 @@
  * 根路由 Document 外壳：分离 Admin（客户端渲染）与前台（SSR + 国际化）
  */
 
+import type { ThemeSide } from "@fsdx/ui-ssr/use-theme-mode";
 import { ClientOnly, HeadContent, Scripts } from "@tanstack/react-router";
 import { useEffect, useRef } from "react";
 import { Toaster } from "sonner";
@@ -17,9 +18,25 @@ import {
 } from "#/components/track/track";
 import adminGlobalCss from "#/styles/admin.global.css?url";
 import ssrGlobalCss from "#/styles/ssr.global.css?inline";
+import { ADMIN_SIDE, buildFamilyMapJson, CLIENT_SIDE } from "#/theme/themes";
 import { AdminProvider } from "./admin/AdminProvider";
 
-const THEME_INIT_SCRIPT = `(function(){try{var s=window.localStorage.getItem('theme');var m=(s==='light'||s==='dark'||s==='auto')?s:'auto';var d=m==='auto'?window.matchMedia('(prefers-color-scheme: dark)').matches:m==='dark';var r=document.documentElement;r.classList.remove('light','dark');r.classList.add(d?'dark':'light');if(m==='auto'){r.removeAttribute('data-theme')}else{r.setAttribute('data-theme',m)}r.style.colorScheme=d?'dark':'light'}catch(e){}})();`;
+// 内联层声明锁定级联层顺序：若全局 CSS <link> 加载失败（混合/陈旧部署 404），antd 运行时注入的
+// @layer antd 会成为首层而落到 preflight 之下、全部样式被重置覆盖；声明顺序须与 global.css 顶部一致。
+const LAYER_ORDER_STYLE =
+	"@layer properties, theme, base, antd, components, utilities;";
+
+/**
+ * 生成主题 init 脚本：家族映射与 storageKey 均从 themes.ts 注册表推导，
+ * 避免脚本与注册表手工双写导致新增/重命名家族时首帧主题静默失效。
+ */
+function buildThemeInitScript(side: ThemeSide): string {
+	const familyMap = buildFamilyMapJson(side);
+	return `(function(){try{var m=localStorage.getItem('${side.storageKeyMode}')||'auto';m=(m==='light'||m==='dark'||m==='auto')?m:'auto';var f=localStorage.getItem('${side.storageKeyFamily}')||'${side.defaultFamilyId}';var fam=${familyMap}[f]||${familyMap}['${side.defaultFamilyId}'];var d=m==='auto'?window.matchMedia('(prefers-color-scheme: dark)').matches:m==='dark';var r=document.documentElement;r.setAttribute('data-theme',fam+(d?'-dark':'-light'));r.style.colorScheme=d?'dark':'light'}catch(e){}})();`;
+}
+
+const ADMIN_THEME_INIT_SCRIPT = buildThemeInitScript(ADMIN_SIDE);
+const CLIENT_THEME_INIT_SCRIPT = buildThemeInitScript(CLIENT_SIDE);
 
 interface SSRRootDocumentProps {
 	children: React.ReactNode;
@@ -55,7 +72,10 @@ export function SSRRootDocument({ children }: SSRRootDocumentProps) {
 	return (
 		<html lang={locale} suppressHydrationWarning>
 			<head>
-				<script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
+				<script
+					dangerouslySetInnerHTML={{ __html: CLIENT_THEME_INIT_SCRIPT }}
+				/>
+				<style dangerouslySetInnerHTML={{ __html: LAYER_ORDER_STYLE }} />
 				<style dangerouslySetInnerHTML={{ __html: ssrGlobalCss }} />
 				<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
 				<title>{siteName}</title>
@@ -89,6 +109,8 @@ export function AdminRootDocument({
 	return (
 		<html lang="zh-CN" suppressHydrationWarning>
 			<head>
+				<script dangerouslySetInnerHTML={{ __html: ADMIN_THEME_INIT_SCRIPT }} />
+				<style dangerouslySetInnerHTML={{ __html: LAYER_ORDER_STYLE }} />
 				<title>{`${siteName} 管理后台`}</title>
 				<HeadContent />
 				<link rel="stylesheet" href={adminGlobalCss} />

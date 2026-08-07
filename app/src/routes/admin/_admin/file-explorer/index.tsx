@@ -320,7 +320,7 @@ function FileExplorerPage() {
 						/>
 					) : (
 						<FileOutlined
-							style={{ color: "#1677ff", fontSize: 16, flexShrink: 0 }}
+							style={{ color: "var(--s-primary)", fontSize: 16, flexShrink: 0 }}
 						/>
 					)}
 					<Typography.Text
@@ -599,7 +599,7 @@ function FileExplorerPage() {
 							fontSize: 13,
 							lineHeight: 1.7,
 							margin: 0,
-							borderRadius: "0 0 8px 8px",
+							borderRadius: "0 0 0 0",
 							whiteSpace: "pre-wrap",
 							wordBreak: "break-all",
 							fontFamily: "'SF Mono', 'Cascadia Code', 'Consolas', monospace",

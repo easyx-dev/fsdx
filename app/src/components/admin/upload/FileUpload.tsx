@@ -306,7 +306,7 @@ export function FileUpload({
 							}}
 							style={{
 								cursor: "pointer",
-								color: "#1677ff",
+								color: "var(--s-primary)",
 								textDecoration: "underline",
 							}}
 						>

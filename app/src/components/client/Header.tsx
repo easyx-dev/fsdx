@@ -14,6 +14,7 @@ import { useGlobalStore } from "#/components/global-store/global-store";
 import { useTranslation } from "#/components/i18n-context";
 import { Logo } from "#/components/Logo";
 import { track } from "#/components/track/track";
+import { CLIENT_SIDE } from "#/theme/themes";
 
 export default function Header() {
 	const [mobileOpen, setMobileOpen] = useState(false);
@@ -107,7 +108,7 @@ export default function Header() {
 							</Button>
 						</Link>
 					)}
-					<ThemeToggle />
+					<ThemeToggle side={CLIENT_SIDE} />
 					{/* 移动端菜单按钮 */}
 					<Button
 						variant="ghost"

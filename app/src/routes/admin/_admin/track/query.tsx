@@ -217,7 +217,7 @@ function EventListPage() {
 			width: 200,
 			ellipsis: true,
 			render: (v: string | null) =>
-				v || <span className="text-gray-400">匿名</span>,
+				v || <span className="text-muted-foreground">匿名</span>,
 		},
 		{
 			title: "会话 ID",
@@ -332,10 +332,10 @@ function EventListPage() {
 									return (
 										<div
 											key={key}
-											className="rounded-lg border border-gray-100 bg-gray-50 px-3 py-2"
+											className="rounded-lg border border-border bg-background-secondary px-3 py-2"
 										>
 											<div className="mb-1 flex items-center gap-1.5">
-												<span className="text-sm font-medium text-gray-800">
+												<span className="text-sm font-medium text-foreground">
 													{displayLabel}
 												</span>
 												{meta && (
@@ -348,7 +348,7 @@ function EventListPage() {
 												)}
 											</div>
 											<Tooltip title={valueStr} mouseEnterDelay={0.5}>
-												<div className="max-h-16 overflow-hidden text-xs text-gray-600 break-all font-mono">
+												<div className="max-h-16 overflow-hidden text-xs text-muted-foreground break-all font-mono">
 													{valueStr}
 												</div>
 											</Tooltip>

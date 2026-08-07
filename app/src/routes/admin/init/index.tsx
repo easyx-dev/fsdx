@@ -66,7 +66,7 @@ function AdminInitPage() {
 	};
 
 	return (
-		<div className="flex min-h-screen items-center justify-center bg-zinc-50 dark:bg-zinc-900">
+		<div className="flex min-h-screen items-center justify-center bg-background-secondary">
 			<div className="w-full max-w-lg">
 				<div className="rounded-lg border border-border bg-card p-8 shadow-sm">
 					<h1 className="mb-4 text-center text-2xl font-bold">系统初始化</h1>

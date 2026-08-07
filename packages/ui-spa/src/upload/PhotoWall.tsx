@@ -112,13 +112,15 @@ export function PhotoWall({
 							width: 104,
 							height: 104,
 							border: "1px solid #d9d9d9",
-							borderRadius: 8,
+							borderRadius: 0,
 							overflow: "hidden",
 							position: "relative",
 							cursor: canSort ? "move" : "default",
 							opacity: dragIndex === index ? 0.4 : 1,
 							borderColor:
-								canSort && hoverIndex === index ? "#1677ff" : "#d9d9d9",
+								canSort && hoverIndex === index
+									? "var(--s-primary)"
+									: "#d9d9d9",
 							borderWidth: canSort && hoverIndex === index ? 2 : 1,
 							transition: "opacity 0.15s, border-color 0.15s",
 						}}
@@ -181,7 +183,7 @@ export function PhotoWall({
 								style={{
 									color: "#fff",
 									background: "rgba(255,77,79,0.7)",
-									borderRadius: 4,
+									borderRadius: 0,
 								}}
 								onClick={(e: React.MouseEvent<HTMLElement>) => {
 									e.stopPropagation();
@@ -212,12 +214,12 @@ export function PhotoWall({
 						width: 104,
 						height: 104,
 						border: "1px dashed #d9d9d9",
-						borderRadius: 8,
+						borderRadius: 0,
 						display: "flex",
 						flexDirection: "column",
 						overflow: "hidden",
-						borderColor: dragOver ? "#1677ff" : "#d9d9d9",
-						background: dragOver ? "#e6f4ff" : "#fafafa",
+						borderColor: dragOver ? "var(--s-primary)" : "#d9d9d9",
+						background: dragOver ? "var(--s-primary-bg)" : "#fafafa",
 						transition: "border-color 0.15s, background 0.15s",
 					}}
 				>
@@ -234,9 +236,9 @@ export function PhotoWall({
 						}}
 						onMouseEnter={(e) => {
 							const el = e.currentTarget as HTMLElement;
-							el.style.color = "#1677ff";
+							el.style.color = "var(--s-primary)";
 							const parent = el.parentElement;
-							if (parent) parent.style.borderColor = "#1677ff";
+							if (parent) parent.style.borderColor = "var(--s-primary)";
 						}}
 						onMouseLeave={(e) => {
 							const el = e.currentTarget as HTMLElement;
@@ -267,8 +269,8 @@ export function PhotoWall({
 						onMouseEnter={(e) => {
 							const el = e.currentTarget as HTMLElement;
 							el.style.color = "#fff";
-							el.style.background = "#1677ff";
-							el.style.borderTopColor = "#1677ff";
+							el.style.background = "var(--s-primary)";
+							el.style.borderTopColor = "var(--s-primary)";
 						}}
 						onMouseLeave={(e) => {
 							const el = e.currentTarget as HTMLElement;

@@ -1,190 +1,338 @@
-/* 层顺序预声明：antd 组件样式由 StyleProvider layer 注入 @layer antd */
-@layer theme, base, antd, components, utilities;
+/* 预声明层顺序：antd 样式由 StyleProvider layer 注入 @layer antd。
+ * 顺序约定：preflight(base) 打底 → antd 组件样式覆盖 reset → utilities 最后，
+ * 保证 Tailwind 工具类可覆盖 antd 全局规则（如锚点颜色），且 antd 组件不受 preflight 影响。
+ * 与 Document.tsx 内联层声明保持一致。 */
+@layer properties, theme, base, antd, components, utilities;
 
 @import 'tailwindcss';
 @plugin '@tailwindcss/typography';
-
 @import 'tw-animate-css';
+@import './shared-tokens.css';
 
 /* 扫描 workspace ui 包源码中的 tailwind 类名 */
 @source "../../packages/ui-ssr/src";
 @source "../../packages/ui-spa/src";
 
-@custom-variant dark (&:is(.dark *));
+/* 暗色变体：data-theme 以 -dark 结尾即暗色主题（主题名由 themes.ts 注册表约定） */
+@custom-variant dark (&:is([data-theme$="-dark"] *));
 
-/**
- * 全局样式：SSR 前端 shadcn/ui 主题变量 + Tailwind 基础样式
- * Admin 端使用 antd CSS-in-JS，不依赖此文件的组件变量
- */
-
+/* ========================================
+ * 品牌色阶（管理端）：棕 / 蓝灰 / 绿 三个家族
+ * 命名前缀 —t 表示基础令牌，不随主题变化；亮暗主题在此之上派生语义变量
+ * ======================================== */
 :root {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.141 0.005 285.823);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.141 0.005 285.823);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.141 0.005 285.823);
-  --primary: oklch(0.21 0.006 285.885);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.967 0.001 286.375);
-  --secondary-foreground: oklch(0.21 0.006 285.885);
-  --muted: oklch(0.967 0.001 286.375);
-  --muted-foreground: oklch(0.552 0.016 285.938);
-  --accent: oklch(0.967 0.001 286.375);
-  --accent-foreground: oklch(0.21 0.006 285.885);
-  --destructive: oklch(0.577 0.245 27.325);
-  --destructive-foreground: oklch(0.577 0.245 27.325);
-  --border: oklch(0.92 0.004 286.32);
-  --input: oklch(0.92 0.004 286.32);
-  --ring: oklch(0.871 0.006 286.286);
-  --chart-1: oklch(0.646 0.222 41.116);
-  --chart-2: oklch(0.6 0.118 184.704);
-  --chart-3: oklch(0.398 0.07 227.392);
-  --chart-4: oklch(0.828 0.189 84.429);
-  --chart-5: oklch(0.769 0.188 70.08);
-  --radius: 0.625rem;
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.141 0.005 285.823);
-  --sidebar-primary: oklch(0.21 0.006 285.885);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.967 0.001 286.375);
-  --sidebar-accent-foreground: oklch(0.21 0.006 285.885);
-  --sidebar-border: oklch(0.92 0.004 286.32);
-  --sidebar-ring: oklch(0.871 0.006 286.286);
+	--t-brand-brown-50: #efebe9;
+	--t-brand-brown-100: #d7ccc8;
+	--t-brand-brown-200: #bcaaa4;
+	--t-brand-brown-300: #a1887f;
+	--t-brand-brown-400: #8d6e63;
+	--t-brand-brown-500: #795548;
+	--t-brand-brown-600: #6d4c41;
+	--t-brand-brown-700: #5d4037;
+	--t-brand-brown-800: #4e342e;
+	--t-brand-brown-900: #3e2723;
+
+	--t-brand-bluegrey-50: #eceff1;
+	--t-brand-bluegrey-100: #cfd8dc;
+	--t-brand-bluegrey-200: #b0bec5;
+	--t-brand-bluegrey-300: #90a4ae;
+	--t-brand-bluegrey-400: #78909c;
+	--t-brand-bluegrey-500: #607d8b;
+	--t-brand-bluegrey-600: #546e7a;
+	--t-brand-bluegrey-700: #455a64;
+	--t-brand-bluegrey-800: #37474f;
+	--t-brand-bluegrey-900: #263238;
+
+	--t-brand-green-50: #e6f9f0;
+	--t-brand-green-100: #b3f0d1;
+	--t-brand-green-200: #80e7b3;
+	--t-brand-green-300: #4dde94;
+	--t-brand-green-400: #26d57c;
+	--t-brand-green-500: #00b96b;
+	--t-brand-green-600: #009a56;
+	--t-brand-green-700: #007c43;
+	--t-brand-green-800: #005e31;
+	--t-brand-green-900: #004020;
 }
 
-.dark {
-  --background: oklch(0.141 0.005 285.823);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.141 0.005 285.823);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.141 0.005 285.823);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.985 0 0);
-  --primary-foreground: oklch(0.21 0.006 285.885);
-  --secondary: oklch(0.274 0.006 286.033);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.274 0.006 286.033);
-  --muted-foreground: oklch(0.705 0.015 286.067);
-  --accent: oklch(0.274 0.006 286.033);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.396 0.141 25.723);
-  --destructive-foreground: oklch(0.637 0.237 25.331);
-  --border: oklch(0.274 0.006 286.033);
-  --input: oklch(0.274 0.006 286.033);
-  --ring: oklch(0.442 0.017 285.786);
-  --chart-1: oklch(0.488 0.243 264.376);
-  --chart-2: oklch(0.696 0.17 162.48);
-  --chart-3: oklch(0.769 0.188 70.08);
-  --chart-4: oklch(0.627 0.265 303.9);
-  --chart-5: oklch(0.645 0.246 16.439);
-  --sidebar: oklch(0.21 0.006 285.885);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.274 0.006 286.033);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(0.274 0.006 286.033);
-  --sidebar-ring: oklch(0.442 0.017 285.786);
+/* ========================================
+ * 语义变量（Semantic Tokens）— 亮色公共
+ * 命名前缀 —s 表示语义变量，随主题切换变化。
+ * 默认品牌为棕色；蓝灰/绿家族仅覆盖差异项（后置同名变量生效）。
+ * :root 兜底默认亮色，保证初始 HTML 无 data-theme（如错误页）时正常渲染。
+ * ======================================== */
+:root,
+[data-theme$="-light"] {
+	--s-primary: var(--t-brand-brown-500);
+	--s-primary-hover: var(--t-brand-brown-400);
+	--s-primary-active: var(--t-brand-brown-600);
+	--s-primary-bg: var(--t-brand-brown-50);
+	--s-primary-fg: var(--t-neutral-0);
+
+	--s-surface: var(--t-neutral-0);
+	--s-surface-secondary: var(--t-neutral-50);
+	--s-surface-tertiary: var(--t-neutral-100);
+
+	--s-text: var(--t-neutral-1000);
+	--s-text-secondary: var(--t-neutral-700);
+	--s-text-tertiary: var(--t-neutral-500);
+	--s-text-inverse: var(--t-neutral-0);
+	--s-text-link: var(--t-brand-brown-600);
+
+	--s-card: var(--t-neutral-0);
+	--s-card-border: var(--t-neutral-200);
+
+	--s-border: var(--t-neutral-200);
+	--s-divider: var(--t-neutral-100);
+	--s-ring: var(--t-brand-brown-500);
+
+	--s-success: var(--t-success);
+	--s-warning: var(--t-warning);
+	--s-danger: var(--t-danger);
+	--s-info: var(--t-info);
+
+	--s-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
+	--s-shadow-md: 0 4px 12px rgba(0, 0, 0, 0.06);
+	--s-shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.08);
+	--s-shadow-xl: 0 12px 48px rgba(0, 0, 0, 0.12);
+
+	/* 侧边栏：中性底 + 品牌激活 */
+	--s-sidebar: var(--t-neutral-50);
+	--s-sidebar-foreground: var(--t-neutral-800);
+	--s-sidebar-primary: var(--t-brand-brown-500);
+	--s-sidebar-primary-foreground: var(--t-neutral-0);
+	--s-sidebar-accent: var(--t-neutral-100);
+	--s-sidebar-accent-foreground: var(--t-neutral-800);
+	--s-sidebar-border: var(--t-neutral-200);
+	--s-sidebar-ring: var(--t-brand-brown-500);
 }
 
+/* 亮色家族覆盖：蓝灰 */
+[data-theme="admin-bluegrey-light"] {
+	--s-primary: var(--t-brand-bluegrey-500);
+	--s-primary-hover: var(--t-brand-bluegrey-400);
+	--s-primary-active: var(--t-brand-bluegrey-600);
+	--s-primary-bg: var(--t-brand-bluegrey-50);
+	--s-text-link: var(--t-brand-bluegrey-600);
+	--s-ring: var(--t-brand-bluegrey-500);
+	--s-sidebar-primary: var(--t-brand-bluegrey-500);
+	--s-sidebar-ring: var(--t-brand-bluegrey-500);
+}
+
+/* 亮色家族覆盖：绿 */
+[data-theme="admin-green-light"] {
+	--s-primary: var(--t-brand-green-500);
+	--s-primary-hover: var(--t-brand-green-400);
+	--s-primary-active: var(--t-brand-green-600);
+	--s-primary-bg: var(--t-brand-green-50);
+	--s-text-link: var(--t-brand-green-600);
+	--s-ring: var(--t-brand-green-500);
+	--s-sidebar-primary: var(--t-brand-green-500);
+	--s-sidebar-ring: var(--t-brand-green-500);
+}
+
+/* ========================================
+ * 语义变量 — 暗色公共（默认品牌棕）
+ * ======================================== */
+[data-theme$="-dark"] {
+	--s-primary: var(--t-brand-brown-300);
+	--s-primary-hover: var(--t-brand-brown-200);
+	--s-primary-active: var(--t-brand-brown-400);
+	--s-primary-bg: rgba(161, 136, 127, 0.15);
+	--s-primary-fg: var(--t-neutral-1000);
+
+	--s-surface: #0a0a0a;
+	--s-surface-secondary: #141414;
+	--s-surface-tertiary: #1a1a1a;
+
+	--s-text: rgba(255, 255, 255, 0.92);
+	--s-text-secondary: rgba(255, 255, 255, 0.65);
+	--s-text-tertiary: rgba(255, 255, 255, 0.45);
+	--s-text-inverse: var(--t-neutral-1000);
+	--s-text-link: var(--t-brand-brown-200);
+
+	--s-card: #141414;
+	--s-card-border: rgba(255, 255, 255, 0.06);
+
+	--s-border: rgba(255, 255, 255, 0.08);
+	--s-divider: rgba(255, 255, 255, 0.04);
+	--s-ring: var(--t-brand-brown-300);
+
+	--s-success: #00d97a;
+	--s-warning: #ffc53d;
+	--s-danger: #ff7875;
+	--s-info: #4096ff;
+
+	--s-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.2);
+	--s-shadow-md: 0 4px 12px rgba(0, 0, 0, 0.3);
+	--s-shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.4);
+	--s-shadow-xl: 0 12px 48px rgba(0, 0, 0, 0.5);
+
+	--s-sidebar: #141414;
+	--s-sidebar-foreground: rgba(255, 255, 255, 0.92);
+	--s-sidebar-primary: var(--t-brand-brown-300);
+	--s-sidebar-primary-foreground: var(--t-neutral-1000);
+	--s-sidebar-accent: #1f1f1f;
+	--s-sidebar-accent-foreground: rgba(255, 255, 255, 0.92);
+	--s-sidebar-border: rgba(255, 255, 255, 0.08);
+	--s-sidebar-ring: var(--t-brand-brown-300);
+}
+
+/* 暗色家族覆盖：蓝灰 */
+[data-theme="admin-bluegrey-dark"] {
+	--s-primary: var(--t-brand-bluegrey-300);
+	--s-primary-hover: var(--t-brand-bluegrey-200);
+	--s-primary-active: var(--t-brand-bluegrey-400);
+	--s-primary-bg: rgba(144, 164, 174, 0.15);
+	--s-text-link: var(--t-brand-bluegrey-200);
+	--s-ring: var(--t-brand-bluegrey-300);
+	--s-sidebar-primary: var(--t-brand-bluegrey-300);
+	--s-sidebar-ring: var(--t-brand-bluegrey-300);
+}
+
+/* 暗色家族覆盖：绿 */
+[data-theme="admin-green-dark"] {
+	--s-primary: var(--t-brand-green-400);
+	--s-primary-hover: var(--t-brand-green-300);
+	--s-primary-active: var(--t-brand-green-500);
+	--s-primary-bg: rgba(0, 185, 107, 0.15);
+	--s-text-link: var(--t-brand-green-300);
+	--s-ring: var(--t-brand-green-400);
+	--s-sidebar-primary: var(--t-brand-green-400);
+	--s-sidebar-ring: var(--t-brand-green-400);
+}
+
+/* ========================================
+ * Tailwind 主题映射
+ * 将语义变量注册到 Tailwind 工具类系统（字体族走系统默认，见 --font-sans）
+ * ======================================== */
 @theme inline {
-  --font-sans: ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji';
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --color-card: var(--card);
-  --color-card-foreground: var(--card-foreground);
-  --color-popover: var(--popover);
-  --color-popover-foreground: var(--popover-foreground);
-  --color-primary: var(--primary);
-  --color-primary-foreground: var(--primary-foreground);
-  --color-secondary: var(--secondary);
-  --color-secondary-foreground: var(--secondary-foreground);
-  --color-muted: var(--muted);
-  --color-muted-foreground: var(--muted-foreground);
-  --color-accent: var(--accent);
-  --color-accent-foreground: var(--accent-foreground);
-  --color-destructive: var(--destructive);
-  --color-destructive-foreground: var(--destructive-foreground);
-  --color-border: var(--border);
-  --color-input: var(--input);
-  --color-ring: var(--ring);
-  --color-chart-1: var(--chart-1);
-  --color-chart-2: var(--chart-2);
-  --color-chart-3: var(--chart-3);
-  --color-chart-4: var(--chart-4);
-  --color-chart-5: var(--chart-5);
-  --radius-sm: calc(var(--radius) - 4px);
-  --radius-md: calc(var(--radius) - 2px);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) + 4px);
-  --color-sidebar: var(--sidebar);
-  --color-sidebar-foreground: var(--sidebar-foreground);
-  --color-sidebar-primary: var(--sidebar-primary);
-  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-  --color-sidebar-accent: var(--sidebar-accent);
-  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-  --color-sidebar-border: var(--sidebar-border);
-  --color-sidebar-ring: var(--sidebar-ring);
+	--font-sans: ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji';
+
+	--color-background: var(--s-surface);
+	--color-background-secondary: var(--s-surface-secondary);
+	--color-background-tertiary: var(--s-surface-tertiary);
+
+	--color-foreground: var(--s-text);
+	--color-foreground-secondary: var(--s-text-secondary);
+	--color-foreground-tertiary: var(--s-text-tertiary);
+	--color-foreground-inverse: var(--s-text-inverse);
+
+	--color-card: var(--s-card);
+	--color-card-border: var(--s-card-border);
+
+	--color-popover: var(--s-card);
+	--color-popover-foreground: var(--s-text);
+
+	--color-primary: var(--s-primary);
+	--color-primary-hover: var(--s-primary-hover);
+	--color-primary-active: var(--s-primary-active);
+	--color-primary-bg: var(--s-primary-bg);
+	--color-primary-fg: var(--s-primary-fg);
+	--color-primary-foreground: var(--s-primary-fg);
+
+	--color-secondary: var(--s-surface-secondary);
+	--color-secondary-foreground: var(--s-text);
+
+	--color-muted: var(--s-surface-secondary);
+	--color-muted-foreground: var(--s-text-secondary);
+
+	--color-accent: var(--s-surface-secondary);
+	--color-accent-foreground: var(--s-text);
+
+	--color-border: var(--s-border);
+	--color-input: var(--s-border);
+	--color-divider: var(--s-divider);
+	--color-ring: var(--s-ring);
+
+	--color-success: var(--s-success);
+	--color-warning: var(--s-warning);
+	--color-danger: var(--s-danger);
+	--color-info: var(--s-info);
+	--color-destructive: var(--s-danger);
+	--color-destructive-foreground: var(--s-text);
+
+	--color-sidebar: var(--s-sidebar);
+	--color-sidebar-foreground: var(--s-sidebar-foreground);
+	--color-sidebar-primary: var(--s-sidebar-primary);
+	--color-sidebar-primary-foreground: var(--s-sidebar-primary-foreground);
+	--color-sidebar-accent: var(--s-sidebar-accent);
+	--color-sidebar-accent-foreground: var(--s-sidebar-accent-foreground);
+	--color-sidebar-border: var(--s-sidebar-border);
+	--color-sidebar-ring: var(--s-sidebar-ring);
+
+	/* 圆角：全 0（裸 rounded 与 rounded-sm/md/lg/xl 及 xs/2xl 均归零），rounded-full 保留圆形 */
+	--radius: 0;
+	--radius-xs: 0;
+	--radius-sm: 0;
+	--radius-md: 0;
+	--radius-lg: 0;
+	--radius-xl: 0;
+	--radius-2xl: 0;
+
+	--shadow-sm: var(--s-shadow-sm);
+	--shadow-md: var(--s-shadow-md);
+	--shadow-lg: var(--s-shadow-lg);
+	--shadow-xl: var(--s-shadow-xl);
 }
 
-html,
-#app {
-  min-height: 100%;
-}
-
+/* ========================================
+ * 全局基础样式
+ * ======================================== */
 @layer base {
-  body {
-    margin: 0;
-    font-family: var(--font-sans);
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-  }
-
-  a {
-    color: var(--primary);
-    text-underline-offset: 2px;
-  }
-
-  a:hover {
-    opacity: 0.8;
-  }
-
-  code {
-    font-size: 0.9em;
-    border: 1px solid var(--border);
-    background: var(--muted);
-    border-radius: 7px;
-    padding: 2px 7px;
-  }
-
-  pre code {
-    border: 0;
-    background: transparent;
-    padding: 0;
-    border-radius: 0;
-    font-size: inherit;
-    color: inherit;
-  }
+	* {
+		@apply border-border outline-ring/50;
+	}
+	html,
+	#app {
+		min-height: 100%;
+	}
+	body {
+		margin: 0;
+		font-family: var(--font-sans);
+		background-color: var(--s-surface);
+		color: var(--s-text);
+		-webkit-font-smoothing: antialiased;
+		-moz-osx-font-smoothing: grayscale;
+	}
+	/* 锚点样式置于 base 层，保证 Tailwind utilities 可覆盖 */
+	a {
+		color: inherit;
+		text-underline-offset: 2px;
+	}
+	a:hover {
+		color: inherit;
+		opacity: 0.8;
+	}
+	code {
+		font-size: 0.9em;
+		border: 1px solid var(--s-border);
+		background: var(--s-surface-secondary);
+		border-radius: 0;
+		padding: 2px 7px;
+	}
+	pre code {
+		border: 0;
+		background: transparent;
+		padding: 0;
+		border-radius: 0;
+		font-size: inherit;
+		color: inherit;
+	}
 }
 
-/* antd reset（@layer antd）会持续把未显式着色的裸 a 覆盖为 antd 链接蓝，
-   此处在 antd 之后、utilities 之前重建语义色，保证浮动层触发时样式稳定 */
+/* antd 的 `:where(hash) a` reset 位于 @layer antd（晚于 base），且 App 组件以 hash 容器包裹全页，
+ * 会把未显式着色的裸 a 持续覆盖为 antd 链接蓝。此处于 components 层（晚于 antd、早于 utilities）
+ * 重建语义色：继承文本色 + 允许 utilities 继续覆盖，避免浮动层（message/modal 等）触发时样式波动 */
 @layer components {
-  a {
-    color: var(--primary);
-    text-underline-offset: 2px;
-  }
-}
-
-@layer base {
-  * {
-    @apply border-border outline-ring/50;
-  }
-  body {
-    background-color: var(--background);
-    color: var(--foreground);
-  }
+	a {
+		color: inherit;
+		text-underline-offset: 2px;
+	}
+	a:hover {
+		color: inherit;
+		opacity: 0.8;
+	}
 }
 
 /* 紧凑型拖拽上传区域 */

@@ -237,7 +237,7 @@ function LogsPage() {
 								padding: 12,
 								fontSize: 12,
 								backgroundColor: "var(--ant-color-fill-tertiary)",
-								borderRadius: 6,
+								borderRadius: 0,
 								margin: 0,
 							}}
 						>
