@@ -64,7 +64,7 @@ export const LOCALE_COOKIE = "lang";
 | `src/services/i18n/i18n.functions.ts` | Server Function 包装器（含权限守卫） |
 | `src/services/i18n/i18n-seed.ts` | 预设英文 UI 翻译种子数据（每次启动增量写入） |
 | `src/db/schema/translation.ts` | 数据库表定义 |
-| `src/components/admin/FieldTranslationDrawer.tsx` | 实体字段翻译编辑抽屉 |
+| `src/components/admin/forms/FieldTranslationDrawer.tsx` | 实体字段翻译编辑抽屉 |
 
 ## 语言检测流程
 
@@ -274,7 +274,7 @@ const getLatestNews = createServerFn({ method: "GET" }).handler(async () => {
 在列表页的操作列中添加 `FieldTranslationDrawer`：
 
 ```tsx
-import { FieldTranslationDrawer } from "#/components/admin/FieldTranslationDrawer";
+import { FieldTranslationDrawer } from "#/components/admin";
 
 // 通过 TableOperate.Custom 包裹，固定使用图标触发模式
 <TableOperate.Custom>
@@ -353,7 +353,7 @@ export const uiTranslationCache = new MemoryCache<Record<string, string>>({
 目前仅支持 `zh` 和 `en`。如需添加新语言（例如 `ja`），需要以下改动：
 
 1. `src/lib/i18n/i18n.types.ts` — `SUPPORTED_LOCALES` 数组追加 `"ja"`
-2. `src/components/admin/FieldTranslationDrawer.tsx` — `LOCALE_LABELS` 追加语言标签
+2. `src/components/admin/forms/FieldTranslationDrawer.tsx` — `LOCALE_LABELS` 追加语言标签
 3. `src/services/i18n/i18n-seed.ts` — 为新语言添加 `SEED_XX` 数组并追加到 `SEED_DATA`
 4. 管理端翻译页面自动支持新语言（语言选择器基于 `SUPPORTED_LOCALES` 渲染）
 

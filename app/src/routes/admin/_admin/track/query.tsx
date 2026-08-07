@@ -21,7 +21,7 @@ import {
 import dayjs from "dayjs";
 import type { ChangeEvent } from "react";
 import { useMemo, useState } from "react";
-import { AdminPageContent } from "#/components/admin/AdminPageContent";
+import { AdminPageContent } from "#/components/admin";
 import {
 	getTrackEventMetaSFn,
 	getTrackPropertyMetaSFn,

@@ -14,39 +14,15 @@ import {
 import type { ThemeMode } from "@fsdx/ui-ssr/theme";
 import { Link, useLocation } from "@tanstack/react-router";
 import { Avatar, Badge, Button, Divider, Flex, Popover, Tooltip } from "antd";
-import {
-	createContext,
-	type ReactNode,
-	useCallback,
-	useContext,
-	useEffect,
-	useState,
-} from "react";
-import { useAdminAuth } from "#/components/admin/AdminAuthProvider";
-import { NAV_GROUPS } from "#/components/admin/NavConfig";
-import { useAdminConfigStore } from "#/components/global-store/admin-config-store";
-import { useAdminDictStore } from "#/components/global-store/admin-dict-store";
+import { type ReactNode, useCallback, useEffect, useState } from "react";
 import { Logo } from "#/components/Logo";
 import { logoutSFn } from "#/services/admin-auth/admin-auth.functions";
 import { getAdminUnreadCountSFn } from "#/services/message/message.functions";
-
-/** Admin 主题 Context */
-interface AdminThemeContextType {
-	mode: ThemeMode;
-	setMode: (mode: ThemeMode) => void;
-	/** 当前是否为暗色模式（水合完成前为 false） */
-	isDark: boolean;
-}
-
-export const AdminThemeContext = createContext<
-	AdminThemeContextType | undefined
->(undefined);
-
-export function useAdminTheme(): AdminThemeContextType {
-	const ctx = useContext(AdminThemeContext);
-	if (!ctx) throw new Error("useAdminTheme 必须在 AdminLayout 内部使用");
-	return ctx;
-}
+import { useAdminAuth } from "./AdminAuthProvider";
+import { useAdminTheme } from "./admin-theme";
+import { NAV_GROUPS } from "./nav-config";
+import { useAdminConfigStore } from "./stores/admin-config-store";
+import { useAdminDictStore } from "./stores/admin-dict-store";
 
 /** 判断当前路径是否匹配菜单项 */
 function isActive(itemKey: string, currentPath: string): boolean {
@@ -156,7 +132,7 @@ export function AdminLayout({ children }: { children: ReactNode }) {
 										} ${collapsed ? "justify-center px-0" : ""}`}
 									>
 										<span className="flex shrink-0 items-center justify-center text-base">
-											{item.icon}
+											<item.icon />
 										</span>
 										{!collapsed && (
 											<span className="truncate">{item.label}</span>

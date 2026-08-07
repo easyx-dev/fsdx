@@ -8,7 +8,7 @@ import { ProTable } from "@fsdx/ui-spa/table";
 import { createFileRoute } from "@tanstack/react-router";
 import { Tag } from "antd";
 import { useMemo } from "react";
-import { AdminPageContent } from "#/components/admin/AdminPageContent";
+import { AdminPageContent } from "#/components/admin";
 
 export const Route = createFileRoute("/admin/_admin/demo/pro-table")({
 	component: ProTableDemoPage,

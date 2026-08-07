@@ -11,12 +11,12 @@ import { Button, Card, Flex, Form, Input, Modal, Space, Switch } from "antd";
 import dayjs from "dayjs";
 import type { ChangeEvent } from "react";
 import { useMemo, useState } from "react";
-import { AdminPageContent } from "#/components/admin/AdminPageContent";
-import { EditorTypes } from "#/components/admin/editor-type";
 import {
+	AdminPageContent,
+	EditorTypes,
 	FieldTranslationDrawer,
 	type TranslatableField,
-} from "#/components/admin/FieldTranslationDrawer";
+} from "#/components/admin";
 import type { EditorType } from "#/constants/editor-types";
 import type { ConfigRecord } from "#/services/config/config.server";
 import {

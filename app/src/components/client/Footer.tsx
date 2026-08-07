@@ -3,11 +3,10 @@
  * 导航链接通过 useTranslation 国际化
  */
 import { Link } from "@tanstack/react-router";
-import { useGlobalStore } from "#/components/global-store/global-store";
-import { useTranslation } from "#/components/i18n-context";
 import { Logo } from "#/components/Logo";
+import { useGlobalStore, useTranslation } from "#/components/providers";
 
-export default function Footer() {
+export function Footer() {
 	const year = new Date().getFullYear();
 	const { t } = useTranslation();
 	const { systemConfig } = useGlobalStore();

@@ -6,16 +6,14 @@ import type { ThemePreset } from "@fsdx/ui-ssr/theme";
 import { ClientOnly, HeadContent, Scripts } from "@tanstack/react-router";
 import { useEffect, useRef } from "react";
 import { Toaster } from "sonner";
-import { useClientAuth } from "#/components/client/ClientAuthProvider";
-import Footer from "#/components/client/Footer";
-import Header from "#/components/client/Header";
-import { useGlobalStore } from "#/components/global-store/global-store";
+import { Footer, Header, useClientAuth } from "#/components/client";
+import { useGlobalStore } from "#/components/providers";
 import {
 	setUserId,
 	startRouteTracking,
 	stopRouteTracking,
 	init as trackInit,
-} from "#/components/track/track";
+} from "#/lib/track/track";
 import adminGlobalCss from "#/styles/admin.global.css?url";
 import ssrGlobalCss from "#/styles/ssr.global.css?inline";
 import { ADMIN_THEME, CLIENT_THEME } from "#/theme/themes";

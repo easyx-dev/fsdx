@@ -4,7 +4,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@fsdx/ui-ssr/ui";
 import { createFileRoute } from "@tanstack/react-router";
-import { useTranslation } from "#/components/i18n-context";
+import { useTranslation } from "#/components/providers";
 
 export const Route = createFileRoute("/about")({
 	component: About,

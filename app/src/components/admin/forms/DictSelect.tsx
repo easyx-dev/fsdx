@@ -6,7 +6,7 @@ import type { SelectProps } from "antd";
 import { Button, Divider, Flex, Select } from "antd";
 import type { ReactNode } from "react";
 import { useMemo } from "react";
-import { useAdminDictStore } from "#/components/global-store/admin-dict-store";
+import { useAdminDictStore } from "#/components/admin/stores/admin-dict-store";
 
 interface DictSelectProps extends Omit<SelectProps, "options"> {
 	/** 字典标识 */

@@ -11,9 +11,9 @@ import {
 } from "@tanstack/react-router";
 import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
 import { Fragment } from "react";
-import { ClientAuthProvider } from "#/components/client/ClientAuthProvider";
+import { ClientAuthProvider } from "#/components/client";
 import { AdminRootDocument, SSRRootDocument } from "#/components/Document";
-import { GlobalStoreProvider } from "#/components/global-store/global-store";
+import { GlobalStoreProvider } from "#/components/providers";
 import { getVisibleConfigsSFn } from "#/services/config/config.functions";
 import { getLocaleBundleSFn } from "#/services/i18n/i18n.functions";
 

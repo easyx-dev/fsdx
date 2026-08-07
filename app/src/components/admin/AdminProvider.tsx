@@ -8,9 +8,10 @@ import { useLocation } from "@tanstack/react-router";
 import { App, theme as antdTheme, ConfigProvider } from "antd";
 import zhCN from "antd/locale/zh_CN";
 import { useMemo } from "react";
-import { AdminLayout, AdminThemeContext } from "#/components/admin/AdminLayout";
 import { ADMIN_THEME } from "#/theme/themes";
 import { AdminAuthProvider } from "./AdminAuthProvider";
+import { AdminLayout } from "./AdminLayout";
+import { AdminThemeContext } from "./admin-theme";
 
 export function AdminProvider({ children }: { children: React.ReactNode }) {
 	const location = useLocation();

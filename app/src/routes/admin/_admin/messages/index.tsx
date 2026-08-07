@@ -23,7 +23,7 @@ import {
 	Typography,
 } from "antd";
 import { useCallback, useEffect, useState } from "react";
-import { AdminPageContent } from "#/components/admin/AdminPageContent";
+import { AdminPageContent } from "#/components/admin";
 import {
 	deleteAdminMessageSFn,
 	getAdminMessagesSFn,

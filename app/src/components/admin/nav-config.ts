@@ -1,6 +1,8 @@
 /**
  * 管理端侧边栏导航配置
+ * 纯数据文件：icon 存组件引用（非 JSX 实例），渲染处负责实例化
  */
+
 import {
 	AppstoreOutlined,
 	BarChartOutlined,
@@ -22,13 +24,13 @@ import {
 	TeamOutlined,
 	TranslationOutlined,
 } from "@ant-design/icons";
-import type { ReactNode } from "react";
+import type { ComponentType } from "react";
 
 /** 导航菜单项 */
 interface NavItem {
 	key: string;
 	label: string;
-	icon: ReactNode;
+	icon: ComponentType;
 }
 
 /** 导航分组 */
@@ -40,11 +42,11 @@ interface NavGroup {
 export const NAV_GROUPS: NavGroup[] = [
 	{
 		label: "概览",
-		items: [{ key: "/admin", label: "仪表盘", icon: <DashboardOutlined /> }],
+		items: [{ key: "/admin", label: "仪表盘", icon: DashboardOutlined }],
 	},
 	{
 		label: "内容管理",
-		items: [{ key: "/admin/news", label: "新闻管理", icon: <ReadOutlined /> }],
+		items: [{ key: "/admin/news", label: "新闻管理", icon: ReadOutlined }],
 	},
 	{
 		label: "用户管理",
@@ -52,12 +54,12 @@ export const NAV_GROUPS: NavGroup[] = [
 			{
 				key: "/admin/users/admins",
 				label: "管理员",
-				icon: <SafetyOutlined />,
+				icon: SafetyOutlined,
 			},
 			{
 				key: "/admin/users/clients",
 				label: "客户端用户",
-				icon: <TeamOutlined />,
+				icon: TeamOutlined,
 			},
 		],
 	},
@@ -67,58 +69,58 @@ export const NAV_GROUPS: NavGroup[] = [
 			{
 				key: "/admin/admin-roles",
 				label: "角色管理",
-				icon: <AppstoreOutlined />,
+				icon: AppstoreOutlined,
 			},
 			{
 				key: "/admin/client-roles",
 				label: "客户端角色",
-				icon: <SafetyOutlined />,
+				icon: SafetyOutlined,
 			},
 		],
 	},
 	{
 		label: "系统管理",
 		items: [
-			{ key: "/admin/dicts", label: "字典管理", icon: <BookOutlined /> },
+			{ key: "/admin/dicts", label: "字典管理", icon: BookOutlined },
 			{
 				key: "/admin/config",
 				label: "系统配置",
-				icon: <SettingOutlined />,
+				icon: SettingOutlined,
 			},
 			{
 				key: "/admin/files",
 				label: "文件管理",
-				icon: <FolderOpenOutlined />,
+				icon: FolderOpenOutlined,
 			},
 			{
 				key: "/admin/file-explorer",
 				label: "文件资源管理器",
-				icon: <FolderOpenOutlined />,
+				icon: FolderOpenOutlined,
 			},
 			{
 				key: "/admin/messages/manage",
 				label: "消息管理",
-				icon: <MessageOutlined />,
+				icon: MessageOutlined,
 			},
 			{
 				key: "/admin/operation-logs",
 				label: "操作日志",
-				icon: <HistoryOutlined />,
+				icon: HistoryOutlined,
 			},
 			{
 				key: "/admin/logs",
 				label: "日志查询",
-				icon: <FileTextOutlined />,
+				icon: FileTextOutlined,
 			},
 			{
 				key: "/admin/translations/ui",
 				label: "UI 翻译",
-				icon: <TranslationOutlined />,
+				icon: TranslationOutlined,
 			},
 			{
 				key: "/admin/translations/content",
 				label: "实体翻译",
-				icon: <TranslationOutlined />,
+				icon: TranslationOutlined,
 			},
 		],
 	},
@@ -128,22 +130,22 @@ export const NAV_GROUPS: NavGroup[] = [
 			{
 				key: "/admin/track/query",
 				label: "事件查询",
-				icon: <BarChartOutlined />,
+				icon: BarChartOutlined,
 			},
 			{
 				key: "/admin/track/analytics",
 				label: "事件分析",
-				icon: <LineChartOutlined />,
+				icon: LineChartOutlined,
 			},
 			{
 				key: "/admin/track/event-meta",
 				label: "元事件",
-				icon: <TableOutlined />,
+				icon: TableOutlined,
 			},
 			{
 				key: "/admin/track/property-meta",
 				label: "元属性",
-				icon: <StockOutlined />,
+				icon: StockOutlined,
 			},
 		],
 	},
@@ -153,22 +155,22 @@ export const NAV_GROUPS: NavGroup[] = [
 			{
 				key: "/admin/demo/editor",
 				label: "编辑器演示",
-				icon: <ExperimentOutlined />,
+				icon: ExperimentOutlined,
 			},
 			{
 				key: "/admin/demo/ai",
 				label: "AI 测试",
-				icon: <RobotOutlined />,
+				icon: RobotOutlined,
 			},
 			{
 				key: "/admin/demo/pro-table",
 				label: "ProTable 演示",
-				icon: <TableOutlined />,
+				icon: TableOutlined,
 			},
 			{
 				key: "/admin/demo/upload",
 				label: "上传组件演示",
-				icon: <CloudUploadOutlined />,
+				icon: CloudUploadOutlined,
 			},
 		],
 	},

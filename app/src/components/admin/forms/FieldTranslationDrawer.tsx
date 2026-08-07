@@ -11,13 +11,13 @@ import { message } from "@fsdx/ui-spa/antd-static";
 import { Button, Card, Drawer, Tabs, Tooltip } from "antd";
 import type { MouseEvent } from "react";
 import { useCallback, useEffect, useId, useState } from "react";
-import { EditorTypes } from "#/components/admin/editor-type";
 import type { EditorType } from "#/constants/editor-types";
 import {
 	aiTranslateFieldSFn,
 	getFieldTranslationsSFn,
 	saveContentTranslationSFn,
 } from "#/services/i18n/i18n.functions";
+import { EditorTypes } from "./editor-type";
 
 /** 可翻译字段定义 */
 export interface TranslatableField {

@@ -8,8 +8,8 @@ import { message } from "@fsdx/ui-spa/antd-static";
 import { Input, InputNumber } from "antd";
 import type { ChangeEvent } from "react";
 import { lazy, Suspense, useEffect, useState } from "react";
-import { RichEditor } from "#/components/admin/RichEditor";
 import { getFileInfoSFn } from "#/services/file/file.functions";
+import { RichEditor } from "../RichEditor";
 
 const CodeEditor = lazy(() =>
 	import("@fsdx/ui-spa/editor").then((mod) => ({
@@ -18,13 +18,13 @@ const CodeEditor = lazy(() =>
 );
 
 const ImageUpload = lazy(() =>
-	import("#/components/admin/upload/ImageUpload").then((mod) => ({
+	import("../upload/ImageUpload").then((mod) => ({
 		default: mod.ImageUpload,
 	})),
 );
 
 const FileUpload = lazy(() =>
-	import("#/components/admin/upload/FileUpload").then((mod) => ({
+	import("../upload/FileUpload").then((mod) => ({
 		default: mod.FileUpload,
 	})),
 );

@@ -11,7 +11,7 @@ vi.mock("#/services/config/config.functions", () => ({
 	getVisibleConfigsSFn: mockLoadConfig,
 }));
 
-import { useAdminConfigStore } from "#/components/global-store/admin-config-store";
+import { useAdminConfigStore } from "#/components/admin/stores/admin-config-store";
 
 describe("useAdminConfigStore", () => {
 	beforeEach(() => {

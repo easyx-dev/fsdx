@@ -18,7 +18,6 @@ import {
 	I18nextProvider,
 	useTranslation as useI18nTranslation,
 } from "react-i18next";
-import { useGlobalStore } from "./global-store/global-store";
 
 interface I18nContextValue {
 	locale: Locale;
@@ -64,7 +63,7 @@ export function I18nProvider({
  * 从 context 获取当前语言
  */
 export function useLocale(): Locale {
-	const { locale } = useGlobalStore();
+	const { locale } = useContext(I18nContext);
 	return locale;
 }
 

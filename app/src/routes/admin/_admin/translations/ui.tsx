@@ -12,8 +12,7 @@ import { Button, Form, Input, Modal, Select, Space, Tag } from "antd";
 import dayjs from "dayjs";
 import type { ChangeEvent } from "react";
 import { useCallback, useEffect, useState } from "react";
-import { AdminPageContent } from "#/components/admin/AdminPageContent";
-import { EditorTypes } from "#/components/admin/editor-type";
+import { AdminPageContent, EditorTypes } from "#/components/admin";
 import type { SortOrder } from "#/types/query";
 import {
 	deleteSFn,

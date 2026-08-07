@@ -12,7 +12,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { Button, Form, Input, Modal, Radio, Select, Table, Tag } from "antd";
 import dayjs from "dayjs";
 import { useCallback, useEffect, useState } from "react";
-import { AdminPageContent } from "#/components/admin/AdminPageContent";
+import { AdminPageContent } from "#/components/admin";
 import {
 	deleteAnyMessageSFn,
 	listAllMessagesSFn,

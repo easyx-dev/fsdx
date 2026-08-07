@@ -35,9 +35,11 @@ import {
 import dayjs from "dayjs";
 import type { MouseEvent } from "react";
 import { useState } from "react";
-import { AdminPageContent } from "#/components/admin/AdminPageContent";
-import { EditorTypes } from "#/components/admin/editor-type";
-import { FieldTranslationDrawer } from "#/components/admin/FieldTranslationDrawer";
+import {
+	AdminPageContent,
+	EditorTypes,
+	FieldTranslationDrawer,
+} from "#/components/admin";
 import { PRESET_DICTS } from "#/constants";
 import type { EditorType } from "#/constants/editor-types";
 import type { DictItemRecord, DictRecord } from "#/services/dict/dict.server";

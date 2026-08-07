@@ -18,7 +18,7 @@ import {
 } from "antd";
 import { useState } from "react";
 import type { z } from "zod";
-import { AdminPageContent } from "#/components/admin/AdminPageContent";
+import { AdminPageContent } from "#/components/admin";
 import { type aiTestSchema, aiTestSFn } from "./-mods/ai.functions";
 
 const { Text, Paragraph } = Typography;

@@ -9,9 +9,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { Button, Form, Input, Modal, Select, Tag } from "antd";
 import type { ChangeEvent } from "react";
 import { useState } from "react";
-import { AdminPageContent } from "#/components/admin/AdminPageContent";
-import { DictSelect } from "#/components/admin/DictSelect";
-import { DictTag } from "#/components/admin/DictTag";
+import { AdminPageContent, DictSelect, DictTag } from "#/components/admin";
 import type { AdminRoleRecord } from "#/services/admin-role/admin-role.server";
 import type { SortOrder } from "#/types/query";
 import {

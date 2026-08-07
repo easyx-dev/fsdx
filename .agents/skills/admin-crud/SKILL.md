@@ -552,7 +552,7 @@ import { Button, Drawer, message, Tag } from "antd";
 import dayjs from "dayjs";
 import { useState } from "react";
 import { z } from "zod";
-import { AdminPageContent } from "#/components/admin/AdminPageContent";
+import { AdminPageContent } from "#/components/admin";
 import { ProTable } from "#/components/admin/ProTable";
 import { TableOperate } from "#/components/admin/TableOperate";
 import { ADMIN_PERMISSIONS } from "#/permissions/admin-permissions";
@@ -771,7 +771,7 @@ function ProductListPage() {
  */
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { message } from "antd";
-import { AdminPageContent } from "#/components/admin/AdminPageContent";
+import { AdminPageContent } from "#/components/admin";
 import { ProductForm } from "./-mods/ProductForm";
 
 export const Route = createFileRoute("/admin/_admin/product/create")({
@@ -811,7 +811,7 @@ function ProductCreatePage() {
  */
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { message } from "antd";
-import { AdminPageContent } from "#/components/admin/AdminPageContent";
+import { AdminPageContent } from "#/components/admin";
 import { ProductForm } from "../-mods/ProductForm";
 
 export const Route = createFileRoute("/admin/_admin/product/$id/edit")({
@@ -914,7 +914,7 @@ admin-crud
 在列表页操作列中通过 `TableOperate.Custom` 包裹 `FieldTranslationDrawer`：
 
 ```tsx
-import { FieldTranslationDrawer } from "#/components/admin/FieldTranslationDrawer";
+import { FieldTranslationDrawer } from "#/components/admin";
 
 // 在 Table columns 的 actions render 中
 <TableOperate>

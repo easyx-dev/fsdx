@@ -10,7 +10,7 @@ import {
 	GlobalStoreProvider,
 	globalStoreContext,
 	useGlobalStore,
-} from "#/components/global-store/global-store";
+} from "#/components/providers";
 
 afterEach(cleanup);
 

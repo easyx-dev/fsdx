@@ -3,7 +3,7 @@
  * 根据 dictSlug 从 zustand store 获取字典选项，按 value 匹配显示标签和颜色
  */
 import { Tag } from "antd";
-import { useAdminDictStore } from "#/components/global-store/admin-dict-store";
+import { useAdminDictStore } from "#/components/admin/stores/admin-dict-store";
 
 interface DictTagProps {
 	/** 字典标识 */

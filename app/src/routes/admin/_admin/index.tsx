@@ -9,7 +9,7 @@ import {
 } from "@ant-design/icons";
 import { createFileRoute } from "@tanstack/react-router";
 import { Card, Col, Row, Statistic } from "antd";
-import { AdminPageContent } from "#/components/admin/AdminPageContent";
+import { AdminPageContent } from "#/components/admin";
 import { getStatsSFn } from "./-mods/index.functions";
 
 export const Route = createFileRoute("/admin/_admin/")({

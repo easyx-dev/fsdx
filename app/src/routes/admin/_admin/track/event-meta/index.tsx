@@ -7,7 +7,7 @@ import { ProTable, TableOperate } from "@fsdx/ui-spa/table";
 import { createFileRoute } from "@tanstack/react-router";
 import { Button, Form, Input, Modal, Tag } from "antd";
 import { useState } from "react";
-import { AdminPageContent } from "#/components/admin/AdminPageContent";
+import { AdminPageContent } from "#/components/admin";
 import { getTrackEventMetaSFn } from "#/services/track/track.functions";
 import type { TrackEventMetaRecord as PresetEventRecord } from "#/services/track/track.types";
 import {

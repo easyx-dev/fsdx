@@ -15,10 +15,12 @@ import { Button, Drawer, Image, Segmented, Space, Tag } from "antd";
 import type { SegmentedValue } from "antd/es/segmented";
 import dayjs from "dayjs";
 import { useMemo, useState } from "react";
-import { AdminPageContent } from "#/components/admin/AdminPageContent";
-import { DictTag } from "#/components/admin/DictTag";
-import { FieldTranslationDrawer } from "#/components/admin/FieldTranslationDrawer";
-import { useAdminDictStore } from "#/components/global-store/admin-dict-store";
+import {
+	AdminPageContent,
+	DictTag,
+	FieldTranslationDrawer,
+	useAdminDictStore,
+} from "#/components/admin";
 import type { NewsRecord } from "#/services/news/news.server";
 import { NewsForm } from "./-mods/NewsForm";
 import {

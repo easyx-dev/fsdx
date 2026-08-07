@@ -13,7 +13,7 @@ import {
 import { createFileRoute, Link } from "@tanstack/react-router";
 import dayjs from "dayjs";
 import { ArrowRight } from "lucide-react";
-import { useTranslation } from "#/components/i18n-context";
+import { useTranslation } from "#/components/providers";
 import type { NewsRecord } from "#/services/news/news.server";
 import { getLatestNewsSFn } from "./index.functions";
 

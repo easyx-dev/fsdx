@@ -11,7 +11,7 @@ vi.mock("#/services/dict/dict.functions", () => ({
 	getAllDictOptionsSFn: mockLoadDicts,
 }));
 
-import { useAdminDictStore } from "#/components/global-store/admin-dict-store";
+import { useAdminDictStore } from "#/components/admin/stores/admin-dict-store";
 
 describe("useAdminDictStore", () => {
 	beforeEach(() => {

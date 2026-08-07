@@ -4,6 +4,14 @@
 
 ### Refactor
 
+- **components 目录规范化重组**：
+  - `admin/` 按职责分层：表单/输入控件（DictSelect、DictTag、PermissionSelector、RichEditor、FieldTranslationDrawer、editor-type/、upload/）统一收进 `admin/forms/`，管理端 zustand store 就近收进 `admin/stores/`，并新增 `index.ts` 统一出口
+  - `NavConfig.tsx` → `admin/nav-config.ts` 改纯数据（icon 存组件引用，渲染处实例化）；`AdminThemeContext`/`useAdminTheme` 自 AdminLayout 拆出至 `admin-theme.ts`
+  - `global-store/` 与 `i18n-context.tsx` 合并为 `providers/`，`useLocale` 改从 `I18nContext` 读取解除模块级循环依赖
+  - 埋点 SDK 自 `components/track/` 迁至 `lib/track/track.ts`
+  - `client/`、`providers/`、`admin/` 新增目录级 barrel；Header/Footer 默认导出改具名导出；全库约 48 处导入收敛为短路径
+  - 删除无消费方的 `hooks/use-sfn-call.ts`
+
 - **ui 包按域分桶导出 + app 上传/验证码组件抽离**：
   - ui-spa exports 收敛：`./table`（ProTable + TableOperate）、`./editor`（CodeEditor + RichEditor）、`./upload`（文件/图片上传 + 文件库弹窗），删除逐文件导出；`json-import-button` 内部改引 `./editor`
   - ui-ssr exports 收敛：`./ui`（shadcn 五件套）、`./theme`（ThemeToggle + useThemeMode）、`./form`（AutofillBlocker + ImageCaptchaModal），`use-theme-mode` 测试随迁 `theme/__tests__/`

@@ -18,8 +18,8 @@ import {
 	useNavigate,
 } from "@tanstack/react-router";
 import { toast } from "sonner";
-import { useTranslation } from "#/components/i18n-context";
-import { track } from "#/components/track/track";
+import { useTranslation } from "#/components/providers";
+import { track } from "#/lib/track/track";
 import { getCurrentClientSFn } from "#/services/client-auth/client-auth.functions";
 import { clientLoginSFn } from "./-mods/login.functions";
 

@@ -9,14 +9,13 @@ import { Button } from "@fsdx/ui-ssr/ui";
 import { ClientOnly, Link } from "@tanstack/react-router";
 import { Bell, LogOut, Menu, User, X } from "lucide-react";
 import { useState } from "react";
-import { useClientAuth } from "#/components/client/ClientAuthProvider";
-import { useGlobalStore } from "#/components/global-store/global-store";
-import { useTranslation } from "#/components/i18n-context";
+import { useClientAuth } from "#/components/client";
 import { Logo } from "#/components/Logo";
-import { track } from "#/components/track/track";
+import { useGlobalStore, useTranslation } from "#/components/providers";
+import { track } from "#/lib/track/track";
 import { CLIENT_THEME } from "#/theme/themes";
 
-export default function Header() {
+export function Header() {
 	const [mobileOpen, setMobileOpen] = useState(false);
 	const { t, locale } = useTranslation();
 	const { user, logout } = useClientAuth();

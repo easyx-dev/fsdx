@@ -25,7 +25,7 @@ import {
 	Upload,
 } from "antd";
 import { useRef, useState } from "react";
-import { AdminPageContent } from "#/components/admin/AdminPageContent";
+import { AdminPageContent } from "#/components/admin";
 import { getFileListSFn, uploadFileSFn } from "#/services/file/file.functions";
 import type { FileRecord } from "#/services/file/file.server";
 import { deleteFileSFn, makePermanentSFn } from "./-mods/files.functions";

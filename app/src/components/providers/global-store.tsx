@@ -1,6 +1,9 @@
+/**
+ * 全局状态 Provider：SSR 注入 locale / translations / systemConfig，并组装 i18n Provider
+ */
 import type { Locale, Translations } from "@fsdx/core/i18n-types";
 import { createContext, useContext } from "react";
-import { I18nProvider } from "../i18n-context";
+import { I18nProvider } from "./i18n-context";
 
 interface GlobalStoreValue {
 	locale: Locale;

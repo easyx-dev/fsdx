@@ -9,8 +9,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { Button, Form, Input, Modal } from "antd";
 import type { ChangeEvent } from "react";
 import { useState } from "react";
-import { AdminPageContent } from "#/components/admin/AdminPageContent";
-import { PermissionSelector } from "#/components/admin/PermissionSelector";
+import { AdminPageContent, PermissionSelector } from "#/components/admin";
 import { ADMIN_PERMISSION_META } from "#/permissions/admin-permissions";
 import type { AdminRoleRecord } from "#/services/admin-role/admin-role.server";
 import {

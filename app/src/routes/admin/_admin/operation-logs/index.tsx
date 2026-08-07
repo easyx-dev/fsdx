@@ -13,7 +13,7 @@ import { Button, DatePicker, Form, Input, Select, Tag } from "antd";
 import type { Dayjs } from "dayjs";
 import dayjs from "dayjs";
 import { useState } from "react";
-import { AdminPageContent } from "#/components/admin/AdminPageContent";
+import { AdminPageContent } from "#/components/admin";
 import type { SortOrder } from "#/types/query";
 import {
 	getOperationLogModulesSFn,

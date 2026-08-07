@@ -19,8 +19,8 @@ import {
 	useNavigate,
 } from "@tanstack/react-router";
 import { toast } from "sonner";
-import { CaptchaInput } from "#/components/client/CaptchaInput";
-import { useTranslation } from "#/components/i18n-context";
+import { CaptchaInput } from "#/components/client";
+import { useTranslation } from "#/components/providers";
 import { getCurrentClientSFn } from "#/services/client-auth/client-auth.functions";
 import { resetPwdSFn } from "./-mods/forgot-password.functions";
 

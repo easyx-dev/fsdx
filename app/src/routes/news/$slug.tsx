@@ -6,7 +6,7 @@ import { Button } from "@fsdx/ui-ssr/ui";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import dayjs from "dayjs";
 import { ArrowLeft, ChevronRight, Home } from "lucide-react";
-import { useTranslation } from "#/components/i18n-context";
+import { useTranslation } from "#/components/providers";
 import { getNewsDetailSFn } from "./-mods/news.functions";
 
 export const Route = createFileRoute("/news/$slug")({

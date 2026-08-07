@@ -21,22 +21,26 @@ app/                          # @fsdx/web —— 应用 package（业务代码 +
     ├── hono-app.ts           # Hono 应用工厂（/health 路由）
     ├── server.ts             # TanStack Start 服务端入口
     ├── components/
-    │   ├── admin/            # 业务组件（AdminLayout、AdminProvider、DictSelect、RichEditor、FieldTranslationDrawer、PermissionSelector、SelectFileModal、sfn-helpers、editor-type/、upload/ 等）
-    │   ├── client/           # 前台业务组件（Header、Footer、ClientAuthProvider、CaptchaInput、ThemeToggle）
-    │   ├── global-store/     # React store（global-store + admin-config-store + admin-dict-store）
-    │   ├── i18n-context.tsx  # 国际化 React Context（createI18nInstance 在 @fsdx/core/i18n-config）
-    │   ├── track/            # 客户端埋点 SDK（依赖 track SFn）
+    │   ├── admin/            # 管理端组件：index.ts 统一出口
+    │   │   ├── AdminProvider / AdminAuthProvider / AdminLayout / AdminPageContent
+    │   │   ├── admin-theme.ts  # AdminThemeContext + useAdminTheme（自 AdminLayout 拆出）
+    │   │   ├── nav-config.ts   # 侧边栏导航纯数据（icon 存组件引用）
+    │   │   ├── stores/         # 管理端 zustand store（admin-config-store、admin-dict-store，就近）
+    │   │   ├── forms/          # 表单/输入控件（DictSelect、DictTag、PermissionSelector、RichEditor、FieldTranslationDrawer、editor-type/、upload/）
+    │   │   └── index.ts
+    │   ├── client/           # 前台业务组件（Header、Footer、ClientAuthProvider、CaptchaInput，index.ts 出口）
+    │   ├── providers/        # 双端共享状态注入（global-store + i18n-context，index.ts 出口）
     │   ├── Document.tsx      # 根布局（AdminRootDocument / SSRRootDocument）
     │   ├── ErrorFallback.tsx # 全局错误处理
     │   └── Logo.tsx          # Logo 组件（依赖 public 静态资源）
     ├── constants/            # 项目级常量（cookie-names.ts、editor-types.ts 等）
     ├── db/                   # Drizzle 客户端 + schema（17 张表）
     ├── permissions/          # RBAC 权限码常量与匹配（admin + client 双端）
-    ├── hooks/                # use-sfn-call（use-theme-mode 在 packages/ui-ssr，主题注册表见 theme/）
     ├── theme/                # 主题注册表（themes.ts：各端亮暗主题预设，单一事实来源）
-    ├── lib/                  # 仅基础设施单例壳（其余基础库在 packages/core）
+    ├── lib/                  # 仅基础设施单例壳 + 客户端 SDK（其余基础库在 packages/core）
     │   ├── logger/logger.ts  # logger 单例壳（createLogger 在 @fsdx/core/logger）
-    │   └── jwt/jwt.ts        # jwt 单例（createJwt 在 @fsdx/core/jwt）
+    │   ├── jwt/jwt.ts        # jwt 单例（createJwt 在 @fsdx/core/jwt）
+    │   └── track/track.ts    # 客户端埋点 SDK（依赖 track SFn）
     ├── middleware/           # admin-auth / client-auth / locale / sf-error-logger
     ├── services/             # 服务端共享业务逻辑（config/dict/file/news/track/...）
     │   └── logs/log-reader.ts    # 日志文件查询（就近归属 services/logs）

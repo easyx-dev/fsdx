@@ -6,8 +6,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Card, Space, Switch, Typography } from "antd";
 import { useState } from "react";
-import { AdminPageContent } from "#/components/admin/AdminPageContent";
-import { EditorTypes } from "#/components/admin/editor-type";
+import { AdminPageContent, EditorTypes } from "#/components/admin";
 import {
 	EDITOR_TYPE_LABELS,
 	EDITOR_TYPES,

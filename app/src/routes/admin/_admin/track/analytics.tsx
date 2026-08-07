@@ -19,7 +19,7 @@ import {
 } from "antd";
 import dayjs from "dayjs";
 import { useEffect, useRef, useState } from "react";
-import { AdminPageContent } from "#/components/admin/AdminPageContent";
+import { AdminPageContent } from "#/components/admin";
 import type { TrackAnalyticsResult as AnalyticsResult } from "#/services/track/track.types";
 import { getTrackAnalyticsSFn } from "./-mods/analytics.functions";
 

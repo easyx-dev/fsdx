@@ -14,9 +14,7 @@ import {
 } from "antd";
 import dayjs from "dayjs";
 import { useEffect, useState } from "react";
-import { DictSelect } from "#/components/admin/DictSelect";
-import { RichEditor } from "#/components/admin/RichEditor";
-import { ImageUpload } from "#/components/admin/upload/ImageUpload";
+import { DictSelect, ImageUpload, RichEditor } from "#/components/admin";
 import { createNewsSFn, getNewsByIdSFn, updateNewsSFn } from "./news.functions";
 
 export interface NewsFormValues {
