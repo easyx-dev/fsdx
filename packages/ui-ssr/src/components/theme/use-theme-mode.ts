@@ -15,6 +15,8 @@ export interface ThemeScheme {
 	isDark: boolean;
 	/** antd ConfigProvider colorPrimary，须与 CSS `--s-primary` 同色 */
 	antdColorPrimary: string;
+	/** 浏览器 UI 主题色（地址栏等），须与对应 global.css `--s-surface` 同色，驱动 `<meta name="theme-color">` */
+	themeColor: string;
 }
 
 /** 主题预设：一端（管理端/前台）的明暗两档主题 */
@@ -91,6 +93,14 @@ function applyThemeToDom(
 	const scheme = resolvedDark ? preset.dark : preset.light;
 	document.documentElement.setAttribute("data-theme", scheme.dataTheme);
 	document.documentElement.style.colorScheme = resolvedDark ? "dark" : "light";
+
+	// 同步浏览器 UI 主题色（地址栏等），跟随当前明暗主题
+	const themeColorMeta = document.querySelector<HTMLMetaElement>(
+		'meta[name="theme-color"]',
+	);
+	if (themeColorMeta) {
+		themeColorMeta.setAttribute("content", scheme.themeColor);
+	}
 }
 
 /**

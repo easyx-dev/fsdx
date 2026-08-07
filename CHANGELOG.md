@@ -2,6 +2,17 @@
 
 ## [Unreleased]
 
+### Features
+
+- **接入 PWA manifest + 浏览器主题色跟随**：
+  - 前台 `SSRRootDocument` head 引入 `/manifest.json`（theme_color/background_color 对齐前台亮色表面 `#ffffff`，start_url/scope 归一至 `/`），提供「添加到主屏幕 / 图标 / 地址栏主题色」能力
+  - `ThemeScheme` 新增 `themeColor` 字段（与各端 `--s-surface` 同色，见 themes.ts 双写注释），`applyThemeToDom` 同步更新 `<meta name="theme-color">`，明暗切换 / 跨标签页 / 系统偏好联动时浏览器地址栏颜色跟随；前台与管理端 head 均挂载 meta，管理端不接 manifest
+- **前台图标品牌色修正 + 暗色可见性适配**：
+  - `favicon.svg` 描边与 F 文字由 antd 蓝 `#1677ff` 改为中性灰 `#212121`；`logo192.png` / `logo512.png` 由 React 默认青色原子 logo 重绘为中性灰六边形 F（Python 标准库几何渲染，一次性脚本见 `.tmp/`）
+  - `Logo` 组件拆分 `ClientLogo`（前台）/ `AdminLogo`（管理端）并统一改为内联 SVG：前台 `currentColor` + `text-foreground` 随明暗主题自动取前景色，解决深灰 `logo.svg` 在暗色下不可见；管理端 fill 取 `--s-primary`、F 取 `--s-primary-fg`，随亮暗品牌色自动切换，替代固定棕色的 `logo-admin.svg`
+  - `favicon.svg` 保留供亮色模式、新增 `favicon-dark.svg`（前台暗色主色 `#f5f5f5`），前台 head 双 favicon 按 `prefers-color-scheme` 切换
+  - 删除不再引用的 `logo.svg`、`logo-admin.svg` 与无消费方的 `drizzle.svg` 死资源
+
 ### Refactor
 
 - **components 目录规范化重组**：

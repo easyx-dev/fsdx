@@ -15,9 +15,9 @@ import type { ThemeMode } from "@fsdx/ui-ssr/theme";
 import { Link, useLocation } from "@tanstack/react-router";
 import { Avatar, Badge, Button, Divider, Flex, Popover, Tooltip } from "antd";
 import { type ReactNode, useCallback, useEffect, useState } from "react";
-import { Logo } from "#/components/Logo";
 import { logoutSFn } from "#/services/admin-auth/admin-auth.functions";
 import { getAdminUnreadCountSFn } from "#/services/message/message.functions";
+import { AdminLogo } from "./AdminLogo";
 import { useAdminAuth } from "./AdminAuthProvider";
 import { useAdminTheme } from "./admin-theme";
 import { NAV_GROUPS } from "./nav-config";
@@ -101,7 +101,7 @@ export function AdminLayout({ children }: { children: ReactNode }) {
 			>
 				{/* Logo 区域 */}
 				<div className="flex h-14 shrink-0 items-center border-b border-border px-3 overflow-hidden">
-					<Logo type="admin" height={36} />
+					<AdminLogo height={36} />
 					{!collapsed && (
 						<span className="ml-2 text-sm font-semibold text-sidebar-primary whitespace-nowrap">
 							{siteName}

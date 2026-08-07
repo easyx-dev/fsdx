@@ -14,11 +14,13 @@ const TEST_PRESET: ThemePreset = {
 		dataTheme: "admin-brown-light",
 		isDark: false,
 		antdColorPrimary: "#795548",
+		themeColor: "#ffffff",
 	},
 	dark: {
 		dataTheme: "admin-brown-dark",
 		isDark: true,
 		antdColorPrimary: "#a1887f",
+		themeColor: "#0a0a0a",
 	},
 };
 
@@ -26,6 +28,14 @@ function setupDom() {
 	vi.spyOn(document.documentElement, "setAttribute").mockImplementation(
 		() => {},
 	);
+}
+
+/** 预插入 `<meta name="theme-color">` 节点，供主题色跟随断言使用 */
+function setupThemeColorMeta() {
+	const meta = document.createElement("meta");
+	meta.name = "theme-color";
+	meta.content = "";
+	document.head.appendChild(meta);
 }
 
 function setupMatchMedia(matches = false) {
@@ -43,6 +53,9 @@ describe("useThemeMode", () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
 		localStorage.clear();
+		document.querySelectorAll('meta[name="theme-color"]').forEach((meta) => {
+			meta.remove();
+		});
 		setupDom();
 		setupMatchMedia();
 	});
@@ -95,5 +108,29 @@ describe("useThemeMode", () => {
 		const { result } = renderHook(() => useThemeMode(TEST_PRESET));
 		expect(result.current.scheme.dataTheme).toBe("admin-brown-dark");
 		expect(result.current.scheme.antdColorPrimary).toBe("#a1887f");
+	});
+
+	it("切换主题时同步 meta theme-color", () => {
+		setupThemeColorMeta();
+		const meta = document.querySelector('meta[name="theme-color"]')!;
+		const { result } = renderHook(() => useThemeMode(TEST_PRESET));
+
+		act(() => {
+			result.current.setMode("dark");
+		});
+		expect(meta.getAttribute("content")).toBe("#0a0a0a");
+
+		act(() => {
+			result.current.setMode("light");
+		});
+		expect(meta.getAttribute("content")).toBe("#ffffff");
+	});
+
+	it("无 meta theme-color 节点时不抛错", () => {
+		const { result } = renderHook(() => useThemeMode(TEST_PRESET));
+		act(() => {
+			result.current.setMode("dark");
+		});
+		expect(result.current.mode).toBe("dark");
 	});
 });

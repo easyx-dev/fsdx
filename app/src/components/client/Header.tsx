@@ -9,8 +9,7 @@ import { Button } from "@fsdx/ui-ssr/ui";
 import { ClientOnly, Link } from "@tanstack/react-router";
 import { Bell, LogOut, Menu, User, X } from "lucide-react";
 import { useState } from "react";
-import { useClientAuth } from "#/components/client";
-import { Logo } from "#/components/Logo";
+import { useClientAuth, ClientLogo } from "#/components/client";
 import { useGlobalStore, useTranslation } from "#/components/providers";
 import { track } from "#/lib/track/track";
 import { CLIENT_THEME } from "#/theme/themes";
@@ -39,7 +38,7 @@ export function Header() {
 			<nav className="mx-auto flex max-w-5xl items-center justify-between py-3">
 				{/* Logo */}
 				<Link to="/" className="flex shrink-0 items-center gap-2 no-underline">
-					<Logo type="ssr" height={32} />
+					<ClientLogo height={32} />
 					<span className="text-base font-semibold text-foreground">
 						{siteName}
 					</span>

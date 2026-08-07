@@ -3,7 +3,7 @@
  * 导航链接通过 useTranslation 国际化
  */
 import { Link } from "@tanstack/react-router";
-import { Logo } from "#/components/Logo";
+import { ClientLogo } from "#/components/client";
 import { useGlobalStore, useTranslation } from "#/components/providers";
 
 export function Footer() {
@@ -17,7 +17,7 @@ export function Footer() {
 			<div className="mx-auto max-w-5xl">
 				<div className="flex flex-col items-center gap-3 sm:flex-row sm:justify-between sm:gap-4">
 					<div className="flex items-center gap-2 text-sm font-medium text-foreground">
-						<Logo type="ssr" height={28} />
+						<ClientLogo height={28} />
 						{siteName}
 					</div>
 					<nav className="flex flex-wrap items-center justify-center gap-3 text-sm text-muted-foreground sm:gap-4">

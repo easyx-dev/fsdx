@@ -74,7 +74,20 @@ export function SSRRootDocument({ children }: SSRRootDocumentProps) {
 				/>
 				<style dangerouslySetInnerHTML={{ __html: LAYER_ORDER_STYLE }} />
 				<style dangerouslySetInnerHTML={{ __html: ssrGlobalCss }} />
-				<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+				<link
+					rel="icon"
+					type="image/svg+xml"
+					href="/favicon.svg"
+					media="(prefers-color-scheme: light)"
+				/>
+				<link
+					rel="icon"
+					type="image/svg+xml"
+					href="/favicon-dark.svg"
+					media="(prefers-color-scheme: dark)"
+				/>
+				<link rel="manifest" href="/manifest.json" />
+				<meta name="theme-color" content="#ffffff" />
 				<title>{siteName}</title>
 				{systemConfig?.description && (
 					<meta name="description" content={systemConfig.description} />
@@ -112,6 +125,7 @@ export function AdminRootDocument({
 				<HeadContent />
 				<link rel="stylesheet" href={adminGlobalCss} />
 				<link rel="icon" type="image/svg+xml" href="/favicon-admin.svg" />
+				<meta name="theme-color" content="#ffffff" />
 			</head>
 			<body className="font-sans antialiased">
 				<ClientOnly>
