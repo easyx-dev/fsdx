@@ -140,16 +140,14 @@ function ClientLoginPage() {
 								)}
 							</form.Field>
 
-							<form.Subscribe
-								selector={(state) => [state.canSubmit, state.isSubmitting]}
-							>
-								{([canSubmit, isSubmitting]: [boolean, boolean]) => (
+							<form.Subscribe>
+								{(state) => (
 									<Button
 										type="submit"
-										disabled={!canSubmit}
+										disabled={!state.canSubmit}
 										className="w-full"
 									>
-										{isSubmitting ? t("登录中") : t("登录")}
+										{state.isSubmitting ? t("登录中") : t("登录")}
 									</Button>
 								)}
 							</form.Subscribe>

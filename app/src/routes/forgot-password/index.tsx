@@ -140,10 +140,10 @@ function ForgotPasswordPage() {
 										<label htmlFor={field.name} className="text-sm font-medium">
 											{t("邮箱验证码")}
 										</label>
-										<form.Subscribe selector={(state) => state.values.email}>
-											{(email: string) => (
+										<form.Subscribe>
+											{(state) => (
 												<CaptchaInput
-													email={email}
+													email={state.values.email}
 													value={field.state.value}
 													onChange={field.handleChange}
 													onMessage={(msg) => {
@@ -229,16 +229,14 @@ function ForgotPasswordPage() {
 								)}
 							</form.Field>
 
-							<form.Subscribe
-								selector={(state) => [state.canSubmit, state.isSubmitting]}
-							>
-								{([canSubmit, isSubmitting]: [boolean, boolean]) => (
+							<form.Subscribe>
+								{(state) => (
 									<Button
 										type="submit"
-										disabled={!canSubmit}
+										disabled={!state.canSubmit}
 										className="w-full"
 									>
-										{isSubmitting ? t("重置中") : t("重置密码")}
+										{state.isSubmitting ? t("重置中") : t("重置密码")}
 									</Button>
 								)}
 							</form.Subscribe>
