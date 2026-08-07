@@ -4,6 +4,7 @@
 import { DownloadOutlined, PlusOutlined } from "@ant-design/icons";
 import { downloadFile } from "@fsdx/core/export";
 import { SUPPORTED_LOCALES } from "@fsdx/core/i18n-types";
+import { message } from "@fsdx/ui-spa/antd-static";
 import { JsonImportButton } from "@fsdx/ui-spa/json-import-button";
 import { ProTable } from "@fsdx/ui-spa/pro-table";
 import { TableOperate } from "@fsdx/ui-spa/table-operate";
@@ -14,7 +15,6 @@ import type { ChangeEvent } from "react";
 import { useCallback, useEffect, useState } from "react";
 import { AdminPageContent } from "#/components/admin/AdminPageContent";
 import { EditorTypes } from "#/components/admin/editor-type";
-import { message } from "#/components/antd-static";
 import type { SortOrder } from "#/types/query";
 import {
 	deleteSFn,

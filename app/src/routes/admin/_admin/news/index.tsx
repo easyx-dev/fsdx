@@ -7,6 +7,7 @@ import {
 	PlusOutlined,
 } from "@ant-design/icons";
 import { downloadFile } from "@fsdx/core/export";
+import { message } from "@fsdx/ui-spa/antd-static";
 import { JsonImportButton } from "@fsdx/ui-spa/json-import-button";
 import { ProTable } from "@fsdx/ui-spa/pro-table";
 import { TableOperate } from "@fsdx/ui-spa/table-operate";
@@ -18,7 +19,6 @@ import { useMemo, useState } from "react";
 import { AdminPageContent } from "#/components/admin/AdminPageContent";
 import { DictTag } from "#/components/admin/DictTag";
 import { FieldTranslationDrawer } from "#/components/admin/FieldTranslationDrawer";
-import { message } from "#/components/antd-static";
 import { useAdminDictStore } from "#/components/global-store/admin-dict-store";
 import type { NewsRecord } from "#/services/news/news.server";
 import { NewsForm } from "./-mods/NewsForm";

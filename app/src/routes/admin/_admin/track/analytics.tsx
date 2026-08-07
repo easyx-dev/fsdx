@@ -4,6 +4,7 @@
 
 import { Column, Line, Pie } from "@ant-design/charts";
 import { ReloadOutlined } from "@ant-design/icons";
+import { message } from "@fsdx/ui-spa/antd-static";
 import { createFileRoute } from "@tanstack/react-router";
 import {
 	Button,
@@ -19,7 +20,6 @@ import {
 import dayjs from "dayjs";
 import { useEffect, useRef, useState } from "react";
 import { AdminPageContent } from "#/components/admin/AdminPageContent";
-import { message } from "#/components/antd-static";
 import type { TrackAnalyticsResult as AnalyticsResult } from "#/services/track/track.types";
 import { getTrackAnalyticsSFn } from "./-mods/analytics.functions";
 

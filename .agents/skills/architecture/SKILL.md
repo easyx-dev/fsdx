@@ -46,7 +46,7 @@ description: >
 
 ### antd 静态方法桥接
 
-- 管理端 `message`/`modal`/`notification` 统一从 `#/components/antd-static` 导入
+- 管理端 `message`/`modal`/`notification` 统一从 `@fsdx/ui-spa/antd-static` 导入
 - **禁止**静态 `import { message } from "antd"`（独立 root 会脱离 StyleProvider layer 与 ConfigProvider 主题）
 - `AntdStaticBridge` 已挂载在管理端 `<App>` 内，从 `App.useApp()` 捕获实例
 - 调用必须发生在 App 挂载后的交互/副作用中；loader/beforeLoad 阶段调用会抛错（宁抛错不静默）

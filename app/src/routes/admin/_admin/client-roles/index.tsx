@@ -2,6 +2,7 @@
  * 客户端角色管理页面：CRUD + 权限分配
  */
 import { PlusOutlined, SearchOutlined } from "@ant-design/icons";
+import { message } from "@fsdx/ui-spa/antd-static";
 import { PermissionTags } from "@fsdx/ui-spa/permission-tags";
 import { ProTable } from "@fsdx/ui-spa/pro-table";
 import { TableOperate } from "@fsdx/ui-spa/table-operate";
@@ -11,7 +12,6 @@ import type { ChangeEvent } from "react";
 import { useState } from "react";
 import { AdminPageContent } from "#/components/admin/AdminPageContent";
 import { PermissionSelector } from "#/components/admin/PermissionSelector";
-import { message } from "#/components/antd-static";
 import {
 	CLIENT_PERMISSION_META,
 	CLIENT_PERMISSIONS_BY_GROUP,

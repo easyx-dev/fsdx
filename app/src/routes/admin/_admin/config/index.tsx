@@ -3,6 +3,7 @@
  */
 import { DownloadOutlined, PlusOutlined } from "@ant-design/icons";
 import { downloadFile } from "@fsdx/core/export";
+import { message } from "@fsdx/ui-spa/antd-static";
 import { JsonImportButton } from "@fsdx/ui-spa/json-import-button";
 import { ProTable } from "@fsdx/ui-spa/pro-table";
 import { TableOperate } from "@fsdx/ui-spa/table-operate";
@@ -17,7 +18,6 @@ import {
 	FieldTranslationDrawer,
 	type TranslatableField,
 } from "#/components/admin/FieldTranslationDrawer";
-import { message } from "#/components/antd-static";
 import type { EditorType } from "#/constants/editor-types";
 import type { ConfigRecord } from "#/services/config/config.server";
 import {

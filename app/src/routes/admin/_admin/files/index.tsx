@@ -8,6 +8,7 @@ import {
 	EyeOutlined,
 	SwapOutlined,
 } from "@ant-design/icons";
+import { message } from "@fsdx/ui-spa/antd-static";
 import { ProTable } from "@fsdx/ui-spa/pro-table";
 import { TableOperate } from "@fsdx/ui-spa/table-operate";
 import { createFileRoute, useRouter } from "@tanstack/react-router";
@@ -26,7 +27,6 @@ import {
 } from "antd";
 import { useRef, useState } from "react";
 import { AdminPageContent } from "#/components/admin/AdminPageContent";
-import { message } from "#/components/antd-static";
 import { getFileListSFn, uploadFileSFn } from "#/services/file/file.functions";
 import type { FileRecord } from "#/services/file/file.server";
 import { deleteFileSFn, makePermanentSFn } from "./-mods/files.functions";

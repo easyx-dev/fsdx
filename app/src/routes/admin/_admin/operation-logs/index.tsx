@@ -6,6 +6,7 @@ import {
 	ReloadOutlined,
 	SearchOutlined,
 } from "@ant-design/icons";
+import { message } from "@fsdx/ui-spa/antd-static";
 import { ProTable } from "@fsdx/ui-spa/pro-table";
 import { createFileRoute } from "@tanstack/react-router";
 import { Button, DatePicker, Form, Input, Select, Tag } from "antd";
@@ -13,7 +14,6 @@ import type { Dayjs } from "dayjs";
 import dayjs from "dayjs";
 import { useState } from "react";
 import { AdminPageContent } from "#/components/admin/AdminPageContent";
-import { message } from "#/components/antd-static";
 import type { SortOrder } from "#/types/query";
 import {
 	getOperationLogModulesSFn,

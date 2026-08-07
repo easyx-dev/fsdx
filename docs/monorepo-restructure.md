@@ -7,7 +7,7 @@
 | 包数量 | 4 包（core / components / ui-ssr / ui-spa） | 3 包（core / ui-ssr / ui-spa），`components` 包取消，AutofillBlocker 并入 ui-ssr |
 | logger 模式 | `initLogger` 全局注入 | `createLogger` 工厂 + app `#/lib/logger/logger` 单例壳（27 处引用零改动） |
 | core 导出 | 单一 `exports` 桶 | subpath exports（无根桶），`pure/`（同构）+ `node/`（服务端）分层 |
-| antd-static | 归 ui-spa | 归 ui-spa，app 保留 `#/components/antd-static` 壳 re-export |
+| antd-static | 归 ui-spa | 归 ui-spa，app 直接经 `@fsdx/ui-spa/antd-static` 导入 |
 | i18n.types | 留 app | 入 core/pure |
 | COOKIE_NAMES | 留 app | 拆至 `src/constants/cookie-names.ts` |
 | AdminPageContent | 留 ui-spa | 留 ui-spa（用户决策） |

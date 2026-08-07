@@ -2,13 +2,13 @@
  * 管理端提供器
  */
 import { StyleProvider } from "@ant-design/cssinjs";
+import { AntdStaticBridge } from "@fsdx/ui-spa/antd-static";
 import { useThemeMode } from "@fsdx/ui-ssr/use-theme-mode";
 import { useLocation } from "@tanstack/react-router";
 import { App, theme as antdTheme, ConfigProvider } from "antd";
 import zhCN from "antd/locale/zh_CN";
 import { useMemo } from "react";
 import { AdminLayout, AdminThemeContext } from "#/components/admin/AdminLayout";
-import { AntdStaticBridge } from "#/components/antd-static";
 import { ADMIN_THEME } from "#/theme/themes";
 import { AdminAuthProvider } from "./AdminAuthProvider";
 

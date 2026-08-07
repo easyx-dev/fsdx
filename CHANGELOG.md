@@ -41,7 +41,7 @@
   - logger 改 `createLogger` 工厂：app 保留 `#/lib/logger/logger` 单例壳，27 处引用零改动；jwt 改 `createJwt` 工厂 + app 惰性单例壳，`COOKIE_NAMES` 迁至 `src/constants/cookie-names.ts`
   - ai/mail/sms 改 `initX` 依赖注入（bootstrap 注入 `getConfig` + logger），未 init 直接调用抛错；scheduler 改 `setSchedulerLogger`
   - `matchPermission` 迁入 core；`OperatorType` 迁入 core request-context，`db/schema/operation-log.ts` re-export；`log-reader.ts` 就近迁至 `services/logs/`
-  - antd-static 迁入 ui-spa，app 保留 `#/components/antd-static` 壳 re-export；Tailwind 经 `@source` 扫描 ui 包源码类名
+  - antd-static 迁入 ui-spa，app 删除 `#/components/antd-static` 壳、各端直接经 `@fsdx/ui-spa/antd-static` 导入；Tailwind 经 `@source` 扫描 ui 包源码类名
 
 ### Refactor
 

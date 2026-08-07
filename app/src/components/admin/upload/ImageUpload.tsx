@@ -3,9 +3,9 @@
  * value / onChange 兼容 antd Form.Item 直接注入
  */
 
+import { message } from "@fsdx/ui-spa/antd-static";
 import { type ImageItem, PhotoWall } from "@fsdx/ui-spa/upload/photo-wall";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { message } from "#/components/antd-static";
 import { uploadFileSFn } from "#/services/file/file.functions";
 import { SelectFileModal } from "../SelectFileModal";
 

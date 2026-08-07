@@ -4,9 +4,9 @@
  * value / onChange 兼容 antd Form.Item 直接注入
  */
 
+import { message } from "@fsdx/ui-spa/antd-static";
 import { RichEditor as RichEditorBase } from "@fsdx/ui-spa/rich-editor";
 import { useCallback } from "react";
-import { message } from "#/components/antd-static";
 import { uploadFileSFn } from "#/services/file/file.functions";
 
 interface Props {

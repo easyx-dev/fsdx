@@ -11,6 +11,7 @@ import {
 	PlusOutlined,
 } from "@ant-design/icons";
 import { downloadFile } from "@fsdx/core/export";
+import { message } from "@fsdx/ui-spa/antd-static";
 import { JsonImportButton } from "@fsdx/ui-spa/json-import-button";
 import { ProTable } from "@fsdx/ui-spa/pro-table";
 import { createFileRoute, useRouter } from "@tanstack/react-router";
@@ -37,7 +38,6 @@ import { useState } from "react";
 import { AdminPageContent } from "#/components/admin/AdminPageContent";
 import { EditorTypes } from "#/components/admin/editor-type";
 import { FieldTranslationDrawer } from "#/components/admin/FieldTranslationDrawer";
-import { message } from "#/components/antd-static";
 import { PRESET_DICTS } from "#/constants";
 import type { EditorType } from "#/constants/editor-types";
 import type { DictItemRecord, DictRecord } from "#/services/dict/dict.server";

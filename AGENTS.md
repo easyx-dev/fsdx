@@ -22,7 +22,6 @@ app/                          # @fsdx/web —— 应用 package（业务代码 +
     ├── server.ts             # TanStack Start 服务端入口
     ├── components/
     │   ├── admin/            # 业务组件（AdminLayout、AdminProvider、DictSelect、RichEditor、FieldTranslationDrawer、PermissionSelector、SelectFileModal、sfn-helpers、editor-type/、upload/ 等）
-    │   ├── antd-static/      # antd 静态方法桥接壳（re-export @fsdx/ui-spa/antd-static）
     │   ├── client/           # 前台业务组件（Header、Footer、ClientAuthProvider、CaptchaInput、ThemeToggle）
     │   ├── global-store/     # React store（global-store + admin-config-store + admin-dict-store）
     │   ├── i18n-context.tsx  # 国际化 React Context（createI18nInstance 在 @fsdx/core/i18n-config）
@@ -72,7 +71,7 @@ packages/
 - **core 按职责分层**：`@fsdx/core/*` subpath 由 `package.json` exports 扁平映射到 `utils/`、`i18n/`、`cache/`（同构）或 `infra/`（服务端）。**注意**：core 的服务端保护依赖 `vite.config.ts` 的 import-protection（按 npm 包名拦截 bcryptjs/drizzle-orm/openai）+ 目录约定，而非 `.server.*` 文件名后缀；客户端组件禁止引用 `infra/` 对应模块。core 内不得出现 `#/services`、`#/db`、`#/routes` 反向引用
 - **core 零全局单例**：`@fsdx/core/logger` 只导出 `createLogger` 工厂，应用级 `logger` 单例由 app 的 `src/lib/logger/logger.ts` 提供（全库 27 处 `#/lib/logger/logger` 引用零改动）；`@fsdx/core/jwt` 同理，`createJwt` + app 惰性单例壳
 - **有外部配置依赖的模块用 init 注入**：`@fsdx/core/ai|mail|sms` 提供 `initAi/initMail/initSms`，bootstrap 注入 `getConfig` 回调与 logger；未 init 直接调用抛错（fail-fast）；`scheduler` 用 `setSchedulerLogger` 注入
-- **antd 单实例**：`@fsdx/ui-spa` 将 antd 声明为 peerDependency，app 提供唯一实例；`antd-static` 桥接在 app `<App>` 上下文内工作，app 保留 `#/components/antd-static` 壳 re-export
+- **antd 单实例**：`@fsdx/ui-spa` 将 antd 声明为 peerDependency，app 提供唯一实例；`antd-static` 桥接在 app `<App>` 上下文内工作，各端组件直接经 `@fsdx/ui-spa/antd-static` 导入
 - **UI token 宿主注入**：ui 包组件只写 tailwind 类名，颜色 token 由 app 的 `global.css` 定义；app 的 Tailwind 通过 `@source "../../packages/ui-ssr/src"`（及 ui-spa）扫描包源码类名
 - **新增共享逻辑**：纯函数/类入 `@fsdx/core`，shadcn 组件入 `@fsdx/ui-ssr`，antd 组件入 `@fsdx/ui-spa`，业务逻辑留在 `app/src`
 
@@ -522,7 +521,7 @@ src/services/config/
 
 管理端（`/admin/*`）使用 antd `message.error/success`，前台 SSR 使用 sonner `toast.error/success`。loader/beforeLoad 失败走 `errorComponent`，不调用 DOM API。
 
-管理端 `message` / `modal` / `notification` 统一从 `#/components/antd-static` 导入（`src/components/antd-static/index.tsx`），**禁止**静态导入 antd。原因：antd 静态函数会创建独立 React root，脱离 `<StyleProvider layer>` 上下文，导致其注入的 reset/link 样式（`:where(hash) a`）未分层、压制所有 `@layer`（把全站 `a` 标签冲成 antd 蓝），且无法继承 ConfigProvider 动态主题（暗色算法、品牌色）。桥接组件 `AntdStaticBridge` 已挂载在管理端 `<App>` 内，从 `App.useApp()` 捕获实例。
+管理端 `message` / `modal` / `notification` 统一从 `@fsdx/ui-spa/antd-static` 导入（`packages/ui-spa/src/antd-static/`），**禁止**静态导入 antd。原因：antd 静态函数会创建独立 React root，脱离 `<StyleProvider layer>` 上下文，导致其注入的 reset/link 样式（`:where(hash) a`）未分层、压制所有 `@layer`（把全站 `a` 标签冲成 antd 蓝），且无法继承 ConfigProvider 动态主题（暗色算法、品牌色）。桥接组件 `AntdStaticBridge` 已挂载在管理端 `<App>` 内，从 `App.useApp()` 捕获实例。
 
 > SFn 调用方完整模式、前台 vs 管理端代码示例 → 见 [server-function](.agents/skills/server-function/SKILL.md) skill。
 

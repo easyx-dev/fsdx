@@ -2,13 +2,13 @@
  * 元事件管理页面：CRUD 元事件定义
  */
 import { PlusOutlined } from "@ant-design/icons";
+import { message } from "@fsdx/ui-spa/antd-static";
 import { ProTable } from "@fsdx/ui-spa/pro-table";
 import { TableOperate } from "@fsdx/ui-spa/table-operate";
 import { createFileRoute } from "@tanstack/react-router";
 import { Button, Form, Input, Modal, Tag } from "antd";
 import { useState } from "react";
 import { AdminPageContent } from "#/components/admin/AdminPageContent";
-import { message } from "#/components/antd-static";
 import { getTrackEventMetaSFn } from "#/services/track/track.functions";
 import type { TrackEventMetaRecord as PresetEventRecord } from "#/services/track/track.types";
 import {

@@ -10,6 +10,7 @@ import {
 	UpOutlined,
 	UserOutlined,
 } from "@ant-design/icons";
+import { message } from "@fsdx/ui-spa/antd-static";
 import { JsonImportButton } from "@fsdx/ui-spa/json-import-button";
 import { AutofillBlocker } from "@fsdx/ui-ssr/autofill-blocker";
 import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
@@ -25,7 +26,6 @@ import {
 } from "antd";
 import { useState } from "react";
 import type { z } from "zod";
-import { message } from "#/components/antd-static";
 import { checkInitStatusSFn } from "#/services/init/init.functions";
 import { type initSchema, initSFn } from "./-mods/init.functions";
 

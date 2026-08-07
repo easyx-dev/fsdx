@@ -2,9 +2,9 @@
  * 新建新闻页面
  */
 
+import { message } from "@fsdx/ui-spa/antd-static";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { AdminPageContent } from "#/components/admin/AdminPageContent";
-import { message } from "#/components/antd-static";
 import { NewsForm } from "./-mods/NewsForm";
 
 export const Route = createFileRoute("/admin/_admin/news/create")({

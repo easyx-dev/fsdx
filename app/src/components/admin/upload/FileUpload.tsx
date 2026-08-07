@@ -7,12 +7,12 @@ import {
 	InboxOutlined,
 	UploadOutlined,
 } from "@ant-design/icons";
+import { message } from "@fsdx/ui-spa/antd-static";
 import { renderUploadItem } from "@fsdx/ui-spa/upload/file-upload-render";
 import type { UploadFile, UploadProps } from "antd";
 import { Button, Input, Space, Upload } from "antd";
 import type { MouseEvent } from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { message } from "#/components/antd-static";
 import { uploadFileSFn } from "#/services/file/file.functions";
 import { SelectFileModal } from "../SelectFileModal";
 

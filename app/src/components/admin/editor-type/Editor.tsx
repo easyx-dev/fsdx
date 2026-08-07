@@ -3,11 +3,12 @@
  * 支持预览模式（preview），以只读形式展示内容
  * value / onChange 兼容 antd Form.Item 注入
  */
+
+import { message } from "@fsdx/ui-spa/antd-static";
 import { Input, InputNumber } from "antd";
 import type { ChangeEvent } from "react";
 import { lazy, Suspense, useEffect, useState } from "react";
 import { RichEditor } from "#/components/admin/RichEditor";
-import { message } from "#/components/antd-static";
 import { getFileInfoSFn } from "#/services/file/file.functions";
 
 const CodeEditor = lazy(() =>

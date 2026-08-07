@@ -2,6 +2,7 @@
  * 管理员管理页面：CRUD + 角色分配 + 密码重置
  */
 import { KeyOutlined, PlusOutlined, SearchOutlined } from "@ant-design/icons";
+import { message } from "@fsdx/ui-spa/antd-static";
 import { ProTable } from "@fsdx/ui-spa/pro-table";
 import { TableOperate } from "@fsdx/ui-spa/table-operate";
 import { AutofillBlocker } from "@fsdx/ui-ssr/autofill-blocker";
@@ -12,7 +13,6 @@ import { useState } from "react";
 import { AdminPageContent } from "#/components/admin/AdminPageContent";
 import { DictSelect } from "#/components/admin/DictSelect";
 import { DictTag } from "#/components/admin/DictTag";
-import { message } from "#/components/antd-static";
 import type { AdminRoleRecord } from "#/services/admin-role/admin-role.server";
 import type { SortOrder } from "#/types/query";
 import {

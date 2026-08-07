@@ -6,6 +6,7 @@ import {
 	ReloadOutlined,
 	SearchOutlined,
 } from "@ant-design/icons";
+import { message } from "@fsdx/ui-spa/antd-static";
 import { createFileRoute } from "@tanstack/react-router";
 import {
 	Button,
@@ -21,7 +22,6 @@ import dayjs from "dayjs";
 import type { ChangeEvent } from "react";
 import { useMemo, useState } from "react";
 import { AdminPageContent } from "#/components/admin/AdminPageContent";
-import { message } from "#/components/antd-static";
 import {
 	getTrackEventMetaSFn,
 	getTrackPropertyMetaSFn,

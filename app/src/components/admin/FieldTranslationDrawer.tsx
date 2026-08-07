@@ -7,11 +7,11 @@ import {
 	type Locale,
 	SUPPORTED_LOCALES,
 } from "@fsdx/core/i18n-types";
+import { message } from "@fsdx/ui-spa/antd-static";
 import { Button, Card, Drawer, Tabs, Tooltip } from "antd";
 import type { MouseEvent } from "react";
 import { useCallback, useEffect, useId, useState } from "react";
 import { EditorTypes } from "#/components/admin/editor-type";
-import { message } from "#/components/antd-static";
 import type { EditorType } from "#/constants/editor-types";
 import {
 	aiTranslateFieldSFn,

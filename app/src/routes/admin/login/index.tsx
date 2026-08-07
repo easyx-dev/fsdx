@@ -2,10 +2,10 @@
  * 管理员登录页面：登录前校验系统是否已初始化
  */
 import { LockOutlined, UserOutlined } from "@ant-design/icons";
+import { message } from "@fsdx/ui-spa/antd-static";
 import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
 import { Button, Form, Input } from "antd";
 import { useState } from "react";
-import { message } from "#/components/antd-static";
 import { checkInitStatusSFn } from "#/services/init/init.functions";
 import { adminLoginSFn } from "./-mods/login.functions";
 
