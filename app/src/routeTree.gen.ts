@@ -9,57 +9,52 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as MessagesRouteImport } from './routes/messages'
-import { Route as AdminRouteImport } from './routes/admin'
-import { Route as AboutRouteImport } from './routes/about'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as RegisterIndexRouteImport } from './routes/register/index'
-import { Route as NewsIndexRouteImport } from './routes/news/index'
-import { Route as LoginIndexRouteImport } from './routes/login/index'
-import { Route as ForgotPasswordIndexRouteImport } from './routes/forgot-password/index'
-import { Route as NewsSlugRouteImport } from './routes/news/$slug'
+import { Route as AboutRouteImport } from './routes/about'
+import { Route as AdminRouteImport } from './routes/admin'
+import { Route as MessagesRouteImport } from './routes/messages'
 import { Route as AdminAdminRouteImport } from './routes/admin/_admin'
-import { Route as AdminLoginIndexRouteImport } from './routes/admin/login/index'
-import { Route as AdminInitIndexRouteImport } from './routes/admin/init/index'
-import { Route as AdminForgotPasswordIndexRouteImport } from './routes/admin/forgot-password/index'
+import { Route as ForgotPasswordIndexRouteImport } from './routes/forgot-password/index'
+import { Route as LoginIndexRouteImport } from './routes/login/index'
+import { Route as NewsIndexRouteImport } from './routes/news/index'
+import { Route as NewsSlugRouteImport } from './routes/news/$slug'
+import { Route as RegisterIndexRouteImport } from './routes/register/index'
 import { Route as AdminAdminIndexRouteImport } from './routes/admin/_admin/index'
-import { Route as AdminAdminOperationLogsIndexRouteImport } from './routes/admin/_admin/operation-logs/index'
-import { Route as AdminAdminNewsIndexRouteImport } from './routes/admin/_admin/news/index'
-import { Route as AdminAdminMessagesIndexRouteImport } from './routes/admin/_admin/messages/index'
-import { Route as AdminAdminLogsIndexRouteImport } from './routes/admin/_admin/logs/index'
-import { Route as AdminAdminFilesIndexRouteImport } from './routes/admin/_admin/files/index'
-import { Route as AdminAdminFileExplorerIndexRouteImport } from './routes/admin/_admin/file-explorer/index'
-import { Route as AdminAdminDictsIndexRouteImport } from './routes/admin/_admin/dicts/index'
-import { Route as AdminAdminConfigIndexRouteImport } from './routes/admin/_admin/config/index'
-import { Route as AdminAdminClientRolesIndexRouteImport } from './routes/admin/_admin/client-roles/index'
+import { Route as AdminForgotPasswordIndexRouteImport } from './routes/admin/forgot-password/index'
+import { Route as AdminInitIndexRouteImport } from './routes/admin/init/index'
+import { Route as AdminLoginIndexRouteImport } from './routes/admin/login/index'
 import { Route as AdminAdminAdminRolesIndexRouteImport } from './routes/admin/_admin/admin-roles/index'
-import { Route as ApiDownloadLogIdRouteImport } from './routes/api/download/log.$id'
-import { Route as ApiDownloadFileIdRouteImport } from './routes/api/download/file.$id'
-import { Route as ApiDownloadFileExplorerSplatRouteImport } from './routes/api/download/file-explorer/$'
-import { Route as AdminAdminTranslationsUiRouteImport } from './routes/admin/_admin/translations/ui'
-import { Route as AdminAdminTranslationsContentRouteImport } from './routes/admin/_admin/translations/content'
-import { Route as AdminAdminTrackQueryRouteImport } from './routes/admin/_admin/track/query'
-import { Route as AdminAdminTrackAnalyticsRouteImport } from './routes/admin/_admin/track/analytics'
-import { Route as AdminAdminNewsCreateRouteImport } from './routes/admin/_admin/news/create'
-import { Route as AdminAdminMessagesManageRouteImport } from './routes/admin/_admin/messages/manage'
-import { Route as AdminAdminDemoUploadRouteImport } from './routes/admin/_admin/demo/upload'
-import { Route as AdminAdminDemoProTableRouteImport } from './routes/admin/_admin/demo/pro-table'
-import { Route as AdminAdminDemoEditorRouteImport } from './routes/admin/_admin/demo/editor'
+import { Route as AdminAdminClientRolesIndexRouteImport } from './routes/admin/_admin/client-roles/index'
+import { Route as AdminAdminConfigIndexRouteImport } from './routes/admin/_admin/config/index'
 import { Route as AdminAdminDemoAiRouteImport } from './routes/admin/_admin/demo/ai'
-import { Route as AdminAdminUsersClientsIndexRouteImport } from './routes/admin/_admin/users/clients/index'
-import { Route as AdminAdminUsersAdminsIndexRouteImport } from './routes/admin/_admin/users/admins/index'
-import { Route as AdminAdminTrackPropertyMetaIndexRouteImport } from './routes/admin/_admin/track/property-meta/index'
-import { Route as AdminAdminTrackEventMetaIndexRouteImport } from './routes/admin/_admin/track/event-meta/index'
+import { Route as AdminAdminDemoEditorRouteImport } from './routes/admin/_admin/demo/editor'
+import { Route as AdminAdminDemoProTableRouteImport } from './routes/admin/_admin/demo/pro-table'
+import { Route as AdminAdminDemoUploadRouteImport } from './routes/admin/_admin/demo/upload'
+import { Route as AdminAdminDictsIndexRouteImport } from './routes/admin/_admin/dicts/index'
+import { Route as AdminAdminFileExplorerIndexRouteImport } from './routes/admin/_admin/file-explorer/index'
+import { Route as AdminAdminFilesIndexRouteImport } from './routes/admin/_admin/files/index'
+import { Route as AdminAdminLogsIndexRouteImport } from './routes/admin/_admin/logs/index'
+import { Route as AdminAdminMessagesIndexRouteImport } from './routes/admin/_admin/messages/index'
+import { Route as AdminAdminMessagesManageRouteImport } from './routes/admin/_admin/messages/manage'
+import { Route as AdminAdminNewsIndexRouteImport } from './routes/admin/_admin/news/index'
+import { Route as AdminAdminNewsCreateRouteImport } from './routes/admin/_admin/news/create'
+import { Route as AdminAdminOperationLogsIndexRouteImport } from './routes/admin/_admin/operation-logs/index'
+import { Route as AdminAdminTrackAnalyticsRouteImport } from './routes/admin/_admin/track/analytics'
+import { Route as AdminAdminTrackQueryRouteImport } from './routes/admin/_admin/track/query'
+import { Route as AdminAdminTranslationsContentRouteImport } from './routes/admin/_admin/translations/content'
+import { Route as AdminAdminTranslationsUiRouteImport } from './routes/admin/_admin/translations/ui'
+import { Route as ApiDownloadFileExplorerSplatRouteImport } from './routes/api/download/file-explorer/$'
+import { Route as ApiDownloadFileIdRouteImport } from './routes/api/download/file.$id'
+import { Route as ApiDownloadLogIdRouteImport } from './routes/api/download/log.$id'
 import { Route as AdminAdminNewsIdEditRouteImport } from './routes/admin/_admin/news/$id/edit'
+import { Route as AdminAdminTrackEventMetaIndexRouteImport } from './routes/admin/_admin/track/event-meta/index'
+import { Route as AdminAdminTrackPropertyMetaIndexRouteImport } from './routes/admin/_admin/track/property-meta/index'
+import { Route as AdminAdminUsersAdminsIndexRouteImport } from './routes/admin/_admin/users/admins/index'
+import { Route as AdminAdminUsersClientsIndexRouteImport } from './routes/admin/_admin/users/clients/index'
 
-const MessagesRoute = MessagesRouteImport.update({
-  id: '/messages',
-  path: '/messages',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AdminRoute = AdminRouteImport.update({
-  id: '/admin',
-  path: '/admin',
+const IndexRoute = IndexRouteImport.update({
+  id: '/',
+  path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AboutRoute = AboutRouteImport.update({
@@ -67,19 +62,23 @@ const AboutRoute = AboutRouteImport.update({
   path: '/about',
   getParentRoute: () => rootRouteImport,
 } as any)
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
+const AdminRoute = AdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
   getParentRoute: () => rootRouteImport,
 } as any)
-const RegisterIndexRoute = RegisterIndexRouteImport.update({
-  id: '/register/',
-  path: '/register/',
+const MessagesRoute = MessagesRouteImport.update({
+  id: '/messages',
+  path: '/messages',
   getParentRoute: () => rootRouteImport,
 } as any)
-const NewsIndexRoute = NewsIndexRouteImport.update({
-  id: '/news/',
-  path: '/news/',
+const AdminAdminRoute = AdminAdminRouteImport.update({
+  id: '/_admin',
+  getParentRoute: () => AdminRoute,
+} as any)
+const ForgotPasswordIndexRoute = ForgotPasswordIndexRouteImport.update({
+  id: '/forgot-password/',
+  path: '/forgot-password/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LoginIndexRoute = LoginIndexRouteImport.update({
@@ -87,9 +86,9 @@ const LoginIndexRoute = LoginIndexRouteImport.update({
   path: '/login/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ForgotPasswordIndexRoute = ForgotPasswordIndexRouteImport.update({
-  id: '/forgot-password/',
-  path: '/forgot-password/',
+const NewsIndexRoute = NewsIndexRouteImport.update({
+  id: '/news/',
+  path: '/news/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const NewsSlugRoute = NewsSlugRouteImport.update({
@@ -97,19 +96,15 @@ const NewsSlugRoute = NewsSlugRouteImport.update({
   path: '/news/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AdminAdminRoute = AdminAdminRouteImport.update({
-  id: '/_admin',
-  getParentRoute: () => AdminRoute,
+const RegisterIndexRoute = RegisterIndexRouteImport.update({
+  id: '/register/',
+  path: '/register/',
+  getParentRoute: () => rootRouteImport,
 } as any)
-const AdminLoginIndexRoute = AdminLoginIndexRouteImport.update({
-  id: '/login/',
-  path: '/login/',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminInitIndexRoute = AdminInitIndexRouteImport.update({
-  id: '/init/',
-  path: '/init/',
-  getParentRoute: () => AdminRoute,
+const AdminAdminIndexRoute = AdminAdminIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AdminAdminRoute,
 } as any)
 const AdminForgotPasswordIndexRoute =
   AdminForgotPasswordIndexRouteImport.update({
@@ -117,35 +112,56 @@ const AdminForgotPasswordIndexRoute =
     path: '/forgot-password/',
     getParentRoute: () => AdminRoute,
   } as any)
-const AdminAdminIndexRoute = AdminAdminIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => AdminAdminRoute,
+const AdminInitIndexRoute = AdminInitIndexRouteImport.update({
+  id: '/init/',
+  path: '/init/',
+  getParentRoute: () => AdminRoute,
 } as any)
-const AdminAdminOperationLogsIndexRoute =
-  AdminAdminOperationLogsIndexRouteImport.update({
-    id: '/operation-logs/',
-    path: '/operation-logs/',
+const AdminLoginIndexRoute = AdminLoginIndexRouteImport.update({
+  id: '/login/',
+  path: '/login/',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminAdminAdminRolesIndexRoute =
+  AdminAdminAdminRolesIndexRouteImport.update({
+    id: '/admin-roles/',
+    path: '/admin-roles/',
     getParentRoute: () => AdminAdminRoute,
   } as any)
-const AdminAdminNewsIndexRoute = AdminAdminNewsIndexRouteImport.update({
-  id: '/news/',
-  path: '/news/',
+const AdminAdminClientRolesIndexRoute =
+  AdminAdminClientRolesIndexRouteImport.update({
+    id: '/client-roles/',
+    path: '/client-roles/',
+    getParentRoute: () => AdminAdminRoute,
+  } as any)
+const AdminAdminConfigIndexRoute = AdminAdminConfigIndexRouteImport.update({
+  id: '/config/',
+  path: '/config/',
   getParentRoute: () => AdminAdminRoute,
 } as any)
-const AdminAdminMessagesIndexRoute = AdminAdminMessagesIndexRouteImport.update({
-  id: '/messages/',
-  path: '/messages/',
+const AdminAdminDemoAiRoute = AdminAdminDemoAiRouteImport.update({
+  id: '/demo/ai',
+  path: '/demo/ai',
   getParentRoute: () => AdminAdminRoute,
 } as any)
-const AdminAdminLogsIndexRoute = AdminAdminLogsIndexRouteImport.update({
-  id: '/logs/',
-  path: '/logs/',
+const AdminAdminDemoEditorRoute = AdminAdminDemoEditorRouteImport.update({
+  id: '/demo/editor',
+  path: '/demo/editor',
   getParentRoute: () => AdminAdminRoute,
 } as any)
-const AdminAdminFilesIndexRoute = AdminAdminFilesIndexRouteImport.update({
-  id: '/files/',
-  path: '/files/',
+const AdminAdminDemoProTableRoute = AdminAdminDemoProTableRouteImport.update({
+  id: '/demo/pro-table',
+  path: '/demo/pro-table',
+  getParentRoute: () => AdminAdminRoute,
+} as any)
+const AdminAdminDemoUploadRoute = AdminAdminDemoUploadRouteImport.update({
+  id: '/demo/upload',
+  path: '/demo/upload',
+  getParentRoute: () => AdminAdminRoute,
+} as any)
+const AdminAdminDictsIndexRoute = AdminAdminDictsIndexRouteImport.update({
+  id: '/dicts/',
+  path: '/dicts/',
   getParentRoute: () => AdminAdminRoute,
 } as any)
 const AdminAdminFileExplorerIndexRoute =
@@ -154,70 +170,19 @@ const AdminAdminFileExplorerIndexRoute =
     path: '/file-explorer/',
     getParentRoute: () => AdminAdminRoute,
   } as any)
-const AdminAdminDictsIndexRoute = AdminAdminDictsIndexRouteImport.update({
-  id: '/dicts/',
-  path: '/dicts/',
+const AdminAdminFilesIndexRoute = AdminAdminFilesIndexRouteImport.update({
+  id: '/files/',
+  path: '/files/',
   getParentRoute: () => AdminAdminRoute,
 } as any)
-const AdminAdminConfigIndexRoute = AdminAdminConfigIndexRouteImport.update({
-  id: '/config/',
-  path: '/config/',
+const AdminAdminLogsIndexRoute = AdminAdminLogsIndexRouteImport.update({
+  id: '/logs/',
+  path: '/logs/',
   getParentRoute: () => AdminAdminRoute,
 } as any)
-const AdminAdminClientRolesIndexRoute =
-  AdminAdminClientRolesIndexRouteImport.update({
-    id: '/client-roles/',
-    path: '/client-roles/',
-    getParentRoute: () => AdminAdminRoute,
-  } as any)
-const AdminAdminAdminRolesIndexRoute =
-  AdminAdminAdminRolesIndexRouteImport.update({
-    id: '/admin-roles/',
-    path: '/admin-roles/',
-    getParentRoute: () => AdminAdminRoute,
-  } as any)
-const ApiDownloadLogIdRoute = ApiDownloadLogIdRouteImport.update({
-  id: '/api/download/log/$id',
-  path: '/api/download/log/$id',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiDownloadFileIdRoute = ApiDownloadFileIdRouteImport.update({
-  id: '/api/download/file/$id',
-  path: '/api/download/file/$id',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiDownloadFileExplorerSplatRoute =
-  ApiDownloadFileExplorerSplatRouteImport.update({
-    id: '/api/download/file-explorer/$',
-    path: '/api/download/file-explorer/$',
-    getParentRoute: () => rootRouteImport,
-  } as any)
-const AdminAdminTranslationsUiRoute =
-  AdminAdminTranslationsUiRouteImport.update({
-    id: '/translations/ui',
-    path: '/translations/ui',
-    getParentRoute: () => AdminAdminRoute,
-  } as any)
-const AdminAdminTranslationsContentRoute =
-  AdminAdminTranslationsContentRouteImport.update({
-    id: '/translations/content',
-    path: '/translations/content',
-    getParentRoute: () => AdminAdminRoute,
-  } as any)
-const AdminAdminTrackQueryRoute = AdminAdminTrackQueryRouteImport.update({
-  id: '/track/query',
-  path: '/track/query',
-  getParentRoute: () => AdminAdminRoute,
-} as any)
-const AdminAdminTrackAnalyticsRoute =
-  AdminAdminTrackAnalyticsRouteImport.update({
-    id: '/track/analytics',
-    path: '/track/analytics',
-    getParentRoute: () => AdminAdminRoute,
-  } as any)
-const AdminAdminNewsCreateRoute = AdminAdminNewsCreateRouteImport.update({
-  id: '/news/create',
-  path: '/news/create',
+const AdminAdminMessagesIndexRoute = AdminAdminMessagesIndexRouteImport.update({
+  id: '/messages/',
+  path: '/messages/',
   getParentRoute: () => AdminAdminRoute,
 } as any)
 const AdminAdminMessagesManageRoute =
@@ -226,36 +191,70 @@ const AdminAdminMessagesManageRoute =
     path: '/messages/manage',
     getParentRoute: () => AdminAdminRoute,
   } as any)
-const AdminAdminDemoUploadRoute = AdminAdminDemoUploadRouteImport.update({
-  id: '/demo/upload',
-  path: '/demo/upload',
+const AdminAdminNewsIndexRoute = AdminAdminNewsIndexRouteImport.update({
+  id: '/news/',
+  path: '/news/',
   getParentRoute: () => AdminAdminRoute,
 } as any)
-const AdminAdminDemoProTableRoute = AdminAdminDemoProTableRouteImport.update({
-  id: '/demo/pro-table',
-  path: '/demo/pro-table',
+const AdminAdminNewsCreateRoute = AdminAdminNewsCreateRouteImport.update({
+  id: '/news/create',
+  path: '/news/create',
   getParentRoute: () => AdminAdminRoute,
 } as any)
-const AdminAdminDemoEditorRoute = AdminAdminDemoEditorRouteImport.update({
-  id: '/demo/editor',
-  path: '/demo/editor',
-  getParentRoute: () => AdminAdminRoute,
-} as any)
-const AdminAdminDemoAiRoute = AdminAdminDemoAiRouteImport.update({
-  id: '/demo/ai',
-  path: '/demo/ai',
-  getParentRoute: () => AdminAdminRoute,
-} as any)
-const AdminAdminUsersClientsIndexRoute =
-  AdminAdminUsersClientsIndexRouteImport.update({
-    id: '/users/clients/',
-    path: '/users/clients/',
+const AdminAdminOperationLogsIndexRoute =
+  AdminAdminOperationLogsIndexRouteImport.update({
+    id: '/operation-logs/',
+    path: '/operation-logs/',
     getParentRoute: () => AdminAdminRoute,
   } as any)
-const AdminAdminUsersAdminsIndexRoute =
-  AdminAdminUsersAdminsIndexRouteImport.update({
-    id: '/users/admins/',
-    path: '/users/admins/',
+const AdminAdminTrackAnalyticsRoute =
+  AdminAdminTrackAnalyticsRouteImport.update({
+    id: '/track/analytics',
+    path: '/track/analytics',
+    getParentRoute: () => AdminAdminRoute,
+  } as any)
+const AdminAdminTrackQueryRoute = AdminAdminTrackQueryRouteImport.update({
+  id: '/track/query',
+  path: '/track/query',
+  getParentRoute: () => AdminAdminRoute,
+} as any)
+const AdminAdminTranslationsContentRoute =
+  AdminAdminTranslationsContentRouteImport.update({
+    id: '/translations/content',
+    path: '/translations/content',
+    getParentRoute: () => AdminAdminRoute,
+  } as any)
+const AdminAdminTranslationsUiRoute =
+  AdminAdminTranslationsUiRouteImport.update({
+    id: '/translations/ui',
+    path: '/translations/ui',
+    getParentRoute: () => AdminAdminRoute,
+  } as any)
+const ApiDownloadFileExplorerSplatRoute =
+  ApiDownloadFileExplorerSplatRouteImport.update({
+    id: '/api/download/file-explorer/$',
+    path: '/api/download/file-explorer/$',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiDownloadFileIdRoute = ApiDownloadFileIdRouteImport.update({
+  id: '/api/download/file/$id',
+  path: '/api/download/file/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiDownloadLogIdRoute = ApiDownloadLogIdRouteImport.update({
+  id: '/api/download/log/$id',
+  path: '/api/download/log/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminAdminNewsIdEditRoute = AdminAdminNewsIdEditRouteImport.update({
+  id: '/news/$id/edit',
+  path: '/news/$id/edit',
+  getParentRoute: () => AdminAdminRoute,
+} as any)
+const AdminAdminTrackEventMetaIndexRoute =
+  AdminAdminTrackEventMetaIndexRouteImport.update({
+    id: '/track/event-meta/',
+    path: '/track/event-meta/',
     getParentRoute: () => AdminAdminRoute,
   } as any)
 const AdminAdminTrackPropertyMetaIndexRoute =
@@ -264,17 +263,18 @@ const AdminAdminTrackPropertyMetaIndexRoute =
     path: '/track/property-meta/',
     getParentRoute: () => AdminAdminRoute,
   } as any)
-const AdminAdminTrackEventMetaIndexRoute =
-  AdminAdminTrackEventMetaIndexRouteImport.update({
-    id: '/track/event-meta/',
-    path: '/track/event-meta/',
+const AdminAdminUsersAdminsIndexRoute =
+  AdminAdminUsersAdminsIndexRouteImport.update({
+    id: '/users/admins/',
+    path: '/users/admins/',
     getParentRoute: () => AdminAdminRoute,
   } as any)
-const AdminAdminNewsIdEditRoute = AdminAdminNewsIdEditRouteImport.update({
-  id: '/news/$id/edit',
-  path: '/news/$id/edit',
-  getParentRoute: () => AdminAdminRoute,
-} as any)
+const AdminAdminUsersClientsIndexRoute =
+  AdminAdminUsersClientsIndexRouteImport.update({
+    id: '/users/clients/',
+    path: '/users/clients/',
+    getParentRoute: () => AdminAdminRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -555,18 +555,11 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/messages': {
-      id: '/messages'
-      path: '/messages'
-      fullPath: '/messages'
-      preLoaderRoute: typeof MessagesRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/admin': {
-      id: '/admin'
-      path: '/admin'
-      fullPath: '/admin'
-      preLoaderRoute: typeof AdminRouteImport
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/about': {
@@ -576,46 +569,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AboutRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
+    '/admin': {
+      id: '/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AdminRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/register/': {
-      id: '/register/'
-      path: '/register'
-      fullPath: '/register/'
-      preLoaderRoute: typeof RegisterIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/news/': {
-      id: '/news/'
-      path: '/news'
-      fullPath: '/news/'
-      preLoaderRoute: typeof NewsIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/login/': {
-      id: '/login/'
-      path: '/login'
-      fullPath: '/login/'
-      preLoaderRoute: typeof LoginIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/forgot-password/': {
-      id: '/forgot-password/'
-      path: '/forgot-password'
-      fullPath: '/forgot-password/'
-      preLoaderRoute: typeof ForgotPasswordIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/news/$slug': {
-      id: '/news/$slug'
-      path: '/news/$slug'
-      fullPath: '/news/$slug'
-      preLoaderRoute: typeof NewsSlugRouteImport
+    '/messages': {
+      id: '/messages'
+      path: '/messages'
+      fullPath: '/messages'
+      preLoaderRoute: typeof MessagesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin/_admin': {
@@ -625,11 +590,53 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminAdminRouteImport
       parentRoute: typeof AdminRoute
     }
-    '/admin/login/': {
-      id: '/admin/login/'
+    '/forgot-password/': {
+      id: '/forgot-password/'
+      path: '/forgot-password'
+      fullPath: '/forgot-password/'
+      preLoaderRoute: typeof ForgotPasswordIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/login/': {
+      id: '/login/'
       path: '/login'
-      fullPath: '/admin/login/'
-      preLoaderRoute: typeof AdminLoginIndexRouteImport
+      fullPath: '/login/'
+      preLoaderRoute: typeof LoginIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/news/': {
+      id: '/news/'
+      path: '/news'
+      fullPath: '/news/'
+      preLoaderRoute: typeof NewsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/news/$slug': {
+      id: '/news/$slug'
+      path: '/news/$slug'
+      fullPath: '/news/$slug'
+      preLoaderRoute: typeof NewsSlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/register/': {
+      id: '/register/'
+      path: '/register'
+      fullPath: '/register/'
+      preLoaderRoute: typeof RegisterIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/_admin/': {
+      id: '/admin/_admin/'
+      path: '/'
+      fullPath: '/admin/'
+      preLoaderRoute: typeof AdminAdminIndexRouteImport
+      parentRoute: typeof AdminAdminRoute
+    }
+    '/admin/forgot-password/': {
+      id: '/admin/forgot-password/'
+      path: '/forgot-password'
+      fullPath: '/admin/forgot-password/'
+      preLoaderRoute: typeof AdminForgotPasswordIndexRouteImport
       parentRoute: typeof AdminRoute
     }
     '/admin/init/': {
@@ -639,74 +646,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminInitIndexRouteImport
       parentRoute: typeof AdminRoute
     }
-    '/admin/forgot-password/': {
-      id: '/admin/forgot-password/'
-      path: '/forgot-password'
-      fullPath: '/admin/forgot-password/'
-      preLoaderRoute: typeof AdminForgotPasswordIndexRouteImport
+    '/admin/login/': {
+      id: '/admin/login/'
+      path: '/login'
+      fullPath: '/admin/login/'
+      preLoaderRoute: typeof AdminLoginIndexRouteImport
       parentRoute: typeof AdminRoute
     }
-    '/admin/_admin/': {
-      id: '/admin/_admin/'
-      path: '/'
-      fullPath: '/admin/'
-      preLoaderRoute: typeof AdminAdminIndexRouteImport
-      parentRoute: typeof AdminAdminRoute
-    }
-    '/admin/_admin/operation-logs/': {
-      id: '/admin/_admin/operation-logs/'
-      path: '/operation-logs'
-      fullPath: '/admin/operation-logs/'
-      preLoaderRoute: typeof AdminAdminOperationLogsIndexRouteImport
-      parentRoute: typeof AdminAdminRoute
-    }
-    '/admin/_admin/news/': {
-      id: '/admin/_admin/news/'
-      path: '/news'
-      fullPath: '/admin/news/'
-      preLoaderRoute: typeof AdminAdminNewsIndexRouteImport
-      parentRoute: typeof AdminAdminRoute
-    }
-    '/admin/_admin/messages/': {
-      id: '/admin/_admin/messages/'
-      path: '/messages'
-      fullPath: '/admin/messages/'
-      preLoaderRoute: typeof AdminAdminMessagesIndexRouteImport
-      parentRoute: typeof AdminAdminRoute
-    }
-    '/admin/_admin/logs/': {
-      id: '/admin/_admin/logs/'
-      path: '/logs'
-      fullPath: '/admin/logs/'
-      preLoaderRoute: typeof AdminAdminLogsIndexRouteImport
-      parentRoute: typeof AdminAdminRoute
-    }
-    '/admin/_admin/files/': {
-      id: '/admin/_admin/files/'
-      path: '/files'
-      fullPath: '/admin/files/'
-      preLoaderRoute: typeof AdminAdminFilesIndexRouteImport
-      parentRoute: typeof AdminAdminRoute
-    }
-    '/admin/_admin/file-explorer/': {
-      id: '/admin/_admin/file-explorer/'
-      path: '/file-explorer'
-      fullPath: '/admin/file-explorer/'
-      preLoaderRoute: typeof AdminAdminFileExplorerIndexRouteImport
-      parentRoute: typeof AdminAdminRoute
-    }
-    '/admin/_admin/dicts/': {
-      id: '/admin/_admin/dicts/'
-      path: '/dicts'
-      fullPath: '/admin/dicts/'
-      preLoaderRoute: typeof AdminAdminDictsIndexRouteImport
-      parentRoute: typeof AdminAdminRoute
-    }
-    '/admin/_admin/config/': {
-      id: '/admin/_admin/config/'
-      path: '/config'
-      fullPath: '/admin/config/'
-      preLoaderRoute: typeof AdminAdminConfigIndexRouteImport
+    '/admin/_admin/admin-roles/': {
+      id: '/admin/_admin/admin-roles/'
+      path: '/admin-roles'
+      fullPath: '/admin/admin-roles/'
+      preLoaderRoute: typeof AdminAdminAdminRolesIndexRouteImport
       parentRoute: typeof AdminAdminRoute
     }
     '/admin/_admin/client-roles/': {
@@ -716,95 +667,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminAdminClientRolesIndexRouteImport
       parentRoute: typeof AdminAdminRoute
     }
-    '/admin/_admin/admin-roles/': {
-      id: '/admin/_admin/admin-roles/'
-      path: '/admin-roles'
-      fullPath: '/admin/admin-roles/'
-      preLoaderRoute: typeof AdminAdminAdminRolesIndexRouteImport
-      parentRoute: typeof AdminAdminRoute
-    }
-    '/api/download/log/$id': {
-      id: '/api/download/log/$id'
-      path: '/api/download/log/$id'
-      fullPath: '/api/download/log/$id'
-      preLoaderRoute: typeof ApiDownloadLogIdRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/download/file/$id': {
-      id: '/api/download/file/$id'
-      path: '/api/download/file/$id'
-      fullPath: '/api/download/file/$id'
-      preLoaderRoute: typeof ApiDownloadFileIdRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/download/file-explorer/$': {
-      id: '/api/download/file-explorer/$'
-      path: '/api/download/file-explorer/$'
-      fullPath: '/api/download/file-explorer/$'
-      preLoaderRoute: typeof ApiDownloadFileExplorerSplatRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/admin/_admin/translations/ui': {
-      id: '/admin/_admin/translations/ui'
-      path: '/translations/ui'
-      fullPath: '/admin/translations/ui'
-      preLoaderRoute: typeof AdminAdminTranslationsUiRouteImport
-      parentRoute: typeof AdminAdminRoute
-    }
-    '/admin/_admin/translations/content': {
-      id: '/admin/_admin/translations/content'
-      path: '/translations/content'
-      fullPath: '/admin/translations/content'
-      preLoaderRoute: typeof AdminAdminTranslationsContentRouteImport
-      parentRoute: typeof AdminAdminRoute
-    }
-    '/admin/_admin/track/query': {
-      id: '/admin/_admin/track/query'
-      path: '/track/query'
-      fullPath: '/admin/track/query'
-      preLoaderRoute: typeof AdminAdminTrackQueryRouteImport
-      parentRoute: typeof AdminAdminRoute
-    }
-    '/admin/_admin/track/analytics': {
-      id: '/admin/_admin/track/analytics'
-      path: '/track/analytics'
-      fullPath: '/admin/track/analytics'
-      preLoaderRoute: typeof AdminAdminTrackAnalyticsRouteImport
-      parentRoute: typeof AdminAdminRoute
-    }
-    '/admin/_admin/news/create': {
-      id: '/admin/_admin/news/create'
-      path: '/news/create'
-      fullPath: '/admin/news/create'
-      preLoaderRoute: typeof AdminAdminNewsCreateRouteImport
-      parentRoute: typeof AdminAdminRoute
-    }
-    '/admin/_admin/messages/manage': {
-      id: '/admin/_admin/messages/manage'
-      path: '/messages/manage'
-      fullPath: '/admin/messages/manage'
-      preLoaderRoute: typeof AdminAdminMessagesManageRouteImport
-      parentRoute: typeof AdminAdminRoute
-    }
-    '/admin/_admin/demo/upload': {
-      id: '/admin/_admin/demo/upload'
-      path: '/demo/upload'
-      fullPath: '/admin/demo/upload'
-      preLoaderRoute: typeof AdminAdminDemoUploadRouteImport
-      parentRoute: typeof AdminAdminRoute
-    }
-    '/admin/_admin/demo/pro-table': {
-      id: '/admin/_admin/demo/pro-table'
-      path: '/demo/pro-table'
-      fullPath: '/admin/demo/pro-table'
-      preLoaderRoute: typeof AdminAdminDemoProTableRouteImport
-      parentRoute: typeof AdminAdminRoute
-    }
-    '/admin/_admin/demo/editor': {
-      id: '/admin/_admin/demo/editor'
-      path: '/demo/editor'
-      fullPath: '/admin/demo/editor'
-      preLoaderRoute: typeof AdminAdminDemoEditorRouteImport
+    '/admin/_admin/config/': {
+      id: '/admin/_admin/config/'
+      path: '/config'
+      fullPath: '/admin/config/'
+      preLoaderRoute: typeof AdminAdminConfigIndexRouteImport
       parentRoute: typeof AdminAdminRoute
     }
     '/admin/_admin/demo/ai': {
@@ -814,25 +681,144 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminAdminDemoAiRouteImport
       parentRoute: typeof AdminAdminRoute
     }
-    '/admin/_admin/users/clients/': {
-      id: '/admin/_admin/users/clients/'
-      path: '/users/clients'
-      fullPath: '/admin/users/clients/'
-      preLoaderRoute: typeof AdminAdminUsersClientsIndexRouteImport
+    '/admin/_admin/demo/editor': {
+      id: '/admin/_admin/demo/editor'
+      path: '/demo/editor'
+      fullPath: '/admin/demo/editor'
+      preLoaderRoute: typeof AdminAdminDemoEditorRouteImport
       parentRoute: typeof AdminAdminRoute
     }
-    '/admin/_admin/users/admins/': {
-      id: '/admin/_admin/users/admins/'
-      path: '/users/admins'
-      fullPath: '/admin/users/admins/'
-      preLoaderRoute: typeof AdminAdminUsersAdminsIndexRouteImport
+    '/admin/_admin/demo/pro-table': {
+      id: '/admin/_admin/demo/pro-table'
+      path: '/demo/pro-table'
+      fullPath: '/admin/demo/pro-table'
+      preLoaderRoute: typeof AdminAdminDemoProTableRouteImport
       parentRoute: typeof AdminAdminRoute
     }
-    '/admin/_admin/track/property-meta/': {
-      id: '/admin/_admin/track/property-meta/'
-      path: '/track/property-meta'
-      fullPath: '/admin/track/property-meta/'
-      preLoaderRoute: typeof AdminAdminTrackPropertyMetaIndexRouteImport
+    '/admin/_admin/demo/upload': {
+      id: '/admin/_admin/demo/upload'
+      path: '/demo/upload'
+      fullPath: '/admin/demo/upload'
+      preLoaderRoute: typeof AdminAdminDemoUploadRouteImport
+      parentRoute: typeof AdminAdminRoute
+    }
+    '/admin/_admin/dicts/': {
+      id: '/admin/_admin/dicts/'
+      path: '/dicts'
+      fullPath: '/admin/dicts/'
+      preLoaderRoute: typeof AdminAdminDictsIndexRouteImport
+      parentRoute: typeof AdminAdminRoute
+    }
+    '/admin/_admin/file-explorer/': {
+      id: '/admin/_admin/file-explorer/'
+      path: '/file-explorer'
+      fullPath: '/admin/file-explorer/'
+      preLoaderRoute: typeof AdminAdminFileExplorerIndexRouteImport
+      parentRoute: typeof AdminAdminRoute
+    }
+    '/admin/_admin/files/': {
+      id: '/admin/_admin/files/'
+      path: '/files'
+      fullPath: '/admin/files/'
+      preLoaderRoute: typeof AdminAdminFilesIndexRouteImport
+      parentRoute: typeof AdminAdminRoute
+    }
+    '/admin/_admin/logs/': {
+      id: '/admin/_admin/logs/'
+      path: '/logs'
+      fullPath: '/admin/logs/'
+      preLoaderRoute: typeof AdminAdminLogsIndexRouteImport
+      parentRoute: typeof AdminAdminRoute
+    }
+    '/admin/_admin/messages/': {
+      id: '/admin/_admin/messages/'
+      path: '/messages'
+      fullPath: '/admin/messages/'
+      preLoaderRoute: typeof AdminAdminMessagesIndexRouteImport
+      parentRoute: typeof AdminAdminRoute
+    }
+    '/admin/_admin/messages/manage': {
+      id: '/admin/_admin/messages/manage'
+      path: '/messages/manage'
+      fullPath: '/admin/messages/manage'
+      preLoaderRoute: typeof AdminAdminMessagesManageRouteImport
+      parentRoute: typeof AdminAdminRoute
+    }
+    '/admin/_admin/news/': {
+      id: '/admin/_admin/news/'
+      path: '/news'
+      fullPath: '/admin/news/'
+      preLoaderRoute: typeof AdminAdminNewsIndexRouteImport
+      parentRoute: typeof AdminAdminRoute
+    }
+    '/admin/_admin/news/create': {
+      id: '/admin/_admin/news/create'
+      path: '/news/create'
+      fullPath: '/admin/news/create'
+      preLoaderRoute: typeof AdminAdminNewsCreateRouteImport
+      parentRoute: typeof AdminAdminRoute
+    }
+    '/admin/_admin/operation-logs/': {
+      id: '/admin/_admin/operation-logs/'
+      path: '/operation-logs'
+      fullPath: '/admin/operation-logs/'
+      preLoaderRoute: typeof AdminAdminOperationLogsIndexRouteImport
+      parentRoute: typeof AdminAdminRoute
+    }
+    '/admin/_admin/track/analytics': {
+      id: '/admin/_admin/track/analytics'
+      path: '/track/analytics'
+      fullPath: '/admin/track/analytics'
+      preLoaderRoute: typeof AdminAdminTrackAnalyticsRouteImport
+      parentRoute: typeof AdminAdminRoute
+    }
+    '/admin/_admin/track/query': {
+      id: '/admin/_admin/track/query'
+      path: '/track/query'
+      fullPath: '/admin/track/query'
+      preLoaderRoute: typeof AdminAdminTrackQueryRouteImport
+      parentRoute: typeof AdminAdminRoute
+    }
+    '/admin/_admin/translations/content': {
+      id: '/admin/_admin/translations/content'
+      path: '/translations/content'
+      fullPath: '/admin/translations/content'
+      preLoaderRoute: typeof AdminAdminTranslationsContentRouteImport
+      parentRoute: typeof AdminAdminRoute
+    }
+    '/admin/_admin/translations/ui': {
+      id: '/admin/_admin/translations/ui'
+      path: '/translations/ui'
+      fullPath: '/admin/translations/ui'
+      preLoaderRoute: typeof AdminAdminTranslationsUiRouteImport
+      parentRoute: typeof AdminAdminRoute
+    }
+    '/api/download/file-explorer/$': {
+      id: '/api/download/file-explorer/$'
+      path: '/api/download/file-explorer/$'
+      fullPath: '/api/download/file-explorer/$'
+      preLoaderRoute: typeof ApiDownloadFileExplorerSplatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/download/file/$id': {
+      id: '/api/download/file/$id'
+      path: '/api/download/file/$id'
+      fullPath: '/api/download/file/$id'
+      preLoaderRoute: typeof ApiDownloadFileIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/download/log/$id': {
+      id: '/api/download/log/$id'
+      path: '/api/download/log/$id'
+      fullPath: '/api/download/log/$id'
+      preLoaderRoute: typeof ApiDownloadLogIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/_admin/news/$id/edit': {
+      id: '/admin/_admin/news/$id/edit'
+      path: '/news/$id/edit'
+      fullPath: '/admin/news/$id/edit'
+      preLoaderRoute: typeof AdminAdminNewsIdEditRouteImport
       parentRoute: typeof AdminAdminRoute
     }
     '/admin/_admin/track/event-meta/': {
@@ -842,11 +828,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminAdminTrackEventMetaIndexRouteImport
       parentRoute: typeof AdminAdminRoute
     }
-    '/admin/_admin/news/$id/edit': {
-      id: '/admin/_admin/news/$id/edit'
-      path: '/news/$id/edit'
-      fullPath: '/admin/news/$id/edit'
-      preLoaderRoute: typeof AdminAdminNewsIdEditRouteImport
+    '/admin/_admin/track/property-meta/': {
+      id: '/admin/_admin/track/property-meta/'
+      path: '/track/property-meta'
+      fullPath: '/admin/track/property-meta/'
+      preLoaderRoute: typeof AdminAdminTrackPropertyMetaIndexRouteImport
+      parentRoute: typeof AdminAdminRoute
+    }
+    '/admin/_admin/users/admins/': {
+      id: '/admin/_admin/users/admins/'
+      path: '/users/admins'
+      fullPath: '/admin/users/admins/'
+      preLoaderRoute: typeof AdminAdminUsersAdminsIndexRouteImport
+      parentRoute: typeof AdminAdminRoute
+    }
+    '/admin/_admin/users/clients/': {
+      id: '/admin/_admin/users/clients/'
+      path: '/users/clients'
+      fullPath: '/admin/users/clients/'
+      preLoaderRoute: typeof AdminAdminUsersClientsIndexRouteImport
       parentRoute: typeof AdminAdminRoute
     }
   }
