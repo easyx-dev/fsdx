@@ -16,7 +16,7 @@ export const Route = createFileRoute("/admin/_admin")({
 	beforeLoad: async ({ location }) => {
 		const user = await getCurrentAdminSFn();
 
-		if (!user || user.userType !== "admin") {
+		if (user?.userType !== "admin") {
 			throw redirect({
 				to: "/admin/login",
 				search: { redirect: location.href },

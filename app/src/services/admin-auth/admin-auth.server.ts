@@ -80,7 +80,7 @@ export async function getCurrentAdmin(
 	if (!token) return null;
 
 	const jwtPayload = await jwt.verifyToken(token);
-	if (!jwtPayload || jwtPayload.userType !== "admin") return null;
+	if (jwtPayload?.userType !== "admin") return null;
 
 	const user = await db.query.adminUser.findFirst({
 		where: (t, { eq: e, isNull: n }) =>

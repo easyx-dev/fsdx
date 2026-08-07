@@ -22,7 +22,7 @@
     "release": "changeset publish"
   },
   "devDependencies": {
-    "@biomejs/biome": "2.4.5",
+    "@biomejs/biome": "2.5.7",
     "@changesets/cli": "^2.29.3",
     "typescript": "^6.0.3"
   }

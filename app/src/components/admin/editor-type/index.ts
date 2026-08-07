@@ -8,5 +8,5 @@ const EditorTypes = Object.assign(EditorComponent, {
 	Preview: EditorTypePreview,
 });
 
-export { EditorTypes };
 export type { EditorProps } from "./Editor";
+export { EditorTypes };

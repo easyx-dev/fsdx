@@ -122,7 +122,7 @@ export async function getCurrentClient(
 	if (!token) return null;
 
 	const jwtPayload = await jwt.verifyToken(token);
-	if (!jwtPayload || jwtPayload.userType !== "client") return null;
+	if (jwtPayload?.userType !== "client") return null;
 
 	// 查缓存（缓存中存有 status，读取时校验是否仍为 active）
 	const cached = clientUserCache.get(jwtPayload.userId);

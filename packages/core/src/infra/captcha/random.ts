@@ -26,7 +26,7 @@ function stripChars(str: string, chars: string): string {
 
 /** 计算 hex 颜色的亮度值（0~1），用于背景对比度判断 */
 function getLightness(hexColor: string): number {
-	if (!hexColor || hexColor[0] !== "#") return 1;
+	if (hexColor?.[0] !== "#") return 1;
 	let c = hexColor.slice(1);
 	if (c.length === 3) c = c[0] + c[0] + c[1] + c[1] + c[2] + c[2];
 	const n = parseInt(c, 16);

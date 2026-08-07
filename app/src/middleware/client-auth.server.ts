@@ -23,7 +23,7 @@ export async function resolveClientAuthContext(
 	}
 
 	const payload = await jwt.verifyToken(token);
-	if (!payload || payload.userType !== "client") {
+	if (payload?.userType !== "client") {
 		throw new ClientAuthError("无效的用户身份", 401);
 	}
 

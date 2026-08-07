@@ -35,4 +35,4 @@ const options = {
 	truncateCurvePositionMax: 0.6,
 };
 
-export { options, font };
+export { font, options };
