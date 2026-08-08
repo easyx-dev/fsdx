@@ -28,7 +28,7 @@ export const PROPERTY_DATA_TYPES = [
 /** 创建元属性 */
 export const createPropertyMetaSFn = createServerFn({ method: "POST" })
 	.middleware([adminPermGuard(ADMIN_PERMISSIONS.TRACK_MANAGE)])
-	.inputValidator(propertyMetaCreateSchema)
+	.validator(propertyMetaCreateSchema)
 	.handler(async ({ data }) => {
 		const { key, ...input } = data;
 		return createTrackPropertyMeta(key, input);
@@ -37,7 +37,7 @@ export const createPropertyMetaSFn = createServerFn({ method: "POST" })
 /** 更新元属性 */
 export const updatePropertyMetaSFn = createServerFn({ method: "POST" })
 	.middleware([adminPermGuard(ADMIN_PERMISSIONS.TRACK_MANAGE)])
-	.inputValidator(propertyMetaUpdateSchema)
+	.validator(propertyMetaUpdateSchema)
 	.handler(async ({ data }) => {
 		const { key, ...input } = data;
 		return updateTrackPropertyMeta(key, input);
@@ -46,5 +46,5 @@ export const updatePropertyMetaSFn = createServerFn({ method: "POST" })
 /** 删除元属性 */
 export const deletePropertyMetaSFn = createServerFn({ method: "POST" })
 	.middleware([adminPermGuard(ADMIN_PERMISSIONS.TRACK_MANAGE)])
-	.inputValidator(propertyMetaDeleteSchema)
+	.validator(propertyMetaDeleteSchema)
 	.handler(async ({ data }) => deleteTrackPropertyMeta(data.key));

@@ -31,7 +31,7 @@ export const getConfigListSFn = createServerFn({ method: "GET" })
 /** 创建配置 */
 export const createConfigSFn = createServerFn({ method: "POST" })
 	.middleware([adminPermGuard(ADMIN_PERMISSIONS.CONFIG_CREATE)])
-	.inputValidator(createConfigSchema)
+	.validator(createConfigSchema)
 	.handler(async ({ data, context }) => {
 		const result = await createConfig(data);
 		logCrud(context.user, "config", "create", {
@@ -44,7 +44,7 @@ export const createConfigSFn = createServerFn({ method: "POST" })
 /** 更新配置 */
 export const updateConfigSFn = createServerFn({ method: "POST" })
 	.middleware([adminPermGuard(ADMIN_PERMISSIONS.CONFIG_EDIT)])
-	.inputValidator(updateConfigSchema)
+	.validator(updateConfigSchema)
 	.handler(async ({ data, context }) => {
 		const { id, ...rest } = data;
 		await updateConfig(id, rest);
@@ -55,7 +55,7 @@ export const updateConfigSFn = createServerFn({ method: "POST" })
 /** 删除配置 */
 export const deleteConfigSFn = createServerFn({ method: "POST" })
 	.middleware([adminPermGuard(ADMIN_PERMISSIONS.CONFIG_DELETE)])
-	.inputValidator(deleteConfigSchema)
+	.validator(deleteConfigSchema)
 	.handler(async ({ data, context }) => {
 		await deleteConfig(data.id);
 		logCrud(context.user, "config", "delete", { id: data.id });
@@ -90,7 +90,7 @@ export interface ConfigImportResult {
 /** 导入配置数据（JSON） */
 export const importConfigsSFn = createServerFn({ method: "POST" })
 	.middleware([adminPermGuard(ADMIN_PERMISSIONS.CONFIG_IMPORT)])
-	.inputValidator(configImportSchema)
+	.validator(configImportSchema)
 	.handler(async ({ data, context }) => {
 		const result = await importConfigs(data);
 		logCrud(context.user, "config", "import", undefined, {

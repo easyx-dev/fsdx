@@ -42,7 +42,7 @@ export const getDictListSFn = createServerFn({ method: "GET" })
 /** 获取字典条目列表 */
 export const getDictItemsSFn = createServerFn({ method: "GET" })
 	.middleware([adminPermGuard(ADMIN_PERMISSIONS.DICT_VIEW)])
-	.inputValidator(dictSlugSchema)
+	.validator(dictSlugSchema)
 	.handler(async ({ data: { dictSlug } }) => {
 		return getDictItems(dictSlug);
 	});
@@ -50,7 +50,7 @@ export const getDictItemsSFn = createServerFn({ method: "GET" })
 /** 创建字典类型 */
 export const createDictSFn = createServerFn({ method: "POST" })
 	.middleware([adminPermGuard(ADMIN_PERMISSIONS.DICT_CREATE)])
-	.inputValidator(createDictSchema)
+	.validator(createDictSchema)
 	.handler(async ({ data, context }) => {
 		const result = await createDict(data);
 		logCrud(context.user, "dict", "create", {
@@ -63,7 +63,7 @@ export const createDictSFn = createServerFn({ method: "POST" })
 /** 更新字典类型 */
 export const updateDictSFn = createServerFn({ method: "POST" })
 	.middleware([adminPermGuard(ADMIN_PERMISSIONS.DICT_EDIT)])
-	.inputValidator(updateDictSchema)
+	.validator(updateDictSchema)
 	.handler(async ({ data, context }) => {
 		const { id, ...rest } = data;
 		const updated = await updateDictRecord(id, rest);
@@ -77,7 +77,7 @@ export const updateDictSFn = createServerFn({ method: "POST" })
 /** 删除字典类型 */
 export const deleteDictSFn = createServerFn({ method: "POST" })
 	.middleware([adminPermGuard(ADMIN_PERMISSIONS.DICT_DELETE)])
-	.inputValidator(idSchema)
+	.validator(idSchema)
 	.handler(async ({ data: { id }, context }) => {
 		await deleteDict(id);
 		logCrud(context.user, "dict", "delete", { id: id });
@@ -87,7 +87,7 @@ export const deleteDictSFn = createServerFn({ method: "POST" })
 /** 创建字典条目 */
 export const createDictItemSFn = createServerFn({ method: "POST" })
 	.middleware([adminPermGuard(ADMIN_PERMISSIONS.DICT_CREATE_ITEM)])
-	.inputValidator(createItemSchema)
+	.validator(createItemSchema)
 	.handler(async ({ data, context }) => {
 		const result = await createDictItemData(data);
 		await loadDictCache();
@@ -104,7 +104,7 @@ export const createDictItemSFn = createServerFn({ method: "POST" })
 /** 更新字典条目 */
 export const updateDictItemSFn = createServerFn({ method: "POST" })
 	.middleware([adminPermGuard(ADMIN_PERMISSIONS.DICT_EDIT_ITEM)])
-	.inputValidator(updateItemSchema)
+	.validator(updateItemSchema)
 	.handler(async ({ data, context }) => {
 		const { id, ...rest } = data;
 		const updated = await updateDictItemRecord(id, rest);
@@ -124,7 +124,7 @@ export const updateDictItemSFn = createServerFn({ method: "POST" })
 /** 删除字典条目 */
 export const deleteDictItemSFn = createServerFn({ method: "POST" })
 	.middleware([adminPermGuard(ADMIN_PERMISSIONS.DICT_DELETE_ITEM)])
-	.inputValidator(idSchema)
+	.validator(idSchema)
 	.handler(async ({ data: { id }, context }) => {
 		const success = await deleteDictItemRecord(id);
 		if (success) {
@@ -174,7 +174,7 @@ export interface DictImportResult {
 /** 导入字典数据（树形 JSON，自动展平为内部格式） */
 export const importDictsSFn = createServerFn({ method: "POST" })
 	.middleware([adminPermGuard(ADMIN_PERMISSIONS.DICT_IMPORT)])
-	.inputValidator(dictImportSchema)
+	.validator(dictImportSchema)
 	.handler(async ({ data, context }) => {
 		const flat: DictImportData = {
 			dicts: data.dicts.map(({ children: _, ...rest }) => rest),

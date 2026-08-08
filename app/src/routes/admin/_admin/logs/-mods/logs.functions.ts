@@ -21,7 +21,7 @@ export const searchLogsSchema = z.object({
 
 export const searchLogsSFn = createServerFn({ method: "GET" })
 	.middleware([adminPermGuard(ADMIN_PERMISSIONS.LOG_VIEW)])
-	.inputValidator(searchLogsSchema)
+	.validator(searchLogsSchema)
 	.handler(async ({ data }) => {
 		return searchLogsService(data);
 	});

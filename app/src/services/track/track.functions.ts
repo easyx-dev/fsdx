@@ -28,7 +28,7 @@ export const trackEventSchema = z.object({
  * 服务端从请求头提取 $ip（通过 x-forwarded-for）和 $user_agent，注入到 properties
  */
 export const trackEventSFn = createServerFn({ method: "POST" })
-	.inputValidator(trackEventSchema)
+	.validator(trackEventSchema)
 	.handler(async ({ data }) => {
 		const serverProps: Record<string, unknown> = {};
 

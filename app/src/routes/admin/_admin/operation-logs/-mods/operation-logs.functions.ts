@@ -39,7 +39,7 @@ export const searchOperationLogsSchema = z.object({
 /** 分页查询操作日志 */
 export const searchOperationLogsSFn = createServerFn({ method: "GET" })
 	.middleware([adminPermGuard(ADMIN_PERMISSIONS.LOG_VIEW)])
-	.inputValidator(searchOperationLogsSchema)
+	.validator(searchOperationLogsSchema)
 	.handler(async ({ data }) => {
 		const result = await searchOperationLogs(data);
 		return {

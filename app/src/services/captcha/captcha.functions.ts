@@ -25,7 +25,7 @@ export const getImageCaptchaSFn = createServerFn({ method: "GET" }).handler(
 export const sendCaptchaWithImageVerificationSFn = createServerFn({
 	method: "POST",
 })
-	.inputValidator(sendCaptchaWithImageSchema)
+	.validator(sendCaptchaWithImageSchema)
 	.handler(async ({ data: { email, imageToken, imageCode } }) => {
 		const valid = await verifyImageCaptcha(imageToken, imageCode);
 		if (!valid) {

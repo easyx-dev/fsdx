@@ -21,7 +21,7 @@ export const publishedNewsSchema = z.object({
 export const newsSlugSchema = z.object({ slug: z.string().min(1) });
 
 export const getPublishedNewsSFn = createServerFn({ method: "GET" })
-	.inputValidator(publishedNewsSchema)
+	.validator(publishedNewsSchema)
 	.handler(async ({ data, context }) => {
 		const { records, ...rest } = await getNewsList({
 			status: "published",
@@ -34,7 +34,7 @@ export const getPublishedNewsSFn = createServerFn({ method: "GET" })
 	});
 
 export const getNewsDetailSFn = createServerFn({ method: "GET" })
-	.inputValidator(newsSlugSchema)
+	.validator(newsSlugSchema)
 	.handler(async ({ data: { slug }, context }) => {
 		const record = await getNewsBySlug(slug);
 		if (!record) return null;

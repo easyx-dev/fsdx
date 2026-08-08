@@ -13,7 +13,7 @@ export const loginSchema = z.object({
 });
 
 export const clientLoginSFn = createServerFn({ method: "POST" })
-	.inputValidator(loginSchema)
+	.validator(loginSchema)
 	.handler(async ({ data: { username, password } }) => {
 		const result = await clientLogin(username, password);
 		if (result.success && result.token) {

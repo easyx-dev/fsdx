@@ -96,7 +96,7 @@ export function buildInitData(data: InitInput): InitData {
 }
 
 export const initSFn = createServerFn({ method: "POST" })
-	.inputValidator(initSchema)
+	.validator(initSchema)
 	.handler(async ({ data }) => {
 		return initSystem(buildInitData(data));
 	});

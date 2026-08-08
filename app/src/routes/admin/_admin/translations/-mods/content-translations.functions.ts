@@ -25,7 +25,7 @@ import {
 
 export const getListSFn = createServerFn({ method: "GET" })
 	.middleware([adminPermGuard(ADMIN_PERMISSIONS.TRANSLATION_VIEW)])
-	.inputValidator(getListSchema)
+	.validator(getListSchema)
 	.handler(async ({ data }) =>
 		listContentTranslations(
 			data as Parameters<typeof listContentTranslations>[0],
@@ -34,7 +34,7 @@ export const getListSFn = createServerFn({ method: "GET" })
 
 export const saveSFn = createServerFn({ method: "POST" })
 	.middleware([adminPermGuard(ADMIN_PERMISSIONS.TRANSLATION_MANAGE)])
-	.inputValidator(formSchema)
+	.validator(formSchema)
 	.handler(async ({ data, context }) => {
 		const result = await upsertContentTranslation(
 			data as Parameters<typeof upsertContentTranslation>[0],
@@ -47,7 +47,7 @@ export const saveSFn = createServerFn({ method: "POST" })
 
 export const deleteSFn = createServerFn({ method: "POST" })
 	.middleware([adminPermGuard(ADMIN_PERMISSIONS.TRANSLATION_MANAGE)])
-	.inputValidator(deleteSchema)
+	.validator(deleteSchema)
 	.handler(async ({ data, context }) => {
 		await deleteContentTranslation(data.id);
 		logCrud(
@@ -85,7 +85,7 @@ export const importContentTranslationsSchema = z.object({
 
 export const importContentTranslationsSFn = createServerFn({ method: "POST" })
 	.middleware([adminPermGuard(ADMIN_PERMISSIONS.TRANSLATION_IMPORT)])
-	.inputValidator(importContentTranslationsSchema)
+	.validator(importContentTranslationsSchema)
 	.handler(
 		async ({ data: { data }, context }): Promise<TranslationImportResult> => {
 			const result = await importContentTranslations(

@@ -30,13 +30,13 @@ export const getClientRolesForSelectSFn = createServerFn({ method: "GET" })
 /** 获取客户端用户列表（分页、筛选、排序） */
 export const getListSFn = createServerFn({ method: "GET" })
 	.middleware([adminPermGuard(ADMIN_PERMISSIONS.CLIENT_VIEW)])
-	.inputValidator(listSchema)
+	.validator(listSchema)
 	.handler(async ({ data }) => getClientUserList(data));
 
 /** 新建客户端用户 */
 export const createSFn = createServerFn({ method: "POST" })
 	.middleware([adminPermGuard(ADMIN_PERMISSIONS.CLIENT_CREATE)])
-	.inputValidator(createSchema)
+	.validator(createSchema)
 	.handler(async ({ data, context }) => {
 		const record = await createClientUser(data);
 		logCrud(
@@ -52,7 +52,7 @@ export const createSFn = createServerFn({ method: "POST" })
 /** 更新客户端用户信息 */
 export const updateSFn = createServerFn({ method: "POST" })
 	.middleware([adminPermGuard(ADMIN_PERMISSIONS.CLIENT_EDIT)])
-	.inputValidator(updateSchema)
+	.validator(updateSchema)
 	.handler(async ({ data, context }) => {
 		const result = await updateClientUser(data.id, data);
 		logCrud(
@@ -68,7 +68,7 @@ export const updateSFn = createServerFn({ method: "POST" })
 /** 删除客户端用户（软删除） */
 export const deleteSFn = createServerFn({ method: "POST" })
 	.middleware([adminPermGuard(ADMIN_PERMISSIONS.CLIENT_DELETE)])
-	.inputValidator(idSchema)
+	.validator(idSchema)
 	.handler(async ({ data, context }) => {
 		const existing = await getClientUser(data.id);
 		const result = await deleteClientUser(data.id);
@@ -85,7 +85,7 @@ export const deleteSFn = createServerFn({ method: "POST" })
 /** 重置客户端用户密码 */
 export const resetPwdSFn = createServerFn({ method: "POST" })
 	.middleware([adminPermGuard(ADMIN_PERMISSIONS.CLIENT_EDIT)])
-	.inputValidator(resetPwdSchema)
+	.validator(resetPwdSchema)
 	.handler(async ({ data, context }) => {
 		const existing = await getClientUser(data.id);
 		const result = await resetClientPassword(data.id, data.password);

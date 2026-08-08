@@ -13,7 +13,7 @@ export const registerSchema = z.object({
 });
 
 export const clientRegisterSFn = createServerFn({ method: "POST" })
-	.inputValidator(registerSchema)
+	.validator(registerSchema)
 	.handler(async ({ data: { username, email, password, captcha } }) => {
 		return clientRegister(username, email, password, captcha);
 	});

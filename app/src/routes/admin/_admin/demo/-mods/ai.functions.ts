@@ -18,7 +18,7 @@ export const aiTestSchema = z.object({
 
 export const aiTestSFn = createServerFn({ method: "POST" })
 	.middleware([adminPermGuard(ADMIN_PERMISSIONS.AI_TEST)])
-	.inputValidator(aiTestSchema)
+	.validator(aiTestSchema)
 	.handler(async ({ data }) => {
 		const messages: ChatMessage[] = [];
 		if (data.systemMessage) {

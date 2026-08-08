@@ -22,7 +22,7 @@ import {
 /** 获取目录全量信息（内容 + 面包屑 + 写保护状态） */
 export const listDirectorySFn = createServerFn({ method: "GET" })
 	.middleware([adminPermGuard(ADMIN_PERMISSIONS.FILE_EXPLORER_VIEW)])
-	.inputValidator(subPathSchema)
+	.validator(subPathSchema)
 	.handler(async ({ data }) => {
 		return getDirectoryInfo(data.subPath);
 	});
@@ -30,7 +30,7 @@ export const listDirectorySFn = createServerFn({ method: "GET" })
 /** 获取文本文件内容 */
 export const getTextContentSFn = createServerFn({ method: "GET" })
 	.middleware([adminPermGuard(ADMIN_PERMISSIONS.FILE_EXPLORER_VIEW)])
-	.inputValidator(subPathSchema)
+	.validator(subPathSchema)
 	.handler(async ({ data }) => {
 		return getTextContent(data.subPath);
 	});
@@ -38,7 +38,7 @@ export const getTextContentSFn = createServerFn({ method: "GET" })
 /** 创建子目录 */
 export const createDirectorySFn = createServerFn({ method: "POST" })
 	.middleware([adminPermGuard(ADMIN_PERMISSIONS.FILE_EXPLORER_MKDIR)])
-	.inputValidator(subPathAndNameSchema)
+	.validator(subPathAndNameSchema)
 	.handler(async ({ data, context }) => {
 		await createDirectory(data.subPath, data.name);
 		logCrud(context.user, "file-explorer", "mkdir", {
@@ -51,7 +51,7 @@ export const createDirectorySFn = createServerFn({ method: "POST" })
 /** 重命名文件或目录 */
 export const renameEntrySFn = createServerFn({ method: "POST" })
 	.middleware([adminPermGuard(ADMIN_PERMISSIONS.FILE_EXPLORER_RENAME)])
-	.inputValidator(renameSchema)
+	.validator(renameSchema)
 	.handler(async ({ data, context }) => {
 		const result = await renameEntry(data.subPath, data.newName);
 		logCrud(context.user, "file-explorer", "rename", {
@@ -64,7 +64,7 @@ export const renameEntrySFn = createServerFn({ method: "POST" })
 /** 删除文件或空目录 */
 export const deleteEntrySFn = createServerFn({ method: "POST" })
 	.middleware([adminPermGuard(ADMIN_PERMISSIONS.FILE_EXPLORER_DELETE)])
-	.inputValidator(subPathSchema)
+	.validator(subPathSchema)
 	.handler(async ({ data, context }) => {
 		const result = await deleteEntry(data.subPath);
 		logCrud(context.user, "file-explorer", "delete", {
@@ -77,7 +77,7 @@ export const deleteEntrySFn = createServerFn({ method: "POST" })
 /** 上传文件到当前目录 */
 export const uploadFileSFn = createServerFn({ method: "POST" })
 	.middleware([adminPermGuard(ADMIN_PERMISSIONS.FILE_EXPLORER_UPLOAD)])
-	.inputValidator((data: unknown) => {
+	.validator((data: unknown) => {
 		if (!(data instanceof FormData)) throw new Error("Expected FormData");
 		const f = data.get("file");
 		if (!f || !(f instanceof File)) throw new Error("未选择文件");
