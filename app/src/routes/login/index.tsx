@@ -18,6 +18,7 @@ import {
 	useNavigate,
 } from "@tanstack/react-router";
 import { toast } from "sonner";
+import { useClientAuth } from "#/components/client";
 import { useTranslation } from "#/components/providers";
 import { track } from "#/lib/track/track";
 import { getCurrentClientSFn } from "#/services/client-auth/client-auth.functions";
@@ -47,6 +48,7 @@ export const Route = createFileRoute("/login/")({
 function ClientLoginPage() {
 	const navigate = useNavigate();
 	const { t } = useTranslation();
+	const { refetch } = useClientAuth();
 
 	const form = useForm({
 		defaultValues: {
@@ -59,6 +61,8 @@ function ClientLoginPage() {
 				toast.error(result.message || t("登录失败"));
 				return;
 			}
+			// 刷新客户端登录态，避免 Header 等组件仍显示未登录
+			refetch();
 			toast.success(t("登录成功"));
 			track("Login", { form_name: "clientLogin" });
 			track("FormSubmit", { form_name: "clientLogin" });
