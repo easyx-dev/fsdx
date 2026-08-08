@@ -111,7 +111,7 @@ export function PhotoWall({
 						style={{
 							width: 104,
 							height: 104,
-							border: "1px solid #d9d9d9",
+							border: "1px solid var(--s-border)",
 							borderRadius: 0,
 							overflow: "hidden",
 							position: "relative",
@@ -120,7 +120,7 @@ export function PhotoWall({
 							borderColor:
 								canSort && hoverIndex === index
 									? "var(--s-primary)"
-									: "#d9d9d9",
+									: "var(--s-border)",
 							borderWidth: canSort && hoverIndex === index ? 2 : 1,
 							transition: "opacity 0.15s, border-color 0.15s",
 						}}
@@ -152,7 +152,8 @@ export function PhotoWall({
 								style={{
 									position: "absolute",
 									inset: 0,
-									background: "rgba(255,255,255,0.7)",
+									background:
+										"color-mix(in srgb, var(--s-surface) 70%, transparent)",
 									display: "flex",
 									alignItems: "center",
 									justifyContent: "center",
@@ -181,8 +182,9 @@ export function PhotoWall({
 								danger
 								icon={<DeleteOutlined />}
 								style={{
-									color: "#fff",
-									background: "rgba(255,77,79,0.7)",
+									color: "var(--s-text-inverse)",
+									background:
+										"color-mix(in srgb, var(--s-danger) 70%, transparent)",
 									borderRadius: 0,
 								}}
 								onClick={(e: React.MouseEvent<HTMLElement>) => {
@@ -213,13 +215,15 @@ export function PhotoWall({
 					style={{
 						width: 104,
 						height: 104,
-						border: "1px dashed #d9d9d9",
+						border: "1px dashed var(--s-border)",
 						borderRadius: 0,
 						display: "flex",
 						flexDirection: "column",
 						overflow: "hidden",
-						borderColor: dragOver ? "var(--s-primary)" : "#d9d9d9",
-						background: dragOver ? "var(--s-primary-bg)" : "#fafafa",
+						borderColor: dragOver ? "var(--s-primary)" : "var(--s-border)",
+						background: dragOver
+							? "var(--s-primary-bg)"
+							: "var(--s-surface-secondary)",
 						transition: "border-color 0.15s, background 0.15s",
 					}}
 				>
@@ -232,7 +236,7 @@ export function PhotoWall({
 							alignItems: "center",
 							justifyContent: "center",
 							cursor: "pointer",
-							color: "#999",
+							color: "var(--s-text-tertiary)",
 						}}
 						onMouseEnter={(e) => {
 							const el = e.currentTarget as HTMLElement;
@@ -242,9 +246,9 @@ export function PhotoWall({
 						}}
 						onMouseLeave={(e) => {
 							const el = e.currentTarget as HTMLElement;
-							el.style.color = "#999";
+							el.style.color = "var(--s-text-tertiary)";
 							const parent = el.parentElement;
-							if (parent) parent.style.borderColor = "#d9d9d9";
+							if (parent) parent.style.borderColor = "var(--s-border)";
 						}}
 					>
 						<PlusOutlined style={{ fontSize: 20 }} />
@@ -257,26 +261,26 @@ export function PhotoWall({
 						}}
 						style={{
 							height: 28,
-							borderTop: "1px dashed #d9d9d9",
+							borderTop: "1px dashed var(--s-border)",
 							display: "flex",
 							alignItems: "center",
 							justifyContent: "center",
 							cursor: "pointer",
 							fontSize: 12,
-							color: "#999",
-							background: "#f5f5f5",
+							color: "var(--s-text-tertiary)",
+							background: "var(--s-surface-tertiary)",
 						}}
 						onMouseEnter={(e) => {
 							const el = e.currentTarget as HTMLElement;
-							el.style.color = "#fff";
+							el.style.color = "var(--s-primary-fg)";
 							el.style.background = "var(--s-primary)";
 							el.style.borderTopColor = "var(--s-primary)";
 						}}
 						onMouseLeave={(e) => {
 							const el = e.currentTarget as HTMLElement;
-							el.style.color = "#999";
-							el.style.background = "#f5f5f5";
-							el.style.borderTopColor = "#d9d9d9";
+							el.style.color = "var(--s-text-tertiary)";
+							el.style.background = "var(--s-surface-tertiary)";
+							el.style.borderTopColor = "var(--s-border)";
 						}}
 					>
 						<FolderOpenOutlined style={{ fontSize: 12, marginRight: 4 }} />
