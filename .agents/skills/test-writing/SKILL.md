@@ -50,12 +50,12 @@ const { mockDb } = vi.hoisted(() => {
   return {
     mockDb: {
       query: {
-        // ⚠️ 必须包含所有表的 query 方法
-        news: q(), adminUser: q(), clientUser: q(), role: q(),
-        dict: q(), dictItem: q(), systemConfig: q(), file: q(),
-        captchaCode: q(), event: q(), operationLog: q(),
-        trackEventMeta: q(), trackPropertyMeta: q(),
-        uiTranslation: q(), contentTranslation: q(),
+        // ⚠️ 必须包含所有表的 query 方法（当前 17 张）
+        adminRole: q(), adminUser: q(), captchaCode: q(),
+        clientRole: q(), clientUser: q(), dict: q(), dictItem: q(),
+        file: q(), message: q(), news: q(), operationLog: q(),
+        systemConfig: q(), trackEvent: q(), trackEventMeta: q(),
+        trackPropertyMeta: q(), uiTranslation: q(), contentTranslation: q(),
       },
       $count: vi.fn(),
       select: vi.fn(() => selectChain),
@@ -102,12 +102,12 @@ const productRecord = {
 
 `mockDb.query` **必须**包含项目中所有表的 query 方法。`.server.ts` 模块之间的交叉引用可能在测试时意外触发其他表查询（如 `logOperation` 内部引用 `operationLog` 表），缺少任何一张表都会导致 `undefined` 错误。
 
-当前项目全部表（15 张）：
+当前项目全部表（17 张）：
 
 ```
-adminUser, clientUser, role, news, file,
-dict, dictItem, systemConfig, captchaCode,
-trackEvent, operationLog, trackEventMeta, trackPropertyMeta,
+adminRole, adminUser, captchaCode, clientRole, clientUser,
+dict, dictItem, file, message, news, operationLog, systemConfig,
+trackEvent, trackEventMeta, trackPropertyMeta,
 uiTranslation, contentTranslation
 ```
 

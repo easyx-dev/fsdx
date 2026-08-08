@@ -19,7 +19,7 @@ description: >
 
 ## 缓存实例所有权
 
-`MemoryCache<T>` 泛型类在 `src/lib/cache/core.ts`，各实例按模块拆分在 `src/lib/cache/*.cache.ts`，每个实例**只能在唯一一个服务端模块中直接操作**：
+`MemoryCache<T>` 泛型类在 `@fsdx/core/cache-core`，各实例按模块拆分在 `services/<module>/<module>.cache.ts`，每个实例**只能在唯一一个服务端模块中直接操作**：
 
 | 缓存实例 | 实例文件 | 所属模块 | 存储内容 |
 |----------|----------|----------|----------|
@@ -67,12 +67,12 @@ export async function getXxx(key: string): Promise<string> {
 
 当需要新的内存缓存时，按以下步骤操作：
 
-1. 在 `src/lib/cache/` 下新建 `<模块名>.cache.ts`，定义 `MemoryCache` 实例并导出缓存条目类型，指定 `name` 和合适的 `defaultTTL`
+1. 在所属服务端模块目录下新建 `<模块名>.cache.ts`（如 `services/config/config.cache.ts`），定义 `MemoryCache` 实例并导出缓存条目类型，指定 `name` 和合适的 `defaultTTL`
 2. 明确其所属服务端模块（一个模块可以拥有多个缓存，但每个缓存只能属于一个模块）
 3. 在所属模块中：
    - 实现 `load*Cache()` 函数（清空旧缓存 + 从数据库加载 + 写入缓存）
    - 实现对外导出的读函数（遵循懒加载模式）
-4. 在 `src/bootstrap.ts` 的启动流程中，`await` 缓存加载确保首次请求前缓存已就绪
+4. 若为高频读取的元数据（如 track 元事件），在 `src/bootstrap.ts` 的启动流程中加载确保首次请求前就绪；一般业务缓存懒加载即可
 5. 其他模块通过该模块的导出函数访问数据，禁止直接 import 缓存实例
 
 ## 测试 mock 模式
@@ -80,7 +80,7 @@ export async function getXxx(key: string): Promise<string> {
 测试中对缓存必须使用 `vi.mock`，禁止直接 import 缓存实例并操作：
 
 ```ts
-// 正确：vi.mock 三段式
+// 正确：vi.mock 三段式（mock 缓存实例所在的模块文件）
 const { mockCache } = vi.hoisted(() => ({
   mockCache: {
     get: vi.fn(),
@@ -91,10 +91,10 @@ const { mockCache } = vi.hoisted(() => ({
     keys: vi.fn(() => []),
   },
 }));
-vi.mock("#/lib/cache/cache", () => ({ configCache: mockCache }));
+vi.mock("#/services/config/config.cache", () => ({ configCache: mockCache }));
 
 // 错误：直接 import 并操作
-import { configCache } from "#/lib/cache/cache";
+import { configCache } from "#/services/config/config.cache";
 beforeEach(() => configCache.clear());
 ```
 

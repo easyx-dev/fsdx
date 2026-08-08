@@ -166,7 +166,7 @@ export const updateProductSFn = createServerFn({ method: "POST" })
 // src/services/product/product.functions.ts
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { toCsv, toJson } from "#/lib/export/export.utils";
+import { toCsv, toJson } from "@fsdx/core/export";
 import { ADMIN_PERMISSIONS } from "#/permissions/admin-permissions";
 import { adminPermGuard } from "#/middleware/admin-auth";
 import { getAllProductsForExport, PRODUCT_EXPORT_COLUMNS } from "./product.server";
@@ -197,6 +197,27 @@ export const exportProductsSFn = createServerFn({ method: "GET" })
 - 子目录内文件名与目录名对应（如 `news/news.server.ts`）
 
 混合 barrel（同时导出类型和运行时值）应拆分：类型走 `.types.ts`，运行时值走 `.server.ts` 或 `.functions.ts`。
+
+## 服务层归属（就近原则与准入门槛）
+
+代码应尽可能靠近其唯一消费者，仅被多方共享的模块才能放入 `src/services/`（渐进式提取）：
+
+| 场景 | 位置 |
+|------|------|
+| 只被 1 个 SFn 消费且无独立单测 | 内联到 SFn handler 体 |
+| 只被 1 个路由模块消费 | 路由同目录 `-mods/<name>.server.ts` |
+| 被 ≥2 个消费者共享（路由、组件、bootstrap、定时任务等） | `src/services/<module>/` |
+
+**`src/services/` 准入门槛**（满足至少一条才能留在 services/）：
+- 被 ≥2 个不同路由/组件/模块消费
+- 被 bootstrap / 定时任务等非路由上下文调用
+- 被 admin 和 client 两端路由同时使用
+
+单路由模块私有的服务层（如 `admin-user`、`client-user`）统一放在 `routes/admin/_admin/<module>/-mods/` 下，不上提 services/。
+
+## Server Route 例外
+
+`src/routes/api/` 下的文件下载/流式响应路由（如 `api/download/file.$id.tsx`）允许在 `.tsx` 内通过 `server.handlers` 直接写服务端 handler 并引用 `.server.ts`——这是 TanStack Start Server Route 的合法形态，与 SFn 是两套并存范式，**不适用**「SFn 必须放 `.functions.ts`」规则。
 
 
 ## Handler 内部模式
@@ -292,15 +313,17 @@ async function handleSubmit() {
 
 ## Import 边界完整规则
 
-| 源文件后缀 | → `.server.ts` | → `.functions.ts` | → 路由/组件 | → `.ts` |
-|-----------|---------------|-------------------|------------|--------|
-| `.server.ts` | ✅ 允许 | ✅ 允许 | ❌ 禁止 | ❌ 禁止 |
+| 源文件后缀 | → `.server.ts` | → `.functions.ts` | → 路由/组件 | → `.ts`（类型/schema） |
+|-----------|---------------|-------------------|------------|----------------------|
+| `.server.ts` | ✅ 允许 | ✅ 允许 | ❌ 禁止 | ✅ 允许 |
 | `.functions.ts` | ❌ 禁止 | ✅ 允许 | ✅ 允许 | ✅ 允许 |
 | `.ts` | ✅ 允许 | ✅ 允许 | ✅ 允许 | ✅ 允许 |
 
 **关键规则**：路由文件和组件**禁止**直接 import `.server.ts`。有两种正确方式：
 1. 通过 `.functions.ts` 的 SFn 包装（全局复用）
 2. 在路由文件中创建局部 SFn，handler 内调用 `.server.ts`（编译器会在客户端构建时移除 handler）
+
+`.server.ts` 允许 import 类型/schema（`.ts` 后缀文件），如 `z.infer` 派生输入类型 —— 这属于类型导入，不违反「路由层禁止直接调服务层」的运行时边界。
 
 ## 全局错误日志
 

@@ -8,8 +8,8 @@
 
 | 表名 | 主键 | 软删除 | 核心职责 |
 |------|------|--------|----------|
-| `admin_user` | UUID | `deleted_at` | 管理端用户（含 root），关联 `admin_role_id` FK |
-| `client_user` | UUID | `deleted_at` | 前台注册用户，关联 `client_role_id` FK（可空） |
+| `admin_user` | UUID | `deleted_at` | 管理端用户（含 root），`admin_role_ids`（JSONB 角色数组） |
+| `client_user` | UUID | `deleted_at` | 前台注册用户，`client_role_ids`（JSONB 角色数组） |
 | `admin_role` | UUID | `deleted_at` | 管理端 RBAC 角色，`permissions` 为 JSONB 字符串数组 |
 | `client_role` | UUID | `deleted_at` | 客户端 RBAC 角色，`permissions` 为 JSONB 字符串数组 |
 | `message` | UUID | `deleted_at` | 通用消息，`recipient_type` + `recipient_id` 定位接收者（无外键） |
@@ -48,7 +48,7 @@ erDiagram
         varchar email UK
         varchar password_hash
         varchar avatar
-        uuid admin_role_id FK
+        jsonb admin_role_ids "角色 id 数组，多角色"
         boolean is_root "部分唯一索引"
         varchar status "active/disabled"
         timestamp last_login_at
@@ -74,7 +74,7 @@ erDiagram
         varchar email UK
         varchar password_hash
         varchar avatar
-        uuid client_role_id FK
+        jsonb client_role_ids "角色 id 数组，多角色"
         varchar status "active/disabled"
         boolean email_verified
         timestamp last_login_at
@@ -259,8 +259,8 @@ erDiagram
         timestamp created_at
     }
 
-    admin_role ||--o{ admin_user : "admin_role_id FK"
-    client_role ||--o{ client_user : "client_role_id FK"
+    admin_role ||..o{ admin_user : "admin_role_ids (jsonb 数组，无外键)"
+    client_role ||..o{ client_user : "client_role_ids (jsonb 数组，无外键)"
     dict ||--o{ dict_item : "dict_slug FK (CASCADE)"
     file ||--o{ news : "cover_image_id FK"
     admin_user ||--o{ news : "created_by_id / updated_by_id FK"
@@ -285,7 +285,7 @@ erDiagram
 要点：
 - 所有列**必须**显式指定数据库列名（如 `createdAt: timestamp("created_at", { withTimezone: true })`）
 - timestamp 列**必须**加 `{ withTimezone: true }`
-- 新增/修改 Schema 后运行 `pnpm db:push`，重命名列时选择 `rename column`
+- 新增/修改 Schema 后运行 `pnpm db:generate` 生成迁移文件，审查 SQL 后执行 `pnpm db:migrate`（禁止 `db:push`），重命名列时选择 `rename column`
 
 ---
 
@@ -298,7 +298,8 @@ erDiagram
 | `admin_user` | `is_root = true` 仅一条 | 部分唯一索引 `WHERE is_root = true` |
 | `admin_user` | `username`, `email` | 普通唯一 |
 | `client_user` | `username`, `email` | 普通唯一 |
-| `role` | `slug` | 普通唯一 |
+| `admin_role` | `slug` | 普通唯一 |
+| `client_role` | `slug` | 普通唯一 |
 | `news` | `slug` | 普通唯一 |
 | `dict` | `slug` | 普通唯一 |
 | `dict_item` | `(dict_slug, value)` | 复合唯一 |
@@ -320,14 +321,12 @@ erDiagram
 
 | 子表 | 列 | 父表 | CASCADE |
 |------|----|------|---------|
-| `admin_user` | `admin_role_id` | `admin_role.id` | 否 |
-| `client_user` | `client_role_id` | `client_role.id` | 否 |
 | `news` | `cover_image_id` | `file.id` | 否 |
 | `news` | `created_by_id` | `admin_user.id` | 否 |
 | `news` | `updated_by_id` | `admin_user.id` | 否 |
 | `dict_item` | `dict_slug` | `dict.slug` | 仅 UPDATE |
 
-> `message` 与 `operation_log` 的接收者/操作者列均无外键（`operator_id`、`recipient_id` 指向不同类型用户），避免跨表约束。
+> 用户与角色的关联**无外键**：`admin_user.admin_role_ids` / `client_user.client_role_ids` 为 JSONB 角色 id 数组（多角色，角色被删时数组遗留失效 id，查询时按 id 过滤）。`message` 与 `operation_log` 的接收者/操作者列同样无外键（`operator_id`、`recipient_id` 指向不同类型用户），避免跨表约束。
 
 ---
 
@@ -356,5 +355,5 @@ erDiagram
 | `src/db/index.ts` | Drizzle 客户端懒加载实例 |
 | `src/db/schema/*.ts` | 各表 Drizzle Schema 定义 |
 | `drizzle/` | 迁移 SQL + meta snapshot（`pnpm db:generate` 生成，bootstrap 启动自动执行） |
-| `.env.example` | 环境变量模板（`DATABASE_URL`） |
-| `drizzle.config.ts` | Drizzle Kit 配置（dialect、schema 路径） |
+| `app/.env.example` | 环境变量模板（`DATABASE_URL`） |
+| `app/drizzle.config.ts` | Drizzle Kit 配置（dialect、schema 路径） |

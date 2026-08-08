@@ -73,7 +73,7 @@ updatedById: uuid("updated_by_id").references(() => adminUser.id),
 | 创建者引用 | `created_by_id` | `createdById` | `uuid(...).references(...)` | FK 引用 `admin_user` |
 | 多态引用类型 | `xxx_type` | `xxxType` | `varchar({ length: N })` | 如 `created_by_type`，配合 `xxx_id` 使用 |
 | 更新者引用 | `updated_by_id` | `updatedById` | `uuid(...).references(...)` | FK 引用 `admin_user` |
-| 角色引用 | `role_id` | `roleId` | `uuid(...).references(...)` | FK 引用 `role` |
+| 角色关联 | `admin_role_ids` / `client_role_ids` | `adminRoleIds` / `clientRoleIds` | `jsonb(...).$type<string[]>().default([]).notNull()` | 多角色 id 数组（无外键），参考 `admin_user` / `client_user` 表 |
 
 ## 外键列命名规则
 
@@ -108,6 +108,22 @@ createdAt: timestamp().defaultNow().notNull(),          // 缺少列名 + withTi
 title: varchar().notNull(),                              // 未指定列名 + 长度
 description: text(),                                    // 未指定列名
 ```
+
+## jsonb 列类型约定
+
+所有 `jsonb()` 列**必须**通过 `.$type<>()` 显式指定 TS 类型，禁止无类型 `jsonb()`：
+
+```ts
+// ✅ 正确
+permissions: jsonb("permissions").$type<string[]>().default([]).notNull(),
+properties: jsonb("properties").$type<Record<string, unknown>>().default({}).notNull(),
+
+// ❌ 错误
+properties: jsonb().default({}).notNull(),
+detail: jsonb(),
+```
+
+`$type<>()` 仅影响 TS 类型推断，不影响数据库列定义（数据库侧始终为 `jsonb`）；读取时 Drizzle 按 `$type` 返回强类型值。
 
 ## 完整表定义模板
 
@@ -175,25 +191,31 @@ export const product = pgTable(
 
 1. **创建 Schema 文件**：`src/db/schema/<table-name>.ts`（使用上面的完整模板）
 2. **注册导出**：在 `src/db/schema/index.ts` 追加一行 `export { product } from "./product";`
-3. **同步到数据库**：`pnpm db:push`
-4. **验证**：`pnpm check && pnpm test -- --run`
+3. **生成迁移**：`pnpm db:generate`，审查生成的 SQL（确认无破坏性操作）
+4. **执行迁移**：`pnpm db:migrate`（或 `pnpm dev`，bootstrap 启动时自动执行）
+5. **验证**：`pnpm check && pnpm test -- --run`
+
+> ⚠️ **禁止使用 `db:push`**：直接改库不生成迁移文件、不更新 snapshot，与启动时自动迁移机制状态脱节，混用必炸。
 
 ## Schema 修改流程
 
 ### 重命名已有列
 
-> ⚠️ 重命名列时 `db:push` 会弹出交互提示，**必须选择 rename column**，否则 Drizzle 会删除旧列 + 创建新列，导致数据丢失。
+> ⚠️ `pnpm db:generate` 检测到重命名时会弹出交互提示，**必须选择 rename column**，否则 Drizzle 会删除旧列 + 创建新列，导致数据丢失。
 
 1. 修改 Drizzle Schema 中的列名
-2. `pnpm db:push`
-3. 在交互提示中选择 **rename column**（输入 `r` 或对应的选项）
-4. `pnpm check && pnpm test -- --run`
+2. `pnpm db:generate`，在交互提示中选择 **rename column**（输入 `r` 或对应的选项）
+3. **审查生成的 SQL** 确认是 `ALTER TABLE ... RENAME COLUMN` 而非 drop + add
+4. `pnpm db:migrate`
+5. `pnpm check && pnpm test -- --run`
 
 ### 新增列
 
 1. 在 Schema 文件中追加列定义
-2. `pnpm db:push`（不会弹出交互提示，直接新增）
-3. `pnpm check && pnpm test -- --run`
+2. `pnpm db:generate`（新增列不弹交互提示，直接生成 `ALTER TABLE ADD COLUMN`）
+3. **审查生成的 SQL**（若新列为 NOT NULL 且无默认值，需评估存量数据）
+4. `pnpm db:migrate`
+5. `pnpm check && pnpm test -- --run`
 
 ## 常见陷阱
 

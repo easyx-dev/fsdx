@@ -91,7 +91,7 @@ export const createProductSFn = createServerFn({ method: "POST" })
 
 ### Step 3：角色编辑页面自动生效
 
-管理端角色编辑页面（`/admin/roles`）基于 `ADMIN_PERMISSIONS_BY_GROUP` 自动渲染所有权限码的复选框，无需手动添加 UI。新增的权限码会自动出现在对应分组下。
+管理端角色编辑页面（`/admin/admin-roles`、`/admin/client-roles`）基于 `ADMIN_PERMISSIONS_BY_GROUP`（管理端）/ `CLIENT_PERMISSIONS_BY_GROUP`（客户端）自动渲染所有权限码的复选框，无需手动添加 UI。新增的权限码会自动出现在对应分组下。
 
 ### Step 4：UI 条件渲染（可选）
 
@@ -133,10 +133,10 @@ function AdminPage() {
 
 ## 权限匹配逻辑
 
-```ts
-// src/permissions/admin-permissions.ts — matchPermission()
-// 优先级：** → 精确匹配 → group:*
+匹配纯函数 `matchPermission()` 在 `@fsdx/core/match-permission`（`#/permissions/admin-permissions` 的 `hasAdminPermission` 等基于它实现）：
+优先级：`**` → 精确匹配 → `group:*`
 
+```ts
 // 1. ** 超级通配符（root 用户）
 rolePermissions = ["**"];
 matchPermission(rolePermissions, "news:edit");  // ✅ true
@@ -180,8 +180,21 @@ matchPermission(rolePermissions, "admin:view");  // ❌ false（不同分组）
 |--------|---------|---------|
 | `adminPermGuard(ADMIN_PERMISSIONS.XXX)` | 登录 + 指定权限 | **所有管理端 SFn**（推荐） |
 | `adminAuthGuard` | 仅登录 | 极少数不需要权限校验的接口 |
+| `adminPermRouteGuard(ADMIN_PERMISSIONS.XXX)` | 登录 + 权限（Server Route） | `/api/` 服务端路由，捕获 `AdminAuthError` 转 HTTP 状态码 |
 
-`adminPermGuard` 内部已组合 `adminAuthGuard`，无需重复加登录校验。
+`adminPermGuard` 内部直接调用 `resolveAdminAuthContext()` 完成登录校验 + 权限校验，无需额外加登录中间件。
+
+### 客户端 RBAC
+
+客户端同样支持 RBAC（`client_role` 表 + `client_user.client_role_ids` 多角色），中间件在 `src/middleware/client-auth.ts`：
+
+| 中间件 | 校验内容 | 使用场景 |
+|--------|---------|---------|
+| `clientPermGuard(CLIENT_PERMISSIONS.XXX)` | 认证 + 指定权限 | 客户端 SFn |
+| `clientAuthGuard` | 仅认证 | 仅需登录的接口 |
+| `clientPermRouteGuard(CLIENT_PERMISSIONS.XXX)` | 认证 + 权限（Server Route） | 客户端服务端路由 |
+
+客户端权限码定义在 `src/permissions/client-permissions.ts`（当前为空集合，业务模块扩展时填充）。
 
 ## 元数据工具
 

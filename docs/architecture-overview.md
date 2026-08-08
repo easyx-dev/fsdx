@@ -45,20 +45,23 @@
 │                           │                                        │
 │  ┌────────────────────────▼──────────────────────────────────┐    │
 │  │              服务层 (src/services/)                           │    │
-│  │  admin-auth / captcha / client-auth / config               │    │
-│  │  dict / track / file / i18n / init / logs                   │    │
-│  │  news / operation-log / query / admin-role / message / tasks                │    │
+│  │  admin-auth / admin-role / captcha / client-auth           │    │
+│  │  client-role / config / dict / file / file-explorer        │    │
+│  │  i18n / init / logs / message / news / operation-log       │    │
+│  │  query / tasks / track                                     │    │
 │  └────────────────────────┬──────────────────────────────────┘    │
 │                           │                                        │
 │  ┌────────────────────────▼──────────────────────────────────┐    │
-│  │              基础库 (src/lib/)                              │    │
-│  │  cache / jwt / logger / scheduler / storage  │    │
-│  │  ai / mail / sms / i18n / captcha / track / query / utils    │    │
+│  │          基础库 (@fsdx/core + src/lib 薄壳)                 │    │
+│  │  utils: ms / export / match-permission / cn / error-utils │    │
+│  │  cache: MemoryCache │ i18n: types / config                 │    │
+│  │  infra(服务端): logger / jwt / batch-writer / storage      │    │
+│  │  request-context / scheduler / ai / mail / sms / captcha   │    │
 │  └────────────────────────┬──────────────────────────────────┘    │
 │                           │                                        │
 │  ┌────────────────────────▼──────────────────────────────────┐    │
 │  │           PostgreSQL (Drizzle ORM)                         │    │
-│  │  17 张表 + 6 个内存缓存实例                                  │    │
+│  │  17 张表 + 8 个内存缓存实例                                  │    │
 │  └───────────────────────────────────────────────────────────┘    │
 └─────────────────────────────────────────────────────────────────────┘
 ```
@@ -150,16 +153,20 @@ requestMiddleware                    functionMiddleware
 ┌─────────────────────────────────────────────┐
 │           MemoryCache<T> (通用基类)           │
 │  基于 Map，支持 TTL 过期、命名空间              │
+│  @fsdx/core/cache-core                       │
 ├─────────────────────────────────────────────┤
 │  dictCache          字典标签/颜色映射          │
 │  configCache        系统配置全量缓存            │
 │  uiTranslationCache  UI 翻译 (按 locale)       │
 │  configTranslationCache  配置翻译 (按 locale)  │
 │  clientUserCache    客户端用户 (TTL 5 分钟)     │
+│  adminUserCache     管理员用户 (TTL 5 分钟)     │
 │  trackEventMetaCache   元事件名校验              │
 │  trackPropertyMetaCache 元属性类型校验            │
 └─────────────────────────────────────────────┘
 ```
+
+缓存实例按模块拆分在 `services/<module>/<module>.cache.ts`，每个实例只能在唯一服务模块中直接操作，详见 [缓存体系](cache-system.md)。
 
 ### 6. 缓冲写入策略
 
@@ -210,13 +217,16 @@ Fire-and-forget 调用
 
 | 目录 | 定位 | 可导入方 | 特殊规则 |
 |------|------|----------|----------|
-| `src/lib/` | 无业务逻辑的基础库 | 全部 | 纯函数/工具类 |
+| `packages/core/` | 纯逻辑库（同构工具 + 服务端基础设施） | 全部 | `infra/` 仅服务端，客户端禁止引用；详见 [core README](../packages/core/README.md) |
+| `packages/ui-ssr/` | shadcn 基础组件 | 前台/两端共用 | 只写 tailwind 类名，颜色 token 宿主注入；详见 [ui-ssr README](../packages/ui-ssr/README.md) |
+| `packages/ui-spa/` | antd 管理端组件 | 管理端 | antd 为 peerDependency 单实例；详见 [ui-spa README](../packages/ui-spa/README.md) |
+| `src/lib/` | 应用级基础设施单例壳 + 客户端 SDK | 全部 | 仅 jwt/logger/track 三个薄壳，其余基础库在 `@fsdx/core` |
 | `src/services/` | 服务端业务逻辑 | routes/, services/ 自身 | `.server.ts` 禁止使用 `SFn` 后缀 |
 | `src/routes/` | 路由页面 + SFn 包装 | — | SFn 必须用 `.inputValidator(zod)` |
 | `src/middleware/` | 请求级中间件 | start.ts, routes/ | — |
 | `src/components/` | React 组件 | 全部 | admin/ 用 antd, client/ 用 shadcn/ui |
 | `src/db/` | 数据库 Schema | services/ | 客户端禁止导入 (importProtection) |
-| `src/lib/cache/` | 内存缓存 | services/ | 服务端单例 |
+| `services/*/*.cache.ts` | 内存缓存实例 | 仅所属模块 | 每个实例只能在唯一服务模块中直接操作 |
 
 ## 关键文件索引
 
@@ -229,6 +239,9 @@ Fire-and-forget 调用
 | `src/start.ts` | 全局中间件注册（locale + CSRF + sfErrorLogger） |
 | `src/router.tsx` | TanStack Router 实例 |
 | `src/routes/__root.tsx` | 根布局（AdminLayout / SSRLayout 分支） |
+| `packages/core/README.md` | @fsdx/core 导出清单与边界 |
+| `packages/ui-ssr/README.md` | @fsdx/ui-ssr 组件清单与集成约定 |
+| `packages/ui-spa/README.md` | @fsdx/ui-spa 组件清单与集成约定 |
 | `docs/auth-permission-model.md` | 认证与权限模型详细文档 |
 | `docs/database-design.md` | 数据库设计文档 |
 | `docs/cache-system.md` | 缓存体系文档 |

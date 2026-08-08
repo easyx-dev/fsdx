@@ -7,7 +7,7 @@
 | 用户体系 | 入口路由 | Cookie 名 | 是否支持 RBAC | 注册方式 |
 |----------|----------|-----------|---------------|----------|
 | 管理端 (admin) | `/admin/login` | `fsdx_admin_token` | 是（admin_role 表） | 仅管理员手动创建 |
-| 客户端 (client) | `/login` | `fsdx_client_token` | 否 | 公开注册 + 邮箱验证码 |
+| 客户端 (client) | `/login` | `fsdx_client_token` | 是（client_role 表） | 公开注册 + 邮箱验证码 |
 
 两套体系使用**独立的 Cookie**，允许同一浏览器同时登录管理员和前台用户。
 
@@ -44,8 +44,8 @@ flowchart TB
         end
 
         subgraph AuthMiddleware["鉴权中间件"]
-            AuthGuard["adminAuthGuard<br/>JWT 校验 + 用户查询"]
             PermGuard["adminPermGuard<br/>权限校验工厂"]
+            Resolver["resolveAdminAuthContext()<br/>登录校验 + 权限校验一步完成"]
         end
     end
 
@@ -53,6 +53,7 @@ flowchart TB
         AdminTbl["admin_user"]
         RoleTbl["admin_role<br/>(permissions: JSONB)"]
         ClientTbl["client_user"]
+        ClientRoleTbl["client_role<br/>(permissions: JSONB)"]
         CaptchaTbl["captcha_code"]
     end
 
@@ -60,10 +61,11 @@ flowchart TB
     RequestMiddleware --> ServerFunctions
     AdminSF --> AuthMiddleware
     Protected -.->|".middleware([adminPermGuard(PERM)])"| PermGuard
-    PermGuard -->|"组合调用"| AuthGuard
-    AuthGuard --> AdminTbl
-    AuthGuard --> RoleTbl
+    PermGuard --> Resolver
+    Resolver --> AdminTbl
+    Resolver --> RoleTbl
     ClientSF --> ClientTbl
+    ClientSF --> ClientRoleTbl
     ClientSF --> CaptchaTbl
 ```
 
@@ -75,7 +77,7 @@ flowchart TB
 
 ```mermaid
 erDiagram
-    role {
+    admin_role {
         uuid id PK "defaultRandom()"
         varchar name UK "角色名称"
         varchar slug UK "角色标识"
@@ -92,10 +94,21 @@ erDiagram
         varchar email UK "邮箱"
         varchar password_hash "bcrypt 哈希"
         varchar avatar "头像"
-        uuid admin_role_id FK "关联角色"
+        jsonb admin_role_ids "角色 id 数组（多角色，无外键）"
         boolean is_root "是否超级管理员(仅一个)"
         varchar status "active/disabled"
         timestamp last_login_at
+        timestamp created_at
+        timestamp updated_at
+        timestamp deleted_at "软删除"
+    }
+
+    client_role {
+        uuid id PK "defaultRandom()"
+        varchar name UK "角色名称"
+        varchar slug UK "角色标识"
+        jsonb permissions "客户端权限码数组"
+        text description "角色描述"
         timestamp created_at
         timestamp updated_at
         timestamp deleted_at "软删除"
@@ -107,6 +120,7 @@ erDiagram
         varchar email UK "邮箱"
         varchar password_hash "bcrypt 哈希"
         varchar avatar "头像"
+        jsonb client_role_ids "角色 id 数组（多角色，无外键）"
         varchar status "active/disabled"
         boolean email_verified "邮箱是否验证"
         timestamp last_login_at
@@ -125,13 +139,14 @@ erDiagram
         timestamp created_at
     }
 
-    admin_role ||--o{ admin_user : "admin_role_id FK"
+    admin_role ||..o{ admin_user : "admin_role_ids (jsonb 数组)"
+    client_role ||..o{ client_user : "client_role_ids (jsonb 数组)"
 ```
 
-### `admin_user` 表关键约束
+### 关键约束
 
-- `is_root` 列有 **部分唯一索引**：`CREATE UNIQUE INDEX idx_admin_user_single_root ON admin_user (is_root) WHERE is_root = true`，从数据库层面保证全局仅一个 root 管理员。
-- `admin_role_id` 为必填字段（`NOT NULL`），包括 root 管理员也必须关联一个角色。
+- `admin_user.is_root` 有**部分唯一索引**：`CREATE UNIQUE INDEX idx_admin_user_single_root ON admin_user (is_root) WHERE is_root = true`，从数据库层面保证全局仅一个 root 管理员。
+- 角色关联使用 `admin_role_ids` / `client_role_ids`（JSONB 字符串数组），支持**多角色**，多角色权限取并集（任一角色含某权限即拥有）；与角色表**无外键约束**。
 
 ### `admin_role.permissions` 字段
 
@@ -150,12 +165,12 @@ erDiagram
 
 | 特性 | admin_user | client_user |
 |------|------------|-------------|
-| 管理端 RBAC 角色 | `admin_role_id` FK（必填） | 无 |
+| 角色关联 | `admin_role_ids`（JSONB 多角色） | `client_role_ids`（JSONB 多角色） |
 | is_root | 有（部分唯一索引） | 无 |
 | 邮箱验证 | 无 | `email_verified` 字段 |
 | 注册入口 | 管理员手动创建 | 公开 `/register` |
-| 认证缓存 | 无 | 内存缓存（5 分钟 TTL） |
-| 中间件保护 | `adminAuthGuard` / `adminPermGuard` | `beforeLoad` 内调用 `getCurrentClientFn` |
+| 认证缓存 | `adminUserCache`（5 分钟 TTL） | `clientUserCache`（5 分钟 TTL） |
+| 中间件保护 | `adminAuthGuard` / `adminPermGuard` / `adminPermRouteGuard` | `clientAuthGuard` / `clientPermGuard` / `clientPermRouteGuard` |
 
 ---
 
@@ -205,6 +220,7 @@ sequenceDiagram
     participant Server as clientAuth.server.ts
     participant DB as PostgreSQL
     participant Captcha as captcha.server.ts
+    participant JWT as signToken()
 
     Note over Browser,Captcha: === 注册流程 ===
 
@@ -237,12 +253,14 @@ sequenceDiagram
     LoginSF->>Browser: setCookie("fsdx_client_token", token, httpOnly)
 ```
 
-### JWT Token 结构
+---
+
+## JWT Token
 
 | 字段 | 说明 |
 |------|------|
-| 算法 | HS256（`jose` 库） |
-| 密钥 | `process.env.JWT_SECRET`（懒加载缓存为 `Uint8Array`） |
+| 算法 | HS256（`jose` 库，`@fsdx/core/jwt`） |
+| 密钥 | `process.env.JWT_SECRET`（app 惰性单例壳缓存为 `Uint8Array`） |
 | 有效期 | 7 天 |
 | 载荷 | `{ userId: string; username: string; userType: "admin" \| "client" }` |
 
@@ -254,7 +272,7 @@ sequenceDiagram
 
 ### 权限码体系
 
-权限码格式：`{模块}:{操作}`，共定义 **49 个权限常量**，按模块分组：
+权限码格式：`{模块}:{操作}`，共定义 **61 个权限常量**，按模块分组：
 
 | 模块 | 权限码 |
 |------|--------|
@@ -262,6 +280,7 @@ sequenceDiagram
 | `admin` | `view`, `create`, `edit`, `delete` |
 | `client` | `view`, `create`, `edit`, `delete` |
 | `admin-role` | `view`, `create`, `edit`, `delete` |
+| `client-role` | `view`, `create`, `edit`, `delete` |
 | `dict` | `view`, `create`, `edit`, `delete`, `create-item`, `edit-item`, `delete-item`, `export`, `import` |
 | `config` | `view`, `create`, `edit`, `delete`, `export`, `import` |
 | `file` | `view`, `upload`, `edit`, `delete` |
@@ -277,62 +296,17 @@ sequenceDiagram
 
 ### 权限匹配算法
 
-```mermaid
-flowchart TD
-    Start(["matchPermission(rolePermissions, requiredCode)"])
-    Start --> Check1{"rolePermissions<br/>包含 '**' ?"}
-    Check1 -->|是| Match(["✅ 匹配通过"])
-    Check1 -->|否| Check2{"rolePermissions<br/>包含精确 requiredCode ?"}
-    Check2 -->|是| Match
-    Check2 -->|否| Check3{"requiredCode 含 ':' ?"}
-    Check3 -->|否| NoMatch(["❌ 无权限"])
-    Check3 -->|是| Check4{"rolePermissions<br/>包含 'module:*' ?"}
-    Check4 -->|是| Match
-    Check4 -->|否| NoMatch
-```
+`matchPermission(rolePermissions, requiredCode)` 匹配纯函数在 `@fsdx/core/match-permission`，三级优先级：
 
-三级优先级：
 1. **`**` 超级通配符**：拥有全部权限，直接通过
 2. **精确匹配**：如角色有 `news:create`，请求 `news:create` 通过
 3. **分组通配符**：如角色有 `news:*`，请求 `news:create` / `news:edit` 等均通过
 
-关键函数：
+关键函数（管理端在 `src/permissions/admin-permissions.ts`，客户端同理）：
 - `matchPermission(rolePermissions, requiredCode)` — 核心匹配逻辑
 - `hasAdminPermission(rolePermissions, AdminPermissionDef)` — 单个权限校验
 - `hasAnyAdminPermission(rolePermissions, AdminPermissionDef[])` — 任意满足（OR）
 - `hasAllAdminPermissions(rolePermissions, AdminPermissionDef[])` — 全部满足（AND）
-
-### 角色-用户-权限关系
-
-```mermaid
-flowchart LR
-    subgraph AdminUsers["管理员用户"]
-        Root["Root 管理员<br/>is_root = true"]
-        Admin1["管理员 A"]
-        Admin2["管理员 B"]
-    end
-
-    subgraph Roles["角色"]
-        SuperRole["super-admin<br/>permissions: ['**']"]
-        EditorRole["editor<br/>permissions: ['news:*', 'dict:view']"]
-        ViewerRole["viewer<br/>permissions: ['news:view', 'dashboard:view']"]
-    end
-
-    subgraph PermLogic["权限判定"]
-        Match["matchPermission()"]
-    end
-
-    Root -->|"admin_role_id FK"| SuperRole
-    Admin1 -->|"admin_role_id FK"| EditorRole
-    Admin2 -->|"admin_role_id FK"| ViewerRole
-
-    SuperRole -->|"自动跳过 DB 查询<br/>直接设置 ['**']"| Match
-    EditorRole -->|"从 DB 读取"| Match
-    ViewerRole -->|"从 DB 读取"| Match
-
-    Match --> Result1["请求 news:create → ✅"]
-    Match --> Result2["请求 admin:delete → ❌ 权限不足"]
-```
 
 ---
 
@@ -340,62 +314,51 @@ flowchart LR
 
 ### 中间件执行链路
 
-```mermaid
-flowchart TD
-    SF["Server Function 调用"]
-    CSRF["CSRF 中间件<br/>(Origin/Referer 校验)"]
-    Locale["Locale 中间件"]
-    PermGuard["adminPermGuard(requiredPerm)"]
-    AuthGuard["adminAuthGuard"]
-    Handler["handler() 执行业务逻辑"]
-
-    SF --> CSRF
-    CSRF --> Locale
-    Locale --> PermGuard
-    PermGuard -->|".middleware([adminAuthGuard])"| AuthGuard
-    AuthGuard -->|"注入 AdminAuthContext"| PermCheck{"hasAdminPermission()"}
-    PermCheck -->|"✅ 有权限"| Handler
-    PermCheck -->|"❌ 无权限"| Error403["throw AdminAuthError('权限不足', 403)"]
-
-    subgraph AuthGuardDetails["adminAuthGuard 执行细节"]
-        direction TB
-        A1["getCookie('fsdx_admin_token')"]
-        A2["verifyToken() → 校验 JWT"]
-        A3["userType === 'admin' ?"]
-        A4["db.query.adminUser → 查用户"]
-        A5{"isRoot ?"}
-        A6["rolePermissions = ['**']"]
-        A7["getAdminUserForAuth → 读取权限"]
-        A8["注入 context: { user, rolePermissions }"]
-
-        A1 --> A2 --> A3 --> A4 --> A5
-        A5 -->|是| A6 --> A8
-        A5 -->|否| A7 --> A8
-    end
-
-    AuthGuard -.-> AuthGuardDetails
+```
+requestMiddleware                    functionMiddleware
+┌───────────────────────┐     ┌─────────────────────────┐
+│ localeMiddleware      │     │ sfErrorLogger           │
+│ createCsrfMiddleware  │     │ (覆盖所有 SF)            │
+│ (仅 ServerFn)         │     └─────────────────────────┘
+└──────────┬────────────┘
+           ▼
+  createServerFn.middleware([adminPermGuard(PERM)])
+           │
+           ▼
+  resolveAdminAuthContext(token)        ← 单步完成登录校验 + 权限校验
+  ┌──────────────────────────────────┐
+  │ verifyToken → userType 校验      │
+  │ getAdminUserForAuth (带缓存)      │
+  │ isRoot → ["**"] / 合并多角色权限   │
+  │ hasAdminPermission 校验           │
+  │ runWithRequestContext 注入 operator
+  └──────────────────────────────────┘
+           │
+           ▼
+  handler() 执行业务逻辑
 ```
 
-### `adminAuthGuard` 逻辑
+> 现状：`adminPermGuard(permission)` 内部直接调用 `resolveAdminAuthContext()` 一步完成登录校验 + 权限校验，不再组合 `adminAuthGuard`。`adminAuthGuard`（仅登录）与 `adminPermRouteGuard`（Server Route 专用，捕获 `AdminAuthError` 转 HTTP 状态码）为同一定位于 `src/middleware/admin-auth.ts` 的兄弟中间件。
+
+### `resolveAdminAuthContext` 逻辑
 
 ```mermaid
 flowchart TD
-    Start(["Server Function 调用管理员鉴权中间件"])
-    GetCookie["读取 Cookie: 'fsdx_admin_token'"]
+    Start(["resolveAdminAuthContext(token)"])
     CheckToken{"token 存在?"}
     VerifyJWT["verifyToken(token)"]
     CheckJWT{"JWT 有效?"}
     CheckType{"userType === 'admin'?"}
-    QueryUser["db.query.adminUser"]
-    CheckUser{"用户存在且<br/>deletedAt = NULL<br/>status = 'active'?"}
+    QueryUser["getAdminUserForAuth()<br/>查 admin_user + 角色（带 adminUserCache）"]
+    CheckUser{"getAdminUserForAuth 结果"}
     CheckRoot{"isRoot ?"}
     SetAllPerms["设置 rolePermissions = ['**']<br/>（不查询 admin_role 表）"]
-    QueryRole["getAdminUserForAuth<br/>读取 admin_role.permissions"]
-    InjectContext["注入 context:<br/>{ user, rolePermissions }"]
+    MergePerms["合并 admin_role_ids 多角色权限（并集）"]
+    CheckPerm{"adminPermGuard 场景：<br/>hasAdminPermission(rolePermissions, required)"}
+    InjectContext["注入 context: { user, rolePermissions }"]
     Proceed(["执行 handler"])
 
-    Start --> GetCookie
-    GetCookie --> CheckToken
+    Start --> CheckToken
     CheckToken -->|否| Err401a["❌ 401: 未登录或登录已过期"]
     CheckToken -->|是| VerifyJWT
     VerifyJWT --> CheckJWT
@@ -404,30 +367,33 @@ flowchart TD
     CheckType -->|否| Err403a["❌ 403: 无权访问管理端"]
     CheckType -->|是| QueryUser
     QueryUser --> CheckUser
-    CheckUser -->|否| Err403b["❌ 403: 账号已被禁用或删除"]
-    CheckUser -->|是| CheckRoot
-    CheckRoot -->|是| SetAllPerms
-    CheckRoot -->|否| QueryRole
-    SetAllPerms --> InjectContext
-    QueryRole --> InjectContext
+    CheckUser -->|"not_found"| Err401c["❌ 401: 用户不存在"]
+    CheckUser -->|"disabled/删除"| Err403b["❌ 403: 账号已被禁用或删除"]
+    CheckUser -->|"✅ 有效"| CheckRoot
+    CheckRoot -->|是| SetAllPerms --> CheckPerm
+    CheckRoot -->|否| MergePerms --> CheckPerm
+    CheckPerm -->|"✅ 有权限"| InjectContext
+    CheckPerm -->|"❌ 无权限"| Err403c["❌ 403: 权限不足"]
     InjectContext --> Proceed
 ```
 
 ### `adminPermGuard` 工厂函数
 
 ```typescript
-// 在 .middleware([adminPermGuard(permission)]) 中的编译结果等价于：
-createMiddleware({ type: "function" })
-  // 第一步：adminAuthGuard 校验登录并注入 context
-  .middleware([adminAuthGuard])
-  // 第二步：校验指定权限
-  .server(async (opts) => {
-    const ctx = opts.context as AdminAuthContext;
+// src/middleware/admin-auth.ts（现状实现）
+export function adminPermGuard(required: AdminPermissionDef) {
+  return createMiddleware().server(async ({ next }) => {
+    const token = getCookie(COOKIE_NAMES.ADMIN_TOKEN);
+    const ctx = await resolveAdminAuthContext(token); // 登录 + 权限校验一步完成
     if (!hasAdminPermission(ctx.rolePermissions, required)) {
       throw new AdminAuthError("权限不足", 403);
     }
-    return opts.next();
+    return runWithRequestContext(
+      { operator: { id, username, email, type: "admin" } },
+      () => next({ context: ctx }),
+    );
   });
+}
 ```
 
 **使用示例**：
@@ -452,6 +418,7 @@ export const deleteNewsFn = createServerFn({ method: "POST" })
 |----------|--------|------|
 | `"未登录或登录已过期"` | 401 | Cookie 不存在或 JWT 验证失败 |
 | `"无权访问管理端"` | 403 | JWT 的 `userType` 不是 `"admin"` |
+| `"用户不存在"` | 401 | JWT 对应的用户记录不存在（如已物理删除） |
 | `"账号已被禁用或删除"` | 403 | 用户被软删除或状态非 active |
 | `"权限不足"` | 403 | `adminPermGuard` 中权限匹配失败 |
 
@@ -461,12 +428,10 @@ export const deleteNewsFn = createServerFn({ method: "POST" })
 
 ### 特性
 
-Root 管理员是系统首次初始化时创建的特殊账号，具有以下特性：
-
 1. **全局唯一** — `admin_user` 表通过部分唯一索引 `idx_admin_user_single_root` 保证仅有一个 `is_root = true` 的记录
-2. **自动拥有全部权限** — 在 `adminAuthGuard` 中，`isRoot` 用户直接设置 `rolePermissions = ["**"]`，**不查询角色表**。这意味着即使 root 关联的角色被删除或权限变更，root 仍保留全部权限
-3. **不可禁用** — `admin-user.server.ts` 中 `updateAdminUser` 禁止设置 root 用户 `status !== "active"`
-4. **不可删除** — `admin-user.server.ts` 中 `deleteAdminUser` 禁止删除 root 用户
+2. **自动拥有全部权限** — 在 `resolveAdminAuthContext()` 中，`isRoot` 用户直接设置 `rolePermissions = ["**"]`，**不查询角色表**。这意味着即使 root 关联的角色被删除或权限变更，root 仍保留全部权限
+3. **不可禁用** — `src/routes/admin/_admin/users/admins/-mods/admins.server.ts` 中 `updateAdminUser` 禁止设置 root 用户 `status !== "active"`
+4. **不可删除** — `src/routes/admin/_admin/users/admins/-mods/admins.server.ts` 中 `deleteAdminUser` 禁止删除 root 用户
 
 ### 系统初始化
 
@@ -490,7 +455,7 @@ sequenceDiagram
         InitServer->>DB: BEGIN TRANSACTION
         InitServer->>DB: 再次检查 is_root = true 是否存在
         InitServer->>DB: INSERT INTO admin_role (name="超级管理员", slug="super-admin", permissions=["**"])
-        InitServer->>DB: INSERT INTO admin_user (is_root=true, admin_role_id=新角色ID, ...)
+        InitServer->>DB: INSERT INTO admin_user (is_root=true, admin_role_ids=[新角色ID], ...)
         InitServer->>DB: INSERT INTO system_config (site_name, smtp_*, ai_*)
         InitServer->>DB: COMMIT
     end
@@ -500,70 +465,27 @@ sequenceDiagram
     Browser->>Browser: 跳转 /admin/login
 ```
 
-### 路由守卫联动
-
-- `/admin/init` 的 `beforeLoad`：若 `checkInitStatus()` 为 true → 重定向到 `/admin/login`
-- `/admin/login` 的 `beforeLoad`：若 `checkInitStatus()` 为 false → 重定向到 `/admin/init`
-
-两条路由互为守门人，确保用户始终停留在正确页面。
+- 首次访问 `/admin` 时，`/admin/init` 路由 `beforeLoad` 调用 `checkInitStatus()`（查询 `admin_user WHERE is_root = true`）；未初始化 → 停留在初始化页，已初始化 → 重定向 `/admin/login`
+- `initSystem()` 在**数据库事务**内完成：二次校验 is_root（防并发）→ INSERT 角色（超级管理员，`["**"]`）→ INSERT root 用户 → INSERT 系统配置（站点名/SMTP/AI）；提交后刷新配置缓存，跳转 `/admin/login`
+- 两条路由互为守门人（`/admin/init` 与 `/admin/login`），确保用户始终停留在正确页面
 
 ---
 
 ## 客户端认证
 
-### 客户端认证 Context
+### 认证 Context
 
-客户端认证通过 React Context 实现全局状态共享：
-
-```
-__root.tsx (SSR Document)
-└── ClientAuthProvider (React Context)
-    ├── 前台页面组件
-    ├── useClientAuth() hook → { user, isLoading, refetch, logout }
-    └── 子组件通过 useClientAuth() 消费
-```
-
-`ClientAuthProvider` 挂载时自动调用 `getCurrentClientFn()` 获取当前登录用户，并通过 Context 向下传递。
+`ClientAuthProvider`（`src/components/client/ClientAuthProvider.tsx`）挂载时自动调用 `getCurrentClientFn()` 获取当前登录用户，通过 React Context 向下传递；前台组件经 `useClientAuth()` 消费 `{ user, isLoading, refetch, logout }`。
 
 ### 客户端用户内存缓存
 
-`getCurrentClient()` 使用 5 分钟 TTL 的内存缓存（`clientUserCache`）减少重复数据库查询：
-
-```mermaid
-flowchart TD
-    Start(["getCurrentClient(token)"])
-    CheckToken{"token 存在?"}
-    VerifyJWT["verifyToken(token)"]
-    CheckJWT{"JWT 有效且<br/>userType === 'client'?"}
-    CheckCache{"缓存命中且<br/>status === 'active'?"}
-    ReturnCache(["返回缓存的用户信息"])
-    QueryDB["db.query.clientUser"]
-    CheckUser{"用户存在且<br/>deletedAt = NULL<br/>status = 'active'?"}
-    SetCache["写入缓存<br/>clientUserCache.set()"]
-    ReturnUser(["返回用户信息"])
-    ReturnNull(["返回 null"])
-
-    Start --> CheckToken
-    CheckToken -->|否| ReturnNull
-    CheckToken -->|是| VerifyJWT
-    VerifyJWT --> CheckJWT
-    CheckJWT -->|否| ReturnNull
-    CheckJWT -->|是| CheckCache
-    CheckCache -->|是| ReturnCache
-    CheckCache -->|否| QueryDB
-    QueryDB --> CheckUser
-    CheckUser -->|否| ReturnNull
-    CheckUser -->|是| SetCache
-    SetCache --> ReturnUser
-```
-
-缓存失效场景：
-- 管理员修改客户端用户状态时，`client-user.server.ts` 主动调用 `clientUserCache.delete(userId)`
+`getCurrentClient()` / `getClientUserForAuth()` 使用 5 分钟 TTL 的内存缓存（`clientUserCache`）减少重复数据库查询。缓存失效场景：
+- 管理员修改客户端用户状态或角色时，`src/routes/admin/_admin/users/clients/-mods/clients.server.ts` 主动调用 `clientUserCache.delete(userId)`
 - 管理员删除客户端用户时，同样清除缓存
 
 ### 管理员端认证状态
 
-管理员端在 `/admin/_admin` 布局路由的 `beforeLoad` 中调用 `getCurrentAdminFn`，返回值通过路由 context 传递给所有子页面。该布局设置 `ssr: false`，所有鉴权在客户端完成。
+管理员端在 `/admin/_admin` 布局路由的 `beforeLoad` 中调用 `getCurrentAdminSFn`，返回值通过路由 context 传递给所有子页面。该布局设置 `ssr: false`，所有鉴权在客户端完成。
 
 ---
 
@@ -603,19 +525,26 @@ const csrfMiddleware = createCsrfMiddleware({
 
 | 文件 | 职责 |
 |------|------|
-| `src/lib/jwt/jwt.ts` | JWT 签发/校验、Cookie 名称常量 |
-| `src/permissions/admin-permissions.ts` | 权限码常量定义、权限匹配算法 |
-| `src/middleware/admin-auth.ts` | adminAuthGuard / adminPermGuard 中间件 |
+| `packages/core/src/infra/jwt.ts` | JWT 签发/校验（`createJwt`，`@fsdx/core/jwt`） |
+| `src/lib/jwt/jwt.ts` | JWT 应用级单例壳（惰性） |
+| `src/constants/cookie-names.ts` | Cookie 名称常量（`fsdx_admin_token` / `fsdx_client_token`） |
+| `src/permissions/admin-permissions.ts` | 管理端权限码常量（`ADMIN_PERMISSIONS` / `ADMIN_PERMISSIONS_BY_GROUP` / `hasAdminPermission` 等） |
+| `packages/core/src/utils/match-permission.ts` | 权限匹配纯函数（`matchPermission`，`@fsdx/core/match-permission`） |
+| `src/middleware/admin-auth.ts` | `adminAuthGuard` / `adminPermGuard` / `adminPermRouteGuard` 中间件 |
+| `src/middleware/admin-auth.server.ts` | `resolveAdminAuthContext()` 登录校验 + 权限解析 |
+| `src/middleware/client-auth.ts` | `clientAuthGuard` / `clientPermGuard` / `clientPermRouteGuard` 中间件 |
 | `src/services/admin-auth/admin-auth.server.ts` | 管理员登录、当前管理员查询 |
 | `src/services/client-auth/client-auth.server.ts` | 客户端登录、注册、当前用户查询（含缓存） |
 | `src/services/client-auth/client-auth.functions.ts` | 客户端认证 Server Function 包装器 |
 | `src/services/init/init.server.ts` | 系统初始化（checkInitStatus / initSystem） |
-| `src/routes/admin/_admin/users/admins/admins.server.ts` | 管理员 CRUD（含 root 禁用/删除拦截） |
-| `src/routes/admin/_admin/users/clients/clients.server.ts` | 客户端用户 CRUD |
+| `src/routes/admin/_admin/users/admins/-mods/admins.server.ts` | 管理员 CRUD（含 root 禁用/删除拦截） |
+| `src/routes/admin/_admin/users/clients/-mods/clients.server.ts` | 客户端用户 CRUD |
 | `src/services/admin-role/admin-role.server.ts` | 管理端角色 CRUD |
+| `src/services/client-role/client-role.server.ts` | 客户端角色 CRUD |
 | `src/db/schema/admin-user.ts` | admin_user 表（含部分唯一索引） |
 | `src/db/schema/client-user.ts` | client_user 表 |
 | `src/db/schema/admin-role.ts` | admin_role 表（permissions JSONB） |
+| `src/db/schema/client-role.ts` | client_role 表 |
 | `src/routes/admin/_admin.tsx` | 管理端布局：beforeLoad 鉴权 |
 | `src/routes/admin/login.tsx` | 管理端登录页 |
 | `src/routes/admin/init.tsx` | 系统初始化页 |

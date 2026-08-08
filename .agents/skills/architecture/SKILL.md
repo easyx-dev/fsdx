@@ -11,38 +11,50 @@ description: >
 
 | 目录 | 定位 | 示例 |
 |------|------|------|
-| `src/lib/` | 无业务逻辑的基础库（缓存、jwt、logger、request-context、batch-writer、i18n 等） | `src/lib/cache/core.ts` |
+| `packages/core/` | 纯逻辑库（同构工具 + 服务端基础设施） | `@fsdx/core/cache-core`、`@fsdx/core/ms`、`@fsdx/core/logger` |
+| `packages/ui-ssr/` | shadcn 基础组件（前台 SSR） | `@fsdx/ui-ssr/ui`、`@fsdx/ui-ssr/theme` |
+| `packages/ui-spa/` | antd 管理端组件（antd 单实例） | `@fsdx/ui-spa/table`、`@fsdx/ui-spa/upload` |
+| `src/lib/` | 应用级基础设施单例壳 + 客户端 SDK | `src/lib/logger/logger.ts`、`src/lib/jwt/jwt.ts`、`src/lib/track/track.ts` |
 | `src/services/` | 跨模块共享的服务端业务逻辑（**仅放被 ≥2 个消费者复用的代码**） | `src/services/track/track.server.ts` |
 | `src/constants/` | 项目级常量 | `src/constants/editor-types.ts` |
 | `src/validators/` | 跨模块共享的 zod schema | `src/validators/common.schemas.ts` |
-| `src/utils/` | 纯工具函数（无依赖） | `src/utils/cn.ts` |
 | `src/types/` | 跨模块共享类型 | `src/types/query.ts` |
 | `src/middleware/` | 请求级中间件（鉴权/权限/locale/错误日志） | `src/middleware/admin-auth.ts` |
 | `src/routes/` | 路由层（页面 + 路由级 SFn + beforeLoad 守卫） | `src/routes/admin/_admin/news/` |
 
-**依赖方向**：`routes → services → lib → db`。`lib/` 禁止引入业务逻辑；单路由私有的服务逻辑内聚在路由 `-mods/`，不上提到 `services/`（渐进式提取）。
+**依赖方向**：`routes → services → (core 基础库) → db`。`src/lib/` 禁止引入业务逻辑；单路由私有的服务逻辑内聚在路由 `-mods/`，不上提到 `services/`（渐进式提取）。
+
+> 每个子包的导出清单与边界见 [core](../../../packages/core/README.md) / [ui-ssr](../../../packages/ui-ssr/README.md) / [ui-spa](../../../packages/ui-spa/README.md)。
 
 ## 基础设施
 
 ### 请求上下文（AsyncLocalStorage）
 
-- `src/lib/request-context/request-context.ts`：`runWithRequestContext` / `getRequestContext` / `getRequestOperator`
+- `@fsdx/core/request-context`：`runWithRequestContext` / `getRequestContext` / `getRequestOperator`
 - 鉴权中间件（admin/client）验证身份后用 `runWithRequestContext({ operator })` 包裹 `next()`
 - 下游所有异步调用通过 `getRequestOperator()` 读取当前操作者；无上下文（cron/后台任务）兜底返回 system
 - 消费方：`logExternalRequest()` 记录外部系统调用时从 ALS 读操作者
 
 ### 批量缓冲写入（BatchWriter）
 
-- `src/lib/buffer/batch-writer.ts`：通用缓冲写入器（定时/定量批量 INSERT + 容量上限 + shutdown 强制刷新）
+- `@fsdx/core/batch-writer`：通用缓冲写入器（定时/定量批量 INSERT + 容量上限 + shutdown 强制刷新）
 - track 埋点与 operation-log 复用；CRUD 审计与外部调用日志使用独立 writer（互不挤压）
 - **禁止**在模块内重复实现缓冲逻辑；新增高频写入场景优先复用 BatchWriter
 
+### 操作日志审计
+
+- `src/services/operation-log/operation-log.server.ts`：`logOperation()` fire-and-forget；SFn 写 CRUD 审计**必须**用 `logCrud()` 一行式封装（自动装配操作人 + targetType 默认值）
+- CRUD 审计与外部调用日志独立 writer：CRUD 缓冲上限 1000，外部调用上限 5000
+- 操作者身份经 request-context（AsyncLocalStorage）由鉴权中间件注入，无上下文兜底 system
+- `logExternalRequest()` 落库字段语义：`module` = 外部系统标识（调用方传入自身系统代号），`action` = `login` / `request`（按请求类型），`targetType` = 接口来源类型（默认 `openapi`），`targetName` = 接口路径，`detail` 含系统/路径/方法/耗时/成功与否等元数据（不含请求响应体）
+- 进程退出时自动刷新缓冲（SIGTERM / SIGINT）
+
 ### 内存缓存
 
-- `MemoryCache<T>` 在 `src/lib/cache/core.ts`，实例按模块拆分在 `src/lib/cache/*.cache.ts`
+- `MemoryCache<T>` 在 `@fsdx/core/cache-core`，实例按模块拆分在 `services/<module>/<module>.cache.ts`
 - 每个实例只能在唯一服务模块中直接操作，禁止跨模块 import 缓存实例
 - 读缓存必须懒加载：cache miss → 查库 → 写缓存 → 返回
-- 详见 [cache](.agents/skills/cache/SKILL.md)
+- 详见 [cache](../cache/SKILL.md)
 
 ### antd 静态方法桥接
 

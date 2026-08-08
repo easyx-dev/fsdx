@@ -12,12 +12,13 @@ TanStack Start + React 19 · TypeScript 6 · Hono · PostgreSQL + Drizzle ORM ·
 # 安装依赖
 pnpm install
 
-# 配置环境变量
-cp .env.example .env
-# 编辑 .env 填写 DATABASE_URL 和 JWT_SECRET
+# 配置环境变量（位于 app/ 下）
+cp app/.env.example app/.env
+# 编辑 app/.env 填写 DATABASE_URL 和 JWT_SECRET
 
-# 推送数据库 Schema
-pnpm db:push
+# 生成并运行数据库迁移
+pnpm db:generate
+pnpm db:migrate
 
 # 启动开发服务器 (端口 3000)
 pnpm dev
@@ -43,19 +44,28 @@ pnpm dev
 | `pnpm check` | TypeScript + Biome 检查 |
 | `pnpm lint` | Biome 检查并自动修复 |
 | `pnpm format` | Biome 格式化 |
-| `pnpm db:push` | 推送 Schema 到数据库 |
 | `pnpm db:generate` | 生成数据库迁移文件 |
 | `pnpm db:migrate` | 运行数据库迁移 |
 | `pnpm db:studio` | 启动 Drizzle Studio |
+
+## 子包文档
+
+单仓库多包（pnpm workspace），`app/` 为应用包，`packages/*` 为被源码直引的库包：
+
+| 包 | 说明 |
+|----|------|
+| [@fsdx/core](packages/core/README.md) | 纯逻辑库：同构纯工具（ms/export/cn/match-permission）+ 服务端基础设施（logger/jwt/ai/mail/sms 等），无 React |
+| [@fsdx/ui-ssr](packages/ui-ssr/README.md) | shadcn 基础组件（前台 SSR），颜色 token 由宿主注入 |
+| [@fsdx/ui-spa](packages/ui-spa/README.md) | antd 管理端组件（表格/上传/编辑器/静态方法桥接），antd 单实例 |
 
 ## 文档
 
 | 文档 | 说明 |
 |------|------|
 | [架构总览](docs/architecture-overview.md) | 系统分层架构、数据流、路由体系 |
-| [数据库设计](docs/database-design.md) | 15 张表（13 个 schema 文件）ER 图、列命名约定、约束汇总 |
+| [数据库设计](docs/database-design.md) | 17 张表（13 个 schema 文件）ER 图、列命名约定、约束汇总 |
 | [认证与权限](docs/auth-permission-model.md) | 双用户体系、RBAC、JWT、中间件链路 |
-| [缓存体系](docs/cache-system.md) | MemoryCache 设计、7 个缓存实例、生命周期 |
+| [缓存体系](docs/cache-system.md) | MemoryCache 设计、8 个缓存实例、生命周期 |
 | [事件埋点](docs/event-tracking.md) | 客户端 SDK、服务端校验、缓冲写入、查询分析 |
 | [部署运维](docs/deployment-ops.md) | 启动流程、定时任务、日志、优雅关闭 |
 

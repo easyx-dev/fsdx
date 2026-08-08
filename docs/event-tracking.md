@@ -144,14 +144,12 @@ flowchart TD
 | 事件名 | 标签 | 分类 |
 |--------|------|------|
 | `PageView` | 页面浏览 | 页面交互 |
-| `Click` | 元素点击 | 页面交互 |
 | `FormSubmit` | 表单提交 | 用户行为 |
-| `Search` | 搜索行为 | 用户行为 |
 | `Login` | 用户登录 | 用户行为 |
 | `Register` | 用户注册 | 用户行为 |
 | `Logout` | 用户退出 | 用户行为 |
-| `Share` | 内容分享 | 内容互动 |
-| `Scroll` | 页面滚动 | 页面交互 |
+
+> 自定义事件需先在管理端 `/admin/track/event-meta/` 注册，否则上报被丢弃（详见「预设管理」）。
 
 ### 11 个预置元属性
 
@@ -162,19 +160,14 @@ flowchart TD
 | `$browser` | 浏览器 | string | — |
 | `$os` | 操作系统 | string | — |
 | `$device_type` | 设备类型 | string | Desktop/Mobile/Tablet |
+| `$screen_size` | 屏幕分辨率 | string | 客户端自动采集 |
+| `$language` | 浏览器语言 | string | 客户端自动采集（navigator.language） |
 | `page_name` | 页面名称 | string | 客户端自动采集 |
 | `url` | 页面地址 | string | 客户端自动采集 |
 | `referer` | 来源地址 | string | 客户端自动采集 |
-| `$screen_size` | 屏幕分辨率 | string | 客户端自动采集 |
-| `$language` | 浏览器语言 | string | 客户端自动采集（navigator.language） |
-| `element_id` | 元素 ID | string | — |
-| `element_text` | 元素文本 | string | — |
-| `scroll_depth` | 滚动深度 | number | 页面滚动深度百分比 |
-| `form_name` | 表单名称 | string | 被提交的表单名称 |
-| `search_query` | 搜索关键词 | string | 用户执行的搜索关键词 |
-| `share_platform` | 分享平台 | string | 内容分享的目标平台 |
+| `form_name` | 表单名称 | string | 被提交的表单名称（如 clientLogin、clientRegister） |
 
-`$` 前缀属性为系统属性，校验时仅检查键是否存在，不做值类型校验（由服务端补齐）。
+`$` 前缀属性（前 7 个）为系统属性，校验时仅检查键是否存在，不做值类型校验（由服务端补齐）。
 
 ---
 
@@ -186,7 +179,7 @@ flowchart TD
 
 ### 事件分析
 
-`getEventAnalytics(query)` — 返回 `AnalyticsResult`：
+`getTrackAnalytics(query)` — 返回 `AnalyticsResult`：
 
 | 字段 | 说明 |
 |------|------|
@@ -215,10 +208,8 @@ flowchart TD
 | `src/lib/track/track.ts` | 客户端埋点 SDK |
 | `src/services/track/track.server.ts` | 服务端：校验、缓冲、查询、分析、预设管理 |
 | `src/services/track/track.functions.ts` | Server Function 包装器 |
-| `src/services/track/event.types.ts` | 类型定义 |
-| `src/db/schema/event.ts` | event 表 Schema |
+| `src/services/track/track.types.ts` | 类型定义 |
+| `src/services/track/track.cache.ts` | trackEventMetaCache / trackPropertyMetaCache 缓存实例 |
 | `src/db/schema/track.ts` | track_event / track_event_meta / track_property_meta 表 Schema |
-|  |
-| `src/lib/cache/cache.ts` | trackEventMetaCache / trackPropertyMetaCache 缓存实例 |
-| `src/routes/admin/_admin/events/query.tsx` | 事件查询页面 |
-| `src/routes/admin/_admin/events/analytics.tsx` | 事件分析页面 |
+| `src/routes/admin/_admin/track/query.tsx` | 事件查询页面 |
+| `src/routes/admin/_admin/track/analytics.tsx` | 事件分析页面 |

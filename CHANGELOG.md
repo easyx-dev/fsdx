@@ -53,6 +53,16 @@
     - `news`：抽 `newsColumns`（405 → 217 行）
     - `messages/manage`：抽 `SendMessageModal` / `messageManageColumns`（400 → 253 行）
 
+### Docs
+
+- **子包文档补齐 + 文档/技能对齐**：
+  - 新增三个子包 README（`packages/core/README.md` / `packages/ui-ssr/README.md` / `packages/ui-spa/README.md`），含 subpath 导出清单、宿主集成约束与依赖边界；根 README、AGENTS.md、architecture-overview 建立对子包文档的引用
+  - 删除已完成的历史方案 `docs/monorepo-restructure.md`（其包边界内容由三个子包 README 承接）
+  - docs 事实对齐：README（17 张表 / 8 个缓存实例 / `db:push`→`db:generate`+`db:migrate`）、cache-system（`@fsdx/core/cache-core` 与实例路径、启动时序）、database-design（`admin_role_ids` / `client_role_ids` JSONB 多角色，无外键）、auth-permission-model（客户端 RBAC、61 个权限常量、`resolveAdminAuthContext` 现状实现）、event-tracking（预置 5 事件 / 11 属性、路径与函数名）、deployment-ops（core 基础设施路径、env 位于 `app/`）
+  - skills 对齐：8 个 skill 修正过时路径与流程（core subpath 迁移、`@fsdx/ui-spa/table` 与 `antd-static` 导入、`logCrud` 一行式审计、mockDb 17 张表清单、`db:generate`+`db:migrate` 迁移流程）
+  - **文档瘦身**：AGENTS.md 552 → 276 行（与 skill 重复的细节压缩为「硬规则 + skill 链接」，删除已修复的历史节；`src/services/` 准入门槛、就近原则、Server Route 例外补入 server-function skill，jsonb `$type` 约定补入 db-schema skill，`logExternalRequest` 字段语义补入 architecture skill）；`auth-permission-model.md` 640 → 552 行（删除重复性角色关系/客户端缓存 flow 与散乱文字，保留并时效修正整体架构、管理员登录、客户端注册登录、系统初始化四张图，按查考级组织）
+  - 文档 review 修正：README 快速开始 env 路径指向 `app/.env.example`；i18n skill「支持的语言」片段去掉与导入重复的本地声明；cache-system 启动时序图更正 dict 缓存为懒加载（仅 config/track 元数据启动热加载）
+
 ### 依赖升级
 
 - **major 版本升级（批次 C）**：

@@ -17,7 +17,7 @@ description: >
 □ 实体英文名：________（如 Product，PascalCase）
 □ 路由路径：________（如 /admin/products，kebab-case 复数）
 □ 表名：________（如 product，单数 snake_case）
-□ 模块标识：________（如 product，用于 permission code、logOperation module）
+□ 模块标识：________（如 product，用于 permission code、logCrud module）
 
 □ 是否需要软删除？（deleted_at）     □ 是  □ 否
 □ 是否有状态机？（status 列）        □ 是  □ 否，状态值：________
@@ -154,7 +154,7 @@ PRODUCT_DELETE: definePermission(
 import { and, desc, eq, ne } from "drizzle-orm";
 import { db } from "#/db/index";
 import { product } from "#/db/schema";
-import type { PaginatedSortParams } from "#/lib/query/query-utils";
+import type { PaginatedSortParams } from "#/types/query";
 import {
   buildSortClause,
   executePaginatedQuery,
@@ -321,7 +321,7 @@ export const updateProductSchema = z.object({
 import { createServerFn } from "@tanstack/react-start";
 import { ADMIN_PERMISSIONS } from "#/permissions/admin-permissions";
 import { adminPermGuard } from "#/middleware/admin-auth";
-import { logOperation } from "#/services/operation-log/operation-log.server";
+import { logCrud } from "#/services/operation-log/operation-log.server";
 import {
   createProduct,
   getProductById,
@@ -348,15 +348,8 @@ export const createProductSFn = createServerFn({ method: "POST" })
       ...data,
       createdById: context.user.id,
     });
-    logOperation({
-      operatorId: context.user.id,
-      operatorName: context.user.username,
-      module: "product",
-      action: "create",
-      targetType: "product",
-      targetId: record.id,
-      targetName: record.name,
-    });
+    // fire-and-forget 审计，自动装配操作人 + targetType 默认 module
+    logCrud(context.user, "product", "create", { id: record.id, name: record.name });
     return record;
   });
 
@@ -365,15 +358,7 @@ export const updateProductSFn = createServerFn({ method: "POST" })
   .inputValidator(updateProductSchema)
   .handler(async ({ data, context }) => {
     const record = await updateProduct(data.id, { ...data });
-    logOperation({
-      operatorId: context.user.id,
-      operatorName: context.user.username,
-      module: "product",
-      action: "update",
-      targetType: "product",
-      targetId: data.id,
-      targetName: data.name,
-    });
+    logCrud(context.user, "product", "update", { id: data.id, name: data.name });
     return record;
   });
 ```
@@ -548,13 +533,13 @@ import {
 } from "@ant-design/icons";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
-import { Button, Drawer, message, Tag } from "antd";
+import { message } from "@fsdx/ui-spa/antd-static";
+import { ProTable, TableOperate } from "@fsdx/ui-spa/table";
+import { Button, Drawer, Tag } from "antd";
 import dayjs from "dayjs";
 import { useState } from "react";
 import { z } from "zod";
 import { AdminPageContent } from "#/components/admin";
-import { ProTable } from "#/components/admin/ProTable";
-import { TableOperate } from "#/components/admin/TableOperate";
 import { ADMIN_PERMISSIONS } from "#/permissions/admin-permissions";
 import { adminPermGuard } from "#/middleware/admin-auth";
 import type { ProductRecord } from "#/services/product/product.server";
@@ -563,7 +548,7 @@ import {
   getProductById,
   getProductList,
 } from "#/services/product/product.server";
-import { logOperation } from "#/services/operation-log/operation-log.server";
+import { logCrud } from "#/services/operation-log/operation-log.server";
 import { ProductForm } from "./-mods/ProductForm";
 
 // ═══ Zod Schema ═══
@@ -589,14 +574,9 @@ const deleteProductSFn = createServerFn({ method: "POST" })
   .handler(async ({ data: { id }, context }) => {
     const record = await getProductById(id);
     await deleteProduct(id);
-    logOperation({
-      operatorId: context.user.id,
-      operatorName: context.user.username,
-      module: "product",
-      action: "delete",
-      targetType: "product",
-      targetId: id,
-      targetName: record?.name ?? id,
+    logCrud(context.user, "product", "delete", {
+      id,
+      name: record?.name ?? id,
     });
     return { success: true };
   });
@@ -770,7 +750,7 @@ function ProductListPage() {
  * 新建<实体中文名>页面
  */
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { message } from "antd";
+import { message } from "@fsdx/ui-spa/antd-static";
 import { AdminPageContent } from "#/components/admin";
 import { ProductForm } from "./-mods/ProductForm";
 
@@ -810,7 +790,7 @@ function ProductCreatePage() {
  * 编辑<实体中文名>页面
  */
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { message } from "antd";
+import { message } from "@fsdx/ui-spa/antd-static";
 import { AdminPageContent } from "#/components/admin";
 import { ProductForm } from "../-mods/ProductForm";
 
@@ -874,7 +854,7 @@ function ProductEditPage() {
 完成所有步骤后，按序执行：
 
 ```
-□ pnpm db:push              # 同步 Schema 到数据库
+□ pnpm db:generate + pnpm db:migrate   # 生成并执行 Schema 迁移
 □ pnpm check                # TypeScript 类型检查 + Biome lint
 □ pnpm test -- --run        # 全部测试通过
 □ 手动测试：列表页加载

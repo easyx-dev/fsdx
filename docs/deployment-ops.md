@@ -148,12 +148,12 @@ Hono (createHonoApp)
 
 ## 环境变量
 
-环境变量文件位于项目根目录（`.env`、`.env.example`），通过 Vite 内置 env 加载机制注入 `process.env`：
+环境变量文件位于 `app/` 下（`app/.env`、`app/.env.example`），Vite 以 app 为 root 加载并注入 `process.env`：
 
 | 文件 | 说明 |
 |------|------|
-| `.env` | 运行环境变量 |
-| `.env.example` | 环境变量模板 |
+| `app/.env` | 运行环境变量（不入库） |
+| `app/.env.example` | 环境变量模板 |
 
 应用代码通过 `process.env` 直接读取（日志模块因 pino transport worker 兼容性问题同样直接读取 `process.env`）。
 
@@ -173,7 +173,7 @@ SMTP 邮件配置已从环境变量迁移至系统配置表，通过 `/admin/con
 
 ## 定时任务
 
-通过 `src/lib/scheduler/scheduler.ts` 的 `registerTask()` 注册 cron 任务：
+通过 `@fsdx/core/infra/scheduler` 的 `registerTask()` 注册 cron 任务（调度器日志经 `setSchedulerLogger` 注入）：
 
 | 任务 | Cron | 处理函数 | 说明 |
 |------|------|----------|------|
@@ -225,7 +225,7 @@ logger.error/warn/info/debug
 
 ## 文件存储
 
-`src/lib/storage/storage.ts` 提供文件存储抽象层（当前仅本地存储实现）：
+`@fsdx/core/infra/storage` 提供文件存储抽象层（`StorageAdapter` 接口 + `LocalStorageAdapter`，当前仅本地存储实现）：
 
 ```
 上传文件
@@ -358,14 +358,15 @@ GET /health → { "status": "ok", "uptime": 123.456 }
 | `src/hono-app.ts` | Hono 应用工厂 + 健康检查 |
 | `src/server.ts` | TanStack Start 服务端入口 |
 | `src/services/tasks/tasks.server.ts` | 定时任务注册 |
-| `src/lib/scheduler/scheduler.ts` | 定时任务调度器 |
-| `src/lib/logger/logger.ts` | Pino 日志实例 |
+| `packages/core/src/infra/scheduler.ts` | 定时任务调度器（`@fsdx/core/infra/scheduler`） |
+| `src/lib/logger/logger.ts` | Pino 日志单例壳（`createLogger` 在 `@fsdx/core/logger`） |
 | `src/middleware/sf-error-logger.ts` | SF 错误日志中间件 |
-| `src/lib/storage/storage.ts` | 文件存储抽象层 |
+| `packages/core/src/infra/storage/storage.ts` | 文件存储抽象层（`@fsdx/core/infra/storage`） |
 | `src/services/init/init.server.ts` | 系统初始化逻辑 |
-| `src/services/logs/logs.server.ts` | 日志文件查询 |
-| `.env.example` | 环境变量模板 |
-| `.env.example` | compose .env 变量模板 |
+| `src/services/logs/logs.server.ts` | 日志查询服务 |
+| `src/services/logs/log-reader.ts` | 日志文件读取 |
+| `src/services/logs/logs-cleanup.server.ts` | 过期日志清理 |
+| `app/.env.example` | 环境变量模板 |
 | `Dockerfile` | Docker 多阶段构建 |
 | `.dockerignore` | Docker 构建排除规则 |
 | `docker-compose.yml` | 开发环境 docker compose（build from source） |

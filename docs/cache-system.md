@@ -2,12 +2,14 @@
 
 ## 概述
 
-系统使用基于 `Map` 的**内存缓存**实现，通过 `MemoryCache<T>` 通用类提供统一接口。所有缓存在服务进程内存中，重启即清空，通过启动时的 `ensurePreset*` 系列函数重新加载。
+系统使用基于 `Map` 的**内存缓存**实现，通过 `MemoryCache<T>` 通用类提供统一接口。所有缓存在服务进程内存中，重启即清空：启动时 `ensurePreset*` 初始化预置数据（dict/config/track 元数据，其中 config 与 track 元数据缓存启动即热加载），dict、UI 翻译与用户缓存（adminUser/clientUser）在首次访问时懒加载回填。
 
 ## MemoryCache 通用类
 
+泛型类在 `@fsdx/core/cache-core`（`MemoryCache<T>`），实例按模块拆分在 `services/<module>/<module>.cache.ts`：
+
 ```
-src/lib/cache/cache.ts
+@fsdx/core/cache-core (MemoryCache)
 
 class MemoryCache<T> {
     constructor(options?: { defaultTTL?: number; name?: string })
@@ -32,9 +34,9 @@ class MemoryCache<T> {
 
 ---
 
-## 6 个缓存实例（`MemoryCache` 类 + 按模块实例文件）
+## 8 个缓存实例（`MemoryCache` 类 + 按模块实例文件）
 
-> `MemoryCache<T>` 泛型类在 `src/lib/cache/core.ts`，各实例按模块拆分在 `src/lib/cache/*.cache.ts`，每个实例只能在唯一服务模块中直接操作。
+> 每个实例只能在唯一一个服务端模块中直接操作（get/set/delete），禁止跨模块 import 缓存实例；外部模块通过所属模块的导出函数访问。
 
 ### 字典缓存 (`dictCache`)
 
@@ -105,7 +107,7 @@ SMTP 邮件配置从数据库读取而非环境变量，通过此缓存获取。
 | Value | `{ id, username, email, avatar, isRoot, adminRoleIds, status }` |
 | TTL | **5 分钟** |
 
-用于减少 `getAdminUserForAuth()`（鉴权中间件核心调用）的数据库查询频率。isRoot 用户命中缓存后直接返回 `["**"]` 权限，不查角色表。
+用于减少 `getAdminUserForAuth()`（鉴权中间件核心调用）的数据库查询频率。isRoot 用户命中缓存后直接返回 `["**"]` 权限，不查角色表。缓存失效场景：管理员状态/角色变更、删除。
 
 ### 元事件缓存 (`trackEventMetaCache`)
 
@@ -136,20 +138,25 @@ SMTP 邮件配置从数据库读取而非环境变量，通过此缓存获取。
 ```mermaid
 sequenceDiagram
     participant Bootstrap as bootstrap.ts
-    participant Server as server/
+    participant Dict as dict.server.ts
+    participant Config as config.server.ts
+    participant Seed as i18n-seed.ts
+    participant Track as track.server.ts
     participant Cache as MemoryCache
     participant DB as PostgreSQL
 
-    Bootstrap->>Server: ensurePresetDicts()
-    Bootstrap->>Server: ensurePresetConfigs()
-    Bootstrap->>Server: ensurePresetEvents()
-    Bootstrap->>Server: ensurePresetProperties()
-    Bootstrap->>Server: ensurePresetTranslations()
-    Bootstrap->>Server: loadPresetCache() (async)
-    Server->>DB: 全量加载预设事件/属性
-    Server->>Cache: presetEventCache.set() / presetPropertyCache.set()
+    Bootstrap->>Dict: ensurePresetDicts()
+    Dict->>DB: 插入缺失的预置字典
+    Bootstrap->>Config: ensurePresetConfigs()
+    Config->>DB: 插入缺失的预置配置
+    Config->>Cache: loadConfigCache() 启动热加载
+    Note over Dict,Config: 二者经 Promise.all 并发执行，均 await 等待
+    Bootstrap->>Seed: void ensurePresetTranslations()（fire-and-forget）
+    Bootstrap->>Track: void ensurePresetEvents() + ensurePresetProperties()
+    Track->>DB: 写入缺失的元事件/元属性并清理被裁剪项
+    Track->>Cache: .then(loadTrackMetaCache()) 加载 track 元数据
 
-    Note over Cache: 其他缓存 (dict/config/translation)<br/>在首次访问时懒加载或启动时加载
+    Note over Cache: dict / UI 翻译 / 用户缓存（adminUser/clientUser）<br/>在首次访问时懒加载
 ```
 
 ### 运行阶段
@@ -189,11 +196,11 @@ Server Function handler
 
 | 文件 | 职责 |
 |------|------|
-| `src/lib/cache/core.ts` | `MemoryCache<T>` 通用类 |
-| `src/lib/cache/*.cache.ts` | 按模块拆分的缓存实例（config/dict/ui-translation/client-user/admin-user/track） |
-| `src/lib/cache/__tests__/cache.test.ts` | 缓存单元测试 |
+| `packages/core/src/cache/cache-core.ts` | `MemoryCache<T>` 通用类（`@fsdx/core/cache-core`） |
+| `services/<module>/<module>.cache.ts` | 按模块拆分的缓存实例（config/dict/i18n/client-auth/admin-auth/track） |
+| `packages/core/src/cache/__tests__/cache-core.test.ts` | 缓存单元测试 |
 | `src/services/config/config.server.ts` | `loadConfigCache()` / 配置缓存管理 |
 | `src/services/dict/dict.server.ts` | `loadDictCache()` / 字典缓存管理 |
 | `src/services/i18n/i18n.server.ts` | UI 翻译缓存管理 |
 | `src/services/client-auth/client-auth.server.ts` | 客户端用户缓存使用 |
-| `src/services/event/event.server.ts` | 预设事件/属性缓存管理 |
+| `src/services/track/track.server.ts` | 元事件/元属性缓存管理 |
