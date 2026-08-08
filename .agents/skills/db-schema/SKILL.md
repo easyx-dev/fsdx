@@ -234,3 +234,4 @@ export const product = pgTable(
 - 为新模块添加权限 → [permission](../permission/SKILL.md)
 - 编写 SFn → [server-function](../server-function/SKILL.md)
 - 编写测试 → [test-writing](../test-writing/SKILL.md)
+- 衍生项目切换数据库：SQLite → [db-sqlite](../db-sqlite/SKILL.md)、MySQL → [db-mysql](../db-mysql/SKILL.md)

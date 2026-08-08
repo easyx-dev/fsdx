@@ -76,6 +76,10 @@
 
 ### Docs
 
+- **新增数据库迁移 skills（db-sqlite / db-mysql）**：
+  - 沉淀 PostgreSQL → SQLite 完整迁移指南为 `db-sqlite` skill：基于 drizzle v1.0-rc.4 + node:sqlite 异步驱动基态，覆盖驱动选型、pg-core→sqlite-core 类型映射、约束差异（部分唯一索引/ON UPDATE CASCADE/降序索引）、**事务同步化（node-sqlite 'sync' kind 事务回调必须同步，否则提前提交）**、时间序列 SQL 改写、日期类型 Date→number、测试 mock 终结符适配与迁移执行流程
+  - 新增 `db-mysql` skill：mysql2 异步驱动，事务与普通查询全部保持 await、日期保持 Date，迁移面最小；覆盖 uuid→char(36)、jsonb→json、json 列默认值限制等 MySQL 特有差异
+  - db-schema skill 相关链接、AGENTS.md 数据库章节同步补齐目标库速查与 drizzle v1 基态说明
 - **子包文档补齐 + 文档/技能对齐**：
   - 新增三个子包 README（`packages/core/README.md` / `packages/ui-ssr/README.md` / `packages/ui-spa/README.md`），含 subpath 导出清单、宿主集成约束与依赖边界；根 README、AGENTS.md、architecture-overview 建立对子包文档的引用
   - 删除已完成的历史方案 `docs/monorepo-restructure.md`（其包边界内容由三个子包 README 承接）
