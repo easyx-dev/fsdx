@@ -23,23 +23,25 @@ const { mockCreateCaptcha } = vi.hoisted(() => ({
 }));
 vi.mock("@fsdx/core/captcha", () => ({ create: mockCreateCaptcha }));
 
-const { mockDb } = vi.hoisted(() => {
-	const q = () => ({ findFirst: vi.fn(), findMany: vi.fn() });
+const { mockDb, mockRows } = vi.hoisted(() => {
+	const rows = vi.fn().mockResolvedValue([]);
+	const chain: any = {
+		from: vi.fn(() => chain),
+		where: vi.fn(() => chain),
+		orderBy: vi.fn(() => chain),
+		limit: vi.fn(() => chain),
+		offset: vi.fn(() => chain),
+		innerJoin: vi.fn(() => chain),
+	};
+	Object.defineProperty(chain, "then", {
+		value: (onFulfilled: (value: unknown) => unknown) =>
+			rows().then(onFulfilled),
+	});
 	return {
+		mockRows: rows,
 		mockDb: {
-			query: {
-				captchaCode: q(),
-				adminUser: q(),
-				clientUser: q(),
-				role: q(),
-				news: q(),
-				dict: q(),
-				dictItem: q(),
-				systemConfig: q(),
-				file: q(),
-			},
+			select: vi.fn(() => chain),
 			$count: vi.fn(),
-			select: vi.fn(() => ({ from: vi.fn(() => ({ where: vi.fn() })) })),
 			insert: vi.fn(() => ({ values: vi.fn(() => ({ returning: vi.fn() })) })),
 			update: vi.fn(() => ({ set: vi.fn(() => ({ where: vi.fn() })) })),
 			delete: vi.fn(() => ({ where: vi.fn() })),
@@ -59,7 +61,7 @@ describe("sendCaptcha", () => {
 	beforeEach(() => vi.clearAllMocks());
 
 	it("首次发送成功", async () => {
-		mockDb.query.captchaCode.findFirst.mockResolvedValue(undefined);
+		mockRows.mockResolvedValue([]);
 		mockSendCaptchaMail.mockResolvedValue(true);
 
 		const result = await sendCaptcha("email", "user@test.com");
@@ -69,7 +71,7 @@ describe("sendCaptcha", () => {
 	});
 
 	it("60 秒内重复发送被拦截", async () => {
-		mockDb.query.captchaCode.findFirst.mockResolvedValue({ id: "recent" });
+		mockRows.mockResolvedValue([{ id: "recent" }]);
 
 		const result = await sendCaptcha("email", "user@test.com");
 		expect(result.success).toBe(false);
@@ -77,7 +79,7 @@ describe("sendCaptcha", () => {
 	});
 
 	it("邮件发送失败返回 false", async () => {
-		mockDb.query.captchaCode.findFirst.mockResolvedValue(undefined);
+		mockRows.mockResolvedValue([]);
 		mockSendCaptchaMail.mockResolvedValue(false);
 
 		const result = await sendCaptcha("email", "user@test.com");
@@ -90,7 +92,7 @@ describe("verifyCaptcha", () => {
 	beforeEach(() => vi.clearAllMocks());
 
 	it("正确验证码返回 true 并标记已使用", async () => {
-		mockDb.query.captchaCode.findFirst.mockResolvedValue({ id: "cap-1" });
+		mockRows.mockResolvedValue([{ id: "cap-1" }]);
 
 		const result = await verifyCaptcha("email", "u@t.com", "123456");
 		expect(result).toBe(true);
@@ -98,14 +100,14 @@ describe("verifyCaptcha", () => {
 	});
 
 	it("错误验证码返回 false", async () => {
-		mockDb.query.captchaCode.findFirst.mockResolvedValue(undefined);
+		mockRows.mockResolvedValue([]);
 
 		const result = await verifyCaptcha("email", "u@t.com", "wrong");
 		expect(result).toBe(false);
 	});
 
 	it("不存在的验证码返回 false", async () => {
-		mockDb.query.captchaCode.findFirst.mockResolvedValue(undefined);
+		mockRows.mockResolvedValue([]);
 
 		const result = await verifyCaptcha("email", "u@t.com", "000000");
 		expect(result).toBe(false);
@@ -116,7 +118,7 @@ describe("sendCaptcha（短信路径）", () => {
 	beforeEach(() => vi.clearAllMocks());
 
 	it("短信发送成功返回成功", async () => {
-		mockDb.query.captchaCode.findFirst.mockResolvedValue(undefined);
+		mockRows.mockResolvedValue([]);
 		mockSendSms.mockResolvedValue(undefined);
 
 		const result = await sendCaptcha("sms", "13800138000");
@@ -127,7 +129,7 @@ describe("sendCaptcha（短信路径）", () => {
 	});
 
 	it("短信发送抛错时返回失败并带出错误信息", async () => {
-		mockDb.query.captchaCode.findFirst.mockResolvedValue(undefined);
+		mockRows.mockResolvedValue([]);
 		mockSendSms.mockRejectedValue(new Error("短信通道异常"));
 
 		const result = await sendCaptcha("sms", "13800138000");
@@ -162,7 +164,7 @@ describe("verifyImageCaptcha", () => {
 	beforeEach(() => vi.clearAllMocks());
 
 	it("校验通过时返回 true 并标记已使用", async () => {
-		mockDb.query.captchaCode.findFirst.mockResolvedValue({ id: "img-1" });
+		mockRows.mockResolvedValue([{ id: "img-1" }]);
 
 		const result = await verifyImageCaptcha("token-1", "aBcD");
 
@@ -171,16 +173,16 @@ describe("verifyImageCaptcha", () => {
 	});
 
 	it("大小写与空格归一后仍可校验通过", async () => {
-		mockDb.query.captchaCode.findFirst.mockResolvedValue({ id: "img-1" });
+		mockRows.mockResolvedValue([{ id: "img-1" }]);
 
 		const result = await verifyImageCaptcha("token-1", "  ABCD  ");
 
 		expect(result).toBe(true);
-		expect(mockDb.query.captchaCode.findFirst).toHaveBeenCalledTimes(1);
+		expect(mockDb.select).toHaveBeenCalledTimes(1);
 	});
 
 	it("验证码不存在时返回 false", async () => {
-		mockDb.query.captchaCode.findFirst.mockResolvedValue(undefined);
+		mockRows.mockResolvedValue([]);
 
 		const result = await verifyImageCaptcha("token-1", "XXXX");
 

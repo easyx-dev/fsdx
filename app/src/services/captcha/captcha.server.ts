@@ -43,16 +43,20 @@ export async function sendCaptcha(
 	target: string,
 ): Promise<{ success: boolean; message: string }> {
 	// 检查发送频率
-	const recentCode = await db.query.captchaCode.findFirst({
-		where: and(
-			eq(captchaCode.type, type),
-			eq(captchaCode.target, target),
-			gt(
-				captchaCode.createdAt,
-				new Date(Date.now() - SEND_INTERVAL_SECONDS * 1000),
+	const [recentCode] = await db
+		.select()
+		.from(captchaCode)
+		.where(
+			and(
+				eq(captchaCode.type, type),
+				eq(captchaCode.target, target),
+				gt(
+					captchaCode.createdAt,
+					new Date(Date.now() - SEND_INTERVAL_SECONDS * 1000),
+				),
 			),
-		),
-	});
+		)
+		.limit(1);
 
 	if (recentCode) {
 		return { success: false, message: "发送过于频繁，请稍后再试" };
@@ -98,16 +102,20 @@ export async function verifyCaptcha(
 	target: string,
 	code: string,
 ): Promise<boolean> {
-	const record = await db.query.captchaCode.findFirst({
-		where: and(
-			eq(captchaCode.type, type),
-			eq(captchaCode.target, target),
-			eq(captchaCode.code, code),
-			eq(captchaCode.used, false),
-			gt(captchaCode.expiredAt, new Date()),
-		),
-		orderBy: desc(captchaCode.createdAt),
-	});
+	const [record] = await db
+		.select()
+		.from(captchaCode)
+		.where(
+			and(
+				eq(captchaCode.type, type),
+				eq(captchaCode.target, target),
+				eq(captchaCode.code, code),
+				eq(captchaCode.used, false),
+				gt(captchaCode.expiredAt, new Date()),
+			),
+		)
+		.orderBy(desc(captchaCode.createdAt))
+		.limit(1);
 
 	if (!record) return false;
 
@@ -151,15 +159,19 @@ export async function verifyImageCaptcha(
 	imageToken: string,
 	imageCode: string,
 ): Promise<boolean> {
-	const record = await db.query.captchaCode.findFirst({
-		where: and(
-			eq(captchaCode.type, "image"),
-			eq(captchaCode.target, imageToken),
-			eq(captchaCode.code, imageCode.toLowerCase().trim()),
-			eq(captchaCode.used, false),
-			gt(captchaCode.expiredAt, new Date()),
-		),
-	});
+	const [record] = await db
+		.select()
+		.from(captchaCode)
+		.where(
+			and(
+				eq(captchaCode.type, "image"),
+				eq(captchaCode.target, imageToken),
+				eq(captchaCode.code, imageCode.toLowerCase().trim()),
+				eq(captchaCode.used, false),
+				gt(captchaCode.expiredAt, new Date()),
+			),
+		)
+		.limit(1);
 
 	if (!record) return false;
 

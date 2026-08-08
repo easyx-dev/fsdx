@@ -4,39 +4,37 @@
 
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const { mockDb, txDictFindFirst, txDictItemFindFirst, txSelectWhere } =
-	vi.hoisted(() => {
-		const txDictFindFirst = vi.fn();
-		const txDictItemFindFirst = vi.fn();
-		const txSelectWhere = vi.fn();
-
-		const queryMock = {
-			dict: { findFirst: txDictFindFirst },
-			dictItem: { findFirst: txDictItemFindFirst },
-		};
-		const txUpdate = vi.fn(() => ({ set: vi.fn(() => ({ where: vi.fn() })) }));
-		const txInsert = vi.fn(() => ({ values: vi.fn() }));
-		const txSelect = vi.fn(() => ({
-			from: vi.fn(() => ({ where: txSelectWhere })),
-		}));
-
-		const mockTx = {
-			query: queryMock,
-			update: txUpdate,
-			insert: txInsert,
-			select: txSelect,
-		};
-
-		return {
-			mockDb: {
-				query: queryMock,
-				transaction: vi.fn((fn: (_tx: unknown) => unknown) => fn(mockTx)),
-			},
-			txDictFindFirst,
-			txDictItemFindFirst,
-			txSelectWhere,
-		};
+const { mockDb, txRows } = vi.hoisted(() => {
+	const rows = vi.fn().mockResolvedValue([]);
+	const chain: any = {
+		from: vi.fn(() => chain),
+		where: vi.fn(() => chain),
+		orderBy: vi.fn(() => chain),
+		limit: vi.fn(() => chain),
+		offset: vi.fn(() => chain),
+		innerJoin: vi.fn(() => chain),
+	};
+	Object.defineProperty(chain, "then", {
+		value: (onFulfilled: (value: unknown) => unknown) =>
+			rows().then(onFulfilled),
 	});
+
+	const txUpdate = vi.fn(() => ({ set: vi.fn(() => ({ where: vi.fn() })) }));
+	const txInsert = vi.fn(() => ({ values: vi.fn() }));
+
+	const mockTx = {
+		select: vi.fn(() => chain),
+		update: txUpdate,
+		insert: txInsert,
+	};
+
+	return {
+		mockDb: {
+			transaction: vi.fn((fn: (_tx: unknown) => unknown) => fn(mockTx)),
+		},
+		txRows: rows,
+	};
+});
 
 vi.mock("#/db/index", () => ({ db: mockDb }));
 
@@ -48,8 +46,8 @@ beforeEach(() => {
 
 describe("importDicts", () => {
 	it("导入新字典类型", async () => {
-		txSelectWhere.mockResolvedValue([]);
-		txDictFindFirst.mockResolvedValue(undefined);
+		// existingDicts 查询 + dict findFirst 均返回空
+		txRows.mockReset().mockResolvedValue([]);
 
 		const result = await importDicts({
 			dicts: [{ name: "测试字典", slug: "new-dict" }],
@@ -64,8 +62,12 @@ describe("importDicts", () => {
 	});
 
 	it("更新已有字典类型", async () => {
-		txSelectWhere.mockResolvedValue([]);
-		txDictFindFirst.mockResolvedValue({ id: "d-1", slug: "dict1" });
+		// existingDicts 查询空，dict findFirst 命中
+		txRows
+			.mockReset()
+			.mockResolvedValueOnce([])
+			.mockResolvedValueOnce([{ id: "d-1", slug: "dict1" }])
+			.mockResolvedValue([]);
 
 		const result = await importDicts({
 			dicts: [{ name: "更新后的字典", slug: "dict1" }],
@@ -77,9 +79,13 @@ describe("importDicts", () => {
 	});
 
 	it("导入新字典条目", async () => {
-		txSelectWhere.mockResolvedValue([]);
-		txDictFindFirst.mockResolvedValue({ id: "d-1", slug: "dict1" });
-		txDictItemFindFirst.mockResolvedValue(undefined);
+		// existingDicts 空 → dict findFirst 命中 → dictItem findFirst 空
+		txRows
+			.mockReset()
+			.mockResolvedValueOnce([])
+			.mockResolvedValueOnce([{ id: "d-1", slug: "dict1" }])
+			.mockResolvedValueOnce([])
+			.mockResolvedValue([]);
 
 		const result = await importDicts({
 			dicts: [{ name: "字典1", slug: "dict1" }],
@@ -92,9 +98,13 @@ describe("importDicts", () => {
 	});
 
 	it("更新已有字典条目", async () => {
-		txSelectWhere.mockResolvedValue([]);
-		txDictFindFirst.mockResolvedValue({ id: "d-1", slug: "dict1" });
-		txDictItemFindFirst.mockResolvedValue({ id: "di-1" });
+		// existingDicts 空 → dict findFirst 命中 → dictItem findFirst 命中
+		txRows
+			.mockReset()
+			.mockResolvedValueOnce([])
+			.mockResolvedValueOnce([{ id: "d-1", slug: "dict1" }])
+			.mockResolvedValueOnce([{ id: "di-1" }])
+			.mockResolvedValue([]);
 
 		const result = await importDicts({
 			dicts: [{ name: "字典1", slug: "dict1" }],
@@ -107,8 +117,12 @@ describe("importDicts", () => {
 	});
 
 	it("跳过未知 dictSlug 的条目", async () => {
-		txSelectWhere.mockResolvedValue([]);
-		txDictFindFirst.mockResolvedValue(undefined);
+		// existingDicts 空 → dict findFirst 空（创建），未知条目被跳过
+		txRows
+			.mockReset()
+			.mockResolvedValueOnce([])
+			.mockResolvedValueOnce([])
+			.mockResolvedValue([]);
 
 		const result = await importDicts({
 			dicts: [{ name: "字典A", slug: "a" }],
@@ -121,13 +135,15 @@ describe("importDicts", () => {
 	});
 
 	it("混合导入统计", async () => {
-		txSelectWhere.mockResolvedValue([]);
-		txDictFindFirst
-			.mockResolvedValueOnce(undefined)
-			.mockResolvedValueOnce({ id: "d-2", slug: "existing" });
-		txDictItemFindFirst
-			.mockResolvedValueOnce(undefined)
-			.mockResolvedValueOnce({ id: "di-2" });
+		// existingDicts 空 → dict1 空 → dict2 命中 → item1 空 → item2 命中
+		txRows
+			.mockReset()
+			.mockResolvedValueOnce([])
+			.mockResolvedValueOnce([])
+			.mockResolvedValueOnce([{ id: "d-2", slug: "existing" }])
+			.mockResolvedValueOnce([])
+			.mockResolvedValueOnce([{ id: "di-2" }])
+			.mockResolvedValue([]);
 
 		const result = await importDicts({
 			dicts: [

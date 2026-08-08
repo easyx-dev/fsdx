@@ -8,26 +8,25 @@ vi.mock("#/lib/logger/logger", () => ({
 	logger: { error: vi.fn(), info: vi.fn(), warn: vi.fn() },
 }));
 
-const { mockDb } = vi.hoisted(() => {
-	const q = () => ({ findFirst: vi.fn(), findMany: vi.fn() });
+const { mockDb, mockRows } = vi.hoisted(() => {
+	const rows = vi.fn().mockResolvedValue([]);
+	const chain: any = {
+		from: vi.fn(() => chain),
+		where: vi.fn(() => chain),
+		orderBy: vi.fn(() => chain),
+		limit: vi.fn(() => chain),
+		offset: vi.fn(() => chain),
+		innerJoin: vi.fn(() => chain),
+	};
+	Object.defineProperty(chain, "then", {
+		value: (onFulfilled: (value: unknown) => unknown) =>
+			rows().then(onFulfilled),
+	});
 	return {
+		mockRows: rows,
 		mockDb: {
-			query: {
-				clientRole: q(),
-				adminRole: q(),
-				adminUser: q(),
-				clientUser: q(),
-				dict: q(),
-				dictItem: q(),
-				news: q(),
-				systemConfig: q(),
-				file: q(),
-				captchaCode: q(),
-			},
+			select: vi.fn(() => chain),
 			$count: vi.fn(),
-			select: vi.fn(() => ({
-				from: vi.fn(() => ({ where: vi.fn(() => ({ orderBy: vi.fn() })) })),
-			})),
 			insert: vi.fn(() => ({ values: vi.fn(() => ({ returning: vi.fn() })) })),
 			update: vi.fn(() => ({ set: vi.fn(() => ({ where: vi.fn() })) })),
 			delete: vi.fn(() => ({ where: vi.fn() })),
@@ -45,11 +44,7 @@ import {
 
 describe("getClientRoleList", () => {
 	it("返回空列表", async () => {
-		mockDb.select.mockReturnValue({
-			from: vi.fn(() => ({
-				where: vi.fn(() => ({ orderBy: vi.fn().mockResolvedValue([]) })),
-			})),
-		});
+		mockRows.mockResolvedValue([]);
 
 		const result = await getClientRoleList();
 		expect(Array.isArray(result)).toBe(true);
@@ -66,13 +61,7 @@ describe("getClientRoleList", () => {
 			},
 			{ id: "r-2", name: "普通用户", slug: "normal-user", permissions: [] },
 		];
-		mockDb.select.mockReturnValue({
-			from: vi.fn(() => ({
-				where: vi.fn(() => ({
-					orderBy: vi.fn().mockResolvedValue(mockRoles),
-				})),
-			})),
-		});
+		mockRows.mockResolvedValue(mockRoles);
 
 		const result = await getClientRoleList("用户");
 		expect(result).toHaveLength(2);
@@ -150,18 +139,20 @@ describe("deleteClientRole", () => {
 	beforeEach(() => vi.clearAllMocks());
 
 	it("角色不存在时返回 false", async () => {
-		mockDb.query.clientRole.findFirst.mockResolvedValue(undefined);
+		mockRows.mockResolvedValue([]);
 
 		const result = await deleteClientRole("不存在的ID");
 		expect(result).toBe(false);
 	});
 
 	it("删除成功返回 true", async () => {
-		mockDb.query.clientRole.findFirst.mockResolvedValue({
-			id: "r-1",
-			name: "旧角色",
-			slug: "old_role",
-		});
+		mockRows.mockResolvedValue([
+			{
+				id: "r-1",
+				name: "旧角色",
+				slug: "old_role",
+			},
+		]);
 
 		const result = await deleteClientRole("r-1");
 		expect(result).toBe(true);

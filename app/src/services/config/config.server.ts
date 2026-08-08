@@ -71,9 +71,11 @@ export async function upsertConfig(
 	groupName?: string,
 	clientVisible?: boolean,
 ): Promise<void> {
-	const existing = await db.query.systemConfig.findFirst({
-		where: eq(systemConfig.key, key),
-	});
+	const [existing] = await db
+		.select()
+		.from(systemConfig)
+		.where(eq(systemConfig.key, key))
+		.limit(1);
 
 	if (existing) {
 		await db
@@ -124,9 +126,11 @@ export async function updateConfig(
 }
 
 export async function deleteConfig(id: string) {
-	const existing = await db.query.systemConfig.findFirst({
-		where: eq(systemConfig.id, id),
-	});
+	const [existing] = await db
+		.select()
+		.from(systemConfig)
+		.where(eq(systemConfig.id, id))
+		.limit(1);
 	if (!existing) return false;
 	await db
 		.update(systemConfig)
@@ -330,9 +334,11 @@ const PRESET_CONFIGS: {
 /** 运行时校验预置系统配置（幂等安全，恢复软删除的预设项） */
 export async function ensurePresetConfigs(): Promise<void> {
 	for (const preset of PRESET_CONFIGS) {
-		const existing = await db.query.systemConfig.findFirst({
-			where: eq(systemConfig.key, preset.key),
-		});
+		const [existing] = await db
+			.select()
+			.from(systemConfig)
+			.where(eq(systemConfig.key, preset.key))
+			.limit(1);
 		if (existing?.deletedAt) {
 			// 预置配置不允许删除，恢复软删除的记录
 			await db

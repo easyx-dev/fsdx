@@ -23,23 +23,25 @@ vi.mock("#/services/i18n/i18n.server", async (importOriginal) => {
 	};
 });
 
-const { mockDb } = vi.hoisted(() => {
-	const q = () => ({ findFirst: vi.fn(), findMany: vi.fn() });
+const { mockDb, mockRows } = vi.hoisted(() => {
+	const rows = vi.fn().mockResolvedValue([]);
+	const chain: any = {
+		from: vi.fn(() => chain),
+		where: vi.fn(() => chain),
+		orderBy: vi.fn(() => chain),
+		limit: vi.fn(() => chain),
+		offset: vi.fn(() => chain),
+		innerJoin: vi.fn(() => chain),
+	};
+	Object.defineProperty(chain, "then", {
+		value: (onFulfilled: (value: unknown) => unknown) =>
+			rows().then(onFulfilled),
+	});
 	return {
+		mockRows: rows,
 		mockDb: {
-			query: {
-				news: q(),
-				adminUser: q(),
-				clientUser: q(),
-				role: q(),
-				dict: q(),
-				dictItem: q(),
-				systemConfig: q(),
-				file: q(),
-				captchaCode: q(),
-			},
+			select: vi.fn(() => chain),
 			$count: vi.fn(),
-			select: vi.fn(() => ({})) as any,
 			insert: vi.fn(() => ({ values: vi.fn(() => ({ returning: vi.fn() })) })),
 			update: vi.fn(() => ({ set: vi.fn(() => ({ where: vi.fn() })) })),
 			delete: vi.fn(() => ({ where: vi.fn() })),
@@ -84,17 +86,7 @@ describe("getNewsList", () => {
 	beforeEach(() => vi.clearAllMocks());
 
 	it("返回分页的新闻列表", async () => {
-		mockDb.select.mockReturnValue({
-			from: vi.fn(() => ({
-				where: vi.fn(() => ({
-					orderBy: vi.fn(() => ({
-						limit: vi.fn(() => ({
-							offset: vi.fn().mockResolvedValue([newsRecord]),
-						})),
-					})),
-				})),
-			})),
-		});
+		mockRows.mockResolvedValue([newsRecord]);
 		mockDb.$count.mockResolvedValue(1);
 
 		const result = await getNewsList();
@@ -102,15 +94,7 @@ describe("getNewsList", () => {
 		expect(result.total).toBe(1);
 	});
 	it("支持状态筛选和分页参数", async () => {
-		mockDb.select.mockReturnValue({
-			from: vi.fn(() => ({
-				where: vi.fn(() => ({
-					orderBy: vi.fn(() => ({
-						limit: vi.fn(() => ({ offset: vi.fn().mockResolvedValue([]) })),
-					})),
-				})),
-			})),
-		});
+		mockRows.mockResolvedValue([]);
 		mockDb.$count.mockResolvedValue(0);
 		const result = await getNewsList({
 			status: "published",
@@ -120,17 +104,7 @@ describe("getNewsList", () => {
 		expect(result.total).toBe(0);
 	});
 	it("支持排序参数", async () => {
-		mockDb.select.mockReturnValue({
-			from: vi.fn(() => ({
-				where: vi.fn(() => ({
-					orderBy: vi.fn(() => ({
-						limit: vi.fn(() => ({
-							offset: vi.fn().mockResolvedValue([newsRecord]),
-						})),
-					})),
-				})),
-			})),
-		});
+		mockRows.mockResolvedValue([newsRecord]);
 		mockDb.$count.mockResolvedValue(1);
 		const result = await getNewsList({
 			sortField: "createdAt",
@@ -142,25 +116,27 @@ describe("getNewsList", () => {
 describe("getNewsBySlug", () => {
 	beforeEach(() => vi.clearAllMocks());
 	it("仅返回已发布的新闻", async () => {
-		mockDb.query.news.findFirst.mockResolvedValue({
-			...newsRecord,
-			status: "published",
-			content: "<p>Hello</p>",
-		});
+		mockRows.mockResolvedValue([
+			{
+				...newsRecord,
+				status: "published",
+				content: "<p>Hello</p>",
+			},
+		]);
 		const result = await getNewsBySlug("test-news");
 		expect(result).not.toBeNull();
 		expect(result!.status).toBe("published");
 		expect(result!.html).toBeDefined();
 	});
 	it("不存在的 slug 返回 null", async () => {
-		mockDb.query.news.findFirst.mockResolvedValue(undefined);
+		mockRows.mockResolvedValue([]);
 		const result = await getNewsBySlug("不存在");
 		expect(result).toBeNull();
 	});
 });
 describe("getNewsById", () => {
 	it("返回任意状态的新闻", async () => {
-		mockDb.query.news.findFirst.mockResolvedValue(newsRecord);
+		mockRows.mockResolvedValue([newsRecord]);
 		const result = await getNewsById("n-1");
 		expect(result).not.toBeNull();
 		expect(result!.id).toBe("n-1");
@@ -168,7 +144,7 @@ describe("getNewsById", () => {
 });
 describe("createNews", () => {
 	it("创建新闻并返回记录", async () => {
-		mockDb.query.news.findFirst.mockResolvedValue(undefined);
+		mockRows.mockResolvedValue([]);
 		mockDb.insert.mockReturnValue({
 			values: vi.fn(() => ({
 				returning: vi.fn().mockResolvedValue([{ ...newsRecord, id: "new-1" }]),
@@ -180,30 +156,32 @@ describe("createNews", () => {
 });
 describe("changeNewsStatus", () => {
 	it("变更新闻状态", async () => {
-		mockDb.query.news.findFirst.mockResolvedValue(newsRecord);
+		mockRows.mockResolvedValue([newsRecord]);
 		const result = await changeNewsStatus("n-1", "published");
 		expect(result.success).toBe(true);
 	});
 });
 describe("deleteNews", () => {
 	it("软删除新闻", async () => {
-		mockDb.query.news.findFirst.mockResolvedValue(newsRecord);
+		mockRows.mockResolvedValue([newsRecord]);
 		const result = await deleteNews("n-1");
 		expect(result).toBe(true);
 	});
 	it("不存在的新闻返回 false", async () => {
-		mockDb.query.news.findFirst.mockResolvedValue(undefined);
+		mockRows.mockResolvedValue([]);
 		const result = await deleteNews("不存在");
 		expect(result).toBe(false);
 	});
 });
 describe("renderContent", () => {
 	it("getNewsBySlug 返回 html 字段（wangEditor 直接存 HTML）", async () => {
-		mockDb.query.news.findFirst.mockResolvedValue({
-			...newsRecord,
-			status: "published",
-			content: "<p>Hello</p>",
-		});
+		mockRows.mockResolvedValue([
+			{
+				...newsRecord,
+				status: "published",
+				content: "<p>Hello</p>",
+			},
+		]);
 		const result = await getNewsBySlug("slug");
 		expect(result!.html).toContain("<p>Hello</p>");
 	});
@@ -245,9 +223,10 @@ describe("createNews 分支", () => {
 
 	it("slug 冲突时自动追加数字后缀", async () => {
 		mockDb.$count.mockResolvedValue(0);
-		mockDb.query.news.findFirst
-			.mockResolvedValueOnce({ id: "n-x", slug: "test-news" })
-			.mockResolvedValueOnce(undefined);
+		mockRows
+			.mockReset()
+			.mockResolvedValueOnce([{ id: "n-x", slug: "test-news" }])
+			.mockResolvedValueOnce([]);
 		const valuesMock = vi.fn((_data: unknown) => ({
 			returning: vi
 				.fn()
@@ -262,7 +241,7 @@ describe("createNews 分支", () => {
 	});
 
 	it("发布状态且未传 publishedAt 时自动填充当前时间", async () => {
-		mockDb.query.news.findFirst.mockResolvedValue(undefined);
+		mockRows.mockReset().mockResolvedValue([]);
 		const valuesMock = vi.fn((_data: unknown) => ({
 			returning: vi
 				.fn()
@@ -285,10 +264,7 @@ describe("changeNewsStatus", () => {
 	beforeEach(() => vi.clearAllMocks());
 
 	it("首次发布时自动填充 publishedAt", async () => {
-		mockDb.query.news.findFirst.mockResolvedValue({
-			...newsRecord,
-			publishedAt: null,
-		});
+		mockRows.mockResolvedValue([{ ...newsRecord, publishedAt: null }]);
 		const setMock = vi.fn((_data: unknown) => ({ where: vi.fn() }));
 		mockDb.update.mockReturnValue({ set: setMock } as any);
 
@@ -299,10 +275,7 @@ describe("changeNewsStatus", () => {
 	});
 
 	it("已发布过的新闻不重复设置 publishedAt", async () => {
-		mockDb.query.news.findFirst.mockResolvedValue({
-			...newsRecord,
-			publishedAt: new Date(),
-		});
+		mockRows.mockResolvedValue([{ ...newsRecord, publishedAt: new Date() }]);
 		const setMock = vi.fn((_data: unknown) => ({ where: vi.fn() }));
 		mockDb.update.mockReturnValue({ set: setMock } as any);
 
@@ -318,7 +291,7 @@ describe("changeNewsStatus", () => {
 
 		await changeNewsStatus("n-1", "archived");
 
-		expect(mockDb.query.news.findFirst).not.toHaveBeenCalled();
+		expect(mockDb.select).not.toHaveBeenCalled();
 		const updateData = setMock.mock.calls[0][0] as { status: string };
 		expect(updateData.status).toBe("archived");
 	});

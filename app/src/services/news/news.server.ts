@@ -59,9 +59,11 @@ async function ensureUniqueSlug(
 		const conditions = [eq(news.slug, uniqueSlug), notDeleted(news.deletedAt)];
 		if (excludeId) conditions.push(ne(news.id, excludeId));
 
-		const existing = await db.query.news.findFirst({
-			where: and(...conditions),
-		});
+		const [existing] = await db
+			.select()
+			.from(news)
+			.where(and(...conditions))
+			.limit(1);
 
 		if (!existing) break;
 		uniqueSlug = `${slug}-${counter}`;
@@ -151,13 +153,17 @@ export async function getNewsList(
  * 返回扁平结构：NewsRecord 字段 + html，不包含国际化翻译
  */
 export async function getNewsBySlug(slug: string): Promise<NewsDetail | null> {
-	const record = await db.query.news.findFirst({
-		where: and(
-			eq(news.slug, slug),
-			eq(news.status, "published"),
-			notDeleted(news.deletedAt),
-		),
-	});
+	const [record] = await db
+		.select()
+		.from(news)
+		.where(
+			and(
+				eq(news.slug, slug),
+				eq(news.status, "published"),
+				notDeleted(news.deletedAt),
+			),
+		)
+		.limit(1);
 	if (!record) return null;
 
 	return { ...record, html: record.content ?? "" };
@@ -165,9 +171,11 @@ export async function getNewsBySlug(slug: string): Promise<NewsDetail | null> {
 
 /** 根据 id 获取单条新闻（管理端用） */
 export async function getNewsById(id: string): Promise<NewsRecord | null> {
-	const record = await db.query.news.findFirst({
-		where: and(eq(news.id, id), notDeleted(news.deletedAt)),
-	});
+	const [record] = await db
+		.select()
+		.from(news)
+		.where(and(eq(news.id, id), notDeleted(news.deletedAt)))
+		.limit(1);
 	return record ?? null;
 }
 
@@ -239,9 +247,11 @@ export async function changeNewsStatus(
 		updatedAt: new Date(),
 	};
 	if (status === "published") {
-		const existing = await db.query.news.findFirst({
-			where: eq(news.id, id),
-		});
+		const [existing] = await db
+			.select()
+			.from(news)
+			.where(eq(news.id, id))
+			.limit(1);
 		if (existing && !existing.publishedAt) updateData.publishedAt = new Date();
 	}
 	await db.update(news).set(updateData).where(eq(news.id, id));

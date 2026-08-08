@@ -2,10 +2,10 @@
  * 管理员用户管理：CRUD 操作
  */
 import bcrypt from "bcryptjs";
-import { and, eq, ilike, or } from "drizzle-orm";
+import { and, eq, ilike, inArray, isNull, or } from "drizzle-orm";
 import type { z } from "zod";
 import { db } from "#/db/index";
-import { adminUser } from "#/db/schema";
+import { adminRole, adminUser } from "#/db/schema";
 import { clearAdminUserCache } from "#/services/admin-auth/admin-auth.server";
 import {
 	buildSortClause,
@@ -33,20 +33,20 @@ export type AdminUserListParams = z.infer<typeof listSchema>;
 
 /** 批量查询角色 id 到名称的映射 */
 async function getRoleNameMap(roleIds: string[]): Promise<Map<string, string>> {
-	const roles = await db.query.adminRole.findMany({
-		where: (t, { inArray: ia, isNull: n }) =>
-			and(ia(t.id, roleIds), n(t.deletedAt)),
-	});
+	const roles = await db
+		.select()
+		.from(adminRole)
+		.where(and(inArray(adminRole.id, roleIds), isNull(adminRole.deletedAt)));
 	return new Map(roles.map((r) => [r.id, r.name]));
 }
 
 /** 校验角色 id 均存在且未软删除，防止写入失效角色 */
 async function assertAdminRolesExist(roleIds: string[]): Promise<void> {
 	if (roleIds.length === 0) return;
-	const roles = await db.query.adminRole.findMany({
-		where: (t, { inArray: ia, isNull: n }) =>
-			and(ia(t.id, roleIds), n(t.deletedAt)),
-	});
+	const roles = await db
+		.select()
+		.from(adminRole)
+		.where(and(inArray(adminRole.id, roleIds), isNull(adminRole.deletedAt)));
 	const found = new Set(roles.map((r) => r.id));
 	const invalid = roleIds.filter((id) => !found.has(id));
 	if (invalid.length > 0) {
@@ -136,9 +136,12 @@ export async function getAdminUserList(params?: AdminUserListParams) {
 
 /** 获取单个管理员 */
 export async function getAdminUser(id: string) {
-	return db.query.adminUser.findFirst({
-		where: and(eq(adminUser.id, id), notDeleted(adminUser.deletedAt)),
-	});
+	const [record] = await db
+		.select()
+		.from(adminUser)
+		.where(and(eq(adminUser.id, id), notDeleted(adminUser.deletedAt)))
+		.limit(1);
+	return record;
 }
 
 /** 创建管理员 */

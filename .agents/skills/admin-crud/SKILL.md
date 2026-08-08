@@ -202,9 +202,11 @@ export async function getProductList(
 export async function getProductById(
   id: string,
 ): Promise<ProductRecord | null> {
-  const record = await db.query.product.findFirst({
-    where: and(eq(product.id, id), notDeleted(product.deletedAt)),
-  });
+  const [record] = await db
+    .select()
+    .from(product)
+    .where(and(eq(product.id, id), notDeleted(product.deletedAt)))
+    .limit(1);
   return record ?? null;
 }
 

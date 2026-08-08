@@ -14,9 +14,11 @@ export async function importConfigs(
 	const result: ConfigImportResult = { created: 0, updated: 0 };
 
 	for (const cfg of data.configs) {
-		const existing = await db.query.systemConfig.findFirst({
-			where: eq(systemConfig.key, cfg.key),
-		});
+		const [existing] = await db
+			.select()
+			.from(systemConfig)
+			.where(eq(systemConfig.key, cfg.key))
+			.limit(1);
 
 		if (existing) {
 			await db

@@ -17,38 +17,44 @@ vi.mock("bcryptjs", () => ({
 	default: { hash: vi.fn().mockResolvedValue("hashed_password") },
 }));
 
-const { mockDb, mockTx } = vi.hoisted(() => {
-	const createTx = () => {
-		const txQuery = {
-			adminUser: { findFirst: vi.fn() },
-			clientRole: { findFirst: vi.fn().mockResolvedValue(undefined) },
+const { mockDb, mockRows, mockTx } = vi.hoisted(() => {
+	const createChain = (rows: () => Promise<unknown[]>) => {
+		const chain: any = {
+			from: vi.fn(() => chain),
+			where: vi.fn(() => chain),
+			orderBy: vi.fn(() => chain),
+			limit: vi.fn(() => chain),
+			offset: vi.fn(() => chain),
+			innerJoin: vi.fn(() => chain),
 		};
-		const tx = {
-			query: txQuery,
-			insert: vi.fn(),
-		};
-		return { tx, txQuery };
+		Object.defineProperty(chain, "then", {
+			value: (onFulfilled: (value: unknown) => unknown) =>
+				rows().then(onFulfilled),
+		});
+		return chain;
 	};
 
-	const q = () => ({ findFirst: vi.fn(), findMany: vi.fn() });
-	return {
-		mockDb: {
-			query: {
-				adminUser: q(),
-				clientUser: q(),
-				adminRole: q(),
-				systemConfig: q(),
-				news: q(),
-				dict: q(),
-				dictItem: q(),
-				file: q(),
-				captchaCode: q(),
+	/** 创建事务 mock：select 走链式查询，行数组由 txRows 控制 */
+	const createTx = () => {
+		const txRows = vi.fn().mockResolvedValue([]);
+		return {
+			txRows,
+			tx: {
+				select: vi.fn(() => createChain(txRows)),
+				insert: vi.fn(),
 			},
+		};
+	};
+
+	const rows = vi.fn().mockResolvedValue([]);
+	return {
+		mockRows: rows,
+		mockDb: {
+			select: vi.fn(() => createChain(rows)),
+			$count: vi.fn(),
 			insert: vi.fn(() => ({ values: vi.fn(() => ({ returning: vi.fn() })) })),
 			update: vi.fn(() => ({ set: vi.fn(() => ({ where: vi.fn() })) })),
 			delete: vi.fn(() => ({ where: vi.fn() })),
-			select: vi.fn(),
-			$count: vi.fn(),
 			transaction: vi.fn(),
 		},
 		mockTx: createTx,
@@ -77,17 +83,19 @@ describe("checkInitStatus", () => {
 	beforeEach(() => vi.clearAllMocks());
 
 	it("系统未初始化时返回 false", async () => {
-		mockDb.query.adminUser.findFirst.mockResolvedValue(undefined);
+		mockRows.mockResolvedValue([]);
 		const result = await checkInitStatus();
 		expect(result).toBe(false);
 	});
 
 	it("系统已初始化时返回 true", async () => {
-		mockDb.query.adminUser.findFirst.mockResolvedValue({
-			id: "root-1",
-			username: "admin",
-			isRoot: true,
-		});
+		mockRows.mockResolvedValue([
+			{
+				id: "root-1",
+				username: "admin",
+				isRoot: true,
+			},
+		]);
 		const result = await checkInitStatus();
 		expect(result).toBe(true);
 	});
@@ -105,8 +113,8 @@ describe("initSystem", () => {
 
 	it("初始化成功，创建角色、管理员用户并写入配置", async () => {
 		mockDb.transaction.mockImplementation(async (cb: CallableFunction) => {
-			const { tx, txQuery } = mockTx();
-			txQuery.adminUser.findFirst.mockResolvedValue(undefined);
+			const { tx, txRows } = mockTx();
+			txRows.mockReset().mockResolvedValue([]);
 			tx.insert = mockInsertReturning({
 				id: "role-1",
 				name: "超级管理员",
@@ -122,12 +130,14 @@ describe("initSystem", () => {
 
 	it("系统已初始化时返回失败", async () => {
 		mockDb.transaction.mockImplementation(async (cb: CallableFunction) => {
-			const { tx, txQuery } = mockTx();
-			txQuery.adminUser.findFirst.mockResolvedValue({
-				id: "root-1",
-				username: "admin",
-				isRoot: true,
-			});
+			const { tx, txRows } = mockTx();
+			txRows.mockReset().mockResolvedValue([
+				{
+					id: "root-1",
+					username: "admin",
+					isRoot: true,
+				},
+			]);
 			return cb(tx);
 		});
 
@@ -140,8 +150,8 @@ describe("initSystem", () => {
 		const { upsertConfig } = await import("#/services/config/config.server");
 
 		mockDb.transaction.mockImplementation(async (cb: CallableFunction) => {
-			const { tx, txQuery } = mockTx();
-			txQuery.adminUser.findFirst.mockResolvedValue(undefined);
+			const { tx, txRows } = mockTx();
+			txRows.mockReset().mockResolvedValue([]);
 			tx.insert = mockInsertReturning({
 				id: "role-1",
 				name: "超级管理员",
@@ -169,8 +179,8 @@ describe("initSystem", () => {
 		const { upsertConfig } = await import("#/services/config/config.server");
 
 		mockDb.transaction.mockImplementation(async (cb: CallableFunction) => {
-			const { tx, txQuery } = mockTx();
-			txQuery.adminUser.findFirst.mockResolvedValue(undefined);
+			const { tx, txRows } = mockTx();
+			txRows.mockReset().mockResolvedValue([]);
 			tx.insert = mockInsertReturning({
 				id: "role-1",
 				name: "超级管理员",
@@ -244,8 +254,8 @@ describe("initSystem", () => {
 		const { upsertConfig } = await import("#/services/config/config.server");
 
 		mockDb.transaction.mockImplementation(async (cb: CallableFunction) => {
-			const { tx, txQuery } = mockTx();
-			txQuery.adminUser.findFirst.mockResolvedValue(undefined);
+			const { tx, txRows } = mockTx();
+			txRows.mockReset().mockResolvedValue([]);
 			tx.insert = mockInsertReturning({
 				id: "role-1",
 				name: "超级管理员",
@@ -277,8 +287,8 @@ describe("initSystem", () => {
 		const { upsertConfig } = await import("#/services/config/config.server");
 
 		mockDb.transaction.mockImplementation(async (cb: CallableFunction) => {
-			const { tx, txQuery } = mockTx();
-			txQuery.adminUser.findFirst.mockResolvedValue(undefined);
+			const { tx, txRows } = mockTx();
+			txRows.mockReset().mockResolvedValue([]);
 			tx.insert = mockInsertReturning({
 				id: "role-1",
 				name: "超级管理员",
@@ -339,8 +349,8 @@ describe("initSystem", () => {
 		const { loadConfigCache } = await import("#/services/config/config.server");
 
 		mockDb.transaction.mockImplementation(async (cb: CallableFunction) => {
-			const { tx, txQuery } = mockTx();
-			txQuery.adminUser.findFirst.mockResolvedValue(undefined);
+			const { tx, txRows } = mockTx();
+			txRows.mockReset().mockResolvedValue([]);
 			tx.insert = mockInsertReturning({
 				id: "role-1",
 				name: "超级管理员",

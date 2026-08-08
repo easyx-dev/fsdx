@@ -23,25 +23,25 @@ const { mockDictCache } = vi.hoisted(() => {
 });
 vi.mock("#/services/dict/dict.cache", () => ({ dictCache: mockDictCache }));
 
-const { mockDb } = vi.hoisted(() => {
-	const q = () => ({ findFirst: vi.fn(), findMany: vi.fn() });
+const { mockDb, mockRows } = vi.hoisted(() => {
+	const rows = vi.fn().mockResolvedValue([]);
+	const chain: any = {
+		from: vi.fn(() => chain),
+		where: vi.fn(() => chain),
+		orderBy: vi.fn(() => chain),
+		limit: vi.fn(() => chain),
+		offset: vi.fn(() => chain),
+		innerJoin: vi.fn(() => chain),
+	};
+	Object.defineProperty(chain, "then", {
+		value: (onFulfilled: (value: unknown) => unknown) =>
+			rows().then(onFulfilled),
+	});
 	return {
+		mockRows: rows,
 		mockDb: {
-			query: {
-				dict: q(),
-				dictItem: q(),
-				adminUser: q(),
-				clientUser: q(),
-				role: q(),
-				news: q(),
-				systemConfig: q(),
-				file: q(),
-				captchaCode: q(),
-			},
+			select: vi.fn(() => chain),
 			$count: vi.fn(),
-			select: vi.fn(() => ({
-				from: vi.fn(() => ({ where: vi.fn(() => ({ orderBy: vi.fn() })) })),
-			})),
 			insert: vi.fn(() => ({ values: vi.fn(() => ({ returning: vi.fn() })) })),
 			update: vi.fn(() => ({ set: vi.fn(() => ({ where: vi.fn() })) })),
 			delete: vi.fn(() => ({ where: vi.fn() })),
@@ -52,7 +52,6 @@ const { mockDb } = vi.hoisted(() => {
 				};
 				await fn(txMock);
 			}),
-			innerJoin: vi.fn(() => ({ where: vi.fn(() => ({ orderBy: vi.fn() })) })),
 		},
 	};
 });
@@ -68,11 +67,7 @@ import {
 
 describe("getDictList", () => {
 	it("返回字典列表", async () => {
-		mockDb.select.mockReturnValue({
-			from: vi.fn(() => ({
-				where: vi.fn(() => ({ orderBy: vi.fn().mockResolvedValue([]) })),
-			})),
-		});
+		mockRows.mockResolvedValue([]);
 		const result = await getDictList();
 		expect(Array.isArray(result)).toBe(true);
 	});
@@ -97,30 +92,17 @@ describe("createDict", () => {
 describe("deleteDict", () => {
 	beforeEach(() => vi.clearAllMocks());
 	it("删除成功返回 true", async () => {
-		mockDb.query.dict.findFirst.mockResolvedValue({
-			id: "d-1",
-			slug: "old_dict",
-		});
+		// findFirst 返回存在记录，loadDictCache 的两个 select 返回空
+		mockRows
+			.mockReset()
+			.mockResolvedValueOnce([{ id: "d-1", slug: "old_dict" }])
+			.mockResolvedValue([]);
 		mockDictCache.set("old_dict", {});
-		// mock loadDictCache 中的两个 Promise.all 查询
-		// db.select().from(dict).where(...) 查询链
-		const mockFromResult = vi.fn(() => ({
-			where: vi.fn().mockResolvedValue([]), // where 返回 Promise，值可被 iterable
-			innerJoin: vi.fn(() => ({
-				where: vi.fn(() => ({ orderBy: vi.fn().mockResolvedValue([]) })),
-			})),
-		}));
-		mockDb.select.mockImplementation(
-			(_args?: unknown) =>
-				({
-					from: mockFromResult,
-				}) as any,
-		);
 		const result = await deleteDict("d-1");
 		expect(result).toBe(true);
 	});
 	it("不存在的字典返回 false", async () => {
-		mockDb.query.dict.findFirst.mockResolvedValue(undefined);
+		mockRows.mockReset().mockResolvedValue([]);
 		const result = await deleteDict("不存在");
 		expect(result).toBe(false);
 	});
@@ -141,14 +123,7 @@ describe("getAllDictOptions", () => {
 		mockDictCache.set("news_status", {
 			published: { label: "已发布", color: "blue" },
 		} as any);
-		mockDb.select.mockReturnValue({
-			from: vi.fn(() => ({
-				where: vi.fn(() => ({ orderBy: vi.fn().mockResolvedValue([]) })),
-				innerJoin: vi.fn(() => ({
-					where: vi.fn(() => ({ orderBy: vi.fn().mockResolvedValue([]) })),
-				})),
-			})),
-		});
+		mockRows.mockResolvedValue([]);
 
 		const result = await getAllDictOptions();
 
@@ -162,14 +137,7 @@ describe("getAllDictOptions", () => {
 	});
 
 	it("无缓存数据时返回空对象", async () => {
-		mockDb.select.mockReturnValue({
-			from: vi.fn(() => ({
-				where: vi.fn(() => ({ orderBy: vi.fn().mockResolvedValue([]) })),
-				innerJoin: vi.fn(() => ({
-					where: vi.fn(() => ({ orderBy: vi.fn().mockResolvedValue([]) })),
-				})),
-			})),
-		});
+		mockRows.mockResolvedValue([]);
 
 		const result = await getAllDictOptions();
 
@@ -181,7 +149,7 @@ describe("ensurePresetDicts", () => {
 	beforeEach(() => vi.clearAllMocks());
 
 	it("全部预置字典缺失时逐个创建并写入子项", async () => {
-		mockDb.query.dict.findFirst.mockResolvedValue(undefined);
+		mockRows.mockReset().mockResolvedValue([]);
 		mockDb.insert.mockReturnValue({
 			values: vi.fn(() => ({
 				returning: vi
@@ -191,35 +159,21 @@ describe("ensurePresetDicts", () => {
 					]),
 			})),
 		});
-		mockDb.select.mockReturnValue({
-			from: vi.fn(() => ({
-				where: vi.fn().mockResolvedValue([]),
-				innerJoin: vi.fn(() => ({
-					where: vi.fn().mockResolvedValue([]),
-				})),
-			})),
-		});
 
 		await ensurePresetDicts();
 
-		expect(mockDb.query.dict.findFirst).toHaveBeenCalledTimes(2);
+		expect(mockDb.select).toHaveBeenCalledTimes(2);
 		expect(mockDb.insert).toHaveBeenCalled();
 	});
 
 	it("预置字典已存在时跳过创建", async () => {
-		mockDb.query.dict.findFirst.mockResolvedValue({
-			id: "d-1",
-			slug: "user_status",
-			name: "用户状态",
-		});
-		mockDb.select.mockReturnValue({
-			from: vi.fn(() => ({
-				where: vi.fn().mockResolvedValue([]),
-				innerJoin: vi.fn(() => ({
-					where: vi.fn().mockResolvedValue([]),
-				})),
-			})),
-		});
+		mockRows.mockReset().mockResolvedValue([
+			{
+				id: "d-1",
+				slug: "user_status",
+				name: "用户状态",
+			},
+		]);
 
 		await ensurePresetDicts();
 

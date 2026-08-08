@@ -38,9 +38,11 @@ export async function ensureUniqueSlug(
 	while (counter <= 100) {
 		const conditions = [eq(news.slug, uniqueSlug), notDeleted(news.deletedAt)];
 		if (excludeId) conditions.push(ne(news.id, excludeId));
-		const existing = await db.query.news.findFirst({
-			where: and(...conditions),
-		});
+		const [existing] = await db
+			.select()
+			.from(news)
+			.where(and(...conditions))
+			.limit(1);
 		if (!existing) break;
 		uniqueSlug = `${slug}-${counter}`;
 		counter++;

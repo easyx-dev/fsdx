@@ -44,21 +44,25 @@ vi.mock("#/services/i18n/i18n.server", () => ({
   getContentTranslations: mockGetContentTranslations,
 }));
 
-const { mockDb } = vi.hoisted(() => {
-  const q = () => ({ findFirst: vi.fn(), findMany: vi.fn() });
-  const selectChain = { from: vi.fn(() => ({ where: vi.fn() })) };
+const { mockDb, mockRows } = vi.hoisted(() => {
+  // 可 await 的 select 链：from/where/orderBy/limit/offset 均返回自身，
+  // await 链时 resolve 到 mockRows 指定的行数组，覆盖 findFirst(limit) 与 findMany(where 即终点)
+  const rows = vi.fn().mockResolvedValue([]);
+  const selectChain = {
+    from: vi.fn(() => selectChain),
+    where: vi.fn(() => selectChain),
+    orderBy: vi.fn(() => selectChain),
+    limit: vi.fn(() => selectChain),
+    offset: vi.fn(() => selectChain),
+    innerJoin: vi.fn(() => selectChain),
+  };
+  Object.defineProperty(selectChain, "then", {
+    value: (onFulfilled) => rows().then(onFulfilled),
+  });
   return {
     mockDb: {
-      query: {
-        // ⚠️ 必须包含所有表的 query 方法（当前 17 张）
-        adminRole: q(), adminUser: q(), captchaCode: q(),
-        clientRole: q(), clientUser: q(), dict: q(), dictItem: q(),
-        file: q(), message: q(), news: q(), operationLog: q(),
-        systemConfig: q(), trackEvent: q(), trackEventMeta: q(),
-        trackPropertyMeta: q(), uiTranslation: q(), contentTranslation: q(),
-      },
-      $count: vi.fn(),
       select: vi.fn(() => selectChain),
+      $count: vi.fn(),
       insert: vi.fn(() => ({
         values: vi.fn(() => ({ returning: vi.fn() })),
       })),
@@ -66,8 +70,9 @@ const { mockDb } = vi.hoisted(() => {
         set: vi.fn(() => ({ where: vi.fn() })),
       })),
       delete: vi.fn(() => ({ where: vi.fn() })),
+      transaction: vi.fn(),
     },
-    selectChain,
+    mockRows: rows,
   };
 });
 
@@ -98,47 +103,54 @@ const productRecord = {
 };
 ```
 
-## mockDb 完整模板 —— 必须包含所有表
+## mockDb 完整模板 —— select 链统一承载所有查询
 
-`mockDb.query` **必须**包含项目中所有表的 query 方法。`.server.ts` 模块之间的交叉引用可能在测试时意外触发其他表查询（如 `logOperation` 内部引用 `operationLog` 表），缺少任何一张表都会导致 `undefined` 错误。
+`mockDb.select` 返回一个**可 await 的查询链**（from/where/orderBy/limit/offset/innerJoin 均返回自身），`await` 链时 resolve 到 `mockRows` 控制的行数组。这样 `db.select().from(T).where(...).limit(1)`（findFirst）与 `db.select().from(T).where(...)`（findMany/列表）共用同一套 mock，无需为每张表单独声明 query 方法。`.server.ts` 模块之间的交叉引用可能在测试时意外触发其他表查询，统一走 select 链即可覆盖。
 
-当前项目全部表（17 张）：
-
-```
-adminRole, adminUser, captchaCode, clientRole, clientUser,
-dict, dictItem, file, message, news, operationLog, systemConfig,
-trackEvent, trackEventMeta, trackPropertyMeta,
-uiTranslation, contentTranslation
-```
+> ⚠️ 由于 `vi.clearAllMocks()` 只清调用记录不清 mock 实现，`mockRows` 的返回值会跨测试残留。默认 `mockResolvedValue([])`；每个用例如需特定返回值，显式设置 `mockRows.mockResolvedValue(...)`；当 findFirst 与后续查询（如 loadDictCache 的列表查询）需要不同返回值时，用 `mockRows.mockReset().mockResolvedValueOnce(...).mockResolvedValue(...)` 按调用顺序编排。
 
 ## Mock 链式调用 Setup 速查
 
-### select 查询
+### select 查询（列表/分页）
 
 ```ts
-mockDb.select.mockReturnValue({
-  from: vi.fn(() => ({
-    where: vi.fn(() => ({
-      orderBy: vi.fn(() => ({
-        limit: vi.fn(() => ({
-          offset: vi.fn().mockResolvedValue([productRecord]),
-        })),
-      })),
-    })),
-  })),
-});
+mockRows.mockResolvedValue([productRecord]);      // 列表返回行数组
+mockDb.$count.mockResolvedValue(1);               // 分页总数单独 mock
 ```
 
-### findFirst（通过 query.xxx.findFirst）
+### findFirst（单条，where → limit(1) 后 await）
 
 ```ts
-mockDb.query.product.findFirst.mockResolvedValue(productRecord);
+// 找到：行数组含一条记录，服务层取 [0]
+mockRows.mockResolvedValue([productRecord]);
+// 未找到
+mockRows.mockResolvedValue([]);
 ```
 
-### findMany（通过 query.xxx.findMany）
+### findMany（多条，where 即终点）
 
 ```ts
-mockDb.query.product.findMany.mockResolvedValue([productRecord]);
+mockRows.mockResolvedValue([productRecord]);
+```
+
+### 同一用例内多个查询返回不同结果
+
+```ts
+// 按服务调用顺序用 mockResolvedValueOnce 编排，末位用 mockResolvedValue 兜底
+mockRows
+  .mockReset()
+  .mockResolvedValueOnce([productRecord])       // 第一次 select（如 findFirst）
+  .mockResolvedValueOnce([])                    // 第二次 select
+  .mockResolvedValue([]);
+```
+
+### 断言 select 链被调用 / 未调用
+
+```ts
+expect(mockDb.select).toHaveBeenCalledTimes(2);
+expect(mockDb.select).not.toHaveBeenCalled();
+// 断言 where 条件内容时，可从 select 链的 where mock 取参数：
+// const sql = extractSqlText(mockSelectChain.where.mock.calls[0][0]);
 ```
 
 ### insert
@@ -289,7 +301,9 @@ pnpm test                   # watch 模式（开发时推荐）
 
 | 错误现象 | 原因 | 修复 |
 |---------|------|------|
-| `TypeError: Cannot read properties of undefined (reading 'findFirst')` | `mockDb.query` 缺少某张表 | 补充缺少的表的 query 方法 |
+| `db.select(...).from(...).where(...).limit is not a function` | `mockDb.select` 返回的不是完整链（缺 limit/offset） | 使用模板中的可 await 查询链（from/where/orderBy/limit/offset 均返回自身） |
+| `await` 链得到的是链对象而非行数组 | 查询链未挂 thenable | 用 `Object.defineProperty(selectChain, "then", ...)` 挂 then，`await` 时返回 `mockRows()` |
+| 查询返回上一条用例的值 | `mockRows` 实现被 `vi.clearAllMocks()` 保留 | 用例开头显式 `mockRows.mockResolvedValue(...)` 或 `mockRows.mockReset()` |
 | Mock 没有生效，仍调用真实 DB | `import` 在 `vi.mock` 之前 | 将被测模块的 `import` 移到 mock 之后 |
 | 测试被上一个测试的 mock 值污染 | 缺少 `vi.clearAllMocks()` | 添加 `beforeEach(() => vi.clearAllMocks())` |
 | hoisted 值在 `vi.mock` 中引用不到 | `vi.mock` 回调无法访问外部变量 | 用 `vi.hoisted()` 包裹 mock 对象声明 |

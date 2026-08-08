@@ -3,11 +3,27 @@
  */
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const { mockDb } = vi.hoisted(() => ({
-	mockDb: {
-		query: { news: { findFirst: vi.fn() } },
-	},
-}));
+const { mockDb, mockRows } = vi.hoisted(() => {
+	const rows = vi.fn().mockResolvedValue([]);
+	const chain: any = {
+		from: vi.fn(() => chain),
+		where: vi.fn(() => chain),
+		orderBy: vi.fn(() => chain),
+		limit: vi.fn(() => chain),
+		offset: vi.fn(() => chain),
+		innerJoin: vi.fn(() => chain),
+	};
+	Object.defineProperty(chain, "then", {
+		value: (onFulfilled: (value: unknown) => unknown) =>
+			rows().then(onFulfilled),
+	});
+	return {
+		mockDb: {
+			select: vi.fn(() => chain),
+		},
+		mockRows: rows,
+	};
+});
 
 vi.mock("#/db/index", () => ({ db: mockDb }));
 
@@ -53,7 +69,7 @@ describe("ensureUniqueSlug", () => {
 	});
 
 	it("slug 唯一时直接返回", async () => {
-		mockDb.query.news.findFirst.mockResolvedValue(undefined);
+		mockRows.mockResolvedValue([]);
 
 		const result = await ensureUniqueSlug("my-slug");
 
@@ -61,18 +77,19 @@ describe("ensureUniqueSlug", () => {
 	});
 
 	it("slug 冲突时追加后缀", async () => {
-		mockDb.query.news.findFirst
-			.mockResolvedValueOnce({ id: "n-1" })
-			.mockResolvedValueOnce(undefined);
+		mockRows
+			.mockReset()
+			.mockResolvedValueOnce([{ id: "n-1" }])
+			.mockResolvedValueOnce([]);
 
 		const result = await ensureUniqueSlug("my-slug");
 
 		expect(result).toBe("my-slug-1");
-		expect(mockDb.query.news.findFirst).toHaveBeenCalledTimes(2);
+		expect(mockDb.select).toHaveBeenCalledTimes(2);
 	});
 
 	it("排除自身 id 时判断唯一", async () => {
-		mockDb.query.news.findFirst.mockResolvedValue(undefined);
+		mockRows.mockReset().mockResolvedValue([]);
 
 		const result = await ensureUniqueSlug("my-slug", "n-1");
 
@@ -80,7 +97,7 @@ describe("ensureUniqueSlug", () => {
 	});
 
 	it("超过 100 次冲突抛出错误", async () => {
-		mockDb.query.news.findFirst.mockResolvedValue({ id: "n-1" });
+		mockRows.mockReset().mockResolvedValue([{ id: "n-1" }]);
 
 		await expect(ensureUniqueSlug("my-slug")).rejects.toThrow(
 			'无法为 slug "my-slug" 生成唯一标识',

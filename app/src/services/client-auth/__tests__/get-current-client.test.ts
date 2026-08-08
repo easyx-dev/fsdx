@@ -3,44 +3,29 @@
  */
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-/** 捕获 findFirst 传入的 where 回调，用哨兵值验证条件组合是否完整 */
-let capturedWhere:
-	| ((
-			table: object,
-			helpers: Record<string, (...a: never[]) => unknown>,
-	  ) => unknown)
-	| undefined;
-
-function captureWhere(where?: (t: object, helpers: any) => unknown): void {
-	capturedWhere = where;
-}
-
-/** 哨兵 SQL 运算符：每个运算符返回可区分的结果，便于断言 and/eq/isNull 是否都被使用 */
-const sentinelHelpers = {
-	eq: () => "EQ",
-	isNull: () => "ISNULL",
-};
-
 const { mockVerifyToken } = vi.hoisted(() => ({ mockVerifyToken: vi.fn() }));
 vi.mock("#/lib/jwt/jwt", () => ({ jwt: { verifyToken: mockVerifyToken } }));
 
-const { mockDb } = vi.hoisted(() => {
-	const q = () => ({ findFirst: vi.fn(), findMany: vi.fn() });
+const { mockDb, mockRows, mockSelectChain } = vi.hoisted(() => {
+	const rows = vi.fn().mockResolvedValue([]);
+	const chain: any = {
+		from: vi.fn(() => chain),
+		where: vi.fn(() => chain),
+		orderBy: vi.fn(() => chain),
+		limit: vi.fn(() => chain),
+		offset: vi.fn(() => chain),
+		innerJoin: vi.fn(() => chain),
+	};
+	Object.defineProperty(chain, "then", {
+		value: (onFulfilled: (value: unknown) => unknown) =>
+			rows().then(onFulfilled),
+	});
 	return {
+		mockRows: rows,
+		mockSelectChain: chain,
 		mockDb: {
-			query: {
-				adminUser: q(),
-				clientUser: q(),
-				adminRole: q(),
-				news: q(),
-				dict: q(),
-				dictItem: q(),
-				systemConfig: q(),
-				file: q(),
-				captchaCode: q(),
-			},
+			select: vi.fn(() => chain),
 			$count: vi.fn(),
-			select: vi.fn(() => ({ from: vi.fn(() => ({ where: vi.fn() })) })),
 			insert: vi.fn(() => ({ values: vi.fn(() => ({ returning: vi.fn() })) })),
 			update: vi.fn(() => ({ set: vi.fn(() => ({ where: vi.fn() })) })),
 			delete: vi.fn(() => ({ where: vi.fn() })),
@@ -70,7 +55,6 @@ describe("getCurrentClient", () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
 		mockCacheMethods.clear();
-		capturedWhere = undefined;
 	});
 
 	it("查询客户端用户时 where 条件同时包含 id 等值与未删除约束（防止 && 吞条件）", async () => {
@@ -79,34 +63,27 @@ describe("getCurrentClient", () => {
 			username: "client",
 			userType: "client",
 		});
-		mockDb.query.clientUser.findFirst.mockImplementation(
-			(opts: {
-				where?: (
-					t: object,
-					helpers: Record<string, (...a: never[]) => unknown>,
-				) => unknown;
-			}) => {
-				captureWhere(opts.where);
-				return Promise.resolve({
-					id: "c-1",
-					username: "client",
-					email: "c@t.com",
-					avatar: null,
-					clientRoleIds: ["role-1"],
-					status: "active",
-					deletedAt: null,
-				});
+		mockRows.mockResolvedValue([
+			{
+				id: "c-1",
+				username: "client",
+				email: "c@t.com",
+				avatar: null,
+				clientRoleIds: ["role-1"],
+				status: "active",
+				deletedAt: null,
 			},
-		);
+		]);
 
 		await getCurrentClient("valid-token");
 
-		expect(capturedWhere).toBeDefined();
-		const result = capturedWhere!({ id: "c-1" }, sentinelHelpers);
-		// and 为模块级 drizzle 组合器，最终 SQL 需同时含 id 等值与未删除两个条件
-		const serialized = JSON.stringify(result);
-		expect(serialized).toContain("EQ");
-		expect(serialized).toContain("ISNULL");
+		// where 应为 and(eq(id), isNull(deletedAt)) 的组合，两个条件都必须存在
+		expect(mockSelectChain.where).toHaveBeenCalled();
+		const sql = extractSqlText(
+			mockSelectChain.where.mock.calls[0][0] as unknown,
+		);
+		expect(sql).toContain("id");
+		expect(sql).toContain("is null");
 	});
 
 	it("token 为 undefined 返回 null", async () => {
@@ -136,14 +113,16 @@ describe("getCurrentClient", () => {
 			username: "client",
 			userType: "client",
 		});
-		mockDb.query.clientUser.findFirst.mockResolvedValue({
-			id: "c-1",
-			username: "client",
-			email: "c@t.com",
-			avatar: null,
-			status: "active",
-			deletedAt: null,
-		});
+		mockRows.mockResolvedValue([
+			{
+				id: "c-1",
+				username: "client",
+				email: "c@t.com",
+				avatar: null,
+				status: "active",
+				deletedAt: null,
+			},
+		]);
 
 		const result = await getCurrentClient("valid-token");
 		expect(result).toMatchObject({
@@ -161,15 +140,47 @@ describe("getCurrentClient", () => {
 			username: "client",
 			userType: "client",
 		});
-		mockDb.query.clientUser.findFirst.mockResolvedValue({
-			id: "c-1",
-			username: "client",
-			email: "c@t.com",
-			status: "disabled",
-			deletedAt: null,
-		});
+		mockRows.mockResolvedValue([
+			{
+				id: "c-1",
+				username: "client",
+				email: "c@t.com",
+				status: "disabled",
+				deletedAt: null,
+			},
+		]);
 
 		const result = await getCurrentClient("valid-token");
 		expect(result).toBeNull();
 	});
 });
+
+/** 递归提取 drizzle SQL 对象的 SQL 文本 */
+function extractSqlText(value: unknown): string {
+	const out: string[] = [];
+	const seen = new WeakSet<object>();
+	const walk = (node: unknown): void => {
+		if (Array.isArray(node)) {
+			for (const item of node) walk(item);
+			return;
+		}
+		if (node === null || typeof node !== "object") {
+			if (typeof node === "string") out.push(node);
+			return;
+		}
+		if (seen.has(node)) return;
+		seen.add(node);
+		const obj = node as Record<string, unknown>;
+		if (Array.isArray(obj.queryChunks)) {
+			for (const chunk of obj.queryChunks) walk(chunk);
+			return;
+		}
+		if (Array.isArray(obj.value)) {
+			for (const v of obj.value) walk(v);
+			return;
+		}
+		for (const v of Object.values(obj)) walk(v);
+	};
+	walk(value);
+	return out.join("").toLowerCase();
+}

@@ -53,6 +53,14 @@
     - `news`：抽 `newsColumns`（405 → 217 行）
     - `messages/manage`：抽 `SendMessageModal` / `messageManageColumns`（400 → 253 行）
 
+- **Drizzle 升级 v0 → v1（rc.4）+ 移除 Relational Queries v1**：
+  - `drizzle-orm` / `drizzle-kit` 升至 `1.0.0-rc.4`（v1 最新 rc，drizzle-kit 移入 devDependencies）；迁移目录重建为 v3 结构（每迁移一文件夹，去除 journal.json），开发库重建基线（17 张表）
+  - ⚠️ **既有环境升级注意**：迁移历史已整体重建，任何已应用旧 `0000/0001` 迁移的库（其他开发机、预发/生产）需先重置库（`DROP SCHEMA public CASCADE; CREATE SCHEMA public;` 并清空 `drizzle` schema 迁移表）再启动，否则 bootstrap 的 `runMigrations()` 会对已存在的表执行建表而 fail-fast 崩溃；如需保留数据，须手工将新基线迁移 hash 回填进 `__drizzle_migrations`
+  - 移除 RQBv1：全库 54 处 `db.query/tx.query.*.findFirst/findMany` 改为标准 query builder（`db.select().from(...).where(...).limit(1)`），回调式 where 内联为 eq/isNull/inArray/or，`getFileInfo` 的 columns 投影改 select 投影；`db` 实例不再传入 schema
+  - 测试 mock 重构：mockDb 统一为可 await 的 select 查询链（`mockRows` 控制行数组），20 个测试文件同步；test-writing / admin-crud skill 示例更新；`noThenProperty` 规则仅在测试文件范围关闭（有意实现的 thenable）；删除死代码 `test-utils/db-mock.ts`
+  - `db:migrate` 改走程序化迁移（新增 `src/db/migrate-cli.ts`）：drizzle-kit v1.0.0-rc.4 的 migrate 命令存在 CREATE SCHEMA 断连 bug（ECONNRESET），程序化路径与生产 bootstrap 的 `runMigrations()` 完全一致
+  - `drizzle.config.ts` 的 schema 指向 `src/db/schema/index.ts`：目录扫描会重复收集表导致 `drizzle-kit generate` 失败
+
 ### Docs
 
 - **子包文档补齐 + 文档/技能对齐**：

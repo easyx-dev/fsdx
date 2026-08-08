@@ -44,9 +44,11 @@ export interface InitData {
  * 通过查询 is_root = true 的管理员用户是否存在来判断
  */
 export async function checkInitStatus(): Promise<boolean> {
-	const root = await db.query.adminUser.findFirst({
-		where: eq(adminUser.isRoot, true),
-	});
+	const [root] = await db
+		.select()
+		.from(adminUser)
+		.where(eq(adminUser.isRoot, true))
+		.limit(1);
 	return !!root;
 }
 
@@ -63,9 +65,11 @@ export async function initSystem(data: InitData): Promise<{
 	// 使用事务包裹，避免并发初始化
 	return db.transaction(async (tx) => {
 		// 事务内再次校验：防止并发场景下重复初始化
-		const existingRoot = await tx.query.adminUser.findFirst({
-			where: eq(adminUser.isRoot, true),
-		});
+		const [existingRoot] = await tx
+			.select()
+			.from(adminUser)
+			.where(eq(adminUser.isRoot, true))
+			.limit(1);
 
 		if (existingRoot) {
 			return { success: false, message: "系统已初始化，禁止重复操作" };
@@ -86,9 +90,13 @@ export async function initSystem(data: InitData): Promise<{
 		// onConflictDoNothing 返回空数组表示记录已存在，此时查询已有记录
 		const effectiveRole =
 			superRole ??
-			(await tx.query.adminRole.findFirst({
-				where: eq(adminRole.slug, "super-admin"),
-			}));
+			(
+				await tx
+					.select()
+					.from(adminRole)
+					.where(eq(adminRole.slug, "super-admin"))
+					.limit(1)
+			)[0];
 
 		if (!effectiveRole) {
 			throw new Error("无法创建或查找超级管理员角色");
@@ -112,9 +120,11 @@ export async function initSystem(data: InitData): Promise<{
 			},
 		];
 		for (const seed of clientRoleSeeds) {
-			const existing = await tx.query.clientRole.findFirst({
-				where: eq(clientRole.slug, seed.slug),
-			});
+			const [existing] = await tx
+				.select()
+				.from(clientRole)
+				.where(eq(clientRole.slug, seed.slug))
+				.limit(1);
 			if (existing) continue;
 			await tx.insert(clientRole).values({
 				name: seed.name,

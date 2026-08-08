@@ -1,9 +1,8 @@
 import { drizzle } from "drizzle-orm/node-postgres";
-import * as schema from "./schema/index";
 
-/** 辅助函数：捕获 drizzle 的完整返回类型（含 schema 表类型推断） */
+/** 辅助函数：捕获 drizzle 的完整返回类型 */
 function createDb() {
-	return drizzle(process.env.DATABASE_URL, { schema });
+	return drizzle(process.env.DATABASE_URL);
 }
 
 let _dbInstance: ReturnType<typeof createDb> | null = null;

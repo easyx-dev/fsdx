@@ -41,9 +41,12 @@ export async function getAdminRoleList(keyword?: string) {
 
 /** 获取单个角色（仅内部使用） */
 async function getAdminRole(id: string) {
-	return db.query.adminRole.findFirst({
-		where: and(eq(adminRole.id, id), isNull(adminRole.deletedAt)),
-	});
+	const [record] = await db
+		.select()
+		.from(adminRole)
+		.where(and(eq(adminRole.id, id), isNull(adminRole.deletedAt)))
+		.limit(1);
+	return record;
 }
 
 /** 创建角色 */

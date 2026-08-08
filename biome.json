@@ -50,6 +50,18 @@
 			}
 		}
 	},
+	"overrides": [
+		{
+			"includes": ["**/__tests__/**", "**/*.test.ts", "**/*.spec.ts"],
+			"linter": {
+				"rules": {
+					"suspicious": {
+						"noThenProperty": "off"
+					}
+				}
+			}
+		}
+	],
 	"javascript": {
 		"formatter": {
 			"quoteStyle": "double"

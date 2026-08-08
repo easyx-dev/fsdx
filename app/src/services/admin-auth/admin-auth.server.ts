@@ -3,9 +3,9 @@
  */
 
 import bcrypt from "bcryptjs";
-import { and, eq } from "drizzle-orm";
+import { and, eq, inArray, isNull } from "drizzle-orm";
 import { db } from "#/db/index";
-import { adminUser } from "#/db/schema";
+import { adminRole, adminUser } from "#/db/schema";
 import { type JwtPayload, jwt } from "#/lib/jwt/jwt";
 import { logger } from "#/lib/logger/logger";
 import type {
@@ -22,10 +22,12 @@ async function getAdminRolePermissions(
 	adminRoleIds: string[],
 ): Promise<string[]> {
 	if (adminRoleIds.length === 0) return [];
-	const roles = await db.query.adminRole.findMany({
-		where: (t, { isNull: n, inArray: ia }) =>
-			and(ia(t.id, adminRoleIds), n(t.deletedAt)),
-	});
+	const roles = await db
+		.select()
+		.from(adminRole)
+		.where(
+			and(inArray(adminRole.id, adminRoleIds), isNull(adminRole.deletedAt)),
+		);
 	return [...new Set(roles.flatMap((r) => (r.permissions as string[]) ?? []))];
 }
 
@@ -37,9 +39,11 @@ export async function adminLogin(
 	username: string,
 	password: string,
 ): Promise<AdminLoginResult> {
-	const user = await db.query.adminUser.findFirst({
-		where: (t, { eq: e }) => e(t.username, username),
-	});
+	const [user] = await db
+		.select()
+		.from(adminUser)
+		.where(eq(adminUser.username, username))
+		.limit(1);
 
 	if (!user || user.deletedAt || user.status !== "active") {
 		return { success: false, message: "用户名或密码错误" };
@@ -82,17 +86,21 @@ export async function getCurrentAdmin(
 	const jwtPayload = await jwt.verifyToken(token);
 	if (jwtPayload?.userType !== "admin") return null;
 
-	const user = await db.query.adminUser.findFirst({
-		where: (t, { eq: e, isNull: n }) =>
-			and(e(t.id, jwtPayload.userId), n(t.deletedAt)),
-	});
+	const [user] = await db
+		.select()
+		.from(adminUser)
+		.where(
+			and(eq(adminUser.id, jwtPayload.userId), isNull(adminUser.deletedAt)),
+		)
+		.limit(1);
 	if (!user || user.deletedAt || user.status !== "active") return null;
 
 	let roleNames: string[] = [];
 	if (!user.isRoot) {
-		const roles = await db.query.adminRole.findMany({
-			where: (t, { inArray: ia }) => ia(t.id, user.adminRoleIds),
-		});
+		const roles = await db
+			.select()
+			.from(adminRole)
+			.where(inArray(adminRole.id, user.adminRoleIds));
 		roleNames = roles.map((r) => r.name);
 	}
 
@@ -148,9 +156,11 @@ export async function getAdminUserForAuth(userId: string): Promise<
 		};
 	}
 
-	const user = await db.query.adminUser.findFirst({
-		where: (t, { eq: e, isNull: n }) => and(e(t.id, userId), n(t.deletedAt)),
-	});
+	const [user] = await db
+		.select()
+		.from(adminUser)
+		.where(and(eq(adminUser.id, userId), isNull(adminUser.deletedAt)))
+		.limit(1);
 	if (!user) return { success: false, reason: "not_found" };
 
 	const cacheEntry: CachedAdminUser = {

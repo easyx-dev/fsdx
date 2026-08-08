@@ -15,24 +15,25 @@ vi.mock("bcryptjs", () => ({
 	},
 }));
 
-const { mockDb } = vi.hoisted(() => {
-	const q = () => ({ findFirst: vi.fn(), findMany: vi.fn() });
+const { mockDb, mockRows } = vi.hoisted(() => {
+	const rows = vi.fn().mockResolvedValue([]);
+	const chain: any = {
+		from: vi.fn(() => chain),
+		where: vi.fn(() => chain),
+		orderBy: vi.fn(() => chain),
+		limit: vi.fn(() => chain),
+		offset: vi.fn(() => chain),
+		innerJoin: vi.fn(() => chain),
+	};
+	Object.defineProperty(chain, "then", {
+		value: (onFulfilled: (value: unknown) => unknown) =>
+			rows().then(onFulfilled),
+	});
 	return {
+		mockRows: rows,
 		mockDb: {
-			query: {
-				clientUser: q(),
-				clientRole: q(),
-			},
 			$count: vi.fn(),
-			select: vi.fn(() => ({
-				from: vi.fn(() => ({
-					where: vi.fn(() => ({
-						orderBy: vi.fn(() => ({
-							limit: vi.fn(() => ({ offset: vi.fn() })),
-						})),
-					})),
-				})),
-			})),
+			select: vi.fn(() => chain),
 			insert: vi.fn(() => ({
 				values: vi.fn(() => ({ returning: vi.fn() })),
 			})),
@@ -60,7 +61,7 @@ beforeEach(() => {
 });
 
 describe("getClientUserList", () => {
-	const mockRows = [
+	const userRows = [
 		{
 			id: "u1",
 			username: "user1",
@@ -82,27 +83,18 @@ describe("getClientUserList", () => {
 	];
 
 	it("返回用户列表和总数", async () => {
-		mockDb.select.mockReturnValueOnce({
-			from: vi.fn(() => ({
-				where: vi.fn(() => ({
-					orderBy: vi.fn(() => ({
-						limit: vi.fn(() => ({
-							offset: vi.fn().mockResolvedValue(mockRows),
-						})),
-					})),
-				})),
-			})),
-		});
-		mockDb.query.clientRole.findMany.mockResolvedValue([
-			{ id: "cr-1", name: "会员" },
-		]);
+		// 分页查询返回用户行，随后角色名称查询返回角色行
+		mockRows
+			.mockReset()
+			.mockResolvedValueOnce(userRows)
+			.mockResolvedValueOnce([{ id: "cr-1", name: "会员" }]);
 		mockDb.$count.mockResolvedValue(2);
 
 		const result = await getClientUserList({ page: 1, pageSize: 20 });
 
 		expect(result.records).toEqual([
-			{ ...mockRows[0], roleNames: ["会员"] },
-			{ ...mockRows[1], roleNames: [] },
+			{ ...userRows[0], roleNames: ["会员"] },
+			{ ...userRows[1], roleNames: [] },
 		]);
 		expect(result.total).toBe(2);
 		expect(result.page).toBe(1);
@@ -110,20 +102,10 @@ describe("getClientUserList", () => {
 	});
 
 	it("关键词搜索按 username 和 email 过滤", async () => {
-		mockDb.select.mockReturnValueOnce({
-			from: vi.fn(() => ({
-				where: vi.fn(() => ({
-					orderBy: vi.fn(() => ({
-						limit: vi.fn(() => ({
-							offset: vi.fn().mockResolvedValue([mockRows[0]]),
-						})),
-					})),
-				})),
-			})),
-		});
-		mockDb.query.clientRole.findMany.mockResolvedValue([
-			{ id: "cr-1", name: "会员" },
-		]);
+		mockRows
+			.mockReset()
+			.mockResolvedValueOnce([userRows[0]])
+			.mockResolvedValueOnce([{ id: "cr-1", name: "会员" }]);
 		mockDb.$count.mockResolvedValue(1);
 
 		const result = await getClientUserList({
@@ -144,7 +126,7 @@ describe("getClientUser", () => {
 			username: "testuser",
 			email: "test@test.com",
 		};
-		mockDb.query.clientUser.findFirst.mockResolvedValue(mockUser);
+		mockRows.mockResolvedValue([mockUser]);
 
 		const result = await getClientUser("u1");
 
@@ -152,7 +134,7 @@ describe("getClientUser", () => {
 	});
 
 	it("用户不存在时返回 undefined", async () => {
-		mockDb.query.clientUser.findFirst.mockResolvedValue(undefined);
+		mockRows.mockResolvedValue([]);
 
 		const result = await getClientUser("不存在");
 
@@ -277,9 +259,7 @@ describe("updateClientUser", () => {
 	});
 
 	it("更新角色为无效角色时抛出错误", async () => {
-		mockDb.query.clientRole.findMany.mockResolvedValue([
-			{ id: "cr-1", name: "会员" },
-		]);
+		mockRows.mockResolvedValue([{ id: "cr-1", name: "会员" }]);
 
 		await expect(
 			updateClientUser("u1", { clientRoleIds: ["cr-ghost"] }),
@@ -290,7 +270,7 @@ describe("updateClientUser", () => {
 
 describe("deleteClientUser", () => {
 	it("用户不存在时返回 false", async () => {
-		mockDb.query.clientUser.findFirst.mockResolvedValue(undefined);
+		mockRows.mockResolvedValue([]);
 
 		const result = await deleteClientUser("不存在");
 
@@ -298,10 +278,12 @@ describe("deleteClientUser", () => {
 	});
 
 	it("软删除成功返回 true", async () => {
-		mockDb.query.clientUser.findFirst.mockResolvedValue({
-			id: "u1",
-			username: "deleteme",
-		});
+		mockRows.mockResolvedValue([
+			{
+				id: "u1",
+				username: "deleteme",
+			},
+		]);
 
 		const result = await deleteClientUser("u1");
 

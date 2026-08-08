@@ -8,37 +8,27 @@ vi.mock("#/lib/logger/logger", () => ({
 	logger: { error: vi.fn(), info: vi.fn(), warn: vi.fn() },
 }));
 
-const { mockBcryptHash, mockDb, mockListRows } = vi.hoisted(() => {
-	const mockListRowsFn = vi.fn().mockResolvedValue([]);
-	const mockListCountFn = vi.fn().mockResolvedValue([{ count: "0" }]);
-	const q = () => ({ findFirst: vi.fn(), findMany: vi.fn() });
+const { mockBcryptHash, mockDb, mockRows } = vi.hoisted(() => {
+	const rows = vi.fn().mockResolvedValue([]);
+	const chain: any = {
+		from: vi.fn(() => chain),
+		where: vi.fn(() => chain),
+		orderBy: vi.fn(() => chain),
+		limit: vi.fn(() => chain),
+		offset: vi.fn(() => chain),
+		innerJoin: vi.fn(() => chain),
+	};
+	Object.defineProperty(chain, "then", {
+		value: (onFulfilled: (value: unknown) => unknown) =>
+			rows().then(onFulfilled),
+	});
 
 	return {
 		mockBcryptHash: vi.fn().mockResolvedValue("$2a$12$hashedpassword"),
+		mockRows: rows,
 		mockDb: {
-			query: {
-				adminUser: q(),
-				adminRole: q(),
-				clientUser: q(),
-				systemConfig: q(),
-				news: q(),
-				dict: q(),
-				dictItem: q(),
-				file: q(),
-				captchaCode: q(),
-			},
 			$count: vi.fn(),
-			select: vi.fn(() => ({
-				from: vi.fn(() => ({
-					where: vi.fn(() => ({
-						orderBy: vi.fn(() => ({
-							limit: vi.fn(() => ({
-								offset: mockListRowsFn,
-							})),
-						})),
-					})),
-				})),
-			})),
+			select: vi.fn(() => chain),
 			insert: vi.fn(() => ({
 				values: vi.fn(() => ({ returning: vi.fn() })),
 			})),
@@ -47,8 +37,6 @@ const { mockBcryptHash, mockDb, mockListRows } = vi.hoisted(() => {
 			})),
 			delete: vi.fn(() => ({ where: vi.fn() })),
 		},
-		mockListRows: mockListRowsFn,
-		mockListCount: mockListCountFn,
 	};
 });
 
@@ -87,10 +75,10 @@ describe("getAdminUserList", () => {
 				adminRoleIds: ["role-1"],
 			},
 		];
-		mockListRows.mockResolvedValue(mockUsers);
-		mockDb.query.adminRole.findMany.mockResolvedValue([
-			{ id: "role-1", name: "编辑者" },
-		]);
+		mockRows
+			.mockReset()
+			.mockResolvedValueOnce(mockUsers)
+			.mockResolvedValueOnce([{ id: "role-1", name: "编辑者" }]);
 		mockDb.$count.mockResolvedValue(5);
 
 		const result = await getAdminUserList();
@@ -105,7 +93,7 @@ describe("getAdminUserList", () => {
 	});
 
 	it("分页参数正确传递", async () => {
-		mockListRows.mockResolvedValue([]);
+		mockRows.mockReset().mockResolvedValue([]);
 		mockDb.$count.mockResolvedValue(0);
 
 		const result = await getAdminUserList({ page: 3, pageSize: 10 });
@@ -115,7 +103,7 @@ describe("getAdminUserList", () => {
 	});
 
 	it("支持关键词搜索", async () => {
-		mockListRows.mockResolvedValue([]);
+		mockRows.mockReset().mockResolvedValue([]);
 		mockDb.$count.mockResolvedValue(0);
 
 		const result = await getAdminUserList({
@@ -132,7 +120,7 @@ describe("getAdminUserList", () => {
 describe("getAdminUser", () => {
 	it("找到用户时返回用户记录", async () => {
 		const mockUser = { id: "1", username: "admin", email: "admin@test.com" };
-		mockDb.query.adminUser.findFirst.mockResolvedValue(mockUser);
+		mockRows.mockResolvedValue([mockUser]);
 
 		const result = await getAdminUser("1");
 
@@ -140,7 +128,7 @@ describe("getAdminUser", () => {
 	});
 
 	it("用户不存在时返回 undefined", async () => {
-		mockDb.query.adminUser.findFirst.mockResolvedValue(undefined);
+		mockRows.mockResolvedValue([]);
 
 		const result = await getAdminUser("notfound");
 
@@ -161,9 +149,7 @@ describe("createAdminUser", () => {
 			username: "newadmin",
 			email: "new@test.com",
 		};
-		mockDb.query.adminRole.findMany.mockResolvedValue([
-			{ id: "role-1", name: "管理员" },
-		]);
+		mockRows.mockResolvedValue([{ id: "role-1", name: "管理员" }]);
 		mockDb.insert.mockReturnValue({
 			values: vi.fn(() => ({
 				returning: vi.fn().mockResolvedValue([createdUser]),
@@ -184,9 +170,7 @@ describe("createAdminUser", () => {
 			password: "plainpassword",
 			adminRoleIds: ["role-1", "role-ghost"],
 		};
-		mockDb.query.adminRole.findMany.mockResolvedValue([
-			{ id: "role-1", name: "管理员" },
-		]);
+		mockRows.mockResolvedValue([{ id: "role-1", name: "管理员" }]);
 
 		await expect(createAdminUser(input)).rejects.toThrow(
 			"存在无效或已删除的角色",
@@ -230,9 +214,7 @@ describe("updateAdminUser", () => {
 	});
 
 	it("更新角色为无效角色时抛出错误", async () => {
-		mockDb.query.adminRole.findMany.mockResolvedValue([
-			{ id: "role-1", name: "管理员" },
-		]);
+		mockRows.mockResolvedValue([{ id: "role-1", name: "管理员" }]);
 
 		await expect(
 			updateAdminUser("1", { adminRoleIds: ["role-ghost"] }),
@@ -243,7 +225,7 @@ describe("updateAdminUser", () => {
 
 describe("deleteAdminUser", () => {
 	it("用户不存在时返回 false", async () => {
-		mockDb.query.adminUser.findFirst.mockResolvedValue(undefined);
+		mockRows.mockResolvedValue([]);
 
 		const result = await deleteAdminUser("notfound", "current-1");
 
@@ -251,10 +233,12 @@ describe("deleteAdminUser", () => {
 	});
 
 	it("root 管理员不可删除抛出错误", async () => {
-		mockDb.query.adminUser.findFirst.mockResolvedValue({
-			id: "root-1",
-			isRoot: true,
-		});
+		mockRows.mockResolvedValue([
+			{
+				id: "root-1",
+				isRoot: true,
+			},
+		]);
 
 		await expect(deleteAdminUser("root-1", "current-1")).rejects.toThrow(
 			"不允许删除 root 管理员",
@@ -262,10 +246,12 @@ describe("deleteAdminUser", () => {
 	});
 
 	it("不可删除自己抛出错误", async () => {
-		mockDb.query.adminUser.findFirst.mockResolvedValue({
-			id: "same-1",
-			isRoot: false,
-		});
+		mockRows.mockResolvedValue([
+			{
+				id: "same-1",
+				isRoot: false,
+			},
+		]);
 
 		await expect(deleteAdminUser("same-1", "same-1")).rejects.toThrow(
 			"不允许删除自己的账号",
@@ -273,11 +259,13 @@ describe("deleteAdminUser", () => {
 	});
 
 	it("成功软删除返回 true", async () => {
-		mockDb.query.adminUser.findFirst.mockResolvedValue({
-			id: "user-2",
-			isRoot: false,
-			username: "testuser",
-		});
+		mockRows.mockResolvedValue([
+			{
+				id: "user-2",
+				isRoot: false,
+				username: "testuser",
+			},
+		]);
 
 		const result = await deleteAdminUser("user-2", "current-1");
 

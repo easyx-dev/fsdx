@@ -22,24 +22,25 @@ vi.mock("#/services/captcha/captcha.server", () => ({
 	verifyCaptcha: mockVerifyCaptcha,
 }));
 
-const { mockDb } = vi.hoisted(() => {
-	const q = () => ({ findFirst: vi.fn(), findMany: vi.fn() });
+const { mockDb, mockRows } = vi.hoisted(() => {
+	const rows = vi.fn().mockResolvedValue([]);
+	const chain: any = {
+		from: vi.fn(() => chain),
+		where: vi.fn(() => chain),
+		orderBy: vi.fn(() => chain),
+		limit: vi.fn(() => chain),
+		offset: vi.fn(() => chain),
+		innerJoin: vi.fn(() => chain),
+	};
+	Object.defineProperty(chain, "then", {
+		value: (onFulfilled: (value: unknown) => unknown) =>
+			rows().then(onFulfilled),
+	});
 	return {
+		mockRows: rows,
 		mockDb: {
-			query: {
-				clientUser: q(),
-				adminUser: q(),
-				adminRole: q(),
-				clientRole: q(),
-				news: q(),
-				dict: q(),
-				dictItem: q(),
-				systemConfig: q(),
-				file: q(),
-				captchaCode: q(),
-			},
+			select: vi.fn(() => chain),
 			$count: vi.fn(),
-			select: vi.fn(() => ({ from: vi.fn(() => ({ where: vi.fn() })) })),
 			insert: vi.fn(() => ({ values: vi.fn(() => ({ returning: vi.fn() })) })),
 			update: vi.fn(() => ({ set: vi.fn(() => ({ where: vi.fn() })) })),
 			delete: vi.fn(() => ({ where: vi.fn() })),
@@ -69,7 +70,7 @@ describe("clientLogin", () => {
 	beforeEach(() => vi.clearAllMocks());
 
 	it("正确凭据登录成功", async () => {
-		mockDb.query.clientUser.findFirst.mockResolvedValue(mockClientUser);
+		mockRows.mockResolvedValue([mockClientUser]);
 		vi.mocked(bcrypt.compare).mockResolvedValue(true as never);
 		mockSignToken.mockResolvedValue("jwt-token");
 
@@ -79,23 +80,20 @@ describe("clientLogin", () => {
 	});
 
 	it("用户不存在返回失败", async () => {
-		mockDb.query.clientUser.findFirst.mockResolvedValue(undefined);
+		mockRows.mockResolvedValue([]);
 		const result = await clientLogin("nobody", "pw");
 		expect(result.success).toBe(false);
 	});
 
 	it("密码错误返回失败", async () => {
-		mockDb.query.clientUser.findFirst.mockResolvedValue(mockClientUser);
+		mockRows.mockResolvedValue([mockClientUser]);
 		vi.mocked(bcrypt.compare).mockResolvedValue(false as never);
 		const result = await clientLogin("testuser", "wrong");
 		expect(result.success).toBe(false);
 	});
 
 	it("用户被禁用返回失败", async () => {
-		mockDb.query.clientUser.findFirst.mockResolvedValue({
-			...mockClientUser,
-			status: "disabled",
-		});
+		mockRows.mockResolvedValue([{ ...mockClientUser, status: "disabled" }]);
 		const result = await clientLogin("testuser", "pw");
 		expect(result.success).toBe(false);
 	});
@@ -106,11 +104,11 @@ describe("clientRegister", () => {
 
 	it("注册成功", async () => {
 		mockVerifyCaptcha.mockResolvedValue(true);
-		mockDb.query.clientUser.findFirst.mockResolvedValue(undefined);
-		mockDb.query.clientRole.findFirst.mockResolvedValue({
-			id: "role-normal",
-			slug: "normal-user",
-		});
+		// 用户不存在（[]），默认角色存在（[role]）
+		mockRows
+			.mockReset()
+			.mockResolvedValueOnce([])
+			.mockResolvedValue([{ id: "role-normal", slug: "normal-user" }]);
 		vi.mocked(bcrypt.hash).mockResolvedValue("hashed-pw" as never);
 
 		const result = await clientRegister(
@@ -133,7 +131,7 @@ describe("clientRegister", () => {
 
 	it("用户名或邮箱已存在返回失败", async () => {
 		mockVerifyCaptcha.mockResolvedValue(true);
-		mockDb.query.clientUser.findFirst.mockResolvedValue(mockClientUser);
+		mockRows.mockReset().mockResolvedValue([mockClientUser]);
 		const result = await clientRegister(
 			"testuser",
 			"test@test.com",
@@ -146,8 +144,7 @@ describe("clientRegister", () => {
 
 	it("默认角色不存在时注册为空角色列表", async () => {
 		mockVerifyCaptcha.mockResolvedValue(true);
-		mockDb.query.clientUser.findFirst.mockResolvedValue(undefined);
-		mockDb.query.clientRole.findFirst.mockResolvedValue(undefined);
+		mockRows.mockReset().mockResolvedValue([]);
 		vi.mocked(bcrypt.hash).mockResolvedValue("hashed-pw" as never);
 
 		const valuesMock = vi.fn();
@@ -183,12 +180,12 @@ describe("getClientUserForAuth", () => {
 		const result = await getClientUserForAuth("client-1");
 
 		expect(result).toEqual({ success: false, reason: "disabled" });
-		expect(mockDb.query.clientUser.findFirst).not.toHaveBeenCalled();
+		expect(mockDb.select).not.toHaveBeenCalled();
 	});
 
 	it("缓存命中时合并角色权限并去重", async () => {
 		clientUserCache.set("client-1", cachedUser);
-		mockDb.query.clientRole.findMany.mockResolvedValue([
+		mockRows.mockResolvedValue([
 			{ id: "role-1", permissions: ["news:view", "news:create"] },
 			{ id: "role-2", permissions: ["news:view", "dict:view"] },
 		]);
@@ -214,11 +211,11 @@ describe("getClientUserForAuth", () => {
 		if (result.success) {
 			expect(result.rolePermissions).toEqual([]);
 		}
-		expect(mockDb.query.clientRole.findMany).not.toHaveBeenCalled();
+		expect(mockDb.select).not.toHaveBeenCalled();
 	});
 
 	it("缓存未命中且用户不存在时返回 not_found", async () => {
-		mockDb.query.clientUser.findFirst.mockResolvedValue(undefined);
+		mockRows.mockReset().mockResolvedValue([]);
 
 		const result = await getClientUserForAuth("ghost");
 
@@ -226,10 +223,9 @@ describe("getClientUserForAuth", () => {
 	});
 
 	it("缓存未命中且未启用时返回 disabled", async () => {
-		mockDb.query.clientUser.findFirst.mockResolvedValue({
-			...cachedUser,
-			status: "disabled",
-		});
+		mockRows
+			.mockReset()
+			.mockResolvedValue([{ ...cachedUser, status: "disabled" }]);
 
 		const result = await getClientUserForAuth("client-1");
 
@@ -237,10 +233,11 @@ describe("getClientUserForAuth", () => {
 	});
 
 	it("缓存未命中时查询角色合并权限并写入缓存", async () => {
-		mockDb.query.clientUser.findFirst.mockResolvedValue(cachedUser);
-		mockDb.query.clientRole.findMany.mockResolvedValue([
-			{ id: "role-1", permissions: ["news:view"] },
-		]);
+		// 先查用户（存在），再查角色权限
+		mockRows
+			.mockReset()
+			.mockResolvedValueOnce([cachedUser])
+			.mockResolvedValue([{ id: "role-1", permissions: ["news:view"] }]);
 
 		const result = await getClientUserForAuth("client-1");
 

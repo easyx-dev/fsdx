@@ -150,7 +150,7 @@ packages/
 ## 测试约定
 
 - 测试文件与被测模块同目录，放在 `__tests__/` 子目录，命名 `<模块名>.test.ts`；每个 `src/services/` 和 `src/lib/` 模块必须覆盖其所有导出函数的测试
-- 使用 `vi.hoisted()` + `vi.mock()` 三段式结构：静态 mock → hoisted 创建 mock 对象 → 用 hoisted 值 mock DB → 最后 import 被测模块；`mockDb` 必须包含全部 17 张表的 `query` 方法；`beforeEach` 中 `vi.clearAllMocks()`
+- 使用 `vi.hoisted()` + `vi.mock()` 三段式结构：静态 mock → hoisted 创建 mock 对象 → 用 hoisted 值 mock DB → 最后 import 被测模块；`mockDb.select` 返回可 await 的查询链（from/where/orderBy/limit/offset 均返回自身），`await` 链时 resolve 到 `mockRows` 控制的行数组，`mockRows` 默认 `mockResolvedValue([])` 且跨用例残留需显式重置；`beforeEach` 中 `vi.clearAllMocks()`
 - `describe` 名称对应被测函数名，`it` 名称描述具体场景（中文）；每个导出函数至少覆盖正常 / 边界 / 错误路径
 - 路由层 schema 校验测试就近放置（路由或 schema 所属模块 `__tests__/`），优先 import 真实 schema
 

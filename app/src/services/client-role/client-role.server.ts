@@ -41,9 +41,12 @@ export async function getClientRoleList(keyword?: string) {
 
 /** 获取单个角色（仅内部使用） */
 async function getClientRole(id: string) {
-	return db.query.clientRole.findFirst({
-		where: and(eq(clientRole.id, id), isNull(clientRole.deletedAt)),
-	});
+	const [record] = await db
+		.select()
+		.from(clientRole)
+		.where(and(eq(clientRole.id, id), isNull(clientRole.deletedAt)))
+		.limit(1);
+	return record;
 }
 
 /** 创建角色 */

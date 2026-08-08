@@ -3,9 +3,9 @@
  */
 
 import bcrypt from "bcryptjs";
-import { and, eq } from "drizzle-orm";
+import { and, eq, inArray, isNull, or } from "drizzle-orm";
 import { db } from "#/db/index";
-import { clientUser } from "#/db/schema";
+import { clientRole, clientUser } from "#/db/schema";
 import { type JwtPayload, jwt } from "#/lib/jwt/jwt";
 import { logger } from "#/lib/logger/logger";
 import { verifyCaptcha } from "#/services/captcha/captcha.server";
@@ -24,10 +24,12 @@ async function getClientRolePermissions(
 	clientRoleIds: string[],
 ): Promise<string[]> {
 	if (clientRoleIds.length === 0) return [];
-	const roles = await db.query.clientRole.findMany({
-		where: (t, { isNull: n, inArray: ia }) =>
-			and(ia(t.id, clientRoleIds), n(t.deletedAt)),
-	});
+	const roles = await db
+		.select()
+		.from(clientRole)
+		.where(
+			and(inArray(clientRole.id, clientRoleIds), isNull(clientRole.deletedAt)),
+		);
 	return [...new Set(roles.flatMap((r) => (r.permissions as string[]) ?? []))];
 }
 
@@ -39,9 +41,11 @@ export async function clientLogin(
 	username: string,
 	password: string,
 ): Promise<ClientLoginResult> {
-	const user = await db.query.clientUser.findFirst({
-		where: (t, { eq: e }) => e(t.username, username),
-	});
+	const [user] = await db
+		.select()
+		.from(clientUser)
+		.where(eq(clientUser.username, username))
+		.limit(1);
 
 	if (!user || user.deletedAt || user.status !== "active") {
 		return { success: false, message: "用户名或密码错误" };
@@ -86,9 +90,11 @@ export async function clientRegister(
 		return { success: false, message: "验证码错误或已过期" };
 	}
 
-	const existing = await db.query.clientUser.findFirst({
-		where: (t, { or }) => or(eq(t.username, username), eq(t.email, email)),
-	});
+	const [existing] = await db
+		.select()
+		.from(clientUser)
+		.where(or(eq(clientUser.username, username), eq(clientUser.email, email)))
+		.limit(1);
 
 	if (existing) {
 		return { success: false, message: "用户名或邮箱已存在" };
@@ -96,9 +102,11 @@ export async function clientRegister(
 
 	const passwordHash = await bcrypt.hash(password, 10);
 	// 新注册用户分配默认普通用户角色（normal-user）
-	const normalRole = await db.query.clientRole.findFirst({
-		where: (t, { eq: e }) => e(t.slug, "normal-user"),
-	});
+	const [normalRole] = await db
+		.select()
+		.from(clientRole)
+		.where(eq(clientRole.slug, "normal-user"))
+		.limit(1);
 	await db.insert(clientUser).values({
 		username,
 		email,
@@ -137,10 +145,13 @@ export async function getCurrentClient(
 		};
 	}
 
-	const user = await db.query.clientUser.findFirst({
-		where: (t, { eq: e, isNull: n }) =>
-			and(e(t.id, jwtPayload.userId), n(t.deletedAt)),
-	});
+	const [user] = await db
+		.select()
+		.from(clientUser)
+		.where(
+			and(eq(clientUser.id, jwtPayload.userId), isNull(clientUser.deletedAt)),
+		)
+		.limit(1);
 	if (!user || user.deletedAt || user.status !== "active") return null;
 
 	const cacheEntry: CachedClientUser = {
@@ -192,9 +203,11 @@ export async function getClientUserForAuth(userId: string): Promise<
 		};
 	}
 
-	const user = await db.query.clientUser.findFirst({
-		where: (t, { eq: e, isNull: n }) => and(e(t.id, userId), n(t.deletedAt)),
-	});
+	const [user] = await db
+		.select()
+		.from(clientUser)
+		.where(and(eq(clientUser.id, userId), isNull(clientUser.deletedAt)))
+		.limit(1);
 	if (!user) return { success: false, reason: "not_found" };
 
 	const cacheEntry: CachedClientUser = {

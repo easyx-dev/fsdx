@@ -49,26 +49,25 @@ vi.mock("#/services/config/config.cache", () => ({
 	configTranslationCache: mockConfigTranslationCache,
 }));
 
-const { mockDb } = vi.hoisted(() => {
-	const q = () => ({ findFirst: vi.fn(), findMany: vi.fn() });
+const { mockDb, mockRows } = vi.hoisted(() => {
+	const rows = vi.fn().mockResolvedValue([]);
+	const chain: any = {
+		from: vi.fn(() => chain),
+		where: vi.fn(() => chain),
+		orderBy: vi.fn(() => chain),
+		limit: vi.fn(() => chain),
+		offset: vi.fn(() => chain),
+		innerJoin: vi.fn(() => chain),
+	};
+	Object.defineProperty(chain, "then", {
+		value: (onFulfilled: (value: unknown) => unknown) =>
+			rows().then(onFulfilled),
+	});
 	return {
+		mockRows: rows,
 		mockDb: {
-			query: {
-				systemConfig: q(),
-				contentTranslation: q(),
-				adminUser: q(),
-				clientUser: q(),
-				role: q(),
-				news: q(),
-				dict: q(),
-				dictItem: q(),
-				file: q(),
-				captchaCode: q(),
-			},
+			select: vi.fn(() => chain),
 			$count: vi.fn(),
-			select: vi.fn(() => ({
-				from: vi.fn(() => ({ where: vi.fn(() => ({ orderBy: vi.fn() })) })),
-			})),
 			insert: vi.fn(() => ({ values: vi.fn(() => ({ returning: vi.fn() })) })),
 			update: vi.fn(() => ({ set: vi.fn(() => ({ where: vi.fn() })) })),
 			delete: vi.fn(() => ({ where: vi.fn() })),
@@ -93,18 +92,14 @@ import {
 
 describe("loadConfigCache", () => {
 	it("从 DB 加载配置到缓存", async () => {
-		mockDb.select.mockReturnValue({
-			from: vi.fn(() => ({
-				where: vi.fn().mockResolvedValue([
-					{
-						id: "c-1",
-						key: "site_name",
-						value: "FSDX",
-						clientVisible: true,
-					},
-				]),
-			})),
-		});
+		mockRows.mockResolvedValue([
+			{
+				id: "c-1",
+				key: "site_name",
+				value: "FSDX",
+				clientVisible: true,
+			},
+		]);
 		await loadConfigCache();
 		expect(mockConfigCache.set).toHaveBeenCalledWith("all", [
 			{ id: "c-1", key: "site_name", value: "FSDX", clientVisible: true },
@@ -119,14 +114,9 @@ describe("loadConfigCache", () => {
 describe("ensurePresetConfigs", () => {
 	it("预设配置不存在时创建", async () => {
 		vi.clearAllMocks();
-		mockDb.query.systemConfig.findFirst.mockResolvedValue(undefined);
+		mockRows.mockResolvedValue([]);
 		mockDb.insert.mockReturnValue({
 			values: vi.fn(() => ({ returning: vi.fn() })),
-		});
-		mockDb.select.mockReturnValue({
-			from: vi.fn(() => ({
-				where: vi.fn().mockResolvedValue([]),
-			})),
 		});
 		await ensurePresetConfigs();
 		expect(mockDb.insert).toHaveBeenCalled();
@@ -134,12 +124,9 @@ describe("ensurePresetConfigs", () => {
 
 	it("预设配置已存在且未删除时跳过", async () => {
 		vi.clearAllMocks();
-		mockDb.query.systemConfig.findFirst.mockResolvedValue({
-			id: "c-1",
-			key: "site_name",
-			value: "FSDX",
-			deletedAt: null,
-		});
+		mockRows.mockResolvedValue([
+			{ id: "c-1", key: "site_name", value: "FSDX", deletedAt: null },
+		]);
 		mockDb.insert.mockReturnValue({
 			values: vi.fn(() => ({ returning: vi.fn() })),
 		});
@@ -150,19 +137,11 @@ describe("ensurePresetConfigs", () => {
 
 	it("预设配置被软删除时恢复", async () => {
 		vi.clearAllMocks();
-		mockDb.query.systemConfig.findFirst.mockResolvedValue({
-			id: "c-1",
-			key: "site_name",
-			value: "old",
-			deletedAt: new Date(),
-		});
+		mockRows.mockResolvedValue([
+			{ id: "c-1", key: "site_name", value: "old", deletedAt: new Date() },
+		]);
 		mockDb.update.mockReturnValue({
 			set: vi.fn(() => ({ where: vi.fn() })),
-		});
-		mockDb.select.mockReturnValue({
-			from: vi.fn(() => ({
-				where: vi.fn().mockResolvedValue([]),
-			})),
 		});
 		await ensurePresetConfigs();
 		expect(mockDb.update).toHaveBeenCalled();
@@ -187,26 +166,14 @@ describe("getConfig", () => {
 describe("getConfigList", () => {
 	it("返回配置列表", async () => {
 		const configRows = [{ id: "c-1", key: "site_name", value: "FSDX" }];
-		mockDb.select.mockReturnValue({
-			from: vi.fn(() => ({
-				where: vi.fn(() => ({
-					orderBy: vi.fn().mockResolvedValue(configRows),
-				})),
-			})),
-		});
+		mockRows.mockResolvedValue(configRows);
 		const result = await getConfigList();
 		expect(result).toHaveLength(1);
 		expect(result[0].key).toBe("site_name");
 	});
 
 	it("无配置时返回空数组", async () => {
-		mockDb.select.mockReturnValue({
-			from: vi.fn(() => ({
-				where: vi.fn(() => ({
-					orderBy: vi.fn().mockResolvedValue([]),
-				})),
-			})),
-		});
+		mockRows.mockResolvedValue([]);
 		const result = await getConfigList();
 		expect(result).toEqual([]);
 	});
@@ -223,15 +190,9 @@ describe("createConfig", () => {
 			})),
 		});
 		// mock loadConfigCache 的 select
-		mockDb.select.mockReturnValue({
-			from: vi.fn(() => ({
-				where: vi
-					.fn()
-					.mockResolvedValue([
-						{ id: "c-1", key: "new_key", value: "val", clientVisible: false },
-					]),
-			})),
-		});
+		mockRows.mockResolvedValue([
+			{ id: "c-1", key: "new_key", value: "val", clientVisible: false },
+		]);
 		const result = await createConfig({ key: "new_key", value: "val" });
 		expect(result.key).toBe("new_key");
 		expect(mockConfigCache.set).toHaveBeenCalledWith("all", [
@@ -242,22 +203,17 @@ describe("createConfig", () => {
 
 describe("deleteConfig", () => {
 	it("删除配置并刷新缓存", async () => {
-		mockDb.query.systemConfig.findFirst.mockResolvedValue({
-			id: "c-1",
-			key: "old_key",
-		});
-		// mock loadConfigCache 的 select
-		mockDb.select.mockReturnValue({
-			from: vi.fn(() => ({
-				where: vi.fn().mockResolvedValue([]),
-			})),
-		});
+		// findFirst 返回存在记录，loadConfigCache 的 select 返回空列表
+		mockRows
+			.mockReset()
+			.mockResolvedValueOnce([{ id: "c-1", key: "old_key" }])
+			.mockResolvedValue([]);
 		const result = await deleteConfig("c-1");
 		expect(result).toBe(true);
 		expect(mockConfigCache.set).toHaveBeenCalledWith("all", []);
 	});
 	it("不存在的配置返回 false", async () => {
-		mockDb.query.systemConfig.findFirst.mockResolvedValue(undefined);
+		mockRows.mockReset().mockResolvedValue([]);
 		const result = await deleteConfig("不存在");
 		expect(result).toBe(false);
 	});
@@ -305,13 +261,7 @@ describe("getConfigTranslations", () => {
 
 	it("缓存未命中时查询 DB 并写入缓存", async () => {
 		mockConfigTranslationCache.get.mockReturnValueOnce(undefined);
-		mockDb.select.mockReturnValue({
-			from: vi.fn(() => ({
-				where: vi
-					.fn()
-					.mockResolvedValue([{ entityId: "c-1", value: "FSDX EN" }]),
-			})),
-		});
+		mockRows.mockResolvedValue([{ entityId: "c-1", value: "FSDX EN" }]);
 		const result = await getConfigTranslations("en");
 		expect(result).toEqual({ "c-1": "FSDX EN" });
 		expect(mockConfigTranslationCache.set).toHaveBeenCalledWith("en", {
@@ -324,18 +274,21 @@ describe("upsertConfig", () => {
 	beforeEach(() => vi.clearAllMocks());
 
 	it("key 已存在时更新配置并保留未传字段", async () => {
-		mockDb.query.systemConfig.findFirst.mockResolvedValue({
-			id: "c-1",
-			key: "site_name",
-			value: "old",
-			clientVisible: true,
-			valueType: "input",
-			groupName: "站点设置",
-			description: "站点名称",
-		});
-		mockDb.select.mockReturnValue({
-			from: vi.fn(() => ({ where: vi.fn().mockResolvedValue([]) })),
-		});
+		// findFirst 返回存在记录，loadConfigCache 的 select 返回空列表
+		mockRows
+			.mockReset()
+			.mockResolvedValueOnce([
+				{
+					id: "c-1",
+					key: "site_name",
+					value: "old",
+					clientVisible: true,
+					valueType: "input",
+					groupName: "站点设置",
+					description: "站点名称",
+				},
+			])
+			.mockResolvedValue([]);
 		const setMock = vi.fn((_data: unknown) => ({ where: vi.fn() }));
 		mockDb.update.mockReturnValue({ set: setMock } as any);
 
@@ -351,10 +304,7 @@ describe("upsertConfig", () => {
 	});
 
 	it("key 不存在时插入新配置", async () => {
-		mockDb.query.systemConfig.findFirst.mockResolvedValue(undefined);
-		mockDb.select.mockReturnValue({
-			from: vi.fn(() => ({ where: vi.fn().mockResolvedValue([]) })),
-		});
+		mockRows.mockReset().mockResolvedValue([]);
 		const valuesMock = vi.fn();
 		mockDb.insert.mockReturnValue({ values: valuesMock });
 
@@ -378,9 +328,7 @@ describe("updateConfig", () => {
 				})),
 			})),
 		});
-		mockDb.select.mockReturnValue({
-			from: vi.fn(() => ({ where: vi.fn().mockResolvedValue([]) })),
-		});
+		mockRows.mockResolvedValue([]);
 
 		const result = await updateConfig("c-1", { value: "new" });
 
@@ -410,9 +358,7 @@ describe("refreshConfigTranslationCache", () => {
 
 	it("指定语言时删除缓存并重新加载", async () => {
 		mockConfigTranslationCache.get.mockReturnValueOnce(undefined);
-		mockDb.select.mockReturnValue({
-			from: vi.fn(() => ({ where: vi.fn().mockResolvedValue([]) })),
-		});
+		mockRows.mockResolvedValue([]);
 
 		await refreshConfigTranslationCache("en");
 

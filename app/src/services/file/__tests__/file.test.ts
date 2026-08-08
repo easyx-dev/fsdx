@@ -19,23 +19,26 @@ const { mockStorage } = vi.hoisted(() => ({
 }));
 vi.mock("@fsdx/core/storage", () => ({ storage: mockStorage }));
 
-const { mockDb } = vi.hoisted(() => {
-	const q = () => ({ findFirst: vi.fn(), findMany: vi.fn() });
+const { mockDb, mockRows, mockSelectChain } = vi.hoisted(() => {
+	const rows = vi.fn().mockResolvedValue([]);
+	const chain: any = {
+		from: vi.fn(() => chain),
+		where: vi.fn(() => chain),
+		orderBy: vi.fn(() => chain),
+		limit: vi.fn(() => chain),
+		offset: vi.fn(() => chain),
+		innerJoin: vi.fn(() => chain),
+	};
+	Object.defineProperty(chain, "then", {
+		value: (onFulfilled: (value: unknown) => unknown) =>
+			rows().then(onFulfilled),
+	});
 	return {
+		mockRows: rows,
+		mockSelectChain: chain,
 		mockDb: {
-			query: {
-				file: q(),
-				adminUser: q(),
-				clientUser: q(),
-				role: q(),
-				news: q(),
-				dict: q(),
-				dictItem: q(),
-				systemConfig: q(),
-				captchaCode: q(),
-			},
+			select: vi.fn(() => chain),
 			$count: vi.fn(),
-			select: vi.fn(() => ({})) as any,
 			insert: vi.fn(() => ({ values: vi.fn(() => ({ returning: vi.fn() })) })),
 			update: vi.fn(() => ({ set: vi.fn(() => ({ where: vi.fn() })) })),
 			delete: vi.fn(() => ({ where: vi.fn() })),
@@ -92,7 +95,7 @@ describe("readFileContent", () => {
 
 	it("文件存在时返回 buffer 和 record", async () => {
 		const content = Buffer.from("文件内容");
-		mockDb.query.file.findFirst.mockResolvedValue(fileRecord);
+		mockRows.mockResolvedValue([fileRecord]);
 		mockStorage.read.mockResolvedValue(content);
 
 		const result = await readFileContent("f-1");
@@ -103,7 +106,7 @@ describe("readFileContent", () => {
 	});
 
 	it("文件不存在时返回 null", async () => {
-		mockDb.query.file.findFirst.mockResolvedValue(undefined);
+		mockRows.mockResolvedValue([]);
 
 		const result = await readFileContent("不存在");
 		expect(result).toBeNull();
@@ -114,9 +117,7 @@ describe("cleanExpiredFiles", () => {
 	beforeEach(() => vi.clearAllMocks());
 
 	it("无过期文件时返回 0", async () => {
-		mockDb.select.mockReturnValue({
-			from: vi.fn(() => ({ where: vi.fn().mockResolvedValue([]) })),
-		});
+		mockRows.mockResolvedValue([]);
 
 		const result = await cleanExpiredFiles();
 		expect(result).toBe(0);
@@ -127,9 +128,7 @@ describe("cleanExpiredFiles", () => {
 			{ ...fileRecord, id: "f-1", path: "path1.txt" },
 			{ ...fileRecord, id: "f-2", path: "path2.txt" },
 		];
-		mockDb.select.mockReturnValue({
-			from: vi.fn(() => ({ where: vi.fn().mockResolvedValue(expired) })),
-		});
+		mockRows.mockResolvedValue(expired);
 		mockStorage.delete.mockResolvedValue(undefined);
 
 		const result = await cleanExpiredFiles();
@@ -142,9 +141,7 @@ describe("cleanExpiredFiles", () => {
 
 	it("storage.delete 报错时被捕获不中断流程", async () => {
 		const expired = [{ ...fileRecord, id: "f-1", path: "bad.txt" }];
-		mockDb.select.mockReturnValue({
-			from: vi.fn(() => ({ where: vi.fn().mockResolvedValue(expired) })),
-		});
+		mockRows.mockResolvedValue(expired);
 		mockStorage.delete.mockRejectedValue(new Error("磁盘错误"));
 
 		const result = await cleanExpiredFiles();
@@ -156,17 +153,7 @@ describe("getFileList", () => {
 	beforeEach(() => vi.clearAllMocks());
 
 	it("返回分页文件列表（空）", async () => {
-		mockDb.select.mockReturnValue({
-			from: vi.fn(() => ({
-				where: vi.fn(() => ({
-					orderBy: vi.fn(() => ({
-						limit: vi.fn(() => ({
-							offset: vi.fn().mockResolvedValue([]),
-						})),
-					})),
-				})),
-			})),
-		});
+		mockRows.mockResolvedValue([]);
 		mockDb.$count.mockResolvedValue(0);
 
 		const result = await getFileList();
@@ -177,24 +164,15 @@ describe("getFileList", () => {
 	});
 
 	it("按状态筛选文件列表（where 条件包含筛选值）", async () => {
-		const whereMock = vi.fn((_condition: unknown) => ({
-			orderBy: vi.fn(() => ({
-				limit: vi.fn(() => ({
-					offset: vi.fn().mockResolvedValue([fileRecord]),
-				})),
-			})),
-		}));
-		mockDb.select.mockReturnValue({
-			from: vi.fn(() => ({ where: whereMock })),
-		});
+		mockRows.mockResolvedValue([fileRecord]);
 		mockDb.$count.mockResolvedValue(1);
 
 		const result = await getFileList({ status: "permanent" });
 		expect(result.records).toHaveLength(1);
 		expect(result.total).toBe(1);
 		// 筛选行为：where 条件中应包含状态筛选值（而非仅软删除条件）
-		expect(whereMock).toHaveBeenCalled();
-		const whereArg = whereMock.mock.calls[0][0] as unknown;
+		expect(mockSelectChain.where).toHaveBeenCalled();
+		const whereArg = mockSelectChain.where.mock.calls[0][0] as unknown;
 		expect(extractSqlText(whereArg)).toContain("permanent");
 	});
 });
@@ -234,14 +212,14 @@ describe("deleteFile", () => {
 	beforeEach(() => vi.clearAllMocks());
 
 	it("不存在的文件返回 false", async () => {
-		mockDb.query.file.findFirst.mockResolvedValue(undefined);
+		mockRows.mockResolvedValue([]);
 
 		const result = await deleteFile("不存在");
 		expect(result).toBe(false);
 	});
 
 	it("已存在的文件删除成功返回 true", async () => {
-		mockDb.query.file.findFirst.mockResolvedValue(fileRecord);
+		mockRows.mockResolvedValue([fileRecord]);
 
 		const result = await deleteFile("f-1");
 		expect(result).toBe(true);
@@ -275,7 +253,7 @@ describe("uploadFile", () => {
 	beforeEach(() => vi.clearAllMocks());
 
 	it("SHA256 命中已存在的永久文件时返回秒传结果", async () => {
-		mockDb.query.file.findFirst.mockResolvedValue(fileRecord);
+		mockRows.mockResolvedValue([fileRecord]);
 
 		const result = await uploadFile(buffer, "测试.txt", "text/plain", true);
 
@@ -286,7 +264,7 @@ describe("uploadFile", () => {
 	});
 
 	it("永久上传：落盘、入库状态为 permanent 且无过期时间", async () => {
-		mockDb.query.file.findFirst.mockResolvedValue(undefined);
+		mockRows.mockResolvedValue([]);
 		const valuesMock = vi.fn((_data: unknown) => ({
 			returning: vi.fn(() => Promise.resolve([insertRecord])),
 		}));
@@ -308,7 +286,7 @@ describe("uploadFile", () => {
 	});
 
 	it("临时上传：入库状态为 temp 且设置 7 天过期时间", async () => {
-		mockDb.query.file.findFirst.mockResolvedValue(undefined);
+		mockRows.mockResolvedValue([]);
 		const valuesMock = vi.fn((_data: unknown) => ({
 			returning: vi.fn(() => Promise.resolve([insertRecord])),
 		}));
@@ -331,7 +309,7 @@ describe("uploadFile", () => {
 	});
 
 	it("保留原始文件扩展名并写入存储路径", async () => {
-		mockDb.query.file.findFirst.mockResolvedValue(undefined);
+		mockRows.mockResolvedValue([]);
 		const valuesMock = vi.fn((_data: unknown) => ({
 			returning: vi.fn(() => Promise.resolve([insertRecord])),
 		}));
@@ -347,7 +325,7 @@ describe("uploadFile", () => {
 	});
 
 	it("无扩展名文件存储时不追加后缀", async () => {
-		mockDb.query.file.findFirst.mockResolvedValue(undefined);
+		mockRows.mockResolvedValue([]);
 		const valuesMock = vi.fn((_data: unknown) => ({
 			returning: vi.fn(() => Promise.resolve([insertRecord])),
 		}));
@@ -365,16 +343,14 @@ describe("getFileInfo", () => {
 	beforeEach(() => vi.clearAllMocks());
 
 	it("文件存在时返回原始文件名", async () => {
-		mockDb.query.file.findFirst.mockResolvedValue({
-			originalName: "报告.xlsx",
-		});
+		mockRows.mockResolvedValue([{ originalName: "报告.xlsx" }]);
 
 		const name = await getFileInfo("f-1");
 		expect(name).toBe("报告.xlsx");
 	});
 
 	it("文件不存在时返回 null", async () => {
-		mockDb.query.file.findFirst.mockResolvedValue(undefined);
+		mockRows.mockResolvedValue([]);
 
 		const name = await getFileInfo("不存在");
 		expect(name).toBeNull();

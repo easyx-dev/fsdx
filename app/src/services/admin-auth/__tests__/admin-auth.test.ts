@@ -20,24 +20,25 @@ vi.mock("#/lib/jwt/jwt", () => ({
 	jwt: { signToken: mockSignToken },
 }));
 
-const { mockDb } = vi.hoisted(() => {
-	const _queryFns = () => ({ findFirst: vi.fn(), findMany: vi.fn() });
+const { mockDb, mockRows } = vi.hoisted(() => {
+	const rows = vi.fn().mockResolvedValue([]);
+	const chain: any = {
+		from: vi.fn(() => chain),
+		where: vi.fn(() => chain),
+		orderBy: vi.fn(() => chain),
+		limit: vi.fn(() => chain),
+		offset: vi.fn(() => chain),
+		innerJoin: vi.fn(() => chain),
+	};
+	Object.defineProperty(chain, "then", {
+		value: (onFulfilled: (value: unknown) => unknown) =>
+			rows().then(onFulfilled),
+	});
 	return {
+		mockRows: rows,
 		mockDb: {
-			query: {
-				adminUser: _queryFns(),
-				adminRole: _queryFns(),
-				clientUser: _queryFns(),
-				role: _queryFns(),
-				news: _queryFns(),
-				dict: _queryFns(),
-				dictItem: _queryFns(),
-				systemConfig: _queryFns(),
-				file: _queryFns(),
-				captchaCode: _queryFns(),
-			},
+			select: vi.fn(() => chain),
 			$count: vi.fn(),
-			select: vi.fn(() => ({ from: vi.fn(() => ({ where: vi.fn() })) })),
 			insert: vi.fn(() => ({ values: vi.fn(() => ({ returning: vi.fn() })) })),
 			update: vi.fn(() => ({
 				set: vi.fn(() => ({ where: vi.fn() })),
@@ -72,7 +73,7 @@ describe("adminLogin", () => {
 	});
 
 	it("正确凭据登录成功，返回 token 和用户信息", async () => {
-		mockDb.query.adminUser.findFirst.mockResolvedValue(mockUser);
+		mockRows.mockResolvedValue([mockUser]);
 		vi.mocked(bcrypt.compare).mockResolvedValue(true as never);
 		mockSignToken.mockResolvedValue("jwt-token-abc");
 
@@ -88,7 +89,7 @@ describe("adminLogin", () => {
 	});
 
 	it("用户不存在返回失败", async () => {
-		mockDb.query.adminUser.findFirst.mockResolvedValue(undefined);
+		mockRows.mockResolvedValue([]);
 
 		const result = await adminLogin("nobody", "pw");
 		expect(result.success).toBe(false);
@@ -96,7 +97,7 @@ describe("adminLogin", () => {
 	});
 
 	it("密码错误返回失败", async () => {
-		mockDb.query.adminUser.findFirst.mockResolvedValue(mockUser);
+		mockRows.mockResolvedValue([mockUser]);
 		vi.mocked(bcrypt.compare).mockResolvedValue(false as never);
 
 		const result = await adminLogin("admin", "wrong");
@@ -105,27 +106,21 @@ describe("adminLogin", () => {
 	});
 
 	it("用户被软删除返回失败", async () => {
-		mockDb.query.adminUser.findFirst.mockResolvedValue({
-			...mockUser,
-			deletedAt: new Date(),
-		});
+		mockRows.mockResolvedValue([{ ...mockUser, deletedAt: new Date() }]);
 
 		const result = await adminLogin("admin", "pw");
 		expect(result.success).toBe(false);
 	});
 
 	it("用户被禁用返回失败", async () => {
-		mockDb.query.adminUser.findFirst.mockResolvedValue({
-			...mockUser,
-			status: "disabled",
-		});
+		mockRows.mockResolvedValue([{ ...mockUser, status: "disabled" }]);
 
 		const result = await adminLogin("admin", "pw");
 		expect(result.success).toBe(false);
 	});
 
 	it("登录成功后更新 lastLoginAt", async () => {
-		mockDb.query.adminUser.findFirst.mockResolvedValue(mockUser);
+		mockRows.mockResolvedValue([mockUser]);
 		vi.mocked(bcrypt.compare).mockResolvedValue(true as never);
 		mockSignToken.mockResolvedValue("token");
 
@@ -157,7 +152,7 @@ describe("getAdminUserForAuth", () => {
 		const result = await getAdminUserForAuth("admin-1");
 
 		expect(result).toEqual({ success: false, reason: "disabled" });
-		expect(mockDb.query.adminUser.findFirst).not.toHaveBeenCalled();
+		expect(mockDb.select).not.toHaveBeenCalled();
 	});
 
 	it("缓存命中且是 root 用户时返回通配权限", async () => {
@@ -170,12 +165,12 @@ describe("getAdminUserForAuth", () => {
 			expect(result.isRoot).toBe(true);
 			expect(result.rolePermissions).toEqual(["**"]);
 		}
-		expect(mockDb.query.adminRole.findMany).not.toHaveBeenCalled();
+		expect(mockDb.select).not.toHaveBeenCalled();
 	});
 
 	it("缓存命中且非 root 时合并角色权限并去重", async () => {
 		adminUserCache.set("admin-1", cachedUser);
-		mockDb.query.adminRole.findMany.mockResolvedValue([
+		mockRows.mockResolvedValue([
 			{ id: "role-1", permissions: ["news:view", "news:create"] },
 			{ id: "role-2", permissions: ["news:view", "dict:view"] },
 		]);
@@ -201,11 +196,11 @@ describe("getAdminUserForAuth", () => {
 		if (result.success) {
 			expect(result.rolePermissions).toEqual([]);
 		}
-		expect(mockDb.query.adminRole.findMany).not.toHaveBeenCalled();
+		expect(mockDb.select).not.toHaveBeenCalled();
 	});
 
 	it("缓存未命中且用户不存在时返回 not_found", async () => {
-		mockDb.query.adminUser.findFirst.mockResolvedValue(undefined);
+		mockRows.mockReset().mockResolvedValue([]);
 
 		const result = await getAdminUserForAuth("ghost");
 
@@ -213,10 +208,9 @@ describe("getAdminUserForAuth", () => {
 	});
 
 	it("缓存未命中且用户未启用时返回 disabled", async () => {
-		mockDb.query.adminUser.findFirst.mockResolvedValue({
-			...cachedUser,
-			status: "disabled",
-		});
+		mockRows
+			.mockReset()
+			.mockResolvedValue([{ ...cachedUser, status: "disabled" }]);
 
 		const result = await getAdminUserForAuth("admin-1");
 
@@ -224,10 +218,7 @@ describe("getAdminUserForAuth", () => {
 	});
 
 	it("缓存未命中且是 root 用户时返回通配权限并写入缓存", async () => {
-		mockDb.query.adminUser.findFirst.mockResolvedValue({
-			...cachedUser,
-			isRoot: true,
-		});
+		mockRows.mockReset().mockResolvedValue([{ ...cachedUser, isRoot: true }]);
 
 		const result = await getAdminUserForAuth("admin-1");
 
@@ -236,14 +227,16 @@ describe("getAdminUserForAuth", () => {
 			expect(result.rolePermissions).toEqual(["**"]);
 		}
 		expect(adminUserCache.has("admin-1")).toBe(true);
-		expect(mockDb.query.adminRole.findMany).not.toHaveBeenCalled();
+		// root 用户只查用户本身，不查询角色表
+		expect(mockDb.select).toHaveBeenCalledTimes(1);
 	});
 
 	it("缓存未命中且非 root 时查询角色合并权限", async () => {
-		mockDb.query.adminUser.findFirst.mockResolvedValue(cachedUser);
-		mockDb.query.adminRole.findMany.mockResolvedValue([
-			{ id: "role-1", permissions: ["news:view"] },
-		]);
+		// 先查用户（存在），再查角色权限
+		mockRows
+			.mockReset()
+			.mockResolvedValueOnce([cachedUser])
+			.mockResolvedValue([{ id: "role-1", permissions: ["news:view"] }]);
 
 		const result = await getAdminUserForAuth("admin-1");
 

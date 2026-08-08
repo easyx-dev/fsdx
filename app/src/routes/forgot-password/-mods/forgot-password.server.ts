@@ -23,9 +23,11 @@ export async function resetClientPassword(
 		return { success: false, message: "验证码错误或已过期" };
 	}
 
-	const user = await db.query.clientUser.findFirst({
-		where: (t, { eq: e }) => e(t.email, email),
-	});
+	const [user] = await db
+		.select()
+		.from(clientUser)
+		.where(eq(clientUser.email, email))
+		.limit(1);
 
 	if (!user || user.deletedAt) {
 		return { success: false, message: "该邮箱未注册" };

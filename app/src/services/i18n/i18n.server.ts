@@ -148,12 +148,16 @@ export async function upsertUITranslation(params: {
 			.where(eq(uiTranslation.id, params.id));
 	} else {
 		// 尝试查找已有记录
-		const existing = await db.query.uiTranslation.findFirst({
-			where: and(
-				eq(uiTranslation.locale, params.locale),
-				eq(uiTranslation.key, params.key),
-			),
-		});
+		const [existing] = await db
+			.select()
+			.from(uiTranslation)
+			.where(
+				and(
+					eq(uiTranslation.locale, params.locale),
+					eq(uiTranslation.key, params.key),
+				),
+			)
+			.limit(1);
 		if (existing) {
 			await db
 				.update(uiTranslation)
@@ -177,9 +181,11 @@ export async function upsertUITranslation(params: {
 
 /** UI 翻译删除 */
 export async function deleteUITranslation(id: string): Promise<boolean> {
-	const existing = await db.query.uiTranslation.findFirst({
-		where: eq(uiTranslation.id, id),
-	});
+	const [existing] = await db
+		.select()
+		.from(uiTranslation)
+		.where(eq(uiTranslation.id, id))
+		.limit(1);
 	if (!existing) return false;
 
 	await db.delete(uiTranslation).where(eq(uiTranslation.id, id));
@@ -238,12 +244,16 @@ export async function importUiTranslations(
 			item.valueType = "input";
 		}
 
-		const existing = await db.query.uiTranslation.findFirst({
-			where: and(
-				eq(uiTranslation.locale, item.locale),
-				eq(uiTranslation.key, item.key),
-			),
-		});
+		const [existing] = await db
+			.select()
+			.from(uiTranslation)
+			.where(
+				and(
+					eq(uiTranslation.locale, item.locale),
+					eq(uiTranslation.key, item.key),
+				),
+			)
+			.limit(1);
 
 		if (existing) {
 			await db
@@ -328,14 +338,18 @@ export async function importContentTranslations(
 				item.valueType = "text";
 			}
 
-			const existing = await tx.query.contentTranslation.findFirst({
-				where: and(
-					eq(contentTranslation.entityType, item.entityType),
-					eq(contentTranslation.entityId, item.entityId),
-					eq(contentTranslation.fieldName, item.fieldName),
-					eq(contentTranslation.locale, item.locale),
-				),
-			});
+			const [existing] = await tx
+				.select()
+				.from(contentTranslation)
+				.where(
+					and(
+						eq(contentTranslation.entityType, item.entityType),
+						eq(contentTranslation.entityId, item.entityId),
+						eq(contentTranslation.fieldName, item.fieldName),
+						eq(contentTranslation.locale, item.locale),
+					),
+				)
+				.limit(1);
 
 			if (existing) {
 				await tx
@@ -616,14 +630,18 @@ export async function upsertContentTranslation(params: {
 			})
 			.where(eq(contentTranslation.id, params.id));
 	} else {
-		const existing = await db.query.contentTranslation.findFirst({
-			where: and(
-				eq(contentTranslation.entityType, params.entityType),
-				eq(contentTranslation.entityId, params.entityId),
-				eq(contentTranslation.fieldName, params.fieldName),
-				eq(contentTranslation.locale, params.locale),
-			),
-		});
+		const [existing] = await db
+			.select()
+			.from(contentTranslation)
+			.where(
+				and(
+					eq(contentTranslation.entityType, params.entityType),
+					eq(contentTranslation.entityId, params.entityId),
+					eq(contentTranslation.fieldName, params.fieldName),
+					eq(contentTranslation.locale, params.locale),
+				),
+			)
+			.limit(1);
 		if (existing) {
 			await db
 				.update(contentTranslation)
@@ -651,9 +669,11 @@ export async function upsertContentTranslation(params: {
 
 /** 实体翻译删除 */
 export async function deleteContentTranslation(id: string): Promise<boolean> {
-	const existing = await db.query.contentTranslation.findFirst({
-		where: eq(contentTranslation.id, id),
-	});
+	const [existing] = await db
+		.select()
+		.from(contentTranslation)
+		.where(eq(contentTranslation.id, id))
+		.limit(1);
 	if (!existing) return false;
 
 	await db.delete(contentTranslation).where(eq(contentTranslation.id, id));

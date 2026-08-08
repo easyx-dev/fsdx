@@ -24,7 +24,11 @@ export async function updateDictRecord(
 	id: string,
 	data: Partial<DictRecord>,
 ): Promise<boolean> {
-	const existing = await db.query.dict.findFirst({ where: eq(dict.id, id) });
+	const [existing] = await db
+		.select()
+		.from(dict)
+		.where(eq(dict.id, id))
+		.limit(1);
 	if (!existing) return false;
 
 	if (
@@ -63,9 +67,11 @@ export async function updateDictItemRecord(
 	data: Partial<DictItemRecord>,
 ): Promise<boolean> {
 	if (data.value) {
-		const item = await db.query.dictItem.findFirst({
-			where: eq(dictItem.id, id),
-		});
+		const [item] = await db
+			.select()
+			.from(dictItem)
+			.where(eq(dictItem.id, id))
+			.limit(1);
 		if (item && PRESET_DICTS.some((d) => d.slug === item.dictSlug)) {
 			throw new Error("预置字典条目的值(value)不允许修改");
 		}
@@ -80,9 +86,11 @@ export async function updateDictItemRecord(
 
 /** 软删除字典条目并返回是否成功 */
 export async function deleteDictItemRecord(id: string): Promise<boolean> {
-	const existing = await db.query.dictItem.findFirst({
-		where: eq(dictItem.id, id),
-	});
+	const [existing] = await db
+		.select()
+		.from(dictItem)
+		.where(eq(dictItem.id, id))
+		.limit(1);
 	if (!existing) return false;
 
 	if (PRESET_DICTS.some((d) => d.slug === existing.dictSlug)) {
@@ -147,9 +155,11 @@ export async function importDicts(
 		for (const d of existingDicts) importedSlugs.add(d.slug);
 
 		for (const d of data.dicts) {
-			const existing = await tx.query.dict.findFirst({
-				where: and(eq(dict.slug, d.slug), isNull(dict.deletedAt)),
-			});
+			const [existing] = await tx
+				.select()
+				.from(dict)
+				.where(and(eq(dict.slug, d.slug), isNull(dict.deletedAt)))
+				.limit(1);
 			if (existing) {
 				await tx
 					.update(dict)
@@ -175,13 +185,17 @@ export async function importDicts(
 				result.itemsSkipped++;
 				continue;
 			}
-			const existing = await tx.query.dictItem.findFirst({
-				where: and(
-					eq(dictItem.dictSlug, item.dictSlug),
-					eq(dictItem.value, item.value),
-					isNull(dictItem.deletedAt),
-				),
-			});
+			const [existing] = await tx
+				.select()
+				.from(dictItem)
+				.where(
+					and(
+						eq(dictItem.dictSlug, item.dictSlug),
+						eq(dictItem.value, item.value),
+						isNull(dictItem.deletedAt),
+					),
+				)
+				.limit(1);
 			if (existing) {
 				await tx
 					.update(dictItem)

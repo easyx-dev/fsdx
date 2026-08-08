@@ -27,9 +27,11 @@ export function sha256(buf: Buffer): string {
 
 /** 读取文件内容（供下载路由使用） */
 export async function readFileContent(id: string) {
-	const record = await db.query.file.findFirst({
-		where: and(eq(file.id, id), notDeleted(file.deletedAt)),
-	});
+	const [record] = await db
+		.select()
+		.from(file)
+		.where(and(eq(file.id, id), notDeleted(file.deletedAt)))
+		.limit(1);
 	if (!record) return null;
 	const buffer = await storage.read(record.path);
 	return { buffer, record };
@@ -128,9 +130,11 @@ export async function getFileList(
 
 /** 删除文件（软删除） */
 export async function deleteFile(id: string): Promise<boolean> {
-	const existing = await db.query.file.findFirst({
-		where: and(eq(file.id, id), notDeleted(file.deletedAt)),
-	});
+	const [existing] = await db
+		.select()
+		.from(file)
+		.where(and(eq(file.id, id), notDeleted(file.deletedAt)))
+		.limit(1);
 	if (!existing) return false;
 
 	await db.update(file).set({ deletedAt: new Date() }).where(eq(file.id, id));
@@ -160,13 +164,17 @@ export async function uploadFile(
 ): Promise<{ record: FileRecord; isDuplicated: boolean }> {
 	const hash = sha256(buffer);
 
-	const existing = await db.query.file.findFirst({
-		where: and(
-			eq(file.sha256, hash),
-			eq(file.status, "permanent"),
-			notDeleted(file.deletedAt),
-		),
-	});
+	const [existing] = await db
+		.select()
+		.from(file)
+		.where(
+			and(
+				eq(file.sha256, hash),
+				eq(file.status, "permanent"),
+				notDeleted(file.deletedAt),
+			),
+		)
+		.limit(1);
 
 	if (existing) {
 		return { record: existing, isDuplicated: true };
@@ -205,9 +213,10 @@ export async function uploadFile(
 
 /** 查询文件原始文件名（供预览组件使用），不存在返回 null */
 export async function getFileInfo(id: string): Promise<string | null> {
-	const result = await db.query.file.findFirst({
-		where: and(eq(file.id, id), notDeleted(file.deletedAt)),
-		columns: { originalName: true },
-	});
+	const [result] = await db
+		.select({ originalName: file.originalName })
+		.from(file)
+		.where(and(eq(file.id, id), notDeleted(file.deletedAt)))
+		.limit(1);
 	return result?.originalName ?? null;
 }

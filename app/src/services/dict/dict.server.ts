@@ -95,7 +95,11 @@ export async function createDict(params: {
 }
 
 export async function deleteDict(id: string) {
-	const existing = await db.query.dict.findFirst({ where: eq(dict.id, id) });
+	const [existing] = await db
+		.select()
+		.from(dict)
+		.where(eq(dict.id, id))
+		.limit(1);
 	if (!existing) return false;
 
 	// 预置字典不允许删除
@@ -121,9 +125,11 @@ export async function deleteDict(id: string) {
 /** 运行时校验并插入缺失的预置字典（幂等安全） */
 export async function ensurePresetDicts(): Promise<void> {
 	for (const preset of PRESET_DICTS) {
-		const existingDict = await db.query.dict.findFirst({
-			where: eq(dict.slug, preset.slug),
-		});
+		const [existingDict] = await db
+			.select()
+			.from(dict)
+			.where(eq(dict.slug, preset.slug))
+			.limit(1);
 		if (existingDict) continue;
 
 		const [newDict] = await db

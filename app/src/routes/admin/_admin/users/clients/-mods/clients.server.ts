@@ -2,10 +2,10 @@
  * 客户端用户管理：CRUD 操作
  */
 import bcrypt from "bcryptjs";
-import { and, eq, ilike, or } from "drizzle-orm";
+import { and, eq, ilike, inArray, isNull, or } from "drizzle-orm";
 import type { z } from "zod";
 import { db } from "#/db/index";
-import { clientUser } from "#/db/schema";
+import { clientRole, clientUser } from "#/db/schema";
 import { clearClientUserCache } from "#/services/client-auth/client-auth.server";
 import {
 	buildSortClause,
@@ -49,20 +49,20 @@ const clientUserSafeCols = {
 
 /** 批量查询客户端角色 id 到名称的映射 */
 async function getRoleNameMap(roleIds: string[]): Promise<Map<string, string>> {
-	const roles = await db.query.clientRole.findMany({
-		where: (t, { inArray: ia, isNull: n }) =>
-			and(ia(t.id, roleIds), n(t.deletedAt)),
-	});
+	const roles = await db
+		.select()
+		.from(clientRole)
+		.where(and(inArray(clientRole.id, roleIds), isNull(clientRole.deletedAt)));
 	return new Map(roles.map((r) => [r.id, r.name]));
 }
 
 /** 校验客户端角色 id 均存在且未软删除，防止写入失效角色 */
 async function assertClientRolesExist(roleIds: string[]): Promise<void> {
 	if (roleIds.length === 0) return;
-	const roles = await db.query.clientRole.findMany({
-		where: (t, { inArray: ia, isNull: n }) =>
-			and(ia(t.id, roleIds), n(t.deletedAt)),
-	});
+	const roles = await db
+		.select()
+		.from(clientRole)
+		.where(and(inArray(clientRole.id, roleIds), isNull(clientRole.deletedAt)));
 	const found = new Set(roles.map((r) => r.id));
 	const invalid = roleIds.filter((id) => !found.has(id));
 	if (invalid.length > 0) {
@@ -138,9 +138,12 @@ export async function getClientUserList(params?: ClientUserListParams) {
 
 /** 获取单个客户端用户 */
 export async function getClientUser(id: string) {
-	return db.query.clientUser.findFirst({
-		where: and(eq(clientUser.id, id), notDeleted(clientUser.deletedAt)),
-	});
+	const [record] = await db
+		.select()
+		.from(clientUser)
+		.where(and(eq(clientUser.id, id), notDeleted(clientUser.deletedAt)))
+		.limit(1);
+	return record;
 }
 
 /** 创建客户端用户 */

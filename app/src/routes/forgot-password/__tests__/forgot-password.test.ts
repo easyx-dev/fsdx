@@ -5,16 +5,31 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const {
 	mockDb,
+	mockRows,
 	mockBcrypt,
 	mockVerifyCaptcha,
 	mockClearClientUserCache,
 	mockLogger,
 } = vi.hoisted(() => {
+	const rows = vi.fn().mockResolvedValue([]);
+	const chain: any = {
+		from: vi.fn(() => chain),
+		where: vi.fn(() => chain),
+		orderBy: vi.fn(() => chain),
+		limit: vi.fn(() => chain),
+		offset: vi.fn(() => chain),
+		innerJoin: vi.fn(() => chain),
+	};
+	Object.defineProperty(chain, "then", {
+		value: (onFulfilled: (value: unknown) => unknown) =>
+			rows().then(onFulfilled),
+	});
 	return {
 		mockDb: {
-			query: { clientUser: { findFirst: vi.fn() } },
+			select: vi.fn(() => chain),
 			update: vi.fn(() => ({ set: vi.fn(() => ({ where: vi.fn() })) })),
 		},
+		mockRows: rows,
 		mockBcrypt: { hash: vi.fn() },
 		mockVerifyCaptcha: vi.fn(),
 		mockClearClientUserCache: vi.fn(),
@@ -51,12 +66,12 @@ describe("resetClientPassword", () => {
 
 		expect(result.success).toBe(false);
 		expect(result.message).toBe("验证码错误或已过期");
-		expect(mockDb.query.clientUser.findFirst).not.toHaveBeenCalled();
+		expect(mockDb.select).not.toHaveBeenCalled();
 	});
 
 	it("用户不存在返回失败", async () => {
 		mockVerifyCaptcha.mockResolvedValue(true);
-		mockDb.query.clientUser.findFirst.mockResolvedValue(undefined);
+		mockRows.mockResolvedValue([]);
 
 		const result = await resetClientPassword("u@t.com", "123456", "newpass");
 
@@ -66,12 +81,14 @@ describe("resetClientPassword", () => {
 
 	it("用户已删除返回失败", async () => {
 		mockVerifyCaptcha.mockResolvedValue(true);
-		mockDb.query.clientUser.findFirst.mockResolvedValue({
-			id: "u-1",
-			email: "u@t.com",
-			status: "active",
-			deletedAt: new Date(),
-		});
+		mockRows.mockResolvedValue([
+			{
+				id: "u-1",
+				email: "u@t.com",
+				status: "active",
+				deletedAt: new Date(),
+			},
+		]);
 
 		const result = await resetClientPassword("u@t.com", "123456", "newpass");
 
@@ -81,11 +98,13 @@ describe("resetClientPassword", () => {
 
 	it("用户已禁用返回失败", async () => {
 		mockVerifyCaptcha.mockResolvedValue(true);
-		mockDb.query.clientUser.findFirst.mockResolvedValue({
-			id: "u-1",
-			email: "u@t.com",
-			status: "disabled",
-		});
+		mockRows.mockResolvedValue([
+			{
+				id: "u-1",
+				email: "u@t.com",
+				status: "disabled",
+			},
+		]);
 
 		const result = await resetClientPassword("u@t.com", "123456", "newpass");
 
@@ -95,11 +114,13 @@ describe("resetClientPassword", () => {
 
 	it("正常重置密码成功", async () => {
 		mockVerifyCaptcha.mockResolvedValue(true);
-		mockDb.query.clientUser.findFirst.mockResolvedValue({
-			id: "u-1",
-			email: "u@t.com",
-			status: "active",
-		});
+		mockRows.mockResolvedValue([
+			{
+				id: "u-1",
+				email: "u@t.com",
+				status: "active",
+			},
+		]);
 		mockBcrypt.hash.mockResolvedValue("hashed_pwd");
 
 		const result = await resetClientPassword("u@t.com", "123456", "newpass");
@@ -111,11 +132,13 @@ describe("resetClientPassword", () => {
 
 	it("调用 bcrypt.hash 时使用正确的 rounds=10", async () => {
 		mockVerifyCaptcha.mockResolvedValue(true);
-		mockDb.query.clientUser.findFirst.mockResolvedValue({
-			id: "u-1",
-			email: "u@t.com",
-			status: "active",
-		});
+		mockRows.mockResolvedValue([
+			{
+				id: "u-1",
+				email: "u@t.com",
+				status: "active",
+			},
+		]);
 		mockBcrypt.hash.mockResolvedValue("hashed_pwd");
 
 		await resetClientPassword("u@t.com", "123456", "newpass");
@@ -125,11 +148,13 @@ describe("resetClientPassword", () => {
 
 	it("成功时清除用户缓存", async () => {
 		mockVerifyCaptcha.mockResolvedValue(true);
-		mockDb.query.clientUser.findFirst.mockResolvedValue({
-			id: "u-1",
-			email: "u@t.com",
-			status: "active",
-		});
+		mockRows.mockResolvedValue([
+			{
+				id: "u-1",
+				email: "u@t.com",
+				status: "active",
+			},
+		]);
 		mockBcrypt.hash.mockResolvedValue("hashed_pwd");
 
 		await resetClientPassword("u@t.com", "123456", "newpass");
