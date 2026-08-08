@@ -18,6 +18,19 @@
   - 菜单渲染自 AdminLayout 抽至 `AdminNav.tsx`（`AdminNav` + `useNavCollapse`）：分组支持折叠（CSS grid 0fr↔1fr 动画），折叠状态持久化到 localStorage（key `admin-nav-collapsed-groups`），路由切换自动展开包含激活项的分组，侧边栏图标模式下强制展开全部分组
   - 滚动条样式统一：`admin.global.css` 新增 `--s-scrollbar-thumb` 语义令牌（亮暗自适应）与 `.scrollbar-thin` 类，应用于侧边栏导航与 `AdminPageContent` 内容区
 
+### Infrastructure
+
+- **Playwright e2e 测试体系接入（关键页面回归）**：
+  - 新增 `@playwright/test`（app devDependency）+ `app/playwright.config.ts` + `app/e2e/`（helpers/scripts/specs），根命令 `pnpm e2e`（app 内 `pnpm e2e`）
+  - 专用隔离数据库 `fsdx_web_e2e`（与开发库彻底隔离）：`e2e/scripts/prepare.ts` 负责建库、重置 public/drizzle schema、直接执行 drizzle 迁移 SQL（迁移记录写入 `drizzle.__drizzle_migrations`，与 bootstrap 的 `runMigrations` 读取路径一致，避免服务启动时重跑迁移）并种子 root 管理员 / 客户端用户 / 预置角色，服务启动时 bootstrap 自动补齐预置配置/字典/翻译；webServer 运行在独立端口 3100，避免与本地 dev server 冲突
+  - 前台 SSR 5 个 spec（首页/Hero/Header、登录、注册、忘记密码、Header 登录态）：注册/忘记密码通过 `seedCaptcha()` 直插 `captcha_code` 绕开图片验证码弹窗与 SMTP 邮件链路，确定性通过
+  - 后台 SPA 5 个 spec（登录、管理员用户、客户端用户、管理端角色、客户端角色）：覆盖列表/搜索/新建（含权限选择器）/编辑/重置密码/删除
+  - `biome.json` 纳入 `**/e2e/**`，`app/tsconfig.json` 纳入 e2e 类型检查；`.gitignore` 增加 `test-results/`、`playwright-report/`
+
+### Fix
+
+- **前台登录后 Header 登录态不刷新**：客户端登录成功仅 `navigate` 到首页，`ClientAuthProvider` 不重挂载导致 Header 仍显示未登录；登录页 `onSubmit` 成功后补充调用 `useClientAuth().refetch()`，使用户名/消息/退出入口即时更新
+
 ### Refactor
 
 - **components 目录规范化重组**：

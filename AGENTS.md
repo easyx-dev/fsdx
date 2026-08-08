@@ -196,6 +196,7 @@ packages/
 | `pnpm format` | 全部包 Biome 格式化 |
 | `pnpm lint` / `pnpm lint:fix` | 全部包 Biome 检查 / 自动修复 |
 | `pnpm test` | 全部包 Vitest 测试（app + core） |
+| `pnpm e2e` | Playwright e2e 测试（专用隔离库 `fsdx_web_e2e`，webServer 端口 3100；需先 `pnpm --filter @fsdx/web exec playwright install chromium`） |
 | `pnpm db:generate` / `pnpm db:migrate` / `pnpm db:pull` / `pnpm db:studio` | app 数据库迁移流程 |
 | `pnpm --filter @fsdx/core test` | 仅 core 包测试 |
 | `pnpm changeset` | 生成 changeset（仅库包版本管理） |

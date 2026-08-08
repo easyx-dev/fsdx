@@ -9,6 +9,7 @@
     "build": "pnpm --filter @fsdx/web build",
     "preview": "pnpm --filter @fsdx/web preview",
     "test": "pnpm -r test",
+    "e2e": "pnpm --filter @fsdx/web e2e",
     "format": "pnpm -r format",
     "lint": "pnpm -r lint",
     "lint:fix": "pnpm -r lint:fix",

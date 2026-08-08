@@ -15,3 +15,7 @@ todos.json
 .tmp
 .data
 .volumes
+
+# Playwright 输出
+test-results/
+playwright-report/
