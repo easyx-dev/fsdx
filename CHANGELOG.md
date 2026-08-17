@@ -20,6 +20,13 @@
 
 ### Infrastructure
 
+- **`@fsdx/core` 基础设施补齐（对照 bom-easy lib 查漏）**：
+  - **`ai` 模块能力对齐**：重构拆分（types / client / chat / chat-stream / truncate，subpath 与既有 API 签名不变）；`ChatOptions` 新增 `extraBody`（如 DeepSeek thinking 控制，思考关闭时不传 temperature）；`deepChat` / `fastChat` 补齐 deep 失败自动降级 fast 重试、空内容参数变化重试（去 `max_tokens` → 改 `temperature=0`，带递增退避），客户端初始化同步超时与 SDK 重试；新增流式 `deepChatStream` / `fastChatStream`（逐 token 回调 + `reasoning_content` 思考流 + 降级通知）；新增 `truncateJsonForLlm` 大体积 JSON 结构截断。**行为变化**：空内容重试后仍为空时 `deepChat`/`fastChat` 直接抛错（原返回空串），`aiTranslateFieldSFn` 捕获后转友好提示，避免用户看到原始错误
+  - **新增 `@fsdx/core/semaphore`**：`Semaphore` 并发限流（许可打满有界排队，队列满 / 等待超时抛 `SemaphoreTimeoutError`）
+  - **新增 `@fsdx/core/task-manager`**：`createTaskManager` 内存任务管理器（pending/running/done/failed 状态机 + TTL 惰性清理 + 事件缓冲 / SSE 订阅与断线回放），供后台任务进度复用
+  - **captcha 补齐 `createMathExpr`**：算式验证码生成（`+`/`-`/`+-` 随机），配套 `random.ts` 新增 `mathExpr` 原语
+  - 全部新增/增强模块补齐 vitest 测试（ai 降级/重试/流式/截断、semaphore 并发与超时、task-manager 状态机与事件、captcha 算式）
+
 - **Playwright e2e 测试体系接入（关键页面回归）**：
   - 新增 `@playwright/test`（app devDependency）+ `app/playwright.config.ts` + `app/e2e/`（helpers/scripts/specs），根命令 `pnpm e2e`（app 内 `pnpm e2e`）
   - 专用隔离数据库 `fsdx_web_e2e`（与开发库彻底隔离）：`e2e/scripts/prepare.ts` 负责建库、重置 public/drizzle schema、直接执行 drizzle 迁移 SQL（迁移记录写入 `drizzle.__drizzle_migrations`，与 bootstrap 的 `runMigrations` 读取路径一致，避免服务启动时重跑迁移）并种子 root 管理员 / 客户端用户 / 预置角色，服务启动时 bootstrap 自动补齐预置配置/字典/翻译；webServer 运行在独立端口 3100，避免与本地 dev server 冲突

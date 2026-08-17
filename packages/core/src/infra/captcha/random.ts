@@ -113,3 +113,55 @@ export function captchaText(userOptions?: number | CaptchaTextOptions): string {
 	}
 	return out;
 }
+
+/** 数学表达式结果 */
+export interface MathExprResult {
+	/** 正确答案文本 */
+	text: string;
+	/** 展示用算式 */
+	equation: string;
+}
+
+/**
+ * 生成随机数学表达式
+ * @param min 运算数下限，默认 1
+ * @param max 运算数上限，默认 9
+ * @param operator 运算符号，默认 "+"；"+-" 随机加减
+ */
+export function mathExpr(
+	min?: number,
+	max?: number,
+	operator?: string,
+): MathExprResult {
+	const mn = min ?? 1;
+	const mx = max ?? 9;
+	const op = operator ?? "+";
+	const left = int(mn, mx);
+	const right = int(mn, mx);
+
+	switch (op) {
+		case "+":
+			return {
+				text: (left + right).toString(),
+				equation: `${left}+${right}`,
+			};
+		case "-": {
+			// 交换两数保证结果非负，避免用户输入带负号的答案
+			const [a, b] = left >= right ? [left, right] : [right, left];
+			return {
+				text: (a - b).toString(),
+				equation: `${a}-${b}`,
+			};
+		}
+		default:
+			return int(1, 2) % 2
+				? { text: (left + right).toString(), equation: `${left}+${right}` }
+				: (() => {
+						const [a, b] = left >= right ? [left, right] : [right, left];
+						return {
+							text: (a - b).toString(),
+							equation: `${a}-${b}`,
+						};
+					})();
+	}
+}

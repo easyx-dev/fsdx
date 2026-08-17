@@ -22,7 +22,9 @@
     "./scheduler": "./src/infra/scheduler/index.ts",
     "./ai": "./src/infra/ai/index.ts",
     "./mail": "./src/infra/mail/index.ts",
-    "./sms": "./src/infra/sms/index.ts"
+    "./sms": "./src/infra/sms/index.ts",
+    "./semaphore": "./src/infra/semaphore/index.ts",
+    "./task-manager": "./src/infra/task-manager/index.ts"
   },
   "scripts": {
     "test": "vitest run",

@@ -90,11 +90,13 @@ export const aiTranslateFieldSFn = createServerFn({ method: "POST" })
 			.replace(/\{targetLang\}/g, targetLang)
 			.replace(/\{sourceText\}/g, sourceText);
 
-		const result = await fastChat([{ role: "user", content: prompt }], {
-			temperature: 0.3,
-		});
-		if (!result.content) {
+		try {
+			// fastChat 空内容重试后仍为空会直接抛错，统一转为友好提示
+			const result = await fastChat([{ role: "user", content: prompt }], {
+				temperature: 0.3,
+			});
+			return result.content;
+		} catch {
 			throw new Error("AI 翻译服务不可用，请检查 AI 配置");
 		}
-		return result.content;
 	});

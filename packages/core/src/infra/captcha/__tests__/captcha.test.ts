@@ -3,8 +3,8 @@
  */
 
 import { describe, expect, it } from "vitest";
-import { create } from "../captcha";
-import { captchaText } from "../random";
+import { create, createMathExpr } from "../captcha";
+import { captchaText, mathExpr } from "../random";
 
 describe("create", () => {
 	it("返回 data 和 text", () => {
@@ -102,5 +102,65 @@ describe("captchaText", () => {
 	it("支持 options 对象", () => {
 		const text = captchaText({ size: 3, charPreset: "A" });
 		expect(text).toBe("AAA");
+	});
+});
+
+describe("createMathExpr", () => {
+	it("返回 data 和 text", () => {
+		const result = createMathExpr();
+		expect(result).toHaveProperty("data");
+		expect(result).toHaveProperty("text");
+	});
+
+	it("text 为数字字符串", () => {
+		const result = createMathExpr({ mathMin: 1, mathMax: 3 });
+		expect(Number.isInteger(Number(result.text))).toBe(true);
+	});
+
+	it("加法模式生成正确答案", () => {
+		const result = createMathExpr({
+			mathOperator: "+",
+			mathMin: 1,
+			mathMax: 1,
+		});
+		expect(result.text).toBe("2");
+		expect(result.data).toContain("<svg");
+		expect(result.data).toContain("</svg>");
+	});
+
+	it("mathOperator 随机模式不报错", () => {
+		expect(() => createMathExpr({ mathOperator: "+-" })).not.toThrow();
+	});
+});
+
+describe("mathExpr", () => {
+	it("默认生成加法表达式", () => {
+		const result = mathExpr(1, 1);
+		expect(result.equation).toBe("1+1");
+		expect(result.text).toBe("2");
+	});
+
+	it("减法模式 text 为两数之差", () => {
+		const result = mathExpr(5, 5, "-");
+		expect(result.equation).toBe("5-5");
+		expect(result.text).toBe("0");
+	});
+
+	it("减法结果恒为非负（交换两数）", () => {
+		for (let i = 0; i < 50; i++) {
+			const result = mathExpr(3, 8, "-");
+			const m = result.equation.match(/^(\d+)-(\d+)$/);
+			expect(m).not.toBeNull();
+			const diff = Number(m?.[1]) - Number(m?.[2]);
+			expect(diff).toBeGreaterThanOrEqual(0);
+			expect(result.text).toBe(String(diff));
+		}
+	});
+
+	it("+- 随机模式结果非负", () => {
+		for (let i = 0; i < 50; i++) {
+			const result = mathExpr(1, 9, "+-");
+			expect(Number(result.text)).toBeGreaterThanOrEqual(0);
+		}
 	});
 });

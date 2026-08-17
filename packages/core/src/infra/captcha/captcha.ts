@@ -6,7 +6,7 @@
 import type { ChToPathOptions } from "./ch-to-path";
 import chToPath from "./ch-to-path";
 import { options } from "./option-manager";
-import { captchaText, color, greyColor, int } from "./random";
+import { captchaText, color, greyColor, int, mathExpr } from "./random";
 
 // ---- 类型 ----
 
@@ -35,6 +35,13 @@ export interface CaptchaOptions {
 export interface CaptchaResult {
 	data: string;
 	text: string;
+}
+
+/** createMathExpr 选项 */
+export interface MathExprOptions extends CaptchaOptions {
+	mathMin?: number;
+	mathMax?: number;
+	mathOperator?: "+" | "-" | "+-";
 }
 
 export { options };
@@ -129,4 +136,15 @@ export function create(userOptions?: CaptchaOptions): CaptchaResult {
 	const text = captchaText(userOptions);
 	const data = createCaptcha(text, userOptions);
 	return { text, data };
+}
+
+/** 生成数学表达式验证码（算式 + 答案） */
+export function createMathExpr(userOptions?: MathExprOptions): CaptchaResult {
+	const expr = mathExpr(
+		userOptions?.mathMin,
+		userOptions?.mathMax,
+		userOptions?.mathOperator,
+	);
+	const data = createCaptcha(expr.equation, userOptions);
+	return { text: expr.text, data };
 }
