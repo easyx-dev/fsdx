@@ -196,9 +196,9 @@ Server Function handler
 
 | 文件 | 职责 |
 |------|------|
-| `packages/core/src/cache/cache-core.ts` | `MemoryCache<T>` 通用类（`@fsdx/core/cache-core`） |
+| `packages/core/src/cache/cache-core/index.ts` | `MemoryCache<T>` 通用类（`@fsdx/core/cache-core`） |
 | `services/<module>/<module>.cache.ts` | 按模块拆分的缓存实例（config/dict/i18n/client-auth/admin-auth/track） |
-| `packages/core/src/cache/__tests__/cache-core.test.ts` | 缓存单元测试 |
+| `packages/core/src/cache/cache-core/__tests__/cache-core.test.ts` | 缓存单元测试 |
 | `src/services/config/config.server.ts` | `loadConfigCache()` / 配置缓存管理 |
 | `src/services/dict/dict.server.ts` | `loadDictCache()` / 字典缓存管理 |
 | `src/services/i18n/i18n.server.ts` | UI 翻译缓存管理 |

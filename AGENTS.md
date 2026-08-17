@@ -38,7 +38,7 @@ packages/
 │   └── src/
 │       ├── utils/            # 同构纯工具：ms/ export/ match-permission/ cn/ error-utils
 │       ├── i18n/             # 同构国际化（i18n-types/ i18n-config）
-│       ├── cache/            # 缓存抽象（cache-core.ts MemoryCache）
+│       ├── cache/            # 缓存抽象（cache-core/ MemoryCache）
 │       └── infra/            # 仅服务端基础设施：logger/ jwt/ storage/ captcha/ batch-writer/
 │                             # request-context/ scheduler/ ai/ mail/ sms
 ├── ui-ssr/                   # @fsdx/ui-ssr —— shadcn 基础组件（ui/ theme/ form 三桶）

@@ -6,7 +6,7 @@ import fs from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { resolve } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { LocalStorageAdapter, type StorageAdapter } from "../storage";
+import { LocalStorageAdapter, type StorageAdapter } from "../index";
 
 process.env.STORAGE_DIR = ".tmp";
 

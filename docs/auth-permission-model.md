@@ -525,11 +525,11 @@ const csrfMiddleware = createCsrfMiddleware({
 
 | 文件 | 职责 |
 |------|------|
-| `packages/core/src/infra/jwt.ts` | JWT 签发/校验（`createJwt`，`@fsdx/core/jwt`） |
+| `packages/core/src/infra/jwt/index.ts` | JWT 签发/校验（`createJwt`，`@fsdx/core/jwt`） |
 | `src/lib/jwt/jwt.ts` | JWT 应用级单例壳（惰性） |
 | `src/constants/cookie-names.ts` | Cookie 名称常量（`fsdx_admin_token` / `fsdx_client_token`） |
 | `src/permissions/admin-permissions.ts` | 管理端权限码常量（`ADMIN_PERMISSIONS` / `ADMIN_PERMISSIONS_BY_GROUP` / `hasAdminPermission` 等） |
-| `packages/core/src/utils/match-permission.ts` | 权限匹配纯函数（`matchPermission`，`@fsdx/core/match-permission`） |
+| `packages/core/src/utils/match-permission/index.ts` | 权限匹配纯函数（`matchPermission`，`@fsdx/core/match-permission`） |
 | `src/middleware/admin-auth.ts` | `adminAuthGuard` / `adminPermGuard` / `adminPermRouteGuard` 中间件 |
 | `src/middleware/admin-auth.server.ts` | `resolveAdminAuthContext()` 登录校验 + 权限解析 |
 | `src/middleware/client-auth.ts` | `clientAuthGuard` / `clientPermGuard` / `clientPermRouteGuard` 中间件 |

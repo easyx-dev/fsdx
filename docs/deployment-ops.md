@@ -173,7 +173,7 @@ SMTP 邮件配置已从环境变量迁移至系统配置表，通过 `/admin/con
 
 ## 定时任务
 
-通过 `@fsdx/core/infra/scheduler` 的 `registerTask()` 注册 cron 任务（调度器日志经 `setSchedulerLogger` 注入）：
+通过 `@fsdx/core/scheduler` 的 `registerTask()` 注册 cron 任务（调度器日志经 `setSchedulerLogger` 注入）：
 
 | 任务 | Cron | 处理函数 | 说明 |
 |------|------|----------|------|
@@ -227,7 +227,7 @@ logger.error/warn/info/debug
 
 ## 文件存储
 
-`@fsdx/core/infra/storage` 提供文件存储抽象层（`StorageAdapter` 接口 + `LocalStorageAdapter`，当前仅本地存储实现）：
+`@fsdx/core/storage` 提供文件存储抽象层（`StorageAdapter` 接口 + `LocalStorageAdapter`，当前仅本地存储实现）：
 
 ```
 上传文件
@@ -360,10 +360,10 @@ GET /health → { "status": "ok", "uptime": 123.456 }
 | `src/hono-app.ts` | Hono 应用工厂 + 健康检查 |
 | `src/server.ts` | TanStack Start 服务端入口 |
 | `src/services/tasks/tasks.server.ts` | 定时任务注册 |
-| `packages/core/src/infra/scheduler.ts` | 定时任务调度器（`@fsdx/core/infra/scheduler`） |
+| `packages/core/src/infra/scheduler/index.ts` | 定时任务调度器（`@fsdx/core/scheduler`） |
 | `src/lib/logger/logger.ts` | Pino 日志单例壳（`createLogger` 在 `@fsdx/core/logger`） |
 | `src/middleware/sf-error-logger.ts` | SF 错误日志中间件 |
-| `packages/core/src/infra/storage/storage.ts` | 文件存储抽象层（`@fsdx/core/infra/storage`） |
+| `packages/core/src/infra/storage/index.ts` | 文件存储抽象层（`@fsdx/core/storage`） |
 | `src/services/init/init.server.ts` | 系统初始化逻辑 |
 | `src/services/logs/logs.server.ts` | 日志查询服务 |
 | `src/services/logs/log-reader.ts` | 日志文件读取 |
