@@ -60,7 +60,7 @@ const { mockDb, mockRows, mockTx } = vi.hoisted(() => {
 		mockTx: createTx,
 	};
 });
-vi.mock("#/db", () => ({ db: mockDb }));
+vi.mock("#/db", () => ({ db: mockDb, withTransaction: mockDb.transaction }));
 
 import { checkInitStatus, initSystem } from "#/services/init/init.server";
 

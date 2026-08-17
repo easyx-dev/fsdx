@@ -3,7 +3,7 @@
  */
 import bcrypt from "bcryptjs";
 import { eq } from "drizzle-orm";
-import { db } from "#/db/index";
+import { db, withTransaction } from "#/db/index";
 import { adminRole, adminUser, clientRole } from "#/db/schema";
 import { logger } from "#/lib/logger/logger";
 import { loadConfigCache, upsertConfig } from "#/services/config/config.server";
@@ -63,7 +63,7 @@ export async function initSystem(data: InitData): Promise<{
 	const { admin, siteName, smtp, ai, sms } = data;
 
 	// 使用事务包裹，避免并发初始化
-	return db.transaction(async (tx) => {
+	return withTransaction(async (tx) => {
 		// 事务内再次校验：防止并发场景下重复初始化
 		const [existingRoot] = await tx
 			.select()

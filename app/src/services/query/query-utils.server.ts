@@ -1,7 +1,7 @@
 /**
  * 通用查询工具函数：软删除条件、排序构建、分页执行
  */
-import { asc, desc, isNull, type SQL } from "drizzle-orm";
+import { asc, desc, isNull, type SQL, type SQLWrapper } from "drizzle-orm";
 import type { PaginatedResult, SortOrder } from "#/types/query";
 
 /** 默认分页值 */
@@ -9,8 +9,8 @@ export const DEFAULT_PAGE = 1;
 export const DEFAULT_PAGE_SIZE = 20;
 
 /** 构建软删除条件：`isNull(table.deletedAt)` */
-export function notDeleted(deletedAtColumn: unknown): SQL {
-	return isNull(deletedAtColumn as Parameters<typeof isNull>[0]);
+export function notDeleted(deletedAtColumn: SQLWrapper): SQL {
+	return isNull(deletedAtColumn);
 }
 
 /** 计算分页偏移量 */
