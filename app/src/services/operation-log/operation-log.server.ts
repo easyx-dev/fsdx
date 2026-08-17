@@ -5,7 +5,10 @@
  */
 
 import { BatchWriter } from "@fsdx/core/batch-writer";
-import { getRequestOperator } from "@fsdx/core/request-context";
+import {
+	getRequestContext,
+	getRequestOperator,
+} from "@fsdx/core/request-context";
 import { and, eq, gte, ilike, lt, or } from "drizzle-orm";
 import { db } from "#/db/index";
 import { type OperatorType, operationLog } from "#/db/schema";
@@ -23,6 +26,8 @@ export interface OperationLogInput {
 	operatorName: string;
 	/** 操作者类型，默认 admin（兼容历史调用） */
 	operatorType?: OperatorType;
+	/** 请求关联 ID，未显式传入时从 ALS 上下文捕获 */
+	requestId?: string;
 	module: string;
 	action: string;
 	targetType: string;
@@ -55,6 +60,7 @@ export interface OperationLogQueryResult {
 /** 将 OperationLogInput 映射为数据库行 */
 function toRow(item: OperationLogInput) {
 	return {
+		requestId: item.requestId ?? null,
 		operatorId: item.operatorId,
 		operatorName: item.operatorName,
 		operatorType: item.operatorType ?? "admin",
@@ -78,7 +84,10 @@ const opLogWriter = new BatchWriter<OperationLogInput>({
 
 /** 追加操作日志到缓冲队列（同步返回，不阻塞业务） */
 export function logOperation(params: OperationLogInput): void {
-	opLogWriter.push(params);
+	opLogWriter.push({
+		...params,
+		requestId: params.requestId ?? getRequestContext()?.requestId,
+	});
 }
 
 /** CRUD 审计日志的操作用户（结构化入参，避免依赖中间件类型） */
@@ -179,6 +188,7 @@ export function logExternalRequest(input: ExternalRequestLogInput): void {
 	const op = getRequestOperator();
 	const isLogin = input.requestType === "login";
 	apiLogWriter.push({
+		requestId: getRequestContext()?.requestId,
 		operatorId: op.id,
 		operatorName: op.username ?? op.id ?? "system",
 		operatorType: op.type,

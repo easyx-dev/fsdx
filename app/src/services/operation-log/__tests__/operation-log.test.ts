@@ -297,6 +297,20 @@ describe("logExternalRequest", () => {
 		});
 	});
 
+	it("ALS 上下文内自动捕获 requestId 落库", async () => {
+		runWithRequestContext({ requestId: "req-trace-1" }, () => {
+			logExternalRequest({
+				system: "external",
+				requestType: "business",
+				path: "/api/test",
+				duration: 10,
+				success: true,
+			});
+		});
+		const rows = await flushAndGetRows();
+		expect(rows![0]).toMatchObject({ requestId: "req-trace-1" });
+	});
+
 	it("login 请求 action 为 login，business 请求 action 为 request", async () => {
 		logExternalRequest({
 			system: "external",

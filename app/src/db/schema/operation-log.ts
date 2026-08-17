@@ -19,6 +19,8 @@ export const operationLog = pgTable(
 	"operation_log",
 	{
 		id: uuid().defaultRandom().primaryKey(),
+		/** 请求关联 ID（requestId），贯穿日志与审计表，实现全链路追踪 */
+		requestId: varchar("request_id", { length: 100 }),
 		/** 操作者 ID（system 类型时为 null；客户端用户 ID 不属于 admin_user 表，故无外键） */
 		operatorId: uuid(),
 		operatorName: varchar({ length: 100 }).notNull(),
