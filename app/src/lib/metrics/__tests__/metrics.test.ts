@@ -1,0 +1,56 @@
+/**
+ * 指标注册表模块测试：计数器、直方图、Prometheus 渲染
+ */
+import { describe, expect, it } from "vitest";
+import { Counter, Histogram } from "#/lib/metrics/metrics";
+
+describe("Counter", () => {
+	it("无标签时自增并渲染 counter 格式", () => {
+		const c = new Counter("test_total", "测试计数器");
+		c.inc();
+		c.inc();
+		const out = c.render();
+		expect(out).toContain("# TYPE test_total counter");
+		expect(out).toContain("test_total 2");
+	});
+
+	it("按标签维度分别计数", () => {
+		const c = new Counter("req_total", "请求数", ["method"]);
+		c.inc({ method: "GET" });
+		c.inc({ method: "GET" });
+		c.inc({ method: "POST" });
+		const out = c.render();
+		expect(out).toContain('req_total{method="GET"} 2');
+		expect(out).toContain('req_total{method="POST"} 1');
+	});
+
+	it("标签值包含引号时转义", () => {
+		const c = new Counter("x", "x", ["k"]);
+		c.inc({ k: 'a"b' });
+		expect(c.render()).toContain('x{k="a\\"b"} 1');
+	});
+});
+
+describe("Histogram", () => {
+	it("观测值落入对应分桶并输出 sum/count", () => {
+		const h = new Histogram("dur_seconds", "耗时", [0.1, 0.5, 1]);
+		h.observe(0.05);
+		h.observe(0.3);
+		h.observe(2);
+		const out = h.render();
+		expect(out).toContain("# TYPE dur_seconds histogram");
+		expect(out).toContain('dur_seconds_bucket{le="0.1"} 1');
+		expect(out).toContain('dur_seconds_bucket{le="0.5"} 2');
+		expect(out).toContain('dur_seconds_bucket{le="1"} 2');
+		expect(out).toContain('dur_seconds_bucket{le="+Inf"} 3');
+		expect(out).toContain("dur_seconds_sum 2.35");
+		expect(out).toContain("dur_seconds_count 3");
+	});
+
+	it("无观测值时输出基线 sum/count", () => {
+		const h = new Histogram("empty", "空", [0.5]);
+		const out = h.render();
+		expect(out).toContain("empty_sum 0");
+		expect(out).toContain("empty_count 0");
+	});
+});
