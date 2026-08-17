@@ -94,6 +94,29 @@ describe("registerTask", () => {
 		expect(mockCronFrom).toHaveBeenCalledTimes(1);
 	});
 
+	it("默认使用 Asia/Shanghai 时区", () => {
+		registerTask({
+			name: "tz-default",
+			cronExpression: "0 3 * * *",
+			handler: async () => {},
+		});
+		expect(mockCronFrom).toHaveBeenCalledWith(
+			expect.objectContaining({ timeZone: "Asia/Shanghai" }),
+		);
+	});
+
+	it("自定义 timeZone 时透传给 CronJob", () => {
+		registerTask({
+			name: "tz-custom",
+			cronExpression: "0 3 * * *",
+			handler: async () => {},
+			timeZone: "UTC",
+		});
+		expect(mockCronFrom).toHaveBeenCalledWith(
+			expect.objectContaining({ timeZone: "UTC" }),
+		);
+	});
+
 	it("runOnInit 时模拟 CronJob 立即执行 handler", async () => {
 		const handler = vi.fn().mockResolvedValue(undefined);
 		registerTask({

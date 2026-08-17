@@ -31,6 +31,12 @@
 
 - **前台登录后 Header 登录态不刷新**：客户端登录成功仅 `navigate` 到首页，`ClientAuthProvider` 不重挂载导致 Header 仍显示未登录；登录页 `onSubmit` 成功后补充调用 `useClientAuth().refetch()`，使用户名/消息/退出入口即时更新
 
+- **统一 Asia/Shanghai 时区基准（定时任务/日志切割/按天查询）**：
+  - `@fsdx/core` 新增 `@fsdx/core/date-format`（dayjs 实现）：`DEFAULT_TASK_TIME_ZONE`（`Asia/Shanghai`）、`DATE_ONLY_REGEX`、`toDateString` / `parseDateOnly` / `toDayRange`，天边界解析不依赖服务器时区（`TZ=UTC` 下已验证）
+  - 定时任务：`registerTask` 支持 `timeZone` 字段，`CronJob` 默认按 `Asia/Shanghai` 调度（原依赖服务器本地时区，UTC 服务器上「每天 3:00」会偏成北京时间 11:00）
+  - 日志体系：pino 日志文件名按天切割与 `cleanExpiredLogs()` 清理截止统一按 `Asia/Shanghai` 计算，与任务调度时区一致
+  - 按天查询：operation-log 列表、埋点事件列表与事件分析的 `startDate/endDate` 边界改用 `toDayRange`（原 `new Date("YYYY-MM-DD")` 按 UTC 解析导致窗口偏移，事件查询页传 `endOf("day")` 再 +1 天造成边界溢出）；schema 增加 `YYYY-MM-DD` 格式校验；事件查询/分析页改传 date-only，与操作日志一致
+
 ### Refactor
 
 - **components 目录规范化重组**：

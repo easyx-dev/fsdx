@@ -149,6 +149,31 @@ describe("searchOperationLogs", () => {
 		expect(result.records[0].module).toBe("news");
 		expect(result.records[0].action).toBe("create");
 	});
+
+	it("按日期范围筛选时 where 收到起止边界条件", async () => {
+		const whereFn = vi.fn((_cond: unknown) => ({
+			orderBy: vi.fn(() => ({
+				limit: vi.fn(() => ({
+					offset: vi.fn().mockResolvedValue([]),
+				})),
+			})),
+		}));
+		vi.mocked(mockDb.select).mockReturnValue({
+			from: vi.fn(() => ({ where: whereFn })),
+		} as unknown as ReturnType<typeof mockDb.select>);
+		vi.mocked(mockDb.$count).mockResolvedValue(0);
+
+		await searchOperationLogs({
+			startDate: "2024-01-01",
+			endDate: "2024-01-31",
+		});
+
+		// 主查询与 $count 嵌套查询各调用一次 where，且均携带日期条件（非 undefined）
+		expect(whereFn.mock.calls.length).toBe(2);
+		for (const call of whereFn.mock.calls) {
+			expect(call[0]).toBeDefined();
+		}
+	});
 });
 
 describe("getOperationLogModules", () => {

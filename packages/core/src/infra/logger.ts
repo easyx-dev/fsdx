@@ -8,6 +8,7 @@ import { createWriteStream, existsSync, mkdirSync } from "node:fs";
 import { join } from "node:path";
 import pino from "pino";
 import pinoPretty from "pino-pretty";
+import { toDateString } from "../utils/date-format";
 
 /** 日志实例创建选项 */
 export interface LoggerOptions {
@@ -22,13 +23,9 @@ export interface LoggerOptions {
 /** pino 日志实例类型 */
 export type Logger = pino.Logger;
 
-/** 获取当前日期的日志文件名 */
+/** 获取当前日期的日志文件名（按业务统一时区切割） */
 function getLogDate(): string {
-	const d = new Date();
-	const y = d.getFullYear();
-	const m = String(d.getMonth() + 1).padStart(2, "0");
-	const day = String(d.getDate()).padStart(2, "0");
-	return `${y}-${m}-${day}`;
+	return toDateString(new Date());
 }
 
 /**

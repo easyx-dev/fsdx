@@ -182,6 +182,8 @@ SMTP 邮件配置已从环境变量迁移至系统配置表，通过 `/admin/con
 
 定时任务在 `bootstrap()` 末尾通过 `registerAllTasks()` 统一注册。
 
+> **时区约定**：cron 执行与日志按天切割均以 `Asia/Shanghai` 为统一时区基准（`@fsdx/core/date-format` 的 `DEFAULT_TASK_TIME_ZONE`），**不依赖服务器系统时区**。部署环境无需设置 `TZ`，服务器时区变更不影响任务执行时间与日志文件名日期。
+
 ---
 
 ## 日志体系
@@ -199,7 +201,7 @@ logger.error/warn/info/debug
         └── 开发环境: pino-pretty (info 级别，带颜色)
 ```
 
-按天自动分割：`createWriteStream` 写入当天日期的日志文件。文件名随进程重启自然切换到新日期。
+按天自动分割：`createWriteStream` 写入当天日期的日志文件。文件名按 `Asia/Shanghai` 时区生成（与日志清理、定时任务同一时区基准），随进程重启自然切换到新日期。
 
 ### SF 错误日志中间件
 

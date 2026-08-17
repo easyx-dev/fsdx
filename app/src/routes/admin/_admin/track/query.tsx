@@ -111,8 +111,8 @@ function EventListPage() {
 				data: {
 					name: filterEvent,
 					keyword: filterKeyword || undefined,
-					startDate: filterDateRange?.[0]?.startOf("day").toISOString(),
-					endDate: filterDateRange?.[1]?.endOf("day").toISOString(),
+					startDate: filterDateRange?.[0]?.format("YYYY-MM-DD"),
+					endDate: filterDateRange?.[1]?.format("YYYY-MM-DD"),
 					page: p,
 					pageSize: ps,
 					sortField: field,

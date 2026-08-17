@@ -3,6 +3,7 @@
  * 日志实例经 setSchedulerLogger 注入，模块自身不依赖全局日志单例
  */
 import { CronJob, CronTime } from "cron";
+import { DEFAULT_TASK_TIME_ZONE } from "../utils/date-format";
 import type { Logger } from "./logger";
 
 /** 任务定义 */
@@ -15,6 +16,8 @@ export interface ScheduledTask {
 	handler: () => Promise<void>;
 	/** 是否立即执行一次 */
 	runOnInit?: boolean;
+	/** 任务执行时区，默认 Asia/Shanghai（业务统一时区） */
+	timeZone?: string;
 }
 
 /** 已注册的任务映射 */
@@ -65,6 +68,7 @@ export function registerTask(task: ScheduledTask): void {
 
 	const job = CronJob.from({
 		cronTime: task.cronExpression,
+		timeZone: task.timeZone ?? DEFAULT_TASK_TIME_ZONE,
 		onTick: () => {
 			logger.info({ name: task.name }, "定时任务开始执行");
 			task

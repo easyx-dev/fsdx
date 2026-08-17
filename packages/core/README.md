@@ -25,6 +25,7 @@
 | `@fsdx/core/match-permission` | `src/utils/match-permission.ts` | `matchPermission(rolePermissions, requiredCode)` 权限码匹配（`**` → 精确 → `group:*` 三级优先级） |
 | `@fsdx/core/cn` | `src/utils/cn.ts` | `cn(...inputs)` className 合并（clsx + tailwind-merge） |
 | `@fsdx/core/error-utils` | `src/utils/error-utils.ts` | `sanitizeError(error)` 错误脱敏（日志/外部输出前使用） |
+| `@fsdx/core/date-format` | `src/utils/date-format.ts` | `DEFAULT_TASK_TIME_ZONE`（`Asia/Shanghai`，业务统一时区）、`DATE_ONLY_REGEX`、`toDateString(date)`、`parseDateOnly(dateStr)`、`toDayRange(dateStr)`（按业务时区解析天边界，不依赖服务器时区） |
 
 ### cache/
 
@@ -49,7 +50,7 @@
 | `@fsdx/core/captcha` | `src/infra/captcha/index.ts` | `create(userOptions?)` 生成 SVG 图片验证码、`captchaText(options?)` 生成验证码文本 | 纯函数，无注入 |
 | `@fsdx/core/batch-writer` | `src/infra/batch-writer.ts` | `BatchWriter<T>` 通用批量缓冲写入器（满 `batchSize` 立即刷 / 定时 `flushInterval` 刷 / 超 `maxBufferSize` 丢弃最旧 / `shutdown()` 强制刷） | 构造注入 `insertFn` + logger |
 | `@fsdx/core/request-context` | `src/infra/request-context.ts` | `runWithRequestContext(ctx, fn)`（AsyncLocalStorage）、`getRequestContext()`、`getRequestOperator()`（无上下文兜底 `system`）、`RequestOperator` / `OperatorType` 类型 | 纯函数 |
-| `@fsdx/core/scheduler` | `src/infra/scheduler.ts` | `registerTask(task)`、`stopTask(name)`、`stopAllTasks()`、`getTaskNames()`（cron） | `setSchedulerLogger(logger)` 注入日志 |
+| `@fsdx/core/scheduler` | `src/infra/scheduler.ts` | `registerTask(task)`、`stopTask(name)`、`stopAllTasks()`、`getTaskNames()`（cron；任务支持 `timeZone` 字段，默认 `Asia/Shanghai`） | `setSchedulerLogger(logger)` 注入日志 |
 | `@fsdx/core/ai` | `src/infra/ai.ts` | `initAi({ getConfig, logger })`、`deepChat` / `fastChat`（OpenAI 兼容，配置指纹变更自动重建客户端） | `initAi` fail-fast |
 | `@fsdx/core/mail` | `src/infra/mail.ts` | `initMail({ getConfig, logger })`、`sendMail(options)`、`sendCaptchaMail(...)`（nodemailer SMTP） | `initMail` fail-fast |
 | `@fsdx/core/sms` | `src/infra/sms.ts` | `initSms({ getConfig, logger })`、`sendSms(phone, code)`（阿里云，服务商工厂模式） | `initSms` fail-fast |

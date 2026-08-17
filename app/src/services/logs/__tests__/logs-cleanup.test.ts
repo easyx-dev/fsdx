@@ -28,6 +28,8 @@ vi.mock("node:path", () => ({
 	resolve: mockResolve,
 }));
 
+import { toDateString } from "@fsdx/core/date-format";
+
 import { cleanExpiredLogs } from "#/services/logs/logs-cleanup.server";
 
 describe("cleanExpiredLogs", () => {
@@ -47,11 +49,8 @@ describe("cleanExpiredLogs", () => {
 	});
 
 	it("全部日志在保留期内返回 0", () => {
-		const today = new Date();
-		const y = today.getFullYear();
-		const m = String(today.getMonth() + 1).padStart(2, "0");
-		const d = String(today.getDate()).padStart(2, "0");
-		const todayStr = `${y}-${m}-${d}.log`;
+		// 与清理逻辑同一时区基准（Asia/Shanghai）生成今日文件名
+		const todayStr = `${toDateString(new Date())}.log`;
 
 		mockExistsSync.mockReturnValue(true);
 		mockReaddirSync.mockReturnValue([todayStr]);
@@ -91,11 +90,7 @@ describe("cleanExpiredLogs", () => {
 	});
 
 	it("支持自定义保留天数", () => {
-		const today = new Date();
-		const y = today.getFullYear();
-		const m = String(today.getMonth() + 1).padStart(2, "0");
-		const d = String(today.getDate()).padStart(2, "0");
-		const todayStr = `${y}-${m}-${d}.log`;
+		const todayStr = `${toDateString(new Date())}.log`;
 
 		mockExistsSync.mockReturnValue(true);
 		mockReaddirSync.mockReturnValue([todayStr]);

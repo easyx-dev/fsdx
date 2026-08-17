@@ -3,14 +3,7 @@
  */
 import { existsSync, readdirSync, unlinkSync } from "node:fs";
 import { join, resolve } from "node:path";
-
-/** 将 Date 格式化为 YYYY-MM-DD 字符串 */
-function formatDate(date: Date): string {
-	const y = date.getFullYear();
-	const m = String(date.getMonth() + 1).padStart(2, "0");
-	const d = String(date.getDate()).padStart(2, "0");
-	return `${y}-${m}-${d}`;
-}
+import { toDateString } from "@fsdx/core/date-format";
 
 /** 日志文件名日期格式 */
 const LOG_DATE_RE = /^\d{4}-\d{2}-\d{2}\.log$/;
@@ -24,9 +17,12 @@ export function cleanExpiredLogs(retentionDays = 30): number {
 	const logDir = resolve(process.env.STORAGE_DIR || ".tmp", "logs");
 	if (!existsSync(logDir)) return 0;
 
-	const cutoff = new Date();
-	cutoff.setDate(cutoff.getDate() - retentionDays);
-	const cutoffStr = formatDate(cutoff);
+	// 截止日期按业务统一时区计算，与日志文件名切割基准保持一致
+	const [y, m, d] = toDateString(new Date()).split("-").map(Number);
+	// 用 UTC 构造日期减法避免本地时区干扰，再格式化为业务时区日期字符串
+	const cutoffStr = toDateString(
+		new Date(Date.UTC(y, m - 1, d - retentionDays)),
+	);
 
 	const files = readdirSync(logDir).filter((f) => LOG_DATE_RE.test(f));
 	let deleted = 0;

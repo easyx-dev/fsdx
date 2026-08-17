@@ -5,6 +5,7 @@
   "type": "module",
   "exports": {
     "./ms": "./src/utils/ms/index.ts",
+    "./date-format": "./src/utils/date-format.ts",
     "./export": "./src/utils/export/export.utils.ts",
     "./cache-core": "./src/cache/cache-core.ts",
     "./match-permission": "./src/utils/match-permission.ts",

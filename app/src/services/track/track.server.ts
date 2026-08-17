@@ -5,6 +5,7 @@
 
 import { BatchWriter } from "@fsdx/core/batch-writer";
 import { MemoryCache } from "@fsdx/core/cache-core";
+import { toDayRange } from "@fsdx/core/date-format";
 import { and, eq, gte, ilike, lt, notInArray, or, sql } from "drizzle-orm";
 import { db } from "#/db/index";
 import {
@@ -498,12 +499,11 @@ export async function searchTrackEvents(
 		);
 	}
 	if (startDate) {
-		conditions.push(gte(trackEventTable.time, new Date(startDate)));
+		conditions.push(gte(trackEventTable.time, toDayRange(startDate).start));
 	}
 	if (endDate) {
-		const end = new Date(endDate);
-		end.setDate(end.getDate() + 1);
-		conditions.push(lt(trackEventTable.time, end));
+		// endDate 按业务时区包含当天全天：排他上界为次日 00:00
+		conditions.push(lt(trackEventTable.time, toDayRange(endDate).end));
 	}
 
 	const whereCondition = conditions.length > 0 ? and(...conditions) : undefined;
@@ -555,9 +555,9 @@ export async function getTrackAnalytics(
 	query: TrackAnalyticsQuery,
 ): Promise<TrackAnalyticsResult> {
 	const { startDate, endDate, granularity = "day" } = query;
-	const start = new Date(startDate);
-	const end = new Date(endDate);
-	end.setDate(end.getDate() + 1);
+	// 日期边界按业务统一时区解析，与下方 AT TIME ZONE 'Asia/Shanghai' 分组对齐
+	const start = toDayRange(startDate).start;
+	const end = toDayRange(endDate).end;
 
 	const timeFormat =
 		granularity === "hour" ? "YYYY-MM-DD HH24:00" : "YYYY-MM-DD";

@@ -107,6 +107,22 @@ describe("trackEventQuerySchema", () => {
 		const result = trackEventQuerySchema.safeParse({ sortOrder: "invalid" });
 		expect(result.success).toBe(false);
 	});
+
+	it("日期格式非 YYYY-MM-DD 应校验失败", () => {
+		const result = trackEventQuerySchema.safeParse({
+			startDate: "2024/01/01",
+			endDate: "2024-12-31T00:00:00.000Z",
+		});
+		expect(result.success).toBe(false);
+	});
+
+	it("不存在的日历日期应校验失败", () => {
+		const result = trackEventQuerySchema.safeParse({
+			startDate: "2024-02-31",
+			endDate: "2024-12-31",
+		});
+		expect(result.success).toBe(false);
+	});
 });
 
 describe("analyticsQuerySchema", () => {
@@ -139,6 +155,22 @@ describe("analyticsQuerySchema", () => {
 			startDate: "2024-01-01",
 			endDate: "2024-12-31",
 			granularity: "week",
+		});
+		expect(result.success).toBe(false);
+	});
+
+	it("日期格式非 YYYY-MM-DD 应校验失败", () => {
+		const result = analyticsQuerySchema.safeParse({
+			startDate: "2024/01/01",
+			endDate: "2024-12-31T00:00:00.000Z",
+		});
+		expect(result.success).toBe(false);
+	});
+
+	it("不存在的日历日期应校验失败", () => {
+		const result = analyticsQuerySchema.safeParse({
+			startDate: "2024-02-31",
+			endDate: "2024-12-31",
 		});
 		expect(result.success).toBe(false);
 	});

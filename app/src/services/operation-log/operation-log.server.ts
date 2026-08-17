@@ -5,6 +5,7 @@
  */
 
 import { BatchWriter } from "@fsdx/core/batch-writer";
+import { toDayRange } from "@fsdx/core/date-format";
 import { getRequestOperator } from "@fsdx/core/request-context";
 import { and, eq, gte, ilike, lt, or } from "drizzle-orm";
 import { db } from "#/db/index";
@@ -240,13 +241,11 @@ export async function searchOperationLogs(
 		);
 	}
 	if (startDate) {
-		conditions.push(gte(operationLog.createdAt, new Date(startDate)));
+		conditions.push(gte(operationLog.createdAt, toDayRange(startDate).start));
 	}
 	if (endDate) {
-		// endDate 应包含当天全天，设为次日 00:00
-		const end = new Date(endDate);
-		end.setDate(end.getDate() + 1);
-		conditions.push(lt(operationLog.createdAt, end));
+		// endDate 按业务时区包含当天全天：排他上界为次日 00:00
+		conditions.push(lt(operationLog.createdAt, toDayRange(endDate).end));
 	}
 
 	const whereCondition = conditions.length > 0 ? and(...conditions) : undefined;

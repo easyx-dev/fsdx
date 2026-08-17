@@ -44,8 +44,8 @@ function EventAnalyticsPage() {
 		try {
 			const result = await getTrackAnalyticsSFn({
 				data: {
-					startDate: dateRange[0].toISOString(),
-					endDate: dateRange[1].toISOString(),
+					startDate: dateRange[0].format("YYYY-MM-DD"),
+					endDate: dateRange[1].format("YYYY-MM-DD"),
 					granularity,
 				},
 			});

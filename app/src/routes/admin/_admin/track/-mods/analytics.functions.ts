@@ -1,6 +1,8 @@
 /**
  * 事件分析 Server Function
  */
+
+import { DATE_ONLY_REGEX, isValidDateStr } from "@fsdx/core/date-format";
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { adminPermGuard } from "#/middleware/admin-auth";
@@ -8,8 +10,8 @@ import { ADMIN_PERMISSIONS } from "#/permissions/admin-permissions";
 import { getTrackAnalytics } from "#/services/track/track.server";
 
 export const analyticsQuerySchema = z.object({
-	startDate: z.string().min(1),
-	endDate: z.string().min(1),
+	startDate: z.string().regex(DATE_ONLY_REGEX).refine(isValidDateStr),
+	endDate: z.string().regex(DATE_ONLY_REGEX).refine(isValidDateStr),
 	granularity: z.enum(["hour", "day"]).optional(),
 });
 
