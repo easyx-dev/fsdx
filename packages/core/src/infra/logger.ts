@@ -17,6 +17,11 @@ export interface LoggerOptions {
 	storageDir: string;
 	/** 生产环境标志 */
 	isProd: boolean;
+	/**
+	 * 每条日志自动合并的附加字段（如 requestId），由宿主注入以解耦 core 与请求上下文
+	 * 无附加字段时返回空对象
+	 */
+	mixin?: () => Record<string, unknown>;
 }
 
 /** pino 日志实例类型 */
@@ -35,7 +40,7 @@ function getLogDate(): string {
  * 创建 pino 日志实例：文件按天切割 + 控制台输出（开发环境 pino-pretty 美化）
  */
 export function createLogger(opts: LoggerOptions): Logger {
-	const { level, storageDir, isProd } = opts;
+	const { level, storageDir, isProd, mixin } = opts;
 
 	const logDir = join(storageDir, "logs");
 	if (!existsSync(logDir)) {
@@ -56,7 +61,7 @@ export function createLogger(opts: LoggerOptions): Logger {
 			});
 
 	return pino(
-		{ level },
+		{ level, mixin },
 		pino.multistream([
 			{ stream: fileStream, level: "info" },
 			{

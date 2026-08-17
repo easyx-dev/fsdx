@@ -3,7 +3,7 @@
  */
 
 import { describe, expect, it } from "vitest";
-import { sanitizeError } from "../error-utils";
+import { sanitizeError, toClientError } from "../error-utils";
 
 describe("sanitizeError", () => {
 	it("对 Error 对象进行脱敏并返回 name 和 message", () => {
@@ -137,5 +137,55 @@ describe("sanitizeError", () => {
 	it("无 cause 时不输出 cause 字段", () => {
 		const result = sanitizeError(new Error("无原因错误"));
 		expect("cause" in result).toBe(false);
+	});
+});
+
+describe("toClientError", () => {
+	it("校验错误（issues 数组）归一化为参数校验失败文案", () => {
+		const err = toClientError(
+			{ issues: [{ message: "标题不能为空", path: ["title"] }] },
+			true,
+		);
+		expect(err).toBeInstanceOf(Error);
+		expect((err as Error).message).toBe("参数校验失败：标题不能为空");
+	});
+
+	it("TanStack 序列化的 issues JSON 错误可识别", () => {
+		const err = toClientError(
+			new Error(JSON.stringify([{ message: "邮箱格式不正确" }])),
+			true,
+		);
+		expect((err as Error).message).toBe("参数校验失败：邮箱格式不正确");
+	});
+
+	it("业务错误（含中文文案）原样透传", () => {
+		const biz = new Error("新闻不存在或已被删除");
+		expect(toClientError(biz, true)).toBe(biz);
+	});
+
+	it("生产环境技术错误（英文）兜底为通用文案", () => {
+		const err = toClientError(
+			new Error('duplicate key value violates unique constraint "xxx"'),
+			true,
+		);
+		expect((err as Error).message).toBe("服务器内部错误，请稍后重试");
+	});
+
+	it("开发环境技术错误保留原始错误", () => {
+		const biz = new Error("some technical error");
+		expect(toClientError(biz, false)).toBe(biz);
+	});
+
+	it("非 Error 抛出值（重定向对象）原样透传", () => {
+		const redirect = { status: 302, location: "/login" };
+		expect(toClientError(redirect, true)).toBe(redirect);
+	});
+
+	it("空 message 的 Error 在开发环境保留，生产环境兜底", () => {
+		const empty = new Error("");
+		expect(toClientError(empty, false)).toBe(empty);
+		expect((toClientError(empty, true) as Error).message).toBe(
+			"服务器内部错误，请稍后重试",
+		);
 	});
 });
