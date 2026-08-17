@@ -30,13 +30,13 @@ export const getAdminRolesForSelectSFn = createServerFn({ method: "GET" })
 /** 获取管理员列表（分页、筛选、排序） */
 export const getListSFn = createServerFn({ method: "GET" })
 	.middleware([adminPermGuard(ADMIN_PERMISSIONS.ADMIN_VIEW)])
-	.inputValidator(listSchema)
+	.validator(listSchema)
 	.handler(async ({ data }) => getAdminUserList(data));
 
 /** 新建管理员 */
 export const createSFn = createServerFn({ method: "POST" })
 	.middleware([adminPermGuard(ADMIN_PERMISSIONS.ADMIN_CREATE)])
-	.inputValidator(createSchema)
+	.validator(createSchema)
 	.handler(async ({ data, context }) => {
 		const record = await createAdminUser(data);
 		logCrud(
@@ -52,7 +52,7 @@ export const createSFn = createServerFn({ method: "POST" })
 /** 更新管理员 */
 export const updateSFn = createServerFn({ method: "POST" })
 	.middleware([adminPermGuard(ADMIN_PERMISSIONS.ADMIN_EDIT)])
-	.inputValidator(updateSchema)
+	.validator(updateSchema)
 	.handler(async ({ data, context }) => {
 		const result = await updateAdminUser(data.id, data);
 		logCrud(
@@ -68,7 +68,7 @@ export const updateSFn = createServerFn({ method: "POST" })
 /** 删除管理员（软删除） */
 export const deleteSFn = createServerFn({ method: "POST" })
 	.middleware([adminPermGuard(ADMIN_PERMISSIONS.ADMIN_DELETE)])
-	.inputValidator(idSchema)
+	.validator(idSchema)
 	.handler(async ({ data, context }) => {
 		const existing = await getAdminUser(data.id);
 		const result = await deleteAdminUser(data.id, context.user.id);
@@ -85,7 +85,7 @@ export const deleteSFn = createServerFn({ method: "POST" })
 /** 重置管理员密码 */
 export const resetPwdSFn = createServerFn({ method: "POST" })
 	.middleware([adminPermGuard(ADMIN_PERMISSIONS.ADMIN_EDIT)])
-	.inputValidator(resetPwdSchema)
+	.validator(resetPwdSchema)
 	.handler(async ({ data, context }) => {
 		const existing = await getAdminUser(data.id);
 		const result = await resetAdminPassword(data.id, data.password);

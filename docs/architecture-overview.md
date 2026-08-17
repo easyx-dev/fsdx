@@ -87,7 +87,7 @@
 ```
 src/services/{module}/
 ├── {module}.server.ts      # 服务层：纯业务逻辑，可被 .functions.ts 和 其他 .server.ts 引用
-├── {module}.functions.ts   # SFn 包装层：createServerFn + inputValidator + 鉴权中间件
+├── {module}.functions.ts   # SFn 包装层：createServerFn + validator + 鉴权中间件
 └── {module}.schemas.ts     # zod schema 定义
 ```
 
@@ -222,7 +222,7 @@ Fire-and-forget 调用
 | `packages/ui-spa/` | antd 管理端组件 | 管理端 | antd 为 peerDependency 单实例；详见 [ui-spa README](../packages/ui-spa/README.md) |
 | `src/lib/` | 应用级基础设施单例壳 + 客户端 SDK | 全部 | 仅 jwt/logger/track 三个薄壳，其余基础库在 `@fsdx/core` |
 | `src/services/` | 服务端业务逻辑 | routes/, services/ 自身 | `.server.ts` 禁止使用 `SFn` 后缀 |
-| `src/routes/` | 路由页面 + SFn 包装 | — | SFn 必须用 `.inputValidator(zod)` |
+| `src/routes/` | 路由页面 + SFn 包装 | — | SFn 必须用 `.validator(zod)` |
 | `src/middleware/` | 请求级中间件 | start.ts, routes/ | — |
 | `src/components/` | React 组件 | 全部 | admin/ 用 antd, client/ 用 shadcn/ui |
 | `src/db/` | 数据库 Schema | services/ | 客户端禁止导入 (importProtection) |

@@ -34,7 +34,7 @@ import {
 /** 获取新闻列表（分页、筛选、排序） */
 export const getNewsListSFn = createServerFn({ method: "GET" })
 	.middleware([adminPermGuard(ADMIN_PERMISSIONS.NEWS_VIEW)])
-	.inputValidator(listSchema)
+	.validator(listSchema)
 	.handler(async ({ data: { status, page = 1, sortField, sortOrder } }) => {
 		return getNewsList({ status, page, pageSize: 20, sortField, sortOrder });
 	});
@@ -42,7 +42,7 @@ export const getNewsListSFn = createServerFn({ method: "GET" })
 /** 根据 id 获取单条新闻 */
 export const getNewsByIdSFn = createServerFn({ method: "GET" })
 	.middleware([adminPermGuard(ADMIN_PERMISSIONS.NEWS_VIEW)])
-	.inputValidator(getNewsSchema)
+	.validator(getNewsSchema)
 	.handler(async ({ data: { id } }) => {
 		return getNewsById(id);
 	});
@@ -50,7 +50,7 @@ export const getNewsByIdSFn = createServerFn({ method: "GET" })
 /** 新建新闻 */
 export const createNewsSFn = createServerFn({ method: "POST" })
 	.middleware([adminPermGuard(ADMIN_PERMISSIONS.NEWS_CREATE)])
-	.inputValidator(createNewsSchema)
+	.validator(createNewsSchema)
 	.handler(async ({ data, context }) => {
 		const record = await createNews({
 			...data,
@@ -69,7 +69,7 @@ export const createNewsSFn = createServerFn({ method: "POST" })
 /** 更新新闻 */
 export const updateNewsSFn = createServerFn({ method: "POST" })
 	.middleware([adminPermGuard(ADMIN_PERMISSIONS.NEWS_EDIT)])
-	.inputValidator(updateNewsSchema)
+	.validator(updateNewsSchema)
 	.handler(async ({ data, context }) => {
 		const existing = await getNewsById(data.id);
 		if (!existing) throw new Error("新闻不存在或已被删除");
@@ -123,7 +123,7 @@ export const updateNewsSFn = createServerFn({ method: "POST" })
 /** 删除新闻（软删除） */
 export const deleteNewsSFn = createServerFn({ method: "POST" })
 	.middleware([adminPermGuard(ADMIN_PERMISSIONS.NEWS_DELETE)])
-	.inputValidator(getNewsSchema)
+	.validator(getNewsSchema)
 	.handler(async ({ data: { id }, context }) => {
 		const newsRecord = await getNewsById(id);
 		await deleteNews(id);
@@ -137,7 +137,7 @@ export const deleteNewsSFn = createServerFn({ method: "POST" })
 /** 变更新闻状态（发布/归档） */
 export const changeStatusSFn = createServerFn({ method: "POST" })
 	.middleware([adminPermGuard(ADMIN_PERMISSIONS.NEWS_PUBLISH)])
-	.inputValidator(statusSchema)
+	.validator(statusSchema)
 	.handler(async ({ data: { id, status }, context }) => {
 		const newsRecord = await getNewsById(id);
 		const result = await changeNewsStatus(id, status);
@@ -151,7 +151,7 @@ export const changeStatusSFn = createServerFn({ method: "POST" })
 /** 批量导入新闻（按标题去重） */
 export const importNewsSFn = createServerFn({ method: "POST" })
 	.middleware([adminPermGuard(ADMIN_PERMISSIONS.NEWS_IMPORT)])
-	.inputValidator(newsImportSchema)
+	.validator(newsImportSchema)
 	.handler(async ({ data, context }) => {
 		const newRecommendedCount = data.news.filter((r) => r.isRecommended).length;
 		if (newRecommendedCount > 0) {
@@ -170,7 +170,7 @@ export const importNewsSFn = createServerFn({ method: "POST" })
 /** 导出新闻数据（CSV 或 JSON） */
 export const exportNewsSFn = createServerFn({ method: "GET" })
 	.middleware([adminPermGuard(ADMIN_PERMISSIONS.NEWS_EXPORT)])
-	.inputValidator(exportSchema)
+	.validator(exportSchema)
 	.handler(async ({ data: { format } }) => {
 		const records = await exportAllNews();
 		return formatNewsExport(records, format);

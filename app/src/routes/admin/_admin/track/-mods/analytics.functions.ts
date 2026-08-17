@@ -16,5 +16,5 @@ export const analyticsQuerySchema = z.object({
 /** 获取事件分析数据 */
 export const getTrackAnalyticsSFn = createServerFn({ method: "GET" })
 	.middleware([adminPermGuard(ADMIN_PERMISSIONS.TRACK_QUERY)])
-	.inputValidator(analyticsQuerySchema)
+	.validator(analyticsQuerySchema)
 	.handler(async ({ data }) => getTrackAnalytics(data));

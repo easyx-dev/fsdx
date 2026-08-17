@@ -93,14 +93,14 @@ const idSchema = z.object({ id: z.string().min(1) });
 // ── SFn 定义 ──
 const getProductListSFn = createServerFn({ method: "GET" })
   .middleware([adminPermGuard(ADMIN_PERMISSIONS.PRODUCT_VIEW)])
-  .inputValidator(listSchema)
+  .validator(listSchema)
   .handler(async ({ data: { status, page = 1, sortField, sortOrder } }) => {
     return getProductList({ status, page, pageSize: 20, sortField, sortOrder });
   });
 
 const deleteProductSFn = createServerFn({ method: "POST" })
   .middleware([adminPermGuard(ADMIN_PERMISSIONS.PRODUCT_DELETE)])
-  .inputValidator(idSchema)
+  .validator(idSchema)
   .handler(async ({ data: { id }, context }) => {
     const record = await getProductById(id);
     await deleteProduct(id);
@@ -131,14 +131,14 @@ import {
 
 export const getProductByIdSFn = createServerFn({ method: "GET" })
   .middleware([adminPermGuard(ADMIN_PERMISSIONS.PRODUCT_VIEW)])
-  .inputValidator(getProductSchema)
+  .validator(getProductSchema)
   .handler(async ({ data: { id } }) => {
     return getProductById(id);
   });
 
 export const createProductSFn = createServerFn({ method: "POST" })
   .middleware([adminPermGuard(ADMIN_PERMISSIONS.PRODUCT_CREATE)])
-  .inputValidator(createProductSchema)
+  .validator(createProductSchema)
   .handler(async ({ data, context }) => {
     const record = await createProduct({
       ...data,
@@ -150,7 +150,7 @@ export const createProductSFn = createServerFn({ method: "POST" })
 
 export const updateProductSFn = createServerFn({ method: "POST" })
   .middleware([adminPermGuard(ADMIN_PERMISSIONS.PRODUCT_EDIT)])
-  .inputValidator(updateProductSchema)
+  .validator(updateProductSchema)
   .handler(async ({ data, context }) => {
     const record = await updateProduct(data.id, { ...data });
     logCrud(context.user, "product", "update", { id: data.id, name: data.name });
@@ -175,7 +175,7 @@ const exportSchema = z.object({ format: z.enum(["csv", "json"]) });
 
 export const exportProductsSFn = createServerFn({ method: "GET" })
   .middleware([adminPermGuard(ADMIN_PERMISSIONS.PRODUCT_EXPORT)])
-  .inputValidator(exportSchema)
+  .validator(exportSchema)
   .handler(async ({ data: { format } }) => {
     const records = await getAllProductsForExport();
     if (format === "csv") {

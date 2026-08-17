@@ -32,7 +32,7 @@ import {
 /** 分页查询自己的消息 */
 export const getMyMessagesSFn = createServerFn({ method: "GET" })
 	.middleware([clientAuthGuard])
-	.inputValidator(messageListSchema)
+	.validator(messageListSchema)
 	.handler(async ({ data, context }) =>
 		getMessages({
 			recipient: { type: "client", id: context.userId },
@@ -52,7 +52,7 @@ export const getMyUnreadCountSFn = createServerFn({ method: "GET" })
 /** 标记自己的一条消息为已读 */
 export const markMyMessageAsReadSFn = createServerFn({ method: "POST" })
 	.middleware([clientAuthGuard])
-	.inputValidator(messageIdSchema)
+	.validator(messageIdSchema)
 	.handler(async ({ data, context }) => {
 		const ok = await markAsRead(data.id, {
 			type: "client",
@@ -72,7 +72,7 @@ export const markAllMyMessagesAsReadSFn = createServerFn({ method: "POST" })
 /** 删除自己的一条消息 */
 export const deleteMyMessageSFn = createServerFn({ method: "POST" })
 	.middleware([clientAuthGuard])
-	.inputValidator(messageIdSchema)
+	.validator(messageIdSchema)
 	.handler(async ({ data, context }) => {
 		const ok = await deleteMessage(data.id, {
 			type: "client",
@@ -88,7 +88,7 @@ export const deleteMyMessageSFn = createServerFn({ method: "POST" })
 /** 分页查询自己的消息 */
 export const getAdminMessagesSFn = createServerFn({ method: "GET" })
 	.middleware([adminAuthGuard])
-	.inputValidator(messageListSchema)
+	.validator(messageListSchema)
 	.handler(async ({ data, context }) =>
 		getMessages({
 			recipient: { type: "admin", id: context.user.id },
@@ -108,7 +108,7 @@ export const getAdminUnreadCountSFn = createServerFn({ method: "GET" })
 /** 标记自己的一条消息为已读 */
 export const markAdminMessageAsReadSFn = createServerFn({ method: "POST" })
 	.middleware([adminAuthGuard])
-	.inputValidator(messageIdSchema)
+	.validator(messageIdSchema)
 	.handler(async ({ data, context }) => {
 		const ok = await markAsRead(data.id, {
 			type: "admin",
@@ -128,7 +128,7 @@ export const markAllAdminMessagesAsReadSFn = createServerFn({ method: "POST" })
 /** 删除自己的一条消息 */
 export const deleteAdminMessageSFn = createServerFn({ method: "POST" })
 	.middleware([adminAuthGuard])
-	.inputValidator(messageIdSchema)
+	.validator(messageIdSchema)
 	.handler(async ({ data, context }) => {
 		const ok = await deleteMessage(data.id, {
 			type: "admin",
@@ -144,7 +144,7 @@ export const deleteAdminMessageSFn = createServerFn({ method: "POST" })
 /** 全量分页查询所有用户消息 */
 export const listAllMessagesSFn = createServerFn({ method: "GET" })
 	.middleware([adminPermGuard(ADMIN_PERMISSIONS.MESSAGE_VIEW)])
-	.inputValidator(adminMessageListSchema)
+	.validator(adminMessageListSchema)
 	.handler(async ({ data }) =>
 		listMessages({
 			recipientType: data.recipientType,
@@ -159,7 +159,7 @@ export const listAllMessagesSFn = createServerFn({ method: "GET" })
 /** 向用户批量发送消息 */
 export const sendMessageSFn = createServerFn({ method: "POST" })
 	.middleware([adminPermGuard(ADMIN_PERMISSIONS.MESSAGE_SEND)])
-	.inputValidator(sendMessageSchema)
+	.validator(sendMessageSchema)
 	.handler(async ({ data, context }) => {
 		const count = await sendMessages({ ...data });
 		logCrud(
@@ -180,7 +180,7 @@ export const sendMessageSFn = createServerFn({ method: "POST" })
 /** 强制删除任意消息 */
 export const deleteAnyMessageSFn = createServerFn({ method: "POST" })
 	.middleware([adminPermGuard(ADMIN_PERMISSIONS.MESSAGE_DELETE)])
-	.inputValidator(messageIdSchema)
+	.validator(messageIdSchema)
 	.handler(async ({ data, context }) => {
 		const ok = await deleteMessageById(data.id);
 		logCrud(context.user, "message", "delete", { id: data.id });
@@ -190,5 +190,5 @@ export const deleteAnyMessageSFn = createServerFn({ method: "POST" })
 /** 搜索消息接收者（发送消息表单的选择器数据源） */
 export const searchRecipientsSFn = createServerFn({ method: "GET" })
 	.middleware([adminPermGuard(ADMIN_PERMISSIONS.MESSAGE_SEND)])
-	.inputValidator(searchRecipientsSchema)
+	.validator(searchRecipientsSchema)
 	.handler(async ({ data }) => searchRecipients(data));

@@ -12,7 +12,7 @@ export const idSchema = z.object({ id: z.string().min(1) });
 
 export const deleteFileSFn = createServerFn({ method: "POST" })
 	.middleware([adminPermGuard(ADMIN_PERMISSIONS.FILE_DELETE)])
-	.inputValidator(idSchema)
+	.validator(idSchema)
 	.handler(async ({ data, context }) => {
 		await deleteFile(data.id);
 		logCrud(context.user, "file", "delete", { id: data.id });
@@ -21,7 +21,7 @@ export const deleteFileSFn = createServerFn({ method: "POST" })
 
 export const makePermanentSFn = createServerFn({ method: "POST" })
 	.middleware([adminPermGuard(ADMIN_PERMISSIONS.FILE_EDIT)])
-	.inputValidator(idSchema)
+	.validator(idSchema)
 	.handler(async ({ data, context }) => {
 		await makePermanent(data.id);
 		logCrud(context.user, "file", "make_permanent", { id: data.id });

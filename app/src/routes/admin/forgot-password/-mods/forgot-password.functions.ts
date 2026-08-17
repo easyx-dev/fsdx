@@ -18,7 +18,7 @@ export const resetPwdSchema = z
 	});
 
 export const resetPwdSFn = createServerFn({ method: "POST" })
-	.inputValidator(resetPwdSchema)
+	.validator(resetPwdSchema)
 	.handler(async ({ data: { email, captcha, password } }) => {
 		return resetAdminPassword(email, captcha, password);
 	});

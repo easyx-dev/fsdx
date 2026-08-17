@@ -31,7 +31,7 @@ export const getLocaleBundleSFn = createServerFn({ method: "GET" }).handler(
 /** 获取某实体某字段的所有语言翻译（抽屉用） */
 export const getFieldTranslationsSFn = createServerFn({ method: "GET" })
 	.middleware([adminPermGuard(ADMIN_PERMISSIONS.TRANSLATION_VIEW)])
-	.inputValidator(
+	.validator(
 		z.object({
 			entityType: z.string(),
 			entityId: z.string(),
@@ -45,7 +45,7 @@ export const getFieldTranslationsSFn = createServerFn({ method: "GET" })
 /** 实体翻译创建/更新 */
 export const saveContentTranslationSFn = createServerFn({ method: "POST" })
 	.middleware([adminPermGuard(ADMIN_PERMISSIONS.TRANSLATION_MANAGE)])
-	.inputValidator(
+	.validator(
 		z.object({
 			id: z.string().optional(),
 			entityType: z.string().min(1),
@@ -71,7 +71,7 @@ export const saveContentTranslationSFn = createServerFn({ method: "POST" })
 /** AI 翻译字段内容（使用 fast 模型） */
 export const aiTranslateFieldSFn = createServerFn({ method: "POST" })
 	.middleware([adminPermGuard(ADMIN_PERMISSIONS.TRANSLATION_MANAGE)])
-	.inputValidator(
+	.validator(
 		z.object({
 			sourceText: z.string().min(1, "源文本不能为空"),
 			targetLang: z.string().min(1),

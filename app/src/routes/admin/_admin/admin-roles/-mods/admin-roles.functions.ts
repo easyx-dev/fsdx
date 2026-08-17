@@ -21,13 +21,13 @@ import {
 /** 获取角色列表 */
 export const getAdminRolesSFn = createServerFn({ method: "GET" })
 	.middleware([adminPermGuard(ADMIN_PERMISSIONS.ADMIN_ROLE_VIEW)])
-	.inputValidator(adminRoleListSchema)
+	.validator(adminRoleListSchema)
 	.handler(async ({ data }) => getAdminRoleList(data.keyword));
 
 /** 创建角色 */
 export const createAdminRoleSFn = createServerFn({ method: "POST" })
 	.middleware([adminPermGuard(ADMIN_PERMISSIONS.ADMIN_ROLE_CREATE)])
-	.inputValidator(adminRoleCreateSchema)
+	.validator(adminRoleCreateSchema)
 	.handler(async ({ data, context }) => {
 		const result = await createAdminRole(data);
 		logCrud(context.user, "admin-role", "create", {
@@ -40,7 +40,7 @@ export const createAdminRoleSFn = createServerFn({ method: "POST" })
 /** 更新角色 */
 export const updateAdminRoleSFn = createServerFn({ method: "POST" })
 	.middleware([adminPermGuard(ADMIN_PERMISSIONS.ADMIN_ROLE_EDIT)])
-	.inputValidator(adminRoleUpdateSchema)
+	.validator(adminRoleUpdateSchema)
 	.handler(async ({ data, context }) => {
 		const result = await updateAdminRole(data.id, data);
 		logCrud(context.user, "admin-role", "update", {
@@ -53,7 +53,7 @@ export const updateAdminRoleSFn = createServerFn({ method: "POST" })
 /** 删除角色 */
 export const deleteAdminRoleSFn = createServerFn({ method: "POST" })
 	.middleware([adminPermGuard(ADMIN_PERMISSIONS.ADMIN_ROLE_DELETE)])
-	.inputValidator(idSchema)
+	.validator(idSchema)
 	.handler(async ({ data, context }) => {
 		await deleteAdminRole(data.id);
 		logCrud(context.user, "admin-role", "delete", { id: data.id });

@@ -26,7 +26,7 @@ export const trackEventQuerySchema = z.object({
 /** 分页查询埋点事件 */
 export const searchTrackEventsSFn = createServerFn({ method: "GET" })
 	.middleware([adminPermGuard(ADMIN_PERMISSIONS.TRACK_QUERY)])
-	.inputValidator(trackEventQuerySchema)
+	.validator(trackEventQuerySchema)
 	.handler(async ({ data }) => searchTrackEvents(data));
 
 /** 获取已有的事件名称列表 */

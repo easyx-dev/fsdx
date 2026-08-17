@@ -18,7 +18,7 @@ import {
 /** 创建元事件 */
 export const createEventMetaSFn = createServerFn({ method: "POST" })
 	.middleware([adminPermGuard(ADMIN_PERMISSIONS.TRACK_MANAGE)])
-	.inputValidator(eventMetaCreateSchema)
+	.validator(eventMetaCreateSchema)
 	.handler(async ({ data }) => {
 		const { name, ...input } = data;
 		return createTrackEventMeta(name, input);
@@ -27,7 +27,7 @@ export const createEventMetaSFn = createServerFn({ method: "POST" })
 /** 更新元事件 */
 export const updateEventMetaSFn = createServerFn({ method: "POST" })
 	.middleware([adminPermGuard(ADMIN_PERMISSIONS.TRACK_MANAGE)])
-	.inputValidator(eventMetaUpdateSchema)
+	.validator(eventMetaUpdateSchema)
 	.handler(async ({ data }) => {
 		const { name, ...input } = data;
 		return updateTrackEventMeta(name, input);
@@ -36,5 +36,5 @@ export const updateEventMetaSFn = createServerFn({ method: "POST" })
 /** 删除元事件 */
 export const deleteEventMetaSFn = createServerFn({ method: "POST" })
 	.middleware([adminPermGuard(ADMIN_PERMISSIONS.TRACK_MANAGE)])
-	.inputValidator(eventMetaDeleteSchema)
+	.validator(eventMetaDeleteSchema)
 	.handler(async ({ data }) => deleteTrackEventMeta(data.name));

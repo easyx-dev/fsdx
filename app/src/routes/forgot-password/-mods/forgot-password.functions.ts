@@ -18,7 +18,7 @@ export const forgotPasswordSchema = z
 	});
 
 export const resetPwdSFn = createServerFn({ method: "POST" })
-	.inputValidator(forgotPasswordSchema)
+	.validator(forgotPasswordSchema)
 	.handler(async ({ data: { email, captcha, password } }) => {
 		return resetClientPassword(email, captcha, password);
 	});
