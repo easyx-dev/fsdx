@@ -3,7 +3,7 @@
  */
 import { asc, eq, isNull } from "drizzle-orm";
 import { PRESET_DICTS } from "#/constants";
-import { db } from "#/db/index";
+import { db, withTransaction } from "#/db/index";
 import { dict, dictItem } from "#/db/schema";
 import { logger } from "#/lib/logger/logger";
 import { dictCache } from "#/services/dict/dict.cache";
@@ -108,7 +108,7 @@ export async function deleteDict(id: string) {
 	}
 
 	const now = new Date();
-	await db.transaction(async (tx) => {
+	await withTransaction(async (tx) => {
 		await tx
 			.update(dictItem)
 			.set({ deletedAt: now })

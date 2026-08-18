@@ -4,6 +4,7 @@
 import { describe, expect, it } from "vitest";
 import {
 	getRequestContext,
+	getRequestId,
 	getRequestOperator,
 	runWithRequestContext,
 } from "../index";
@@ -21,10 +22,10 @@ describe("runWithRequestContext / getRequestContext", () => {
 			},
 			() => {
 				const ctx = getRequestContext();
-				expect(ctx?.operator.id).toBe("user-1");
-				expect(ctx?.operator.username).toBe("张三");
-				expect(ctx?.operator.email).toBe("z@x.com");
-				expect(ctx?.operator.type).toBe("admin");
+				expect(ctx?.operator?.id).toBe("user-1");
+				expect(ctx?.operator?.username).toBe("张三");
+				expect(ctx?.operator?.email).toBe("z@x.com");
+				expect(ctx?.operator?.type).toBe("admin");
 			},
 		);
 	});
@@ -42,9 +43,9 @@ describe("runWithRequestContext / getRequestContext", () => {
 			async () => {
 				await Promise.resolve();
 				const ctx = getRequestContext();
-				expect(ctx?.operator.id).toBe("client-1");
-				expect(ctx?.operator.username).toBe("李四");
-				expect(ctx?.operator.type).toBe("client");
+				expect(ctx?.operator?.id).toBe("client-1");
+				expect(ctx?.operator?.username).toBe("李四");
+				expect(ctx?.operator?.type).toBe("client");
 			},
 		);
 	});
@@ -77,6 +78,39 @@ describe("runWithRequestContext / getRequestContext", () => {
 				expect(getRequestOperator().id).toBe("outer");
 			},
 		);
+	});
+});
+
+describe("getRequestId", () => {
+	it("无上下文时返回 undefined", () => {
+		expect(getRequestId()).toBeUndefined();
+	});
+
+	it("上下文内返回注入的 requestId", () => {
+		runWithRequestContext({ requestId: "req-123" }, () => {
+			expect(getRequestId()).toBe("req-123");
+		});
+	});
+});
+
+describe("runWithRequestContext 合并语义", () => {
+	it("后写入字段与已有字段浅合并，不覆盖先写入的 requestId", () => {
+		runWithRequestContext({ requestId: "req-merge" }, () => {
+			runWithRequestContext(
+				{
+					operator: {
+						id: "u-1",
+						username: "合并",
+						email: null,
+						type: "admin",
+					},
+				},
+				() => {
+					expect(getRequestId()).toBe("req-merge");
+					expect(getRequestOperator().id).toBe("u-1");
+				},
+			);
+		});
 	});
 });
 

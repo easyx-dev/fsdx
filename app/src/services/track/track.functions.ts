@@ -12,6 +12,7 @@ import {
 	getTrackPropertyMetaList,
 	trackEvent,
 } from "./track.server";
+import type { JsonProperties } from "./track.types";
 
 /** 埋点事件上报入参 schema（客户端 SDK 与测试共用） */
 export const trackEventSchema = z.object({
@@ -44,7 +45,7 @@ export const trackEventSFn = createServerFn({ method: "POST" })
 
 		trackEvent({
 			...data,
-			properties: { ...data.properties, ...serverProps },
+			properties: { ...data.properties, ...serverProps } as JsonProperties,
 		});
 		return { success: true };
 	});

@@ -14,7 +14,11 @@ export interface BatchWriterConfig<T> {
 	batchSize?: number;
 	/** 定时刷新间隔（ms），默认 5000 */
 	flushInterval?: number;
-	/** 批量写入函数 */
+	/**
+	 * 批量写入函数：当前实现为直接 INSERT 数据库
+	 * 预留队列接缝：升级为多实例/持久队列时，可将此函数替换为投递消息队列（Redis/BullMQ），
+	 * 由独立消费者落库，业务调用方无需改动
+	 */
 	insertFn: (items: T[]) => Promise<void>;
 	/** 日志标签（用于区分不同 writer 的日志） */
 	logLabel: string;

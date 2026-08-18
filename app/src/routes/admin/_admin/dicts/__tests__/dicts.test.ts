@@ -36,7 +36,10 @@ const { mockDb, txRows } = vi.hoisted(() => {
 	};
 });
 
-vi.mock("#/db/index", () => ({ db: mockDb }));
+vi.mock("#/db/index", () => ({
+	db: mockDb,
+	withTransaction: mockDb.transaction,
+}));
 
 import { importDicts } from "../-mods/dicts.server";
 

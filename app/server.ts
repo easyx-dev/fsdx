@@ -6,6 +6,7 @@
  */
 import { bootstrap } from "./src/bootstrap";
 import { createHonoApp } from "./src/hono-app";
+import { httpRequestsTotal } from "./src/lib/metrics/metrics";
 
 await bootstrap();
 
@@ -13,6 +14,7 @@ const app = createHonoApp();
 
 export default {
 	async fetch(req: Request) {
+		httpRequestsTotal.inc({ method: req.method });
 		const res = await app.fetch(req);
 		// Hono 未匹配（404）→ 返回 undefined → Nitro 继续到 TanStack Start SSR
 		return res.status !== 404 ? res : undefined;

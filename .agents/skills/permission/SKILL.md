@@ -80,12 +80,12 @@ import { adminPermGuard } from "#/middleware/admin-auth";
 
 export const getProductListSFn = createServerFn({ method: "GET" })
   .middleware([adminPermGuard(ADMIN_PERMISSIONS.PRODUCT_VIEW)])
-  .inputValidator(listSchema)
+  .validator(listSchema)
   .handler(async ({ data }) => { /* ... */ });
 
 export const createProductSFn = createServerFn({ method: "POST" })
   .middleware([adminPermGuard(ADMIN_PERMISSIONS.PRODUCT_CREATE)])
-  .inputValidator(createSchema)
+  .validator(createSchema)
   .handler(async ({ data, context }) => { /* ... */ });
 ```
 

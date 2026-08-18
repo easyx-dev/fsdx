@@ -3,7 +3,7 @@
  */
 import { and, asc, eq, isNull } from "drizzle-orm";
 import { PRESET_DICTS } from "#/constants";
-import { db } from "#/db/index";
+import { db, withTransaction } from "#/db/index";
 import { dict, dictItem } from "#/db/schema";
 import type { DictItemRecord, DictRecord } from "#/services/dict/dict.server";
 import type { DictImportData, DictImportResult } from "./dicts.functions";
@@ -146,7 +146,7 @@ export async function importDicts(
 		itemsSkipped: 0,
 	};
 
-	await db.transaction(async (tx) => {
+	await withTransaction(async (tx) => {
 		const importedSlugs = new Set(data.dicts.map((d) => d.slug));
 		const existingDicts = await tx
 			.select({ slug: dict.slug })

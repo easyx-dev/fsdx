@@ -5,8 +5,17 @@
 import type { trackEventMeta, trackPropertyMeta } from "#/db/schema";
 import type { PaginatedSortParams } from "#/types/query";
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type JsonProperties = Record<string, any>;
+/** JSON 值类型：覆盖可安全序列化的 JSON 基本类型（递归） */
+export type JsonValue =
+	| string
+	| number
+	| boolean
+	| null
+	| JsonValue[]
+	| { [key: string]: JsonValue };
+
+/** 埋点事件属性：JSON 对象 */
+export type JsonProperties = Record<string, JsonValue>;
 
 /** 追踪事件输入 */
 export interface TrackEventInput {

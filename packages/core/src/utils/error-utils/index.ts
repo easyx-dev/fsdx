@@ -1,6 +1,74 @@
 /**
- * 错误处理工具：日志脱敏
+ * 错误处理工具：日志脱敏 + 客户端错误归一化
  */
+
+/** 生产环境未知错误兜底文案 */
+const CLIENT_FALLBACK_MESSAGE = "服务器内部错误，请稍后重试";
+
+/**
+ * 归一化抛给客户端的错误，保证 err.message 始终为「业务文案 / 校验文案 / 兜底文案」之一
+ * - 校验错误（StandardSchema issues / ZodError）→ "参数校验失败：{首条 issue}"
+ * - 业务错误（含中文文案，本项目约定 UI 文案均为简体中文）→ 原样透传
+ * - 其他技术错误（SQL/堆栈/英文）→ 生产环境兜底，开发环境保留原样便于排查
+ * - 非 Error 抛出值（如 TanStack 重定向对象）→ 原样透传
+ * @param error 任意抛出值
+ * @param isProd 是否生产环境
+ */
+export function toClientError(error: unknown, isProd: boolean): unknown {
+	const validationMessage = extractValidationMessage(error);
+	if (validationMessage !== null) {
+		return new Error(`参数校验失败：${validationMessage}`);
+	}
+
+	if (error instanceof Error) {
+		// 开发环境保留原始错误（含堆栈细节），生产环境仅透传业务文案
+		if (!isProd) return error;
+		if (isUserFacingMessage(error.message)) return error;
+		return new Error(CLIENT_FALLBACK_MESSAGE);
+	}
+
+	return error;
+}
+
+/**
+ * 从校验错误中提取首条 issue 文案，非校验错误返回 null
+ * 兼容两种形态：StandardSchema 返回的 issues 数组、TanStack 将 issues JSON 序列化后抛出的 Error
+ */
+function extractValidationMessage(error: unknown): string | null {
+	if (typeof error === "object" && error !== null && "issues" in error) {
+		const issues = (error as { issues?: unknown }).issues;
+		if (Array.isArray(issues) && issues.length > 0) {
+			return issueToMessage(issues[0]);
+		}
+	}
+
+	if (error instanceof Error) {
+		try {
+			const parsed: unknown = JSON.parse(error.message);
+			if (Array.isArray(parsed) && parsed.length > 0) {
+				return issueToMessage(parsed[0]);
+			}
+		} catch {
+			// 非 JSON 消息，忽略
+		}
+	}
+
+	return null;
+}
+
+/** 提取单条 issue 的 message 字段 */
+function issueToMessage(issue: unknown): string {
+	if (typeof issue === "object" && issue !== null && "message" in issue) {
+		const message = (issue as { message?: unknown }).message;
+		if (typeof message === "string" && message.trim()) return message.trim();
+	}
+	return "输入参数不合法";
+}
+
+/** 判断是否为面向用户的业务文案：包含中文字符即视为业务文案 */
+function isUserFacingMessage(message: string): boolean {
+	return /[\u4e00-\u9fff]/.test(message);
+}
 
 /** 需要在日志中脱敏的敏感字段 */
 const SENSITIVE_PATTERNS: [RegExp, string][] = [

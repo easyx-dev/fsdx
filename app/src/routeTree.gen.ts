@@ -14,6 +14,7 @@ import { Route as AboutRouteImport } from './routes/about'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as MessagesRouteImport } from './routes/messages'
 import { Route as AdminAdminRouteImport } from './routes/admin/_admin'
+import { Route as ApiMetricsRouteImport } from './routes/api/metrics'
 import { Route as ForgotPasswordIndexRouteImport } from './routes/forgot-password/index'
 import { Route as LoginIndexRouteImport } from './routes/login/index'
 import { Route as NewsIndexRouteImport } from './routes/news/index'
@@ -75,6 +76,11 @@ const MessagesRoute = MessagesRouteImport.update({
 const AdminAdminRoute = AdminAdminRouteImport.update({
   id: '/_admin',
   getParentRoute: () => AdminRoute,
+} as any)
+const ApiMetricsRoute = ApiMetricsRouteImport.update({
+  id: '/api/metrics',
+  path: '/api/metrics',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const ForgotPasswordIndexRoute = ForgotPasswordIndexRouteImport.update({
   id: '/forgot-password/',
@@ -282,6 +288,7 @@ export interface FileRoutesByFullPath {
   '/about': typeof AboutRoute
   '/admin': typeof AdminRouteWithChildren
   '/messages': typeof MessagesRoute
+  '/api/metrics': typeof ApiMetricsRoute
   '/news/$slug': typeof NewsSlugRoute
   '/forgot-password/': typeof ForgotPasswordIndexRoute
   '/login/': typeof LoginIndexRoute
@@ -325,6 +332,7 @@ export interface FileRoutesByTo {
   '/about': typeof AboutRoute
   '/admin': typeof AdminAdminIndexRoute
   '/messages': typeof MessagesRoute
+  '/api/metrics': typeof ApiMetricsRoute
   '/news/$slug': typeof NewsSlugRoute
   '/forgot-password': typeof ForgotPasswordIndexRoute
   '/login': typeof LoginIndexRoute
@@ -369,6 +377,7 @@ export interface FileRoutesById {
   '/admin': typeof AdminRouteWithChildren
   '/messages': typeof MessagesRoute
   '/admin/_admin': typeof AdminAdminRouteWithChildren
+  '/api/metrics': typeof ApiMetricsRoute
   '/news/$slug': typeof NewsSlugRoute
   '/forgot-password/': typeof ForgotPasswordIndexRoute
   '/login/': typeof LoginIndexRoute
@@ -414,6 +423,7 @@ export interface FileRouteTypes {
     | '/about'
     | '/admin'
     | '/messages'
+    | '/api/metrics'
     | '/news/$slug'
     | '/forgot-password/'
     | '/login/'
@@ -457,6 +467,7 @@ export interface FileRouteTypes {
     | '/about'
     | '/admin'
     | '/messages'
+    | '/api/metrics'
     | '/news/$slug'
     | '/forgot-password'
     | '/login'
@@ -500,6 +511,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/messages'
     | '/admin/_admin'
+    | '/api/metrics'
     | '/news/$slug'
     | '/forgot-password/'
     | '/login/'
@@ -544,6 +556,7 @@ export interface RootRouteChildren {
   AboutRoute: typeof AboutRoute
   AdminRoute: typeof AdminRouteWithChildren
   MessagesRoute: typeof MessagesRoute
+  ApiMetricsRoute: typeof ApiMetricsRoute
   NewsSlugRoute: typeof NewsSlugRoute
   ForgotPasswordIndexRoute: typeof ForgotPasswordIndexRoute
   LoginIndexRoute: typeof LoginIndexRoute
@@ -588,6 +601,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/admin'
       preLoaderRoute: typeof AdminAdminRouteImport
       parentRoute: typeof AdminRoute
+    }
+    '/api/metrics': {
+      id: '/api/metrics'
+      path: '/api/metrics'
+      fullPath: '/api/metrics'
+      preLoaderRoute: typeof ApiMetricsRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/forgot-password/': {
       id: '/forgot-password/'
@@ -939,6 +959,7 @@ const rootRouteChildren: RootRouteChildren = {
   AboutRoute: AboutRoute,
   AdminRoute: AdminRouteWithChildren,
   MessagesRoute: MessagesRoute,
+  ApiMetricsRoute: ApiMetricsRoute,
   NewsSlugRoute: NewsSlugRoute,
   ForgotPasswordIndexRoute: ForgotPasswordIndexRoute,
   LoginIndexRoute: LoginIndexRoute,

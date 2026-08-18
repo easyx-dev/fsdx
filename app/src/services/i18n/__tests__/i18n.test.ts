@@ -56,7 +56,7 @@ const { mockDb, mockRows } = vi.hoisted(() => {
 		},
 	};
 });
-vi.mock("#/db", () => ({ db: mockDb }));
+vi.mock("#/db", () => ({ db: mockDb, withTransaction: mockDb.transaction }));
 
 import {
 	deleteContentTranslation,
