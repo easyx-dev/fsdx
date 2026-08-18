@@ -32,14 +32,14 @@ flowchart TB
         subgraph ServerFunctions["Server Functions"]
             direction TB
             subgraph AdminSF["管理端 SF"]
-                Login["adminLoginFn"]
-                CurrentAdmin["getCurrentAdminFn"]
+                Login["adminLoginSFn"]
+                CurrentAdmin["getCurrentAdminSFn"]
                 Protected["其他受保护 SF"]
             end
             subgraph ClientSF["客户端 SF"]
-                ClientLogin["clientLoginFn"]
-                ClientRegister["clientRegisterFn"]
-                CurrentClient["getCurrentClientFn"]
+                ClientLogin["clientLoginSFn"]
+                ClientRegister["clientRegisterSFn"]
+                CurrentClient["getCurrentClientSFn"]
             end
         end
 
@@ -181,7 +181,7 @@ erDiagram
 ```mermaid
 sequenceDiagram
     participant Browser as 浏览器
-    participant LoginSF as adminLoginFn<br/>(Server Function)
+    participant LoginSF as adminLoginSFn<br/>(Server Function)
     participant Server as adminLogin()<br/>(.server.ts)
     participant DB as PostgreSQL
     participant JWT as signToken()
@@ -215,8 +215,8 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     participant Browser as 浏览器
-    participant RegisterSF as clientRegisterFn
-    participant LoginSF as clientLoginFn
+    participant RegisterSF as clientRegisterSFn
+    participant LoginSF as clientLoginSFn
     participant Server as clientAuth.server.ts
     participant DB as PostgreSQL
     participant Captcha as captcha.server.ts
@@ -237,6 +237,7 @@ sequenceDiagram
             Server-->>RegisterSF: { success: false, message: "用户名或邮箱已存在" }
         else 可用
             Server->>DB: INSERT INTO client_user
+            Server->>DB: 分配默认普通用户角色（按 slug="normal-user" 固定查询，init 种子预置）
             Server-->>RegisterSF: { success: true }
             Browser->>Browser: 跳转 /login
         end
@@ -317,11 +318,12 @@ sequenceDiagram
 ```
 requestMiddleware                    functionMiddleware
 ┌───────────────────────┐     ┌─────────────────────────┐
-│ localeMiddleware      │     │ sfErrorLogger           │
-│ createCsrfMiddleware  │     │ (覆盖所有 SF)            │
-│ (仅 ServerFn)         │     └─────────────────────────┘
-└──────────┬────────────┘
-           ▼
+│ requestIdMiddleware   │     │ sfErrorLogger           │
+│ localeMiddleware      │     │ (覆盖所有 SF)            │
+│ createCsrfMiddleware  │     │ 鉴权失败 warn / 异常 error│
+│ (仅 ServerFn)         │     │ 埋耗时/结果指标           │
+└──────────┬────────────┘     │ toClientError 归一化抛出  │
+           ▼                  └─────────────────────────┘
   createServerFn.middleware([adminPermGuard(PERM)])
            │
            ▼
@@ -475,7 +477,7 @@ sequenceDiagram
 
 ### 认证 Context
 
-`ClientAuthProvider`（`src/components/client/ClientAuthProvider.tsx`）挂载时自动调用 `getCurrentClientFn()` 获取当前登录用户，通过 React Context 向下传递；前台组件经 `useClientAuth()` 消费 `{ user, isLoading, refetch, logout }`。
+`ClientAuthProvider`（`src/components/client/ClientAuthProvider.tsx`）挂载时自动调用 `getCurrentClientSFn()` 获取当前登录用户，通过 React Context 向下传递；前台组件经 `useClientAuth()` 消费 `{ user, isLoading, refetch, logout }`。
 
 ### 客户端用户内存缓存
 
@@ -501,7 +503,7 @@ const csrfMiddleware = createCsrfMiddleware({
 
 - **仅对 Server Function 请求生效**，页面渲染请求不受影响
 - 默认校验 `Origin`、`Referer`、`Sec-Fetch-Site` 头，拒绝跨站请求
-- 位于 `requestMiddleware` 数组中，在 `localeMiddleware` 之后执行
+- 位于 `requestMiddleware` 数组中，在 `requestIdMiddleware` 与 `localeMiddleware` 之后执行（`start.ts` 注册顺序 `[requestId, locale, csrf]`）
 
 ---
 

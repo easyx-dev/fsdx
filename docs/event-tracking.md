@@ -140,9 +140,10 @@ flowchart TD
 ## 单实例与数据一致性边界
 
 - **缓冲丢失窗口**：埋点事件经 `BatchWriter` 内存缓冲，进程崩溃或异常退出会丢失未刷入数据库的至多 5 秒 / 100 条（缓冲满 1000 条时丢弃最旧条目）。
-- **频控进程内**：`track_rate_limit` 会话频控（60 条/分）为进程内 `MemoryCache`，仅单实例部署有效；多实例时退化为每实例 60 条/分。
+- **频控进程内**：`sessionRateCache`（`track_rate_limit`，会话频控 60 条/分，全系统第 9 个 `MemoryCache` 实例）仅单实例部署有效；多实例时退化为每实例 60 条/分。
 - **元数据缓存进程内**：`trackEventMetaCache` / `trackPropertyMetaCache` 为进程内缓存，管理端编辑元数据仅失效当前实例。
 - **演进接缝**：`BatchWriter.insertFn` 为队列/持久化接缝，升级多实例时可将其替换为消息队列投递，业务调用方无需改动。
+- 完整的单实例边界与扩容路径 → [部署运维](deployment-ops.md)。
 
 ---
 
@@ -215,7 +216,10 @@ flowchart TD
 | 文件 | 职责 |
 |------|------|
 | `src/lib/track/track.ts` | 客户端埋点 SDK |
-| `src/services/track/track.server.ts` | 服务端：校验、缓冲、查询、分析、预设管理 |
+| `src/services/track/track.server.ts` | 服务层入口（barrel）：事件上报缓冲写入 + 统一导出 |
+| `src/services/track/track.validate.ts` | 属性值类型校验、per-session 频控、服务端时间钳制（纯逻辑） |
+| `src/services/track/track.meta.ts` | 元事件/元属性管理（预设、CRUD、`loadTrackMetaCache()`） |
+| `src/services/track/track.analytics.ts` | 查询与分析（`searchTrackEvents` / `getTrackAnalytics` / `getTrackEventNames`） |
 | `src/services/track/track.functions.ts` | Server Function 包装器 |
 | `src/services/track/track.types.ts` | 类型定义 |
 | `src/services/track/track.cache.ts` | trackEventMetaCache / trackPropertyMetaCache 缓存实例 |

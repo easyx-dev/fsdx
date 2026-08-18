@@ -34,9 +34,11 @@ class MemoryCache<T> {
 
 ---
 
-## 8 个缓存实例（`MemoryCache` 类 + 按模块实例文件）
+## 9 个缓存实例（`MemoryCache` 类 + 按模块实例文件）
 
 > 每个实例只能在唯一一个服务端模块中直接操作（get/set/delete），禁止跨模块 import 缓存实例；外部模块通过所属模块的导出函数访问。
+>
+> 其中 8 个为领域数据缓存，另有 1 个内部实例 `sessionRateCache`（埋点频控）不属于领域缓存清单，详见下文。
 
 ### 字典缓存 (`dictCache`)
 
@@ -48,7 +50,7 @@ class MemoryCache<T> {
 | 加载 | `loadDictCache()` → `dictCache.set(dictSlug, {...})` |
 | 查询 | `getDictLabel(slug, value)`、`getDictMap(slug)`、`getDictOptions(slug)` |
 
-字典缓存在启动时全量加载，管理端修改字典后通过 Server Function 主动刷新。
+字典缓存**懒加载**：首次访问经 `ensureCache()`（`cacheLoaded` 标志）触发 `loadDictCache()` 全量加载，**启动时不预热**；管理端修改字典/条目后由服务层 `loadDictCache()` 全量重载（缓存失效内聚在 `dict.server.ts`，SFn 层不直接刷新）。
 
 ### 系统配置缓存 (`configCache`)
 
@@ -72,7 +74,7 @@ SMTP 邮件配置从数据库读取而非环境变量，通过此缓存获取。
 | 加载 | `loadUITranslations()` |
 | 查询 | `getUITranslations(locale)` |
 
-启动时加载所有语言的 UI 翻译，管理端修改翻译后触发局部刷新。
+启动时不预热，按 locale 首次访问懒加载；管理端修改翻译后触发局部刷新。归属模块：`src/services/i18n/`（UI 翻译逻辑在 `i18n-ui.server.ts`，实体字段翻译在 `i18n-content.server.ts`）。
 
 ### 配置翻译缓存 (`configTranslationCache`)
 
@@ -81,10 +83,10 @@ SMTP 邮件配置从数据库读取而非环境变量，通过此缓存获取。
 | Key | `locale` |
 | Value | `Record<string, string>`（`{ configId: translatedValue }`） |
 | TTL | 无（永不过期） |
-| 加载 | `loadConfigTranslationCache()` |
+| 加载 | `getConfigTranslations(locale)`（懒加载回填） |
 | 刷新 | `refreshConfigTranslationCache(locale?)` |
 
-为系统配置项（如站点名称）提供多语言翻译支持。
+为系统配置项（如站点名称）提供多语言翻译支持，读取 `content_translation` 表 `entity_type = 'system_config'` 的记录。归属模块：`src/services/config/config.server.ts`（非 i18n 模块）。
 
 ### 客户端用户缓存 (`clientUserCache`)
 
@@ -128,6 +130,17 @@ SMTP 邮件配置从数据库读取而非环境变量，通过此缓存获取。
 | TTL | 无（永不过期，随元数据变更主动失效） |
 
 用于 `trackEvent()` 中校验上报属性的键是否存在及其值的类型是否匹配。
+
+### 会话频控缓存 (`sessionRateCache`，内部实例)
+
+| 属性 | 值 |
+|------|-----|
+| Key | `sessionId` |
+| Value | `number`（窗口内已上报条数） |
+| TTL | 60 秒滑动（每上报一条重置窗口） |
+| 读取 | `isTrackSessionRateLimited(sessionId)` |
+
+用于埋点 per-session 频控（60 条/分），**内部实例**：不遵循「读缓存懒加载」模式，也不属于领域数据缓存清单，仅由 `src/services/track/track.validate.ts` 操作，外部经 `clearTrackRateLimit()` 清理（测试/运维排查）。
 
 ---
 
@@ -194,9 +207,9 @@ Server Function handler
 
 ## 单实例与数据一致性边界
 
-- 所有 8 个缓存实例均为进程内 `MemoryCache`，缓存失效（`loadXxxCache` / `delete`）仅作用于当前实例，多实例部署时实例间缓存会短暂不一致。
+- 所有 9 个缓存实例均为进程内 `MemoryCache`，缓存失效仅作用于当前实例，多实例部署时实例间缓存会短暂不一致；进程退出后缓存自动丢失，重启后按需懒加载重建。
 - `MemoryCache` 已实现 `CacheAdapter` 接口，未来升级多实例可用 Redis 等分布式缓存适配器替换内存实现而不改动业务层。
-- 无持久化：进程退出后缓存数据自动丢失，重启后按需懒加载重建。
+- 完整的单实例边界、崩溃丢数据窗口与扩容路径 → [部署运维](deployment-ops.md)。
 
 ---
 
@@ -205,10 +218,11 @@ Server Function handler
 | 文件 | 职责 |
 |------|------|
 | `packages/core/src/cache/cache-core/index.ts` | `MemoryCache<T>` 通用类（`@fsdx/core/cache-core`） |
-| `services/<module>/<module>.cache.ts` | 按模块拆分的缓存实例（config/dict/i18n/client-auth/admin-auth/track） |
+| `services/<module>/<module>.cache.ts` | 按模块拆分的缓存实例（config / dict / i18n / client-auth / admin-auth / track） |
 | `packages/core/src/cache/cache-core/__tests__/cache-core.test.ts` | 缓存单元测试 |
-| `src/services/config/config.server.ts` | `loadConfigCache()` / 配置缓存管理 |
-| `src/services/dict/dict.server.ts` | `loadDictCache()` / 字典缓存管理 |
-| `src/services/i18n/i18n.server.ts` | UI 翻译缓存管理 |
+| `src/services/config/config.server.ts` | `loadConfigCache()` / `getConfigTranslations()` 配置与配置翻译缓存管理 |
+| `src/services/dict/dict.server.ts` | `loadDictCache()` / `ensureCache()` 字典缓存管理（懒加载） |
+| `src/services/i18n/i18n-ui.server.ts` | `getUITranslations()` / `refreshUITranslationCache()` UI 翻译缓存管理 |
 | `src/services/client-auth/client-auth.server.ts` | 客户端用户缓存使用 |
-| `src/services/track/track.server.ts` | 元事件/元属性缓存管理 |
+| `src/services/track/track.meta.ts` | `loadTrackMetaCache()` 元事件/元属性缓存管理 |
+| `src/services/track/track.validate.ts` | `sessionRateCache` 埋点频控内部实例 |

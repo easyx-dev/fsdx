@@ -34,7 +34,7 @@
 | `track_event` | UUID | — | 埋点原始事件，`name` 为事件名，`properties` 为 JSONB |
 | `track_event_meta` | name (varchar) | — | 元事件定义，`is_preset` 标记是否系统预置 |
 | `track_property_meta` | key (varchar) | — | 元属性定义，`data_type` 声明值类型 |
-| `operation_log` | UUID | — | 操作审计日志（含外部调用），`operator_type` 区分 admin/client/system，`detail` 为 JSONB |
+| `operation_log` | UUID | — | 操作审计日志（含外部调用），`operator_type` 区分 admin/client/system，`request_id` 贯通请求链路，`detail` 为 JSONB |
 
 ---
 
@@ -237,6 +237,7 @@ erDiagram
 
     operation_log {
         uuid id PK
+        varchar request_id "请求关联 ID（x-request-id 透传/生成，贯通日志与审计）"
         uuid operatorId "索引"
         varchar operatorName
         varchar operatorType "admin/client/system"
@@ -286,6 +287,7 @@ erDiagram
 - 所有列**必须**显式指定数据库列名（如 `createdAt: timestamp("created_at", { withTimezone: true })`）
 - timestamp 列**必须**加 `{ withTimezone: true }`
 - 新增/修改 Schema 后运行 `pnpm db:generate` 生成迁移文件，审查 SQL 后执行 `pnpm db:migrate`（禁止 `db:push`），重命名列时选择 `rename column`
+- **例外**：`operation_log` 为历史表，多数列未显式指定数据库列名（DB 列名即 JS 属性名的 camelCase，如 `operatorId`），仅 `request_id` 为显式 snake_case 映射；新增该表列时按全库约定显式指定 snake_case 列名
 
 ---
 

@@ -253,9 +253,9 @@ async function handleSubmit() {
 
 所有 SFn 自动被 `src/middleware/sf-error-logger.ts` 覆盖，无需手动在 handler 中添加错误日志：
 
-- 鉴权失败（`AdminAuthError` / `ApiAuthError`）→ `logger.warn`
+- 鉴权失败（`AdminAuthError` / `ClientAuthError`）→ `logger.warn`
 - 系统异常 → `logger.error`（脱敏后记录）
-- 错误始终重新抛出，保证客户端能 `catch` 到
+- 错误经 `toClientError()` 归一化后重新抛出，保证客户端能 `catch` 到业务/校验文案；中间件同时埋 SF 耗时与结果指标
 
 ## 常见违规自查
 

@@ -20,15 +20,15 @@ app/                          # @fsdx/web —— 应用 package（业务代码 +
     ├── bootstrap.ts          # 服务启动初始化（init 注入、预置数据、定时任务、优雅关闭）
     ├── hono-app.ts           # Hono 应用工厂（/health 路由）
     ├── server.ts             # TanStack Start 服务端入口
-    ├── router.tsx / start.ts # Router 实例 / 全局中间件注册（locale + CSRF + sfErrorLogger）
+    ├── router.tsx / start.ts # Router 实例 / 全局中间件注册（requestId + locale + CSRF + sfErrorLogger）
     ├── components/           # admin/（antd 业务组件）、client/（前台）、providers/（global-store+i18n-context）
     ├── constants/            # 项目级常量（cookie-names、editor-types）
     ├── db/                   # Drizzle 客户端 + schema（17 张表）
     ├── permissions/          # RBAC 权限码常量与匹配（admin + client 双端）
     ├── theme/                # 主题注册表（themes.ts：各端亮暗主题预设，单一事实来源）
     ├── lib/                  # 仅基础设施单例壳 + 客户端 SDK（其余基础库在 packages/core）
-    │   └── logger/logger.ts  jwt/jwt.ts  track/track.ts
-    ├── middleware/           # admin-auth / client-auth / locale / sf-error-logger
+    │   └── logger/logger.ts  jwt/jwt.ts  track/track.ts  metrics/metrics.ts
+    ├── middleware/           # admin-auth / client-auth / locale / request-id / sf-error-logger
     ├── services/             # 服务端共享业务逻辑（config/dict/file/news/track/...）
     ├── routes/               # 前台 + /admin 全部路由页面与 SFn
     └── styles/ test-utils/ types/ validators/ utils/
@@ -65,14 +65,14 @@ packages/
 | 框架 | TanStack Start (SSR) + React | 19 |
 | 路由 | TanStack Router（文件路由） | - |
 | 构建 | Vite | 8 |
-| 语言 | TypeScript（strict） | 6 |
+| 语言 | TypeScript（strict） | 7 |
 | 样式 | Tailwind CSS + shadcn/ui (new-york) | 4 |
 | 国际化 | i18next + react-i18next | - |
 | 管理端 UI | Ant Design | 6 |
 | API 层 | Hono | - |
 | 数据库 | PostgreSQL + Drizzle ORM（node-postgres） | 1.0.0-rc.4 |
 | 校验 | Zod | - |
-| Lint/Format | Biome | 2.4 |
+| Lint/Format | Biome | 2.5 |
 | 测试 | Vitest | 4 |
 | 包管理 | pnpm | - |
 | 日志 | pino（multistream，按天写入文件） | - |
@@ -88,7 +88,7 @@ packages/
 - 所有 Server Function 的 `validator` **必须**使用 zod schema，禁止裸函数校验（FormData 上传类 SFn 除外，zod 无法直接校验 `FormData`，允许用裸函数做类型守卫）；格式 `createServerFn({ method: "GET" | "POST" }).validator(schema).handler(async ({ data }) => ...)`；调用方通过 `{ data: ... }` 传参
 - `createServerFn` 定义的函数**必须**以 `SFn` 为后缀；`.server.ts` 中的辅助函数**禁止**使用 `SFn` 后缀；`.functions.ts` 中未被引用的包装器视为死代码
 - **三层分离**：`.server.ts`（服务逻辑）/ `.functions.ts`（SFn 包装）/ `.schemas.ts`（zod schema 单一来源，服务层用 `z.infer` 派生类型）；路由文件与组件**禁止**直接 import `.server.ts`
-- **Server Route 例外**：文件读取/下载/流式响应路由（`routes/file/r.$id.tsx`、`routes/admin/_admin/logs/download.$id.tsx`、`routes/admin/_admin/file-explorer/download.$.tsx`）允许在 `.tsx` 内通过 `server.handlers` 写服务端 handler 并引用 `.server.ts`，与 SFn 是两套并存范式；下载响应统一由 `services/download/download.server.ts` 的 `createFileDownloadResponse` 构造
+- **Server Route 例外**：文件读取/下载/流式响应与指标端点路由（`routes/file/r.$id.tsx`、`routes/admin/_admin/logs/download.$id.tsx`、`routes/admin/_admin/file-explorer/download.$.tsx`、`routes/api/metrics.tsx`）允许在 `.tsx` 内通过 `server.handlers` 写服务端 handler 并引用 `.server.ts`，与 SFn 是两套并存范式；下载响应统一由 `services/download/download.server.ts` 的 `createFileDownloadResponse` 构造
 
 > 详细规范、SFn 放置规则、`src/services/` 准入门槛、就近原则、调用方模式、违规自查 → [server-function](.agents/skills/server-function/SKILL.md)
 
@@ -103,11 +103,13 @@ packages/
 
 ### 其他基础设施
 
+- **请求 ID 贯通**：`requestIdMiddleware` 注册于 requestMiddleware 首位，透传上游 `x-request-id`（超长截断至 100）或生成 UUID，写入 ALS 上下文并回写响应头；logger mixin 自动注入 requestId，操作审计落库 `operation_log.request_id`，实现日志与审计全链路追踪
+- **Prometheus 指标**：`src/lib/metrics/metrics.ts` 进程内注册表（`Counter` + `Histogram`，无第三方依赖），预置 `http_requests_total` / `server_function_requests_total` / `server_function_duration_seconds`；`/api/metrics` 端点（Server Route，无鉴权）输出 Prometheus text 格式，多实例部署需实例层聚合
 - **CSRF**：`src/start.ts` 注册 `createCsrfMiddleware`，仅对 ServerFn 生效，校验 Origin / Referer / Sec-Fetch-Site
-- **SF 错误日志**：`sfErrorLogger` 注册于 `functionMiddleware` 自动覆盖所有 SF；鉴权失败记 warn、系统异常记 error（`sanitizeError()` 脱敏），错误始终重新抛出
+- **SF 错误日志**：`sfErrorLogger` 注册于 `functionMiddleware` 自动覆盖所有 SF；鉴权失败（`AdminAuthError`/`ClientAuthError`）记 warn、系统异常记 error（`sanitizeError()` 脱敏），并埋入耗时/结果指标；错误经 `toClientError()` 归一化后重新抛出
 - **Import Protection**：客户端构建禁止导入 `*.server.*` 与 `bcryptjs` / `drizzle-orm` / `openai`；服务端禁止 `*.client.*`；type-only import 不触发
 - **事件埋点**：`track_event` + 元事件/元属性三表；客户端 SDK `src/lib/track/track.ts` 自动采集 PageView；服务端校验链：per-session 频控（60 条/分）→ 时间钳制 → 事件/属性名校验 → 值类型校验；BatchWriter 5 秒/100 条/上限 1000；预置 5 元事件（PageView、FormSubmit、Login、Register、Logout）+ 11 元属性（含 7 个 `$` 系统属性）→ 详见 [event-tracking](docs/event-tracking.md)
-- **操作日志审计**：`logOperation()` fire-and-forget；SFn 写 CRUD 审计**必须**用同模块 `logCrud()` 一行式封装（自动装配操作人 + targetType 默认值）；CRUD 审计与外部调用日志使用独立 BatchWriter（上限 1000 / 5000）；操作者身份经 request-context（AsyncLocalStorage）注入，进程退出自动刷新
+- **操作日志审计**：`logOperation()` fire-and-forget；SFn 写 CRUD 审计**必须**用同模块 `logCrud()` 一行式封装（自动装配操作人 + targetType 默认值）；CRUD 审计与外部调用日志使用独立 BatchWriter（上限 1000 / 5000）；操作者身份经 request-context（AsyncLocalStorage）注入，requestId 自动从 ALS 捕获落库，进程退出自动刷新
 - **系统初始化**：首次部署自动跳转 `/admin/init`，以 `admin_user.is_root`（数据库部分唯一索引）判断是否已初始化；事务内完成角色 → root 用户 → 系统配置，已初始化后禁止重复操作
 - **环境变量**：位于 `app/.env` / `app/.env.example`，Vite 以 app 为 root 加载并注入 `process.env`；SMTP 邮件配置已迁系统配置表，不再通过环境变量管理
 
@@ -136,7 +138,7 @@ packages/
 - Schema 文件按模块拆分在 `src/db/schema/`，通过 `index.ts` 统一导出
 - 列命名硬规则：主键 `id`、时间 `created_at`/`updated_at`（timestamptz）、软删除 `deleted_at`、描述 `description`、排序 `sort_order`、外键列 `xxx_id`（JS 属性以 `Id` 结尾）；所有列必须显式指定数据库列名，timestamp 必须加 `{ withTimezone: true }`
 - **jsonb 列必须通过 `.$type<>()` 显式指定 TS 类型**，禁止无类型 `jsonb()`
-- **Schema 变更禁止 `db:push`**，一律走 `pnpm db:generate`（重命名列时交互选 rename）→ 审查生成的 SQL → `pnpm db:migrate`；生产部署由 bootstrap `runMigrations()` 启动时自动执行（迁移失败 = 进程启动即崩，fail-fast）；本项目为单实例架构，无并发迁移竞态
+- **Schema 变更禁止 `db:push`**，一律走 `pnpm db:generate`（重命名列时交互选 rename）→ 审查生成的 SQL → `pnpm db:migrate`；生产部署由 bootstrap `runMigrations()` 启动时自动执行（失败记 `logger.warn` 容错并继续启动，需人工 `pnpm db:migrate` 同步，进程本身不崩溃）；本项目为单实例架构，无并发迁移竞态
 - `pnpm db:migrate` 走程序化迁移（`src/db/migrate-cli.ts` 调 `runMigrations()`，与 bootstrap 路径一致），不使用 drizzle-kit migrate 命令
 
 > 完整列命名决策表、表定义模板、迁移流程、常见陷阱 → [db-schema](.agents/skills/db-schema/SKILL.md)
@@ -149,7 +151,7 @@ packages/
 - 每个缓存实例只能在唯一一个服务端模块中直接操作，禁止跨模块 import；外部模块通过所属模块的导出函数访问
 - 读缓存函数必须实现懒加载模式：cache miss → 查库 → 写缓存 → 返回
 
-> 8 个缓存实例清单、新增缓存步骤、测试 mock 模式 → [cache](.agents/skills/cache/SKILL.md)
+> 9 个缓存实例清单（8 个领域数据缓存 + 1 个埋点频控内部实例 `sessionRateCache`）、新增缓存步骤、测试 mock 模式 → [cache](.agents/skills/cache/SKILL.md)，清单详情 → [cache-system](docs/cache-system.md)
 
 ## 测试约定
 
@@ -203,7 +205,6 @@ packages/
 | `pnpm e2e` | Playwright e2e 测试（专用隔离库 `fsdx_web_e2e`，webServer 端口 3100；需先 `pnpm --filter @fsdx/web exec playwright install chromium`） |
 | `pnpm db:generate` / `pnpm db:migrate` / `pnpm db:pull` / `pnpm db:studio` | app 数据库迁移流程 |
 | `pnpm --filter @fsdx/core test` | 仅 core 包测试 |
-| `pnpm changeset` | 生成 changeset（仅库包版本管理） |
 
 ## 开发边界
 

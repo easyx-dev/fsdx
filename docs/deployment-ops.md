@@ -107,16 +107,16 @@ CI 部署使用 `${CI_COMMIT_SHORT_SHA}` 作为镜像 tag，每次部署可追�
 服务器启动
     │
     ▼
-server.ts (根目录, Nitro entry)
+app/server.ts (Nitro entry)
     │
     ├── bootstrap()                          # src/bootstrap.ts
-    │   ├── Vite 内置 env 加载 .env + .env.example
-    │   ├── runMigrations()                 程序化数据库迁移（try/catch 容错，表已存在则跳过）
+    │   ├── init 注入                        # initAi / initMail / initSms / setSchedulerLogger（先于一切）
+    │   ├── runMigrations()                 程序化数据库迁移（try/catch 容错，失败仅 warn 并继续）
     │   ├── await Promise.all([ensurePresetDicts(), ensurePresetConfigs()])
-    │   │       等待预置字典和系统配置完成（同步等待）
+    │   │       等待预置字典和系统配置完成（同步等待，config 缓存随之热加载）
     │   ├── void ensurePresetTranslations()  fire-and-forget（不阻塞）
     │   ├── void Promise.all([ensurePresetEvents(), ensurePresetProperties()])
-    │   │       .then(loadPresetCache())     链式加载缓存（不阻塞）
+    │   │       .then(loadTrackMetaCache())  链式加载 track 元数据缓存（不阻塞）
     │   ├── registerAllTasks()              注册定时任务
     │   ├── 注册 uncaughtException 处理器 → logger.fatal + exit(1)
     │   ├── 注册 unhandledRejection 处理器 → logger.fatal + exit(1)
@@ -131,6 +131,8 @@ server.ts (根目录, Nitro entry)
             匹配的请求 → Hono 返回 200+ → 直接响应
 ```
 
+HTTP 入口（`app/server.ts`）对每个请求 `httpRequestsTotal.inc({ method })` 埋点。
+
 ### 请求路由优先级
 
 ```
@@ -142,6 +144,7 @@ Hono (createHonoApp)
     └── 404 → 透传
           ↓
     TanStack Start SSR / Server Functions
+    └── /api/metrics（Server Route handler，无鉴权）→ Prometheus 文本
 ```
 
 ---
@@ -166,6 +169,11 @@ Hono (createHonoApp)
 | `LOG_LEVEL` | 日志级别 | `info` |
 | `STORAGE_DIR` | 文件存储目录（上传文件 + 日志） | `.tmp` |
 | `NODE_ENV` | 运行环境 | — |
+| `DB_POOL_MAX` | pg 连接池最大连接数 | `10` |
+| `DB_POOL_IDLE_TIMEOUT_MS` | 连接空闲回收时间（毫秒） | `30000` |
+| `DB_POOL_CONNECTION_TIMEOUT_MS` | 连接获取超时（毫秒） | `2000` |
+
+> 连接池参数在 `src/db/index.ts` 中读取，postgres 驱动默认值见 [node-postgres 文档](https://node-postgres.com/features/pool)。
 
 SMTP 邮件配置已从环境变量迁移至系统配置表，通过 `/admin/config` 页面管理。
 
@@ -209,12 +217,12 @@ logger.error/warn/info/debug
 
 | 错误类型 | 日志级别 | 行为 |
 |----------|----------|------|
-| `AdminAuthError` (401/403) | warn | 记录状态码 + 消息 |
-| `ApiAuthError` | warn | 记录状态码 + 消息 |
+| `AdminAuthError` / `ClientAuthError` (401/403) | warn | 记录状态码 + 消息 |
 | 其他异常 | error | `sanitizeError()` 脱敏后记录 |
 | 开发环境成功请求 | debug | 记录耗时 |
 
-中间件 `throw error` 保持原有错误传播，不影响框架 error boundary 和客户端 catch。
+- 中间件同时埋入 SF 耗时直方图与结果计数器（`server_function_duration_seconds` / `server_function_requests_total`）
+- 错误经 `toClientError()` 归一化后抛出，保证客户端 `err.message` 始终为业务/校验/兜底文案，不影响框架 error boundary 和客户端 catch
 
 ### 日志查询
 
@@ -223,11 +231,31 @@ logger.error/warn/info/debug
 - `searchLogs(query)` — 按关键词/级别/日期范围搜索
 - `getLogRawContent(date)` — 获取指定日期日志原始内容
 
+### 请求 ID 贯通
+
+`requestIdMiddleware`（`src/middleware/request-id.ts`）注册于 requestMiddleware 首位：优先透传上游 `x-request-id`（超长截断至 100），否则生成 UUID，写入 ALS 上下文并回写响应头。logger mixin 自动注入 requestId，操作审计落库 `operation_log.request_id`——日志、审计、埋点可按同一 requestId 全链路串联。
+
+---
+
+## 监控（Prometheus）
+
+`src/lib/metrics/metrics.ts` 为进程内指标注册表（`Counter` + `Histogram`，无第三方依赖），HTTP 入口与 SF 中间件自动埋点：
+
+| 指标 | 类型 | 标签 | 埋点位置 |
+|------|------|------|----------|
+| `http_requests_total` | Counter | `method` | `app/server.ts` 入口 |
+| `server_function_requests_total` | Counter | `result`（success/error） | `sf-error-logger` |
+| `server_function_duration_seconds` | Histogram | — | `sf-error-logger` |
+
+拉取端点 `/api/metrics`（Server Route handler，无鉴权）输出 Prometheus text 格式。接入 Prometheus 即可采集，**注意**：
+- 无鉴权端点，如对外暴露需在反向代理层加访问控制
+- 指标为进程内计数，多实例部署需在实例层聚合（Prometheus 直接抓取多实例再聚合即可）
+
 ---
 
 ## 文件存储
 
-`@fsdx/core/storage` 提供文件存储抽象层（`StorageAdapter` 接口 + `LocalStorageAdapter`，当前仅本地存储实现）：
+`@fsdx/core/storage` 提供文件存储抽象层（`StorageAdapter` 接口 + `LocalStorageAdapter`，当前仅本地存储实现），存储基址为 `{STORAGE_DIR}/uploads/`：
 
 ```
 上传文件
@@ -236,7 +264,7 @@ uploadFileSFn()
     ↓
 sha256 校验 → 秒传检测（相同哈希复用已有文件）
     ↓
-物理存储: {STORAGE_DIR}/files/{stored_name}
+物理存储: {STORAGE_DIR}/uploads/{YYYY-MM-DD}/{stored_name}
     ↓
 数据库记录: file 表 (status='temp' / 'permanent')
 ```
@@ -364,10 +392,14 @@ GET /health → { "status": "ok", "uptime": 123.456 }
 
 | 文件 | 职责 |
 |------|------|
-| `server.ts` (根目录) | Nitro 服务入口 |
-| `src/bootstrap.ts` | 启动初始化 |
+| `server.ts`（app 根目录） | Nitro 服务入口 + HTTP 指标埋点 |
+| `src/bootstrap.ts` | 启动初始化（init 注入、迁移、预置、定时任务、优雅关闭） |
 | `src/hono-app.ts` | Hono 应用工厂 + 健康检查 |
 | `src/server.ts` | TanStack Start 服务端入口 |
+| `src/start.ts` | 全局中间件注册（requestId + locale + CSRF + sfErrorLogger） |
+| `src/middleware/request-id.ts` | 请求 ID 中间件 |
+| `src/lib/metrics/metrics.ts` | Prometheus 进程内指标注册表 |
+| `src/routes/api/metrics.tsx` | `/api/metrics` 指标端点（无鉴权） |
 | `src/services/tasks/tasks.server.ts` | 定时任务注册 |
 | `packages/core/src/infra/scheduler/index.ts` | 定时任务调度器（`@fsdx/core/scheduler`） |
 | `src/lib/logger/logger.ts` | Pino 日志单例壳（`createLogger` 在 `@fsdx/core/logger`） |

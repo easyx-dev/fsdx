@@ -4,7 +4,9 @@
 
 ## 技术栈
 
-TanStack Start + React 19 · TypeScript 6 · Hono · PostgreSQL + Drizzle ORM · Ant Design 6 · shadcn/ui · Tailwind CSS 4 · i18next · JWT + bcryptjs · Pino · Vite 8 · Biome 2.4 · Vitest 4
+TanStack Start · React 19 · TypeScript · Hono · PostgreSQL + Drizzle ORM · Ant Design 6 · shadcn/ui · Tailwind CSS 4 · i18next · JWT + bcryptjs · Pino · Vite · Biome · Vitest
+
+> 各技术版本号以 [AGENTS.md](AGENTS.md) 技术栈表为准。
 
 ## 快速开始
 
@@ -35,6 +37,8 @@ pnpm dev
 
 ## 命令
 
+常用开发命令如下，完整命令表（含 `pnpm e2e`、`pnpm db:pull`、`pnpm lint:fix` 等）见 [AGENTS.md](AGENTS.md)：
+
 | 命令 | 说明 |
 |------|------|
 | `pnpm dev` | 启动开发服务器 |
@@ -42,7 +46,8 @@ pnpm dev
 | `pnpm preview` | 预览生产构建 |
 | `pnpm test` | 运行测试 |
 | `pnpm check` | TypeScript + Biome 检查 |
-| `pnpm lint` | Biome 检查并自动修复 |
+| `pnpm lint` | Biome 检查 |
+| `pnpm lint:fix` | Biome 自动修复 |
 | `pnpm format` | Biome 格式化 |
 | `pnpm db:generate` | 生成数据库迁移文件 |
 | `pnpm db:migrate` | 运行数据库迁移 |
@@ -54,7 +59,7 @@ pnpm dev
 
 | 包 | 说明 |
 |----|------|
-| [@fsdx/core](packages/core/README.md) | 纯逻辑库：同构纯工具（ms/export/cn/match-permission）+ 服务端基础设施（logger/jwt/ai/mail/sms 等），无 React |
+| [@fsdx/core](packages/core/README.md) | 纯逻辑库：同构纯工具（ms/export/cn/match-permission/date-format）+ 服务端基础设施（logger/jwt/ai/mail/sms/semaphore/task-manager 等），无 React |
 | [@fsdx/ui-ssr](packages/ui-ssr/README.md) | shadcn 基础组件（前台 SSR），颜色 token 由宿主注入 |
 | [@fsdx/ui-spa](packages/ui-spa/README.md) | antd 管理端组件（表格/上传/编辑器/静态方法桥接），antd 单实例 |
 
@@ -65,7 +70,7 @@ pnpm dev
 | [架构总览](docs/architecture-overview.md) | 系统分层架构、数据流、路由体系 |
 | [数据库设计](docs/database-design.md) | 17 张表（13 个 schema 文件）ER 图、列命名约定、约束汇总 |
 | [认证与权限](docs/auth-permission-model.md) | 双用户体系、RBAC、JWT、中间件链路 |
-| [缓存体系](docs/cache-system.md) | MemoryCache 设计、8 个缓存实例、生命周期 |
+| [缓存体系](docs/cache-system.md) | MemoryCache 设计、9 个缓存实例、生命周期 |
 | [事件埋点](docs/event-tracking.md) | 客户端 SDK、服务端校验、缓冲写入、查询分析 |
 | [部署运维](docs/deployment-ops.md) | 启动流程、定时任务、日志、优雅关闭 |
 

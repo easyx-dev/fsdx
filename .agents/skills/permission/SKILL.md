@@ -21,6 +21,7 @@ admin_user ──► roles（jsonb string[]，可多角色）──► permissio
 - **Root 用户**：`admin_user.is_root === true` → 自动拥有 `**` 权限，不查角色表
 - **普通管理员**：`admin_user.admin_role_ids`（jsonb string[]）存多个角色 id，多角色权限取**并集**（任一角色含某权限即拥有）；客户端用户同理使用 `client_user.client_role_ids`
 - **权限匹配优先级**：`**`（超级通配符）→ 精确匹配 → `group:*`（分组通配符）
+- 现有 61 个管理端权限码的完整清单与中间件速查 → [auth-permission-model](../../../docs/auth-permission-model.md)
 
 ## AdminPermissionDef 数据结构
 

@@ -107,6 +107,11 @@
 
 ### Docs
 
+- **文档全面校准 + 去重收敛**（对齐请求 ID 贯通、Prometheus 指标、routes/services 分层重构、i18n/track 服务拆分、TS 7 / Biome 2.5 等代码现状）：
+  - 事实校准：AGENTS / README 技术栈版本（TypeScript 7、Biome 2.5）、删除已移除的 `pnpm changeset` 命令、README 命令表精简为常用项；缓存实例数 8 → **9**（新增 track 频控 `sessionRateCache`）；迁移失败行为按代码改为 `try/catch` + `logger.warn` 容错（非 fail-fast）；Server Route 例外补充 `routes/api/metrics.tsx`；`operation_log` ER 图补充 `request_id` 列并注明该表 camelCase 列命名例外；`dict` 缓存启动加载描述修正为懒加载；`configTranslationCache` 归属修正为 `services/config/`；i18n 拆分后路径更新（`i18n-ui.server.ts` / `i18n-content.server.ts`）；track 服务子文件索引（meta/validate/analytics）；SF 错误日志移除已删除的 `ApiAuthError`、补充 `ClientAuthError` 与埋指标/`toClientError` 归一化；环境变量补充 `DB_POOL_*` 连接池参数；文件存储物理路径修正为 `{STORAGE_DIR}/uploads/{date}/{name}`；登录时序图 SFn 命名统一 `SFn` 后缀
+  - 新增基础设施入文档：请求 ID 贯通（requestIdMiddleware / `x-request-id` / `operation_log.request_id`）与 Prometheus 指标（`/api/metrics`、3 个预置指标、进程内聚合边界）写入 AGENTS / architecture-overview / deployment-ops / architecture skill
+  - 去重收敛：技术栈版本、命令表、缓存实例清单、中间件执行链路、单实例一致性边界、服务层三层契约等重复声明各收敛为单一事实来源 + 交叉引用（auth-permission-model / server-function skill / cache-system / deployment-ops 各为权威载体，其余改链接）
+  - skills 同步：cache 实例表 8→9 并与 cache-system 互标同步提示；server-function 全局错误日志改 `AdminAuthError`/`ClientAuthError` + `toClientError`；architecture 补 `lib/metrics`、请求 ID、Prometheus；permission 补权限清单引用
 - **新增数据库迁移 skills（db-sqlite / db-mysql）**：
   - 沉淀 PostgreSQL → SQLite 完整迁移指南为 `db-sqlite` skill：基于 drizzle v1.0-rc.4 + node:sqlite 异步驱动基态，覆盖驱动选型、pg-core→sqlite-core 类型映射、约束差异（部分唯一索引/ON UPDATE CASCADE/降序索引）、**事务同步化（node-sqlite 'sync' kind 事务回调必须同步，否则提前提交）**、时间序列 SQL 改写、日期类型 Date→number、测试 mock 终结符适配与迁移执行流程
   - 新增 `db-mysql` skill：mysql2 异步驱动，事务与普通查询全部保持 await、日期保持 Date，迁移面最小；覆盖 uuid→char(36)、jsonb→json、json 列默认值限制等 MySQL 特有差异
