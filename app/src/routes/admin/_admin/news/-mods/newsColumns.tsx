@@ -46,7 +46,7 @@ export function newsColumns(options: NewsColumnsOptions) {
 					return <span style={{ color: "#5A6478" }}>—</span>;
 				return (
 					<Image
-						src={`/api/download/file/${record.coverImageId}`}
+						src={`/file/r/${record.coverImageId}`}
 						width={60}
 						height={40}
 						style={{ objectFit: "cover", borderRadius: 0 }}

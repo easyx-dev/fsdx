@@ -1,6 +1,6 @@
 /**
  * 图片上传组件（基础组件，照片墙）：支持单/多图上传、拖拽排序、从文件库选择、画廊预览
- * 上传实现经 uploadFile 回调注入，文件库查询经 fetchFiles / downloadUrl 回调注入
+ * 上传实现经 uploadFile 回调注入，文件库查询经 fetchFiles / readUrl 回调注入
  * value / onChange 兼容 antd Form.Item 直接注入
  */
 
@@ -27,19 +27,16 @@ interface ImageUploadProps {
 	uploadFile: UploadFileFn;
 	/** 文件库查询回调（宿主注入，如对接 getFileListSFn） */
 	fetchFiles: FetchFiles;
-	/** 根据文件 ID 生成下载/预览地址（宿主注入） */
-	downloadUrl: (id: string) => string;
+	/** 根据文件 ID 生成读取地址（宿主注入，用于内联预览/打开） */
+	readUrl: (id: string) => string;
 }
 
 /** 将文件 ID 转为 ImageItem（用于展示已存在的文件） */
-function idToImageItem(
-	id: string,
-	downloadUrl: (id: string) => string,
-): ImageItem {
+function idToImageItem(id: string, readUrl: (id: string) => string): ImageItem {
 	return {
 		uid: id,
 		name: "",
-		url: downloadUrl(id),
+		url: readUrl(id),
 		status: "done",
 	};
 }
@@ -47,11 +44,11 @@ function idToImageItem(
 /** 将 value 转为 ImageItem[] */
 function valueToItems(
 	value: string | string[] | undefined,
-	downloadUrl: (id: string) => string,
+	readUrl: (id: string) => string,
 ): ImageItem[] {
 	if (!value) return [];
 	const ids = Array.isArray(value) ? value : [value];
-	return ids.filter(Boolean).map((id) => idToImageItem(id, downloadUrl));
+	return ids.filter(Boolean).map((id) => idToImageItem(id, readUrl));
 }
 
 /** 从 ImageItem 列表提取文件 ID */
@@ -68,10 +65,10 @@ export function ImageUpload({
 	permanent = true,
 	uploadFile,
 	fetchFiles,
-	downloadUrl,
+	readUrl,
 }: ImageUploadProps) {
 	const [fileList, setFileList] = useState<ImageItem[]>(() =>
-		valueToItems(value, downloadUrl),
+		valueToItems(value, readUrl),
 	);
 	const [selectModalOpen, setSelectModalOpen] = useState(false);
 	const inputRef = useRef<HTMLInputElement>(null);
@@ -84,8 +81,8 @@ export function ImageUpload({
 			internalChangeRef.current = false;
 			return;
 		}
-		setFileList(valueToItems(value, downloadUrl));
-	}, [value, downloadUrl]);
+		setFileList(valueToItems(value, readUrl));
+	}, [value, readUrl]);
 
 	/** 通知外部值变更 */
 	const emitChange = useCallback(
@@ -113,7 +110,7 @@ export function ImageUpload({
 							? {
 									...item,
 									uid: result.id,
-									url: downloadUrl(result.id),
+									url: readUrl(result.id),
 									status: "done" as const,
 									name: result.originalName || item.name,
 								}
@@ -140,7 +137,7 @@ export function ImageUpload({
 				message.error("上传失败：网络错误");
 			}
 		},
-		[permanent, maxCount, onChange, uploadFile, downloadUrl],
+		[permanent, maxCount, onChange, uploadFile, readUrl],
 	);
 
 	/** 处理待上传文件（校验 + 创建临时条目 + 开始上传） */
@@ -231,10 +228,10 @@ export function ImageUpload({
 				message.warning(`最多还能添加 ${available} 个文件`);
 				return;
 			}
-			const newItems = newIds.map((id) => idToImageItem(id, downloadUrl));
+			const newItems = newIds.map((id) => idToImageItem(id, readUrl));
 			emitChange([...fileList, ...newItems]);
 		},
-		[fileList, maxCount, emitChange, downloadUrl],
+		[fileList, maxCount, emitChange, readUrl],
 	);
 
 	/** 拖拽排序 */
@@ -329,7 +326,7 @@ export function ImageUpload({
 				accept={accept}
 				maxCount={maxCount}
 				fetchFiles={fetchFiles}
-				downloadUrl={downloadUrl}
+				readUrl={readUrl}
 			/>
 		</>
 	);

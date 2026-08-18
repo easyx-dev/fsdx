@@ -112,7 +112,7 @@ export function fileExplorerColumns(options: FileExplorerColumnsOptions) {
 									size="small"
 									onClick={() => {
 										window.open(
-											`/api/download/file-explorer/${encodeURIComponent(entryPath(options.currentPath, record.name))}`,
+											`/admin/file-explorer/download/${encodeURIComponent(entryPath(options.currentPath, record.name))}`,
 											"_blank",
 											"noreferrer",
 										);

@@ -105,7 +105,7 @@ function FilePreview({ fileId }: { fileId: string }) {
 		};
 	}, [fileId]);
 
-	const href = `/api/download/file/${fileId}`;
+	const href = `/file/r/${fileId}`;
 	return (
 		<div className="rounded-md border border-border bg-background-secondary px-3 py-2 text-sm min-h-[40px] flex items-center">
 			{loading ? (
@@ -167,7 +167,7 @@ function PreviewContent({
 				</pre>
 			);
 		case "image": {
-			const src = value ? `/api/download/file/${value}` : "";
+			const src = value ? `/file/r/${value}` : "";
 			return (
 				<div className="rounded-md border border-border p-2 min-h-[80px] flex items-center justify-center bg-background-secondary">
 					{value ? (

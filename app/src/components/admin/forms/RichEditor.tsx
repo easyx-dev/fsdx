@@ -25,7 +25,7 @@ export function RichEditor({ value = "", onChange }: Props) {
 			if (!result?.data?.id) {
 				throw new Error("上传未返回文件标识");
 			}
-			return `/api/download/file/${result.data.id}`;
+			return `/file/r/${result.data.id}`;
 		} catch (err) {
 			const reason = err instanceof Error ? err.message : "未知原因";
 			message.error(`图片上传失败：${reason}`);

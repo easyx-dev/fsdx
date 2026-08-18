@@ -79,6 +79,12 @@
     - `news`：抽 `newsColumns`（405 → 217 行）
     - `messages/manage`：抽 `SendMessageModal` / `messageManageColumns`（400 → 253 行）
 
+- **下载路由回归模块 + 下载响应统一服务**：
+  - 读取/下载/流式响应路由自 `routes/api/download/` 迁至所属模块：`routes/file/r.$id.tsx`（`/file/r/$id`）、`routes/admin/_admin/logs/download.$id.tsx`（`/admin/logs/download/$id`）、`routes/admin/_admin/file-explorer/download.$.tsx`（`/admin/file-explorer/download/*`），删除 `routes/api/` 目录；⚠️ **URL 变化**：原 `/api/download/*` 全部变更，旧书签/外链需更新
+  - 新增 `services/download/download.server.ts`：`toWebStream` + `createFileDownloadResponse`，Content-Disposition 统一走 RFC 6266 `filename` + RFC 5987 `filename*=UTF-8''` 双头，修正中文文件名编码不一致
+  - `file/r/$id` 保持前台公共访问（无登录守卫），新增 `createCsrfMiddleware` 同源校验防跨站盗链（放行 `same-origin`/`none`，拒绝 `cross-site`/`same-site`）；`logs` / `file-explorer` 下载路由保留 `adminPermRouteGuard` 管理端权限
+  - ui-spa 上传组件回调 `downloadUrl` 更名 `readUrl`（该 URL 全程用于内联预览/打开，`/file/r/` 语义），`ImageUpload` / `FileUpload` / `SelectFileModal` 同步
+
 - **Drizzle 升级 v0 → v1（rc.4）+ 移除 Relational Queries v1**：
   - `drizzle-orm` / `drizzle-kit` 升至 `1.0.0-rc.4`（v1 最新 rc，drizzle-kit 移入 devDependencies）；迁移目录重建为 v3 结构（每迁移一文件夹，去除 journal.json），开发库重建基线（17 张表）
   - ⚠️ **既有环境升级注意**：迁移历史已整体重建，任何已应用旧 `0000/0001` 迁移的库（其他开发机、预发/生产）需先重置库（`DROP SCHEMA public CASCADE; CREATE SCHEMA public;` 并清空 `drizzle` schema 迁移表）再启动，否则 bootstrap 的 `runMigrations()` 会对已存在的表执行建表而 fail-fast 崩溃；如需保留数据，须手工将新基线迁移 hash 回填进 `__drizzle_migrations`

@@ -1,6 +1,6 @@
 /**
  * 文件上传组件（基础组件）：支持拖拽上传 / 按钮点击上传、从文件库选择、拖拽排序
- * 上传实现经 uploadFile 回调注入，文件库查询经 fetchFiles / downloadUrl 回调注入
+ * 上传实现经 uploadFile 回调注入，文件库查询经 fetchFiles / readUrl 回调注入
  * value / onChange 兼容 antd Form.Item 直接注入
  */
 import {
@@ -50,31 +50,31 @@ interface FileUploadProps {
 	uploadFile: UploadFileFn;
 	/** 文件库查询回调（宿主注入，如对接 getFileListSFn） */
 	fetchFiles: FetchFiles;
-	/** 根据文件 ID 生成下载/预览地址（宿主注入） */
-	downloadUrl: (id: string) => string;
+	/** 根据文件 ID 生成读取地址（宿主注入，用于内联预览/打开） */
+	readUrl: (id: string) => string;
 }
 
 /** 将文件 ID 转为 UploadFile 对象（用于展示） */
 function idToUploadFile(
 	id: string,
-	downloadUrl: (id: string) => string,
+	readUrl: (id: string) => string,
 ): UploadFile {
 	return {
 		uid: id,
 		name: id,
 		status: "done",
-		url: downloadUrl(id),
+		url: readUrl(id),
 	};
 }
 
 /** 将 value 转为 UploadFile[] */
 function valueToFileList(
 	value: string | string[] | undefined,
-	downloadUrl: (id: string) => string,
+	readUrl: (id: string) => string,
 ): UploadFile[] {
 	if (!value) return [];
 	const ids = Array.isArray(value) ? value : [value];
-	return ids.filter(Boolean).map((id) => idToUploadFile(id, downloadUrl));
+	return ids.filter(Boolean).map((id) => idToUploadFile(id, readUrl));
 }
 
 /** 从 UploadFile 列表提取文件 ID */
@@ -93,10 +93,10 @@ export function FileUpload({
 	permanent = true,
 	uploadFile,
 	fetchFiles,
-	downloadUrl,
+	readUrl,
 }: FileUploadProps) {
 	const [fileList, setFileList] = useState<UploadFile[]>(() =>
-		valueToFileList(value, downloadUrl),
+		valueToFileList(value, readUrl),
 	);
 	const [selectModalOpen, setSelectModalOpen] = useState(false);
 	const internalChangeRef = useRef(false);
@@ -109,8 +109,8 @@ export function FileUpload({
 			internalChangeRef.current = false;
 			return;
 		}
-		setFileList(valueToFileList(value, downloadUrl));
-	}, [value, downloadUrl]);
+		setFileList(valueToFileList(value, readUrl));
+	}, [value, readUrl]);
 
 	/** 通知外部值变更 */
 	const emitChange = useCallback(
@@ -174,7 +174,7 @@ export function FileUpload({
 					...f,
 					uid: f.response?.id || f.uid,
 					name: f.response?.originalName || f.name,
-					url: f.response?.id ? downloadUrl(f.response.id) : f.url,
+					url: f.response?.id ? readUrl(f.response.id) : f.url,
 				};
 			}
 			return f;
@@ -196,10 +196,10 @@ export function FileUpload({
 				message.warning(`最多还能添加 ${available} 个文件`);
 				return;
 			}
-			const newFiles = newIds.map((id) => idToUploadFile(id, downloadUrl));
+			const newFiles = newIds.map((id) => idToUploadFile(id, readUrl));
 			emitChange([...fileList, ...newFiles]);
 		},
-		[fileList, maxCount, emitChange, downloadUrl],
+		[fileList, maxCount, emitChange, readUrl],
 	);
 
 	/** 拖拽排序处理 */
@@ -400,7 +400,7 @@ export function FileUpload({
 				accept={accept}
 				maxCount={maxCount}
 				fetchFiles={fetchFiles}
-				downloadUrl={downloadUrl}
+				readUrl={readUrl}
 			/>
 		</>
 	);

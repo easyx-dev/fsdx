@@ -50,8 +50,8 @@ const fetchFiles: FetchFiles = async ({
 	return { records: result.records ?? [], total: result.total };
 };
 
-/** 生成文件下载/预览地址 */
-const downloadUrl = (id: string) => `/api/download/file/${id}`;
+/** 生成文件读取地址（内联预览/打开） */
+const readUrl = (id: string) => `/file/r/${id}`;
 
 export function ImageUpload(props: ImageUploadProps) {
 	return (
@@ -59,7 +59,7 @@ export function ImageUpload(props: ImageUploadProps) {
 			{...props}
 			uploadFile={uploadFile}
 			fetchFiles={fetchFiles}
-			downloadUrl={downloadUrl}
+			readUrl={readUrl}
 		/>
 	);
 }

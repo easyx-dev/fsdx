@@ -1,14 +1,14 @@
 /**
  * 资源管理器：文件下载路由（catch-all 路径参数）
- * URL: /api/download/file-explorer/*
+ * URL: /admin/file-explorer/download/*
  */
-import { Readable } from "node:stream";
 import { createFileRoute } from "@tanstack/react-router";
 import { adminPermRouteGuard } from "#/middleware/admin-auth";
 import { ADMIN_PERMISSIONS } from "#/permissions/admin-permissions";
+import { createFileDownloadResponse } from "#/services/download/download.server";
 import { createFileReadStream } from "#/services/file-explorer/file-explorer.server";
 
-export const Route = createFileRoute("/api/download/file-explorer/$")({
+export const Route = createFileRoute("/admin/_admin/file-explorer/download/$")({
 	server: {
 		middleware: [adminPermRouteGuard(ADMIN_PERMISSIONS.FILE_EXPLORER_VIEW)],
 		handlers: {
@@ -16,12 +16,10 @@ export const Route = createFileRoute("/api/download/file-explorer/$")({
 				try {
 					const subPath = decodeURIComponent(params._splat ?? "");
 					const { stream, name } = await createFileReadStream(subPath);
-					const readableStream = Readable.toWeb(stream);
-					return new Response(readableStream as ReadableStream, {
-						headers: {
-							"Content-Type": "application/octet-stream",
-							"Content-Disposition": `attachment; filename*=UTF-8''${encodeURIComponent(name)}`,
-						},
+					return createFileDownloadResponse(stream, {
+						filename: name,
+						mimeType: "application/octet-stream",
+						disposition: "attachment",
 					});
 				} catch (err) {
 					const e = err as NodeJS.ErrnoException;

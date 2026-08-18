@@ -117,12 +117,13 @@ __root.tsx                    # HTML shell，按 pathname 分发 AdminLayout / S
 │       ├── dicts/            # 字典管理
 │       ├── config/           # 系统配置
 │       ├── files/            # 文件管理
-│       ├── logs/             # 日志查询
+│       ├── logs/             # 日志查询（含 download/ 下载路由）
+│       ├── file-explorer/    # 资源管理器（含 download/ 下载路由）
 │       ├── operation-logs/   # 操作日志审计
 │       ├── translations/     # 翻译管理
 │       ├── track/            # 埋点分析
 │       └── demo/             # 组件演示
-└── api/download/             # 文件/日志下载 API
+└── file/r/                  # 文件内容读取路由（通用，前台公共访问 + 同源校验，inline 预览/打开）
 ```
 
 ### 4. 中间件执行链路

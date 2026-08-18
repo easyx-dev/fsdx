@@ -240,11 +240,7 @@ function FilesPage() {
 						</TableOperate.Custom>
 					)}
 					<TableOperate.Custom>
-						<a
-							href={`/api/download/file/${record.id}`}
-							target="_blank"
-							rel="noreferrer"
-						>
+						<a href={`/file/r/${record.id}`} target="_blank" rel="noreferrer">
 							<Button type="link" size="small" icon={<DownloadOutlined />}>
 								下载
 							</Button>
@@ -357,7 +353,7 @@ function FilesPage() {
 			>
 				{previewFile && isImage(previewFile.mimeType) && (
 					<img
-						src={`/api/download/file/${previewFile.id}`}
+						src={`/file/r/${previewFile.id}`}
 						alt={previewFile.originalName}
 						style={{ maxWidth: "80vw", maxHeight: "80vh" }}
 					/>

@@ -217,7 +217,9 @@ export const exportProductsSFn = createServerFn({ method: "GET" })
 
 ## Server Route 例外
 
-`src/routes/api/` 下的文件下载/流式响应路由（如 `api/download/file.$id.tsx`）允许在 `.tsx` 内通过 `server.handlers` 直接写服务端 handler 并引用 `.server.ts`——这是 TanStack Start Server Route 的合法形态，与 SFn 是两套并存范式，**不适用**「SFn 必须放 `.functions.ts`」规则。
+文件读取/下载/流式响应路由（如 `routes/file/r.$id.tsx`、`routes/admin/_admin/logs/download.$id.tsx`、`routes/admin/_admin/file-explorer/download.$.tsx`）允许在 `.tsx` 内通过 `server.handlers` 直接写服务端 handler 并引用 `.server.ts`——这是 TanStack Start Server Route 的合法形态，与 SFn 是两套并存范式，**不适用**「SFn 必须放 `.functions.ts`」规则。
+
+下载路由统一通过 `services/download/download.server.ts` 的 `createFileDownloadResponse(source, { filename, mimeType, disposition })` 构造响应（Content-Disposition 走 RFC 5987 `filename*=UTF-8''`），避免各路由重复手写流式转换与头部编码。
 
 
 ## Handler 内部模式

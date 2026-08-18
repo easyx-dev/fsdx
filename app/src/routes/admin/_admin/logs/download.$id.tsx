@@ -1,13 +1,13 @@
 /**
- * 日志下载 API 路由
+ * 日志下载路由（管理端）
  */
-import { Readable } from "node:stream";
 import { createFileRoute } from "@tanstack/react-router";
 import { adminPermRouteGuard } from "#/middleware/admin-auth";
 import { ADMIN_PERMISSIONS } from "#/permissions/admin-permissions";
+import { createFileDownloadResponse } from "#/services/download/download.server";
 import { getLogRawContent } from "#/services/logs/logs.server";
 
-export const Route = createFileRoute("/api/download/log/$id")({
+export const Route = createFileRoute("/admin/_admin/logs/download/$id")({
 	server: {
 		middleware: [adminPermRouteGuard(ADMIN_PERMISSIONS.LOG_DOWNLOAD)],
 		handlers: {
@@ -16,12 +16,10 @@ export const Route = createFileRoute("/api/download/log/$id")({
 				if (!content) {
 					return new Response("File not found", { status: 404 });
 				}
-				const readableStream = Readable.toWeb(Readable.from(content));
-				return new Response(readableStream as ReadableStream, {
-					headers: {
-						"Content-Type": "text/plain; charset=utf-8",
-						"Content-Disposition": `attachment; filename="${params.id}.log"`,
-					},
+				return createFileDownloadResponse(content, {
+					filename: `${params.id}.log`,
+					mimeType: "text/plain; charset=utf-8",
+					disposition: "attachment",
 				});
 			},
 		},

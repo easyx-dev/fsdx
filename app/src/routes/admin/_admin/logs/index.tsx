@@ -203,7 +203,7 @@ function LogsPage() {
 							</Tag>
 							<Tooltip title="下载该日日志文件">
 								<a
-									href={`/api/download/log/${d}`}
+									href={`/admin/logs/download/${d}`}
 									style={{
 										display: "inline-flex",
 										alignItems: "center",

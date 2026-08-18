@@ -1,6 +1,6 @@
 /**
  * 文件库选择弹窗（基础组件）：从已上传文件中选取，支持搜索、筛选、预览、单选/多选、分页
- * 文件列表查询经 fetchFiles 回调注入，由宿主决定数据来源；下载地址经 downloadUrl 回调注入
+ * 文件列表查询经 fetchFiles 回调注入，由宿主决定数据来源；读取地址经 readUrl 回调注入
  */
 import { EyeOutlined } from "@ant-design/icons";
 import { Button, Image, Input, Modal, Space, Tag } from "antd";
@@ -47,8 +47,8 @@ interface SelectFileModalProps {
 	maxCount?: number;
 	/** 文件列表查询回调（宿主注入，如对接 getFileListSFn） */
 	fetchFiles: FetchFiles;
-	/** 根据文件 ID 生成下载/预览地址（宿主注入） */
-	downloadUrl: (id: string) => string;
+	/** 根据文件 ID 生成读取地址（宿主注入，用于内联预览/打开） */
+	readUrl: (id: string) => string;
 }
 
 /** 将 accept 值转为 mimeType 前缀（如 "image/*" → "image/"） */
@@ -74,7 +74,7 @@ export function SelectFileModal({
 	accept,
 	maxCount,
 	fetchFiles,
-	downloadUrl,
+	readUrl,
 }: SelectFileModalProps) {
 	const pageSize = 50;
 	const [loading, setLoading] = useState(false);
@@ -290,7 +290,7 @@ export function SelectFileModal({
 				>
 					<Image
 						preview={false}
-						src={downloadUrl(previewFile.id)}
+						src={readUrl(previewFile.id)}
 						alt={previewFile.originalName}
 						style={{ maxWidth: "70vw", maxHeight: "70vh" }}
 					/>
