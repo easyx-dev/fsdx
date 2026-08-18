@@ -5,14 +5,6 @@ import { createServerFn } from "@tanstack/react-start";
 import { adminPermGuard } from "#/middleware/admin-auth";
 import { ADMIN_PERMISSIONS } from "#/permissions/admin-permissions";
 import {
-	changeNewsStatus,
-	createNews,
-	deleteNews,
-	getNewsById,
-	getNewsList,
-} from "#/services/news/news.server";
-import { logCrud } from "#/services/operation-log/operation-log.server";
-import {
 	createNewsSchema,
 	exportSchema,
 	getNewsSchema,
@@ -20,16 +12,22 @@ import {
 	newsImportSchema,
 	statusSchema,
 	updateNewsSchema,
-} from "./news.schemas";
+} from "#/services/news/news.schemas";
 import {
+	changeNewsStatus,
 	checkRecommendedLimit,
+	createNews,
+	deleteNews,
 	ensureUniqueSlug,
 	exportAllNews,
 	formatNewsExport,
+	getNewsById,
+	getNewsList,
 	importNewsItems,
 	type NewsUpdateData,
 	updateNewsRecord,
-} from "./news.server";
+} from "#/services/news/news.server";
+import { logCrud } from "#/services/operation-log/operation-log.server";
 
 /** 获取新闻列表（分页、筛选、排序） */
 export const getNewsListSFn = createServerFn({ method: "GET" })

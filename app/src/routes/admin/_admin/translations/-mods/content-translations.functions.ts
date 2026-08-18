@@ -8,6 +8,11 @@ import { z } from "zod";
 import { adminPermGuard } from "#/middleware/admin-auth";
 import { ADMIN_PERMISSIONS } from "#/permissions/admin-permissions";
 import {
+	deleteSchema,
+	formSchema,
+	getListSchema,
+} from "#/services/i18n/content-translation.schemas";
+import {
 	type ContentTranslationExportData,
 	deleteContentTranslation,
 	getAllContentTranslationsForExport,
@@ -17,11 +22,6 @@ import {
 	upsertContentTranslation,
 } from "#/services/i18n/i18n.server";
 import { logCrud } from "#/services/operation-log/operation-log.server";
-import {
-	deleteSchema,
-	formSchema,
-	getListSchema,
-} from "./content-translations.schemas";
 
 export const getListSFn = createServerFn({ method: "GET" })
 	.middleware([adminPermGuard(ADMIN_PERMISSIONS.TRANSLATION_VIEW)])

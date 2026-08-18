@@ -37,15 +37,17 @@ description: >
 | 1 | `src/db/schema/<module-name>.ts` | Drizzle 表定义 | [db-schema](../db-schema/SKILL.md) |
 | 2 | `src/db/schema/index.ts` | 追加 export | — |
 | 3 | `src/permissions/admin-permissions.ts` | 追加权限码 | [permission](../permission/SKILL.md) |
-| 4 | `src/services/<module-name>/<module-name>.server.ts` | 服务层 helper | — |
-| 5 | `src/routes/admin/_admin/<module-name>/-mods/<module-name>.schemas.ts` | Zod Schema | — |
-| 6 | `src/routes/admin/_admin/<module-name>/-mods/<module-name>.functions.ts` | SFn 包装器 | [server-function](../server-function/SKILL.md) |
+| 4 | `src/services/<module-name>/<module-name>.schemas.ts` | Zod Schema（单一来源） | — |
+| 5 | `src/services/<module-name>/<module-name>.server.ts` | 服务层 helper | — |
+| 6 | `src/routes/admin/_admin/<module-name>/-mods/<module-name>.functions.ts` | SFn 包装器（就近路由） | [server-function](../server-function/SKILL.md) |
 | 7 | `src/routes/admin/_admin/<module-name>/-mods/<ModuleName>Form.tsx` | antd Form 组件 | — |
 | 8 | `src/routes/admin/_admin/<module-name>/index.tsx` | 列表页 | — |
 | 9 | `src/routes/admin/_admin/<module-name>/create.tsx` | 创建页 | — |
 | 10 | `src/routes/admin/_admin/<module-name>/$id/edit.tsx` | 编辑页 | — |
 | 11 | `src/services/<module-name>/__tests__/<module-name>.test.ts` | 服务层测试 | [test-writing](../test-writing/SKILL.md) |
 | 12 | 路由目录 `__tests__/`（schema 就近测试） | 追加 Schema 测试 | [test-writing](../test-writing/SKILL.md) |
+
+> 服务层（schemas/server）统一收在 `src/services/<module-name>/`，SFn 就近放路由 `-mods/`（import services 的 schema/server），`-mods/` 同时放 UI 组件（Form/Columns）。参考实现：`src/services/news/` + `src/routes/admin/_admin/news/`。
 
 ---
 
@@ -281,7 +283,7 @@ export async function deleteProduct(id: string): Promise<boolean> {
 
 ## Step 5：创建 Zod Schema
 
-创建 `src/routes/admin/_admin/<module-name>/-mods/<module-name>.schemas.ts`：
+创建 `src/services/<module-name>/<module-name>.schemas.ts`：
 
 ```ts
 import { z } from "zod";
@@ -333,7 +335,7 @@ import {
   createProductSchema,
   getProductSchema,
   updateProductSchema,
-} from "./product.schemas";
+} from "#/services/product/product.schemas";
 
 export const getProductByIdSFn = createServerFn({ method: "GET" })
   .middleware([adminPermGuard(ADMIN_PERMISSIONS.PRODUCT_VIEW)])
@@ -383,6 +385,7 @@ import {
   Switch,
 } from "antd";
 import { useEffect, useState } from "react";
+// Form 与 SFn 同在路由 -mods/，直接相对导入
 import { createProductSFn, getProductByIdSFn, updateProductSFn } from "./product.functions";
 
 export interface ProductFormValues {
@@ -869,16 +872,20 @@ function ProductEditPage() {
 
 ## 参考实现
 
-完整参考：`src/routes/admin/_admin/news/`
+完整参考：`src/services/news/` + `src/routes/admin/_admin/news/`
 
 ```
+src/services/news/
+├── news.schemas.ts      # Zod Schema（单一来源，服务层 z.infer 派生）
+├── news.server.ts       # 服务层（CRUD/导入导出）
+└── __tests__/
+
 src/routes/admin/_admin/news/
-├── index.tsx              # 列表页（421 行，含状态筛选 + 抽屉编辑 + 导出 + 字段翻译）
+├── index.tsx              # 列表页（含状态筛选 + 抽屉编辑 + 导出 + 字段翻译）
 ├── create.tsx             # 创建页（约 20 行）
 ├── $id/edit.tsx           # 编辑页（约 30 行）
 └── -mods/
-    ├── news.schemas.ts    # Zod Schema
-    ├── news.functions.ts  # SFn 包装器（create / update / getById）
+    ├── news.functions.ts  # SFn 包装器（import services 的 schema/server）
     └── NewsForm.tsx       # antd Form 组件（210 行）
 ```
 

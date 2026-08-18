@@ -2,9 +2,9 @@
  * 埋点事件 Schema 验证测试
  */
 import { describe, expect, it } from "vitest";
+import { analyticsQuerySchema } from "#/routes/admin/_admin/track/-mods/analytics.functions";
+import { trackEventQuerySchema } from "#/routes/admin/_admin/track/-mods/query.functions";
 import { trackEventSchema } from "#/services/track/track.functions";
-import { analyticsQuerySchema } from "../-mods/analytics.functions";
-import { trackEventQuerySchema } from "../-mods/query.functions";
 
 describe("trackEventSchema", () => {
 	it("最小有效参数应通过校验", () => {

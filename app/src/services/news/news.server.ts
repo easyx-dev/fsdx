@@ -1,11 +1,12 @@
 /**
- * 新闻管理：CRUD 操作 + slug 自动生成
+ * 新闻管理：CRUD + 导入导出 + slug 自动生成（领域实体唯一归属）
  * wangEditor 直接存储 HTML，无需服务端渲染转换
  * 国际化数据通过 translateNewsRecord / translateNewsRecords 按需组合获取
  */
 
+import { toCsv, toJson } from "@fsdx/core/export";
 import { DEFAULT_LOCALE, type Locale } from "@fsdx/core/i18n-types";
-import { and, desc, eq, ne } from "drizzle-orm";
+import { and, desc, eq, inArray, ne } from "drizzle-orm";
 import { db } from "#/db/index";
 import { news } from "#/db/schema";
 import {
@@ -22,7 +23,24 @@ import type { PaginatedSortParams } from "#/types/query";
 
 export type NewsRecord = typeof news.$inferSelect;
 
+/** 新闻更新数据 */
+export type NewsUpdateData = Partial<typeof news.$inferInsert>;
+
 const MAX_RECOMMENDED = 5;
+
+/** 新闻导出 CSV 列定义 */
+export const NEWS_EXPORT_COLUMNS: { key: string; title: string }[] = [
+	{ key: "id", title: "ID" },
+	{ key: "title", title: "标题" },
+	{ key: "slug", title: "Slug" },
+	{ key: "description", title: "摘要" },
+	{ key: "content", title: "正文" },
+	{ key: "status", title: "状态" },
+	{ key: "isPinned", title: "是否置顶" },
+	{ key: "publishedAt", title: "发布时间" },
+	{ key: "createdAt", title: "创建时间" },
+	{ key: "updatedAt", title: "更新时间" },
+];
 
 /** 新闻详情返回类型（扁平结构，避免 SF 序列化嵌套问题） */
 export type NewsDetail = NewsRecord & { html: string };
@@ -47,7 +65,7 @@ export function generateSlug(title: string): string {
 }
 
 /** 确保 slug 唯一，重复时追加数字后缀 */
-async function ensureUniqueSlug(
+export async function ensureUniqueSlug(
 	slug: string,
 	excludeId?: string,
 ): Promise<string> {
@@ -78,6 +96,26 @@ async function ensureUniqueSlug(
 	}
 
 	return uniqueSlug;
+}
+
+/**
+ * 校验推荐上限，additionalCount 用于导入场景计入待插入条目
+ */
+export async function checkRecommendedLimit(
+	excludeId?: string,
+	additionalCount = 0,
+): Promise<void> {
+	const conditions = [eq(news.isRecommended, true), notDeleted(news.deletedAt)];
+	if (excludeId) conditions.push(ne(news.id, excludeId));
+	const recommendedCount = await db.$count(
+		db
+			.select()
+			.from(news)
+			.where(and(...conditions)),
+	);
+	if (recommendedCount + additionalCount > MAX_RECOMMENDED) {
+		throw new Error(`最多推荐 ${MAX_RECOMMENDED} 条新闻`);
+	}
 }
 
 /**
@@ -194,17 +232,9 @@ export async function createNews(params: {
 	publishedAt?: Date | string;
 	createdById?: string;
 }): Promise<NewsRecord> {
-	// 推荐上限校验
+	// 推荐上限校验（本次将新增 1 条推荐）
 	if (params.isRecommended) {
-		const recommendedCount = await db.$count(
-			db
-				.select()
-				.from(news)
-				.where(and(eq(news.isRecommended, true), notDeleted(news.deletedAt))),
-		);
-		if (recommendedCount >= MAX_RECOMMENDED) {
-			throw new Error(`最多推荐 ${MAX_RECOMMENDED} 条新闻`);
-		}
+		await checkRecommendedLimit(undefined, 1);
 	}
 
 	let slug = params.slug?.trim() || generateSlug(params.title);
@@ -281,4 +311,98 @@ export async function translateNewsRecords(
 	const translationsMap = await getContentTranslations("news", ids, locale);
 
 	return applyTranslations(records, translationsMap);
+}
+
+/** 更新新闻记录并返回更新后的记录 */
+export async function updateNewsRecord(
+	id: string,
+	data: NewsUpdateData,
+): Promise<NewsRecord | null> {
+	const [record] = await db
+		.update(news)
+		.set({ ...data, updatedAt: new Date() })
+		.where(eq(news.id, id))
+		.returning();
+	return record ?? null;
+}
+
+/** 批量导入新闻（先批量查询已有标题去重，避免 N+1） */
+export async function importNewsItems(
+	items: {
+		title: string;
+		slug?: string;
+		description?: string | null;
+		content?: string | null;
+		externalUrl?: string | null;
+		coverImageId?: string | null;
+		status?: string;
+		isPinned?: boolean;
+		isRecommended?: boolean;
+		sortOrder?: number;
+	}[],
+	userId: string,
+): Promise<{ created: number; skipped: number }> {
+	// 一次性查询所有标题对应的已有新闻，构建去重集合
+	const existingNews = await db
+		.select({ title: news.title })
+		.from(news)
+		.where(
+			and(
+				inArray(
+					news.title,
+					items.map((r) => r.title),
+				),
+				notDeleted(news.deletedAt),
+			),
+		);
+	const existingTitles = new Set(existingNews.map((n) => n.title));
+
+	let created = 0;
+	let skipped = 0;
+	for (const row of items) {
+		if (existingTitles.has(row.title)) {
+			skipped++;
+			continue;
+		}
+		const slug = await ensureUniqueSlug(row.slug || generateSlug(row.title));
+		await db.insert(news).values({
+			title: row.title,
+			slug,
+			description: row.description ?? null,
+			content: row.content ?? null,
+			externalUrl: row.externalUrl ?? null,
+			coverImageId: row.coverImageId ?? null,
+			status: row.status ?? "draft",
+			isPinned: row.isPinned ?? false,
+			isRecommended: row.isRecommended ?? false,
+			sortOrder: row.sortOrder ?? 0,
+			publishedAt: row.status === "published" ? new Date() : null,
+			createdById: userId,
+		});
+		created++;
+	}
+	return { created, skipped };
+}
+
+/** 导出全部新闻记录 */
+export async function exportAllNews(): Promise<NewsRecord[]> {
+	return db
+		.select()
+		.from(news)
+		.where(notDeleted(news.deletedAt))
+		.orderBy(desc(news.sortOrder), desc(news.createdAt));
+}
+
+/** 按格式导出新闻 */
+export function formatNewsExport(
+	records: NewsRecord[],
+	format: "csv" | "json",
+): { format: "csv" | "json"; content: string } {
+	if (format === "csv") {
+		return {
+			format: "csv" as const,
+			content: toCsv(records, NEWS_EXPORT_COLUMNS),
+		};
+	}
+	return { format: "json" as const, content: toJson(records) };
 }

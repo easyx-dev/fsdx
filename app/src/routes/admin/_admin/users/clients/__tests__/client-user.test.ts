@@ -54,7 +54,7 @@ import {
 	getClientUserList,
 	resetClientPassword,
 	updateClientUser,
-} from "#/routes/admin/_admin/users/clients/-mods/clients.server";
+} from "#/services/client-user/client-user.server";
 
 beforeEach(() => {
 	vi.clearAllMocks();

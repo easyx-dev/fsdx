@@ -1,5 +1,5 @@
 /**
- * 元事件管理共享 Zod Schema
+ * 元事件（event_meta）zod schema：单一来源
  */
 import { z } from "zod";
 

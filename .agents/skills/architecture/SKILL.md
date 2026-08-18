@@ -15,14 +15,14 @@ description: >
 | `packages/ui-ssr/` | shadcn 基础组件（前台 SSR） | `@fsdx/ui-ssr/ui`、`@fsdx/ui-ssr/theme` |
 | `packages/ui-spa/` | antd 管理端组件（antd 单实例） | `@fsdx/ui-spa/table`、`@fsdx/ui-spa/upload` |
 | `src/lib/` | 应用级基础设施单例壳 + 客户端 SDK | `src/lib/logger/logger.ts`、`src/lib/jwt/jwt.ts`、`src/lib/track/track.ts` |
-| `src/services/` | 跨模块共享的服务端业务逻辑（**仅放被 ≥2 个消费者复用的代码**） | `src/services/track/track.server.ts` |
+| `src/services/` | 领域服务层（`server` 业务逻辑 + `schemas` zod + `cache` + `types`）+ 跨端共享 SFn | `src/services/news/`、`src/services/query/`、`src/services/admin-auth/` |
 | `src/constants/` | 项目级常量 | `src/constants/editor-types.ts` |
 | `src/validators/` | 跨模块共享的 zod schema | `src/validators/common.schemas.ts` |
 | `src/types/` | 跨模块共享类型 | `src/types/query.ts` |
 | `src/middleware/` | 请求级中间件（鉴权/权限/locale/错误日志） | `src/middleware/admin-auth.ts` |
-| `src/routes/` | 路由层（页面 + 路由级 SFn + beforeLoad 守卫） | `src/routes/admin/_admin/news/` |
+| `src/routes/` | 路由层（页面 + UI 组件 + 就近 SFn + beforeLoad 守卫） | `src/routes/admin/_admin/news/` |
 
-**依赖方向**：`routes → services → (core 基础库) → db`。`src/lib/` 禁止引入业务逻辑；单路由私有的服务逻辑内聚在路由 `-mods/`，不上提到 `services/`（渐进式提取）。
+**依赖方向**：`routes → services → (core 基础库) → db`。`src/lib/` 禁止引入业务逻辑。`services/<module>/` 是领域服务层的归属：`server`（业务逻辑/DB）+ `schemas`（zod 单一来源，server 用 `z.infer` 派生）+ `cache` + `types`；跨端共享的 SFn（auth/captcha/track/message/...）也可留在 services。`routes/**/-mods/` 放 UI 组件与**就近的 SFn**（SFn + 路由局部 schema 随页面），页面通过 SFn 调服务层，禁止直接 import `*.server.ts`。
 
 > 每个子包的导出清单与边界见 [core](../../../packages/core/README.md) / [ui-ssr](../../../packages/ui-ssr/README.md) / [ui-spa](../../../packages/ui-spa/README.md)。
 
@@ -81,7 +81,8 @@ const result = createNews(data as CreateNewsInput);
 
 ## 违规自查
 
-- `services/` 中出现只被 1 个消费者使用的模块 → 下移到路由 `-mods/`
+- 领域实体的 `server`/`schemas`/`cache`/`types` 拆在路由 `-mods/` 里 → 收编到 `services/<module>/`，服务层只保留一处归属
+- 实体的 SFn 应就近放在消费页面的路由 `-mods/`，未在页面消费的跨端共享 SFn 才留在 services
 - `.functions.ts` handler 中出现 DB 查询/业务逻辑 → 提取到 `.server.ts`
 - `lib/` 中出现业务常量/业务类型 → 移到 `constants/` 或 `services/`
 - 跨模块直接 `import` 缓存实例 → 改为所属模块导出函数

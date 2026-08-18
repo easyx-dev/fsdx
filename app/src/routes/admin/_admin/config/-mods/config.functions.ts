@@ -7,19 +7,19 @@ import { createServerFn } from "@tanstack/react-start";
 import { adminPermGuard } from "#/middleware/admin-auth";
 import { ADMIN_PERMISSIONS } from "#/permissions/admin-permissions";
 import {
-	createConfig,
-	deleteConfig,
-	getConfigList,
-	updateConfig,
-} from "#/services/config/config.server";
-import { logCrud } from "#/services/operation-log/operation-log.server";
-import {
 	configImportSchema,
 	createConfigSchema,
 	deleteConfigSchema,
 	updateConfigSchema,
-} from "./config.schemas";
-import { importConfigs } from "./config.server";
+} from "#/services/config/config.schemas";
+import {
+	createConfig,
+	deleteConfig,
+	getConfigList,
+	importConfigs,
+	updateConfig,
+} from "#/services/config/config.server";
+import { logCrud } from "#/services/operation-log/operation-log.server";
 
 /** 获取配置列表 */
 export const getConfigListSFn = createServerFn({ method: "GET" })
@@ -69,23 +69,6 @@ export const exportConfigsSFn = createServerFn({ method: "GET" })
 		const configs = await getConfigList();
 		return toJson({ configs });
 	});
-
-/** 配置导入数据格式 */
-export interface ConfigImportData {
-	configs: {
-		key: string;
-		value: string;
-		clientVisible?: boolean;
-		valueType?: string;
-		groupName?: string | null;
-		description?: string | null;
-	}[];
-}
-
-export interface ConfigImportResult {
-	created: number;
-	updated: number;
-}
 
 /** 导入配置数据（JSON） */
 export const importConfigsSFn = createServerFn({ method: "POST" })

@@ -8,7 +8,7 @@ import {
 	listSchema,
 	resetPwdSchema,
 	updateSchema,
-} from "../-mods/clients.schemas";
+} from "#/services/client-user/client-user.schemas";
 
 describe("listSchema", () => {
 	it("空参数通过", () => {

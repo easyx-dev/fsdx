@@ -84,6 +84,7 @@ import {
 	getConfigList,
 	getConfigTranslations,
 	getVisibleConfigRows,
+	importConfigs,
 	loadConfigCache,
 	refreshConfigTranslationCache,
 	updateConfig,
@@ -373,5 +374,59 @@ describe("refreshConfigTranslationCache", () => {
 
 		expect(mockConfigTranslationCache.delete).toHaveBeenCalledTimes(2);
 		expect(mockDb.select).not.toHaveBeenCalled();
+	});
+});
+
+describe("importConfigs", () => {
+	beforeEach(() => vi.clearAllMocks());
+
+	it("导入新配置", async () => {
+		mockRows.mockResolvedValue([]);
+
+		const result = await importConfigs({
+			configs: [{ key: "new.key", value: "new-value" }],
+		});
+
+		expect(result.created).toBe(1);
+		expect(result.updated).toBe(0);
+	});
+
+	it("更新已有配置", async () => {
+		mockRows.mockResolvedValue([{ id: "c-1" }]);
+
+		const result = await importConfigs({
+			configs: [{ key: "existing.key", value: "updated-value" }],
+		});
+
+		expect(result.created).toBe(0);
+		expect(result.updated).toBe(1);
+	});
+
+	it("导入后重新加载配置缓存", async () => {
+		mockRows.mockResolvedValue([]);
+
+		await importConfigs({
+			configs: [{ key: "new.key", value: "new-value" }],
+		});
+
+		expect(mockConfigCache.set).toHaveBeenCalled();
+	});
+
+	it("混合导入统计", async () => {
+		mockRows
+			.mockReset()
+			.mockResolvedValueOnce([])
+			.mockResolvedValueOnce([{ id: "c-2" }])
+			.mockResolvedValue([]);
+
+		const result = await importConfigs({
+			configs: [
+				{ key: "new.key", value: "new-value" },
+				{ key: "existing.key", value: "updated-value" },
+			],
+		});
+
+		expect(result.created).toBe(1);
+		expect(result.updated).toBe(1);
 	});
 });

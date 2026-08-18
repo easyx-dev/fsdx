@@ -11,6 +11,7 @@ import type { ChangeEvent } from "react";
 import { useState } from "react";
 import { AdminPageContent, DictSelect, DictTag } from "#/components/admin";
 import type { AdminRoleRecord } from "#/services/admin-role/admin-role.server";
+import type { AdminUserListItem } from "#/services/admin-user/admin-user.server";
 import type { SortOrder } from "#/types/query";
 import {
 	createSFn,
@@ -20,7 +21,6 @@ import {
 	resetPwdSFn,
 	updateSFn,
 } from "./-mods/admins.functions";
-import type { AdminUserListItem } from "./-mods/admins.server";
 
 // ─── Route & Component ──────────────────────────────────────────────
 

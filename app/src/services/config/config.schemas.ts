@@ -1,6 +1,7 @@
 /**
- * 系统配置管理共享 Zod Schema
+ * 系统配置模块 Zod Schema：管理端 CRUD + 导入，单一来源
  */
+
 import { z } from "zod";
 
 export const createConfigSchema = z.object({

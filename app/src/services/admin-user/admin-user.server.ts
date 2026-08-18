@@ -1,5 +1,5 @@
 /**
- * 管理员用户管理：CRUD 操作
+ * 管理端用户（admin_user）管理：CRUD 操作
  */
 import bcrypt from "bcryptjs";
 import { and, eq, ilike, inArray, isNull, or } from "drizzle-orm";
@@ -13,7 +13,11 @@ import {
 	notDeleted,
 	paginationOffset,
 } from "#/services/query/query-utils.server";
-import type { createSchema, listSchema, updateSchema } from "./admins.schemas";
+import type {
+	createSchema,
+	listSchema,
+	updateSchema,
+} from "./admin-user.schemas";
 
 export type AdminUserRecord = typeof adminUser.$inferSelect;
 

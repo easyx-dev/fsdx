@@ -1,6 +1,6 @@
 /**
  * 埋点事件 Server Function 包装器
- * trackEventSFn 被客户端 SDK 调用，其余 SF 被 admin 多路由共享
+ * trackEventSFn 被客户端 SDK 调用，元事件/元属性 SFn 被 admin 多路由共享
  */
 import { createServerFn } from "@tanstack/react-start";
 import { getRequestHeader, getRequestIP } from "@tanstack/react-start/server";

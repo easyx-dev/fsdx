@@ -430,8 +430,8 @@ export const deleteNewsFn = createServerFn({ method: "POST" })
 
 1. **全局唯一** — `admin_user` 表通过部分唯一索引 `idx_admin_user_single_root` 保证仅有一个 `is_root = true` 的记录
 2. **自动拥有全部权限** — 在 `resolveAdminAuthContext()` 中，`isRoot` 用户直接设置 `rolePermissions = ["**"]`，**不查询角色表**。这意味着即使 root 关联的角色被删除或权限变更，root 仍保留全部权限
-3. **不可禁用** — `src/routes/admin/_admin/users/admins/-mods/admins.server.ts` 中 `updateAdminUser` 禁止设置 root 用户 `status !== "active"`
-4. **不可删除** — `src/routes/admin/_admin/users/admins/-mods/admins.server.ts` 中 `deleteAdminUser` 禁止删除 root 用户
+3. **不可禁用** — `src/services/admin-user/admin-user.server.ts` 中 `updateAdminUser` 禁止设置 root 用户 `status !== "active"`
+4. **不可删除** — `src/services/admin-user/admin-user.server.ts` 中 `deleteAdminUser` 禁止删除 root 用户
 
 ### 系统初始化
 
@@ -480,7 +480,7 @@ sequenceDiagram
 ### 客户端用户内存缓存
 
 `getCurrentClient()` / `getClientUserForAuth()` 使用 5 分钟 TTL 的内存缓存（`clientUserCache`）减少重复数据库查询。缓存失效场景：
-- 管理员修改客户端用户状态或角色时，`src/routes/admin/_admin/users/clients/-mods/clients.server.ts` 主动调用 `clientUserCache.delete(userId)`
+- 管理员修改客户端用户状态或角色时，`src/services/client-user/client-user.server.ts` 主动调用 `clientUserCache.delete(userId)`
 - 管理员删除客户端用户时，同样清除缓存
 
 ### 管理员端认证状态
@@ -537,8 +537,8 @@ const csrfMiddleware = createCsrfMiddleware({
 | `src/services/client-auth/client-auth.server.ts` | 客户端登录、注册、当前用户查询（含缓存） |
 | `src/services/client-auth/client-auth.functions.ts` | 客户端认证 Server Function 包装器 |
 | `src/services/init/init.server.ts` | 系统初始化（checkInitStatus / initSystem） |
-| `src/routes/admin/_admin/users/admins/-mods/admins.server.ts` | 管理员 CRUD（含 root 禁用/删除拦截） |
-| `src/routes/admin/_admin/users/clients/-mods/clients.server.ts` | 客户端用户 CRUD |
+| `src/services/admin-user/admin-user.server.ts` | 管理员 CRUD（含 root 禁用/删除拦截） |
+| `src/services/client-user/client-user.server.ts` | 客户端用户 CRUD |
 | `src/services/admin-role/admin-role.server.ts` | 管理端角色 CRUD |
 | `src/services/client-role/client-role.server.ts` | 客户端角色 CRUD |
 | `src/db/schema/admin-user.ts` | admin_user 表（含部分唯一索引） |

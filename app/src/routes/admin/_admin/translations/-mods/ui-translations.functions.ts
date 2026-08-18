@@ -16,12 +16,12 @@ import {
 	type UiTranslationExportData,
 	upsertUITranslation,
 } from "#/services/i18n/i18n.server";
-import { logCrud } from "#/services/operation-log/operation-log.server";
 import {
 	deleteSchema,
 	formSchema,
 	getListSchema,
-} from "./ui-translations.schemas";
+} from "#/services/i18n/ui-translation.schemas";
+import { logCrud } from "#/services/operation-log/operation-log.server";
 
 export const getListSFn = createServerFn({ method: "GET" })
 	.middleware([adminPermGuard(ADMIN_PERMISSIONS.TRANSLATION_VIEW)])

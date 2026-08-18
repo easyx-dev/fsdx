@@ -1,9 +1,10 @@
 /**
- * 系统配置管理：CRUD 操作 + 内存缓存
+ * 系统配置管理：CRUD + 导入导出 + 内存缓存（领域实体唯一归属）
  */
 
 import { DEFAULT_LOCALE, type Locale } from "@fsdx/core/i18n-types";
 import { and, asc, eq, isNull } from "drizzle-orm";
+import type { z } from "zod";
 import type { EditorType } from "#/constants/editor-types";
 import { db } from "#/db/index";
 import { contentTranslation, systemConfig } from "#/db/schema";
@@ -12,6 +13,7 @@ import {
 	configCache,
 	configTranslationCache,
 } from "#/services/config/config.cache";
+import type { configImportSchema } from "./config.schemas";
 
 export type ConfigRecord = typeof systemConfig.$inferSelect;
 
@@ -421,4 +423,57 @@ export async function refreshConfigTranslationCache(
 		}
 		logger.info("全部系统配置翻译缓存已清理");
 	}
+}
+
+// ========== 导入导出 ==========
+
+/** 配置导入数据结构（schema 单一来源，z.infer 派生） */
+export type ConfigImportData = z.infer<typeof configImportSchema>;
+
+export interface ConfigImportResult {
+	created: number;
+	updated: number;
+}
+
+/** 导入配置数据（按 key upsert） */
+export async function importConfigs(
+	data: ConfigImportData,
+): Promise<ConfigImportResult> {
+	const result: ConfigImportResult = { created: 0, updated: 0 };
+
+	for (const cfg of data.configs) {
+		const [existing] = await db
+			.select()
+			.from(systemConfig)
+			.where(eq(systemConfig.key, cfg.key))
+			.limit(1);
+
+		if (existing) {
+			await db
+				.update(systemConfig)
+				.set({
+					value: cfg.value,
+					clientVisible: cfg.clientVisible ?? existing.clientVisible,
+					valueType: cfg.valueType ?? existing.valueType,
+					groupName: cfg.groupName ?? existing.groupName,
+					description: cfg.description ?? existing.description,
+					updatedAt: new Date(),
+				})
+				.where(eq(systemConfig.id, existing.id));
+			result.updated++;
+		} else {
+			await db.insert(systemConfig).values({
+				key: cfg.key,
+				value: cfg.value,
+				clientVisible: cfg.clientVisible ?? false,
+				valueType: cfg.valueType ?? "input",
+				groupName: cfg.groupName ?? null,
+				description: cfg.description ?? null,
+			});
+			result.created++;
+		}
+	}
+
+	await loadConfigCache();
+	return result;
 }

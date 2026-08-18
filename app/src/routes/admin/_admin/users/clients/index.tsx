@@ -11,6 +11,7 @@ import type { ChangeEvent } from "react";
 import { useState } from "react";
 import { AdminPageContent, DictSelect, DictTag } from "#/components/admin";
 import type { ClientRoleRecord } from "#/services/client-role/client-role.server";
+import type { ClientUserListItem } from "#/services/client-user/client-user.server";
 import type { SortOrder } from "#/types/query";
 import {
 	createSFn,
@@ -20,7 +21,6 @@ import {
 	resetPwdSFn,
 	updateSFn,
 } from "./-mods/clients.functions";
-import type { ClientUserListItem } from "./-mods/clients.server";
 
 // ─── Route & Component ──────────────────────────────────────────────
 

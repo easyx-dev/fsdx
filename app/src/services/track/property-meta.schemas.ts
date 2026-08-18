@@ -1,5 +1,5 @@
 /**
- * 元属性管理共享 Zod Schema
+ * 元属性（property_meta）zod schema：单一来源
  */
 import { z } from "zod";
 

@@ -10,7 +10,7 @@ import {
 	newsImportSchema,
 	statusSchema,
 	updateNewsSchema,
-} from "../-mods/news.schemas";
+} from "#/services/news/news.schemas";
 
 describe("listSchema", () => {
 	it("空参数通过", () => {

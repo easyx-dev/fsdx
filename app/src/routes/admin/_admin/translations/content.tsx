@@ -13,6 +13,7 @@ import dayjs from "dayjs";
 import type { ChangeEvent } from "react";
 import { useEffect, useState } from "react";
 import { AdminPageContent, EditorTypes } from "#/components/admin";
+import { formSchema } from "#/services/i18n/content-translation.schemas";
 import type { SortOrder } from "#/types/query";
 import {
 	deleteSFn,
@@ -21,7 +22,6 @@ import {
 	importContentTranslationsSFn,
 	saveSFn,
 } from "./-mods/content-translations.functions";
-import { formSchema } from "./-mods/content-translations.schemas";
 
 export const Route = createFileRoute("/admin/_admin/translations/content")({
 	component: ContentTranslationPage,

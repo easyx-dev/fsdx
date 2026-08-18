@@ -1,12 +1,13 @@
 /**
- * 新闻路由共享 Zod Schema
+ * 新闻模块 Zod Schema：管理端 + 前台共用，单一来源
  */
+
 import { z } from "zod";
 
 /** 通过 id 获取/删除单条新闻 */
 export const getNewsSchema = z.object({ id: z.string().min(1) });
 
-/** 新闻列表查询 */
+/** 新闻列表查询（管理端） */
 export const listSchema = z.object({
 	status: z.string().optional(),
 	page: z.number().optional(),

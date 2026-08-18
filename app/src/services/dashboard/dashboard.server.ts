@@ -4,7 +4,7 @@
 import { and, eq, isNull, sql } from "drizzle-orm";
 import { db } from "#/db/index";
 import { adminUser, clientUser, file, news } from "#/db/schema";
-import type { DashboardStats } from "./dashboard.functions";
+import type { DashboardStats } from "./dashboard.types";
 
 /** 获取仪表盘统计数据 */
 export async function getStats(): Promise<DashboardStats> {

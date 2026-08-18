@@ -26,8 +26,8 @@ description: >
 └── 否 → 创建 .server.ts，纯 async 函数，无 createServerFn
 
 需要共享的类型/Zod Schema？
-├── 与特定路由绑定 → 放在路由的 -mods/ 目录下（如 -mods/news.schemas.ts）
-└── 全局可用 → 放在 src/services/<module>/ 下（如 config.types.ts）
+├── 被服务层 `z.infer` 派生或跨端复用 → 放在 src/services/<module>/<module>.schemas.ts（单一来源）
+└── 纯路由局部（仅随 SFn 校验） → 可随 SFn 留在路由 -mods/ 内
 ```
 
 ## SFn 后缀规则
@@ -48,25 +48,25 @@ export async function createNews(data) { /* ... */ }     // 不是 SFn
 
 ## Schema 单一来源
 
-有入参 SFn 的 zod schema 统一定义在 `.schemas.ts` 文件（路由级放 `-mods/`，跨路由共享放 `src/services/<module>/`）。服务层输入类型用 `z.infer` 派生，**禁止**手写接口 + `as XxxInput` 桥接：
+有入参 SFn 的 zod schema 统一定义在 `.schemas.ts` 文件。**被服务层 `z.infer` 派生或跨端复用的 schema 放 `src/services/<module>/<module>.schemas.ts`**（单一来源，禁止手写接口 + `as XxxInput` 桥接）；纯路由局部 schema（仅随某个 SFn 校验、无 `z.infer` 耦合）可随 SFn 留在路由 `-mods/`。
 
 ```ts
-// services/news/news.schemas.ts
+// services/news/news.schemas.ts —— 需要服务层 z.infer 时放这里
 export const createNewsSchema = z.object({ title: z.string().min(1), ... });
 
 // services/news/news.server.ts
 export type CreateNewsInput = z.infer<typeof createNewsSchema>;
 export function createNews(input: CreateNewsInput) { ... }
 
-// news.functions.ts —— 直接传 data，无需 as 断言
+// routes/.../-mods/news.functions.ts —— 直接传 data，无需 as 断言
 .handler(async ({ data }) => createNews(data));
 ```
 
 ## SFn 标准模板
 
-### 路由内 SFn（页面局部）
+### SFn 就近放路由 -mods/
 
-用于列表页的查询/删除/状态变更等仅当前页面使用的操作。
+SFn（RPC 边界）就近放在**消费它的页面**的 `-mods/` 下，随页面组织；schema 从 services 的 `.schemas.ts` 导入（纯路由局部 schema 可内联），业务逻辑从 services 的 `.server.ts` 导入。同一实体被管理端 + 前台两端消费时，SFn 各自拆到对应端的路由 `-mods/`（`routes/admin/_admin/<module>/-mods/` 与 `routes/<module>/-mods/`），仅无页面消费的跨端共享 SFn 才留在 `services/<module>/<module>.functions.ts`。
 
 ```ts
 import { createServerFn } from "@tanstack/react-start";
@@ -109,84 +109,7 @@ const deleteProductSFn = createServerFn({ method: "POST" })
   });
 ```
 
-### -mods/ 共享 SFn（create / update / getById）
-
-用于创建/编辑/详情页面共用的表单操作。
-
-```ts
-import { createServerFn } from "@tanstack/react-start";
-import { ADMIN_PERMISSIONS } from "#/permissions/admin-permissions";
-import { adminPermGuard } from "#/middleware/admin-auth";
-import {
-  createProduct,
-  getProductById,
-  updateProduct,
-} from "#/services/product/product.server";
-import { logCrud } from "#/services/operation-log/operation-log.server";
-import {
-  createProductSchema,
-  getProductSchema,
-  updateProductSchema,
-} from "./product.schemas";
-
-export const getProductByIdSFn = createServerFn({ method: "GET" })
-  .middleware([adminPermGuard(ADMIN_PERMISSIONS.PRODUCT_VIEW)])
-  .validator(getProductSchema)
-  .handler(async ({ data: { id } }) => {
-    return getProductById(id);
-  });
-
-export const createProductSFn = createServerFn({ method: "POST" })
-  .middleware([adminPermGuard(ADMIN_PERMISSIONS.PRODUCT_CREATE)])
-  .validator(createProductSchema)
-  .handler(async ({ data, context }) => {
-    const record = await createProduct({
-      ...data,
-      createdById: context.user.id,
-    });
-    logCrud(context.user, "product", "create", { id: record.id, name: record.name });
-    return record;
-  });
-
-export const updateProductSFn = createServerFn({ method: "POST" })
-  .middleware([adminPermGuard(ADMIN_PERMISSIONS.PRODUCT_EDIT)])
-  .validator(updateProductSchema)
-  .handler(async ({ data, context }) => {
-    const record = await updateProduct(data.id, { ...data });
-    logCrud(context.user, "product", "update", { id: data.id, name: data.name });
-    return record;
-  });
-```
-
-### 全局 .functions.ts SFn（跨页面功能）
-
-仅当 SFn 需要被多个路由复用、且不属于表单操作时才放在 `src/services/<module>/<module>.functions.ts`。典型场景：导出。
-
-```ts
-// src/services/product/product.functions.ts
-import { createServerFn } from "@tanstack/react-start";
-import { z } from "zod";
-import { toCsv, toJson } from "@fsdx/core/export";
-import { ADMIN_PERMISSIONS } from "#/permissions/admin-permissions";
-import { adminPermGuard } from "#/middleware/admin-auth";
-import { getAllProductsForExport, PRODUCT_EXPORT_COLUMNS } from "./product.server";
-
-const exportSchema = z.object({ format: z.enum(["csv", "json"]) });
-
-export const exportProductsSFn = createServerFn({ method: "GET" })
-  .middleware([adminPermGuard(ADMIN_PERMISSIONS.PRODUCT_EXPORT)])
-  .validator(exportSchema)
-  .handler(async ({ data: { format } }) => {
-    const records = await getAllProductsForExport();
-    if (format === "csv") {
-      return {
-        format: "csv" as const,
-        content: toCsv(records, PRODUCT_EXPORT_COLUMNS),
-      };
-    }
-    return { format: "json" as const, content: toJson(records) };
-  });
-```
+> 上面的 `listSchema`/`idSchema` 是纯路由局部 schema，内联即可；若 schema 需被服务层 `z.infer` 派生或跨端复用，则从 `#/services/<module>/<module>.schemas` 导入。
 
 ## 目录组织规则
 
@@ -198,22 +121,21 @@ export const exportProductsSFn = createServerFn({ method: "GET" })
 
 混合 barrel（同时导出类型和运行时值）应拆分：类型走 `.types.ts`，运行时值走 `.server.ts` 或 `.functions.ts`。
 
-## 服务层归属（就近原则与准入门槛）
+## 服务层归属
 
-代码应尽可能靠近其唯一消费者，仅被多方共享的模块才能放入 `src/services/`（渐进式提取）：
+`services/<module>/` 的归属依据是「是否为一个独立的领域实体或跨切面基础设施」，**不是消费者数量**。服务层（server/schemas/cache/types）完整收编于此：
 
 | 场景 | 位置 |
 |------|------|
-| 只被 1 个 SFn 消费且无独立单测 | 内联到 SFn handler 体 |
-| 只被 1 个路由模块消费 | 路由同目录 `-mods/<name>.server.ts` |
-| 被 ≥2 个消费者共享（路由、组件、bootstrap、定时任务等） | `src/services/<module>/` |
+| 领域实体服务层（news/dict/config/file/message/track/user/role/...） | `src/services/<module>/`：`server` + `schemas`（z.infer 派生）+ `cache` + `types` |
+| 跨切面基础设施（query/operation-log/download/logs/tasks/i18n/captcha/auth/init） | `src/services/<module>/` |
+| 实体/页面 SFn（RPC 边界） | 就近放消费页面的路由 `-mods/<name>.functions.ts` |
+| 跨端共享、无页面消费的 SFn（auth/captcha/track SDK/message/dict 选项/客户端可见配置/初始化状态） | `src/services/<module>/<module>.functions.ts` |
 
-**`src/services/` 准入门槛**（满足至少一条才能留在 services/）：
-- 被 ≥2 个不同路由/组件/模块消费
-- 被 bootstrap / 定时任务等非路由上下文调用
-- 被 admin 和 client 两端路由同时使用
-
-单路由模块私有的服务层（如 `admin-user`、`client-user`）统一放在 `routes/admin/_admin/<module>/-mods/` 下，不上提 services/。
+**硬规则**：
+- 实体的 CRUD/导入导出/查询全部收编进 `services/<module>/<module>.server.ts`，禁止拆到路由
+- 被服务层 `z.infer` 派生或跨端复用的 schema 收编进 `services/<module>/<module>.schemas.ts`；纯路由局部 schema 可随 SFn 留在路由
+- 实体/页面 SFn 就近放路由 `-mods/`；跨端共享、无页面消费的 SFn 才留在 services
 
 ## Server Route 例外
 
@@ -318,7 +240,7 @@ async function handleSubmit() {
 | 源文件后缀 | → `.server.ts` | → `.functions.ts` | → 路由/组件 | → `.ts`（类型/schema） |
 |-----------|---------------|-------------------|------------|----------------------|
 | `.server.ts` | ✅ 允许 | ✅ 允许 | ❌ 禁止 | ✅ 允许 |
-| `.functions.ts` | ❌ 禁止 | ✅ 允许 | ✅ 允许 | ✅ 允许 |
+| `.functions.ts` | ✅ 允许（handler 内调用，客户端构建时被剥离） | ✅ 允许 | ✅ 允许 | ✅ 允许 |
 | `.ts` | ✅ 允许 | ✅ 允许 | ✅ 允许 | ✅ 允许 |
 
 **关键规则**：路由文件和组件**禁止**直接 import `.server.ts`。有两种正确方式：
@@ -344,6 +266,8 @@ async function handleSubmit() {
 | 空 catch 块 | 搜索 `catch {}` 或 `catch () {}` |
 | 路由直接 import .server.ts | 检查路由文件中的 import 是否含 `.server` |
 | .server.ts 中使用了 createServerFn | `.server.ts` 不应出现 `createServerFn` |
+| 实体 server/schemas/cache 拆在路由 `-mods/` | 服务层应统一收编进 `services/<module>/` |
+| 有页面消费的 SFn 堆在 services（未就近放路由） | SFn 应就近放消费页面的 `-mods/`，仅跨端共享无页面消费的留 services |
 
 ## 相关 Skill
 

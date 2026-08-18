@@ -247,13 +247,13 @@ describe("createProduct", () => {
 
 ## Schema 测试模板
 
-路由 SFn 的 Zod Schema 测试就近放置：路由层 schema 测试在对应路由 `__tests__/` 目录，services 层共享 schema 测试在对应模块 `__tests__/` 目录。**优先 import 真实 schema 对象**（源文件需导出），禁止本地复制副本导致测试与真实 schema 漂移。
+路由 SFn 的 Zod Schema 测试就近放置：实体 schema 测试在 `services/<module>/__tests__/` 目录，页面局部 schema 测试在路由 `__tests__/` 目录。**优先 import 真实 schema 对象**（源文件需导出），禁止本地复制副本导致测试与真实 schema 漂移。
 
 ```ts
 import { describe, expect, it } from "vitest";
 
-// 从路由文件导入真实 schema（源文件需导出），而非复制定义
-import { productCreateSchema } from "...-mods/product.functions";
+// 从 services 模块导入真实 schema（源文件需导出），而非复制定义
+import { productCreateSchema } from "#/services/product/product.schemas";
 import { z } from "zod";
 
 describe("产品 Schema 校验", () => {

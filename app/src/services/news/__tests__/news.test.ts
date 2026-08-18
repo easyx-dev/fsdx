@@ -54,6 +54,7 @@ import {
 	changeNewsStatus,
 	createNews,
 	deleteNews,
+	ensureUniqueSlug,
 	generateSlug,
 	getNewsById,
 	getNewsBySlug,
@@ -364,5 +365,47 @@ describe("translateNewsRecords", () => {
 		const results = await translateNewsRecords(records, "zh");
 		expect(results).toEqual(records);
 		expect(mockGetContentTranslations).not.toHaveBeenCalled();
+	});
+});
+
+describe("ensureUniqueSlug", () => {
+	beforeEach(() => {
+		vi.clearAllMocks();
+	});
+
+	it("slug 唯一时直接返回", async () => {
+		mockRows.mockResolvedValue([]);
+
+		const result = await ensureUniqueSlug("my-slug");
+
+		expect(result).toBe("my-slug");
+	});
+
+	it("slug 冲突时追加后缀", async () => {
+		mockRows
+			.mockReset()
+			.mockResolvedValueOnce([{ id: "n-1" }])
+			.mockResolvedValueOnce([]);
+
+		const result = await ensureUniqueSlug("my-slug");
+
+		expect(result).toBe("my-slug-1");
+		expect(mockDb.select).toHaveBeenCalledTimes(2);
+	});
+
+	it("排除自身 id 时判断唯一", async () => {
+		mockRows.mockReset().mockResolvedValue([]);
+
+		const result = await ensureUniqueSlug("my-slug", "n-1");
+
+		expect(result).toBe("my-slug");
+	});
+
+	it("超过 100 次冲突抛出错误", async () => {
+		mockRows.mockReset().mockResolvedValue([{ id: "n-1" }]);
+
+		await expect(ensureUniqueSlug("my-slug")).rejects.toThrow(
+			'无法为 slug "my-slug" 生成唯一标识',
+		);
 	});
 });

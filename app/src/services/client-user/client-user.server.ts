@@ -1,5 +1,5 @@
 /**
- * 客户端用户管理：CRUD 操作
+ * 客户端用户（client_user）管理：CRUD 操作
  */
 import bcrypt from "bcryptjs";
 import { and, eq, ilike, inArray, isNull, or } from "drizzle-orm";
@@ -13,7 +13,11 @@ import {
 	notDeleted,
 	paginationOffset,
 } from "#/services/query/query-utils.server";
-import type { createSchema, listSchema, updateSchema } from "./clients.schemas";
+import type {
+	createSchema,
+	listSchema,
+	updateSchema,
+} from "./client-user.schemas";
 
 export type ClientUserRecord = Omit<
 	typeof clientUser.$inferSelect,

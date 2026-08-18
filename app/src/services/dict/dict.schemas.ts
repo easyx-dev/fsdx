@@ -1,6 +1,7 @@
 /**
- * 字典管理共享 Zod Schema
+ * 字典模块 Zod Schema：字典类型 + 字典条目 + 导入导出，单一来源
  */
+
 import { z } from "zod";
 
 export const dictSlugSchema = z.object({ dictSlug: z.string().min(1) });

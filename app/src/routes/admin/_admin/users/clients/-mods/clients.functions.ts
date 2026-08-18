@@ -5,14 +5,13 @@ import { createServerFn } from "@tanstack/react-start";
 import { adminPermGuard } from "#/middleware/admin-auth";
 import { ADMIN_PERMISSIONS } from "#/permissions/admin-permissions";
 import { getClientRoleList } from "#/services/client-role/client-role.server";
-import { logCrud } from "#/services/operation-log/operation-log.server";
 import {
 	createSchema,
 	idSchema,
 	listSchema,
 	resetPwdSchema,
 	updateSchema,
-} from "./clients.schemas";
+} from "#/services/client-user/client-user.schemas";
 import {
 	createClientUser,
 	deleteClientUser,
@@ -20,7 +19,8 @@ import {
 	getClientUserList,
 	resetClientPassword,
 	updateClientUser,
-} from "./clients.server";
+} from "#/services/client-user/client-user.server";
+import { logCrud } from "#/services/operation-log/operation-log.server";
 
 /** 获取客户端角色下拉列表 */
 export const getClientRolesForSelectSFn = createServerFn({ method: "GET" })

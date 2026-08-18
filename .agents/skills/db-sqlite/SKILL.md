@@ -543,7 +543,7 @@ try {
 | 文件 | 位置 | 处理方式 |
 |------|------|---------|
 | `src/services/dict/dict.server.ts` `deleteDict` | `db.transaction(async (tx) => ...)` | 同步回调（8.2 示例） |
-| `src/routes/admin/_admin/dicts/-mods/dicts.server.ts` `importDicts` | 同上 | 同步回调；内部 `tx.select().from()` → `.all()`、`tx.insert().values()` → `.run()` |
+| `src/services/dict/dict.server.ts` `importDicts` | 同上 | 同步回调；内部 `tx.select().from()` → `.all()`、`tx.insert().values()` → `.run()` |
 | `src/services/i18n/i18n.server.ts` `importContentTranslations` | 同上 | 同步回调；`tx.select().limit(1)` → `.all()`、`tx.update().set().where()` → `.run()`、`tx.insert().values()` → `.run()` |
 | `src/services/init/init.server.ts` `initSystem` | 内含 `bcrypt.hash` + `upsertConfig`×N + `loadConfigCache` | 手动 BEGIN/COMMIT（8.3），`upsertConfig`/`loadConfigCache` 保持 await |
 

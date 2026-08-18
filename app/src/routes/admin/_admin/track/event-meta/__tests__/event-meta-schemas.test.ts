@@ -6,7 +6,7 @@ import {
 	eventMetaCreateSchema,
 	eventMetaDeleteSchema,
 	eventMetaUpdateSchema,
-} from "../-mods/event-meta.schemas";
+} from "#/services/track/event-meta.schemas";
 
 describe("eventMetaCreateSchema", () => {
 	it("有效参数应通过校验", () => {

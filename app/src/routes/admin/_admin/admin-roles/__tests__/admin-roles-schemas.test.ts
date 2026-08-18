@@ -7,7 +7,7 @@ import {
 	adminRoleListSchema,
 	adminRoleUpdateSchema,
 	idSchema,
-} from "../-mods/admin-roles.schemas";
+} from "#/services/admin-role/admin-role.schemas";
 
 describe("adminRoleListSchema", () => {
 	it("空参数通过", () => {

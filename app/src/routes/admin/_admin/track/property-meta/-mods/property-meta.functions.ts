@@ -5,15 +5,15 @@ import { createServerFn } from "@tanstack/react-start";
 import { adminPermGuard } from "#/middleware/admin-auth";
 import { ADMIN_PERMISSIONS } from "#/permissions/admin-permissions";
 import {
+	propertyMetaCreateSchema,
+	propertyMetaDeleteSchema,
+	propertyMetaUpdateSchema,
+} from "#/services/track/property-meta.schemas";
+import {
 	createTrackPropertyMeta,
 	deleteTrackPropertyMeta,
 	updateTrackPropertyMeta,
 } from "#/services/track/track.server";
-import {
-	propertyMetaCreateSchema,
-	propertyMetaDeleteSchema,
-	propertyMetaUpdateSchema,
-} from "./property-meta.schemas";
 
 /** 元属性支持的数据类型 */
 export const PROPERTY_DATA_TYPES = [

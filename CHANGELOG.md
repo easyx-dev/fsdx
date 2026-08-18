@@ -46,6 +46,18 @@
 
 ### Refactor
 
+- **routes/services 分层重构（服务层收 services，SFn 就近路由）**：
+  - 分层契约：`services/<module>/` 收**服务层**（`server` 业务逻辑 + `schemas` zod 单一来源 + `cache` + `types`），被服务层 `z.infer` 派生或跨端复用的 schema 必须收 services，纯路由局部 schema 可随 SFn 留在路由；`routes/**/-mods/` 放 UI 组件 + **就近的 SFn**（RPC 边界随消费页面，跨端实体 SFn 各拆到所属端路由），仅无页面消费的跨端共享 SFn（auth/captcha/track SDK/message/dict 选项/客户端可见配置/初始化状态/文件上传列表查询）留在 services
+  - **news / dict / config**：路由 `-mods/` 的 `server` 收编至 `services/<module>/`，消除 `ensureUniqueSlug` / `MAX_RECOMMENDED` 重复实现（`checkRecommendedLimit` 统一按「新增数量」校验，修正 update 允许第 6 条推荐的越界）；`dict.server.ts` 补齐原缺失的 update 分支；SFn 就近回到各自路由 `-mods/`（news 拆管理端 + 前台两端），实体 schema 收 `*.schemas.ts`
+  - **admin-role / client-role / admin-user / client-user / dashboard / logs / operation-log / translations / track（event-meta / property-meta / analytics / query）**：`server` + `schemas` 收编至 `services/<module>/`；SFn 就近回到对应路由 `-mods/`
+  - **file / init / 登录**：删除/转永久、初始化、登录 SFn 回到各自路由 `-mods/`；文件上传/列表查询、`checkInitStatusSFn`、`getCurrentAdminSFn` / `logoutSFn`、`getCurrentClientSFn` / `clientLogoutSFn` 等跨端共享 SFn 保留在 services
+  - **认证登录**：`adminLoginSFn` / `clientLoginSFn` 回归路由 login `-mods/`（登录 schema 为纯路由局部，内联）
+  - 相关测试同步随迁（importConfigs / importDicts / ensureUniqueSlug 随被测模块至 `services/<module>/__tests__/`；路由局部 schema 测试改从路由 functions 导入）；路由组件仅从就近路由 `-mods/*.functions` 导入 SFn
+  - `dict` / `dashboard` 的导入导出类型与统计类型抽至 `*.types.ts`（消除 `.server.ts` 反向 import `.functions.ts` 的分层倒置）
+  - **dict 缓存失效内聚**：`updateDictRecord` / `createDictItemData` / `updateDictItemRecord` / `deleteDictItemRecord` / `importDicts` 在 server 层内部统一调用 `loadDictCache()`，删除 SFn handler 中的外置缓存刷新，与 `createDict` / `deleteDict` 的缓存所有权一致
+  - 同步改写 architecture / server-function / admin-crud 三个 skill（双份 hardlink 副本）的分层契约、SFn 放置规则、Schema 归属与违规自查；修正 server-function skill 中 `.functions.ts → .server.ts` 误标为禁止的 Import 边界（实际为允许，handler 客户端构建剥离）
+  - 文档路径时效更新：`auth-permission-model.md` 中 admin-user / client-user 服务层路径改指 `services/`；db-sqlite / test-writing skill 中 `dicts.server` 路径与 schema 导入示例同步修正
+
 - **components 目录规范化重组**：
   - `admin/` 按职责分层：表单/输入控件（DictSelect、DictTag、PermissionSelector、RichEditor、FieldTranslationDrawer、editor-type/、upload/）统一收进 `admin/forms/`，管理端 zustand store 就近收进 `admin/stores/`，并新增 `index.ts` 统一出口
   - `NavConfig.tsx` → `admin/nav-config.ts` 改纯数据（icon 存组件引用，渲染处实例化）；`AdminThemeContext`/`useAdminTheme` 自 AdminLayout 拆出至 `admin-theme.ts`

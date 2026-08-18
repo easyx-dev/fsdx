@@ -5,7 +5,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { deleteCookie, getCookie } from "@tanstack/react-start/server";
 import { COOKIE_NAMES } from "#/constants/cookie-names";
-import { getCurrentClient } from "#/services/client-auth/client-auth.server";
+import { getCurrentClient } from "./client-auth.server";
 
 /**
  * 获取当前客户端登录用户信息

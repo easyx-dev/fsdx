@@ -47,7 +47,9 @@ const { mockDb, mockRows } = vi.hoisted(() => {
 			delete: vi.fn(() => ({ where: vi.fn() })),
 			transaction: vi.fn(async (fn: (tx: unknown) => Promise<void>) => {
 				const txMock = {
+					select: vi.fn(() => chain),
 					update: vi.fn(() => ({ set: vi.fn(() => ({ where: vi.fn() })) })),
+					insert: vi.fn(() => ({ values: vi.fn() })),
 					delete: vi.fn(() => ({ where: vi.fn() })),
 				};
 				await fn(txMock);
@@ -63,6 +65,7 @@ import {
 	ensurePresetDicts,
 	getAllDictOptions,
 	getDictList,
+	importDicts,
 } from "#/services/dict/dict.server";
 
 describe("getDictList", () => {
@@ -178,5 +181,126 @@ describe("ensurePresetDicts", () => {
 		await ensurePresetDicts();
 
 		expect(mockDb.insert).not.toHaveBeenCalled();
+	});
+});
+
+describe("importDicts", () => {
+	it("导入新字典类型", async () => {
+		// existingDicts 查询 + dict findFirst 均返回空
+		mockRows.mockReset().mockResolvedValue([]);
+
+		const result = await importDicts({
+			dicts: [{ name: "测试字典", slug: "new-dict" }],
+			dictItems: [],
+		});
+
+		expect(result.dictsCreated).toBe(1);
+		expect(result.dictsUpdated).toBe(0);
+		expect(result.itemsCreated).toBe(0);
+		expect(result.itemsUpdated).toBe(0);
+		expect(result.itemsSkipped).toBe(0);
+	});
+
+	it("更新已有字典类型", async () => {
+		// existingDicts 查询空，dict findFirst 命中
+		mockRows
+			.mockReset()
+			.mockResolvedValueOnce([])
+			.mockResolvedValueOnce([{ id: "d-1", slug: "dict1" }])
+			.mockResolvedValue([]);
+
+		const result = await importDicts({
+			dicts: [{ name: "更新后的字典", slug: "dict1" }],
+			dictItems: [],
+		});
+
+		expect(result.dictsCreated).toBe(0);
+		expect(result.dictsUpdated).toBe(1);
+	});
+
+	it("导入新字典条目", async () => {
+		// existingDicts 空 → dict findFirst 命中 → dictItem findFirst 空
+		mockRows
+			.mockReset()
+			.mockResolvedValueOnce([])
+			.mockResolvedValueOnce([{ id: "d-1", slug: "dict1" }])
+			.mockResolvedValueOnce([])
+			.mockResolvedValue([]);
+
+		const result = await importDicts({
+			dicts: [{ name: "字典1", slug: "dict1" }],
+			dictItems: [{ dictSlug: "dict1", label: "条目1", value: "v1" }],
+		});
+
+		expect(result.dictsUpdated).toBe(1);
+		expect(result.itemsCreated).toBe(1);
+		expect(result.itemsUpdated).toBe(0);
+	});
+
+	it("更新已有字典条目", async () => {
+		// existingDicts 空 → dict findFirst 命中 → dictItem findFirst 命中
+		mockRows
+			.mockReset()
+			.mockResolvedValueOnce([])
+			.mockResolvedValueOnce([{ id: "d-1", slug: "dict1" }])
+			.mockResolvedValueOnce([{ id: "di-1" }])
+			.mockResolvedValue([]);
+
+		const result = await importDicts({
+			dicts: [{ name: "字典1", slug: "dict1" }],
+			dictItems: [{ dictSlug: "dict1", label: "条目1", value: "v1" }],
+		});
+
+		expect(result.dictsUpdated).toBe(1);
+		expect(result.itemsCreated).toBe(0);
+		expect(result.itemsUpdated).toBe(1);
+	});
+
+	it("跳过未知 dictSlug 的条目", async () => {
+		// existingDicts 空 → dict findFirst 空（创建），未知条目被跳过
+		mockRows
+			.mockReset()
+			.mockResolvedValueOnce([])
+			.mockResolvedValueOnce([])
+			.mockResolvedValue([]);
+
+		const result = await importDicts({
+			dicts: [{ name: "字典A", slug: "a" }],
+			dictItems: [{ dictSlug: "unknown", label: "孤立条目", value: "v1" }],
+		});
+
+		expect(result.dictsCreated).toBe(1);
+		expect(result.itemsSkipped).toBe(1);
+		expect(result.itemsCreated).toBe(0);
+	});
+
+	it("混合导入统计", async () => {
+		// existingDicts 空 → dict1 空 → dict2 命中 → item1 空 → item2 命中
+		mockRows
+			.mockReset()
+			.mockResolvedValueOnce([])
+			.mockResolvedValueOnce([])
+			.mockResolvedValueOnce([{ id: "d-2", slug: "existing" }])
+			.mockResolvedValueOnce([])
+			.mockResolvedValueOnce([{ id: "di-2" }])
+			.mockResolvedValue([]);
+
+		const result = await importDicts({
+			dicts: [
+				{ name: "新字典", slug: "new" },
+				{ name: "已存在字典", slug: "existing" },
+			],
+			dictItems: [
+				{ dictSlug: "new", label: "新条目", value: "v1" },
+				{ dictSlug: "existing", label: "已存在条目", value: "v2" },
+				{ dictSlug: "unknown", label: "孤立条目", value: "v3" },
+			],
+		});
+
+		expect(result.dictsCreated).toBe(1);
+		expect(result.dictsUpdated).toBe(1);
+		expect(result.itemsCreated).toBe(1);
+		expect(result.itemsUpdated).toBe(1);
+		expect(result.itemsSkipped).toBe(1);
 	});
 });
