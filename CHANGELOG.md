@@ -4,6 +4,11 @@
 
 ### Features
 
+- **资源管理器页面 UI 优化 + 夜间模式适配**：
+  - 顶部面包屑改为可编辑路径输入框（`AdminPageContent` 新增可选 `titleTrailing` 插槽，路径输入 + 前往按钮，回车/按钮跳转，`normalizePath` 规范化输入）
+  - 表格名称列定宽 320px，操作列不再强制 240px 宽度（按内容自适应，保留 `fixed: right`）；空态增加图标
+  - 硬编码颜色全部替换为 antd 语义色 token（`--ant-color-text*`/`warning`）与 `--s-surface-tertiary`/`--s-text`，文本预览区明暗双主题自适应
+  - 侧边栏菜单「目录浏览」更名为「资源管理器」（与页面标题一致）
 - **接入 PWA manifest + 浏览器主题色跟随**：
   - 前台 `SSRRootDocument` head 引入 `/manifest.json`（theme_color/background_color 对齐前台亮色表面 `#ffffff`，start_url/scope 归一至 `/`），提供「添加到主屏幕 / 图标 / 地址栏主题色」能力
   - `ThemeScheme` 新增 `themeColor` 字段（与各端 `--s-surface` 同色，见 themes.ts 双写注释），`applyThemeToDom` 同步更新 `<meta name="theme-color">`，明暗切换 / 跨标签页 / 系统偏好联动时浏览器地址栏颜色跟随；前台与管理端 head 均挂载 meta，管理端不接 manifest

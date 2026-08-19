@@ -23,6 +23,7 @@ export function fileExplorerColumns(options: FileExplorerColumnsOptions) {
 			title: "名称",
 			dataIndex: "name",
 			key: "name",
+			width: 320,
 			render: (_: unknown, record: FsEntry) => (
 				<div
 					style={{
@@ -43,7 +44,11 @@ export function fileExplorerColumns(options: FileExplorerColumnsOptions) {
 				>
 					{record.type === "directory" ? (
 						<FolderOutlined
-							style={{ color: "#faad14", fontSize: 18, flexShrink: 0 }}
+							style={{
+								color: "var(--ant-color-warning)",
+								fontSize: 18,
+								flexShrink: 0,
+							}}
 						/>
 					) : (
 						<FileOutlined
@@ -53,7 +58,10 @@ export function fileExplorerColumns(options: FileExplorerColumnsOptions) {
 					<Typography.Text
 						ellipsis={{ tooltip: record.name }}
 						style={{
-							color: record.type === "directory" ? "#1a1a2e" : "#4a4a4a",
+							color:
+								record.type === "directory"
+									? "var(--ant-color-text)"
+									: "var(--ant-color-text-secondary)",
 							fontWeight: record.type === "directory" ? 500 : 400,
 						}}
 					>
@@ -70,7 +78,7 @@ export function fileExplorerColumns(options: FileExplorerColumnsOptions) {
 			align: "right" as const,
 			sorter: (a: FsEntry, b: FsEntry) => a.size - b.size,
 			render: (_: unknown, record: FsEntry) => (
-				<span style={{ color: "#8c8c8c", fontSize: 13 }}>
+				<span style={{ color: "var(--ant-color-text-tertiary)", fontSize: 13 }}>
 					{record.type === "directory" ? "-" : formatSize(record.size)}
 				</span>
 			),
@@ -87,7 +95,6 @@ export function fileExplorerColumns(options: FileExplorerColumnsOptions) {
 		{
 			title: "操作",
 			key: "actions",
-			width: 240,
 			fixed: "right" as const,
 			render: (_: unknown, record: FsEntry) => {
 				const isWriteLocked = options.writeProtected;

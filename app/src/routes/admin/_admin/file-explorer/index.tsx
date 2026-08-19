@@ -2,8 +2,11 @@
  * 资源管理器页面：浏览和管理 STORAGE_DIR 下的文件系统
  */
 import {
+	ArrowRightOutlined,
 	CloudUploadOutlined,
 	FolderAddOutlined,
+	FolderOpenOutlined,
+	InboxOutlined,
 	ReloadOutlined,
 } from "@ant-design/icons";
 import { message } from "@fsdx/ui-spa/antd-static";
@@ -11,7 +14,7 @@ import { safeSfnCall } from "@fsdx/ui-spa/sfn-helpers";
 import { ProTable } from "@fsdx/ui-spa/table";
 import { createFileRoute } from "@tanstack/react-router";
 import type { UploadProps } from "antd";
-import { Breadcrumb, Button, Space, Tooltip, Upload } from "antd";
+import { Button, Input, Space, Tag, Tooltip, Upload } from "antd";
 import { useCallback, useState } from "react";
 import { AdminPageContent } from "#/components/admin";
 import {
@@ -25,7 +28,12 @@ import {
 import type { FsEntry } from "#/services/file-explorer/file-explorer.server";
 import { MkdirModal, PreviewModal, RenameModal } from "./-mods/FileModals";
 import { fileExplorerColumns } from "./-mods/fileExplorerColumns";
-import { type DirData, entryPath } from "./-mods/fileExplorerUtils";
+import {
+	type DirData,
+	entryPath,
+	formatDisplayPath,
+	normalizePath,
+} from "./-mods/fileExplorerUtils";
 
 export const Route = createFileRoute("/admin/_admin/file-explorer/")({
 	component: FileExplorerPage,
@@ -38,6 +46,9 @@ function FileExplorerPage() {
 	const initialData = Route.useLoaderData() as DirData;
 	const [data, setData] = useState<DirData>(initialData);
 	const [currentPath, setCurrentPath] = useState("");
+	const [pathDraft, setPathDraft] = useState(() =>
+		formatDisplayPath(initialData.currentPath),
+	);
 	const [loading, setLoading] = useState(false);
 
 	// Modal 状态
@@ -68,6 +79,7 @@ function FileExplorerPage() {
 				);
 				setData(result as DirData);
 				setCurrentPath(path);
+				setPathDraft(formatDisplayPath(path));
 			} catch {
 				// safeSfnCall 已处理
 			} finally {
@@ -85,13 +97,11 @@ function FileExplorerPage() {
 		[refreshDir],
 	);
 
-	/** 面包屑点击 */
-	const handleBreadcrumbClick = useCallback(
-		(path: string) => {
-			navigateTo(path);
-		},
-		[navigateTo],
-	);
+	/** 从路径输入框跳转 */
+	const handlePathSubmit = useCallback(() => {
+		if (loading) return;
+		refreshDir(normalizePath(pathDraft));
+	}, [pathDraft, refreshDir, loading]);
 
 	/** 创建目录 */
 	const handleMkdir = useCallback(async () => {
@@ -223,7 +233,8 @@ function FileExplorerPage() {
 
 	const toolbar = (
 		<Space size={12}>
-			<span style={{ color: "#8c8c8c", fontSize: 13 }}>
+			{data.writeProtected && <Tag color="warning">写保护</Tag>}
+			<span style={{ color: "var(--ant-color-text-tertiary)", fontSize: 13 }}>
 				{data.entries.length > 0 && (
 					<>
 						{dirCount > 0 && `${dirCount} 个目录`}
@@ -271,33 +282,29 @@ function FileExplorerPage() {
 
 	return (
 		<AdminPageContent
-			title={
-				<Space>
-					<span style={{ fontSize: 16, fontWeight: 600 }}>资源管理器</span>
-					<Breadcrumb
-						items={data.breadcrumb?.map((item, index) => {
-							const isLast = index === data.breadcrumb.length - 1;
-							return {
-								title: isLast ? (
-									<span
-										style={{ fontSize: 13, fontWeight: 500, color: "#1a1a2e" }}
-									>
-										{item.label}
-									</span>
-								) : (
-									<Button
-										type="link"
-										size="small"
-										style={{ padding: 0, fontSize: 13 }}
-										onClick={() => handleBreadcrumbClick(item.path)}
-									>
-										{item.label}
-									</Button>
-								),
-							};
-						})}
-						style={{ fontSize: 13 }}
+			title="资源管理器"
+			titleTrailing={
+				<Space size={8} style={{ width: "100%" }}>
+					<Input
+						value={pathDraft}
+						onChange={(e) => setPathDraft(e.target.value)}
+						onPressEnter={handlePathSubmit}
+						allowClear
+						prefix={
+							<FolderOpenOutlined
+								style={{ color: "var(--ant-color-text-tertiary)" }}
+							/>
+						}
+						placeholder="输入路径后回车跳转"
+						style={{ flex: 1, minWidth: 200 }}
 					/>
+					<Button
+						icon={<ArrowRightOutlined />}
+						disabled={loading}
+						onClick={handlePathSubmit}
+					>
+						前往
+					</Button>
 				</Space>
 			}
 			extra={toolbar}
@@ -307,8 +314,23 @@ function FileExplorerPage() {
 				columns={columns}
 				rowKey="name"
 				loading={loading}
-				locale={{ emptyText: "目录为空" }}
-				scroll={{ x: 610 }}
+				locale={{
+					emptyText: (
+						<div style={{ padding: "32px 0" }}>
+							<InboxOutlined
+								style={{
+									fontSize: 32,
+									color: "var(--ant-color-text-quaternary)",
+									marginBottom: 8,
+								}}
+							/>
+							<p style={{ color: "var(--ant-color-text-tertiary)" }}>
+								目录为空
+							</p>
+						</div>
+					),
+				}}
+				scroll={{ x: 800 }}
 				pagination={false}
 				bordered
 			/>
