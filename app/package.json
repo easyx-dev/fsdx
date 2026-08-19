@@ -7,6 +7,7 @@
   },
   "scripts": {
     "dev": "vite dev --port 3000",
+    "dev:mem": "node --max-heap-size=2048 --heapsnapshot-near-heap-limit=3 node_modules/vite/bin/vite.js dev --port 3000",
     "start": "node .output/server/index.mjs",
     "build": "vite build",
     "preview": "vite preview",
