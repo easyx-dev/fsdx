@@ -78,3 +78,19 @@ export function isTextFile(name: string): boolean {
 export function entryPath(parentPath: string, name: string): string {
 	return parentPath ? `${parentPath}/${name}` : name;
 }
+
+/** 将子路径格式化为路径输入框的展示值（根目录显示 "/"） */
+export function formatDisplayPath(subPath: string): string {
+	return subPath && subPath !== "/" ? `/${subPath}` : "/";
+}
+
+/**
+ * 规范化用户输入的路径：去首尾空格/斜杠、折叠连续斜杠
+ * 空输入或仅斜杠视为根目录，返回 ""
+ */
+export function normalizePath(input: string): string {
+	return input
+		.trim()
+		.replace(/\/+/g, "/")
+		.replace(/^\/+|\/+$/g, "");
+}

@@ -115,7 +115,13 @@ export function PreviewModal({
 			styles={{ body: { padding: 0 } }}
 		>
 			{loading ? (
-				<div style={{ textAlign: "center", padding: 60, color: "#8c8c8c" }}>
+				<div
+					style={{
+						textAlign: "center",
+						padding: 60,
+						color: "var(--ant-color-text-tertiary)",
+					}}
+				>
 					加载中...
 				</div>
 			) : (
@@ -123,13 +129,13 @@ export function PreviewModal({
 					style={{
 						maxHeight: "72vh",
 						overflow: "auto",
-						background: "#1e1e1e",
-						color: "#d4d4d4",
+						background: "var(--s-surface-tertiary)",
+						color: "var(--s-text)",
 						padding: 20,
 						fontSize: 13,
 						lineHeight: 1.7,
 						margin: 0,
-						borderRadius: "0 0 0 0",
+						borderRadius: 0,
 						whiteSpace: "pre-wrap",
 						wordBreak: "break-all",
 						fontFamily: "'SF Mono', 'Cascadia Code', 'Consolas', monospace",

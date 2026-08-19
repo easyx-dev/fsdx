@@ -7,6 +7,8 @@ import type { ReactNode } from "react";
 interface AdminPageContentProps {
 	title: ReactNode;
 	description?: string;
+	/** 标题右侧同行的扩展内容（如路径输入框），不传时无影响 */
+	titleTrailing?: ReactNode;
 	extra?: ReactNode;
 	children: ReactNode;
 }
@@ -14,6 +16,7 @@ interface AdminPageContentProps {
 export function AdminPageContent({
 	title,
 	description,
+	titleTrailing,
 	extra,
 	children,
 }: AdminPageContentProps) {
@@ -25,12 +28,19 @@ export function AdminPageContent({
 				style={{ height: "var(--admin-header-height)" }}
 			>
 				<div className="flex min-w-0 flex-1 items-center justify-between gap-4">
-					<div className="min-w-0">
-						<h1 className="text-base font-semibold text-foreground">{title}</h1>
-						{description && (
-							<p className="mt-0.5 text-xs text-muted-foreground">
-								{description}
-							</p>
+					<div className="flex min-w-0 items-center gap-3">
+						<div className="min-w-0">
+							<h1 className="text-base font-semibold text-foreground">
+								{title}
+							</h1>
+							{description && (
+								<p className="mt-0.5 text-xs text-muted-foreground">
+									{description}
+								</p>
+							)}
+						</div>
+						{titleTrailing && (
+							<div className="min-w-0 flex-1">{titleTrailing}</div>
 						)}
 					</div>
 					{extra && (

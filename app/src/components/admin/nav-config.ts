@@ -76,7 +76,7 @@ export const NAV_GROUPS: NavGroup[] = [
 			{ key: "/admin/files", label: "文件管理", icon: FolderOpenOutlined },
 			{
 				key: "/admin/file-explorer",
-				label: "目录浏览",
+				label: "资源管理器",
 				icon: FileSearchOutlined,
 			},
 		],
