@@ -16,7 +16,7 @@
 L0  AGENTS.md           规则本体（唯一自动加载）
                          只放跨模块规则、约定、索引；清单/机制详解一律外迁
 L1  .agents/guide.md    任务导航（任务 → 读什么/用什么），不重复规则
-L2  .agents/skills      「怎么做/禁止什么」规则展开（10 个：架构/服务函数/权限/缓存/数据库/测试/国际化/CRUD）
+L2  .agents/skills      「怎么做/禁止什么」规则展开（10 个：架构/服务函数/权限/缓存/数据库/测试/国际化/CRUD，另含 db-sqlite/db-mysql 衍生技能）
 L3  .agents/commands    固定流程执行（deploy 发布 / check-architecture 审计，引用 skills / docs）
 L4  .agents/checklists  验证清单（skills 的浓缩：sfn / route / component）
 L5  docs/               背景与设计（人类向），按性质分四子类：

@@ -518,7 +518,7 @@ const csrfMiddleware = createCsrfMiddleware({
 
 | 层面 | 措施 |
 |------|------|
-| 密码存储 | bcrypt 哈希（admin 创建用 cost=12，client 注册用 cost=10） |
+| 密码存储 | bcrypt 哈希（管理端 CRUD 创建/重置用 cost=12，客户端注册用 cost=10，管理员/客户端自助验证码重置 cost=12） |
 | Token | HS256 JWT，7 天有效期，httpOnly Cookie |
 | Cookie | 管理端/客户端独立 Cookie，避免相互覆盖 |
 | CSRF | TanStack Start 内置 CSRF 中间件，仅 ServerFn 生效 |
@@ -555,7 +555,7 @@ const csrfMiddleware = createCsrfMiddleware({
 | `src/db/schema/admin-role.ts` | admin_role 表（permissions JSONB） |
 | `src/db/schema/client-role.ts` | client_role 表 |
 | `src/routes/admin/_admin.tsx` | 管理端布局：beforeLoad 鉴权 |
-| `src/routes/admin/login.tsx` | 管理端登录页 |
-| `src/routes/admin/init.tsx` | 系统初始化页 |
+| `src/routes/admin/login/index.tsx` | 管理端登录页 |
+| `src/routes/admin/init/index.tsx` | 系统初始化页 |
 | `src/components/client/ClientAuthProvider.tsx` | 客户端认证 Context |
 | `src/start.ts` | CSRF 中间件注册 |

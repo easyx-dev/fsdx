@@ -70,7 +70,7 @@ pnpm dev
 | [架构总览](docs/architecture-overview.md) | 系统分层架构、数据流、路由体系 |
 | [数据库设计](docs/database-design.md) | 表清单（以 `src/db/schema/` 为准）ER 图、列命名约定、约束汇总 |
 | [认证与权限](docs/auth-permission-model.md) | 双用户体系、RBAC、JWT、中间件链路 |
-| [缓存体系](docs/cache-system.md) | MemoryCache 设计、缓存实例清单（以 `src/services/*/*.cache.ts` 为准）、生命周期 |
+| [缓存体系](docs/cache-system.md) | MemoryCache 设计、缓存实例清单（8 个领域缓存位于 `src/services/*/*.cache.ts`，含 `track.validate.ts` 频控内部实例）、生命周期 |
 | [事件埋点](docs/event-tracking.md) | 客户端 SDK、服务端校验、缓冲写入、查询分析 |
 | [部署运维](docs/deployment-ops.md) | 启动流程、定时任务、日志、优雅关闭 |
 | [文档体系架构](docs/documentation-architecture.md) | 文档角色/边界、事实 SSOT、引用图、维护规则 |

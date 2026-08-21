@@ -1,6 +1,6 @@
 /**
  * 通用消息表：管理端与客户端用户消息
- * 通过 recipientType + recipientId 定位接收者（无外键，仿 operation_log 的 operator_id 模式）
+ * 通过 recipientType + recipientId 定位接收者（无外键，仿 operation_log 的 operatorId 模式）
  */
 import {
 	index,

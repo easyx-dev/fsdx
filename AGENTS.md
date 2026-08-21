@@ -26,8 +26,7 @@ app/                          # @fsdx/web —— 应用 package（业务代码 +
     ├── db/                   # Drizzle 客户端 + schema（17 张表，以 src/db/schema/ 为准）
     ├── permissions/          # RBAC 权限码常量与匹配（admin + client 双端）
     ├── theme/                # 主题注册表（themes.ts：各端亮暗主题预设，单一事实来源）
-    ├── lib/                  # 仅基础设施单例壳 + 客户端 SDK（其余基础库在 packages/core）
-    │   └── logger/logger.ts  jwt/jwt.ts  track/track.ts  metrics/metrics.ts
+    ├── lib/                  # 仅基础设施单例壳 + 客户端 SDK（logger/jwt/metrics/track 四个薄壳，其余基础库在 packages/core）
     ├── middleware/           # admin-auth / client-auth / locale / request-id / sf-error-logger
     ├── services/             # 服务端共享业务逻辑（config/dict/file/news/track/...）
     ├── routes/               # 前台 + /admin 全部路由页面与 SFn
@@ -36,11 +35,10 @@ app/                          # @fsdx/web —— 应用 package（业务代码 +
 packages/
 ├── core/                     # @fsdx/core —— 纯逻辑库（subpath exports，无根桶）
 │   └── src/
-│       ├── utils/            # 同构纯工具：ms/ export/ match-permission/ cn/ error-utils
-│       ├── i18n/             # 同构国际化（i18n-types/ i18n-config）
+│       ├── utils/            # 同构纯工具
+│       ├── i18n/             # 同构国际化
 │       ├── cache/            # 缓存抽象（cache-core/ MemoryCache）
-│       └── infra/            # 仅服务端基础设施：logger/ jwt/ storage/ captcha/ batch-writer/
-│                             # request-context/ scheduler/ ai/ mail/ sms
+│       └── infra/            # 仅服务端基础设施
 ├── ui-ssr/                   # @fsdx/ui-ssr —— shadcn 基础组件（ui/ theme/ form 三桶）
 └── ui-spa/                   # @fsdx/ui-spa —— antd 管理端组件（antd 为 peerDependency）
 ```
@@ -143,7 +141,7 @@ packages/
 - drizzle-orm / drizzle-kit **v1.0.0-rc.4**（node-postgres 驱动）：RQB v1 已移除，查询一律标准 query builder（`db.select().from().where()`），**禁止使用 `db.query.*` 与 `defineRelations`**
 - 所有表使用 `uuid` 主键（`defaultRandom()`）、单数表名（如 `admin_user`、`file`）、支持删除的表统一 `deleted_at` 软删除
 - Schema 文件按模块拆分在 `src/db/schema/`，通过 `index.ts` 统一导出
-- 列命名硬规则：主键 `id`、时间 `created_at`/`updated_at`（timestamptz）、软删除 `deleted_at`、描述 `description`、排序 `sort_order`、外键列 `xxx_id`（JS 属性以 `Id` 结尾）；所有列必须显式指定数据库列名，timestamp 必须加 `{ withTimezone: true }`
+- 列命名硬规则：主键 `id`、时间 `created_at`/`updated_at`（timestamptz）、软删除 `deleted_at`、描述 `description`、排序 `sort_order`、外键列 `xxx_id`（JS 属性以 `Id` 结尾）；所有列必须显式指定数据库列名，timestamp 必须加 `{ withTimezone: true }`（`operation_log` 历史表为 camelCase 列名例外，见 [database-design](docs/database-design.md)）
 - **jsonb 列必须通过 `.$type<>()` 显式指定 TS 类型**，禁止无类型 `jsonb()`
 - **Schema 变更禁止 `db:push`**，一律走 `pnpm db:generate`（重命名列时交互选 rename）→ 审查生成的 SQL → `pnpm db:migrate`；生产部署由 bootstrap `runMigrations()` 启动时自动执行（失败记 `logger.warn` 容错并继续启动，需人工 `pnpm db:migrate` 同步，进程本身不崩溃）；本项目为单实例架构，无并发迁移竞态
 - `pnpm db:migrate` 走程序化迁移（`src/db/migrate-cli.ts` 调 `runMigrations()`，与 bootstrap 路径一致），不使用 drizzle-kit migrate 命令
@@ -158,7 +156,7 @@ packages/
 - 每个缓存实例只能在唯一一个服务端模块中直接操作，禁止跨模块 import；外部模块通过所属模块的导出函数访问
 - 读缓存函数必须实现懒加载模式：cache miss → 查库 → 写缓存 → 返回
 
-> 9 个缓存实例清单（8 个领域数据缓存 + 1 个埋点频控内部实例 `sessionRateCache`，以 `src/services/*/*.cache.ts` 为准）、新增缓存步骤、测试 mock 模式 → [cache](.agents/skills/cache/SKILL.md)，清单详情 → [cache-system](docs/cache-system.md)
+> 9 个缓存实例清单（8 个领域数据缓存位于 `src/services/*/*.cache.ts` + 1 个埋点频控内部实例 `sessionRateCache` 位于 `src/services/track/track.validate.ts`）、新增缓存步骤、测试 mock 模式 → [cache](.agents/skills/cache/SKILL.md)，清单详情 → [cache-system](docs/cache-system.md)
 
 ## 测试约定
 
@@ -212,7 +210,8 @@ packages/
 | `pnpm e2e` | Playwright e2e 测试（专用隔离库 `fsdx_web_e2e`，webServer 端口 3100；需先 `pnpm --filter @fsdx/web exec playwright install chromium`） |
 | `pnpm db:generate` / `pnpm db:migrate` / `pnpm db:pull` / `pnpm db:studio` | app 数据库迁移流程 |
 | `pnpm --filter @fsdx/core test` | 仅 core 包测试 |
-| `/deploy`（`.opencode/commands/deploy.md`） | 版本发布：联动提交 → 确定版本（未发布直接用当前版本，已发布则 bump patch）→ 更新 CHANGELOG → 打 tag（含 commit 摘要）→ 推送 |
+| `/deploy`（`.agents/commands/deploy.md`） | 版本发布：联动提交 → 确定版本（未发布直接用当前版本，已发布则 bump patch）→ 更新 CHANGELOG → 打 tag（含 commit 摘要）→ 推送 |
+| `/check-architecture`（`.agents/commands/check-architecture.md`） | 全量架构审计：8 维度扫描并输出分级报告 |
 
 ## 对话效率
 

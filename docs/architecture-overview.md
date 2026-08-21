@@ -53,27 +53,21 @@
 │                           │                                        │
 │  ┌────────────────────────▼──────────────────────────────────┐    │
 │  │              服务层 (src/services/)                           │    │
-│  │  admin-auth / admin-role / admin-user / captcha           │    │
-│  │  client-auth / client-role / client-user / config /       │    │
-│  │  dashboard / dict / download / file / file-explorer       │    │
-│  │  i18n(ui+content 拆分) / init / logs / message / news /    │    │
-│  │  operation-log / query / tasks / track(meta/validate/     │    │
-│  │  analytics 拆分)                                           │    │
+│  │   业务逻辑按模块拆分（.server / schemas / cache / types 四件套）        │    │
+│  │   模块清单以 src/services/ 目录为准                                │    │
 │  └────────────────────────┬──────────────────────────────────┘    │
 │                           │                                        │
 │  ┌────────────────────────▼──────────────────────────────────┐    │
 │  │          基础库 (@fsdx/core + src/lib 薄壳)                 │    │
-│  │  utils: ms / export / match-permission / cn / error-utils │    │
-│  │  date-format / cache: MemoryCache │ i18n: types / config  │    │
-│  │  infra(服务端): logger / jwt / batch-writer / storage /   │    │
-│  │  captcha / semaphore / task-manager / request-context /   │    │
-│  │  scheduler / ai / mail / sms                              │    │
-│  │  src/lib 单例壳: logger / jwt / metrics / track(SDK)       │    │
+│  │   utils / i18n / cache 为同构层，infra 为服务端基础设施                │    │
+│  │   导出清单见 @fsdx/core README；src/lib 为应用级单例壳                 │    │
+│  │   （logger / jwt / metrics / track 四个薄壳）                   │    │
 │  └────────────────────────┬──────────────────────────────────┘    │
 │                           │                                        │
 │  ┌────────────────────────▼──────────────────────────────────┐    │
-│  │           PostgreSQL (Drizzle ORM)                         │    │
-│  │  17 张表 + 9 个内存缓存实例                                  │    │
+│  │               PostgreSQL (Drizzle ORM)                    │    │
+│  │   表清单见 database-design（以 src/db/schema/ 为准）               │    │
+│  │   缓存实例见 cache-system（以 cache skill 清单为准）                  │    │
 │  └───────────────────────────────────────────────────────────┘    │
 └─────────────────────────────────────────────────────────────────────┘
 ```
@@ -119,38 +113,17 @@ src/routes/**/-mods/          # 路由层：UI 组件 + 就近的 SFn
 
 ```
 __root.tsx                    # HTML shell，按 pathname 前缀分发 AdminRootDocument / SSRRootDocument
-├── /                         # 前台首页 (SSR, index.functions.ts)
-├── /about                    # 关于页 (SSR)
-├── /messages                 # 消息中心 (SSR)
-├── /login, /register         # 客户端认证 (SSR)
-├── /forgot-password          # 客户端忘记密码 (SSR)
-├── /news, /news/$slug        # 新闻列表 / 详情 (SSR)
+├── 前台（SSR）               # / · /about · /messages · /login · /register · /forgot-password · /news(/news/$slug)
 ├── /file/r/$id               # 文件读取路由（公共访问 + 同源校验，inline 预览/打开）
 ├── /api/metrics              # Prometheus 指标端点（Server Route handler，无鉴权）
-└── admin.tsx                 # 管理端父路由（SSR=false），子路由无布局外壳
-    ├── admin/init            # 系统初始化
-    ├── admin/login           # 管理员登录
-    ├── admin/forgot-password # 管理端忘记密码
+└── admin.tsx                 # 管理端 SPA 根（SSR=false）；admin/login · admin/init · admin/forgot-password 无布局外壳
     └── admin/_admin.tsx      # 管理端鉴权布局（beforeLoad + SSR=false）
-        ├── /                 # 仪表盘
-        ├── users/admins      # 管理员用户
-        ├── users/clients     # 客户端用户
-        ├── admin-roles       # 管理端角色
-        ├── client-roles      # 客户端角色
-        ├── news (list/create/$id/edit)   # 新闻管理
-        ├── dicts             # 字典管理
-        ├── config            # 系统配置
-        ├── files             # 文件管理
-        ├── logs              # 运行日志（含 download/$id）
-        ├── file-explorer     # 目录浏览（含 download/$）
-        ├── operation-logs    # 操作审计
-        ├── translations      # 翻译管理（ui.tsx + content.tsx）
-        ├── track             # 埋点（query / analytics / event-meta / property-meta）
-        ├── messages          # 消息（收件箱 + manage）
-        └── demo              # 组件演示（ai / editor / pro-table / upload）
+        ├── 仪表盘 / 用户（admins · clients）/ 角色（admin-roles · client-roles）
+        ├── news · dicts · config · files · file-explorer · logs · operation-logs
+        └── translations · track · messages · demo
 ```
 
-路由目录组织约定（`-mods/` companion 收纳、单页 vs 子路由决策矩阵、页面本体必须是路由文件、首页不目录化等）详见 [AGENTS.md](../AGENTS.md)。
+路由目录组织约定（`-mods/` companion 收纳、单页 vs 子路由决策矩阵、页面本体必须是路由文件、首页不目录化等）详见 [AGENTS.md](../AGENTS.md)；完整路由树以 `src/routes/` 目录（`src/routeTree.gen.ts`）为准。
 
 ### 4. 中间件执行链路
 
@@ -218,43 +191,21 @@ __root.tsx                    # HTML shell，按 pathname 前缀分发 AdminRoot
   operation_log 表 → searchOperationLogs()
 ```
 
-## 目录职责矩阵
+## 目录职责
 
-| 目录 | 定位 | 可导入方 | 特殊规则 |
-|------|------|----------|----------|
-| `packages/core/` | 纯逻辑库（同构工具 + 服务端基础设施） | 全部 | `infra/` 仅服务端，客户端禁止引用；详见 [core README](../packages/core/README.md) |
-| `packages/ui-ssr/` | shadcn 基础组件 | 前台/两端共用 | 只写 tailwind 类名，颜色 token 宿主注入；详见 [ui-ssr README](../packages/ui-ssr/README.md) |
-| `packages/ui-spa/` | antd 管理端组件 | 管理端 | antd 为 peerDependency 单实例；详见 [ui-spa README](../packages/ui-spa/README.md) |
-| `src/lib/` | 应用级基础设施单例壳 + 客户端 SDK | 全部 | 仅 logger / jwt / metrics / track 四个薄壳，其余基础库在 `@fsdx/core` |
-| `src/services/` | 服务端业务逻辑（server + schemas + cache + types）+ 跨端共享 SFn | routes/, services/ 自身 | `.server.ts` 禁止使用 `SFn` 后缀；SFn 就近路由 |
-| `src/routes/` | 路由页面 + UI 组件 + 就近 SFn（`-mods/`） | — | SFn 必须用 `.validator(zod)`；禁止直接 import `.server.ts` |
-| `src/middleware/` | 请求级中间件（鉴权/权限/locale/request-id/错误日志） | start.ts, routes/ | — |
-| `src/permissions/` | RBAC 权限码常量与匹配（admin + client 双端） | 全部 | 客户端禁止导入 `infra/`；详见 [permission](../.agents/skills/permission/SKILL.md) |
-| `src/constants/` | 项目级常量 | 全部 | — |
-| `src/theme/` | 主题注册表（单一事实来源） | app 内 | — |
-| `src/components/` | React 组件 | 全部 | admin/ 用 antd, client/ 用 shadcn/ui |
-| `src/db/` | 数据库 Schema | services/ | 客户端禁止导入 (importProtection) |
-| `services/*/*.cache.ts` | 内存缓存实例 | 仅所属模块 | 每个实例只能在唯一服务模块中直接操作 |
+目录层级与各目录职责见 [AGENTS.md「工程结构」](../AGENTS.md)（唯一目录树）与「包边界约定」章节；跨目录依赖遵循 [AGENTS.md「Server Function 依赖方向」](../AGENTS.md) 硬规则（`routes → services → (core 基础库) → db`），缓存实例归属与可导入方约束见「内存缓存约定」。包级导出清单与集成约束见各子包 README（[core](../packages/core/README.md) / [ui-ssr](../packages/ui-ssr/README.md) / [ui-spa](../packages/ui-spa/README.md)）。
 
-## 关键文件索引
+## 相关文档
 
-| 文件 | 职责 |
+| 文档 | 说明 |
 |------|------|
-| `server.ts`（app 根目录） | Nitro 服务入口，bootstrap + Hono 代理 + HTTP 指标埋点 |
-| `src/bootstrap.ts` | 启动初始化（init 注入、迁移、预置数据、定时任务、优雅关闭） |
-| `src/hono-app.ts` | Hono 应用工厂（/health 路由） |
-| `src/server.ts` | TanStack Start 服务端入口（createServerEntry） |
-| `src/start.ts` | 全局中间件注册（requestId + locale + CSRF + sfErrorLogger） |
-| `src/router.tsx` | TanStack Router 实例 |
-| `src/routes/__root.tsx` | 根布局（AdminLayout / SSRLayout 分支） |
-| `src/middleware/request-id.ts` | 请求 ID 中间件（x-request-id 透传/生成 + ALS + 响应头） |
-| `src/lib/metrics/metrics.ts` | Prometheus 进程内指标注册表 |
-| `src/routes/api/metrics.tsx` | `/api/metrics` 指标端点（Server Route，无鉴权） |
-| `packages/core/README.md` | @fsdx/core 导出清单与边界 |
-| `packages/ui-ssr/README.md` | @fsdx/ui-ssr 组件清单与集成约定 |
-| `packages/ui-spa/README.md` | @fsdx/ui-spa 组件清单与集成约定 |
-| `docs/auth-permission-model.md` | 认证与权限模型详细文档 |
-| `docs/database-design.md` | 数据库设计文档 |
-| `docs/cache-system.md` | 缓存体系文档 |
-| `docs/event-tracking.md` | 事件埋点文档 |
-| `docs/deployment-ops.md` | 部署运维文档 |
+| [@fsdx/core README](../packages/core/README.md) | @fsdx/core 导出清单与边界 |
+| [@fsdx/ui-ssr README](../packages/ui-ssr/README.md) | @fsdx/ui-ssr 组件清单与集成约定 |
+| [@fsdx/ui-spa README](../packages/ui-spa/README.md) | @fsdx/ui-spa 组件清单与集成约定 |
+| [认证与权限](auth-permission-model.md) | 双用户体系、RBAC、JWT、中间件链路 |
+| [数据库设计](database-design.md) | 表清单、ER 图、列命名约定、约束汇总 |
+| [缓存体系](cache-system.md) | MemoryCache 与缓存实例 |
+| [事件埋点](event-tracking.md) | 埋点链路与预置元数据 |
+| [部署运维](deployment-ops.md) | 启动流程、定时任务、日志、部署 |
+
+> 关键入口文件职责见 [AGENTS.md「工程结构」](../AGENTS.md) 唯一目录树（含各目录职责注释），不再重复罗列。

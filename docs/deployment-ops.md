@@ -316,7 +316,7 @@ process.on("SIGQUIT", gracefulShutdown);
 ```
 首次访问 /admin
     ↓
-admin/init.tsx beforeLoad → checkInitStatus()
+admin/init/index.tsx beforeLoad → checkInitStatus()
     ↓
 SELECT FROM admin_user WHERE is_root = true → null
     ↓

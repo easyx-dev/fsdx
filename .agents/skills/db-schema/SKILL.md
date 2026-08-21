@@ -32,6 +32,8 @@ createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(
 updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
 ```
 
+> **主键例外**：埋点元数据表 `track_event_meta`（`name`）与 `track_property_meta`（`key`）以业务标识符为 varchar 主键，不适用 uuid 统一规则；其余表一律 uuid 主键。
+
 **可选通用列**（按需添加）：
 
 ```ts

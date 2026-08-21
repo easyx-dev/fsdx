@@ -27,12 +27,12 @@
 
 - **版本发布流程 + CHANGELOG 归档机制**：
   - `app/package.json`（`@fsdx/web`）新增 `version` 字段（起始 `1.1.0`，即下一个待发布版本），版本号统一 `v1.x.y` 与 git tag 一致，根 `package.json` 为 workspace 编排壳不设版本
-  - 新增 `.opencode/commands/deploy.md` 发布命令：联动提交 → 确定版本（未发布直接用当前版本，已发布则 bump patch）→ 更新 CHANGELOG（Unreleased 升版 + 归档）→ 打 tag（含 commit 摘要）→ 推送
+  - 新增 `.agents/commands/deploy.md` 发布命令：联动提交 → 确定版本（未发布直接用当前版本，已发布则 bump patch）→ 更新 CHANGELOG（Unreleased 升版 + 归档）→ 打 tag（含 commit 摘要）→ 推送
   - AGENTS.md 新增「变更日志（CHANGELOG）」章节：主文件只保留 `[Unreleased]` + 最近 3 个版本 + 「历史版本」索引，更早版本归档至 `docs/archive/changelog/`
   - `[1.0.0]` 历史版本归档至 `docs/archive/changelog/v1.0.0.md`，主 CHANGELOG 历史索引链接指向归档
 
 - **favicon ?url import 缓存治理**：favicon.svg / favicon-dark.svg / favicon-admin.svg 自 `public/` 移入 `src/assets/` 并以 `?url` import（`Document.tsx` 内联为带 hash 的资源，图标变更不再受浏览器 URL 缓存影响）；`manifest.json` 移除对已删除 `favicon.svg` 的图标引用（PWA 图标保留 png）
-- **新增 check-architecture 架构审计命令**：`.opencode/commands/check-architecture.md` 按 8 维度（分层/路由/SFn/组件/类型与 DB/安全/错误处理/测试）全量扫描并输出分级报告；配套 `.agents/checklists/` 新增 sfn / route / component 三份精简检查清单
+- **新增 check-architecture 架构审计命令**：`.agents/commands/check-architecture.md` 按 8 维度（分层/路由/SFn/组件/类型与 DB/安全/错误处理/测试）全量扫描并输出分级报告；配套 `.agents/checklists/` 新增 sfn / route / component 三份精简检查清单
 - **AGENTS.md 新增「对话效率」章节**：约定控制单会话上下文体积（阶段化会话 / explore 子代理 / read 限定行范围 / bash 输出瘦身 / 长文档按需读取），对齐 bom-easy 项目治理实践
 
 - **`@fsdx/core` 基础设施补齐（对照 bom-easy lib 查漏）**：
@@ -151,6 +151,15 @@
   - skills 对齐：8 个 skill 修正过时路径与流程（core subpath 迁移、`@fsdx/ui-spa/table` 与 `antd-static` 导入、`logCrud` 一行式审计、mockDb 17 张表清单、`db:generate`+`db:migrate` 迁移流程）
   - **文档瘦身**：AGENTS.md 552 → 276 行（与 skill 重复的细节压缩为「硬规则 + skill 链接」，删除已修复的历史节；`src/services/` 准入门槛、就近原则、Server Route 例外补入 server-function skill，jsonb `$type` 约定补入 db-schema skill，`logExternalRequest` 字段语义补入 architecture skill）；`auth-permission-model.md` 640 → 552 行（删除重复性角色关系/客户端缓存 flow 与散乱文字，保留并时效修正整体架构、管理员登录、客户端注册登录、系统初始化四张图，按查考级组织）
   - 文档 review 修正：README 快速开始 env 路径指向 `app/.env.example`；i18n skill「支持的语言」片段去掉与导入重复的本地声明；cache-system 启动时序图更正 dict 缓存为懒加载（仅 config/track 元数据启动热加载）
+- **文档引用源与事实校准（`.agents` 为引用权威，`.opencode` 不再作为文档引用来源）**：
+  - AGENTS 命令表 `/deploy` 与 CHANGELOG 条目中 `.opencode/commands/*` 引用改为 `.agents/commands/*`；软链机制描述保留并明确内容以 `.agents/` 为准
+  - 事实修正：缓存清单口径统一（`sessionRateCache` 位于 `track.validate.ts`，AGENTS / cache-system / README 三处一致）；`operation_log` 操作者列名 `operator_id`→`operatorId`（camelCase 例外）；auth-permission-model 登录/初始化页路径补 `index.tsx`、bcrypt cost 表述补自助重置=12（明确排除 init 的 cost=10）；deployment-ops init 页路径修正
+  - 规则层补全：db-schema skill 补 `track_event_meta` / `track_property_meta` varchar 主键例外；test-writing skill 补按子模块/子功能拆分测试文件命名说明；命令表补 `/check-architecture`；documentation-architecture skills 清单补全至 10 个（AGENTS core 目录树模块明细已移交给 core README，见下条收敛记录）
+  - 清理 `.opencode/` 未入库残留（node_modules / package.json / package-lock.json / .DS_Store），仅保留指向 `.agents/` 的软链视图
+- **工程结构描述收敛（消除重复罗列）**：
+  - AGENTS「工程结构」树去重：`lib/` 段删文件明细（薄壳名保留在注释）、core 段删模块明细只留 `utils/i18n/cache/infra` 四桶分层（导出清单指向 core README），避免与包 README 双份维护
+  - architecture-overview 删除「目录职责矩阵」与「关键文件索引」两节（前者职责/规则与 AGENTS 树及既有章节重复，后者前 10 行即 AGENTS 树注释、后 9 行系文档导航）：改为「目录职责」引用段（指向 AGENTS 工程结构/包边界/依赖方向）+「相关文档」导航表，文件级职责不再重复罗列
+  - architecture-overview「系统分层架构」图与「路由分层」树收敛为概览：删除 services 22 个模块名、core 模块清单与「17 张表 + 9 个缓存」等易漂移枚举（图内改指向 `src/services/`、core README、database-design、cache-system），路由树改分组概览并以 `src/routes/`（`routeTree.gen.ts`）为 SSOT
 
 ### 依赖升级
 

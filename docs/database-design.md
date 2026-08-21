@@ -335,7 +335,7 @@ erDiagram
 | `news` | `updated_by_id` | `admin_user.id` | 否 |
 | `dict_item` | `dict_slug` | `dict.slug` | 仅 UPDATE |
 
-> 用户与角色的关联**无外键**：`admin_user.admin_role_ids` / `client_user.client_role_ids` 为 JSONB 角色 id 数组（多角色，角色被删时数组遗留失效 id，查询时按 id 过滤）。`message` 与 `operation_log` 的接收者/操作者列同样无外键（`operator_id`、`recipient_id` 指向不同类型用户），避免跨表约束。
+> 用户与角色的关联**无外键**：`admin_user.admin_role_ids` / `client_user.client_role_ids` 为 JSONB 角色 id 数组（多角色，角色被删时数组遗留失效 id，查询时按 id 过滤）。`message` 与 `operation_log` 的接收者/操作者列同样无外键（`operatorId`、`recipient_id` 指向不同类型用户），避免跨表约束。
 
 ---
 

@@ -18,6 +18,8 @@ description: >
 
 **判断标准**：被测模块 import 了 `#/db` 或任何 `.server.ts` → Service 测试（需 mock）。
 
+**命名**：测试文件默认 `<模块名>.test.ts`；允许按子模块/子功能拆分命名（如 `logs-cleanup.test.ts`、`log-reader.test.ts`、`forgot-password.test.ts`），只要位于被测模块的 `__tests__/` 目录内。
+
 ## Service 测试：三段式 Mock 模式
 
 > ⚠️ **顺序至关重要**：所有 mock 必须在源模块 import 之前。源模块的 import 必须放在最后。
