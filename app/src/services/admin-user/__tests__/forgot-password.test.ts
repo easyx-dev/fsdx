@@ -6,12 +6,14 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const {
 	mockDb,
 	mockRows,
+	mockUpdateRows,
 	mockBcrypt,
 	mockVerifyCaptcha,
 	mockClearAdminUserCache,
 	mockLogger,
 } = vi.hoisted(() => {
 	const rows = vi.fn().mockResolvedValue([]);
+	const updateRows = vi.fn().mockResolvedValue([{ id: "a-1" }]);
 	const chain: any = {
 		from: vi.fn(() => chain),
 		where: vi.fn(() => chain),
@@ -27,9 +29,14 @@ const {
 	return {
 		mockDb: {
 			select: vi.fn(() => chain),
-			update: vi.fn(() => ({ set: vi.fn(() => ({ where: vi.fn() })) })),
+			update: vi.fn(() => ({
+				set: vi.fn(() => ({
+					where: vi.fn(() => ({ returning: vi.fn(() => updateRows()) })),
+				})),
+			})),
 		},
 		mockRows: rows,
+		mockUpdateRows: updateRows,
 		mockBcrypt: { hash: vi.fn() },
 		mockVerifyCaptcha: vi.fn(),
 		mockClearAdminUserCache: vi.fn(),
@@ -56,6 +63,7 @@ import { resetAdminPasswordByEmail } from "../admin-user.server";
 
 beforeEach(() => {
 	vi.clearAllMocks();
+	mockUpdateRows.mockResolvedValue([{ id: "a-1" }]);
 });
 
 describe("resetAdminPasswordByEmail", () => {
@@ -150,7 +158,7 @@ describe("resetAdminPasswordByEmail", () => {
 		expect(mockDb.update).toHaveBeenCalled();
 	});
 
-	it("bcrypt.hash 使用正确 rounds=10", async () => {
+	it("bcrypt.hash 使用正确 rounds=12", async () => {
 		mockVerifyCaptcha.mockResolvedValue(true);
 		mockRows.mockResolvedValue([
 			{
@@ -163,7 +171,30 @@ describe("resetAdminPasswordByEmail", () => {
 
 		await resetAdminPasswordByEmail("admin@t.com", "123456", "newpass");
 
-		expect(mockBcrypt.hash).toHaveBeenCalledWith("newpass", 10);
+		expect(mockBcrypt.hash).toHaveBeenCalledWith("newpass", 12);
+	});
+
+	it("update 无记录（用户被删除）返回失败", async () => {
+		mockVerifyCaptcha.mockResolvedValue(true);
+		mockRows.mockResolvedValue([
+			{
+				id: "a-1",
+				email: "admin@t.com",
+				status: "active",
+			},
+		]);
+		mockBcrypt.hash.mockResolvedValue("hashed_pwd");
+		mockUpdateRows.mockResolvedValue([]);
+
+		const result = await resetAdminPasswordByEmail(
+			"admin@t.com",
+			"123456",
+			"newpass",
+		);
+
+		expect(result.success).toBe(false);
+		expect(result.message).toBe("该邮箱未注册管理员账号");
+		expect(mockClearAdminUserCache).not.toHaveBeenCalled();
 	});
 
 	it("成功时清除管理员缓存", async () => {

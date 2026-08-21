@@ -257,11 +257,16 @@ export async function resetAdminPasswordByEmail(
 		return { success: false, message: "该账号已被禁用，请联系超级管理员" };
 	}
 
-	const passwordHash = await bcrypt.hash(password, 10);
-	await db
+	const passwordHash = await bcrypt.hash(password, 12);
+	const [record] = await db
 		.update(adminUser)
 		.set({ passwordHash, updatedAt: new Date() })
-		.where(eq(adminUser.id, user.id));
+		.where(eq(adminUser.id, user.id))
+		.returning();
+
+	if (!record) {
+		return { success: false, message: "该邮箱未注册管理员账号" };
+	}
 
 	clearAdminUserCache(user.id);
 

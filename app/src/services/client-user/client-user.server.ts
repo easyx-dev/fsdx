@@ -252,11 +252,16 @@ export async function resetClientPasswordByEmail(
 		return { success: false, message: "该账号已被禁用" };
 	}
 
-	const passwordHash = await bcrypt.hash(password, 10);
-	await db
+	const passwordHash = await bcrypt.hash(password, 12);
+	const [record] = await db
 		.update(clientUser)
 		.set({ passwordHash, updatedAt: new Date() })
-		.where(eq(clientUser.id, user.id));
+		.where(eq(clientUser.id, user.id))
+		.returning();
+
+	if (!record) {
+		return { success: false, message: "该邮箱未注册" };
+	}
 
 	clearClientUserCache(user.id);
 

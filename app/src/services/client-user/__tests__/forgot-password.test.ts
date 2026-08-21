@@ -6,12 +6,14 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const {
 	mockDb,
 	mockRows,
+	mockUpdateRows,
 	mockBcrypt,
 	mockVerifyCaptcha,
 	mockClearClientUserCache,
 	mockLogger,
 } = vi.hoisted(() => {
 	const rows = vi.fn().mockResolvedValue([]);
+	const updateRows = vi.fn().mockResolvedValue([{ id: "u-1" }]);
 	const chain: any = {
 		from: vi.fn(() => chain),
 		where: vi.fn(() => chain),
@@ -27,9 +29,14 @@ const {
 	return {
 		mockDb: {
 			select: vi.fn(() => chain),
-			update: vi.fn(() => ({ set: vi.fn(() => ({ where: vi.fn() })) })),
+			update: vi.fn(() => ({
+				set: vi.fn(() => ({
+					where: vi.fn(() => ({ returning: vi.fn(() => updateRows()) })),
+				})),
+			})),
 		},
 		mockRows: rows,
+		mockUpdateRows: updateRows,
 		mockBcrypt: { hash: vi.fn() },
 		mockVerifyCaptcha: vi.fn(),
 		mockClearClientUserCache: vi.fn(),
@@ -56,6 +63,7 @@ import { resetClientPasswordByEmail } from "../client-user.server";
 
 beforeEach(() => {
 	vi.clearAllMocks();
+	mockUpdateRows.mockResolvedValue([{ id: "u-1" }]);
 });
 
 describe("resetClientPasswordByEmail", () => {
@@ -150,7 +158,7 @@ describe("resetClientPasswordByEmail", () => {
 		expect(mockDb.update).toHaveBeenCalled();
 	});
 
-	it("调用 bcrypt.hash 时使用正确的 rounds=10", async () => {
+	it("调用 bcrypt.hash 时使用正确的 rounds=12", async () => {
 		mockVerifyCaptcha.mockResolvedValue(true);
 		mockRows.mockResolvedValue([
 			{
@@ -163,7 +171,30 @@ describe("resetClientPasswordByEmail", () => {
 
 		await resetClientPasswordByEmail("u@t.com", "123456", "newpass");
 
-		expect(mockBcrypt.hash).toHaveBeenCalledWith("newpass", 10);
+		expect(mockBcrypt.hash).toHaveBeenCalledWith("newpass", 12);
+	});
+
+	it("update 无记录（用户被删除）返回失败", async () => {
+		mockVerifyCaptcha.mockResolvedValue(true);
+		mockRows.mockResolvedValue([
+			{
+				id: "u-1",
+				email: "u@t.com",
+				status: "active",
+			},
+		]);
+		mockBcrypt.hash.mockResolvedValue("hashed_pwd");
+		mockUpdateRows.mockResolvedValue([]);
+
+		const result = await resetClientPasswordByEmail(
+			"u@t.com",
+			"123456",
+			"newpass",
+		);
+
+		expect(result.success).toBe(false);
+		expect(result.message).toBe("该邮箱未注册");
+		expect(mockClearClientUserCache).not.toHaveBeenCalled();
 	});
 
 	it("成功时清除用户缓存", async () => {
