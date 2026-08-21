@@ -4,7 +4,7 @@
 
 import type { ThemePreset } from "@fsdx/ui-ssr/theme";
 import { ClientOnly, HeadContent, Scripts } from "@tanstack/react-router";
-import { useEffect, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { Toaster } from "sonner";
 import faviconUrl from "#/assets/favicon.svg?url";
 import adminFaviconUrl from "#/assets/favicon-admin.svg?url";
@@ -20,6 +20,7 @@ import {
 import adminGlobalCss from "#/styles/admin.global.css?url";
 import ssrGlobalCss from "#/styles/ssr.global.css?inline";
 import { ADMIN_THEME, CLIENT_THEME } from "#/theme/themes";
+import { parseCustomHeadConfig } from "#/utils/custom-head";
 import { AdminProvider } from "./admin/AdminProvider";
 
 // 内联层声明锁定级联层顺序：若全局 CSS <link> 加载失败（混合/陈旧部署 404），antd 运行时注入的
@@ -48,6 +49,12 @@ export function SSRRootDocument({ children }: SSRRootDocumentProps) {
 	const siteName = systemConfig?.site_name || "FSDX";
 	const { user, isLoading } = useClientAuth();
 	const trackInitialized = useRef(false);
+
+	// 自定义 head 配置：解析系统配置 JSON，按结构注入 meta/links/scripts/styles
+	const customHead = useMemo(
+		() => parseCustomHeadConfig(systemConfig?.custom_head_config),
+		[systemConfig?.custom_head_config],
+	);
 
 	// 登录状态就绪后初始化追踪 SDK（仅一次），确保首次 PageView 携带正确的 userId
 	useEffect(() => {
@@ -98,6 +105,18 @@ export function SSRRootDocument({ children }: SSRRootDocumentProps) {
 				{systemConfig?.keywords && (
 					<meta name="keywords" content={systemConfig.keywords} />
 				)}
+				{customHead?.meta?.map((m, i) => (
+					<meta key={i} {...m} />
+				))}
+				{customHead?.links?.map((l, i) => (
+					<link key={i} {...l} />
+				))}
+				{customHead?.scripts?.map((s, i) => (
+					<script key={i} {...s} />
+				))}
+				{customHead?.styles?.map((s, i) => (
+					<style key={i} {...s} />
+				))}
 				<HeadContent />
 			</head>
 			<body className="font-sans antialiased flex min-h-screen flex-col">

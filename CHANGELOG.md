@@ -4,6 +4,7 @@
 
 ### Features
 
+- **新增自定义 head 配置**：预置 `custom_head_config` 系统配置（`clientVisible`、`json` 类型），管理端可直接编辑 JSON（结构同 TanStack head()：`{ meta, links, scripts, styles }`，如百度统计、JSON-LD）；`parseCustomHeadConfig` 解析并校验 `scripts/styles.children` 为字符串，前台 `SSRRootDocument` head 全局注入，管理端不生效
 - **资源管理器页面 UI 优化 + 夜间模式适配**：
   - 顶部面包屑改为可编辑路径输入框（`AdminPageContent` 新增可选 `titleTrailing` 插槽，路径输入 + 前往按钮，回车/按钮跳转，`normalizePath` 规范化输入）
   - 表格名称列定宽 320px，操作列不再强制 240px 宽度（按内容自适应，保留 `fixed: right`）；空态增加图标

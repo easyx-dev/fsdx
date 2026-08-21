@@ -331,6 +331,15 @@ const PRESET_CONFIGS: {
 		valueType: "input",
 		groupName: "短信设置",
 	},
+	{
+		key: "custom_head_config",
+		value: "{}",
+		description:
+			"自定义 head 配置（JSON，结构同 TanStack head()：{ meta, links, scripts, styles }，如百度统计、JSON-LD），全局生效于前台 SSR 页面。注意：该配置由管理员填写并原样注入页面，拥有配置编辑权限即等价于可执行公共站点任意脚本",
+		clientVisible: true,
+		valueType: "json",
+		groupName: "站点设置",
+	},
 ];
 
 /** 运行时校验预置系统配置（幂等安全，恢复软删除的预设项） */
