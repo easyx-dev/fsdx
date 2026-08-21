@@ -6,6 +6,9 @@ import type { ThemePreset } from "@fsdx/ui-ssr/theme";
 import { ClientOnly, HeadContent, Scripts } from "@tanstack/react-router";
 import { useEffect, useRef } from "react";
 import { Toaster } from "sonner";
+import faviconUrl from "#/assets/favicon.svg?url";
+import adminFaviconUrl from "#/assets/favicon-admin.svg?url";
+import faviconDarkUrl from "#/assets/favicon-dark.svg?url";
 import { Footer, Header, useClientAuth } from "#/components/client";
 import { useGlobalStore } from "#/components/providers";
 import {
@@ -77,13 +80,13 @@ export function SSRRootDocument({ children }: SSRRootDocumentProps) {
 				<link
 					rel="icon"
 					type="image/svg+xml"
-					href="/favicon.svg"
+					href={faviconUrl}
 					media="(prefers-color-scheme: light)"
 				/>
 				<link
 					rel="icon"
 					type="image/svg+xml"
-					href="/favicon-dark.svg"
+					href={faviconDarkUrl}
 					media="(prefers-color-scheme: dark)"
 				/>
 				<link rel="manifest" href="/manifest.json" />
@@ -124,7 +127,7 @@ export function AdminRootDocument({
 				<title>{`${siteName} 管理后台`}</title>
 				<HeadContent />
 				<link rel="stylesheet" href={adminGlobalCss} />
-				<link rel="icon" type="image/svg+xml" href="/favicon-admin.svg" />
+				<link rel="icon" type="image/svg+xml" href={adminFaviconUrl} />
 				<meta name="theme-color" content="#ffffff" />
 			</head>
 			<body className="font-sans antialiased">
