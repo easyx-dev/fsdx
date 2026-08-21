@@ -11,7 +11,7 @@ import {
 import { message } from "@fsdx/ui-spa/antd-static";
 import { ProTable, TableOperate } from "@fsdx/ui-spa/table";
 import { createFileRoute, useRouter } from "@tanstack/react-router";
-import type { UploadProps } from "antd";
+import type { TableProps, UploadProps } from "antd";
 import {
 	Button,
 	Col,
@@ -46,11 +46,11 @@ function FilesPage() {
 	const router = useRouter();
 	const initialData = Route.useLoaderData();
 	const [data, setData] = useState(initialData);
-	const [filter, setFilter] = useState("");
+	const [filter, setFilter] = useState<"" | "temp" | "permanent">("");
 	const uploadingCountRef = useRef(0);
 	const [uploading, setUploading] = useState(false);
 	const [keyword, setKeyword] = useState("");
-	const [sortField, setSortField] = useState<string | undefined>();
+	const [sortField, setSortField] = useState<string>();
 	const [sortOrder, setSortOrder] = useState<
 		"ascend" | "descend" | undefined
 	>();
@@ -58,7 +58,7 @@ function FilesPage() {
 
 	/** 按当前条件刷新文件列表 */
 	const refreshFiles = async (params?: {
-		status?: string;
+		status?: "" | "temp" | "permanent";
 		keyword?: string;
 		sortField?: string;
 		sortOrder?: "ascend" | "descend";
@@ -81,7 +81,7 @@ function FilesPage() {
 	};
 
 	/** 切换筛选状态并刷新列表 */
-	const handleFilterChange = async (status: string) => {
+	const handleFilterChange = async (status: "" | "temp" | "permanent") => {
 		setFilter(status);
 		await refreshFiles({ status });
 	};
@@ -93,14 +93,15 @@ function FilesPage() {
 	};
 
 	/** 表格排序变更 */
-	const handleTableChange = async (
-		_pagination: unknown,
-		_filters: unknown,
-		sorter: unknown,
+	const handleTableChange: TableProps<FileRecord>["onChange"] = async (
+		_pagination,
+		_filters,
+		sorter,
 	) => {
-		const s = sorter as { field?: string; order?: string };
-		const field = s.field as string | undefined;
-		const order = s.order as "ascend" | "descend" | undefined;
+		const s = Array.isArray(sorter) ? sorter[0] : sorter;
+		const field = typeof s?.field === "string" ? s.field : undefined;
+		const order =
+			s?.order === "ascend" || s?.order === "descend" ? s.order : undefined;
 		setSortField(field);
 		setSortOrder(order);
 		await refreshFiles({ sortField: field, sortOrder: order });
@@ -109,9 +110,9 @@ function FilesPage() {
 	/** 上传核心逻辑（支持多文件并行上传） */
 	const doUpload = async (
 		file: File,
-		onSuccess: (body: unknown) => void,
-		onError: (err: Error) => void,
 		permanent: boolean,
+		onSuccess?: (body: unknown) => void,
+		onError?: (err: Error) => void,
 	) => {
 		uploadingCountRef.current++;
 		setUploading(true);
@@ -142,13 +143,13 @@ function FilesPage() {
 	/** 临时文件上传 */
 	const tempRequest: UploadProps["customRequest"] = async (options) => {
 		const { file, onSuccess, onError } = options;
-		await doUpload(file as File, onSuccess!, onError!, false);
+		await doUpload(file as File, false, onSuccess, onError);
 	};
 
 	/** 永久文件上传 */
 	const permanentRequest: UploadProps["customRequest"] = async (options) => {
 		const { file, onSuccess, onError } = options;
-		await doUpload(file as File, onSuccess!, onError!, true);
+		await doUpload(file as File, true, onSuccess, onError);
 	};
 
 	/** 判断是否为图片类型 */
@@ -314,7 +315,7 @@ function FilesPage() {
 					]}
 					value={filter}
 					onChange={(value: string | number) => {
-						handleFilterChange(value as string);
+						handleFilterChange(value as "" | "temp" | "permanent");
 					}}
 				/>
 				<Input.Search

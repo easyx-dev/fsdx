@@ -85,15 +85,15 @@ export async function getClientUserList(params?: ClientUserListParams) {
 		sortField,
 		sortOrder,
 	} = params ?? {};
-	const conditions = [notDeleted(clientUser.deletedAt)];
-	if (keyword) {
-		conditions.push(
-			or(
-				ilike(clientUser.username, `%${keyword}%`),
-				ilike(clientUser.email, `%${keyword}%`),
-			)!,
-		);
-	}
+	const whereCondition = and(
+		notDeleted(clientUser.deletedAt),
+		keyword
+			? or(
+					ilike(clientUser.username, `%${keyword}%`),
+					ilike(clientUser.email, `%${keyword}%`),
+				)
+			: undefined,
+	);
 
 	const offset = paginationOffset(page, pageSize);
 
@@ -114,16 +114,11 @@ export async function getClientUserList(params?: ClientUserListParams) {
 		db
 			.select(clientUserSafeCols)
 			.from(clientUser)
-			.where(and(...conditions))
+			.where(whereCondition)
 			.orderBy(direction)
 			.limit(pageSize)
 			.offset(offset),
-		db.$count(
-			db
-				.select()
-				.from(clientUser)
-				.where(and(...conditions)),
-		),
+		db.$count(db.select().from(clientUser).where(whereCondition)),
 		page,
 		pageSize,
 	);
@@ -175,14 +170,20 @@ export async function updateClientUser(
 	id: string,
 	input: UpdateClientUserInput,
 ) {
-	const setData: Record<string, unknown> = { updatedAt: new Date() };
+	if (input.clientRoleIds !== undefined) {
+		await assertClientRolesExist(input.clientRoleIds);
+	}
+
+	const setData: Partial<typeof clientUser.$inferInsert> = {
+		updatedAt: new Date(),
+	};
 	if (input.username !== undefined) setData.username = input.username;
 	if (input.email !== undefined) setData.email = input.email;
 	if (input.status !== undefined) setData.status = input.status;
-	if (input.emailVerified !== undefined)
+	if (input.emailVerified !== undefined) {
 		setData.emailVerified = input.emailVerified;
+	}
 	if (input.clientRoleIds !== undefined) {
-		await assertClientRolesExist(input.clientRoleIds);
 		setData.clientRoleIds = input.clientRoleIds;
 	}
 

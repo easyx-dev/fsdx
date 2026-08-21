@@ -26,19 +26,13 @@ import { logCrud } from "#/services/operation-log/operation-log.server";
 export const getListSFn = createServerFn({ method: "GET" })
 	.middleware([adminPermGuard(ADMIN_PERMISSIONS.TRANSLATION_VIEW)])
 	.validator(getListSchema)
-	.handler(async ({ data }) =>
-		listContentTranslations(
-			data as Parameters<typeof listContentTranslations>[0],
-		),
-	);
+	.handler(async ({ data }) => listContentTranslations(data));
 
 export const saveSFn = createServerFn({ method: "POST" })
 	.middleware([adminPermGuard(ADMIN_PERMISSIONS.TRANSLATION_MANAGE)])
 	.validator(formSchema)
 	.handler(async ({ data, context }) => {
-		const result = await upsertContentTranslation(
-			data as Parameters<typeof upsertContentTranslation>[0],
-		);
+		const result = await upsertContentTranslation(data);
 		logCrud(context.user, "translation", "update", undefined, {
 			targetType: "content_translation",
 		});

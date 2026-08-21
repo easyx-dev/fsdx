@@ -26,7 +26,9 @@ const MAX_TEXT_PREVIEW_BYTES = 1024 * 1024;
 
 /** 获取 STORAGE_DIR 的规范化绝对路径（包含符号链接解析） */
 async function getStorageDir(): Promise<string> {
-	const raw = resolve(process.env.STORAGE_DIR!);
+	const envDir = process.env.STORAGE_DIR;
+	if (!envDir) throw new Error("缺少 STORAGE_DIR 环境变量");
+	const raw = resolve(envDir);
 	try {
 		return await realpath(raw);
 	} catch {

@@ -3,7 +3,7 @@
  * 翻译按需查询（单条/批量/按字段），合并到主表记录后覆盖对应字段值
  */
 import { DEFAULT_LOCALE, type Locale } from "@fsdx/core/i18n-types";
-import { and, eq, inArray, like, or } from "drizzle-orm";
+import { and, eq, inArray, like, or, type SQLWrapper } from "drizzle-orm";
 import { EDITOR_TYPES, type EditorType } from "#/constants/editor-types";
 import { db, withTransaction } from "#/db/index";
 import { contentTranslation } from "#/db/schema";
@@ -293,7 +293,7 @@ export async function listContentTranslations(
 	} = params ?? {};
 	const offset = paginationOffset(page, pageSize);
 
-	const conditions = [];
+	const conditions: (SQLWrapper | undefined)[] = [];
 	if (entityType)
 		conditions.push(eq(contentTranslation.entityType, entityType));
 	if (locale) conditions.push(eq(contentTranslation.locale, locale));

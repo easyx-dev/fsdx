@@ -69,15 +69,15 @@ export async function getAdminUserList(params?: AdminUserListParams) {
 		sortField,
 		sortOrder,
 	} = params ?? {};
-	const conditions = [notDeleted(adminUser.deletedAt)];
-	if (keyword) {
-		conditions.push(
-			or(
-				ilike(adminUser.username, `%${keyword}%`),
-				ilike(adminUser.email, `%${keyword}%`),
-			)!,
-		);
-	}
+	const whereCondition = and(
+		notDeleted(adminUser.deletedAt),
+		keyword
+			? or(
+					ilike(adminUser.username, `%${keyword}%`),
+					ilike(adminUser.email, `%${keyword}%`),
+				)
+			: undefined,
+	);
 
 	const offset = paginationOffset(page, pageSize);
 
@@ -112,16 +112,11 @@ export async function getAdminUserList(params?: AdminUserListParams) {
 				passwordHash: adminUser.passwordHash,
 			})
 			.from(adminUser)
-			.where(and(...conditions))
+			.where(whereCondition)
 			.orderBy(direction)
 			.limit(pageSize)
 			.offset(offset),
-		db.$count(
-			db
-				.select()
-				.from(adminUser)
-				.where(and(...conditions)),
-		),
+		db.$count(db.select().from(adminUser).where(whereCondition)),
 		page,
 		pageSize,
 	);
@@ -169,18 +164,21 @@ export async function createAdminUser(input: CreateAdminUserInput) {
 
 /** 更新管理员信息 */
 export async function updateAdminUser(id: string, input: UpdateAdminUserInput) {
-	const setData: Record<string, unknown> = { updatedAt: new Date() };
-	if (input.username !== undefined) setData.username = input.username;
-
 	// 禁止将 root 管理员设为禁用状态
 	if (input.status === "disabled") {
 		const existing = await getAdminUser(id);
 		if (existing?.isRoot) throw new Error("不允许禁用 root 管理员");
 	}
-
-	if (input.email !== undefined) setData.email = input.email;
 	if (input.adminRoleIds !== undefined) {
 		await assertAdminRolesExist(input.adminRoleIds);
+	}
+
+	const setData: Partial<typeof adminUser.$inferInsert> = {
+		updatedAt: new Date(),
+	};
+	if (input.username !== undefined) setData.username = input.username;
+	if (input.email !== undefined) setData.email = input.email;
+	if (input.adminRoleIds !== undefined) {
 		setData.adminRoleIds = input.adminRoleIds;
 	}
 	if (input.status !== undefined) setData.status = input.status;

@@ -148,13 +148,9 @@ export function FileUpload({
 	const customRequest: UploadProps["customRequest"] = async (options) => {
 		const { file, onSuccess, onError, onProgress } = options;
 		try {
-			onProgress?.({ percent: 0 } as Parameters<
-				NonNullable<typeof onProgress>
-			>[0]);
+			onProgress?.({ percent: 0 });
 			const result = await uploadFile(file as File, permanent);
-			onProgress?.({ percent: 100 } as Parameters<
-				NonNullable<typeof onProgress>
-			>[0]);
+			onProgress?.({ percent: 100 });
 			onSuccess?.(result);
 			if (result.isDuplicated) {
 				message.success("秒传成功（文件已存在）");

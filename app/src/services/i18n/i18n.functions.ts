@@ -7,6 +7,7 @@ import type { Locale } from "@fsdx/core/i18n-types";
 import { DEFAULT_LOCALE, SUPPORTED_LOCALES } from "@fsdx/core/i18n-types";
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import { EDITOR_TYPES } from "#/constants/editor-types";
 import { adminPermGuard } from "#/middleware/admin-auth";
 import { ADMIN_PERMISSIONS } from "#/permissions/admin-permissions";
 import { getConfig } from "#/services/config/config.server";
@@ -53,13 +54,11 @@ export const saveContentTranslationSFn = createServerFn({ method: "POST" })
 			fieldName: z.string().min(1),
 			locale: localeSchema,
 			value: z.string().min(1),
-			valueType: z.string().optional(),
+			valueType: z.enum(EDITOR_TYPES).optional(),
 		}),
 	)
 	.handler(async ({ data, context }) => {
-		const result = await upsertContentTranslation(
-			data as Parameters<typeof upsertContentTranslation>[0],
-		);
+		const result = await upsertContentTranslation(data);
 		logCrud(context.user, "translation", "update", undefined, {
 			targetType: "content_translation",
 		});

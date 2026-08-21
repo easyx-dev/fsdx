@@ -41,8 +41,8 @@ function AdminsPage() {
 	const [roles] = useState<AdminRoleRecord[]>(initial.roles);
 	const [keyword, setKeyword] = useState("");
 	const [page, setPage] = useState(1);
-	const [sortField, setSortField] = useState<string | undefined>();
-	const [sortOrder, setSortOrder] = useState<SortOrder | undefined>();
+	const [sortField, setSortField] = useState<string>();
+	const [sortOrder, setSortOrder] = useState<SortOrder>();
 	const [modalOpen, setModalOpen] = useState(false);
 	const [pwdModalOpen, setPwdModalOpen] = useState(false);
 	const [editingUser, setEditingUser] = useState<AdminUserListItem | null>(
@@ -137,10 +137,14 @@ function AdminsPage() {
 	};
 
 	const handlePwdSubmit = async () => {
+		if (!editingUser) {
+			message.warning("请先选择要重置密码的用户");
+			return;
+		}
 		try {
 			const values = await pwdForm.validateFields();
 			await resetPwdSFn({
-				data: { id: editingUser!.id, password: values.password },
+				data: { id: editingUser.id, password: values.password },
 			});
 			message.success("密码已重置");
 			setPwdModalOpen(false);

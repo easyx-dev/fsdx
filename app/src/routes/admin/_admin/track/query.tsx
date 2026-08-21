@@ -87,14 +87,14 @@ function EventListPage() {
 	}, [presetProperties]);
 
 	// 筛选条件
-	const [filterEvent, setFilterEvent] = useState<string | undefined>();
+	const [filterEvent, setFilterEvent] = useState<string>();
 	const [filterKeyword, setFilterKeyword] = useState("");
 	const [filterDateRange, setFilterDateRange] = useState<
 		[dayjs.Dayjs, dayjs.Dayjs] | null
 	>(null);
 	const pageSize = 20;
-	const [sortField, setSortField] = useState<string | undefined>();
-	const [sortOrder, setSortOrder] = useState<SortOrder | undefined>();
+	const [sortField, setSortField] = useState<string>();
+	const [sortOrder, setSortOrder] = useState<SortOrder>();
 
 	/** 核心查询方法：接受明确的 page/pageSize，消除闭包过期问题 */
 	const searchWith = async (

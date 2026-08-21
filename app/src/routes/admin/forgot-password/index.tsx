@@ -4,6 +4,7 @@
 import { LockOutlined, MailOutlined, ReloadOutlined } from "@ant-design/icons";
 import { message } from "@fsdx/ui-spa/antd-static";
 import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
+import type { InputRef } from "antd";
 import { Button, Form, Input, Modal } from "antd";
 import type React from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -45,7 +46,7 @@ function AdminForgotPasswordPage() {
 	const [imageCode, setImageCode] = useState("");
 	const [sendingCode, setSendingCode] = useState(false);
 	const [captchaError, setCaptchaError] = useState("");
-	const imageInputRef = useRef<any>(null);
+	const imageInputRef = useRef<InputRef>(null);
 
 	// 倒计时
 	const [countdown, setCountdown] = useState(0);

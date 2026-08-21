@@ -10,7 +10,7 @@ import {
 	getRequestContext,
 	getRequestOperator,
 } from "@fsdx/core/request-context";
-import { and, eq, gte, ilike, lt, or } from "drizzle-orm";
+import { and, eq, gte, ilike, lt, or, type SQLWrapper } from "drizzle-orm";
 import { db } from "#/db/index";
 import { type OperatorType, operationLog } from "#/db/schema";
 import { logger } from "#/lib/logger/logger";
@@ -233,7 +233,7 @@ export async function searchOperationLogs(
 		sortOrder,
 	} = query ?? {};
 
-	const conditions = [];
+	const conditions: (SQLWrapper | undefined)[] = [];
 
 	if (module) {
 		conditions.push(eq(operationLog.module, module));
@@ -247,7 +247,7 @@ export async function searchOperationLogs(
 				ilike(operationLog.operatorName, `%${keyword}%`),
 				ilike(operationLog.targetName, `%${keyword}%`),
 				ilike(operationLog.module, `%${keyword}%`),
-			)!,
+			),
 		);
 	}
 	if (startDate) {

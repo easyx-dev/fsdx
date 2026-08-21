@@ -330,7 +330,7 @@ export async function searchRecipients(params: {
 	const keywordCondition = or(
 		ilike(adminUser.username, keyword),
 		ilike(adminUser.email, keyword),
-	)!;
+	);
 
 	if (params.recipientType === "admin") {
 		const rows = await db
@@ -351,7 +351,7 @@ export async function searchRecipients(params: {
 	const clientKeywordCondition = or(
 		ilike(clientUser.username, keyword),
 		ilike(clientUser.email, keyword),
-	)!;
+	);
 
 	const rows = await db
 		.select({

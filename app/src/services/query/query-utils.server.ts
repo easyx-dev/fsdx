@@ -1,7 +1,14 @@
 /**
  * 通用查询工具函数：软删除条件、排序构建、分页执行
  */
-import { asc, desc, isNull, type SQL, type SQLWrapper } from "drizzle-orm";
+import {
+	type AnyColumn,
+	asc,
+	desc,
+	isNull,
+	type SQL,
+	type SQLWrapper,
+} from "drizzle-orm";
 import type { PaginatedResult, SortOrder } from "#/types/query";
 
 /** 默认分页值 */
@@ -25,16 +32,15 @@ export function paginationOffset(page: number, pageSize: number): number {
  * @param sortOrder 排序方向 ("ascend" | "descend")
  * @param defaultField 无有效排序参数时的默认字段
  */
-export function buildSortClause<T extends Record<string, unknown>>(
+export function buildSortClause<
+	T extends Record<string, AnyColumn | SQLWrapper>,
+>(
 	fieldMap: T,
 	sortField: string | undefined,
 	sortOrder: SortOrder | undefined,
 	defaultField: keyof T,
-): ReturnType<typeof desc> | ReturnType<typeof asc> {
-	const col =
-		sortField && fieldMap[sortField]
-			? (fieldMap[sortField] as Parameters<typeof desc>[0])
-			: (fieldMap[defaultField] as Parameters<typeof desc>[0]);
+): SQL {
+	const col = (sortField && fieldMap[sortField]) || fieldMap[defaultField];
 	return sortOrder === "ascend" ? asc(col) : desc(col);
 }
 

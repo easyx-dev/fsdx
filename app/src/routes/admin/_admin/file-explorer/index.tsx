@@ -43,7 +43,7 @@ export const Route = createFileRoute("/admin/_admin/file-explorer/")({
 });
 
 function FileExplorerPage() {
-	const initialData = Route.useLoaderData() as DirData;
+	const initialData = Route.useLoaderData();
 	const [data, setData] = useState<DirData>(initialData);
 	const [currentPath, setCurrentPath] = useState("");
 	const [pathDraft, setPathDraft] = useState(() =>
@@ -77,7 +77,7 @@ function FileExplorerPage() {
 				const result = await safeSfnCall(
 					listDirectorySFn({ data: { subPath: path } }),
 				);
-				setData(result as DirData);
+				setData(result);
 				setCurrentPath(path);
 				setPathDraft(formatDisplayPath(path));
 			} catch {

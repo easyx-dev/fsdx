@@ -10,7 +10,7 @@ import { getFileInfo, getFileList, uploadFile } from "./file.server";
 
 /** 文件列表查询参数 schema */
 export const fileListSchema = z.object({
-	status: z.string().optional(),
+	status: z.enum(["temp", "permanent"]).optional(),
 	keyword: z.string().optional(),
 	mimePrefix: z.string().optional(),
 	sortField: z.string().optional(),

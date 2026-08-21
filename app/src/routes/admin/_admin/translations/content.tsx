@@ -3,16 +3,18 @@
  */
 import { DownloadOutlined, PlusOutlined } from "@ant-design/icons";
 import { downloadFile } from "@fsdx/core/export";
-import { SUPPORTED_LOCALES } from "@fsdx/core/i18n-types";
+import { type Locale, SUPPORTED_LOCALES } from "@fsdx/core/i18n-types";
 import { message } from "@fsdx/ui-spa/antd-static";
 import { JsonImportButton } from "@fsdx/ui-spa/json-import-button";
 import { ProTable, TableOperate } from "@fsdx/ui-spa/table";
 import { createFileRoute } from "@tanstack/react-router";
+import type { TableProps } from "antd";
 import { Button, Form, Input, Modal, Select, Space, Tag } from "antd";
 import dayjs from "dayjs";
 import type { ChangeEvent } from "react";
 import { useEffect, useState } from "react";
 import { AdminPageContent, EditorTypes } from "#/components/admin";
+import type { contentTranslation } from "#/db/schema";
 import { formSchema } from "#/services/i18n/content-translation.schemas";
 import type { SortOrder } from "#/types/query";
 import {
@@ -23,6 +25,9 @@ import {
 	saveSFn,
 } from "./-mods/content-translations.functions";
 
+/** 实体翻译行记录类型 */
+type ContentTranslationRow = typeof contentTranslation.$inferSelect;
+
 export const Route = createFileRoute("/admin/_admin/translations/content")({
 	component: ContentTranslationPage,
 	loader: async () => await getListSFn({ data: {} }),
@@ -32,16 +37,16 @@ function ContentTranslationPage() {
 	const initial = Route.useLoaderData();
 	const [data, setData] = useState(initial);
 	const [modalOpen, setModalOpen] = useState(false);
-	const [editing, setEditing] = useState<Record<string, unknown> | null>(null);
+	const [editing, setEditing] = useState<ContentTranslationRow | null>(null);
 	const [filterEntityType, setFilterEntityType] = useState<
 		string | undefined
 	>();
-	const [filterLocale, setFilterLocale] = useState<string | undefined>();
+	const [filterLocale, setFilterLocale] = useState<Locale>();
 	const [filterKeyword, setFilterKeyword] = useState<string>("");
 	// 防抖后的搜索关键字
 	const [debouncedKeyword, setDebouncedKeyword] = useState<string>("");
-	const [sortField, setSortField] = useState<string | undefined>();
-	const [sortOrder, setSortOrder] = useState<SortOrder | undefined>();
+	const [sortField, setSortField] = useState<string>();
+	const [sortOrder, setSortOrder] = useState<SortOrder>();
 	const [form] = Form.useForm();
 
 	// 搜索关键字输入防抖（300ms）
@@ -83,27 +88,25 @@ function ContentTranslationPage() {
 	}
 
 	/** 表格排序变更 */
-	const handleTableChange = async (
-		_pagination: unknown,
-		_filters: unknown,
-		sorter: unknown,
-	) => {
-		const s = sorter as { field?: string; order?: string };
-		const field = s.field as string | undefined;
-		const order = s.order as SortOrder | undefined;
-		setSortField(field);
-		setSortOrder(order);
-		const result = await getListSFn({
-			data: {
-				entityType: filterEntityType,
-				locale: filterLocale,
-				keyword: debouncedKeyword,
-				sortField: field,
-				sortOrder: order,
-			},
-		});
-		setData(result);
-	};
+	const handleTableChange: TableProps<ContentTranslationRow>["onChange"] =
+		async (_pagination, _filters, sorter) => {
+			const s = Array.isArray(sorter) ? sorter[0] : sorter;
+			const field = typeof s?.field === "string" ? s.field : undefined;
+			const order =
+				s?.order === "ascend" || s?.order === "descend" ? s.order : undefined;
+			setSortField(field);
+			setSortOrder(order);
+			const result = await getListSFn({
+				data: {
+					entityType: filterEntityType,
+					locale: filterLocale,
+					keyword: debouncedKeyword,
+					sortField: field,
+					sortOrder: order,
+				},
+			});
+			setData(result);
+		};
 
 	async function handleSubmit(values: Record<string, unknown>) {
 		try {
@@ -130,7 +133,7 @@ function ContentTranslationPage() {
 		setModalOpen(true);
 	}
 
-	function openEdit(record: Record<string, unknown>) {
+	function openEdit(record: ContentTranslationRow) {
 		setEditing(record);
 		form.setFieldsValue(record);
 		setModalOpen(true);
@@ -219,12 +222,10 @@ function ContentTranslationPage() {
 			title: "操作",
 			key: "actions",
 			fixed: "right" as const,
-			render: (_: unknown, record: Record<string, unknown>) => (
+			render: (_: unknown, record: ContentTranslationRow) => (
 				<TableOperate>
 					<TableOperate.Edit onClick={() => openEdit(record)} />
-					<TableOperate.Delete
-						onConfirm={() => handleDelete(record.id as string)}
-					/>
+					<TableOperate.Delete onConfirm={() => handleDelete(record.id)} />
 				</TableOperate>
 			),
 		},
@@ -290,7 +291,7 @@ function ContentTranslationPage() {
 						allowClear
 						style={{ width: 100 }}
 						value={filterLocale}
-						onChange={(v: string | undefined) => {
+						onChange={(v?: Locale) => {
 							setFilterLocale(v);
 						}}
 						options={SUPPORTED_LOCALES.map((l) => ({

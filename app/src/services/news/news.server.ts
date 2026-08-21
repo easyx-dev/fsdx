@@ -7,6 +7,7 @@
 import { toCsv, toJson } from "@fsdx/core/export";
 import { DEFAULT_LOCALE, type Locale } from "@fsdx/core/i18n-types";
 import { and, desc, eq, inArray, ne } from "drizzle-orm";
+import type { z } from "zod";
 import { db } from "#/db/index";
 import { news } from "#/db/schema";
 import {
@@ -20,8 +21,12 @@ import {
 	paginationOffset,
 } from "#/services/query/query-utils.server";
 import type { PaginatedSortParams } from "#/types/query";
+import type { statusSchema } from "./news.schemas";
 
 export type NewsRecord = typeof news.$inferSelect;
+
+/** 新闻状态（单一来源：statusSchema） */
+export type NewsStatus = z.infer<typeof statusSchema>["status"];
 
 /** 新闻更新数据 */
 export type NewsUpdateData = Partial<typeof news.$inferInsert>;
@@ -270,9 +275,9 @@ export async function createNews(params: {
 /** 变更新闻状态（发布/归档） */
 export async function changeNewsStatus(
 	id: string,
-	status: string,
+	status: NewsStatus,
 ): Promise<{ success: boolean }> {
-	const updateData: Record<string, unknown> = {
+	const updateData: Partial<typeof news.$inferInsert> = {
 		status,
 		updatedAt: new Date(),
 	};

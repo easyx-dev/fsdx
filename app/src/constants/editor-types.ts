@@ -15,7 +15,7 @@ export type EditorType =
 	| "file";
 
 /** 所有编辑器类型的数组，便于迭代渲染 */
-export const EDITOR_TYPES: EditorType[] = [
+export const EDITOR_TYPES = [
 	"input",
 	"text",
 	"number",
@@ -24,7 +24,7 @@ export const EDITOR_TYPES: EditorType[] = [
 	"code",
 	"image",
 	"file",
-];
+] as const satisfies readonly EditorType[];
 
 /** 编辑器类型对应的中文标签 */
 export const EDITOR_TYPE_LABELS: Record<EditorType, string> = {

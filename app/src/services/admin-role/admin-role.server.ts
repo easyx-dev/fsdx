@@ -23,19 +23,20 @@ export type UpdateAdminRoleInput = Omit<
 
 /** 获取角色列表（支持关键词搜索） */
 export async function getAdminRoleList(keyword?: string) {
-	const conditions = [isNull(adminRole.deletedAt)];
-	if (keyword) {
-		conditions.push(
-			or(
-				ilike(adminRole.name, `%${keyword}%`),
-				ilike(adminRole.slug, `%${keyword}%`),
-			)!,
-		);
-	}
 	return db
 		.select()
 		.from(adminRole)
-		.where(and(...conditions))
+		.where(
+			and(
+				isNull(adminRole.deletedAt),
+				keyword
+					? or(
+							ilike(adminRole.name, `%${keyword}%`),
+							ilike(adminRole.slug, `%${keyword}%`),
+						)
+					: undefined,
+			),
+		)
 		.orderBy(adminRole.createdAt);
 }
 

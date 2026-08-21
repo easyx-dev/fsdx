@@ -13,7 +13,9 @@ export async function runMigrations() {
 		logger.warn({ migrationsFolder }, "迁移目录不存在，跳过数据库迁移");
 		return;
 	}
-	const migrationDb = drizzle(process.env.DATABASE_URL!);
+	const databaseUrl = process.env.DATABASE_URL;
+	if (!databaseUrl) throw new Error("缺少 DATABASE_URL 环境变量");
+	const migrationDb = drizzle(databaseUrl);
 
 	logger.info({ migrationsFolder }, "开始执行数据库迁移");
 	await migrate(migrationDb, {

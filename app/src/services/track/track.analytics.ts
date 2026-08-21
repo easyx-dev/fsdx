@@ -2,7 +2,7 @@
  * 埋点事件查询与分析模块：分页查询、事件名列表、趋势/分布/排行聚合
  */
 import { toDayRange } from "@fsdx/core/date-format";
-import { and, eq, gte, ilike, lt, or, sql } from "drizzle-orm";
+import { and, eq, gte, ilike, lt, or, type SQLWrapper, sql } from "drizzle-orm";
 import { db } from "#/db/index";
 import { trackEvent as trackEventTable } from "#/db/schema";
 import {
@@ -42,7 +42,7 @@ export async function searchTrackEvents(
 		sortOrder,
 	} = query;
 
-	const conditions = [];
+	const conditions: (SQLWrapper | undefined)[] = [];
 
 	if (eventName) {
 		conditions.push(eq(trackEventTable.name, eventName));
@@ -58,7 +58,7 @@ export async function searchTrackEvents(
 			or(
 				ilike(trackEventTable.name, `%${keyword}%`),
 				sql`${trackEventTable.properties}::text ILIKE ${`%${keyword}%`}`,
-			)!,
+			),
 		);
 	}
 	if (startDate) {
@@ -126,7 +126,7 @@ export async function getTrackAnalytics(
 		granularity === "hour" ? "YYYY-MM-DD HH24:00" : "YYYY-MM-DD";
 
 	// 时间序列趋势
-	const timeSeriesResult = await db.execute(
+	const timeSeriesResult = await db.execute<{ date: string; count: number }>(
 		sql`SELECT TO_CHAR(${trackEventTable.time} AT TIME ZONE 'Asia/Shanghai', ${timeFormat}) AS date,
 		            COUNT(*)::int AS count
 		       FROM ${trackEventTable}
@@ -189,10 +189,9 @@ export async function getTrackAnalytics(
 			and(gte(trackEventTable.time, start), lt(trackEventTable.time, end)),
 		);
 
-	const timeSeries: TimeSeriesItem[] = (
-		(timeSeriesResult as unknown as { rows: { date: string; count: number }[] })
-			.rows ?? []
-	).map((r) => ({ date: r.date, count: r.count }));
+	const timeSeries: TimeSeriesItem[] = (timeSeriesResult.rows ?? []).map(
+		(r) => ({ date: r.date, count: r.count }),
+	);
 
 	const eventDistribution: TrackEventDistributionItem[] =
 		distributionResult.map((r) => ({ name: r.name, count: r.count }));

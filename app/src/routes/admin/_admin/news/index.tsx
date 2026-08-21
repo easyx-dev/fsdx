@@ -34,7 +34,7 @@ function NewsListPage() {
 	const newsData = Route.useLoaderData();
 	const [data, setData] = useState(newsData);
 	const [filter, setFilter] = useState<string>("");
-	const [sortField, setSortField] = useState<string | undefined>();
+	const [sortField, setSortField] = useState<string>();
 	const [sortOrder, setSortOrder] = useState<
 		"ascend" | "descend" | undefined
 	>();

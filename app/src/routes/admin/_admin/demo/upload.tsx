@@ -12,13 +12,23 @@ export const Route = createFileRoute("/admin/_admin/demo/upload")({
 	component: UploadDemoPage,
 });
 
-function UploadDemoPage() {
-	const [form] = Form.useForm();
-	const [submitted, setSubmitted] = useState<Record<string, unknown> | null>(
-		null,
-	);
+/** 演示表单字段类型（各字段对应不同上传组件的值形态） */
+interface UploadDemoValues {
+	coverImageId?: string;
+	galleryIds?: string[];
+	attachmentId?: string;
+	attachmentIds?: string[];
+	pdfFileId?: string;
+	singleFileId?: string;
+	multiFileIds?: string[];
+	imageFileId?: string;
+}
 
-	const handleFinish = (values: Record<string, unknown>) => {
+function UploadDemoPage() {
+	const [form] = Form.useForm<UploadDemoValues>();
+	const [submitted, setSubmitted] = useState<UploadDemoValues | null>(null);
+
+	const handleFinish = (values: UploadDemoValues) => {
 		setSubmitted(values);
 		message.success("表单提交成功，查看下方结果");
 	};

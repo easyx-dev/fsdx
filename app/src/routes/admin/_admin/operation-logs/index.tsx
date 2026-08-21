@@ -35,6 +35,12 @@ interface OperationLogEntry {
 	createdAt: string;
 }
 
+/** 表格行类型：createdAt 已转为 Date，并附带行标识 */
+type OperationLogRow = Omit<OperationLogEntry, "createdAt"> & {
+	_rowKey: string;
+	createdAt: Date;
+};
+
 /** 模块对应 Tag 颜色 */
 const MODULE_COLORS: Record<string, string> = {
 	news: "blue",
@@ -109,8 +115,8 @@ function OperationLogsPage() {
 	const [page, setPage] = useState(1);
 	const [pageSize] = useState(20);
 	const [form] = Form.useForm();
-	const [sortField, setSortField] = useState<string | undefined>();
-	const [sortOrder, setSortOrder] = useState<SortOrder | undefined>();
+	const [sortField, setSortField] = useState<string>();
+	const [sortOrder, setSortOrder] = useState<SortOrder>();
 
 	/** 执行搜索 */
 	const doSearch = async (p?: number, sf?: string, so?: SortOrder) => {
@@ -165,7 +171,7 @@ function OperationLogsPage() {
 		doSearch();
 	};
 
-	const dataSource = result.records.map(
+	const dataSource: OperationLogRow[] = result.records.map(
 		(entry: OperationLogEntry, idx: number) => ({
 			...entry,
 			_rowKey: `${result.page}-${idx}`,
@@ -194,8 +200,8 @@ function OperationLogsPage() {
 			width: 180,
 			sorter: true,
 			sortOrder: sortField === "createdAt" ? sortOrder : undefined,
-			render: (_: unknown, record: Record<string, unknown>) =>
-				dayjs(record.createdAt as Date).format("YYYY-MM-DD HH:mm"),
+			render: (_: unknown, record: OperationLogRow) =>
+				dayjs(record.createdAt).format("YYYY-MM-DD HH:mm"),
 		},
 		{
 			title: "操作人",
@@ -286,7 +292,7 @@ function OperationLogsPage() {
 				rowKey="_rowKey"
 				onChange={handleTableChange}
 				expandable={{
-					expandedRowRender: (record: Record<string, unknown>) => (
+					expandedRowRender: (record: OperationLogRow) => (
 						<pre
 							style={{
 								maxHeight: 300,

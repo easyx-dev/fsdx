@@ -138,7 +138,7 @@ function pushToBuffer(input: TrackEventInput, time: number): void {
 		userId: input.userId ?? null,
 		sessionId: input.sessionId,
 		name: input.name,
-		properties: input.properties as Record<string, unknown>,
+		properties: input.properties,
 	});
 }
 

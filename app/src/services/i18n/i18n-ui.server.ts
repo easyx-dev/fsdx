@@ -3,7 +3,7 @@
  * 内存缓存全量 UI 翻译，按 locale 懒加载
  */
 import type { Locale } from "@fsdx/core/i18n-types";
-import { and, eq, like, or } from "drizzle-orm";
+import { and, eq, like, or, type SQLWrapper } from "drizzle-orm";
 import { EDITOR_TYPES, type EditorType } from "#/constants/editor-types";
 import { db } from "#/db/index";
 import { uiTranslation } from "#/db/schema";
@@ -87,7 +87,7 @@ export async function listUITranslations(params?: ListUITranslationsParams) {
 	} = params ?? {};
 	const offset = paginationOffset(page, pageSize);
 
-	const conditions = [];
+	const conditions: (SQLWrapper | undefined)[] = [];
 	if (locale) conditions.push(eq(uiTranslation.locale, locale));
 	if (keyword) {
 		conditions.push(

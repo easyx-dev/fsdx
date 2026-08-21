@@ -3,6 +3,7 @@
  */
 import { SUPPORTED_LOCALES } from "@fsdx/core/i18n-types";
 import { z } from "zod";
+import { EDITOR_TYPES } from "#/constants/editor-types";
 
 export const formSchema = z.object({
 	id: z.string().optional(),
@@ -11,12 +12,12 @@ export const formSchema = z.object({
 	fieldName: z.string().min(1),
 	locale: z.enum(SUPPORTED_LOCALES),
 	value: z.string().min(1),
-	valueType: z.string().optional(),
+	valueType: z.enum(EDITOR_TYPES).optional(),
 });
 
 export const getListSchema = z.object({
 	entityType: z.string().optional(),
-	locale: z.string().optional(),
+	locale: z.enum(SUPPORTED_LOCALES).optional(),
 	keyword: z.string().optional(),
 	page: z.number().optional(),
 	sortField: z.string().optional(),

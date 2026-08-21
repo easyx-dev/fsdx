@@ -23,19 +23,20 @@ export type UpdateClientRoleInput = Omit<
 
 /** 获取角色列表（支持关键词搜索） */
 export async function getClientRoleList(keyword?: string) {
-	const conditions = [isNull(clientRole.deletedAt)];
-	if (keyword) {
-		conditions.push(
-			or(
-				ilike(clientRole.name, `%${keyword}%`),
-				ilike(clientRole.slug, `%${keyword}%`),
-			)!,
-		);
-	}
 	return db
 		.select()
 		.from(clientRole)
-		.where(and(...conditions))
+		.where(
+			and(
+				isNull(clientRole.deletedAt),
+				keyword
+					? or(
+							ilike(clientRole.name, `%${keyword}%`),
+							ilike(clientRole.slug, `%${keyword}%`),
+						)
+					: undefined,
+			),
+		)
 		.orderBy(clientRole.createdAt);
 }
 
