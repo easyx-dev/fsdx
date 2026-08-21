@@ -25,6 +25,16 @@
 
 ### Infrastructure
 
+- **版本发布流程 + CHANGELOG 归档机制**：
+  - `app/package.json`（`@fsdx/web`）新增 `version` 字段（起始 `1.1.0`，即下一个待发布版本），版本号统一 `v1.x.y` 与 git tag 一致，根 `package.json` 为 workspace 编排壳不设版本
+  - 新增 `.opencode/commands/deploy.md` 发布命令：联动提交 → 确定版本（未发布直接用当前版本，已发布则 bump patch）→ 更新 CHANGELOG（Unreleased 升版 + 归档）→ 打 tag（含 commit 摘要）→ 推送
+  - AGENTS.md 新增「变更日志（CHANGELOG）」章节：主文件只保留 `[Unreleased]` + 最近 3 个版本 + 「历史版本」索引，更早版本归档至 `docs/archive/changelog/`
+  - `[1.0.0]` 历史版本归档至 `docs/archive/changelog/v1.0.0.md`，主 CHANGELOG 历史索引链接指向归档
+
+- **favicon ?url import 缓存治理**：favicon.svg / favicon-dark.svg / favicon-admin.svg 自 `public/` 移入 `src/assets/` 并以 `?url` import（`Document.tsx` 内联为带 hash 的资源，图标变更不再受浏览器 URL 缓存影响）；`manifest.json` 移除对已删除 `favicon.svg` 的图标引用（PWA 图标保留 png）
+- **新增 check-architecture 架构审计命令**：`.opencode/commands/check-architecture.md` 按 8 维度（分层/路由/SFn/组件/类型与 DB/安全/错误处理/测试）全量扫描并输出分级报告；配套 `.opencode/checklists/` 新增 sfn / route / component 三份精简检查清单
+- **AGENTS.md 新增「对话效率」章节**：约定控制单会话上下文体积（阶段化会话 / explore 子代理 / read 限定行范围 / bash 输出瘦身 / 长文档按需读取），对齐 bom-easy 项目治理实践
+
 - **`@fsdx/core` 基础设施补齐（对照 bom-easy lib 查漏）**：
   - **`ai` 模块能力对齐**：重构拆分（types / client / chat / chat-stream / truncate，subpath 与既有 API 签名不变）；`ChatOptions` 新增 `extraBody`（如 DeepSeek thinking 控制，思考关闭时不传 temperature）；`deepChat` / `fastChat` 补齐 deep 失败自动降级 fast 重试、空内容参数变化重试（去 `max_tokens` → 改 `temperature=0`，带递增退避），客户端初始化同步超时与 SDK 重试；新增流式 `deepChatStream` / `fastChatStream`（逐 token 回调 + `reasoning_content` 思考流 + 降级通知）；新增 `truncateJsonForLlm` 大体积 JSON 结构截断。**行为变化**：空内容重试后仍为空时 `deepChat`/`fastChat` 直接抛错（原返回空串），`aiTranslateFieldSFn` 捕获后转友好提示，避免用户看到原始错误
   - **新增 `@fsdx/core/semaphore`**：`Semaphore` 并发限流（许可打满有界排队，队列满 / 等待超时抛 `SemaphoreTimeoutError`）
@@ -249,56 +259,6 @@
 - **权限码分隔符规范化**：`file_explorer:*`→`file-explorer:*`、`dict:*_item`→`dict:*-item`；审计模块名 `file_explorer`/`admin_role` 同步为 kebab（`operation_log.module` 数据格式变更）
 - **组件命名规范化**：`components/admin/nav-config.tsx` → `NavConfig.tsx`
 
-## [1.0.0] - 2026-06-23
+## 历史版本
 
-### Features
-
-- 基于 TanStack Start 的全栈 Web 应用框架，内置 CMS 示例
-- 双端同构：管理端 SPA（`/admin`）+ 客户端 SSR 前台（`/`）
-- 双用户认证体系（管理员 + 客户端用户），JWT + bcryptjs
-- RBAC 权限模型：角色 → 权限码 → 管理端 SFn 鉴权中间件
-- 管理员 CRUD（`/admin/users/admins`）含角色分配、密码重置
-- 客户端用户 CRUD（`/admin/users/clients`）含状态管理
-- 角色管理（`/admin/roles`）含权限码多选
-- 新闻管理（`/admin/news`）含 RichEditor 富文本编辑
-- 字典管理（`/admin/dicts`）含标签颜色、预置字典保护
-- 系统配置（`/admin/config`）含站点设置、SMTP、AI 配置分组
-- 文件管理（`/admin/files`）含上传、秒传、临时/永久状态
-- 操作日志审计（`/admin/operation-logs`）含缓冲批量写入
-- 日志查询（`/admin/logs`）按关键词/级别/日期搜索
-- 翻译管理（`/admin/translations`）含 UI 翻译 + 内容翻译
-- 事件埋点分析（`/admin/events`）含 9 个预设事件 + 15 个预设属性管理 + 查询分析
-  - 客户端自动采集系统属性（$browser、$os、$device_type、$user_agent、$language、$screen_size）
-  - 服务端自动注入 $ip（x-forwarded-for）和 $user_agent（请求头）
-  - 登录/注册/退出埋点已接入（Login、Register、FormSubmit、Logout 事件）
-- 仪表盘统计（`/admin`）新闻/用户/文件概览
-- 组件演示（`/admin/demo`）编辑器 + AI 聊天
-- 系统初始化（`/admin/init`）首次部署自动引导
-- 国际化（i18next）：zh/en，支持 UI 固定文案 + 实体字段翻译
-- 邮件发送（nodemailer）：SMTP 配置存于系统配置表
-- AI 集成（OpenAI 兼容）：深度思考 + 快速模型，翻译 + 聊天
-- AI 翻译（`/admin/translations`）一键多语言翻译
-- 图片验证码：SVG 生成 + 校验，防机器注册
-- 邮箱验证码：发送 + 校验，频率限制
-- 客户端注册/登录/登出：邮箱验证码 + TanStack Form + shadcn/ui
-- 内存缓存：config/dict/uiTranslation/clientUser/presetEvent/presetProperty 共 7 个实例
-- 文件存储抽象层：本地存储实现
-- 定时任务（cron）：每小时清理过期临时文件 + 每天凌晨清理过期日志
-- 缓冲写入策略：事件埋点 + 操作日志（5 秒/100 条/上限 1000 条）
-- 优雅关闭：SIGTERM/SIGINT 刷新缓冲队列
-- 健康检查：`GET /health`（Hono）
-- SF 错误日志中间件：自动覆盖所有 Server Function
-- CSRF 保护：基于 Origin/Referer/Sec-Fetch-Site 校验
-- Import Protection：防止 bcryptjs/drizzle-orm/openai 泄漏到客户端
-- 环境变量：zod schema 校验 + dotenv 手动加载
-- 文件/日志下载 API（`/api/download/`）
-
-### Infrastructure
-
-- PostgreSQL + Drizzle ORM（15 张表，uuid 主键，软删除，timestamptz）
-- pino 日志（按天文件流 + 控制台美化）
-- Vitest 测试（40 个测试文件，502 条测试）
-- Biome lint/format + TypeScript strict
-- Vite 8 构建 + Tailwind CSS 4 + shadcn/ui
-- Ant Design 6（管理端）+ shadcn/ui（前台）
-- WangEditor 5 富文本编辑器 + Monaco 代码编辑器
+- [v1.0.0 - 2026-06-23](docs/archive/changelog/v1.0.0.md)

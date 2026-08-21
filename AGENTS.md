@@ -212,12 +212,30 @@ packages/
 | `pnpm e2e` | Playwright e2e 测试（专用隔离库 `fsdx_web_e2e`，webServer 端口 3100；需先 `pnpm --filter @fsdx/web exec playwright install chromium`） |
 | `pnpm db:generate` / `pnpm db:migrate` / `pnpm db:pull` / `pnpm db:studio` | app 数据库迁移流程 |
 | `pnpm --filter @fsdx/core test` | 仅 core 包测试 |
+| `/deploy`（`.opencode/commands/deploy.md`） | 版本发布：联动提交 → 确定版本（未发布直接用当前版本，已发布则 bump patch）→ 更新 CHANGELOG → 打 tag（含 commit 摘要）→ 推送 |
+
+## 对话效率
+
+- 控制单会话上下文体积（历史消息 + 工具输出 + 推理思考全部每轮重发，体积越大响应越慢）：
+  - **阶段化会话**：一个任务一个会话，完成即新开，不无限累积；明显变慢时执行 `/compact` 压缩历史
+  - **调研用子代理**：探索/读取密集任务派 `explore` 子代理，主会话只收结论摘要，不吸入大文件全文
+  - **`read` 限定行范围**：读大文件用行号区间（`offset`/`limit`），避免整文件进上下文
+  - **`bash` 输出瘦身**：大输出用 `head`/`tail` 截断或聚合，不整屏回显
+  - **低频长文档按需读取**：AGENTS.md / docs/ 的长章节与 `.agents/skills/` 内容需要时才 `read`，不预先整篇贴入对话
+
+## 变更日志（CHANGELOG）
+
+- 版本号统一 `v1.x.y`，与 git tag 一致；版本号挂在应用包 `app/package.json`（`@fsdx/web`），根 `package.json` 为 workspace 编排壳不设版本；`app/package.json` 中版本即「下一个待发布版本」——首次发布直接以当前版本打 tag，已发布过则 bump patch 后发布（见 `/deploy` 命令）
+- 每次 `chore: release v1.x.y` 发布时，把 `[Unreleased]` 升为 `[v1.x.y] - {当天日期}`（日期格式如 `2026-08-21`），顶部新增空 `[Unreleased]` 段
+- 新变更一律写入 `[Unreleased]`，归入固定分类（`Features` / `Infrastructure` / `Fix` / `Refactor` / `Docs` / `依赖升级` / `Breaking Changes`），禁止各自追加重复标题块
+- 主 `CHANGELOG.md` 只保留 `[Unreleased]` + 最近 3 个版本 + 「历史版本」索引链接；更早版本归档到 `docs/archive/changelog/v1.x.x.md`（保留各版本标题），归档文件头部注明对应版本范围
+- 单条描述一句话讲清「做了什么 + 影响范围」，拆分子项用缩进列表，避免多页说明塞进一行
 
 ## 开发边界
 
 - 修改时以现有代码为准
 - 任务完成后必须执行 `pnpm check`，确保 TypeScript 类型检查与 Biome 规范检查通过
-- 涉及项目流程状态时，同步更新 `CHANGELOG.md`
+- 涉及项目流程状态时，同步更新 `CHANGELOG.md`（结构与归档规则见「变更日志（CHANGELOG）」章节）
 - 不提交临时文件、测试产物、密钥、`.env`；临时文件统一放入仓库根目录 `.tmp/`
 
 ## 提交建议
@@ -225,6 +243,7 @@ packages/
 - 保持一个提交只做一个逻辑改动
 - 优先使用 Conventional Commits
 - 如果改动影响运行方式或验证命令，提交说明里明确写出影响范围
+- 禁止私自提交代码：必须用户明确提出「提交」「commit」等指令后才能执行 `git commit`，否则仅做代码修改
 
 ## 语言规范
 
