@@ -6,6 +6,8 @@ import { and, eq, ilike, inArray, isNull, or } from "drizzle-orm";
 import type { z } from "zod";
 import { db } from "#/db/index";
 import { clientRole, clientUser } from "#/db/schema";
+import { logger } from "#/lib/logger/logger";
+import { verifyCaptcha } from "#/services/captcha/captcha.server";
 import { clearClientUserCache } from "#/services/client-auth/client-auth.server";
 import {
 	buildSortClause,
@@ -223,4 +225,41 @@ export async function resetClientPassword(
 		.where(and(eq(clientUser.id, id), notDeleted(clientUser.deletedAt)))
 		.returning();
 	return !!record;
+}
+
+/** 客户端用户自助重置密码（忘记密码流程）：校验邮箱验证码后更新密码哈希并清缓存 */
+export async function resetClientPasswordByEmail(
+	email: string,
+	captcha: string,
+	password: string,
+): Promise<{ success: boolean; message: string }> {
+	const captchaValid = await verifyCaptcha("email", email, captcha);
+	if (!captchaValid) {
+		return { success: false, message: "验证码错误或已过期" };
+	}
+
+	const [user] = await db
+		.select()
+		.from(clientUser)
+		.where(eq(clientUser.email, email))
+		.limit(1);
+
+	if (!user || user.deletedAt) {
+		return { success: false, message: "该邮箱未注册" };
+	}
+
+	if (user.status !== "active") {
+		return { success: false, message: "该账号已被禁用" };
+	}
+
+	const passwordHash = await bcrypt.hash(password, 10);
+	await db
+		.update(clientUser)
+		.set({ passwordHash, updatedAt: new Date() })
+		.where(eq(clientUser.id, user.id));
+
+	clearClientUserCache(user.id);
+
+	logger.info({ userId: user.id }, "客户端用户密码已重置");
+	return { success: true, message: "密码重置成功" };
 }

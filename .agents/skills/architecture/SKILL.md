@@ -87,6 +87,9 @@ const result = createNews(data as CreateNewsInput);
 ## 违规自查
 
 - 领域实体的 `server`/`schemas`/`cache`/`types` 拆在路由 `-mods/` 里 → 收编到 `services/<module>/`，服务层只保留一处归属
+- 路由 `-mods/` 下出现 `*.server.ts` → 按实体归属收编进 `services/<module>/`（`-mods/` 只放 SFn / 路由局部 schema / 组件 / 纯函数 / 常量）
+- 可独立访问的页面视图以组件/函数形式塞进 `-mods/` → 应建成路由文件（页面本体禁止入 `-mods/`）
+- 单路由文件内用 state/Tab 硬分屏承载 ≥2 个静态视图 → 拆为每视图一个路由文件
 - 实体的 SFn 应就近放在消费页面的路由 `-mods/`，未在页面消费的跨端共享 SFn 才留在 services
 - `.functions.ts` handler 中出现 DB 查询/业务逻辑 → 提取到 `.server.ts`
 - `lib/` 中出现业务常量/业务类型 → 移到 `constants/` 或 `services/`

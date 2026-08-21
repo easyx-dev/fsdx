@@ -6,7 +6,9 @@ import { and, eq, ilike, inArray, isNull, or } from "drizzle-orm";
 import type { z } from "zod";
 import { db } from "#/db/index";
 import { adminRole, adminUser } from "#/db/schema";
+import { logger } from "#/lib/logger/logger";
 import { clearAdminUserCache } from "#/services/admin-auth/admin-auth.server";
+import { verifyCaptcha } from "#/services/captcha/captcha.server";
 import {
 	buildSortClause,
 	executePaginatedQuery,
@@ -228,4 +230,41 @@ export async function resetAdminPassword(
 		.where(and(eq(adminUser.id, id), notDeleted(adminUser.deletedAt)))
 		.returning();
 	return !!record;
+}
+
+/** 管理员自助重置密码（忘记密码流程）：校验邮箱验证码后更新密码哈希并清缓存 */
+export async function resetAdminPasswordByEmail(
+	email: string,
+	captcha: string,
+	password: string,
+): Promise<{ success: boolean; message: string }> {
+	const captchaValid = await verifyCaptcha("email", email, captcha);
+	if (!captchaValid) {
+		return { success: false, message: "验证码错误或已过期" };
+	}
+
+	const [user] = await db
+		.select()
+		.from(adminUser)
+		.where(eq(adminUser.email, email))
+		.limit(1);
+
+	if (!user || user.deletedAt) {
+		return { success: false, message: "该邮箱未注册管理员账号" };
+	}
+
+	if (user.status !== "active") {
+		return { success: false, message: "该账号已被禁用，请联系超级管理员" };
+	}
+
+	const passwordHash = await bcrypt.hash(password, 10);
+	await db
+		.update(adminUser)
+		.set({ passwordHash, updatedAt: new Date() })
+		.where(eq(adminUser.id, user.id));
+
+	clearAdminUserCache(user.id);
+
+	logger.info({ userId: user.id }, "管理员密码已重置");
+	return { success: true, message: "密码重置成功，请使用新密码登录" };
 }

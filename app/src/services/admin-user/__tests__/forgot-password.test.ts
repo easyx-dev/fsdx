@@ -1,58 +1,72 @@
 /**
- * 管理员忘记密码核心逻辑测试
+ * 管理员自助重置密码（忘记密码流程）核心逻辑测试
  */
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const { mockDb, mockRows, mockBcrypt, mockVerifyCaptcha, mockLogger } =
-	vi.hoisted(() => {
-		const rows = vi.fn().mockResolvedValue([]);
-		const chain: any = {
-			from: vi.fn(() => chain),
-			where: vi.fn(() => chain),
-			orderBy: vi.fn(() => chain),
-			limit: vi.fn(() => chain),
-			offset: vi.fn(() => chain),
-			innerJoin: vi.fn(() => chain),
-		};
-		Object.defineProperty(chain, "then", {
-			value: (onFulfilled: (value: unknown) => unknown) =>
-				rows().then(onFulfilled),
-		});
-		return {
-			mockDb: {
-				select: vi.fn(() => chain),
-				update: vi.fn(() => ({ set: vi.fn(() => ({ where: vi.fn() })) })),
-			},
-			mockRows: rows,
-			mockBcrypt: { hash: vi.fn() },
-			mockVerifyCaptcha: vi.fn(),
-			mockLogger: {
-				info: vi.fn(),
-				debug: vi.fn(),
-				warn: vi.fn(),
-				error: vi.fn(),
-			},
-		};
+const {
+	mockDb,
+	mockRows,
+	mockBcrypt,
+	mockVerifyCaptcha,
+	mockClearAdminUserCache,
+	mockLogger,
+} = vi.hoisted(() => {
+	const rows = vi.fn().mockResolvedValue([]);
+	const chain: any = {
+		from: vi.fn(() => chain),
+		where: vi.fn(() => chain),
+		orderBy: vi.fn(() => chain),
+		limit: vi.fn(() => chain),
+		offset: vi.fn(() => chain),
+		innerJoin: vi.fn(() => chain),
+	};
+	Object.defineProperty(chain, "then", {
+		value: (onFulfilled: (value: unknown) => unknown) =>
+			rows().then(onFulfilled),
 	});
+	return {
+		mockDb: {
+			select: vi.fn(() => chain),
+			update: vi.fn(() => ({ set: vi.fn(() => ({ where: vi.fn() })) })),
+		},
+		mockRows: rows,
+		mockBcrypt: { hash: vi.fn() },
+		mockVerifyCaptcha: vi.fn(),
+		mockClearAdminUserCache: vi.fn(),
+		mockLogger: {
+			info: vi.fn(),
+			debug: vi.fn(),
+			warn: vi.fn(),
+			error: vi.fn(),
+		},
+	};
+});
 
 vi.mock("#/db/index", () => ({ db: mockDb }));
 vi.mock("bcryptjs", () => ({ default: mockBcrypt }));
 vi.mock("#/services/captcha/captcha.server", () => ({
 	verifyCaptcha: mockVerifyCaptcha,
 }));
+vi.mock("#/services/admin-auth/admin-auth.server", () => ({
+	clearAdminUserCache: mockClearAdminUserCache,
+}));
 vi.mock("#/lib/logger/logger", () => ({ logger: mockLogger }));
 
-import { resetAdminPassword } from "../-mods/forgot-password.server";
+import { resetAdminPasswordByEmail } from "../admin-user.server";
 
 beforeEach(() => {
 	vi.clearAllMocks();
 });
 
-describe("resetAdminPassword", () => {
+describe("resetAdminPasswordByEmail", () => {
 	it("验证码错误返回失败", async () => {
 		mockVerifyCaptcha.mockResolvedValue(false);
 
-		const result = await resetAdminPassword("admin@t.com", "123456", "newpass");
+		const result = await resetAdminPasswordByEmail(
+			"admin@t.com",
+			"123456",
+			"newpass",
+		);
 
 		expect(result.success).toBe(false);
 		expect(result.message).toBe("验证码错误或已过期");
@@ -63,7 +77,11 @@ describe("resetAdminPassword", () => {
 		mockVerifyCaptcha.mockResolvedValue(true);
 		mockRows.mockResolvedValue([]);
 
-		const result = await resetAdminPassword("admin@t.com", "123456", "newpass");
+		const result = await resetAdminPasswordByEmail(
+			"admin@t.com",
+			"123456",
+			"newpass",
+		);
 
 		expect(result.success).toBe(false);
 		expect(result.message).toBe("该邮箱未注册管理员账号");
@@ -80,7 +98,11 @@ describe("resetAdminPassword", () => {
 			},
 		]);
 
-		const result = await resetAdminPassword("admin@t.com", "123456", "newpass");
+		const result = await resetAdminPasswordByEmail(
+			"admin@t.com",
+			"123456",
+			"newpass",
+		);
 
 		expect(result.success).toBe(false);
 		expect(result.message).toBe("该邮箱未注册管理员账号");
@@ -96,7 +118,11 @@ describe("resetAdminPassword", () => {
 			},
 		]);
 
-		const result = await resetAdminPassword("admin@t.com", "123456", "newpass");
+		const result = await resetAdminPasswordByEmail(
+			"admin@t.com",
+			"123456",
+			"newpass",
+		);
 
 		expect(result.success).toBe(false);
 		expect(result.message).toBe("该账号已被禁用，请联系超级管理员");
@@ -113,7 +139,11 @@ describe("resetAdminPassword", () => {
 		]);
 		mockBcrypt.hash.mockResolvedValue("hashed_pwd");
 
-		const result = await resetAdminPassword("admin@t.com", "123456", "newpass");
+		const result = await resetAdminPasswordByEmail(
+			"admin@t.com",
+			"123456",
+			"newpass",
+		);
 
 		expect(result.success).toBe(true);
 		expect(result.message).toBe("密码重置成功，请使用新密码登录");
@@ -131,8 +161,24 @@ describe("resetAdminPassword", () => {
 		]);
 		mockBcrypt.hash.mockResolvedValue("hashed_pwd");
 
-		await resetAdminPassword("admin@t.com", "123456", "newpass");
+		await resetAdminPasswordByEmail("admin@t.com", "123456", "newpass");
 
 		expect(mockBcrypt.hash).toHaveBeenCalledWith("newpass", 10);
+	});
+
+	it("成功时清除管理员缓存", async () => {
+		mockVerifyCaptcha.mockResolvedValue(true);
+		mockRows.mockResolvedValue([
+			{
+				id: "a-1",
+				email: "admin@t.com",
+				status: "active",
+			},
+		]);
+		mockBcrypt.hash.mockResolvedValue("hashed_pwd");
+
+		await resetAdminPasswordByEmail("admin@t.com", "123456", "newpass");
+
+		expect(mockClearAdminUserCache).toHaveBeenCalledWith("a-1");
 	});
 });

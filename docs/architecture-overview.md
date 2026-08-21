@@ -100,7 +100,7 @@ src/services/{module}/        # 服务层：业务逻辑 + zod 单一来源
 
 src/routes/**/-mods/          # 路由层：UI 组件 + 就近的 SFn
 ├── *.functions.ts            # 消费该页面的 SFn（createServerFn）
-└── 组件/局部 schema
+└── 组件/路由局部 schema（*.server.ts 一律归 services/，禁止出现在 -mods/）
 ```
 
 - `.server.ts` 中的函数**禁止**以 `SFn` 为后缀；`.functions.ts` 中的 `createServerFn`**必须**以 `SFn` 为后缀
@@ -145,7 +145,7 @@ __root.tsx                    # HTML shell，按 pathname 前缀分发 AdminRoot
         └── demo              # 组件演示（ai / editor / pro-table / upload）
 ```
 
-路由目录组织约定（`-mods/` companion 收纳、首页不目录化等）详见 [AGENTS.md](../AGENTS.md)。
+路由目录组织约定（`-mods/` companion 收纳、单页 vs 子路由决策矩阵、页面本体必须是路由文件、首页不目录化等）详见 [AGENTS.md](../AGENTS.md)。
 
 ### 4. 中间件执行链路
 

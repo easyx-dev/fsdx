@@ -122,15 +122,20 @@ packages/
 
 ### 路由目录组织
 
+- **路由文件 = 一个可独立访问的视图**（有 URL / 进菜单 / 可深链分享 / 前进后退可达）；页面本体必须建成路由文件，禁止塞进 `-mods/`
 - 路由目录本身就是分组容器；**非路由文件（companion）一律放入 `-mods/` 子目录**，与路由页面（`.tsx`）视觉分离
-- 决策表：
+- **`-mods/` 收纳范围**：该路由资源下的非视图 companion——就近 SFn、路由局部 schema、组件（表单/弹窗/列定义）、纯函数、常量；`*.server.ts` 一律归属 `services/`，禁止出现在 `-mods/`
+- 单页 vs 子路由决策矩阵：
 
 | 条件 | 结构 | 示例 |
 |------|------|------|
+| 单视图 | 单路由文件，页内 Tab/state 组织子区块 | `messages/index.tsx` |
 | 无 companion 文件 | 平级 `.tsx` | `about.tsx` |
 | 有 companion 文件 | 目录路由 + `-mods/` 收纳 | `login/index.tsx` + `login/-mods/login.functions.ts` |
+| ≥2 个静态视图 | 每视图一个路由文件，共用该目录 `-mods/`（无需父布局 `<Outlet/>`，管理端已有 `_admin.tsx` 总布局） | `translations/ui.tsx` + `content.tsx` 共用 `translations/-mods/` |
+| 动态数量视图 | 参数路由 `$xxx.tsx` | `news/$slug.tsx`、`news/$id/edit.tsx` |
 
-- `-mods/` 内部约定：逻辑文件用 `模块名.类型.ts` 命名（`news.functions.ts` / `news.schemas.ts` / `news.server.ts`），路由级组件用 PascalCase（`NewsForm.tsx`）；`-mods/` 内不嵌套子目录（组件 >6 个时优先拆子路由）
+- `-mods/` 内部约定：逻辑文件用 `模块名.类型.ts` 命名（`news.functions.ts` / `news.schemas.ts` / `news.types.ts`），路由级组件用 PascalCase（`NewsForm.tsx`）；`-mods/` 内不嵌套子目录（组件 >6 个时优先拆子路由）
 - 例外：首页不能目录化（`index/index.tsx` 会把路径变成 `/index`），保持 `src/routes/index.tsx` + `index.functions.ts` 平级
 
 ## 数据库

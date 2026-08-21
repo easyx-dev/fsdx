@@ -3,7 +3,7 @@
  */
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { resetAdminPassword } from "./forgot-password.server";
+import { resetAdminPasswordByEmail } from "#/services/admin-user/admin-user.server";
 
 export const resetPwdSchema = z
 	.object({
@@ -20,5 +20,5 @@ export const resetPwdSchema = z
 export const resetPwdSFn = createServerFn({ method: "POST" })
 	.validator(resetPwdSchema)
 	.handler(async ({ data: { email, captcha, password } }) => {
-		return resetAdminPassword(email, captcha, password);
+		return resetAdminPasswordByEmail(email, captcha, password);
 	});

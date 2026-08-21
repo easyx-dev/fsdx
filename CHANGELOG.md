@@ -51,6 +51,11 @@
 
 ### Refactor
 
+- **路由目录组织边界补强 + forgot-password 服务层收编**：
+  - AGENTS.md「路由目录组织」补边界与决策矩阵：路由文件 = 可独立访问的视图（有 URL / 进菜单 / 可深链分享 / 前进后退可达），页面本体必须建成路由文件，禁止塞进 `-mods/`；`-mods/` 收纳范围 = 就近 SFn + 路由局部 schema + 组件（表单/弹窗/列定义）+ 纯函数/常量，`*.server.ts` 一律归 `services/`；单页 vs 子路由决策矩阵（单视图页内 Tab/state、≥2 静态视图每视图一路由共用 `-mods/`、动态数量视图参数路由 `$xxx.tsx`）替代原两行决策表
+  - architecture / server-function skill 违规自查与 docs/architecture-overview.md 同步（`-mods/` 目录树去掉 `.server.ts`，补页面本体禁入 `-mods/` 与多视图拆分自查）
+  - **forgot-password 残留 `-mods/*.server.ts` 收编**：`resetClientPassword` / `resetAdminPassword`（自助验证码重置）重命名为 `resetClientPasswordByEmail` / `resetAdminPasswordByEmail` 收编至 `services/client-user/` / `services/admin-user/`（与既有管理端重置他人密码同名函数区分），SFn 导入路径更新，测试随迁至 `services/<module>/__tests__/`，删除路由 `-mods/` 内 `forgot-password.server.ts`
+
 - **routes/services 分层重构（服务层收 services，SFn 就近路由）**：
   - 分层契约：`services/<module>/` 收**服务层**（`server` 业务逻辑 + `schemas` zod 单一来源 + `cache` + `types`），被服务层 `z.infer` 派生或跨端复用的 schema 必须收 services，纯路由局部 schema 可随 SFn 留在路由；`routes/**/-mods/` 放 UI 组件 + **就近的 SFn**（RPC 边界随消费页面，跨端实体 SFn 各拆到所属端路由），仅无页面消费的跨端共享 SFn（auth/captcha/track SDK/message/dict 选项/客户端可见配置/初始化状态/文件上传列表查询）留在 services
   - **news / dict / config**：路由 `-mods/` 的 `server` 收编至 `services/<module>/`，消除 `ensureUniqueSlug` / `MAX_RECOMMENDED` 重复实现（`checkRecommendedLimit` 统一按「新增数量」校验，修正 update 允许第 6 条推荐的越界）；`dict.server.ts` 补齐原缺失的 update 分支；SFn 就近回到各自路由 `-mods/`（news 拆管理端 + 前台两端），实体 schema 收 `*.schemas.ts`

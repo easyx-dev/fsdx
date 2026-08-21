@@ -1,5 +1,5 @@
 /**
- * 客户端忘记密码核心逻辑测试
+ * 客户端用户自助重置密码（忘记密码流程）核心逻辑测试
  */
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -52,17 +52,21 @@ vi.mock("#/services/client-auth/client-auth.server", () => ({
 }));
 vi.mock("#/lib/logger/logger", () => ({ logger: mockLogger }));
 
-import { resetClientPassword } from "../-mods/forgot-password.server";
+import { resetClientPasswordByEmail } from "../client-user.server";
 
 beforeEach(() => {
 	vi.clearAllMocks();
 });
 
-describe("resetClientPassword", () => {
+describe("resetClientPasswordByEmail", () => {
 	it("验证码错误返回失败", async () => {
 		mockVerifyCaptcha.mockResolvedValue(false);
 
-		const result = await resetClientPassword("u@t.com", "123456", "newpass");
+		const result = await resetClientPasswordByEmail(
+			"u@t.com",
+			"123456",
+			"newpass",
+		);
 
 		expect(result.success).toBe(false);
 		expect(result.message).toBe("验证码错误或已过期");
@@ -73,7 +77,11 @@ describe("resetClientPassword", () => {
 		mockVerifyCaptcha.mockResolvedValue(true);
 		mockRows.mockResolvedValue([]);
 
-		const result = await resetClientPassword("u@t.com", "123456", "newpass");
+		const result = await resetClientPasswordByEmail(
+			"u@t.com",
+			"123456",
+			"newpass",
+		);
 
 		expect(result.success).toBe(false);
 		expect(result.message).toBe("该邮箱未注册");
@@ -90,7 +98,11 @@ describe("resetClientPassword", () => {
 			},
 		]);
 
-		const result = await resetClientPassword("u@t.com", "123456", "newpass");
+		const result = await resetClientPasswordByEmail(
+			"u@t.com",
+			"123456",
+			"newpass",
+		);
 
 		expect(result.success).toBe(false);
 		expect(result.message).toBe("该邮箱未注册");
@@ -106,7 +118,11 @@ describe("resetClientPassword", () => {
 			},
 		]);
 
-		const result = await resetClientPassword("u@t.com", "123456", "newpass");
+		const result = await resetClientPasswordByEmail(
+			"u@t.com",
+			"123456",
+			"newpass",
+		);
 
 		expect(result.success).toBe(false);
 		expect(result.message).toBe("该账号已被禁用");
@@ -123,7 +139,11 @@ describe("resetClientPassword", () => {
 		]);
 		mockBcrypt.hash.mockResolvedValue("hashed_pwd");
 
-		const result = await resetClientPassword("u@t.com", "123456", "newpass");
+		const result = await resetClientPasswordByEmail(
+			"u@t.com",
+			"123456",
+			"newpass",
+		);
 
 		expect(result.success).toBe(true);
 		expect(result.message).toBe("密码重置成功");
@@ -141,7 +161,7 @@ describe("resetClientPassword", () => {
 		]);
 		mockBcrypt.hash.mockResolvedValue("hashed_pwd");
 
-		await resetClientPassword("u@t.com", "123456", "newpass");
+		await resetClientPasswordByEmail("u@t.com", "123456", "newpass");
 
 		expect(mockBcrypt.hash).toHaveBeenCalledWith("newpass", 10);
 	});
@@ -157,7 +177,7 @@ describe("resetClientPassword", () => {
 		]);
 		mockBcrypt.hash.mockResolvedValue("hashed_pwd");
 
-		await resetClientPassword("u@t.com", "123456", "newpass");
+		await resetClientPasswordByEmail("u@t.com", "123456", "newpass");
 
 		expect(mockClearClientUserCache).toHaveBeenCalledWith("u-1");
 	});
