@@ -22,7 +22,7 @@ description: >
 | `src/middleware/` | 请求级中间件（鉴权/权限/locale/错误日志） | `src/middleware/admin-auth.ts` |
 | `src/routes/` | 路由层（页面 + UI 组件 + 就近 SFn + beforeLoad 守卫） | `src/routes/admin/_admin/news/` |
 
-**依赖方向**：`routes → services → (core 基础库) → db`。`src/lib/` 禁止引入业务逻辑。`services/<module>/` 是领域服务层的归属：`server`（业务逻辑/DB）+ `schemas`（zod 单一来源，server 用 `z.infer` 派生）+ `cache` + `types`；跨端共享的 SFn（auth/captcha/track/message/...）也可留在 services。`routes/**/-mods/` 放 UI 组件与**就近的 SFn**（SFn + 路由局部 schema 随页面），页面通过 SFn 调服务层，禁止直接 import `*.server.ts`。
+**依赖方向**：`routes → services → (core 基础库) → db`，服务层不得反向依赖表现层——`services/**` **禁止** import `routes/**`（含路由 `-mods/`、路由组件与路由局部 schema）；services 的上游仅限表现层入口（routes / middleware / bootstrap / lib SDK）与服务间协作（如 `logCrud`、`query-utils`）。`src/lib/` 禁止引入业务逻辑。`services/<module>/` 是领域服务层的归属：`server`（业务逻辑/DB）+ `schemas`（zod 单一来源，server 用 `z.infer` 派生）+ `cache` + `types`；跨端共享的 SFn（auth/captcha/track/message/...）也可留在 services。`routes/**/-mods/` 放 UI 组件与**就近的 SFn**（SFn + 路由局部 schema 随页面），页面通过 SFn 调服务层，禁止直接 import `*.server.ts`。
 
 > 每个子包的导出清单与边界见 [core](../../../packages/core/README.md) / [ui-ssr](../../../packages/ui-ssr/README.md) / [ui-spa](../../../packages/ui-spa/README.md)。
 

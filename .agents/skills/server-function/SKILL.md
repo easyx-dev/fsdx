@@ -268,6 +268,8 @@ async function handleSubmit() {
 | .server.ts 中使用了 createServerFn | `.server.ts` 不应出现 `createServerFn` |
 | 实体 server/schemas/cache 拆在路由 `-mods/` | 服务层应统一收编进 `services/<module>/` |
 | 有页面消费的 SFn 堆在 services（未就近放路由） | SFn 应就近放消费页面的 `-mods/`，仅跨端共享无页面消费的留 services |
+| services 反向 import 路由（`routes/**` 或路由 `-mods/`） | 服务层禁止依赖表现层，保持 `routes → services → (core 基础库) → db` 单向调用 |
+| `.server.ts` 反向 import `.functions.ts` | RPC 边界只能被调用方引用，服务逻辑禁止反向引用 |
 
 ## 相关 Skill
 

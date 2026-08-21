@@ -88,6 +88,8 @@ packages/
 - 所有 Server Function 的 `validator` **必须**使用 zod schema，禁止裸函数校验（FormData 上传类 SFn 除外，zod 无法直接校验 `FormData`，允许用裸函数做类型守卫）；格式 `createServerFn({ method: "GET" | "POST" }).validator(schema).handler(async ({ data }) => ...)`；调用方通过 `{ data: ... }` 传参
 - `createServerFn` 定义的函数**必须**以 `SFn` 为后缀；`.server.ts` 中的辅助函数**禁止**使用 `SFn` 后缀；`.functions.ts` 中未被引用的包装器视为死代码
 - **三层分离**：`.server.ts`（服务逻辑）/ `.functions.ts`（SFn 包装）/ `.schemas.ts`（zod schema 单一来源，服务层用 `z.infer` 派生类型）；路由文件与组件**禁止**直接 import `.server.ts`
+- **依赖方向（硬规则）**：单向分层 `routes → services → (core 基础库) → db`，服务层不得反向依赖表现层——`services/**` **禁止** import `routes/**`（含路由 `-mods/`、路由组件与路由局部 schema）；services 的上游仅限表现层入口（routes / middleware / bootstrap / lib SDK）与服务间协作（如 `logCrud`、`query-utils`）
+- **禁止业务逻辑反向引用 RPC**：`.server.ts` **禁止** import 任何 `.functions.ts`（RPC 边界只允许被调用方引用，不允许被服务逻辑反向引用）
 - **Server Route 例外**：文件读取/下载/流式响应与指标端点路由（`routes/file/r.$id.tsx`、`routes/admin/_admin/logs/download.$id.tsx`、`routes/admin/_admin/file-explorer/download.$.tsx`、`routes/api/metrics.tsx`）允许在 `.tsx` 内通过 `server.handlers` 写服务端 handler 并引用 `.server.ts`，与 SFn 是两套并存范式；下载响应统一由 `services/download/download.server.ts` 的 `createFileDownloadResponse` 构造
 
 > 详细规范、SFn 放置规则、`src/services/` 准入门槛、就近原则、调用方模式、违规自查 → [server-function](.agents/skills/server-function/SKILL.md)
