@@ -32,7 +32,7 @@
   - `[1.0.0]` 历史版本归档至 `docs/archive/changelog/v1.0.0.md`，主 CHANGELOG 历史索引链接指向归档
 
 - **favicon ?url import 缓存治理**：favicon.svg / favicon-dark.svg / favicon-admin.svg 自 `public/` 移入 `src/assets/` 并以 `?url` import（`Document.tsx` 内联为带 hash 的资源，图标变更不再受浏览器 URL 缓存影响）；`manifest.json` 移除对已删除 `favicon.svg` 的图标引用（PWA 图标保留 png）
-- **新增 check-architecture 架构审计命令**：`.opencode/commands/check-architecture.md` 按 8 维度（分层/路由/SFn/组件/类型与 DB/安全/错误处理/测试）全量扫描并输出分级报告；配套 `.opencode/checklists/` 新增 sfn / route / component 三份精简检查清单
+- **新增 check-architecture 架构审计命令**：`.opencode/commands/check-architecture.md` 按 8 维度（分层/路由/SFn/组件/类型与 DB/安全/错误处理/测试）全量扫描并输出分级报告；配套 `.agents/checklists/` 新增 sfn / route / component 三份精简检查清单
 - **AGENTS.md 新增「对话效率」章节**：约定控制单会话上下文体积（阶段化会话 / explore 子代理 / read 限定行范围 / bash 输出瘦身 / 长文档按需读取），对齐 bom-easy 项目治理实践
 
 - **`@fsdx/core` 基础设施补齐（对照 bom-easy lib 查漏）**：
@@ -127,6 +127,13 @@
   - `drizzle.config.ts` 的 schema 指向 `src/db/schema/index.ts`：目录扫描会重复收集表导致 `drizzle-kit generate` 失败
 
 ### Docs
+
+- **文档体系边界治理（对齐 bom-easy documentation-architecture）**：
+  - 新增 `docs/documentation-architecture.md` 作为文档边界模型 SSOT：六层体系（AGENTS → guide → skills → commands → checklists → docs）、内容性质→归属映射表、事实 SSOT 表、引用图、文档元信息块约定、维护规则
+  - AGENTS.md 新增「文档体系」章节（L0-L5 分层 + 归属判定 + 事实不复制 + 引用单向可追踪），README 文档索引补收录
+  - 新增 `.agents/guide.md` 任务导航：任务 → skills/docs/commands/checklists 映射 + 文档索引
+  - docs/ 6 篇平台类文档头部补元信息块（定位 / SSOT / 引用关系 / 更新触发）
+  - 数量/清单类事实收敛：README 与 docs 中「17 张表」「9 个缓存实例」「61 个权限常量」等改为「当前值 + 以代码为准」标注，数字准确性由权威文档兜底
 
 - **文档全面校准 + 去重收敛**（对齐请求 ID 贯通、Prometheus 指标、routes/services 分层重构、i18n/track 服务拆分、TS 7 / Biome 2.5 等代码现状）：
   - 事实校准：AGENTS / README 技术栈版本（TypeScript 7、Biome 2.5）、删除已移除的 `pnpm changeset` 命令、README 命令表精简为常用项；缓存实例数 8 → **9**（新增 track 频控 `sessionRateCache`）；迁移失败行为按代码改为 `try/catch` + `logger.warn` 容错（非 fail-fast）；Server Route 例外补充 `routes/api/metrics.tsx`；`operation_log` ER 图补充 `request_id` 列并注明该表 camelCase 列命名例外；`dict` 缓存启动加载描述修正为懒加载；`configTranslationCache` 归属修正为 `services/config/`；i18n 拆分后路径更新（`i18n-ui.server.ts` / `i18n-content.server.ts`）；track 服务子文件索引（meta/validate/analytics）；SF 错误日志移除已删除的 `ApiAuthError`、补充 `ClientAuthError` 与埋指标/`toClientError` 归一化；环境变量补充 `DB_POOL_*` 连接池参数；文件存储物理路径修正为 `{STORAGE_DIR}/uploads/{date}/{name}`；登录时序图 SFn 命名统一 `SFn` 后缀

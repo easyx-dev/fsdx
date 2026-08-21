@@ -1,6 +1,13 @@
 # 数据库设计
 
+> 定位：平台机制类 · 人类阅读
+> 单一事实来源：`src/db/schema/`（index.ts 汇总全部表定义）
+> 引用关系：← 被 architecture-overview 引用、README「文档」索引、AGENTS「数据库」章节链接；→ 引用数据表代码单一事实来源
+> 更新触发：数据表 / 列定义 / 约束 / 预置数据变更时
+
 ## 表总览
+
+> 完整清单与数量以 `src/db/schema/index.ts` 为准（当前 17 张表）。
 
 共 17 张表，按用途分为三组：
 
@@ -353,7 +360,7 @@ erDiagram
 
 | 文件 | 职责 |
 |------|------|
-| `src/db/schema/index.ts` | 全部 17 张表统一导出 |
+| `src/db/schema/index.ts` | 全部表统一导出（当前 17 张，以代码为准） |
 | `src/db/index.ts` | Drizzle 客户端懒加载实例 |
 | `src/db/schema/*.ts` | 各表 Drizzle Schema 定义 |
 | `drizzle/` | 迁移 SQL + meta snapshot（`pnpm db:generate` 生成，bootstrap 启动自动执行） |

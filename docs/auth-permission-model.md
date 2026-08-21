@@ -1,5 +1,10 @@
 # 身份认证与权限模型
 
+> 定位：平台机制类 · 人类阅读
+> 单一事实来源：`src/middleware/admin-auth.ts`（adminPermGuard）与 `src/middleware/client-auth.ts`（clientAuthGuard/clientPermGuard）、`src/permissions/`（权限码）、`src/db/schema/admin-role.ts` / `client-role.ts`（角色表）
+> 引用关系：← 被 architecture-overview 引用、AGENTS「鉴权中间件」章节链接；→ 引用权限码代码单一事实来源
+> 更新触发：认证/授权中间件、RBAC 模型、角色表或权限码变更时
+
 ## 概述
 
 本项目采用**双用户体系 + RBAC + JWT** 的认证授权架构：
@@ -272,6 +277,8 @@ sequenceDiagram
 ## 权限模型 (RBAC)
 
 ### 权限码体系
+
+> 完整清单以 `src/permissions/admin-permissions.ts` 与 `src/permissions/client-permissions.ts` 为准（当前管理端 61 个权限常量）。
 
 权限码格式：`{模块}:{操作}`，共定义 **61 个权限常量**，按模块分组：
 

@@ -1,5 +1,10 @@
 # 部署运维
 
+> 定位：平台机制类 · 人类阅读
+> 单一事实来源：`src/bootstrap.ts`（启动流程/优雅关闭）、`src/services/tasks/tasks.server.ts`（定时任务）、`src/lib/logger/logger.ts`（日志）
+> 引用关系：← 被 architecture-overview 引用、README「文档」索引；→ 引用启动/任务/日志代码单一事实来源
+> 更新触发：启动流程、定时任务、日志策略、部署/环境变量变更时
+
 ## 生产环境部署
 
 ### 服务器目录结构
