@@ -8,7 +8,6 @@ export function createHonoApp() {
 	const app = new Hono();
 
 	// 自定义 API 路由在下方添加
-	app.get("/health", (c) => c.json({ status: "ok", uptime: process.uptime() }));
 
 	return app;
 }

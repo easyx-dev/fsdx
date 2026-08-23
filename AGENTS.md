@@ -18,7 +18,7 @@ app/                          # @fsdx/web —— 应用 package（业务代码 +
 ├── public/                   # 静态资源
 └── src/
     ├── bootstrap.ts          # 服务启动初始化（init 注入、预置数据、定时任务、优雅关闭）
-    ├── hono-app.ts           # Hono 应用工厂（/health 路由）
+    ├── hono-app.ts           # Hono 应用工厂（预留自定义 API 路由）
     ├── server.ts             # TanStack Start 服务端入口
     ├── router.tsx / start.ts # Router 实例 / 全局中间件注册（requestId + locale + CSRF + sfErrorLogger）
     ├── components/           # admin/（antd 业务组件）、client/（前台）、providers/（global-store+i18n-context）

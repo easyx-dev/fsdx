@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as AdminRouteImport } from './routes/admin'
+import { Route as HealthRouteImport } from './routes/health'
 import { Route as MessagesRouteImport } from './routes/messages'
 import { Route as AdminAdminRouteImport } from './routes/admin/_admin'
 import { Route as ApiMetricsRouteImport } from './routes/api/metrics'
@@ -66,6 +67,11 @@ const AboutRoute = AboutRouteImport.update({
 const AdminRoute = AdminRouteImport.update({
   id: '/admin',
   path: '/admin',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const HealthRoute = HealthRouteImport.update({
+  id: '/health',
+  path: '/health',
   getParentRoute: () => rootRouteImport,
 } as any)
 const MessagesRoute = MessagesRouteImport.update({
@@ -287,6 +293,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/admin': typeof AdminRouteWithChildren
+  '/health': typeof HealthRoute
   '/messages': typeof MessagesRoute
   '/api/metrics': typeof ApiMetricsRoute
   '/news/$slug': typeof NewsSlugRoute
@@ -331,6 +338,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/admin': typeof AdminAdminIndexRoute
+  '/health': typeof HealthRoute
   '/messages': typeof MessagesRoute
   '/api/metrics': typeof ApiMetricsRoute
   '/news/$slug': typeof NewsSlugRoute
@@ -375,6 +383,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/admin': typeof AdminRouteWithChildren
+  '/health': typeof HealthRoute
   '/messages': typeof MessagesRoute
   '/admin/_admin': typeof AdminAdminRouteWithChildren
   '/api/metrics': typeof ApiMetricsRoute
@@ -422,6 +431,7 @@ export interface FileRouteTypes {
     | '/'
     | '/about'
     | '/admin'
+    | '/health'
     | '/messages'
     | '/api/metrics'
     | '/news/$slug'
@@ -466,6 +476,7 @@ export interface FileRouteTypes {
     | '/'
     | '/about'
     | '/admin'
+    | '/health'
     | '/messages'
     | '/api/metrics'
     | '/news/$slug'
@@ -509,6 +520,7 @@ export interface FileRouteTypes {
     | '/'
     | '/about'
     | '/admin'
+    | '/health'
     | '/messages'
     | '/admin/_admin'
     | '/api/metrics'
@@ -555,6 +567,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AboutRoute: typeof AboutRoute
   AdminRoute: typeof AdminRouteWithChildren
+  HealthRoute: typeof HealthRoute
   MessagesRoute: typeof MessagesRoute
   ApiMetricsRoute: typeof ApiMetricsRoute
   NewsSlugRoute: typeof NewsSlugRoute
@@ -586,6 +599,13 @@ declare module '@tanstack/react-router' {
       path: '/admin'
       fullPath: '/admin'
       preLoaderRoute: typeof AdminRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/health': {
+      id: '/health'
+      path: '/health'
+      fullPath: '/health'
+      preLoaderRoute: typeof HealthRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/messages': {
@@ -958,6 +978,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AboutRoute: AboutRoute,
   AdminRoute: AdminRouteWithChildren,
+  HealthRoute: HealthRoute,
   MessagesRoute: MessagesRoute,
   ApiMetricsRoute: ApiMetricsRoute,
   NewsSlugRoute: NewsSlugRoute,

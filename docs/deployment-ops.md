@@ -128,7 +128,7 @@ app/server.ts (Nitro entry)
     │   └── 注册 SIGTERM/SIGINT/SIGQUIT 处理器 → 缓冲刷入（含超时保护）
     │
     ├── createHonoApp()                      # src/hono-app.ts
-    │   └── /health 路由 → { status: "ok", uptime }
+    │   └── 预留自定义 API 路由（当前为空，请求一律透传）
     │
     └── TanStack Start SSR fetcher            # src/server.ts
         └── handler.fetch(request)
@@ -144,11 +144,11 @@ HTTP 入口（`app/server.ts`）对每个请求 `httpRequestsTotal.inc({ method 
 HTTP 请求
     ↓
 Hono (createHonoApp)
-    ├── /health → 健康检查
-    ├── 其他自定义 API 路由
+    ├── 自定义 API 路由（预留）
     └── 404 → 透传
           ↓
     TanStack Start SSR / Server Functions
+    ├── /health（Server Route handler，无鉴权）→ 健康检查 { status, uptime }
     └── /api/metrics（Server Route handler，无鉴权）→ Prometheus 文本
 ```
 
@@ -180,7 +180,7 @@ Hono (createHonoApp)
 
 > 连接池参数在 `src/db/index.ts` 中读取，postgres 驱动默认值见 [node-postgres 文档](https://node-postgres.com/features/pool)。
 
-SMTP 邮件配置已从环境变量迁移至系统配置表，通过 `/admin/config` 页面管理。
+SMTP 邮件配置存储于系统配置表，通过 `/admin/config` 页面管理。
 
 ---
 
@@ -385,11 +385,21 @@ cp .env.example .env
 
 ## 健康检查
 
-```bash
-GET /health → { "status": "ok", "uptime": 123.456 }
+```json
+GET /health → 200
+{
+  "status": "ok",
+  "uptime": 123.456,
+  "timestamp": "2026-08-23T05:28:52.721Z",
+  "version": "1.1.0",
+  "checks": {
+    "database": { "status": "up", "latencyMs": 9 },
+    "storage": { "status": "up" }
+  }
+}
 ```
 
-通过 Hono 提供，不经过 TanStack Start SSR 处理链路，轻量快速。
+通过 TanStack Start Server Route 提供（`src/routes/health.tsx`），无鉴权。就绪语义：数据库连通（`SELECT 1`）与存储目录可写均正常返回 `200`，任一异常返回 `503`，供 Docker healthcheck / Playwright 等待依赖就绪。
 
 ---
 
@@ -399,7 +409,7 @@ GET /health → { "status": "ok", "uptime": 123.456 }
 |------|------|
 | `server.ts`（app 根目录） | Nitro 服务入口 + HTTP 指标埋点 |
 | `src/bootstrap.ts` | 启动初始化（init 注入、迁移、预置、定时任务、优雅关闭） |
-| `src/hono-app.ts` | Hono 应用工厂 + 健康检查 |
+| `src/hono-app.ts` | Hono 应用工厂（预留自定义 API 路由） |
 | `src/server.ts` | TanStack Start 服务端入口 |
 | `src/start.ts` | 全局中间件注册（requestId + locale + CSRF + sfErrorLogger） |
 | `src/middleware/request-id.ts` | 请求 ID 中间件 |

@@ -1,6 +1,9 @@
 /// <reference types="vite/client" />
 
 declare global {
+	/** 应用版本号（由 vite.config.ts 从 app/package.json 构建时注入） */
+	const __APP_VERSION__: string;
+
 	namespace NodeJS {
 		interface ProcessEnv {
 			/** PostgreSQL 连接 URL */

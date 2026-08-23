@@ -50,6 +50,11 @@
   - 后台 SPA 5 个 spec（登录、管理员用户、客户端用户、管理端角色、客户端角色）：覆盖列表/搜索/新建（含权限选择器）/编辑/重置密码/删除
   - `biome.json` 纳入 `**/e2e/**`，`app/tsconfig.json` 纳入 e2e 类型检查；`.gitignore` 增加 `test-results/`、`playwright-report/`
 
+- **`/health` 健康检查端点迁移至 Server Route 并升级为就绪探活**：
+  - 由 Hono 自定义路由（`hono-app.ts`）迁移为 TanStack Start Server Route（`routes/health.tsx`），Hono 层保留为空壳预留自定义 API 路由
+  - 响应升级为通用健康检查风格：`status / uptime / timestamp / version / checks`，`checks` 并发探测数据库连通（`SELECT 1`，含 `latencyMs`）与存储目录可写；全部可用返回 `200`，任一异常返回 `503`（readiness 语义），供 Docker healthcheck / Playwright 正确等待依赖就绪
+  - 检查逻辑位于 `src/services/health/health.server.ts`（含 vitest 覆盖）；版本号由 Vite `define` 从 `app/package.json` 构建时注入 `__APP_VERSION__`（`env.d.ts` 声明、`vitest.config.ts` 同步注入测试值）
+
 ### Fix
 
 - **前台登录后 Header 登录态不刷新**：客户端登录成功仅 `navigate` 到首页，`ClientAuthProvider` 不重挂载导致 Header 仍显示未登录；登录页 `onSubmit` 成功后补充调用 `useClientAuth().refetch()`，使用户名/消息/退出入口即时更新
