@@ -11,8 +11,8 @@
 
 | 用户体系 | 入口路由 | Cookie 名 | 是否支持 RBAC | 注册方式 |
 |----------|----------|-----------|---------------|----------|
-| 管理端 (admin) | `/admin/login` | `fsdx_admin_token` | 是（admin_role 表） | 仅管理员手动创建 |
-| 客户端 (client) | `/login` | `fsdx_client_token` | 是（client_role 表） | 公开注册 + 邮箱验证码 |
+| 管理端 (admin) | `/admin/login` | `admin_token` | 是（admin_role 表） | 仅管理员手动创建 |
+| 客户端 (client) | `/login` | `client_token` | 是（client_role 表） | 公开注册 + 邮箱验证码 |
 
 两套体系使用**独立的 Cookie**，允许同一浏览器同时登录管理员和前台用户。
 
@@ -209,7 +209,7 @@ sequenceDiagram
             Server->>JWT: signToken({ userId, username, userType: "admin" })
             JWT-->>Server: JWT Token (HS256, 7 天有效)
             Server-->>LoginSF: { success: true, user, token }
-            LoginSF->>Browser: setCookie("fsdx_admin_token", token, httpOnly)
+            LoginSF->>Browser: setCookie("admin_token", token, httpOnly)
             Browser->>Browser: 跳转 /admin
         end
     end
@@ -256,7 +256,7 @@ sequenceDiagram
     Server->>Server: bcrypt.compare(password, passwordHash)
     Server->>JWT: signToken({ userId, username, userType: "client" })
     Server-->>LoginSF: { success: true, user, token }
-    LoginSF->>Browser: setCookie("fsdx_client_token", token, httpOnly)
+    LoginSF->>Browser: setCookie("client_token", token, httpOnly)
 ```
 
 ---
@@ -536,7 +536,7 @@ const csrfMiddleware = createCsrfMiddleware({
 |------|------|
 | `packages/core/src/infra/jwt/index.ts` | JWT 签发/校验（`createJwt`，`@fsdx/core/jwt`） |
 | `src/lib/jwt/jwt.ts` | JWT 应用级单例壳（惰性） |
-| `src/constants/cookie-names.ts` | Cookie 名称常量（`fsdx_admin_token` / `fsdx_client_token`） |
+| `src/constants/cookie-names.ts` | Cookie 名称常量（`COOKIE_NAMES`，模板中性默认 `admin_token` / `client_token`，项目更名集中修改点） |
 | `src/permissions/admin-permissions.ts` | 管理端权限码常量（`ADMIN_PERMISSIONS` / `ADMIN_PERMISSIONS_BY_GROUP` / `hasAdminPermission` 等） |
 | `packages/core/src/utils/match-permission/index.ts` | 权限匹配纯函数（`matchPermission`，`@fsdx/core/match-permission`） |
 | `src/middleware/admin-auth.ts` | `adminAuthGuard` / `adminPermGuard` / `adminPermRouteGuard` 中间件 |

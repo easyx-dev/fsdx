@@ -1,9 +1,10 @@
 /**
- * Cookie 名称常量：管理端与客户端使用独立 Cookie，避免同一浏览器同时登录互相覆盖
+ * Cookie 名称：模板中性默认值，项目更名时在此集中修改（与包名、主题名同等对待）
+ * 仅服务端使用（鉴权中间件 / 登录 SFn / 测试）；纯常量可在客户端安全引用
  */
 export const COOKIE_NAMES = {
 	/** 管理端 JWT Token Cookie */
-	ADMIN_TOKEN: "fsdx_admin_token",
+	ADMIN_TOKEN: "admin_token",
 	/** 客户端 JWT Token Cookie */
-	CLIENT_TOKEN: "fsdx_client_token",
+	CLIENT_TOKEN: "client_token",
 } as const;

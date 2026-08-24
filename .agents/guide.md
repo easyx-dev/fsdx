@@ -26,11 +26,16 @@
 |------|------|
 | 版本发布 | [`/deploy`](commands/deploy.md)（.agents/commands） |
 | 全量架构审计 | [`/check-architecture`](commands/check-architecture.md)（.agents/commands） |
+| 派生新项目（更名） | [`/derive`](commands/derive.md)（.agents/commands） |
+| 下游吸收上游 | [`/import-upstream`](commands/import-upstream.md)（.agents/commands，在衍生项目内执行） |
+| 上游吸收下游 | [`/backport`](commands/backport.md)（.agents/commands） |
 
-### 衍生项目
+### 衍生项目与协同进化
 
 | 任务 | 读 / 用 |
 |------|---------|
+| 基于模板派生新项目 / 项目更名 | [derive-project](skills/derive-project/SKILL.md)、[docs/project-ecosystem.md](../docs/project-ecosystem.md) |
+| 双向同步判定（基建 vs 业务）/ 移植净化 | [upstream-sync](skills/upstream-sync/SKILL.md)、[docs/project-ecosystem.md](../docs/project-ecosystem.md) |
 | 切 SQLite | [db-sqlite](skills/db-sqlite/SKILL.md) |
 | 切 MySQL | [db-mysql](skills/db-mysql/SKILL.md) |
 
@@ -41,6 +46,8 @@
 | [sfn-checklist](checklists/sfn-checklist.md) | SFn 新增/修改自查 |
 | [route-checklist](checklists/route-checklist.md) | 路由新增/修改自查 |
 | [component-checklist](checklists/component-checklist.md) | 组件新增/修改自查 |
+| [derive-checklist](checklists/derive-checklist.md) | 派生项目（更名）自查 |
+| [upstream-sync-checklist](checklists/upstream-sync-checklist.md) | 上游↔下游同步自查 |
 
 ## 文档索引
 
@@ -48,5 +55,5 @@
 |----|------|------|
 | 规则本体 | [AGENTS.md](../AGENTS.md) | 唯一自动加载，跨模块规则/约定/索引 |
 | 边界模型 | [documentation-architecture](../docs/documentation-architecture.md) | 文档体系边界与事实 SSOT 表 |
-| 平台机制 | [docs/](../docs/) 6 篇 | architecture-overview / database-design / auth-permission-model / cache-system / event-tracking / deployment-ops |
+| 平台机制 | [docs/](../docs/) 7 篇 | architecture-overview / database-design / auth-permission-model / cache-system / event-tracking / deployment-ops / project-ecosystem |
 | 历史档案 | [docs/archive/](../docs/archive/) | 已归档版本与历史方案 |

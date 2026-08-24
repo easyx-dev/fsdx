@@ -6,18 +6,24 @@ import bcrypt from "bcryptjs";
 import { Pool } from "pg";
 import { getE2eDbUrl } from "./env";
 
+/** e2e 根管理员邮箱：可经 E2E_ADMIN_EMAIL 覆盖，默认中性域名 */
+const e2eAdminEmail = process.env.E2E_ADMIN_EMAIL ?? "root@example.com";
+
+/** e2e 客户端用户邮箱：可经 E2E_CLIENT_EMAIL 覆盖，默认中性域名 */
+const e2eClientEmail = process.env.E2E_CLIENT_EMAIL ?? "client01@example.com";
+
 /** 根管理员测试账号（globalSetup 种子） */
 export const ROOT_ADMIN = {
 	username: "root",
 	password: "Admin123!",
-	email: "root@fsdx.dev",
+	email: e2eAdminEmail,
 };
 
 /** 客户端测试账号（globalSetup 种子） */
 export const CLIENT_USER = {
 	username: "client01",
 	password: "Client123!",
-	email: "client01@fsdx.dev",
+	email: e2eClientEmail,
 };
 
 let pool: Pool | null = null;

@@ -21,10 +21,10 @@ L3  .agents/commands    固定流程执行（deploy 发布 / check-architecture 
 L4  .agents/checklists  验证清单（skills 的浓缩：sfn / route / component）
 L5  docs/               背景与设计（人类向），按性质分四子类：
     ├─ 平台机制类   architecture-overview / database-design / auth-permission-model /
-    │               cache-system / event-tracking / deployment-ops
+    │               cache-system / event-tracking / deployment-ops / project-ecosystem
     ├─ 决策档案类   （ADR，当前暂无，新增时置于 docs/decisions.md）
     ├─ archive/     历史档案（被推翻的设计、已完成计划）
-    └─ generated/   事实快照（预留：后续可接入 doc-facts 脚本从代码生成，禁止手改）
+    └─ generated/   事实快照（doc-facts 脚本生成：`pnpm doc:gen`，禁止手改；`pnpm check` 自动校验漂移）
 ```
 
 > fsdx-web 无 `.agents/templates` 层（代码骨架由 skills 内嵌示例承载）。skills / commands / checklists 实体均在 `.agents/` 下；`.opencode/` 内为指向 `.agents/` 的软链视图（`.opencode/skills` / `.opencode/commands`），供 opencode 工具识别与加载（opencode 约定仅识别这两类）；checklists 为 AI 自查参考，无 opencode 软链视图，内容修改一律以 `.agents/` 为准。
@@ -48,8 +48,8 @@ L5  docs/               背景与设计（人类向），按性质分四子类�
 
 | 事实 | 唯一 owner（代码） | 可读快照 | 引用方（只引用，不复制） |
 |------|-------------------|---------|--------------------------|
-| 权限码清单 | `src/permissions/admin-permissions.ts` + `client-permissions.ts` | — | auth-permission-model、AGENTS、architecture-overview |
-| 数据表清单 / 数量 | `src/db/schema/`（index.ts 汇总） | — | database-design、architecture-overview、README、AGENTS |
+| 权限码清单 | `src/permissions/admin-permissions.ts` + `client-permissions.ts` | [docs/generated/permissions.md](generated/permissions.md)（`pnpm doc:gen`） | auth-permission-model、AGENTS、architecture-overview |
+| 数据表清单 / 数量 | `src/db/schema/`（index.ts 汇总） | [docs/generated/tables.md](generated/tables.md)（`pnpm doc:gen`） | database-design、architecture-overview、README、AGENTS |
 | 内存缓存实例 | `src/services/*/*.cache.ts`（领域缓存）+ `src/services/track/track.validate.ts`（频控内部实例 `sessionRateCache`） | — | cache-system、architecture-overview、AGENTS |
 | 路由树 | `src/routeTree.gen.ts` + `src/routes/` | — | architecture-overview（仅概览）、routing 约定在 AGENTS |
 | 定时任务清单 | `src/services/tasks/tasks.server.ts` | — | deployment-ops |
@@ -108,8 +108,9 @@ docs/ 内部：
 ### 事实变更（改表/权限码/缓存等）
 
 1. 修改代码
-2. 触发更新引用方文档的元信息块「更新触发」中的对应项
-3. 若引用方文档中有残留的硬编码数量，手动同步为「当前值 + 以代码为准」标注（校验守门见 AGENTS「开发边界」）
+2. 运行 `pnpm doc:gen` 重新生成 docs/generated 快照
+3. 触发更新引用方文档的元信息块「更新触发」中的对应项
+4. 若引用方文档中有残留的硬编码数量，手动同步为「当前值 + 以代码为准」标注（`pnpm check` 内置 doc:check 自动拦截漂移）
 
 ### 已弃用 / 历史内容
 

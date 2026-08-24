@@ -71,8 +71,8 @@ describe("jwt.signToken / jwt.verifyToken", () => {
 });
 
 describe("COOKIE_NAMES", () => {
-	it("ADMIN_TOKEN 和 CLIENT_TOKEN 名称正确", () => {
-		expect(COOKIE_NAMES.ADMIN_TOKEN).toBe("fsdx_admin_token");
-		expect(COOKIE_NAMES.CLIENT_TOKEN).toBe("fsdx_client_token");
+	it("使用模板中性默认名（更名时在此集中修改）", () => {
+		expect(COOKIE_NAMES.ADMIN_TOKEN).toBe("admin_token");
+		expect(COOKIE_NAMES.CLIENT_TOKEN).toBe("client_token");
 	});
 });

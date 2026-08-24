@@ -10,7 +10,7 @@
 ### 服务器目录结构
 
 ```
-/opt/fsdx-web/
+/opt/{项目名}/
 ├── docker-compose.yml          # 生产 docker compose 编排文件（由仓库 docker-compose.prod.yml 复制而来）
 ├── .env                        # 全部配置（DATABASE_URL、JWT_SECRET、LOG_LEVEL）
 └── volumes/
@@ -21,17 +21,17 @@
 
 ```bash
 # 1. 创建目录结构
-mkdir -p /opt/fsdx-web/volumes/app
+mkdir -p /opt/{项目名}/volumes/app
 
 # 2. 创建配置文件
-cp .env.example /opt/fsdx-web/.env
-# 编辑 /opt/fsdx-web/.env，修改 DATABASE_URL 和 JWT_SECRET
+cp .env.example /opt/{项目名}/.env
+# 编辑 /opt/{项目名}/.env，修改 DATABASE_URL 和 JWT_SECRET
 
 # 3. 放入 compose 文件（生产环境统一使用 docker-compose.yml 作为默认文件名）
-cp docker-compose.prod.yml /opt/fsdx-web/docker-compose.yml
+cp docker-compose.prod.yml /opt/{项目名}/docker-compose.yml
 
 # 4. 拉取镜像并启动
-cd /opt/fsdx-web
+cd /opt/{项目名}
 docker compose pull
 docker compose up -d
 ```
@@ -73,7 +73,7 @@ App 端口绑定 `127.0.0.1:3000`，仅允许宿主机 nginx 反代访问，不�
 
 ```bash
 # 手动部署指定版本
-cd /opt/fsdx-web
+cd /opt/{项目名}
 TAG=v1.0.0 docker compose pull
 TAG=v1.0.0 docker compose up -d
 
@@ -341,10 +341,10 @@ initSystem() 在事务中执行:
 
 ```bash
 # 默认官方源构建
-docker build -t fsdx-cms .
+docker build -t {项目名} .
 
 # 使用国内 npm 镜像源加速构建
-docker build --build-arg NPM_REGISTRY=https://registry.npmmirror.com -t fsdx-cms .
+docker build --build-arg NPM_REGISTRY=https://registry.npmmirror.com -t {项目名} .
 ```
 
 ### Dockerfile 结构

@@ -15,7 +15,7 @@ services:
     ports:
       - "${APP_PORT:-3000}:3000"
     environment:
-      DATABASE_URL: ${DATABASE_URL:-postgresql://postgres:postgres@host.docker.internal:5432/fsdx_web}
+      DATABASE_URL: ${DATABASE_URL:-postgresql://postgres:postgres@host.docker.internal:5432/app_web}
       STORAGE_DIR: /app/data
       JWT_SECRET: ${JWT_SECRET:-dev-secret-at-least-32-characters-long}
       LOG_LEVEL: ${LOG_LEVEL:-debug}

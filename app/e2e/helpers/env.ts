@@ -7,8 +7,12 @@ import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import dotenv from "dotenv";
 
-/** e2e 专用隔离数据库名（与开发库完全隔离） */
-export const E2E_DB_NAME = "fsdx_web_e2e";
+/**
+ * e2e 专用隔离数据库名：可经 E2E_DB_NAME 覆盖，默认取开发库名 + _e2e 后缀（避免硬编码品牌库名）
+ */
+export const E2E_DB_NAME =
+	process.env.E2E_DB_NAME ??
+	`${new URL(loadAppEnv().DATABASE_URL).pathname.slice(1) || "app"}_e2e`;
 
 /** app 包目录（由本文件位置向上两级） */
 export const APP_DIR = resolve(

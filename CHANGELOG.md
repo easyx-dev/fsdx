@@ -26,6 +26,14 @@
 
 ### Infrastructure
 
+- **[infra] 文档事实生成与校验（doc-facts，回灌自 bom-easy `/backport` 试点）**：新增 `app/scripts/doc-facts.ts` + `gen-doc-facts.ts` + `check-doc-facts.ts`，从代码单一事实来源生成 `docs/generated/{permissions,tables}.md`（`pnpm doc:gen`），`pnpm doc:check` 挂入 `pnpm check` 自动拦截文档数字漂移（如「17 张表」「9 个缓存实例」「61 个权限常量」）；documentation-architecture 将 docs/generated 由「预留」落实为已实现机制并补充事实变更流程
+
+- **[infra] 模板命名面收敛化改造 + 衍生项目协同进化协议**：
+  - **运行期标识收敛**（可被衍生项目吸收）：Cookie 名收敛为集中常量 `COOKIE_NAMES`（`src/constants/cookie-names.ts`，中性默认 `admin_token`/`client_token`，移除 `fsdx_*` 硬编码）；e2e 库名由 `DATABASE_URL` 派生 + `_e2e` 后缀（`E2E_DB_NAME` 可覆盖）；e2e 账号邮箱默认 example.com 域（`E2E_ADMIN_EMAIL`/`E2E_CLIENT_EMAIL` 可覆盖）
+  - **部署文档路径示例中性化**：`/opt/{项目名}/` 占位、镜像 tag 示例改 `{项目名}`
+  - **新增衍生项目协同进化协议**：`docs/project-ecosystem.md`（定位模型 + 演进方向判定准则 + 命名面映射 + 基线管理）；`.agents/skills/` 新增 derive-project / upstream-sync；`.agents/commands/` 新增 /derive、/import-upstream、/backport；`.agents/checklists/` 新增 derive / upstream-sync 两份清单；AGENTS.md 新增「衍生项目与协同进化」章节（命名收敛硬规则、`[infra]` 标记、回灌净化）
+  - 影响：衍生项目可据 CHANGELOG `[infra]` 条目吸收基建变更；模板 Cookie 名变化，既有部署需重新登录
+
 - **版本发布流程 + CHANGELOG 归档机制**：
   - `app/package.json`（`@fsdx/web`）新增 `version` 字段（起始 `1.1.0`，即下一个待发布版本），版本号统一 `v1.x.y` 与 git tag 一致，根 `package.json` 为 workspace 编排壳不设版本
   - 新增 `.agents/commands/deploy.md` 发布命令：联动提交 → 确定版本（未发布直接用当前版本，已发布则 bump patch）→ 更新 CHANGELOG（Unreleased 升版 + 归档）→ 打 tag（含 commit 摘要）→ 推送

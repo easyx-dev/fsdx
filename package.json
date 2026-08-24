@@ -14,11 +14,13 @@
     "format": "pnpm -r format",
     "lint": "pnpm -r --parallel lint",
     "lint:fix": "pnpm -r --parallel lint:fix",
-    "check": "pnpm -r --parallel check",
+    "check": "pnpm -r --parallel check && pnpm doc:check",
     "db:generate": "pnpm --filter @fsdx/web db:generate",
     "db:migrate": "pnpm --filter @fsdx/web db:migrate",
     "db:pull": "pnpm --filter @fsdx/web db:pull",
-    "db:studio": "pnpm --filter @fsdx/web db:studio"
+    "db:studio": "pnpm --filter @fsdx/web db:studio",
+    "doc:gen": "pnpm --filter @fsdx/web doc:gen",
+    "doc:check": "pnpm --filter @fsdx/web doc:check"
   },
   "dependencies": {
     "dayjs": "^1.11.21",

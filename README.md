@@ -45,7 +45,7 @@ pnpm dev
 | `pnpm build` | 生产构建 |
 | `pnpm preview` | 预览生产构建 |
 | `pnpm test` | 运行测试 |
-| `pnpm check` | TypeScript + Biome 检查 |
+| `pnpm check` | TypeScript + Biome + 文档事实校验（doc:check） |
 | `pnpm lint` | Biome 检查 |
 | `pnpm lint:fix` | Biome 自动修复 |
 | `pnpm format` | Biome 格式化 |
@@ -73,6 +73,7 @@ pnpm dev
 | [缓存体系](docs/cache-system.md) | MemoryCache 设计、缓存实例清单（8 个领域缓存位于 `src/services/*/*.cache.ts`，含 `track.validate.ts` 频控内部实例）、生命周期 |
 | [事件埋点](docs/event-tracking.md) | 客户端 SDK、服务端校验、缓冲写入、查询分析 |
 | [部署运维](docs/deployment-ops.md) | 启动流程、定时任务、日志、优雅关闭 |
+| [项目生态与衍生协同](docs/project-ecosystem.md) | 基座模板定位、衍生项目双向同步、命名面收敛、回灌净化 |
 | [文档体系架构](docs/documentation-architecture.md) | 文档角色/边界、事实 SSOT、引用图、维护规则 |
 
 ## 开发约定

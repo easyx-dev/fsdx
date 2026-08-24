@@ -84,7 +84,7 @@
 | 渲染模式 | SPA (`ssr: false`) | SSR |
 | UI 组件库 | Ant Design 6 | shadcn/ui + Tailwind |
 | 认证方式 | `adminPermGuard` 中间件 | `beforeLoad` 调用 `getCurrentClientSFn` |
-| Cookie | `fsdx_admin_token` | `fsdx_client_token` |
+| Cookie | `admin_token` | `client_token` |
 | 错误通知 | antd `message.error` | sonner `toast.error` |
 
 ### 2. 服务层与路由层分离（SFn 就近路由）

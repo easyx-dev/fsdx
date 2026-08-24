@@ -21,7 +21,9 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "tsx src/db/migrate-cli.ts",
     "db:pull": "drizzle-kit pull",
-    "db:studio": "drizzle-kit studio"
+    "db:studio": "drizzle-kit studio",
+    "doc:gen": "tsx scripts/gen-doc-facts.ts",
+    "doc:check": "tsx scripts/check-doc-facts.ts"
   },
   "dependencies": {
     "@ant-design/charts": "^2.6.7",
