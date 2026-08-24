@@ -237,6 +237,7 @@ packages/
 - **归属判定**：规则/禁令 → AGENTS + skills；机制/设计解释 → docs 平台类；事实清单 → 指向代码；流程 → commands；验证 → checklists；历史 → docs/archive
 - **事实不复制**：表数/权限码数/缓存实例数等「数量/清单」一律指向代码（标注以代码为准），禁止在文档中硬编码复制
 - **文档间引用单向可追踪**：索引层（guide.md / README）只导航不重复内容；docs 平台类文档头部填写元信息块（定位/SSOT/引用关系/更新触发）
+- **markdown 风格统一**：H1 首行、标题层级、表格/代码块、中文排版、CHANGELOG 结构（每分类一个块）与 skill/command 结构模板 → [documentation-architecture](docs/documentation-architecture.md) 第 7 节「markdown 风格规范」（SSOT）
 
 ## 衍生项目与协同进化
 

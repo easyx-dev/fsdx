@@ -181,6 +181,11 @@
   - AGENTS「工程结构」树去重：`lib/` 段删文件明细（薄壳名保留在注释）、core 段删模块明细只留 `utils/i18n/cache/infra` 四桶分层（导出清单指向 core README），避免与包 README 双份维护
   - architecture-overview 删除「目录职责矩阵」与「关键文件索引」两节（前者职责/规则与 AGENTS 树及既有章节重复，后者前 10 行即 AGENTS 树注释、后 9 行系文档导航）：改为「目录职责」引用段（指向 AGENTS 工程结构/包边界/依赖方向）+「相关文档」导航表，文件级职责不再重复罗列
   - architecture-overview「系统分层架构」图与「路由分层」树收敛为概览：删除 services 22 个模块名、core 模块清单与「17 张表 + 9 个缓存」等易漂移枚举（图内改指向 `src/services/`、core README、database-design、cache-system），路由树改分组概览并以 `src/routes/`（`routeTree.gen.ts`）为 SSOT
+- **文档体系统一治理（doc:check 守门补强 + markdown 风格成文）**：
+  - CHANGELOG 结构重整：历史积压条目拆为 `[v1.1.0] - 2026-08-24` 版本段并合并重复分类标题，恢复「每个分类仅一个块」规则；AGENTS / deploy command 的 CHANGELOG 规则一致
+  - doc:check 守门补强：新增 skill 数量事实（`computeFacts` 扫描 `.agents/skills`，拦截「N 个 skill」漂移），扫描范围扩展至 `.agents/` 规则文档、子包 README 与 deploy README（CHANGELOG 为历史记录不参与当前事实比对）
+  - documentation-architecture 新增「markdown 风格规范」章节（文件结构/标题层级/表格/代码块/中文排版/CHANGELOG 结构/skill 与 command 结构模板），AGENTS 文档体系章节补引用；修正 skill 清单 10→12（补 derive-project / upstream-sync）
+  - deploy command 补 H1 标题，与其余 command 结构对齐
 
 ### 依赖升级
 
@@ -223,6 +228,27 @@
   - `matchPermission` 迁入 core；`OperatorType` 迁入 core request-context，`db/schema/operation-log.ts` re-export；`log-reader.ts` 就近迁至 `services/logs/`
   - antd-static 迁入 ui-spa，app 删除 `#/components/antd-static` 壳、各端直接经 `@fsdx/ui-spa/antd-static` 导入；Tailwind 经 `@source` 扫描 ui 包源码类名
 
+## [v1.1.0] - 2026-08-24
+
+### Features
+
+- **消息中心（message）**：`message` 表（`recipient_type` + `recipient_id` 无外键）+ 服务层 10 函数 + 三组 SFn（客户端自助/管理端收件箱/管理端管理）+ 前台 `/messages`（shadcn/ui SSR）+ 管理端 `/admin/messages`（收件箱）与 `/admin/messages/manage`（管理）+ Header/AdminLayout 消息铃铛（30 秒轮询）+ `message:view/send/delete` 权限
+- **文件资源管理器（file-explorer）**：`STORAGE_DIR` 目录浏览 + 路径穿越防护 + 写保护 + `/admin/file-explorer` 页面 + `/api/download/file-explorer/*` 下载路由 + `file_explorer:*` 权限
+- **lib/ms + MSInput**：vercel/ms 移植（parse/parseStrict/format/ms）+ 4 个测试文件 + antd 时长输入组件
+- 修复既有测试失败：jwt 测试 logger mock 缺 `debug`；news 测试 i18n.server mock 缺 `applyTranslations`（改用 `importOriginal`）
+
+### Infrastructure
+
+- PostgreSQL + Drizzle ORM（17 张表，uuid 主键，软删除，timestamptz）
+- Vitest 测试（79 个测试文件，822 条测试）
+- 迁移流程：`pnpm db:generate` + `pnpm db:migrate`（bootstrap 启动自动执行）
+
+### Fix
+
+- **中间件 import-protection 告警**：`resolveAdminAuthContext`/`resolveClientAuthContext` 下沉到 `middleware/*.server.ts`，中间件 guard 在 `.server()` 回调内动态导入；客户端构建剥离回调后不再残留 `.server` 依赖（此前 admin 侧因函数被 export 无法被死代码消除而告警）
+- **AdminRootDocument `<title>` 告警**：`{siteName} 管理后台` 两个 children 改为模板字符串，消除 React title 数组警告
+- **登录/注册/找回密码页 tsc 报错**：`form.Subscribe` 的 `selector` 泛型推断被 `NoInfer` + 默认值阻断（TS 6），改为全量 FormState 订阅（去掉 selector），`state.canSubmit`/`state.isSubmitting`/`state.values.email` 直接读取，消除 FormState 类型不匹配
+
 ### Refactor
 
 - **用户/认证/日志/操作日志向 bom-easy 对齐**：
@@ -240,9 +266,6 @@
   - 预置清单裁剪：元事件 9→5、元属性 16→11，`ensurePreset*` 增补清理逻辑
 - **管理端角色改名 `role`→`admin_role`**：表、`admin_user.role_id`→`admin_role_id`、模块 `src/services/admin-role/`、路由 `/admin/admin-roles`、权限码 `role:*`→`admin-role:*`、审计模块名 `admin_role`
 - **DB 迁移基线重置**：统一 generate+migrate（移除 db:push），重建 `drizzle/0000_initial.sql`（17 张表全量建表，允许清库）
-
-### Refactor
-
 - **主题体系重构（对齐 bom-easy）**：
   - 具名主题注册表 `app/src/theme/themes.ts`：每个端一个主题预设（`ThemePreset`），`data-theme` 承载完整主题名（如 `admin-brown-light`）；管理端棕 `#795548`、前台中性灰
   - CSS 令牌链路：新增 `shared-tokens.css` 共享中性令牌（`--t-*`），两端 `--t-brand-*` 品牌色阶 → `--s-*` 语义令牌 → `@theme` 映射；`@custom-variant dark (&:is([data-theme$="-dark"] *))` 统一暗色变体，废弃 `.dark` class 双轨
@@ -254,10 +277,6 @@
   - 硬编码颜色清理：`#1677ff`→`var(--s-primary)`、`zinc/blue/gray`→语义令牌类；Monaco 暗色检测改 `data-theme` 判断；内联非零圆角归零
   - 管理端 logo/favicon 蓝 `#1677ff`→棕 `#795548`；前台 storageKey `theme`→`client-theme`
 - **AdminPageContent 挪回 app**：布局组件（标题栏 + 内容区）自 `@fsdx/ui-spa` 迁至 `app/src/components/admin/AdminPageContent.tsx`，26 处路由页面导入改 `#/components/admin/AdminPageContent`，ui-spa 移除对应导出；标题栏定高改 CSS 变量 `--admin-header-height`，内容区高度按 `calc(100vh - var(--admin-header-height))` 计算内部滚动，便于子元素按已知高度布局
-
-
-### Refactor
-
 - 目录分层：新增 `src/constants/`、`src/validators/`、`src/utils/`、`src/types/`；`lib/query` 类型迁入 `types/query.ts`；删除 `format-date` 改用 dayjs 内联
 - 缓存拆分：`lib/cache/cache.ts`→`core.ts` + 按模块 `*.cache.ts` 实例文件，新增 `adminUserCache`
 - 新增 `lib/request-context`（AsyncLocalStorage 操作者身份）+ `lib/buffer/batch-writer`（通用缓冲写入器，event/operation-log 复用）
@@ -269,28 +288,6 @@
 - antd-static 桥接：message/modal/notification 经 `App.useApp` 捕获，31 处静态 message 调用迁移；AdminProvider 加 `<StyleProvider layer>` + 品牌色 `#00b96b`
 - 样式分层：两份 global.css 预声明 `@layer theme, base, antd, components, utilities` + 裸 `a` 语义色兜底
 - 新增 `sfn-helpers.ts`（safeSfnCall/unwrapSfn）+ `hooks/use-sfn-call.ts` + `PermissionTags` + `useCrudPage`
-
-### Features
-
-- **消息中心（message）**：`message` 表（`recipient_type` + `recipient_id` 无外键）+ 服务层 10 函数 + 三组 SFn（客户端自助/管理端收件箱/管理端管理）+ 前台 `/messages`（shadcn/ui SSR）+ 管理端 `/admin/messages`（收件箱）与 `/admin/messages/manage`（管理）+ Header/AdminLayout 消息铃铛（30 秒轮询）+ `message:view/send/delete` 权限
-- **文件资源管理器（file-explorer）**：`STORAGE_DIR` 目录浏览 + 路径穿越防护 + 写保护 + `/admin/file-explorer` 页面 + `/api/download/file-explorer/*` 下载路由 + `file_explorer:*` 权限
-- **lib/ms + MSInput**：vercel/ms 移植（parse/parseStrict/format/ms）+ 4 个测试文件 + antd 时长输入组件
-- 修复既有测试失败：jwt 测试 logger mock 缺 `debug`；news 测试 i18n.server mock 缺 `applyTranslations`（改用 `importOriginal`）
-
-### Fix
-
-- **中间件 import-protection 告警**：`resolveAdminAuthContext`/`resolveClientAuthContext` 下沉到 `middleware/*.server.ts`，中间件 guard 在 `.server()` 回调内动态导入；客户端构建剥离回调后不再残留 `.server` 依赖（此前 admin 侧因函数被 export 无法被死代码消除而告警）
-- **AdminRootDocument `<title>` 告警**：`{siteName} 管理后台` 两个 children 改为模板字符串，消除 React title 数组警告
-- **登录/注册/找回密码页 tsc 报错**：`form.Subscribe` 的 `selector` 泛型推断被 `NoInfer` + 默认值阻断（TS 6），改为全量 FormState 订阅（去掉 selector），`state.canSubmit`/`state.isSubmitting`/`state.values.email` 直接读取，消除 FormState 类型不匹配
-
-### Infrastructure
-
-- PostgreSQL + Drizzle ORM（17 张表，uuid 主键，软删除，timestamptz）
-- Vitest 测试（79 个测试文件，822 条测试）
-- 迁移流程：`pnpm db:generate` + `pnpm db:migrate`（bootstrap 启动自动执行）
-
-### Refactor
-
 - **权限模块迁至顶层 `src/permissions/`**：权限码从 `src/constants/permissions/` 提升为顶层领域模块（与 `src/db/` 同级），30 处 `#/constants/permissions/*` 引用改为 `#/permissions/*`，同步更新 AGENTS.md 与 skill 文档路径
 - **权限命名全对称（破坏性重构）**：`permissions.ts` → `admin-permissions.ts`，符号全量加 `Admin` 前缀（`PERMISSIONS`→`ADMIN_PERMISSIONS`、`PermissionDef`→`AdminPermissionDef`、`hasPermission`→`hasAdminPermission` 等），与 `client-permissions.ts` 的 `Client*` 命名对齐
 - **权限码分隔符规范化**：`file_explorer:*`→`file-explorer:*`、`dict:*_item`→`dict:*-item`；审计模块名 `file_explorer`/`admin_role` 同步为 kebab（`operation_log.module` 数据格式变更）

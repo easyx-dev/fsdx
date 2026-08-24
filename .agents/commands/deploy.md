@@ -1,6 +1,8 @@
 ---
 description: 版本发布：联动 commit 流程提交业务变更、确定新版本号、更新 CHANGELOG、打 tag（含 commit 摘要）、推送
 ---
+# /deploy
+
 依次执行以下步骤：
 
 1. 执行 `git status --porcelain` 检查是否有未提交变更：

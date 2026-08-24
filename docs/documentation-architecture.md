@@ -16,7 +16,7 @@
 L0  AGENTS.md           规则本体（唯一自动加载）
                          只放跨模块规则、约定、索引；清单/机制详解一律外迁
 L1  .agents/guide.md    任务导航（任务 → 读什么/用什么），不重复规则
-L2  .agents/skills      「怎么做/禁止什么」规则展开（10 个：架构/服务函数/权限/缓存/数据库/测试/国际化/CRUD，另含 db-sqlite/db-mysql 衍生技能）
+L2  .agents/skills      「怎么做/禁止什么」规则展开（12 个 skill：架构/服务函数/权限/缓存/数据库/测试/国际化/CRUD + db-sqlite/db-mysql 衍生技能 + derive-project/upstream-sync 协同技能；数量以代码为准）
 L3  .agents/commands    固定流程执行（deploy 发布 / check-architecture 审计，引用 skills / docs）
 L4  .agents/checklists  验证清单（skills 的浓缩：sfn / route / component）
 L5  docs/               背景与设计（人类向），按性质分四子类：
@@ -95,13 +95,57 @@ docs/ 内部：
 
 **Skills 不引入该块**：`.agents/skills/**/SKILL.md` 使用结构化 frontmatter（`name` + `description`），其 `description` 已承担「何时触发」职责，边界以第 3 节归属映射为准。
 
-## 7. 维护规则
+## 7. markdown 风格规范
+
+全仓库 md 文件（README / AGENTS / docs / .agents / CHANGELOG）统一遵循下列风格；改动既有文档时以本规范为准做对齐，新增文档按本规范撰写。Biome 不覆盖 md 文件，本规范为人工守门（review 自查）。
+
+### 7.1 文件结构
+
+- 每个 md 文件**第一行必须是 H1 标题**（`# 文档名`），不允许正文裸开头；skill / command 例外：frontmatter 之后立即接正文的 command（如 `deploy.md`）也必须先写 H1
+- docs 平台类文档头部跟随第 6 节**元信息块**（四行 `>` 引用）
+- skill / command 使用 YAML **frontmatter**（`---` 包裹），内容以 `.agents/` 为权威（软链视图不另维护）
+
+### 7.2 标题层级
+
+- H1 唯一，表示文件主题；H2 为章节；H3 为子节；**禁止跳级**（H1 → H3）
+- 标题与上下正文之间保留一个空行；标题使用 ATX 风格（`#` 前缀），不使用 Setext 下划线式
+
+### 7.3 表格
+
+- 表头下方必须有分隔行（`|------|`），列数对齐表头
+- 单元格内代码/标识符用反引号包裹；单元格内 `|` 需转义为 `\|`
+- 表格仅用于结构化对照（清单/映射/对比），大段描述用列表而非表格
+
+### 7.4 代码块
+
+- 代码块标注语言（如 ` ```ts `、` ```bash `、` ```mermaid `），不使用裸代码块
+- 代码块内缩进与正文列表缩进一致，不混用 tab / 空格
+
+### 7.5 中文排版
+
+- 正文一律**简体中文**；术语与代码标识保持英文原样（不翻译）
+- 同一概念全文用语一致（如「Server Function / SFn」「缓存实例 / 缓存」不可混用变体）
+- 数字与单位之间、中文与英文之间不加多余空格；标点使用全角中文标点，英文/代码片段内使用半角
+
+### 7.6 CHANGELOG 结构规则
+
+- 分类固定为 `Features` / `Infrastructure` / `Fix` / `Refactor` / `Docs` / `依赖升级` / `Breaking Changes`，按此顺序排列
+- **每个版本段内每个分类只允许一个标题块**（新增条目归入既有块，禁止追加重复标题）
+- 版本段自上而下递减：`[Unreleased]` → 最近发布版本 → 「历史版本」索引；主文件只保留 `[Unreleased]` + 最近 3 个版本，更早版本归档至 `docs/archive/changelog/`
+
+### 7.7 结构模板
+
+- **skill**：frontmatter（`name` + `description`）→ H1 → 快速索引（可选）→ 规则正文 → 代码示例 → 违规自查（可选）→ 相关 Skill
+- **command**：frontmatter（`description`）→ H1（`# /命令名`）→ 按序编号的步骤（`1. 2. 3.`），涉及既有流程时引用 skills/docs 而非复制规则
+- **checklist**：H1 → 来源说明块（`> 规则来源：...`）→ 按主题分组的 `- [ ]` 勾选项
+
+## 8. 维护规则
 
 ### 新增文档
 
 1. 按第 3 节映射表判定归属层；不确定时按「机制解释 → docs/平台类」「操作步骤 → commands」「规则 → skills」
 2. 若内容含数量/清单类事实，删除并改为指向代码
-3. 填写第 6 节元信息块
+3. 填写第 6 节元信息块，并按第 7 节风格规范撰写（H1 首行、标题层级、表格/代码块、结构模板）
 4. 同步 `.agents/guide.md` 的 Docs / Skills 索引
 5. 若 README 需要收录，同步 README 文档索引
 
@@ -117,6 +161,6 @@ docs/ 内部：
 - 模块废弃或设计被推翻时，正文保留但头部标注「已废弃/已弃用，仅作历史参考」，并在现行方案处加链接；不删除（历史可追溯）
 - 一次性计划完成后归档至 `docs/archive/`
 
-## 8. 当前文档清单
+## 9. 当前文档清单
 
 > 完整清单与角色见 [.agents/guide.md](../.agents/guide.md) 的索引；README 文档索引仅导航不重复内容。

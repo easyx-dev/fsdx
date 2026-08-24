@@ -2,7 +2,7 @@
  * 文档事实提取：从代码单一事实来源计算事实数据，供生成与校验脚本复用
  * 单一事实来源：权限码 → src/permissions/，数据表 → src/db/schema/，缓存实例 → src/services/
  */
-import { readdirSync, readFileSync, statSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import * as schema from "../src/db/schema/index.ts";
@@ -17,6 +17,9 @@ export const ROOT = resolve(
 
 /** 缓存实例源码目录（app/src/services，含子目录，如 track.validate.ts 内嵌频控实例） */
 const CACHE_SRC_DIR = join(ROOT, "app/src/services");
+
+/** skill 规则目录（.agents/skills，每个子目录一个 SKILL.md） */
+const SKILLS_DIR = join(ROOT, ".agents/skills");
 
 /** 权限定义结构 */
 export interface PermissionDef {
@@ -46,6 +49,8 @@ export interface DocFacts {
 	clientPermissions: PermissionDef[];
 	/** 内存缓存实例数量 */
 	cacheInstanceCount: number;
+	/** skill 数量（.agents/skills 下含 SKILL.md 的子目录数） */
+	skillCount: number;
 }
 
 /** Drizzle 表对象元数据符号 */
@@ -119,7 +124,19 @@ export function computeFacts(): DocFacts {
 		0,
 	);
 
-	return { tables, adminPermissions, clientPermissions, cacheInstanceCount };
+	// 统计 .agents/skills 下含 SKILL.md 的子目录数
+	const skillCount = readdirSync(SKILLS_DIR).filter((entry) => {
+		const dir = join(SKILLS_DIR, entry);
+		return statSync(dir).isDirectory() && existsSync(join(dir, "SKILL.md"));
+	}).length;
+
+	return {
+		tables,
+		adminPermissions,
+		clientPermissions,
+		cacheInstanceCount,
+		skillCount,
+	};
 }
 
 /** 转义 markdown 表格单元格文本 */

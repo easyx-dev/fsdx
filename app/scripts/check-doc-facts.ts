@@ -2,12 +2,14 @@
  * 文档事实校验：挂入 pnpm check，防止文档中的事实数字与代码漂移
  * ① 校验 docs/generated/ 生成物与代码一致（过期则要求运行 pnpm doc:gen）
  * ② 扫描非生成类文档中出现的「数量 + 单位」短语，与代码实际值比对
+ * 扫描范围：README/AGENTS + docs 顶层 + .agents 规则文档（skills/commands/checklists）+ 子包与 deploy README；
+ * CHANGELOG 为历史记录（数字表述过去状态），不参与当前事实比对
  */
-import { existsSync, readdirSync, readFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { computeFacts, GENERATED_FILES, ROOT } from "./doc-facts.ts";
 
-/** 校验的文档范围：仓库根 README/AGENTS + docs/ 顶层非 generated/archive 文件 */
+/** 校验的文档范围：仓库根 README/AGENTS + docs/ 顶层 + .agents 规则文档 + 子包/deploy README（CHANGELOG 除外） */
 function collectScanTargets(): string[] {
 	const targets = [join(ROOT, "README.md"), join(ROOT, "AGENTS.md")];
 	const docsDir = join(ROOT, "docs");
@@ -15,6 +17,26 @@ function collectScanTargets(): string[] {
 		if (!file.endsWith(".md")) continue;
 		targets.push(join(docsDir, file));
 	}
+	// .agents 规则文档（skills / commands / checklists），递归收集
+	for (const sub of ["skills", "commands", "checklists"]) {
+		const dir = join(ROOT, ".agents", sub);
+		if (!existsSync(dir)) continue;
+		const walk = (current: string): void => {
+			for (const entry of readdirSync(current)) {
+				const full = join(current, entry);
+				if (statSync(full).isDirectory()) walk(full);
+				else if (entry.endsWith(".md")) targets.push(full);
+			}
+		};
+		walk(dir);
+	}
+	// 子包 README 与 deploy 子仓库 README
+	for (const pkg of readdirSync(join(ROOT, "packages"))) {
+		const readme = join(ROOT, "packages", pkg, "README.md");
+		if (existsSync(readme)) targets.push(readme);
+	}
+	const deployReadme = join(ROOT, "deploy", "README.md");
+	if (existsSync(deployReadme)) targets.push(deployReadme);
 	return targets;
 }
 
@@ -40,6 +62,11 @@ function buildNumberFacts(): {
 			regex: /(\d+) 个权限常量/g,
 			expected: facts.adminPermissions.length,
 			label: "管理端权限码数量",
+		},
+		{
+			regex: /(\d+) 个 skill/g,
+			expected: facts.skillCount,
+			label: "skill 数量",
 		},
 	];
 }
