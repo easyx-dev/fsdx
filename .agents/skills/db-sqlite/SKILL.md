@@ -23,6 +23,7 @@ description: >
 | **事务必须同步化（关键陷阱）** | → [事务改造](#8-事务改造关键陷阱) |
 | 测试 mock 适配 | → [测试迁移](#9-测试迁移) |
 | 删除旧迁移、重建基线 | → [迁移执行流程](#10-迁移执行流程) |
+| 生产部署适配（deploy 子仓库裁剪） | → [10.1 部署适配](#101-生产部署适配deploy-子仓库) |
 | node:sqlite 常见报错 | → [常见错误排查](#11-常见错误排查) |
 
 ## 0. 基态与选型
@@ -597,6 +598,29 @@ DATABASE_URL="./data/data.db" pnpm --filter @fsdx/web db:migrate
 生产部署：bootstrap `runMigrations()` 启动时自动执行（`data/` 目录需存在且可写，迁移失败 = 进程启动即崩，fail-fast）。
 
 > ⚠️ 迁移目录整体重建后，任何应用过旧 PostgreSQL 迁移的库已不适用（SQLite 是新库，无此问题）；SQLite 库如有残留表（`table already exists`），删除 `data/data.db` 后重启。
+
+### 10.1 生产部署适配（deploy 子仓库）
+
+切 SQLite 后生产部署**不再需要 PostgreSQL 容器**，`deploy/` 子仓库须针对性裁剪（针对 [docs/project-ecosystem.md](../../../docs/project-ecosystem.md) 部署子仓库方案）：
+
+1. **compose 裁剪**：删除 `db` 服务与 `volumes/db`，仅保留 `app`；`DATABASE_URL` 改指向挂载卷内 SQLite 文件（`./data/data.db`，即 `volumes/app/data.db`），移除 `POSTGRES_*` env，保留 `STORAGE_DIR=/app/data`
+2. **备份/恢复脚本**：
+   - `backup.sh`：去掉 pg_dump 两步——数据库与应用数据**同源**（`volumes/app` 内含 `data.db`），直接打包 `volumes/app` 即可。在线一致快照用容器内 `node:sqlite` 的 `VACUUM INTO`（**镜像无 `sqlite3` CLI**，勿用 `sqlite3 .backup`）：
+     ```bash
+     docker compose exec app node -e "const{DatabaseSync}=require('node:sqlite');const db=new DatabaseSync('data/data.db');db.exec(\"VACUUM INTO '/tmp/db.bak'\")"
+     docker cp fsdx-app:/tmp/db.bak backup/db-$(date +%Y%m%d%H%M%S).bak
+     ```
+     简单场景可停 app 后整体 tar
+   - `restore.sh`：无需 pg_restore，恢复 `volumes/app`（含 `data.db`）即完成
+   - `preflight-migrations.sh`：无需连 db 容器——迁移记录在 SQLite 库内（`drizzle.__drizzle_migrations`），核对方式改为容器内 `node:sqlite` 查询（勿用 `sqlite3` CLI）：
+     ```bash
+     docker compose exec app node -e "const{DatabaseSync}=require('node:sqlite');const db=new DatabaseSync('data/data.db');for(const r of db.prepare('SELECT name FROM drizzle.__drizzle_migrations').all())console.log(r.name)"
+     ```
+     与镜像 `/app/drizzle` 文件夹比对；SQLite 全新库无孤儿记录问题
+3. **迁移 fail-fast 语义不变**：`runMigrations()` 对 `data/data.db` 执行，文件不可写或迁移失败即应用启动失败，`deploy.sh` 健康检查自然捕获
+4. **数据卷**：SQLite 单文件持久化在 `volumes/app/data.db`，升级备份/恢复只需此目录（无需单独 db 卷）
+
+> 镜像无需改动：`node:sqlite` 内置 Node，drizzle 迁移文件已 COPY 进镜像；`data/` 属主 1001 对齐由 `deploy.sh` 的 chown 处理。
 
 ## 11. 常见错误排查
 

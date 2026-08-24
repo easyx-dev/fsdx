@@ -58,7 +58,7 @@ description: >
 
 ### Step 3：C 部署面
 
-1. `docker-compose.yml` / `docker-compose.prod.yml`：`container_name`、镜像名；
+1. `docker-compose.yml`：`container_name`、镜像名（生产编排已迁至 `deploy/` 子仓库，镜像地址见其 `docker-compose.yml`）；
 2. `.gitlab-ci.yml`：镜像仓库地址与镜像名；
 3. 部署目录（若沿用文档默认则无需改，文档已用 `/opt/{项目名}/` 占位）。
 

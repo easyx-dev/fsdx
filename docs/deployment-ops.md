@@ -7,102 +7,15 @@
 
 ## 生产环境部署
 
-### 服务器目录结构
+生产部署由独立子仓库 [fsdx-deploy](https://github.com/easyx-dev/fsdx-deploy.git) 承载（主仓库 `deploy/` 子模块）：生产 compose（内置 PostgreSQL）、一键部署/更新、备份/恢复、迁移预检脚本与运维手册。
 
-```
-/opt/{项目名}/
-├── docker-compose.yml          # 生产 docker compose 编排文件（由仓库 docker-compose.prod.yml 复制而来）
-├── .env                        # 全部配置（DATABASE_URL、JWT_SECRET、LOG_LEVEL）
-└── volumes/
-    └── app/                    # 应用数据（日志、上传文件）
-```
+- **部署运维手册**（首次部署 / 升级流程 / 回滚 / 定期备份 cron）→ 子仓库 [`deploy/README.md`](../deploy/README.md)
+- 主仓库保留镜像构建（见下文「镜像构建」）与开发环境 compose；生产编排与部署脚本不再在此重复维护
 
-### 首次部署
+### 镜像来源
 
-```bash
-# 1. 创建目录结构
-mkdir -p /opt/{项目名}/volumes/app
-
-# 2. 创建配置文件
-cp .env.example /opt/{项目名}/.env
-# 编辑 /opt/{项目名}/.env，修改 DATABASE_URL 和 JWT_SECRET
-
-# 3. 放入 compose 文件（生产环境统一使用 docker-compose.yml 作为默认文件名）
-cp docker-compose.prod.yml /opt/{项目名}/docker-compose.yml
-
-# 4. 拉取镜像并启动
-cd /opt/{项目名}
-docker compose pull
-docker compose up -d
-```
-
-### 服务拓扑
-
-```
-宿主机 nginx (80/443, SSL)
-    └── proxy_pass http://127.0.0.1:3000
-            │
-┌───────────┴───────────────┐
-│  docker compose (app)      │
-│                             │
-│  ┌──────────┐              │
-│  │   app    │──────────────┼──▶ 宿主机 PostgreSQL
-│  │ :3000    │              │
-│  │          │              │
-│  │ volumes  │              │
-│  └──────────┘              │
-│       │                     │
-│  volumes/app                │
-└───────┼─────────────────────┘
-```
-
-App 端口绑定 `127.0.0.1:3000`，仅允许宿主机 nginx 反代访问，不直接暴露公网。PostgreSQL 使用宿主实例，多服务共享。
-
-### 环境变量分层
-
-全部通过 compose `environment:` 注入，变量统一在 `.env` 文件管理：
-
-| 变量 | 说明 |
-|------|------|
-| `DATABASE_URL` | PostgreSQL 连接字符串，指向宿主 PG 实例 |
-| `STORAGE_DIR` | compose 硬编码 `/app/data` |
-| `JWT_SECRET` | JWT 签名密钥 |
-| `LOG_LEVEL` | 日志级别，默认 `info` |
-
-### 部署命令
-
-```bash
-# 手动部署指定版本
-cd /opt/{项目名}
-TAG=v1.0.0 docker compose pull
-TAG=v1.0.0 docker compose up -d
-
-# 查看运行状态
-docker compose ps
-docker compose logs -f app
-
-# 回滚到指定版本
-TAG=<旧版本> docker compose up -d
-```
-
-### CI/CD 自动部署
-
-GitLab CI 在 `main` 分支推送后自动构建镜像并部署：
-
-```
-git push main
-    ↓
-构建阶段: docker build → push to GitLab Registry
-    ↓
-部署阶段: SSH 到服务器 → docker compose pull → docker compose up -d
-```
-
-CI 部署使用 `${CI_COMMIT_SHORT_SHA}` 作为镜像 tag，每次部署可追溯到具体 commit。
-
-需要设置 GitLab CI 变量：
-- `DEPLOY_USER` — 服务器 SSH 用户
-- `DEPLOY_HOST` — 服务器地址
-- SSH 密钥配置（GitLab Runner → 目标服务器免密登录）
+- GitHub Actions（`.github/workflows/build.yml`）构建推送 `ghcr.io/easyx-dev/fsdx:{latest|commit-sha|tag}`；内网 GitLab CI（`.gitlab-ci.yml`）并存推送内网 registry
+- 生产部署镜像地址见子仓库 `docker-compose.yml`（默认 `ghcr.io/easyx-dev/fsdx:${TAG}`）
 
 ---
 
@@ -116,7 +29,7 @@ app/server.ts (Nitro entry)
     │
     ├── bootstrap()                          # src/bootstrap.ts
     │   ├── init 注入                        # initAi / initMail / initSms / setSchedulerLogger（先于一切）
-    │   ├── runMigrations()                 程序化数据库迁移（try/catch 容错，失败仅 warn 并继续）
+    │   ├── runMigrations()                 程序化数据库迁移（fail-fast：失败即应用启动失败）
     │   ├── await Promise.all([ensurePresetDicts(), ensurePresetConfigs()])
     │   │       等待预置字典和系统配置完成（同步等待，config 缓存随之热加载）
     │   ├── void ensurePresetTranslations()  fire-and-forget（不阻塞）
@@ -407,6 +320,7 @@ GET /health → 200
 
 | 文件 | 职责 |
 |------|------|
+| `deploy/`（子模块） | 生产部署运维仓库（fsdx-deploy：compose/脚本/手册） |
 | `server.ts`（app 根目录） | Nitro 服务入口 + HTTP 指标埋点 |
 | `src/bootstrap.ts` | 启动初始化（init 注入、迁移、预置、定时任务、优雅关闭） |
 | `src/hono-app.ts` | Hono 应用工厂（预留自定义 API 路由） |
@@ -428,5 +342,4 @@ GET /health → 200
 | `Dockerfile` | Docker 多阶段构建 |
 | `.dockerignore` | Docker 构建排除规则 |
 | `docker-compose.yml` | 开发环境 docker compose（build from source） |
-| `docker-compose.prod.yml` | 生产环境 docker compose（pull from registry） |
 | `.gitlab-ci.yml` | GitLab CI/CD（构建 + 自动部署） |

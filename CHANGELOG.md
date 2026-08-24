@@ -26,6 +26,13 @@
 
 ### Infrastructure
 
+- **[infra] 生产部署子仓库（fsdx-deploy）+ 迁移 fail-fast**：
+  - 新增 `deploy/` 子模块（[fsdx-deploy](https://github.com/easyx-dev/fsdx-deploy.git)，回灌自 bom-easy 部署实践）：生产 compose（内置 postgres + app，镜像 `ghcr.io/easyx-dev/fsdx`）、`deploy.sh` 一键部署（等待健康检查 = 迁移结果）、`backup.sh`/`restore.sh` 备份恢复、`preflight-migrations.sh` 迁移预检与运维手册
+  - bootstrap `runMigrations()` 改 **fail-fast**（失败即应用启动失败，原 warn 容错移除），生产部署由子仓库健康检查捕获迁移结果
+  - 新增 GitHub Actions（`.github/workflows/build.yml`）构建推送 `ghcr.io/easyx-dev/fsdx:{latest|sha|tag}`，与内网 GitLab CI 并存
+  - `deployment-ops.md` 生产部署章节收敛为指向子仓库 README；AGENTS/guide 同步
+  - 影响：数据库迁移失败不再静默容错（本地 dev 与生产均 fail-fast）；生产部署运维迁移至 `deploy/` 子仓库
+
 - **[infra] 文档事实生成与校验（doc-facts，回灌自 bom-easy `/backport` 试点）**：新增 `app/scripts/doc-facts.ts` + `gen-doc-facts.ts` + `check-doc-facts.ts`，从代码单一事实来源生成 `docs/generated/{permissions,tables}.md`（`pnpm doc:gen`），`pnpm doc:check` 挂入 `pnpm check` 自动拦截文档数字漂移（如「17 张表」「9 个缓存实例」「61 个权限常量」）；documentation-architecture 将 docs/generated 由「预留」落实为已实现机制并补充事实变更流程
 
 - **[infra] 模板命名面收敛化改造 + 衍生项目协同进化协议**：

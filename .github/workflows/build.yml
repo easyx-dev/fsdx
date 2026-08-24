@@ -1,0 +1,41 @@
+# 构建推送：main 分支 / v* tag 触发，构建镜像并推送 GitHub Container Registry
+# 镜像地址：ghcr.io/easyx-dev/fsdx:{latest|commit-sha|tag}
+# 与 .gitlab-ci.yml（内网 registry）并存，各自独立推送
+name: build
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 登录 GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 构建并推送镜像
+        run: |
+          IMAGE="ghcr.io/${{ github.repository }}"
+          DESTINATIONS="${IMAGE}:latest"
+          DESTINATIONS="${DESTINATIONS} ${IMAGE}:${GITHUB_SHA::7}"
+          if [[ "$GITHUB_REF_NAME" =~ ^v ]]; then
+            DESTINATIONS="${DESTINATIONS} ${IMAGE}:${GITHUB_REF_NAME}"
+          fi
+          for tag in $DESTINATIONS; do
+            echo "构建并推送 ${tag}"
+            docker build --build-arg NPM_REGISTRY=https://registry.npmmirror.com -t "$tag" .
+            docker push "$tag"
+          done

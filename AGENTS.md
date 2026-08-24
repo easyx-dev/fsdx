@@ -143,7 +143,7 @@ packages/
 - Schema 文件按模块拆分在 `src/db/schema/`，通过 `index.ts` 统一导出
 - 列命名硬规则：主键 `id`、时间 `created_at`/`updated_at`（timestamptz）、软删除 `deleted_at`、描述 `description`、排序 `sort_order`、外键列 `xxx_id`（JS 属性以 `Id` 结尾）；所有列必须显式指定数据库列名，timestamp 必须加 `{ withTimezone: true }`（`operation_log` 历史表为 camelCase 列名例外，见 [database-design](docs/database-design.md)）
 - **jsonb 列必须通过 `.$type<>()` 显式指定 TS 类型**，禁止无类型 `jsonb()`
-- **Schema 变更禁止 `db:push`**，一律走 `pnpm db:generate`（重命名列时交互选 rename）→ 审查生成的 SQL → `pnpm db:migrate`；生产部署由 bootstrap `runMigrations()` 启动时自动执行（失败记 `logger.warn` 容错并继续启动，需人工 `pnpm db:migrate` 同步，进程本身不崩溃）；本项目为单实例架构，无并发迁移竞态
+- **Schema 变更禁止 `db:push`**，一律走 `pnpm db:generate`（重命名列时交互选 rename）→ 审查生成的 SQL → `pnpm db:migrate`；生产部署由 bootstrap `runMigrations()` 启动时自动执行（**fail-fast：失败即应用启动失败**，部署由 `deploy/` 子仓库健康检查捕获）；本项目为单实例架构，无并发迁移竞态
 - `pnpm db:migrate` 走程序化迁移（`src/db/migrate-cli.ts` 调 `runMigrations()`，与 bootstrap 路径一致），不使用 drizzle-kit migrate 命令
 
 > 完整列命名决策表、表定义模板、迁移流程、常见陷阱 → [db-schema](.agents/skills/db-schema/SKILL.md)

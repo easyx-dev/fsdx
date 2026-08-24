@@ -34,15 +34,9 @@ export async function bootstrap() {
 	setSchedulerLogger(logger);
 
 	logger.info("服务启动初始化开始");
-	// 程序化数据库迁移（在预置数据写入前执行，确保表结构就绪）
-	try {
-		await runMigrations();
-	} catch (err) {
-		logger.warn(
-			{ err: (err as Error).message },
-			"数据库迁移执行失败，请手动执行 pnpm db:migrate 同步表结构",
-		);
-	}
+	// 程序化数据库迁移（fail-fast：迁移失败即应用启动失败，避免 schema 不一致静默运行，
+	// 生产部署由 deploy.sh 通过健康检查捕获迁移结果）
+	await runMigrations();
 
 	// 预置数据：确保缓存就绪后再处理请求
 	try {

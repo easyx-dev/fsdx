@@ -18,7 +18,7 @@
 | 国际化 / 翻译文案 / 实体字段翻译 | [i18n](skills/i18n/SKILL.md) |
 | 新增管理端 CRUD 模块 | [admin-crud](skills/admin-crud/SKILL.md) |
 | 埋点 / 事件分析 | [docs/event-tracking.md](../docs/event-tracking.md)、`src/services/track/` |
-| 部署 / 定时任务 / 日志 | [docs/deployment-ops.md](../docs/deployment-ops.md) |
+| 部署 / 定时任务 / 日志 | [docs/deployment-ops.md](../docs/deployment-ops.md)；生产部署运维见 [deploy/README.md](../deploy/README.md)（子仓库 fsdx-deploy） |
 
 ### 工程流程
 
