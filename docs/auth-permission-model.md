@@ -347,7 +347,7 @@ requestMiddleware                    functionMiddleware
   handler() 执行业务逻辑
 ```
 
-> 现状：`adminPermGuard(permission)` 内部直接调用 `resolveAdminAuthContext()` 一步完成登录校验 + 权限校验，不再组合 `adminAuthGuard`。`adminAuthGuard`（仅登录）与 `adminPermRouteGuard`（Server Route 专用，捕获 `AdminAuthError` 转 HTTP 状态码）为同一定位于 `src/middleware/admin-auth.ts` 的兄弟中间件。
+`adminPermGuard(permission)` 内部直接调用 `resolveAdminAuthContext()` 一步完成登录校验 + 权限校验。`adminAuthGuard`（仅登录）与 `adminPermRouteGuard`（Server Route 专用，捕获 `AdminAuthError` 转 HTTP 状态码）为同一定位于 `src/middleware/admin-auth.ts` 的兄弟中间件。
 
 ### `resolveAdminAuthContext` 逻辑
 
@@ -389,7 +389,7 @@ flowchart TD
 ### `adminPermGuard` 工厂函数
 
 ```typescript
-// src/middleware/admin-auth.ts（现状实现）
+// src/middleware/admin-auth.ts
 export function adminPermGuard(required: AdminPermissionDef) {
   return createMiddleware().server(async ({ next }) => {
     const token = getCookie(COOKIE_NAMES.ADMIN_TOKEN);

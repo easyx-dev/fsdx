@@ -67,7 +67,7 @@ class MemoryCache<T> {
 | 加载 | `loadConfigCache()` → `configCache.set("all", rows)` |
 | 查询 | `getConfig(key)` 返回 `string` |
 
-SMTP 邮件配置从数据库读取而非环境变量，通过此缓存获取。管理端修改配置后触发缓存刷新。
+SMTP 邮件配置存储于数据库，通过此缓存获取。管理端修改配置后触发缓存刷新。
 
 ### UI 翻译缓存 (`uiTranslationCache`)
 
