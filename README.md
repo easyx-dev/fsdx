@@ -4,7 +4,7 @@
 
 ## 技术栈
 
-TanStack Start · React 19 · TypeScript · Hono · PostgreSQL + Drizzle ORM · Ant Design 6 · shadcn/ui · Tailwind CSS 4 · i18next · JWT + bcryptjs · Pino · Vite · Biome · Vitest
+TanStack Start · React 19 · TypeScript · PostgreSQL + Drizzle ORM · Ant Design 6 · shadcn/ui · Tailwind CSS 4 · i18next · JWT + bcryptjs · Pino · Vite · Biome · Vitest
 
 > 各技术版本号以 [AGENTS.md](AGENTS.md) 技术栈表为准。
 

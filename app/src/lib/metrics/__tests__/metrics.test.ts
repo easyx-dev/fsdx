@@ -1,7 +1,7 @@
 /**
  * 指标注册表模块测试：计数器、直方图、Prometheus 渲染
  */
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { Counter, Histogram } from "#/lib/metrics/metrics";
 
 describe("Counter", () => {
@@ -52,5 +52,20 @@ describe("Histogram", () => {
 		const out = h.render();
 		expect(out).toContain("empty_sum 0");
 		expect(out).toContain("empty_count 0");
+	});
+});
+
+describe("全局注册表", () => {
+	it("跨模块图共享同一注册表（Nitro 入口与 SSR 实例不分裂）", async () => {
+		// resetModules 模拟 Nitro 入口与 SSR 渲染器分别加载 metrics.ts 的场景
+		vi.resetModules();
+		const first = await import("#/lib/metrics/metrics");
+		first.httpRequestsTotal.inc({ method: "GET" });
+
+		vi.resetModules();
+		const second = await import("#/lib/metrics/metrics");
+		expect(second.httpRequestsTotal.render()).toContain(
+			'http_requests_total{method="GET"} 1',
+		);
 	});
 });

@@ -1,6 +1,7 @@
 /**
  * 进程内指标注册表：计数器 + 直方图，输出 Prometheus text 格式
- * 无第三方依赖，进程级单例；埋点位置为中间件（SF 耗时/错误）与 HTTP 入口
+ * 无第三方依赖；注册表挂载于 globalThis，保证 Nitro 入口与 SSR 各 bundle 共享同一实例
+ * （入口与 SSR 渲染器分别打包 metrics.ts，模块级单例会分裂，导致入口埋点不可见）
  * 注意：进程内存储，多实例部署时各实例各自计数，指标需在实例层聚合
  */
 
@@ -134,26 +135,49 @@ export class Histogram {
 	}
 }
 
+/** 全局注册表键：跨 bundle（Nitro 入口 / SSR 渲染器）共享同一注册表 */
+const REGISTRY_KEY = "__APP_METRICS_REGISTRY__";
+
+/** 指标注册表：预置三个指标实例 */
+interface MetricsRegistry {
+	httpRequestsTotal: Counter;
+	serverFunctionRequestsTotal: Counter;
+	serverFunctionDurationSeconds: Histogram;
+}
+
+/** 惰性获取全局指标注册表（首次加载时创建，之后跨 bundle 复用） */
+function getRegistry(): MetricsRegistry {
+	const global = globalThis as typeof globalThis & {
+		[REGISTRY_KEY]?: MetricsRegistry;
+	};
+	global[REGISTRY_KEY] ??= {
+		httpRequestsTotal: new Counter("http_requests_total", "HTTP 请求总数", [
+			"method",
+		]),
+		serverFunctionRequestsTotal: new Counter(
+			"server_function_requests_total",
+			"Server Function 请求总数",
+			["result"],
+		),
+		serverFunctionDurationSeconds: new Histogram(
+			"server_function_duration_seconds",
+			"Server Function 执行耗时分布",
+			[0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5],
+		),
+	};
+	return global[REGISTRY_KEY]!;
+}
+
 /** HTTP 请求总数（按方法分标签） */
-export const httpRequestsTotal = new Counter(
-	"http_requests_total",
-	"HTTP 请求总数",
-	["method"],
-);
+export const httpRequestsTotal = getRegistry().httpRequestsTotal;
 
 /** Server Function 请求总数（按结果分标签） */
-export const serverFunctionRequestsTotal = new Counter(
-	"server_function_requests_total",
-	"Server Function 请求总数",
-	["result"],
-);
+export const serverFunctionRequestsTotal =
+	getRegistry().serverFunctionRequestsTotal;
 
 /** Server Function 执行耗时（秒）直方图 */
-export const serverFunctionDurationSeconds = new Histogram(
-	"server_function_duration_seconds",
-	"Server Function 执行耗时分布",
-	[0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5],
-);
+export const serverFunctionDurationSeconds =
+	getRegistry().serverFunctionDurationSeconds;
 
 /** 汇总所有指标为 Prometheus text 格式 */
 export function renderMetrics(): string {

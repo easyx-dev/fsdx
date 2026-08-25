@@ -70,6 +70,12 @@
   - 响应升级为通用健康检查风格：`status / uptime / timestamp / version / checks`，`checks` 并发探测数据库连通（`SELECT 1`，含 `latencyMs`）与存储目录可写；全部可用返回 `200`，任一异常返回 `503`（readiness 语义），供 Docker healthcheck / Playwright 正确等待依赖就绪
   - 检查逻辑位于 `src/services/health/health.server.ts`（含 vitest 覆盖）；版本号由 Vite `define` 从 `app/package.json` 构建时注入 `__APP_VERSION__`（`env.d.ts` 声明、`vitest.config.ts` 同步注入测试值）
 
+- **[infra] 移除 Hono 自定义 API 层，回归纯 TanStack Start**：
+  - 删除 Hono（`hono` / `@hono/node-server` 依赖）与 `src/hono-app.ts`，`app/server.ts`（Nitro entry）回归薄壳：bootstrap + HTTP 指标埋点 + 直接透传 TanStack Start SSR
+  - 自定义 API 一律走 Server Function / Server Route（`/health`、`/api/metrics`、下载端点已有先例）；将来出现开放 REST / webhook 等非自身前端消费场景时再按需引入
+  - `http_requests_total` 入口埋点修复：指标注册表挂载于 globalThis，解决 Nitro 入口与 SSR 渲染器分别打包 metrics.ts 导致入口计数不可见的问题（配套 vitest 覆盖跨模块图共享）
+  - 影响：依赖减少、入口分流逻辑简化；请求行为等价（未匹配路由仍由 Nitro 兜底）
+
 ### Fix
 
 - **前台登录后 Header 登录态不刷新**：客户端登录成功仅 `navigate` 到首页，`ClientAuthProvider` 不重挂载导致 Header 仍显示未登录；登录页 `onSubmit` 成功后补充调用 `useClientAuth().refetch()`，使用户名/消息/退出入口即时更新

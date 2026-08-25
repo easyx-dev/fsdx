@@ -40,13 +40,10 @@ app/server.ts (Nitro entry)
     │   ├── 注册 unhandledRejection 处理器 → logger.fatal + exit(1)
     │   └── 注册 SIGTERM/SIGINT/SIGQUIT 处理器 → 缓冲刷入（含超时保护）
     │
-    ├── createHonoApp()                      # src/hono-app.ts
-    │   └── 预留自定义 API 路由（当前为空，请求一律透传）
-    │
     └── TanStack Start SSR fetcher            # src/server.ts
         └── handler.fetch(request)
-            未匹配的请求 → Hono 返回 404 → Nitro 继续处理
-            匹配的请求 → Hono 返回 200+ → 直接响应
+            匹配路由 → 直接响应（页面 / Server Function / Server Route）
+            未匹配 → 返回 undefined → Nitro 继续处理静态资源等
 ```
 
 HTTP 入口（`app/server.ts`）对每个请求 `httpRequestsTotal.inc({ method })` 埋点。
@@ -56,11 +53,7 @@ HTTP 入口（`app/server.ts`）对每个请求 `httpRequestsTotal.inc({ method 
 ```
 HTTP 请求
     ↓
-Hono (createHonoApp)
-    ├── 自定义 API 路由（预留）
-    └── 404 → 透传
-          ↓
-    TanStack Start SSR / Server Functions
+TanStack Start SSR / Server Functions
     ├── /health（Server Route handler，无鉴权）→ 健康检查 { status, uptime }
     └── /api/metrics（Server Route handler，无鉴权）→ Prometheus 文本
 ```
@@ -323,7 +316,6 @@ GET /health → 200
 | `deploy/`（子模块） | 生产部署运维仓库（fsdx-deploy：compose/脚本/手册） |
 | `server.ts`（app 根目录） | Nitro 服务入口 + HTTP 指标埋点 |
 | `src/bootstrap.ts` | 启动初始化（init 注入、迁移、预置、定时任务、优雅关闭） |
-| `src/hono-app.ts` | Hono 应用工厂（预留自定义 API 路由） |
 | `src/server.ts` | TanStack Start 服务端入口 |
 | `src/start.ts` | 全局中间件注册（requestId + locale + CSRF + sfErrorLogger） |
 | `src/middleware/request-id.ts` | 请求 ID 中间件 |
