@@ -6,6 +6,7 @@ import { setCookie } from "@tanstack/react-start/server";
 import { z } from "zod";
 import { COOKIE_NAMES } from "#/constants/cookie-names";
 import { adminLogin } from "#/services/admin-auth/admin-auth.server";
+import { isCookieSecure } from "#/utils/cookie-secure";
 
 export const loginSchema = z.object({
 	username: z.string().min(1, "用户名不能为空").max(50),
@@ -19,7 +20,7 @@ export const adminLoginSFn = createServerFn({ method: "POST" })
 		if (result.success && result.token) {
 			setCookie(COOKIE_NAMES.ADMIN_TOKEN, result.token, {
 				httpOnly: true,
-				secure: process.env.NODE_ENV === "production",
+				secure: isCookieSecure(),
 				sameSite: "lax",
 				path: "/",
 				maxAge: 7 * 24 * 3600,

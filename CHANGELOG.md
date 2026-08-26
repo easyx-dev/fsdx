@@ -26,6 +26,8 @@
 
 ### Infrastructure
 
+- **[infra] 认证 Cookie Secure 标志可配置化**：新增 `COOKIE_SECURE` 环境变量（未设置时生产默认开启），admin/client 登录 Cookie 的 `secure` 标志由 `isCookieSecure()` 统一决策；线上未启用 HTTPS 时设 `COOKIE_SECURE=false` 即可正常登录（此前仅 `NODE_ENV === "production"` 判定，无法显式关闭，http:// 访问下浏览器不保存 Cookie、登录后被立即打回登录页）；`.env.example`、dev docker-compose、部署文档同步，生产 compose 透传在部署子仓库（fsdx-deploy）同步
+
 - **[infra] 生产部署子仓库（fsdx-deploy）+ 迁移 fail-fast**：
   - 新增 `deploy/` 子模块（[fsdx-deploy](https://github.com/easyx-dev/fsdx-deploy.git)，回灌自 bom-easy 部署实践）：生产 compose（内置 postgres + app，镜像 `ghcr.io/easyx-dev/fsdx`）、`deploy.sh` 一键部署（等待健康检查 = 迁移结果）、`backup.sh`/`restore.sh` 备份恢复、`preflight-migrations.sh` 迁移预检与运维手册
   - bootstrap `runMigrations()` 改 **fail-fast**（失败即应用启动失败，原 warn 容错移除），生产部署由子仓库健康检查捕获迁移结果

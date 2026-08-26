@@ -79,6 +79,7 @@ TanStack Start SSR / Server Functions
 | `JWT_SECRET` | HS256 签名密钥 | —（必填） |
 | `LOG_LEVEL` | 日志级别 | `info` |
 | `STORAGE_DIR` | 文件存储目录（上传文件 + 日志） | `.tmp` |
+| `COOKIE_SECURE` | 认证 Cookie 是否启用 Secure 标志（`true`/`false`），未设置时生产默认开启 | 生产为 `true` |
 | `NODE_ENV` | 运行环境 | — |
 | `DB_POOL_MAX` | pg 连接池最大连接数 | `10` |
 | `DB_POOL_IDLE_TIMEOUT_MS` | 连接空闲回收时间（毫秒） | `30000` |
@@ -87,6 +88,8 @@ TanStack Start SSR / Server Functions
 > 连接池参数在 `src/db/index.ts` 中读取，postgres 驱动默认值见 [node-postgres 文档](https://node-postgres.com/features/pool)。
 
 SMTP 邮件配置存储于系统配置表，通过 `/admin/config` 页面管理。
+
+> **HTTPS 与 Cookie**：生产环境认证 Cookie 默认携带 `Secure` 标志（浏览器仅在 HTTPS 下保存）。线上若尚未启用 HTTPS（http:// 访问），必须在 `.env` 设置 `COOKIE_SECURE=false`，否则登录成功后 token 立即丢失、反复跳回登录页。启用 HTTPS 后应移除该配置或设回 `true`。生产 compose 透传需在部署子仓库（fsdx-deploy）同步。
 
 ---
 
