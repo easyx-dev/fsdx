@@ -2,7 +2,6 @@
  * 新闻前台 Server Functions
  */
 import { createServerFn } from "@tanstack/react-start";
-import DOMPurify from "isomorphic-dompurify";
 import { z } from "zod";
 import {
 	getNewsBySlug,
@@ -39,6 +38,6 @@ export const getNewsDetailSFn = createServerFn({ method: "GET" })
 		const record = await getNewsBySlug(slug);
 		if (!record) return null;
 		const translated = await translateNewsRecord(record, context.locale);
-		const safeHtml = DOMPurify.sanitize(translated.content ?? "");
-		return { ...translated, html: safeHtml };
+		// admin 富文本视为受信任内容，正文直接透传
+		return { ...translated, html: translated.content ?? "" };
 	});

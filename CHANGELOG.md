@@ -92,6 +92,8 @@
 
 ### Refactor
 
+- **移除富文本 HTML 消毒（dompurify / isomorphic-dompurify）**：前台新闻详情正文改直接透传渲染，admin 富文本视为受信任内容，删除 `DOMPurify.sanitize` 调用与 `app/package.json` 两个直连依赖（monaco-editor 传递依赖的 dompurify 不受影响）
+
 - **路由目录组织边界补强 + forgot-password 服务层收编**：
   - AGENTS.md「路由目录组织」补边界与决策矩阵：路由文件 = 可独立访问的视图（有 URL / 进菜单 / 可深链分享 / 前进后退可达），页面本体必须建成路由文件，禁止塞进 `-mods/`；`-mods/` 收纳范围 = 就近 SFn + 路由局部 schema + 组件（表单/弹窗/列定义）+ 纯函数/常量，`*.server.ts` 一律归 `services/`；单页 vs 子路由决策矩阵（单视图页内 Tab/state、≥2 静态视图每视图一路由共用 `-mods/`、动态数量视图参数路由 `$xxx.tsx`）替代原两行决策表
   - architecture / server-function skill 违规自查与 docs/architecture-overview.md 同步（`-mods/` 目录树去掉 `.server.ts`，补页面本体禁入 `-mods/` 与多视图拆分自查）
