@@ -26,6 +26,8 @@
 
 ### Infrastructure
 
+- **[infra] 系统配置新增布尔值类型**：`EditorType` 新增 `boolean`（管理端编辑渲染 Switch，列表用「是/否」彩色标签展示，存储仍为 `"true"`/`"false"` 字符串），`smtp_secure` 预置项改用该类型，消除管理端手拼 true/false；`ensurePresetConfigs` 对已存在预置项仅同步 valueType（value 等其余字段不受影响），已部署系统重启即生效
+
 - **[infra] 认证 Cookie Secure 标志可配置化**：新增 `COOKIE_SECURE` 环境变量（未设置时生产默认开启），admin/client 登录 Cookie 的 `secure` 标志由 `isCookieSecure()` 统一决策；线上未启用 HTTPS 时设 `COOKIE_SECURE=false` 即可正常登录（此前仅 `NODE_ENV === "production"` 判定，无法显式关闭，http:// 访问下浏览器不保存 Cookie、登录后被立即打回登录页）；`.env.example`、dev docker-compose、部署文档同步，生产 compose 透传在部署子仓库（fsdx-deploy）同步
 
 - **[infra] 生产部署子仓库（fsdx-deploy）+ 迁移 fail-fast**：

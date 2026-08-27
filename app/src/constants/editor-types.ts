@@ -8,6 +8,7 @@ export type EditorType =
 	| "input"
 	| "text"
 	| "number"
+	| "boolean"
 	| "json"
 	| "rich"
 	| "code"
@@ -19,6 +20,7 @@ export const EDITOR_TYPES = [
 	"input",
 	"text",
 	"number",
+	"boolean",
 	"json",
 	"rich",
 	"code",
@@ -31,6 +33,7 @@ export const EDITOR_TYPE_LABELS: Record<EditorType, string> = {
 	input: "Input 单行输入",
 	text: "Text 多行文本域",
 	number: "Number 数字输入",
+	boolean: "Boolean 布尔开关",
 	json: "JSON 编辑器",
 	code: "Code 代码编辑器",
 	rich: "Rich 富文本编辑器",

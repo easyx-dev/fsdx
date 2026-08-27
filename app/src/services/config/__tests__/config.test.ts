@@ -123,17 +123,63 @@ describe("ensurePresetConfigs", () => {
 		expect(mockDb.insert).toHaveBeenCalled();
 	});
 
-	it("预设配置已存在且未删除时跳过", async () => {
+	it("预置配置已存在且 valueType 一致时不更新（其他元数据不一致也不更新）", async () => {
 		vi.clearAllMocks();
-		mockRows.mockResolvedValue([
-			{ id: "c-1", key: "site_name", value: "FSDX", deletedAt: null },
-		]);
-		mockDb.insert.mockReturnValue({
-			values: vi.fn(() => ({ returning: vi.fn() })),
-		});
+		// 依赖 PRESET_CONFIGS 首项为 site_name（mock 无法按 key 区分查询，命中首项即可），
+		// 若调整预设顺序需同步更新本用例
+		mockRows
+			.mockReset()
+			.mockResolvedValueOnce([
+				{
+					id: "c-1",
+					key: "site_name",
+					value: "FSDX",
+					deletedAt: null,
+					clientVisible: false, // 与预设 true 不一致，但不应触发更新
+					valueType: "input",
+					groupName: "自定义分组",
+					description: "自定义描述",
+				},
+			])
+			.mockResolvedValue([]);
 		await ensurePresetConfigs();
-		expect(mockDb.insert).not.toHaveBeenCalled();
 		expect(mockDb.update).not.toHaveBeenCalled();
+	});
+
+	it("预置配置已存在但 valueType 不一致时仅同步 valueType，不触碰其他字段", async () => {
+		vi.clearAllMocks();
+		const setMock = vi.fn(() => ({ where: vi.fn() }));
+		mockDb.update.mockReturnValue({ set: setMock });
+		// 依赖 PRESET_CONFIGS 首项为 site_name（mock 无法按 key 区分查询），
+		// 其 valueType 与预设不一致（模拟历史遗留类型）
+		mockRows
+			.mockReset()
+			.mockResolvedValueOnce([
+				{
+					id: "c-1",
+					key: "site_name",
+					value: "用户自定义值",
+					deletedAt: null,
+					clientVisible: false,
+					valueType: "text",
+					groupName: "旧分组",
+					description: "旧描述",
+				},
+			])
+			.mockResolvedValue([]);
+		await ensurePresetConfigs();
+		expect(mockDb.update).toHaveBeenCalled();
+		expect(setMock).toHaveBeenCalledWith(
+			expect.objectContaining({ valueType: "input" }),
+		);
+		// 仅同步 valueType 与 updatedAt，value / clientVisible / groupName / description 不被覆盖
+		const setArgs = setMock.mock.calls[0] as unknown as [
+			Record<string, unknown>,
+		];
+		expect(setArgs[0]).toEqual({
+			valueType: "input",
+			updatedAt: expect.any(Date),
+		});
 	});
 
 	it("预设配置被软删除时恢复", async () => {

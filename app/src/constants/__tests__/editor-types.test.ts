@@ -7,19 +7,20 @@ import type { EditorType } from "#/constants/editor-types";
 import { EDITOR_TYPE_LABELS, EDITOR_TYPES } from "#/constants/editor-types";
 
 describe("EDITOR_TYPES", () => {
-	it("包含全部 8 种编辑器类型", () => {
-		expect(EDITOR_TYPES).toHaveLength(8);
+	it("包含全部 9 种编辑器类型", () => {
+		expect(EDITOR_TYPES).toHaveLength(9);
 	});
 
 	it("所有元素均为唯一值", () => {
 		expect(new Set(EDITOR_TYPES).size).toBe(EDITOR_TYPES.length);
 	});
 
-	it("按预期顺序排列（input → text → number → json → rich → code → image → file）", () => {
+	it("按预期顺序排列（input → text → number → boolean → json → rich → code → image → file）", () => {
 		expect(EDITOR_TYPES).toEqual([
 			"input",
 			"text",
 			"number",
+			"boolean",
 			"json",
 			"rich",
 			"code",

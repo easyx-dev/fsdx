@@ -5,10 +5,11 @@
  */
 
 import { message } from "@fsdx/ui-spa/antd-static";
-import { Input, InputNumber } from "antd";
+import { Input, InputNumber, Switch } from "antd";
 import type { ChangeEvent } from "react";
 import { lazy, Suspense, useEffect, useState } from "react";
 import { getFileInfoSFn } from "#/services/file/file.functions";
+import { toBool } from "#/utils/bool";
 import { RichEditor } from "../RichEditor";
 
 const CodeEditor = lazy(() =>
@@ -184,6 +185,12 @@ function PreviewContent({
 		}
 		case "file":
 			return <FilePreview fileId={value} />;
+		case "boolean":
+			return (
+				<div className="rounded-md border border-border bg-background-secondary px-3 py-2 text-sm min-h-[40px]">
+					{toBool(value) ? "是" : "否"}
+				</div>
+			);
 		default:
 			return (
 				<div className="rounded-md border border-border bg-background-secondary px-3 py-2 text-sm min-h-[40px]">
@@ -257,6 +264,16 @@ export function Editor({
 					placeholder={placeholder}
 					disabled={disabled}
 					className="w-full"
+				/>
+			);
+
+		case "boolean":
+			return (
+				<Switch
+					id={id}
+					checked={toBool(value)}
+					onChange={(checked) => onChange?.(checked ? "true" : "false")}
+					disabled={disabled}
 				/>
 			);
 

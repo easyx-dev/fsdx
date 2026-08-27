@@ -222,7 +222,7 @@ const PRESET_CONFIGS: {
 		value: "false",
 		description: "是否使用 SSL/TLS",
 		clientVisible: false,
-		valueType: "input",
+		valueType: "boolean",
 		groupName: "邮件设置",
 	},
 	{
@@ -342,7 +342,7 @@ const PRESET_CONFIGS: {
 	},
 ];
 
-/** 运行时校验预置系统配置（幂等安全，恢复软删除的预设项） */
+/** 运行时校验预置系统配置（幂等安全，恢复软删除的预设项，同步 valueType 变更） */
 export async function ensurePresetConfigs(): Promise<void> {
 	for (const preset of PRESET_CONFIGS) {
 		const [existing] = await db
@@ -365,9 +365,23 @@ export async function ensurePresetConfigs(): Promise<void> {
 				})
 				.where(eq(systemConfig.id, existing.id));
 			logger.info({ key: preset.key }, "预置系统配置已恢复");
-		} else if (!existing) {
+			continue;
+		}
+		if (!existing) {
 			await db.insert(systemConfig).values(preset);
 			logger.info({ key: preset.key }, "预置系统配置已创建");
+			continue;
+		}
+		// 已存在：仅同步 valueType 变更（value / description / groupName / clientVisible 属用户可编辑项，不被覆盖）
+		if (existing.valueType !== preset.valueType) {
+			await db
+				.update(systemConfig)
+				.set({
+					valueType: preset.valueType,
+					updatedAt: new Date(),
+				})
+				.where(eq(systemConfig.id, existing.id));
+			logger.info({ key: preset.key }, "预置系统配置 valueType 已同步");
 		}
 	}
 	await loadConfigCache();

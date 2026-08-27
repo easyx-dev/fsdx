@@ -224,7 +224,7 @@ describe("initSystem", () => {
 			"smtp_secure",
 			"true",
 			expect.any(String),
-			"input",
+			"boolean",
 			"邮件设置",
 		);
 		expect(upsertConfig).toHaveBeenCalledWith(
@@ -278,7 +278,7 @@ describe("initSystem", () => {
 			"smtp_secure",
 			"false",
 			expect.any(String),
-			"input",
+			"boolean",
 			"邮件设置",
 		);
 	});
@@ -319,7 +319,7 @@ describe("initSystem", () => {
 			"smtp_secure",
 			"false",
 			expect.any(String),
-			"input",
+			"boolean",
 			"邮件设置",
 		);
 		// 未传入的字段不应被调用

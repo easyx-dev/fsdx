@@ -2,12 +2,14 @@
  * 系统配置表格列定义
  */
 import { TableOperate } from "@fsdx/ui-spa/table";
+import { Tag } from "antd";
 import {
 	EditorTypes,
 	FieldTranslationDrawer,
 	type TranslatableField,
 } from "#/components/admin";
 import type { ConfigRecord } from "#/services/config/config.server";
+import { toBool } from "#/utils/bool";
 
 /** 系统配置可翻译字段定义 */
 const CONFIG_TRANSLATABLE_FIELDS: TranslatableField[] = [
@@ -37,6 +39,18 @@ export function configColumns(options: ConfigColumnsOptions) {
 			key: "value",
 			width: 180,
 			ellipsis: true,
+			render: (val: string, record: ConfigRecord) => {
+				// 布尔类型用彩色标签展示：是（绿）/ 否（灰）
+				if (record.valueType === "boolean") {
+					const enabled = toBool(val);
+					return (
+						<Tag color={enabled ? "success" : "default"}>
+							{enabled ? "是" : "否"}
+						</Tag>
+					);
+				}
+				return val;
+			},
 		},
 		{
 			title: "值类型",

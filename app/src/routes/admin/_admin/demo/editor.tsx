@@ -20,6 +20,7 @@ const DEMO_VALUES: Record<EditorType, string | number> = {
 	input: "这是一段输入框的演示文本",
 	text: "这是多行文本域的演示内容。\n支持多行编辑。",
 	number: 42,
+	boolean: "true",
 	json: JSON.stringify(
 		{ name: "演示配置", enabled: true, items: ["a", "b", "c"] },
 		null,

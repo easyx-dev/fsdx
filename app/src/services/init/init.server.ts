@@ -187,7 +187,7 @@ export async function initSystem(data: InitData): Promise<{
 				"smtp_secure",
 				smtp.secure ? "true" : "false",
 				"是否使用 SSL/TLS",
-				"input",
+				"boolean",
 				"邮件设置",
 			);
 			if (smtp.user)
