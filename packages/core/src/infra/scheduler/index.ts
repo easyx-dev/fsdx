@@ -1,9 +1,11 @@
 /**
  * 定时任务调度器：基于 cron 库的轻量级定时任务管理
- * 日志实例经 setSchedulerLogger 注入，模块自身不依赖全局日志单例
+ * 日志实例经 setSchedulerLogger 注入，模块自身不依赖全局日志单例；
+ * 注入状态经 createGlobalDepsStore 挂载 globalThis，跨 bundle（Nitro 入口 / SSR 渲染器）共享
  */
 import { CronJob, CronTime } from "cron";
 import { DEFAULT_TASK_TIME_ZONE } from "../../utils/date-format";
+import { createGlobalDepsStore } from "../deps-store";
 import type { Logger } from "../logger";
 
 /** 任务定义 */
@@ -23,24 +25,26 @@ export interface ScheduledTask {
 /** 已注册的任务映射 */
 const tasks = new Map<string, CronJob>();
 
-let _logger: Logger | null = null;
+/** 跨 bundle 共享的日志实例存储 */
+const depsStore = createGlobalDepsStore<Logger>("__FSDX_SCHEDULER_LOGGER__");
 
 /** 注入日志实例（bootstrap 启动时调用） */
 export function setSchedulerLogger(logger: Logger): void {
-	_logger = logger;
+	depsStore.set(logger);
 }
 
 /** 测试专用：重置注入状态 */
 export function resetSchedulerLoggerForTest(): void {
-	_logger = null;
+	depsStore.reset();
 }
 
 /** 获取日志实例，未注入时抛错（fail-fast） */
 function getLogger(): Logger {
-	if (!_logger) {
+	const logger = depsStore.get();
+	if (!logger) {
 		throw new Error("定时任务模块未初始化，请先调用 setSchedulerLogger()");
 	}
-	return _logger;
+	return logger;
 }
 
 /**

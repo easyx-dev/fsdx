@@ -3,6 +3,7 @@
  * 未 init 直接调用时抛错（fail-fast），配置变更时自动重建 transporter
  */
 import { createTransport, type Transporter } from "nodemailer";
+import { createGlobalDepsStore } from "../deps-store";
 import type { Logger } from "../logger";
 
 /** 邮件发送参数 */
@@ -20,30 +21,37 @@ export interface MailDeps {
 	logger: Logger;
 }
 
-let _deps: MailDeps | null = null;
+/**
+ * 注入状态挂载于 globalThis：入口（bootstrap）与 SSR 渲染器分别打包本模块，
+ * 模块级单例会分裂导致 SSR bundle 内 fail-fast；经 createGlobalDepsStore 跨 bundle 共享
+ */
+const depsStore = createGlobalDepsStore<MailDeps>("__FSDX_MAIL_DEPS__");
+
 let _transporter: Transporter | null = null;
 let _lastConfigFingerprint = "";
 
 /**
  * 注入邮件模块依赖，bootstrap 启动时调用
+ * 写入 globalThis，Nitro 入口与 SSR 渲染器共享
  */
 export function initMail(deps: MailDeps): void {
-	_deps = deps;
+	depsStore.set(deps);
 }
 
 /** 测试专用：重置注入状态与缓存的 transporter */
 export function resetMailForTest(): void {
-	_deps = null;
+	depsStore.reset();
 	_transporter = null;
 	_lastConfigFingerprint = "";
 }
 
 /** 获取依赖，未注入时抛错（fail-fast） */
 function assertDeps(): MailDeps {
-	if (!_deps) {
+	const deps = depsStore.get();
+	if (!deps) {
 		throw new Error("邮件模块未初始化，请先调用 initMail()");
 	}
-	return _deps;
+	return deps;
 }
 
 /**

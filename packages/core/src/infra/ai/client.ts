@@ -3,6 +3,7 @@
  * 配置经 getConfig 回调读取，未 init 直接调用时抛错（fail-fast）
  */
 import OpenAI from "openai";
+import { createGlobalDepsStore } from "../deps-store";
 import type {
 	AiDeps,
 	AiModelType,
@@ -25,30 +26,37 @@ export function delay(ms: number): Promise<void> {
 
 // ========== 私有状态 ==========
 
-let _deps: AiDeps | null = null;
+/**
+ * 注入状态挂载于 globalThis：入口（bootstrap）与 SSR 渲染器分别打包本模块，
+ * 模块级单例会分裂导致 SSR bundle 内 fail-fast；经 createGlobalDepsStore 跨 bundle 共享
+ */
+const depsStore = createGlobalDepsStore<AiDeps>("__FSDX_AI_DEPS__");
+
 let _client: OpenAI | null = null;
 let _lastConfigFingerprint = "";
 
 /**
  * 注入 AI 模块依赖，bootstrap 启动时调用
+ * 写入 globalThis，Nitro 入口与 SSR 渲染器共享
  */
 export function initAi(deps: AiDeps): void {
-	_deps = deps;
+	depsStore.set(deps);
 }
 
 /** 测试专用：重置注入状态与缓存的客户端 */
 export function resetAiForTest(): void {
-	_deps = null;
+	depsStore.reset();
 	_client = null;
 	_lastConfigFingerprint = "";
 }
 
 /** 获取依赖，未注入时抛错（fail-fast） */
 export function assertDeps(): AiDeps {
-	if (!_deps) {
+	const deps = depsStore.get();
+	if (!deps) {
 		throw new Error("AI 模块未初始化，请先调用 initAi()");
 	}
-	return _deps;
+	return deps;
 }
 
 /** 读取 AI 配置并计算指纹 */

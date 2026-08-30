@@ -4,6 +4,7 @@
  */
 import Dysmsapi20170525, { SendSmsRequest } from "@alicloud/dysmsapi20170525";
 import * as $OpenApi from "@alicloud/openapi-client";
+import { createGlobalDepsStore } from "../deps-store";
 import type { Logger } from "../logger";
 
 /** 短信服务商标识 */
@@ -25,30 +26,37 @@ export interface SmsDeps {
 	logger: Logger;
 }
 
-let _deps: SmsDeps | null = null;
+/**
+ * 注入状态挂载于 globalThis：入口（bootstrap）与 SSR 渲染器分别打包本模块，
+ * 模块级单例会分裂导致 SSR bundle 内 fail-fast；经 createGlobalDepsStore 跨 bundle 共享
+ */
+const depsStore = createGlobalDepsStore<SmsDeps>("__FSDX_SMS_DEPS__");
+
 let _client: Dysmsapi20170525 | null = null;
 let _lastConfigFingerprint = "";
 
 /**
  * 注入短信模块依赖，bootstrap 启动时调用
+ * 写入 globalThis，Nitro 入口与 SSR 渲染器共享
  */
 export function initSms(deps: SmsDeps): void {
-	_deps = deps;
+	depsStore.set(deps);
 }
 
 /** 测试专用：重置注入状态与缓存的客户端 */
 export function resetSmsForTest(): void {
-	_deps = null;
+	depsStore.reset();
 	_client = null;
 	_lastConfigFingerprint = "";
 }
 
 /** 获取依赖，未注入时抛错（fail-fast） */
 function assertDeps(): SmsDeps {
-	if (!_deps) {
+	const deps = depsStore.get();
+	if (!deps) {
 		throw new Error("短信模块未初始化，请先调用 initSms()");
 	}
-	return _deps;
+	return deps;
 }
 
 /** 读取阿里云配置并计算指纹 */
