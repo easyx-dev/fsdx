@@ -27,6 +27,7 @@
 | 版本发布 | [`/deploy`](commands/deploy.md)（.agents/commands） |
 | 全量架构审计 | [`/check-architecture`](commands/check-architecture.md)（.agents/commands） |
 | 派生新项目（更名） | [`/derive`](commands/derive.md)（.agents/commands） |
+| 切 SQLite | [`/db-sqlite`](commands/db-sqlite.md)（.agents/commands） |
 | 下游吸收上游 | [`/import-upstream`](commands/import-upstream.md)（.agents/commands，在衍生项目内执行） |
 | 上游吸收下游 | [`/backport`](commands/backport.md)（.agents/commands） |
 

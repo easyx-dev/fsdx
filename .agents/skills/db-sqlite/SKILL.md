@@ -22,6 +22,8 @@ description: >
 | 时间戳从 Date 改 number | → [日期时间处理](#7-日期时间处理) |
 | **事务必须同步化（关键陷阱）** | → [事务改造](#8-事务改造关键陷阱) |
 | 测试 mock 适配 | → [测试迁移](#9-测试迁移) |
+| e2e helpers 由 pg 改 node:sqlite 直连 | → [9.5 e2e 改造](#95-e2e-改造3-个文件pg--node-sqlite-文件路径直连) |
+| 迁移前预扫描 / 迁移后校验 / 安全改写脚本 | → [迁移辅助脚本](#102-迁移辅助脚本scriptsdb-migrationts) |
 | 删除旧迁移、重建基线 | → [迁移执行流程](#10-迁移执行流程) |
 | 生产部署适配（deploy 子仓库裁剪） | → [10.1 部署适配](#101-生产部署适配deploy-子仓库) |
 | node:sqlite 常见报错 | → [常见错误排查](#11-常见错误排查) |
@@ -145,19 +147,32 @@ data/
 | `varchar({ length: N })` | `text()` | SQLite 忽略长度约束，列名照常写：`varchar("name")` → `text("name")` |
 | `text()` / `integer()` | `text()` / `integer()` | 不变 |
 
+> ⚠️ **`$defaultFn` 是客户端侧默认，不生成 DB 级 DEFAULT**：pg 的 `.defaultNow()` 会落库为 `DEFAULT now()`，sqlite 的 `$defaultFn` 仅由 drizzle 在写入时 JS 计算填值，迁移 SQL 中**没有** `DEFAULT` 子句（且 `.notNull()` 仍在）。因此**绕过 drizzle 的原始 SQL `INSERT`**（e2e 种子数据、数据灌入脚本、SQLite CLI）若不显式填写 `id` / `created_at` / `updated_at` 会直接违反主键/`NOT NULL` 约束。处理方式：原始 SQL 须显式填值（`id` 用 `random()`、时间戳用 `unixepoch()` 毫秒），或改用 drizzle query builder（自动触发 `$defaultFn`）——e2e 种子即因此采用后者。
+>
+> ⚠️ **无列名 `integer({ mode: "number" })` → 列名即 JS 属性名**：`timestamp({ withTimezone: true })`（无列名，如 `operation_log.createdAt`）迁移后列名保持 camelCase `createdAt`，生成 SQL 为 `` `createdAt` integer NOT NULL ``、索引落在 `createdAt` 上——与 AGENTS.md「operation_log 历史表为 camelCase 列名例外」对齐，**勿改成 `created_at`**。
+
 ### 3.3 约束差异处理
 
 **部分唯一索引（Partial Unique Index）**
 
-PostgreSQL 的 `uniqueIndex().on(column).where(condition)` SQLite 不支持。本项目案例（`admin_user.is_root` 单 root 约束）：
+SQLite **原生支持**部分唯一索引，drizzle sqlite-core 的 `IndexBuilder` 也暴露 `.where()`（已验证 `sqlite-core/indexes.d.ts`）。本项目案例（`admin_user.is_root` 单 root 约束）**保留不动**：
 
-```diff
-- import { sql } from "drizzle-orm";
-- uniqueIndex("idx_admin_user_single_root").on(table.isRoot).where(sql`${table.isRoot} = true`),
-+ // 移除数据库层约束，由应用层校验
+```ts
+import { sql } from "drizzle-orm";
+import { integer, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core";
+
+export const adminUser = sqliteTable(
+	"admin_user",
+	{ /* ...列定义... */ },
+	(table) => [
+		uniqueIndex("idx_admin_user_single_root")
+			.on(table.isRoot)
+			.where(sql`${table.isRoot} = true`),
+	],
+);
 ```
 
-应用层兜底已存在：`init.server.ts` 的 `checkInitStatus()` 与事务内二次校验（`where: eq(adminUser.isRoot, true)`），删除约束后保持逻辑不变。
+生成的 SQL 为 `CREATE UNIQUE INDEX ... ON admin_user (is_root) WHERE "admin_user"."is_root" = true`，与 pg 语义等价。应用层 `init.server.ts` 的 `checkInitStatus()` 校验仍保留作为快速路径。
 
 **ON UPDATE CASCADE**
 
@@ -169,7 +184,7 @@ dictSlug: varchar("dict_slug", { length: 50 })
 	.notNull(),
 ```
 
-> 若目标 drizzle-kit 版本对 sqlite 生成 `ON UPDATE CASCADE` 存在兼容问题，可降级移除该约束并在应用层处理关联条目（`dicts.server.ts` 的 update 路径已覆盖）。
+> 若目标 drizzle-kit 版本对 sqlite 生成 `ON UPDATE CASCADE` 存在兼容问题，可降级移除该约束并在应用层处理关联条目（`dict.server.ts` 的 update 路径已覆盖）。
 
 **降序索引（DESC Index）**
 
@@ -217,7 +232,8 @@ export const adminUser = pgTable(
 **迁移后**：
 
 ```ts
-import { integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
+import { sql } from "drizzle-orm";
+import { integer, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core";
 
 export const adminUser = sqliteTable(
 	"admin_user",
@@ -235,6 +251,11 @@ export const adminUser = sqliteTable(
 		updatedAt: integer("updated_at", { mode: "number" }).$defaultFn(() => Date.now()).notNull(),
 		deletedAt: integer("deleted_at", { mode: "number" }),
 	},
+	(table) => [
+		uniqueIndex("idx_admin_user_single_root")
+			.on(table.isRoot)
+			.where(sql`${table.isRoot} = true`),
+	],
 );
 ```
 
@@ -243,10 +264,23 @@ export const adminUser = sqliteTable(
 ### 4.1 `src/db/index.ts`
 
 ```ts
+import { mkdirSync } from "node:fs";
+import { dirname } from "node:path";
 import { DatabaseSync } from "node:sqlite";
-import { sql } from "drizzle-orm";
-import { drizzle } from "drizzle-orm/node-sqlite";
-import * as schema from "./schema/index";
+import { drizzle, type NodeSQLiteDatabase } from "drizzle-orm/node-sqlite";
+
+/** 数据库实例类型（无 relations，查询一律使用 query builder） */
+export type Db = NodeSQLiteDatabase;
+
+/** 从 db.transaction 回调参数推导事务实例类型，规避与内部 SQLiteAsyncTransaction 的协变/逆变偏差 */
+type TxOf<D> = D extends {
+	transaction: (fn: (tx: infer T) => unknown, ...args: never[]) => unknown;
+}
+	? T
+	: never;
+
+/** 事务实例类型（无 relations，查询一律使用 query builder） */
+export type Tx = TxOf<Db>;
 
 /** 从 DATABASE_URL 提取数据库文件路径（去除可选的 file: 前缀） */
 function getDbPath(): string {
@@ -254,37 +288,50 @@ function getDbPath(): string {
 	return url.replace(/^file:/, "");
 }
 
-function createDb() {
-	const sqlite = new DatabaseSync(getDbPath());
+function createDb(): Db {
+	const dbPath = getDbPath();
+	// node:sqlite 不会自动创建父目录，先确保数据目录存在（:memory: 无目录跳过）
+	if (dbPath !== ":memory:") {
+		mkdirSync(dirname(dbPath), { recursive: true });
+	}
+	const sqlite = new DatabaseSync(dbPath);
 	// WAL 提升并发读性能；foreign_keys 由 node:sqlite 默认开启（enableForeignKeyConstraints 默认 true）
 	sqlite.exec("PRAGMA journal_mode = WAL");
-	return drizzle({ client: sqlite, schema });
+	return drizzle({ client: sqlite });
 }
 
-let _dbInstance: ReturnType<typeof createDb> | null = null;
+let _dbInstance: Db | null = null;
 
 /** 懒加载 db 实例的 Proxy：所有属性访问触发时初始化，延迟 db 实例初始化至首次属性访问 */
-export const db = new Proxy({} as any, {
+export const db: Db = new Proxy({} as Db, {
 	get(_, prop) {
 		if (!_dbInstance) {
 			_dbInstance = createDb();
 		}
-		return (_dbInstance as any)[prop];
+		return (_dbInstance as unknown as Record<string | symbol, unknown>)[prop];
 	},
-}) as unknown as ReturnType<typeof createDb>;
+});
+
+/** 事务助手：统一 db.transaction 用法（同步回调，node:sqlite 事务不可 async） */
+export function withTransaction<T>(fn: (tx: Tx) => T): T {
+	return db.transaction(fn as never) as T;
+}
 ```
 
 要点：
 
 - 传显式 `{ client: sqlite }` 是为了在打开后执行 pragma；`sqlite.exec()` 是 `DatabaseSync` 的同步方法
 - `drizzle(process.env.DATABASE_URL)` 字符串简写同样可用，但无法设置 WAL pragma
-- 懒加载 Proxy 结构保持不变
+- **不要传 `schema` 参数**：本项目 RQB v1 已移除（不定义 `defineRelations`），`typeof schema` 不满足 `NodeSQLiteDatabase<TRelations>` 的 `TablesRelationalConfig` 约束，`drizzle({ client, schema })` 直接编译报错——保持无 schema，查询用 query builder 即可
+- `Tx` 用 `TxOf<Db>` 从 `db.transaction` 回调参数反向推导，避免手写 `SQLiteAsyncTransaction<'sync', ...>` 的类型偏差
+- `withTransaction` 的 `as never`/`as T` 双 cast 是 node-sqlite 'sync' kind 下 `db.transaction` 返回条件类型（`T extends Promise ? DrizzleTypeError : T`）无法与普通泛型 `T` 直接统一的必要规避，属薄壳内的局部豁免
+- **必须加 `mkdirSync`**：`node:sqlite` 不自动创建父目录，`data/` 已在 `.gitignore`，全新 checkout 下不加会启动即崩
 
 ### 4.2 `src/db/migrate.ts`
 
 ```ts
-import { existsSync } from "node:fs";
-import { resolve } from "node:path";
+import { existsSync, mkdirSync } from "node:fs";
+import { dirname, resolve } from "node:path";
 import { DatabaseSync } from "node:sqlite";
 import { drizzle } from "drizzle-orm/node-sqlite";
 import { migrate } from "drizzle-orm/node-sqlite/migrator";
@@ -301,7 +348,12 @@ export async function runMigrations() {
 		logger.warn({ migrationsFolder }, "迁移目录不存在，跳过数据库迁移");
 		return;
 	}
-	const sqlite = new DatabaseSync(getDbPath());
+	const dbPath = getDbPath();
+	// node:sqlite 不会自动创建父目录，先确保数据目录存在（:memory: 无目录跳过）
+	if (dbPath !== ":memory:") {
+		mkdirSync(dirname(dbPath), { recursive: true });
+	}
+	const sqlite = new DatabaseSync(dbPath);
 	sqlite.exec("PRAGMA journal_mode = WAL");
 	const migrationDb = drizzle({ client: sqlite });
 
@@ -347,7 +399,7 @@ PostgreSQL 的 `ILIKE` 在 SQLite 不存在；SQLite 的 `LIKE` 对 ASCII 默认
 + like(event.event, `%${keyword}%`)
 ```
 
-影响文件（8 个，各 1~4 处）：`admin-role`、`client-role`、`file`、`i18n`、`message`、`news`（无 ilike，但含 `db.$count`）、`operation-log`、`track` 的 `.server.ts`。
+影响文件（8 个，各 1~4 处）：`admin-user`、`admin-role`、`client-user`、`client-role`、`file`、`message`、`operation-log`、`track.analytics`。
 
 ### 6.2 `db.execute()` → `db.all()`
 
@@ -360,7 +412,7 @@ PostgreSQL 的 `ILIKE` 在 SQLite 不存在；SQLite 的 `LIKE` 对 ASCII 默认
 + timeSeriesResult
 ```
 
-影响：`track.server.ts` 的 `getTrackAnalytics`（约 4 段聚合 SQL 中的时间序列趋势段）。
+影响：`track.analytics.ts` 的 `getTrackAnalytics`（约 4 段聚合 SQL 中的时间序列趋势段）。
 
 ### 6.3 时间序列聚合查询
 
@@ -406,9 +458,26 @@ SQLite 是动态类型，无需显式转换：
 + CASE WHEN ... THEN ${trackEventTable.userId} ELSE ... END
 ```
 
-`count(*)::int` 在本项目 `track.server.ts` 的事件分布 / Top 页面 / 独立用户数 / 总事件数段出现，全部去除 `::int`。
+`count(*)::int` 在本项目 `track.analytics.ts` 的事件分布 / Top 页面 / 独立用户数 / 总事件数段出现，全部去除 `::int`。
 
 > `properties` 模糊搜索（`properties::text ILIKE`）在 SQLite 下 `json_extract` 语义不等价，建议改为对 `name`/已知标量字段 `like` 匹配；如需对 JSON 全文模糊，可对整列 `like(trackEventTable.properties, `%${keyword}%`)`（text 存储直接匹配子串）。
+
+### 6.6 结果行数字段 `rowCount` → `changes`
+
+node-postgres 的 `update()/insert()` 返回 `{ rowCount }`；node-sqlite 返回 `StatementResultingChanges`（字段为 `changes: number | bigint`，无 `rowCount`）。本项目 `message.server.ts` 的 5 处读写结果行数需改：
+
+```diff
+- return (result.rowCount ?? 0) > 0;
++ return Number(result.changes) > 0;
+
+- return result.rowCount ?? 0;
++ return Number(result.changes);
+
+- return result.rowCount ?? rows.length;
++ return Number(result.changes);
+```
+
+影响：`message.server.ts` 的 `markAsRead` / `markAllRead` / `deleteMessage` / `sendMessages` / `deleteMessageById`（5 处）；对应 `message.test.ts` 的 mock 由 `{ rowCount: N }` 改 `{ changes: N }`。
 
 ## 7. 日期时间处理
 
@@ -467,8 +536,25 @@ export interface EventRecord {
 }
 ```
 
-**替换范围与豁免**：全局搜索 `new Date()`，仅在 Drizzle `.set()` / `.values()` / `gt()` / `lt()` / `gte()` 等调用中替换为 `Date.now()`；纯 JS 日期计算（如 `logs-cleanup.server.ts` 的文件截止时间、`track.server.ts` 的 `end.setDate(end.getDate() + 1)`）保留不动。本项目约 30 处写操作点。
+**替换范围与豁免**：全局搜索 `new Date(`（注意不是只有 `new Date()`，还包括 `new Date(expr)`），分类处理：
 
+- `new Date()` 在 Drizzle `.set()` / `.values()` / `gt()` / `lt()` / `gte()` 中 → `Date.now()`
+- `new Date(Date.now() ± X)`（如 captcha `expiredAt`、file 临时文件过期时间）→ `Date.now() ± X`
+- `new Date(params.xxx)`（字符串转时间戳，如 news `publishedAt`）→ `new Date(params.xxx).getTime()`
+- 纯 JS 日期计算（`logs-cleanup.server.ts` 的 `toDateString(new Date())`、`track.validate.ts` 的 `new Date(value)` 校验）**保留不动**
+- 搜索范围覆盖**所有 `.ts`**（含非 `.server.ts` 的 `track.meta.ts`、`i18n-seed.ts`），本项目约 30 处写操作点
+
+> 可先用迁移脚本的 `audit` 子命令一次性列出全部 `new Date(` 位置再逐一甄别（见 [§10.2](#102-迁移辅助脚本scriptsdb-migrationts)）。
+
+### 7.6 路由层 SFn 与前端日期消费点
+
+时间戳变 `number` 后，`.server.ts` 之外还有两类消费点需甄别（audit 会列出，但要人工判断）：
+
+- **需改（入参转换）**：
+  - SFn 序列化层：如 `operation-logs.functions.ts` 的 `mapDateField`——`createdAt` 已是 `number`，须补 `typeof value === "number" ? new Date(value).toISOString() : String(value)` 分支（见 §11.8）
+  - SFn 把字符串/Date 转成 DB 写入值：如 `news.functions.ts` 的 `new Date(data.publishedAt)` → `.getTime()`、发版补写 `updateData.publishedAt = new Date()` → `Date.now()`
+- **无需改（number 可直接 `new Date(num)`）**：前端渲染点 `new Date(item.createdAt).toLocaleString(...)` / `new Date(e.time).toISOString()`（`routes/messages.tsx`、`admin/_admin/messages/index.tsx`、`admin/_admin/track/query.tsx`、`admin/_admin/operation-logs/index.tsx` `new Date(entry.createdAt)`）——`new Date()` 接受 number，`toISOString`/`toLocaleString` 行为一致，勿画蛇添足
+  
 ## 8. 事务改造（关键陷阱）
 
 ### 8.1 为什么必须同步化
@@ -539,24 +625,40 @@ try {
 
 注意：手动事务内必须使用顶层 `db`（`tx` 由 `db.transaction()` 创建，手动模式下不存在），所有操作经 `db` + 终结符执行。
 
+> ⚠️ **提前 return 的分支须先 `ROLLBACK`**：手动事务没有回调收尾，任何在 `try` 内直接 `return` / `throw`（非依赖外层 catch 的路径）都会让事务悬挂。例如 `initSystem` 侦测到已初始化时应先 `db.run(sql.raw("ROLLBACK"))` 再 `return`，不能直接返回：
+
+```ts
+db.run(sql.raw("BEGIN"));
+try {
+	const [existingRoot] = db.select().from(adminUser).where(eq(adminUser.isRoot, true)).limit(1).all();
+	if (existingRoot) {
+		db.run(sql.raw("ROLLBACK"));   // 早退必须先回滚
+		return { success: false, message: "系统已初始化，禁止重复操作" };
+	}
+	// ...其余操作...
+	db.run(sql.raw("COMMIT"));
+} catch (err) {
+	db.run(sql.raw("ROLLBACK"));
+	throw err;
+}
+```
+
 ### 8.4 本项目 4 处事务清单
 
 | 文件 | 位置 | 处理方式 |
 |------|------|---------|
 | `src/services/dict/dict.server.ts` `deleteDict` | `db.transaction(async (tx) => ...)` | 同步回调（8.2 示例） |
 | `src/services/dict/dict.server.ts` `importDicts` | 同上 | 同步回调；内部 `tx.select().from()` → `.all()`、`tx.insert().values()` → `.run()` |
-| `src/services/i18n/i18n.server.ts` `importContentTranslations` | 同上 | 同步回调；`tx.select().limit(1)` → `.all()`、`tx.update().set().where()` → `.run()`、`tx.insert().values()` → `.run()` |
+| `src/services/i18n/i18n-content.server.ts` `importContentTranslations` | 同上 | 同步回调；`tx.select().limit(1)` → `.get()`、`tx.update().set().where()` → `.run()`、`tx.insert().values()` → `.run()` |
 | `src/services/init/init.server.ts` `initSystem` | 内含 `bcrypt.hash` + `upsertConfig`×N + `loadConfigCache` | 手动 BEGIN/COMMIT（8.3），`upsertConfig`/`loadConfigCache` 保持 await |
 
 ## 9. 测试迁移
 
-当前测试 mock 为可 await 的 select 查询链（`mockRows` 控制行数组，`then` 属性拦截），**node:sqlite 异步 API 下保持有效**：
+测试改动**不止事务相关**，共三类，覆盖约 10 个测试文件。建议先用脚本 `audit` 列出全部 `new Date(`/`rowCount`/`withTransaction` 命中，再逐类处理。
 
-- `mockRows.mockResolvedValue([...])` 不变
-- `mockDb.$count.mockResolvedValue(n)` 不变（同步 number 被 await 也无害）
-- `insert/update/delete` 链式 mock 不变
+**第一类：事务 mock 同步化**（3 个文件，改动最大）
 
-**唯一需要调整的是事务相关测试**：被测代码的事务回调变为同步后，mock 的 `transaction.mockImplementation(async (cb) => cb(tx))` 仍可工作（`cb(tx)` 返回的值被 async 包装），但 tx 内 mock 需补齐终结符节点。以 `init.test.ts` 为例：
+被测代码的事务回调由 async 变同步后，tx mock 需补齐 `.all()/.get()/.run()` 终结符，且行数组要 `mockReturnValue`（同步）而非 `mockResolvedValue`（异步）。以 `init.test.ts` 为例：
 
 ```diff
 // mockTx 的 createChain 已具备 then 拦截；事务内不再 await，需要终结符
@@ -570,11 +672,50 @@ try {
   });
 ```
 
+涉及文件：
+- `init.test.ts`：`initSystem` 改手动 BEGIN/COMMIT，不再走 `withTransaction`——mock 改用顶层 `mockDb.run` + `mockRows`，删掉 `mockTx`/`transaction` 包装
+- `dict.test.ts`：`importDicts` 事务内 select 走 `.all()/.get()`，需独立 `txRows`（`mockReturnValueOnce`）+ tx 链加 `.all()/.get()`、update/insert 加 `.run()`
+- `i18n.test.ts`：`importContentTranslations` 同上，tx select 链加 `.get()`、insert 加 `.run()`
+
+**第二类：时间戳类型断言**（`new Date()` 夹具 + `toBeInstanceOf(Date)` → `toBeTypeOf("number")`）
+
+涉及文件：`news.test.ts`（`publishedAt`/`createdAt` 断言）、`captcha.test.ts`（`expiredAt` 类型）、`config.test.ts`（`updatedAt: expect.any(Date)` → `expect.any(Number)`）、`file.test.ts`（`expiredAt.getTime()` → 直接比数字）、`operation-logs.test.ts`（`mapDateField` 数字入参）。mock 夹具里的 `createdAt: new Date()` 在 `any` 语境下不报错，可不动，但显式类型化的夹具（如 news 的 `newsRecord`）必须改 `Date.now()`。
+
+**第三类：结果字段 / API 改名**（`rowCount` → `changes`、`db.execute` → `db.all`）
+
+涉及文件：`message.test.ts`（`{ rowCount: N }` → `{ changes: N }`，`sendMessages` 兜底用例改名）、`health.test.ts`（`mockDb.execute` → `mockDb.all`）、`track.test.ts`（`mockDb.execute` → `mockDb.all` + 时间序列结果形状 + `batch[].time` 改 number）。
+
 > 事务内终结符走 `.all()`，mock 链需在 `limit()` 之后挂 `.all()` 返回 `txRows()` 的值（同步）。若被测代码同时保留 `await` 风格（如手动事务内的顶层 `db`），对应 `select` 链继续用 `then` 拦截即可。
+
+### 9.5 e2e 改造（3 个文件，pg → node:sqlite 文件路径直连）
+
+e2e 用 `DATABASE_URL` 直连数据库塞种子/验证码，`DATABASE_URL` 从连接 URL 变为**文件路径**后，`new URL()` 推导隔离库会崩，且 pg 专用 API（`Pool`/`Client`/`rowCount`/`serial`）全部不可用。逐文件处理（`playwright.config.ts` 的 `getE2eDbUrl()` 名保留、返回值即文件路径，**无需改动**）：
+
+- **`e2e/helpers/env.ts`**：删除 `E2E_DB_NAME` 的 `new URL(loadAppEnv().DATABASE_URL)` 推导与 `getMaintenanceDbUrl()`（SQLite 无「建库/维护连接」概念）；改为文件路径推导——基础库路径去 `file:` 前缀后，以 `_e2e` 后缀生成隔离库（`data.db` → `data_e2e.db`），`E2E_DB_URL` 可覆盖：
+
+```ts
+export function getE2eDbUrl(): string {
+	return process.env.E2E_DB_URL ?? getE2eDbPath(); // getE2eDbPath 由 base 路径 + _e2e 推导
+}
+```
+
+- **`e2e/helpers/db.ts`**：pg `Pool` → `DatabaseSync` + `drizzle({ client })`（懒加载单例）；`seedBaseData` / `seedCaptcha` / `seedClientUser` 改用 **drizzle query builder**（**不要手写原始 SQL**——`created_at`/`updated_at` 已无 DB 默认，见 §3.2 `$defaultFn` 警告），事务含 `bcrypt.hash` 异步操作走手动 `BEGIN/COMMIT`（§8.3）；`is_root`/`email_verified` 布尔列存 `true`/`false`（drizzle `integer({ mode: "boolean" })` 转换）
+- **`e2e/scripts/prepare.ts`**：删除 `ensureE2eDb()`（`CREATE DATABASE`）与 `getMaintenanceDbUrl` 使用；`resetE2eSchema()` 改为删除隔离库文件（含 `-wal`/`-shm` 伴生文件）整体重置；`migrateE2eDb()` 改用 `drizzle-orm/node-sqlite/migrator` 的 `migrate()`（替代手工遍历 SQL + sha256 哈希回填 `drizzle.__drizzle_migrations`，与 bootstrap `runMigrations()` 同路径）：
+
+```ts
+import { migrate } from "drizzle-orm/node-sqlite/migrator";
+sqlite.exec("PRAGMA journal_mode = WAL");
+migrate(drizzle({ client: sqlite }), { migrationsFolder, migrationsTable: "__drizzle_migrations" });
+```
+
+> e2e 文件被 `tsc` 与 `audit`/`verify` 门禁覆盖（`app/e2e` 在扫描目录内），改动后应通过 `pnpm check` 与 `verify`。
 
 ## 10. 迁移执行流程
 
 ```bash
+# 0. 预扫描：列出全部「必改/甄别」命中，锁定改动面（见 §10.2）
+pnpm --filter @fsdx/web exec tsx ../.agents/skills/db-sqlite/scripts/db-migration.ts audit
+
 # 1. 移除 pg 依赖
 pnpm remove pg @types/pg
 
@@ -591,13 +732,52 @@ DATABASE_URL="./data/data.db" pnpm --filter @fsdx/web db:generate
 
 # 6. 执行程序化迁移（开发环境；与生产 bootstrap 路径一致）
 DATABASE_URL="./data/data.db" pnpm --filter @fsdx/web db:migrate
+
+# 7. 迁移后校验：断言「必改」模式 0 命中 + 配置断言（见 §10.2）
+pnpm --filter @fsdx/web exec tsx ../.agents/skills/db-sqlite/scripts/db-migration.ts verify
+
+# 7.1 重建 doc 事实产物（schema 表定义函数改名后 doc-facts 正则失配，须人工同步 + 重新生成，见下方说明）
+#   ① 改 app/scripts/doc-facts.ts 的 buildTableFileMap() 正则：pgTable( → sqliteTable(
+#   ② 重新生成 docs/generated/{permissions,tables}.md
+pnpm --filter @fsdx/web doc:gen
+
+# 8. 全量回归
+pnpm check && pnpm test
+
+# 9. 更新 CHANGELOG（基建变更按 AGENTS.md 在 [Unreleased] Infrastructure 追加 [infra] 条目，说明影响面）
 ```
+
+> ⚠️ **doc-facts 必须人工同步**：`app/scripts/doc-facts.ts` 的 `buildTableFileMap()` 用 `/pgTable\(\s*"([^"]+)"/` 映射表名 → schema 文件。全部 schema 改 `sqliteTable(` 后正则失配，`tables.md` 的「Schema 文件」列全部变空，且 `doc:check` 与生成物同向漂移**仍会通过**（校验脚本和提交物一起漂移，掩盖文档 SSOT 退化）。务必改正则并重新 `doc:gen`；`doc-check` 此形态不拦截，需人工复核 `tables.md` 中有无空列。
 
 > ⚠️ **不要用 `db:push`**：push 直接建表会跳过迁移记录，随后 bootstrap 的 `runMigrations()` 对已存在的表重复执行 `CREATE TABLE` 而 fail-fast（`table already exists`），与项目「禁止 db:push」约定冲突。SQLite 目标统一走 `db:migrate`（`migrate-cli.ts` → `runMigrations()`）。
 
 生产部署：bootstrap `runMigrations()` 启动时自动执行（`data/` 目录需存在且可写，迁移失败 = 进程启动即崩，fail-fast）。
 
 > ⚠️ 迁移目录整体重建后，任何应用过旧 PostgreSQL 迁移的库已不适用（SQLite 是新库，无此问题）；SQLite 库如有残留表（`table already exists`），删除 `data/data.db` 后重启。
+
+### 10.2 迁移辅助脚本（scripts/db-migration.ts）
+
+本 skill 内置一个零依赖（纯 `node:fs/path/url`）的辅助脚本，位于 `.agents/skills/db-sqlite/scripts/db-migration.ts`，经 `tsx` 运行、仓库根由脚本位置自推导（不依赖 cwd）。三个子命令：
+
+```bash
+pnpm --filter @fsdx/web exec tsx ../.agents/skills/db-sqlite/scripts/db-migration.ts audit
+pnpm --filter @fsdx/web exec tsx ../.agents/skills/db-sqlite/scripts/db-migration.ts verify
+pnpm --filter @fsdx/web exec tsx ../.agents/skills/db-sqlite/scripts/db-migration.ts fix --ilike --execute --rowcount [--write]
+```
+
+| 子命令 | 作用 | 退出码 |
+|--------|------|--------|
+| `audit`（默认） | 扫描 `app/src`/`app/e2e`/`app/scripts` 与固定配置文件，按「必改/甄别」两级输出 file:line 清单 | 存在「必改」命中即 1 |
+| `verify` | 断言「必改」模式 0 命中 + 固定配置断言（`package.json` 无 pg、`drizzle.config.ts` 为 sqlite、schema 无 pg-core） | 任一失败即 1 |
+| `fix` | 安全机械改写（默认 dry-run 预览，加 `--write` 落盘，幂等） | 未知目标/缺参数即 1 |
+
+**「必改」模式**（迁移必须处理，供 audit/verify 门禁）：`ilike`、`db.execute`、`rowCount`、`pg`/`node-postgres`/`pg-core` 导入、`pgTable(`（正则 `/pgTable\\?\(/` 同时命中源码调用 `pgTable("...` 与正则字面量形态 `pgTable\(`，如 doc-facts.ts 的映射正则）、`postgresql://`、`TO_CHAR`、`AT TIME ZONE`、`->>`、`::int`/`::text`/`::bigint`。
+
+**「甄别」模式**（仅列出位置，需人工判断）：`new Date(`、`withTransaction`、`db.transaction`、`timestamp(`/`jsonb(`/`uuid(`/`boolean(`。
+
+**`fix` 的边界**：只做三件无歧义替换——`--ilike`（`ilike`→`like`，app/src 全量）、`--execute`（仅 health 的 `db.execute(sql\`SELECT 1\`)` → `db.all(...)`）、`--rowcount`（仅 message 模块的 `result.rowCount ?? X` → `Number(result.changes)`）。**不做**事务同步化、schema 类型映射、时间序列 SQL、jsonb 运算符、测试 mock 改造——这些仍需按本 skill 各节人工完成，脚本只负责「发现 + 兜底校验」。
+
+> `fix` 只改服务端源码的精确形态，测试 mock 里的 `{ rowCount: N }` 等仍需按 §9 手工调整。
 
 ### 10.1 生产部署适配（deploy 子仓库）
 
@@ -671,10 +851,12 @@ DATABASE_URL="./data/data.db" pnpm --filter @fsdx/web db:migrate
 | 配置文件 | 5 | drizzle.config.ts、app/.env.example、src/env.d.ts、.gitignore、vitest.config.ts |
 | Schema 文件 | 13 | 全部 `src/db/schema/*.ts`（17 张表），pg-core → sqlite-core |
 | DB 客户端 | 2 | src/db/index.ts、src/db/migrate.ts（migrate-cli.ts 不动） |
-| 服务端 SQL | 8 | `ilike→like`（7 个文件）、`db.execute→db.all` + 时间序列改写（track） |
-| 日期时间 | ~30 处 | `new Date()` → `Date.now()` / `.getTime()`，类型 `Date` → `number` |
+| 服务端 SQL | 9 | `ilike→like`（8 个文件）、`db.execute→db.all` + 时间序列改写（track）、`rowCount→changes`（message） |
+| 日期时间 | ~30 处 | `new Date()`/`new Date(expr)` → `Date.now()`/`.getTime()`，类型 `Date` → `number` |
 | 事务 | 4 | dict/dicts/i18n 同步回调；init 手动 BEGIN/COMMIT |
-| 测试 | 4 | 事务相关测试 mock 终结符适配（init/dict/dicts/i18n） |
+| 测试 | ~10 | 三类：事务 mock 终结符（init/dict/i18n）、时间戳断言（news/captcha/config/file/operation-logs）、`rowCount`/`db.execute` 改名（message/health/track） |
+| e2e | 3 | e2e/helpers/{db,env}.ts + e2e/scripts/prepare.ts 由 pg 改 node:sqlite 文件路径直连 |
+| 辅助脚本 | 1 | `.agents/skills/db-sqlite/scripts/db-migration.ts`（audit/verify/fix） |
 | 迁移文件 | 1 | 删除旧 drizzle/，生成 SQLite 新基线 |
 
 ## 相关 Skill
