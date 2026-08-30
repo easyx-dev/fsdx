@@ -12,6 +12,7 @@
 /* 扫描 workspace ui 包源码中的 tailwind 类名 */
 @source "../../packages/ui-ssr/src";
 @source "../../packages/ui-spa/src";
+@source "../../packages/ai-rich-editor/src";
 
 /* 暗色变体：data-theme 以 -dark 结尾即暗色主题（主题名由 themes.ts 注册表约定） */
 @custom-variant dark (&:is([data-theme$="-dark"] *));

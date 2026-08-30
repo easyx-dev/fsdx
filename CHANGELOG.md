@@ -4,6 +4,25 @@
 
 ### Features
 
+- **新增 `@fsdx/ai-rich-editor` 独立包（AI 富编辑器三栏工作台）+ 演示页**：
+  - **包定位**：重客户端组件，对标 `RichEditor`（WangEditor 富文本）的 AI 进化形态——左栏 AI 对话（预设指令 / 流式回复 / 代码块一键应用）+ 中栏 Monaco 代码编辑 + 右栏 iframe 沙箱预览，顶栏支持面板折叠、设备宽度（桌面/平板/手机）、脚本开关、复制；受控 `value/onChange`
+  - **对话契约**：`AiChatAdapter = (req, signal) => AsyncIterable<AiChatChunk>` 方法契约，调用方注入实现（可走 OpenAI / SSE / 宿主 SFn），组件不持有端点/传输/鉴权知识；`stop` 即 abort；system 提示词由适配方注入（包提供 `DEFAULT_SYSTEM_PROMPT_TEMPLATE` / `MODE_PROMPT_DESCRIPTIONS` 模板）
+  - **依赖收口**：peer 仅 `antd` / `@ant-design/icons` / `monaco-editor`，dep 仅 `@monaco-editor/react`；样式用 tailwind 语义令牌类（宿主 `global.css` 注入 + `@source` 扫描）；附通用 SSE 工具 subpath（`@fsdx/ai-rich-editor/sse`）
+  - **app 侧集成**：demo 页 `/admin/demo/ai-rich-editor`（侧栏「测试页」菜单）+ 宿主 adapter 示例（`-mods/ai-rich-editor.adapter.ts`，映射 `/api/ai/html-chat` SSE 端点）；权限 `html-editor:use` + 审计保留在服务端；原「HTML 编辑器演示」页与 app 内组件目录随包迁移删除
+
+- **`@fsdx/ai-rich-editor` 体验修复（对话与编辑器联动 + 打字机流式渲染）**：
+  - **AI 生成自动应用到编辑器**：`useAiChat` 新增 `onComplete` 完成回调，`AiRichEditor` 默认在流结束后把回复中的 HTML 代码块自动写入编辑器（`autoApply` prop 可关，手动「应用到编辑器」按钮保留）——对话区与编辑器/预览形成联动
+  - **打字机流式渲染**：`streamText` 改为 rAF 逐帧渐进推进（每帧 12 字符），不再一次性 setState——即使后端一次性返回大 chunk 也呈现逐字效果；流成功结束清空占位避免与列表消息重复，失败/中止保留已输出部分
+  - **降级清空与清空提示修复**：deep→fast 降级（`attempt` 事件）时同时清空已输出的正文与思考残文（此前仅清思考，会导致降级后正文混入 fast 重新生成的完整结果）；「清空对话」触发的 abort 不再残留「已停止生成」错误提示，并补充 `useAiChat` 流式/降级/错误/清空四条单元测试
+
+- **`@fsdx/ai-rich-editor` 思考过程展示（reasoning）**：
+  - **全链路接通**：app SSE 路由补 `onThinking` 下发 `thinking` 帧 → 包 `sse.ts` 新增 `SSE_EVENT_THINKING` → adapter yield `{ type: "thinking" }` → `useAiChat` 累积 `thinkingText` 并随 assistant 消息持久化（`ChatTurn.thinking`）
+  - **UI**：新增 `ThinkingBubble` 思考气泡（默认收起显示「思考中…/已思考 (N 字)」，展开可看全文），渲染于每条 assistant 消息正文上方与流式占位；deep→fast 降级（`attempt` 事件）自动清空残缺思考片段；无思考模型（fast / 关闭 thinking）不渲染气泡
+
+- **`@fsdx/ai-rich-editor` 接入重构（SFn 流式 + 提示词归包）**：
+  - **弃用自建 API 端点**：删除 `/api/ai/html-chat` Server Route，改为 `htmlChatSFn`（Server Function 返回 `ReadableStream<Uint8Array>`，经 TanStack Start 原始流协议逐块透传；SSE 帧编码逻辑随迁至 `services/html-editor/html-editor.functions.ts`），鉴权/审计沿用 `adminPermGuard` + `logOperation`，客户端 adapter 由 `fetch` 改为直接消费 SFn 流——减少自定义 HTTP 端点、走框架原生流式能力
+  - **提示词归包**：`buildHtmlSystemPrompt` 自 `html-editor.server.ts` 移除，改由 `@fsdx/ai-rich-editor` 包的 `buildDefaultSystemPrompt(mode)` 按输出形态生成（组合 `DEFAULT_SYSTEM_PROMPT_TEMPLATE` + `MODE_PROMPT_DESCRIPTIONS`）；`AiChatRequest.systemPrompt` / `AiRichEditorProps.systemPrompt` 暴露自定义配置项（覆盖默认），app server 仅透传注入 system 消息、不再持有提示词业务语义
+
 - **新增自定义 head 配置**：预置 `custom_head_config` 系统配置（`clientVisible`、`json` 类型），管理端可直接编辑 JSON（结构同 TanStack head()：`{ meta, links, scripts, styles }`，如百度统计、JSON-LD）；`parseCustomHeadConfig` 解析并校验 `scripts/styles.children` 为字符串，前台 `SSRRootDocument` head 全局注入，管理端不生效
 - **资源管理器页面 UI 优化 + 夜间模式适配**：
   - 顶部面包屑改为可编辑路径输入框（`AdminPageContent` 新增可选 `titleTrailing` 插槽，路径输入 + 前往按钮，回车/按钮跳转，`normalizePath` 规范化输入）
@@ -25,6 +44,8 @@
   - 滚动条样式统一：`admin.global.css` 新增 `--s-scrollbar-thumb` 语义令牌（亮暗自适应）与 `.scrollbar-thin` 类，应用于侧边栏导航与 `AdminPageContent` 内容区
 
 ### Infrastructure
+
+- **[infra] `@fsdx/core` ai/mail/sms/scheduler 依赖注入统一封装跨 bundle 共享存储**：`initAi`/`initMail`/`initSms`/`setSchedulerLogger` 注入的 deps 原为模块级单例，而 Nitro 入口（bootstrap 注入）与 TanStack Start SSR 渲染器会分别打包一份模块实例，导致在 SSR/bundle 内调用（如 SSE 路由、验证码邮件 SFn）抛「模块未初始化」；现新增 `@fsdx/core` 内部 `deps-store`（`createGlobalDepsStore<T>(key)` 工厂，get/set/reset），将注入状态挂载 `globalThis`（`__FSDX_AI_DEPS__` / `__FSDX_MAIL_DEPS__` / `__FSDX_SMS_DEPS__` / `__FSDX_SCHEDULER_LOGGER__`），四个模块消除各自重复的 globalThis 存取样板、统一经 store 访问，任意 bundle 共享同一份依赖。可被衍生项目吸收；现存部署重启后生效
 
 - **[infra] 系统配置新增布尔值类型**：`EditorType` 新增 `boolean`（管理端编辑渲染 Switch，列表用「是/否」彩色标签展示，存储仍为 `"true"`/`"false"` 字符串），`smtp_secure` 预置项改用该类型，消除管理端手拼 true/false；`ensurePresetConfigs` 对已存在预置项仅同步 valueType（value 等其余字段不受影响），已部署系统重启即生效
 

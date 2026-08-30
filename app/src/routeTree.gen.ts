@@ -30,6 +30,7 @@ import { Route as AdminAdminAdminRolesIndexRouteImport } from './routes/admin/_a
 import { Route as AdminAdminClientRolesIndexRouteImport } from './routes/admin/_admin/client-roles/index'
 import { Route as AdminAdminConfigIndexRouteImport } from './routes/admin/_admin/config/index'
 import { Route as AdminAdminDemoAiRouteImport } from './routes/admin/_admin/demo/ai'
+import { Route as AdminAdminDemoAiRichEditorRouteImport } from './routes/admin/_admin/demo/ai-rich-editor'
 import { Route as AdminAdminDemoEditorRouteImport } from './routes/admin/_admin/demo/editor'
 import { Route as AdminAdminDemoProTableRouteImport } from './routes/admin/_admin/demo/pro-table'
 import { Route as AdminAdminDemoUploadRouteImport } from './routes/admin/_admin/demo/upload'
@@ -161,6 +162,12 @@ const AdminAdminDemoAiRoute = AdminAdminDemoAiRouteImport.update({
   path: '/demo/ai',
   getParentRoute: () => AdminAdminRoute,
 } as any)
+const AdminAdminDemoAiRichEditorRoute =
+  AdminAdminDemoAiRichEditorRouteImport.update({
+    id: '/demo/ai-rich-editor',
+    path: '/demo/ai-rich-editor',
+    getParentRoute: () => AdminAdminRoute,
+  } as any)
 const AdminAdminDemoEditorRoute = AdminAdminDemoEditorRouteImport.update({
   id: '/demo/editor',
   path: '/demo/editor',
@@ -307,6 +314,7 @@ export interface FileRoutesByFullPath {
   '/admin/init/': typeof AdminInitIndexRoute
   '/admin/login/': typeof AdminLoginIndexRoute
   '/admin/demo/ai': typeof AdminAdminDemoAiRoute
+  '/admin/demo/ai-rich-editor': typeof AdminAdminDemoAiRichEditorRoute
   '/admin/demo/editor': typeof AdminAdminDemoEditorRoute
   '/admin/demo/pro-table': typeof AdminAdminDemoProTableRoute
   '/admin/demo/upload': typeof AdminAdminDemoUploadRoute
@@ -351,6 +359,7 @@ export interface FileRoutesByTo {
   '/admin/init': typeof AdminInitIndexRoute
   '/admin/login': typeof AdminLoginIndexRoute
   '/admin/demo/ai': typeof AdminAdminDemoAiRoute
+  '/admin/demo/ai-rich-editor': typeof AdminAdminDemoAiRichEditorRoute
   '/admin/demo/editor': typeof AdminAdminDemoEditorRoute
   '/admin/demo/pro-table': typeof AdminAdminDemoProTableRoute
   '/admin/demo/upload': typeof AdminAdminDemoUploadRoute
@@ -398,6 +407,7 @@ export interface FileRoutesById {
   '/admin/init/': typeof AdminInitIndexRoute
   '/admin/login/': typeof AdminLoginIndexRoute
   '/admin/_admin/demo/ai': typeof AdminAdminDemoAiRoute
+  '/admin/_admin/demo/ai-rich-editor': typeof AdminAdminDemoAiRichEditorRoute
   '/admin/_admin/demo/editor': typeof AdminAdminDemoEditorRoute
   '/admin/_admin/demo/pro-table': typeof AdminAdminDemoProTableRoute
   '/admin/_admin/demo/upload': typeof AdminAdminDemoUploadRoute
@@ -445,6 +455,7 @@ export interface FileRouteTypes {
     | '/admin/init/'
     | '/admin/login/'
     | '/admin/demo/ai'
+    | '/admin/demo/ai-rich-editor'
     | '/admin/demo/editor'
     | '/admin/demo/pro-table'
     | '/admin/demo/upload'
@@ -489,6 +500,7 @@ export interface FileRouteTypes {
     | '/admin/init'
     | '/admin/login'
     | '/admin/demo/ai'
+    | '/admin/demo/ai-rich-editor'
     | '/admin/demo/editor'
     | '/admin/demo/pro-table'
     | '/admin/demo/upload'
@@ -535,6 +547,7 @@ export interface FileRouteTypes {
     | '/admin/init/'
     | '/admin/login/'
     | '/admin/_admin/demo/ai'
+    | '/admin/_admin/demo/ai-rich-editor'
     | '/admin/_admin/demo/editor'
     | '/admin/_admin/demo/pro-table'
     | '/admin/_admin/demo/upload'
@@ -727,6 +740,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminAdminDemoAiRouteImport
       parentRoute: typeof AdminAdminRoute
     }
+    '/admin/_admin/demo/ai-rich-editor': {
+      id: '/admin/_admin/demo/ai-rich-editor'
+      path: '/demo/ai-rich-editor'
+      fullPath: '/admin/demo/ai-rich-editor'
+      preLoaderRoute: typeof AdminAdminDemoAiRichEditorRouteImport
+      parentRoute: typeof AdminAdminRoute
+    }
     '/admin/_admin/demo/editor': {
       id: '/admin/_admin/demo/editor'
       path: '/demo/editor'
@@ -894,6 +914,7 @@ declare module '@tanstack/react-router' {
 interface AdminAdminRouteChildren {
   AdminAdminIndexRoute: typeof AdminAdminIndexRoute
   AdminAdminDemoAiRoute: typeof AdminAdminDemoAiRoute
+  AdminAdminDemoAiRichEditorRoute: typeof AdminAdminDemoAiRichEditorRoute
   AdminAdminDemoEditorRoute: typeof AdminAdminDemoEditorRoute
   AdminAdminDemoProTableRoute: typeof AdminAdminDemoProTableRoute
   AdminAdminDemoUploadRoute: typeof AdminAdminDemoUploadRoute
@@ -925,6 +946,7 @@ interface AdminAdminRouteChildren {
 const AdminAdminRouteChildren: AdminAdminRouteChildren = {
   AdminAdminIndexRoute: AdminAdminIndexRoute,
   AdminAdminDemoAiRoute: AdminAdminDemoAiRoute,
+  AdminAdminDemoAiRichEditorRoute: AdminAdminDemoAiRichEditorRoute,
   AdminAdminDemoEditorRoute: AdminAdminDemoEditorRoute,
   AdminAdminDemoProTableRoute: AdminAdminDemoProTableRoute,
   AdminAdminDemoUploadRoute: AdminAdminDemoUploadRoute,

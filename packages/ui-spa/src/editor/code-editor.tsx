@@ -16,6 +16,8 @@ export interface CodeEditorProps {
 	language: string;
 	/** 是否只读 */
 	readOnly?: boolean;
+	/** 编辑器高度：数字按像素，字符串透传为 height 样式值，默认 300 */
+	height?: number | string;
 }
 
 export function CodeEditor({
@@ -24,6 +26,7 @@ export function CodeEditor({
 	onChange,
 	language,
 	readOnly = false,
+	height = 300,
 }: CodeEditorProps) {
 	const isDark =
 		typeof document !== "undefined" &&
@@ -31,7 +34,8 @@ export function CodeEditor({
 
 	return (
 		<div
-			className={`h-[300px] rounded-md border border-border overflow-hidden ${className}`}
+			className={`rounded-md border border-border overflow-hidden ${className}`}
+			style={{ height: typeof height === "number" ? `${height}px` : height }}
 		>
 			<Editor
 				height="100%"

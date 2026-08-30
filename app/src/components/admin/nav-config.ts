@@ -143,6 +143,11 @@ export const NAV_GROUPS: NavGroup[] = [
 			},
 			{ key: "/admin/demo/ai", label: "AI 测试", icon: RobotOutlined },
 			{
+				key: "/admin/demo/ai-rich-editor",
+				label: "AI 富编辑器演示",
+				icon: ExperimentOutlined,
+			},
+			{
 				key: "/admin/demo/pro-table",
 				label: "ProTable 演示",
 				icon: TableOutlined,

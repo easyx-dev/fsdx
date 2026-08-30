@@ -317,6 +317,11 @@ export const ADMIN_PERMISSIONS = {
 		"AI 测试",
 		"允许使用 AI 模型测试页面进行模型调用测试",
 	),
+	AI_CHAT: definePermission(
+		"ai:chat",
+		"AI 对话",
+		"允许使用通用 AI 流式对话能力（供 AI 富编辑器等业务模块调用）",
+	),
 } as const;
 
 // ─── 对外类型 ───

@@ -29,6 +29,7 @@
     "@ant-design/charts": "^2.6.7",
     "@ant-design/cssinjs": "^2.1.2",
     "@ant-design/icons": "^6.3.2",
+    "@fsdx/ai-rich-editor": "workspace:*",
     "@fsdx/core": "workspace:*",
     "@fsdx/ui-spa": "workspace:*",
     "@fsdx/ui-ssr": "workspace:*",
