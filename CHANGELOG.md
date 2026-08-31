@@ -56,6 +56,8 @@
 
 - **[infra] `@fsdx/core` ai/mail/sms/scheduler 依赖注入统一封装跨 bundle 共享存储**：`initAi`/`initMail`/`initSms`/`setSchedulerLogger` 注入的 deps 原为模块级单例，而 Nitro 入口（bootstrap 注入）与 TanStack Start SSR 渲染器会分别打包一份模块实例，导致在 SSR/bundle 内调用（如 SSE 路由、验证码邮件 SFn）抛「模块未初始化」；现新增 `@fsdx/core` 内部 `deps-store`（`createGlobalDepsStore<T>(key)` 工厂，get/set/reset），将注入状态挂载 `globalThis`（`__FSDX_AI_DEPS__` / `__FSDX_MAIL_DEPS__` / `__FSDX_SMS_DEPS__` / `__FSDX_SCHEDULER_LOGGER__`），四个模块消除各自重复的 globalThis 存取样板、统一经 store 访问，任意 bundle 共享同一份依赖。可被衍生项目吸收；现存部署重启后生效
 
+- **[infra] 系统配置缓存挂载 globalThis 跨 bundle 共享**：`configCache`/`configTranslationCache` 原为模块级单例，Nitro 入口（bootstrap 注入 `getConfig`）与 SSR 渲染器分别打包一份实例，启动后经管理端修改的配置只刷新 SSR 侧缓存，注入 `getConfig` 的模块（AI / SMTP / 短信）仍读到启动时空值——表现为运行时填写 AI 配置后 AI 对话仍报「AI 客户端未配置」；现两个缓存实例挂载 `globalThis`（`__FSDX_CONFIG_CACHE__` / `__FSDX_CONFIG_TRANSLATION_CACHE__`），任意 bundle 读写同一实例，运行时配置变更即时生效。可被衍生项目吸收
+
 - **[infra] 系统配置新增布尔值类型**：`EditorType` 新增 `boolean`（管理端编辑渲染 Switch，列表用「是/否」彩色标签展示，存储仍为 `"true"`/`"false"` 字符串），`smtp_secure` 预置项改用该类型，消除管理端手拼 true/false；`ensurePresetConfigs` 对已存在预置项仅同步 valueType（value 等其余字段不受影响），已部署系统重启即生效
 
 - **[infra] 认证 Cookie Secure 标志可配置化**：新增 `COOKIE_SECURE` 环境变量（未设置时生产默认开启），admin/client 登录 Cookie 的 `secure` 标志由 `isCookieSecure()` 统一决策；线上未启用 HTTPS 时设 `COOKIE_SECURE=false` 即可正常登录（此前仅 `NODE_ENV === "production"` 判定，无法显式关闭，http:// 访问下浏览器不保存 Cookie、登录后被立即打回登录页）；`.env.example`、dev docker-compose、部署文档同步，生产 compose 透传在部署子仓库（fsdx-deploy）同步
