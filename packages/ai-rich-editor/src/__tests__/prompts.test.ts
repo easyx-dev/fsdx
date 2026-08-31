@@ -1,24 +1,28 @@
 /**
- * AI Rich Editor 提示词能力测试：按输出形态组装默认 system 提示词
+ * AI Rich Editor 提示词能力测试：fragment-only 定位的默认 system 提示词
  */
 import { describe, expect, it } from "vitest";
 import { buildDefaultSystemPrompt } from "../prompts";
 
 describe("buildDefaultSystemPrompt", () => {
-	it("fragment 模式要求仅输出 body 内部片段", () => {
-		const prompt = buildDefaultSystemPrompt("fragment");
-		expect(prompt).toContain("页面内容片段");
+	it("定位为富文本片段：只输出 body 内部片段", () => {
+		const prompt = buildDefaultSystemPrompt();
+		expect(prompt).toContain("富文本 HTML 片段生成助手");
+		expect(prompt).toContain("另一种形态的富文本");
 		expect(prompt).toContain("<body>");
 		expect(prompt).toContain("```html");
 	});
 
-	it("document 模式要求完整文档外壳", () => {
-		const prompt = buildDefaultSystemPrompt("document");
-		expect(prompt).toContain("<!DOCTYPE html>");
+	it("不输出整页文档外壳（禁止 DOCTYPE/html/head/body）", () => {
+		const prompt = buildDefaultSystemPrompt();
+		expect(prompt).toContain(
+			"禁止输出 <!DOCTYPE> / <html> / <head> / <body> 外壳",
+		);
 	});
 
-	it("两种模式均要求自包含样式与代码块包裹", () => {
-		expect(buildDefaultSystemPrompt("fragment")).toContain("<style>");
-		expect(buildDefaultSystemPrompt("document")).toContain("<style>");
+	it("要求自包含样式与代码块包裹", () => {
+		const prompt = buildDefaultSystemPrompt();
+		expect(prompt).toContain("<style>");
+		expect(prompt).toContain("```html");
 	});
 });

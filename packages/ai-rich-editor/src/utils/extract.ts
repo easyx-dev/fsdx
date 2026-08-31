@@ -2,7 +2,6 @@
  * 纯函数：从 AI 回复中提取 HTML 代码块 + 构建预览文档外壳
  * 与协议层同属开放工具，任意宿主可复用
  */
-import type { AiChatMode } from "../types";
 
 /** 去除相邻重复的片段（同一回复中多次出现同一代码块时去重） */
 function dedupe(items: string[]): string[] {
@@ -34,10 +33,13 @@ export function extractHtmlFragments(content: string): string[] {
 }
 
 /**
- * 构建 iframe 预览文档
- * fragment 模式包一层最小文档外壳（补充 charset/viewport），document 模式原样返回
+ * 构建 iframe 预览文档：包一层最小文档外壳（补充 charset/viewport）
+ * previewHead 为可选注入的原始 HTML 片段（如内置 <style>/<script>），原样插入 <head>
  */
-export function buildPreviewDocument(html: string, mode: AiChatMode): string {
-	if (mode === "document") return html;
-	return `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"></head><body>${html}</body></html>`;
+export function buildPreviewDocument(
+	html: string,
+	previewHead?: string,
+): string {
+	const headInjection = previewHead?.trim() ? previewHead : "";
+	return `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">${headInjection}</head><body>${html}</body></html>`;
 }

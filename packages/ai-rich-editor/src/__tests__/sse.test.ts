@@ -6,11 +6,23 @@ import {
 	consumeSseStream,
 	extractSseFrames,
 	parseSseFrame,
+	type SseFrame,
+	sseStream,
 } from "../utils/sse";
 
 /** 将字符串编码为 Uint8Array */
 function encode(text: string): Uint8Array {
 	return new TextEncoder().encode(text);
+}
+
+/** 构造按块入队的 ReadableStream */
+function makeStream(chunks: Uint8Array[]): ReadableStream<Uint8Array> {
+	return new ReadableStream({
+		start(controller) {
+			for (const chunk of chunks) controller.enqueue(chunk);
+			controller.close();
+		},
+	});
 }
 
 describe("extractSseFrames", () => {
@@ -68,15 +80,6 @@ describe("parseSseFrame", () => {
 });
 
 describe("consumeSseStream", () => {
-	function makeStream(chunks: Uint8Array[]): ReadableStream<Uint8Array> {
-		return new ReadableStream({
-			start(controller) {
-				for (const chunk of chunks) controller.enqueue(chunk);
-				controller.close();
-			},
-		});
-	}
-
 	it("跨 chunk 分片正确重组帧并回调（含 UTF-8 多字节分割）", async () => {
 		// “中”的 UTF-8 为 3 字节，故意在第 2、3 字节之间断开
 		const middle = "中"; // U+4E2D = e4 b8 ad
@@ -114,5 +117,64 @@ describe("consumeSseStream", () => {
 		const onFrame = vi.fn();
 		await consumeSseStream(makeStream([encode("data: 123")]), onFrame);
 		expect(onFrame).not.toHaveBeenCalled();
+	});
+
+	it("abort 时取消底层读取并冲刷已回调帧", async () => {
+		const onCancel = vi.fn();
+		const stream = new ReadableStream<Uint8Array>({
+			start(controller) {
+				controller.enqueue(encode("data: 1\n\n"));
+				// 保持流打开，等待 abort 触发 cancel
+				void controller;
+			},
+			cancel() {
+				onCancel();
+			},
+		});
+		const controller = new AbortController();
+		const onFrame = vi.fn();
+		const p = consumeSseStream(stream, onFrame, controller.signal);
+		// 等待首帧处理完成
+		await new Promise((r) => setTimeout(r, 0));
+		controller.abort();
+		await p.catch(() => undefined); // read 可能被拒绝，此处吞掉
+		expect(onFrame).toHaveBeenCalledWith({ event: "message", data: "1" });
+		expect(onCancel).toHaveBeenCalled();
+	});
+});
+
+describe("sseStream", () => {
+	it("以异步迭代器逐帧产出并冲刷尾部缓冲", async () => {
+		const stream = makeStream([
+			encode("data: 123"),
+			encode("\n\ndata: 456\n\n"),
+		]);
+		const frames: SseFrame[] = [];
+		for await (const frame of sseStream(stream)) frames.push(frame);
+		expect(frames).toEqual([
+			{ event: "message", data: "123" },
+			{ event: "message", data: "456" },
+		]);
+	});
+
+	it("abort 时取消底层读取并结束迭代", async () => {
+		const onCancel = vi.fn();
+		const stream = new ReadableStream<Uint8Array>({
+			start(controller) {
+				controller.enqueue(encode("data: 1\n\n"));
+				void controller;
+			},
+			cancel() {
+				onCancel();
+			},
+		});
+		const controller = new AbortController();
+		const gen = sseStream(stream, controller.signal);
+		const first = await gen.next();
+		expect(first.value).toEqual({ event: "message", data: "1" });
+		controller.abort();
+		const second = await gen.next();
+		expect(second.done).toBe(true);
+		expect(onCancel).toHaveBeenCalled();
 	});
 });

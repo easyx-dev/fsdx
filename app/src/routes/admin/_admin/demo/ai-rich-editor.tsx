@@ -3,7 +3,7 @@
  * 演示独立包 @fsdx/ai-rich-editor 的接入方式：注入宿主 adapter（SSE 端点）+ notify
  */
 
-import { AiRichEditor, DEFAULT_HTML } from "@fsdx/ai-rich-editor";
+import { AiRichEditor, DEFAULT_HTML, type AiRichEditorConfig } from "@fsdx/ai-rich-editor";
 import { message } from "@fsdx/ui-spa/antd-static";
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
@@ -13,6 +13,15 @@ import { aiRichEditorAdapter } from "./-mods/ai-rich-editor.adapter";
 export const Route = createFileRoute("/admin/_admin/demo/ai-rich-editor")({
 	component: DemoPage,
 });
+
+// 稳定引用：config 为「仅初始值」，避免每次渲染新建对象造成误解
+const demoEditorConfig: AiRichEditorConfig = {
+	notify: (type, content) => {
+		if (type === "success") message.success(content);
+		else if (type === "error") message.error(content);
+		else message.warning(content);
+	},
+};
 
 function DemoPage() {
 	const [html, setHtml] = useState(DEFAULT_HTML);
@@ -26,12 +35,8 @@ function DemoPage() {
 				value={html}
 				onChange={setHtml}
 				adapter={aiRichEditorAdapter}
-				notify={(type, content) => {
-					if (type === "success") message.success(content);
-					else if (type === "error") message.error(content);
-					else message.warning(content);
-				}}
 				height="calc(100vh - var(--admin-header-height) - 56px)"
+				config={demoEditorConfig}
 			/>
 		</AdminPageContent>
 	);

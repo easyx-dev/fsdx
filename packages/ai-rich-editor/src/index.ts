@@ -5,9 +5,9 @@
 export { AiRichEditor } from "./AiRichEditor";
 export { ThinkingBubble } from "./components/ThinkingBubble";
 export {
+	DEFAULT_CONFIG,
 	DEFAULT_HTML,
 	DEFAULT_SYSTEM_PROMPT_TEMPLATE,
-	MODE_PROMPT_DESCRIPTIONS,
 	PRESET_PROMPTS,
 	PREVIEW_DEVICES,
 	type PreviewDevice,
@@ -17,9 +17,9 @@ export { buildDefaultSystemPrompt } from "./prompts";
 export type {
 	AiChatAdapter,
 	AiChatChunk,
-	AiChatMode,
 	AiChatRequest,
 	AiChatUsage,
+	AiRichEditorConfig,
 	AiRichEditorProps,
 	AiRichNotify,
 	ChatTurn,

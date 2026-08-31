@@ -43,18 +43,29 @@ describe("extractHtmlFragments", () => {
 });
 
 describe("buildPreviewDocument", () => {
-	it("fragment 模式包裹最小文档外壳", () => {
-		const doc = buildPreviewDocument("<div>内容</div>", "fragment");
+	it("片段模式包裹最小文档外壳", () => {
+		const doc = buildPreviewDocument("<div>内容</div>");
 		expect(doc).toContain("<!DOCTYPE html>");
 		expect(doc).toContain('<meta charset="utf-8">');
 		expect(doc).toContain("<body><div>内容</div></body>");
 	});
 
-	it("document 模式原样返回", () => {
+	it("注入 previewHead 到 head（位于 body 之前）", () => {
 		const doc = buildPreviewDocument(
-			"<!DOCTYPE html><html>...</html>",
-			"document",
+			"<div>内容</div>",
+			"<style>body{margin:0}</style>",
 		);
-		expect(doc).toBe("<!DOCTYPE html><html>...</html>");
+		expect(doc).toContain('<meta name="viewport"');
+		expect(doc).toContain("<style>body{margin:0}</style>");
+		expect(doc.indexOf("<style>body{margin:0}</style>")).toBeLessThan(
+			doc.indexOf("</head>"),
+		);
+		expect(doc).toContain("<body><div>内容</div></body>");
+	});
+
+	it("空 previewHead 不注入", () => {
+		const doc = buildPreviewDocument("<div>内容</div>", "   ");
+		expect(doc).not.toContain("<style>");
+		expect(doc).toContain("</head><body><div>内容</div></body></html>");
 	});
 });

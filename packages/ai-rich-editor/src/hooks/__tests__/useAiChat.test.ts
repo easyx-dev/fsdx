@@ -1,10 +1,10 @@
 /**
- * useAiChat 对话状态 hook 测试：流式消费、思考累积、deep→fast 降级清空、失败提示
+ * useAiChat 对话状态 hook 测试：流式消费、思考累积、deep→fast 降级清空、失败/中止、裁剪
  * @vitest-environment jsdom
  */
 import { act, renderHook } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
-import type { AiChatAdapter, AiChatChunk, AiChatMode } from "../../types";
+import type { AiChatAdapter, AiChatChunk, AiChatRequest } from "../../types";
 import { useAiChat } from "../useAiChat";
 
 /** 按给定 chunk 序列产出对话流的 mock 适配器 */
@@ -14,6 +14,20 @@ function adapterFrom(chunks: AiChatChunk[]): AiChatAdapter {
 	};
 }
 
+/** 记录每次请求的 mock 适配器（用于断言裁剪与请求载荷） */
+function recordingAdapter(): {
+	adapter: AiChatAdapter;
+	requests: AiChatRequest[];
+} {
+	const requests: AiChatRequest[] = [];
+	const adapter: AiChatAdapter = async function* (request) {
+		requests.push(request);
+		yield { type: "delta", text: "ok" };
+		yield { type: "done", model: "deep-model", usage: undefined };
+	};
+	return { adapter, requests };
+}
+
 /** 渲染 hook 并发送一条消息，等待流结束后返回 controller */
 async function runChat(chunks: AiChatChunk[]) {
 	const adapter = adapterFrom(chunks);
@@ -21,7 +35,6 @@ async function runChat(chunks: AiChatChunk[]) {
 		useAiChat({
 			currentHtml: "<div>旧</div>",
 			adapter,
-			mode: "fragment" as AiChatMode,
 			systemPrompt: "你是助手",
 		}),
 	);
@@ -44,7 +57,6 @@ describe("useAiChat", () => {
 			useAiChat({
 				currentHtml: "",
 				adapter,
-				mode: "fragment",
 				systemPrompt: "sys",
 				onComplete,
 			}),
@@ -86,7 +98,7 @@ describe("useAiChat", () => {
 		// 流式开始后立即清空：messages 已同步清空，abort 的 catch 分支应跳过错误提示
 		const adapter = adapterFrom([{ type: "delta", text: "部分输出" }]);
 		const { result } = renderHook(() =>
-			useAiChat({ currentHtml: "", adapter, mode: "fragment" }),
+			useAiChat({ currentHtml: "", adapter }),
 		);
 		// 先触发一次 send，让 controller 持有 abort
 		const sendPromise = act(async () => {
@@ -96,5 +108,80 @@ describe("useAiChat", () => {
 		});
 		await sendPromise;
 		expect(result.current.error).toBeNull();
+	});
+
+	it("空 prompt 直接 no-op 不进入流", async () => {
+		const { adapter, requests } = recordingAdapter();
+		const { result } = renderHook(() =>
+			useAiChat({ currentHtml: "", adapter }),
+		);
+		await act(async () => {
+			await result.current.send("   ");
+		});
+		expect(result.current.messages.length).toBe(0);
+		expect(requests.length).toBe(0);
+	});
+
+	it("stop 中止：适配器抛错时提示「已停止生成」并保留部分输出", async () => {
+		const adapter: AiChatAdapter = async function* (_request, signal) {
+			yield { type: "delta", text: "部分输出" };
+			await new Promise<void>((_, reject) => {
+				// 兼容：abort 可能在监听器注册前触发（已中止的 signal 不再重放事件）
+				if (signal.aborted) {
+					reject(new Error("aborted"));
+					return;
+				}
+				signal.addEventListener("abort", () => reject(new Error("aborted")), {
+					once: true,
+				});
+			});
+		};
+		const { result } = renderHook(() =>
+			useAiChat({ currentHtml: "", adapter }),
+		);
+		await act(async () => {
+			const p = result.current.send("hi");
+			result.current.stop();
+			await p;
+		});
+		expect(result.current.error).toBe("已停止生成");
+		expect(result.current.messages.length).toBe(1); // 仅用户消息
+	});
+
+	it("done 帧记录 model 与 usage", async () => {
+		const adapter = adapterFrom([
+			{ type: "delta", text: "<p>hi</p>" },
+			{ type: "done", model: "deepseek-chat", usage: { totalTokens: 42 } },
+		]);
+		const { result } = renderHook(() =>
+			useAiChat({ currentHtml: "", adapter }),
+		);
+		await act(async () => {
+			await result.current.send("hi");
+		});
+		expect(result.current.model).toBe("deepseek-chat");
+		expect(result.current.usage).toEqual({ totalTokens: 42 });
+	});
+
+	it("超限裁剪：只保留最近 CHAT_MAX_TURNS 轮", async () => {
+		const { adapter, requests } = recordingAdapter();
+		const { result } = renderHook(() =>
+			useAiChat({ currentHtml: "", adapter }),
+		);
+		for (let i = 0; i < 13; i++) {
+			await act(async () => {
+				await result.current.send(`第${i}条`);
+			});
+		}
+		const lastRequest = requests.at(-1);
+		expect(lastRequest?.messages.length).toBe(24);
+		// 最早一轮（第0条）被裁剪，最新一条 user 保留
+		expect(lastRequest?.messages.every((m) => m.content !== "第0条")).toBe(
+			true,
+		);
+		expect(lastRequest?.messages.at(-1)).toMatchObject({
+			role: "user",
+			content: "第12条",
+		});
 	});
 });

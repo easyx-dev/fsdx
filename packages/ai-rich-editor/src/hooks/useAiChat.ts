@@ -6,12 +6,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { CHAT_MAX_TURNS } from "../constants";
 import { buildDefaultSystemPrompt } from "../prompts";
-import type {
-	AiChatAdapter,
-	AiChatMode,
-	AiChatUsage,
-	ChatTurn,
-} from "../types";
+import type { AiChatAdapter, AiChatUsage, ChatTurn } from "../types";
 
 /** 打字机动画每帧最多推进的字符数 */
 const TYPEWRITER_STEP = 12;
@@ -22,9 +17,7 @@ export interface UseAiChatOptions {
 	currentHtml: string;
 	/** 对话适配器 */
 	adapter: AiChatAdapter;
-	/** AI 输出形态 */
-	mode: AiChatMode;
-	/** 自定义 system 提示词（可选，缺省按 mode 使用包内置模板） */
+	/** 自定义 system 提示词（可选，缺省用包内置模板） */
 	systemPrompt?: string;
 	/** 单轮流正常结束时回调（内容为完整回复，供自动应用编辑器等联动） */
 	onComplete?: (content: string) => void;
@@ -55,7 +48,6 @@ export interface AiChatController {
 export function useAiChat({
 	currentHtml,
 	adapter,
-	mode,
 	systemPrompt,
 	onComplete,
 }: UseAiChatOptions): AiChatController {
@@ -71,7 +63,6 @@ export function useAiChat({
 	const messagesRef = useRef<ChatTurn[]>([]);
 	const currentHtmlRef = useRef(currentHtml);
 	const adapterRef = useRef(adapter);
-	const modeRef = useRef(mode);
 	const systemPromptRef = useRef(systemPrompt);
 	const isStreamingRef = useRef(false);
 	const abortRef = useRef<AbortController | null>(null);
@@ -88,9 +79,6 @@ export function useAiChat({
 	useEffect(() => {
 		adapterRef.current = adapter;
 	}, [adapter]);
-	useEffect(() => {
-		modeRef.current = mode;
-	}, [mode]);
 	useEffect(() => {
 		systemPromptRef.current = systemPrompt;
 	}, [systemPrompt]);
@@ -138,115 +126,116 @@ export function useAiChat({
 		setStreamText(fullRef.current);
 	}, []);
 
-	const send = useCallback(async (text: string) => {
-		const prompt = text.trim();
-		if (!prompt || isStreamingRef.current) return;
+	const send = useCallback(
+		async (text: string) => {
+			const prompt = text.trim();
+			if (!prompt || isStreamingRef.current) return;
 
-		const userMessage: ChatTurn = { role: "user", content: prompt };
-		const history = [...messagesRef.current, userMessage];
-		messagesRef.current = history;
-		setMessages(history);
-		setStreamText("");
-		setError(null);
-		setModel(null);
-		setUsage(null);
-		isStreamingRef.current = true;
-		setIsStreaming(true);
+			const userMessage: ChatTurn = { role: "user", content: prompt };
+			const history = [...messagesRef.current, userMessage];
+			messagesRef.current = history;
+			setMessages(history);
+			setStreamText("");
+			setError(null);
+			setModel(null);
+			setUsage(null);
+			isStreamingRef.current = true;
+			setIsStreaming(true);
 
-		const controller = new AbortController();
-		abortRef.current = controller;
-		let full = "";
-		let thinking = "";
-		let errored = false;
-		let saved = false;
-		fullRef.current = "";
-		displayRef.current = "";
-		setThinkingText("");
-		try {
-			// 裁剪最旧轮次（user + assistant 为一轮），保留最近 N 轮
-			const trimmed = history.slice(-CHAT_MAX_TURNS * 2);
-			const request = {
-				mode: modeRef.current,
-				messages: trimmed,
-				snapshot: currentHtmlRef.current,
-				systemPrompt:
-					systemPromptRef.current ?? buildDefaultSystemPrompt(modeRef.current),
-			};
-			for await (const chunk of adapterRef.current(
-				request,
-				controller.signal,
-			)) {
-				if (chunk.type === "thinking") {
-					thinking += chunk.text;
-					setThinkingText(thinking);
-				} else if (chunk.type === "delta") {
-					full += chunk.text;
-					fullRef.current = full;
-					startTypewriter();
-				} else if (chunk.type === "attempt") {
-					// deep→fast 降级：清空残缺的思考片段与已输出的正文，
-					// 避免 deep 已中断的推理过程混入 fast 重新生成的完整结果
-					thinking = "";
-					setThinkingText("");
-					full = "";
-					fullRef.current = "";
-					displayRef.current = "";
+			const controller = new AbortController();
+			abortRef.current = controller;
+			let full = "";
+			let thinking = "";
+			let errored = false;
+			let saved = false;
+			fullRef.current = "";
+			displayRef.current = "";
+			setThinkingText("");
+			try {
+				// 裁剪最旧轮次（user + assistant 为一轮），保留最近 N 轮
+				const trimmed = history.slice(-CHAT_MAX_TURNS * 2);
+				const request = {
+					messages: trimmed,
+					snapshot: currentHtmlRef.current,
+					systemPrompt: systemPromptRef.current ?? buildDefaultSystemPrompt(),
+				};
+				for await (const chunk of adapterRef.current(
+					request,
+					controller.signal,
+				)) {
+					if (chunk.type === "thinking") {
+						thinking += chunk.text;
+						setThinkingText(thinking);
+					} else if (chunk.type === "delta") {
+						full += chunk.text;
+						fullRef.current = full;
+						startTypewriter();
+					} else if (chunk.type === "attempt") {
+						// deep→fast 降级：清空残缺的思考片段与已输出的正文，
+						// 避免 deep 已中断的推理过程混入 fast 重新生成的完整结果
+						thinking = "";
+						setThinkingText("");
+						full = "";
+						fullRef.current = "";
+						displayRef.current = "";
+						if (rafRef.current !== null) {
+							cancelAnimationFrame(rafRef.current);
+							rafRef.current = null;
+						}
+						setStreamText("");
+					} else if (chunk.type === "done") {
+						setModel(chunk.model);
+						setUsage(chunk.usage ?? null);
+					} else if (chunk.type === "error") {
+						errored = true;
+						setError(chunk.message);
+					}
+				}
+
+				// 流正常结束且无错误帧：保留累积内容为 assistant 消息
+				if (!errored && full.trim()) {
+					const next = [
+						...messagesRef.current,
+						{
+							role: "assistant",
+							content: full,
+							thinking: thinking.trim() ? thinking : undefined,
+						} as ChatTurn,
+					];
+					messagesRef.current = next;
+					setMessages(next);
+					saved = true;
+					// 触发「自动应用到编辑器」等联动的完成回调
+					onCompleteRef.current?.(full);
+				}
+			} catch (err) {
+				if (controller.signal.aborted) {
+					// 用户清空对话（clear）触发的中止不算错误：messages 已清空时跳过提示
+					if (messagesRef.current.length > 0) setError("已停止生成");
+				} else {
+					setError(err instanceof Error ? err.message : "AI 调用失败");
+				}
+			} finally {
+				if (saved) {
+					// 成功：清除打字机占位，完整内容已由 assistant 消息展示，避免重复
 					if (rafRef.current !== null) {
 						cancelAnimationFrame(rafRef.current);
 						rafRef.current = null;
 					}
+					fullRef.current = "";
+					displayRef.current = "";
 					setStreamText("");
-				} else if (chunk.type === "done") {
-					setModel(chunk.model);
-					setUsage(chunk.usage ?? null);
-				} else if (chunk.type === "error") {
-					errored = true;
-					setError(chunk.message);
+				} else {
+					// 失败/中止：保留已输出的部分文本供查看
+					flushTypewriter();
 				}
+				isStreamingRef.current = false;
+				setIsStreaming(false);
+				abortRef.current = null;
 			}
-
-			// 流正常结束且无错误帧：保留累积内容为 assistant 消息
-			if (!errored && full.trim()) {
-				const next = [
-					...messagesRef.current,
-					{
-						role: "assistant",
-						content: full,
-						thinking: thinking.trim() ? thinking : undefined,
-					} as ChatTurn,
-				];
-				messagesRef.current = next;
-				setMessages(next);
-				saved = true;
-				// 触发「自动应用到编辑器」等联动的完成回调
-				onCompleteRef.current?.(full);
-			}
-		} catch (err) {
-			if (controller.signal.aborted) {
-				// 用户清空对话（clear）触发的中止不算错误：messages 已清空时跳过提示
-				if (messagesRef.current.length > 0) setError("已停止生成");
-			} else {
-				setError(err instanceof Error ? err.message : "AI 调用失败");
-			}
-		} finally {
-			if (saved) {
-				// 成功：清除打字机占位，完整内容已由 assistant 消息展示，避免重复
-				if (rafRef.current !== null) {
-					cancelAnimationFrame(rafRef.current);
-					rafRef.current = null;
-				}
-				fullRef.current = "";
-				displayRef.current = "";
-				setStreamText("");
-			} else {
-				// 失败/中止：保留已输出的部分文本供查看
-				flushTypewriter();
-			}
-			isStreamingRef.current = false;
-			setIsStreaming(false);
-			abortRef.current = null;
-		}
-	}, []);
+		},
+		[startTypewriter, flushTypewriter],
+	);
 
 	const stop = useCallback(() => {
 		abortRef.current?.abort();

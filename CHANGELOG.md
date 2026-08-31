@@ -4,6 +4,15 @@
 
 ### Features
 
+- **`@fsdx/ai-rich-editor` 优化（fragment-only 定位 + 配置归拢 + 本地打包）**：
+  - **定位收敛为 fragment-only**：删除 `AiChatMode` / `AiRichEditorProps.mode` / `AiChatRequest.mode` / 顶栏「片段-完整文档」切换，只输出 HTML 内容片段（另一种形态的富文本）；app 宿主 adapter / ai-chat 服务不依赖 `mode`，不受影响
+  - **提示词重写**：默认 system 提示词按富文本片段定位重写（强调「只输出 body 内部片段、不输出整页文档」），删 `MODE_PROMPT_DESCRIPTIONS`，`buildDefaultSystemPrompt()` 去掉入参
+  - **新增 `previewHead` 附加代码注入**：`config.previewHead` 一段原始 HTML 原样注入预览文档 `<head>`（如预置全局样式/脚本），`buildPreviewDocument(html, previewHead?)` 支持
+  - **配置归拢到 `config` + 设置面板**：包配置项统一收拢到 `config` 属性（`autoApply`/`systemPrompt`/`previewHead`/`notify`），`adapter`/`value`/`onChange`/`height` 保持顶层；顶栏新增「设置」按钮 → antd 抽屉面板，编辑保存后生效并经 `onConfigChange` 回写宿主以持久化；提示词展示区分「自定义」与「内置默认」（生效 Tag + 只读折叠模板）
+  - **可分离性与体验**：补 `react`/`react-dom` peer 与测试 devDeps；Monaco 改本地打包并**仅启用 html/css/js**（`editor.api` + 三个 `languages/definitions/*/register.js`，Monarch 词法高亮、无需语言服务/worker），去除默认 CDN 加载并显著缩包；新增 `useIsDark()` 订阅 `data-theme`，Monaco 主题随三态切换实时联动；补 `sseStream`/`stop` 中止/历史裁剪/`previewHead` 等测试
+  - **布局重构**：三栏改用 antd `Splitter` 水平拖拽分割（对话默认 300 / 预览默认 440 / 预览 max 1200，含 min/max 阈值）；删除顶栏「折叠」按钮，改为「设置」下拉内的「对话面板 / 预览面板」开关，与 Splitter 联动显隐；预览区设计升级——自带头部（设备档位 Segmented、脚本开关、刷新按钮），顶栏精简为「复制 + 设置」
+  - **预览设备档位**：移除平板档与横竖屏切换——桌面拉伸预览（无壳）、手机为固定尺寸设备框（375×812，按舞台等比缩放）；面板最大宽度调大至 1200；新增**新窗口预览**（同源 `window.open` + `document.write` 写入完整文档，保留 `/file` 相对资源）
+
 - **新增 `@fsdx/ai-rich-editor` 独立包（AI 富编辑器三栏工作台）+ 演示页**：
   - **包定位**：重客户端组件，对标 `RichEditor`（WangEditor 富文本）的 AI 进化形态——左栏 AI 对话（预设指令 / 流式回复 / 代码块一键应用）+ 中栏 Monaco 代码编辑 + 右栏 iframe 沙箱预览，顶栏支持面板折叠、设备宽度（桌面/平板/手机）、脚本开关、复制；受控 `value/onChange`
   - **对话契约**：`AiChatAdapter = (req, signal) => AsyncIterable<AiChatChunk>` 方法契约，调用方注入实现（可走 OpenAI / SSE / 宿主 SFn），组件不持有端点/传输/鉴权知识；`stop` 即 abort；system 提示词由适配方注入（包提供 `DEFAULT_SYSTEM_PROMPT_TEMPLATE` / `MODE_PROMPT_DESCRIPTIONS` 模板）

@@ -1,35 +1,41 @@
 /**
  * AI Rich Editor 主容器：顶栏 + 左(AI 对话) / 中(Monaco) / 右(iframe 预览) 三栏
- * value / onChange 兼容受控注入；对话能力由调用方通过 adapter 注入
+ * value / onChange 兼容受控注入；对话能力由调用方通过 adapter 注入；
+ * 包配置项统一收拢到 config，经设置面板编辑保存生效
  */
-import { useCallback, useMemo, useState } from "react";
+import { Splitter } from "antd";
+import { useCallback, useState } from "react";
 import { ChatPanel } from "./components/ChatPanel";
 import { EditorPanel } from "./components/EditorPanel";
 import { PreviewPanel } from "./components/PreviewPanel";
+import { SettingsPanel } from "./components/SettingsPanel";
 import { Toolbar } from "./components/Toolbar";
-import { DEFAULT_HTML, PREVIEW_DEVICES } from "./constants";
+import { DEFAULT_CONFIG, DEFAULT_HTML } from "./constants";
 import { useAiChat } from "./hooks/useAiChat";
-import type { AiChatMode, AiRichEditorProps } from "./types";
+import type { AiRichEditorConfig, AiRichEditorProps } from "./types";
 import { extractHtmlFragments } from "./utils/extract";
-
-const CHAT_PANEL_WIDTH = 300;
-const PREVIEW_PANEL_WIDTH = 400;
 
 export function AiRichEditor({
 	value = DEFAULT_HTML,
 	onChange,
-	height = 640,
-	mode: initialMode = "fragment",
 	adapter,
-	notify,
-	autoApply = true,
-	systemPrompt,
+	height = 640,
+	config,
+	onConfigChange,
 }: AiRichEditorProps) {
 	const [showChat, setShowChat] = useState(true);
 	const [showPreview, setShowPreview] = useState(true);
 	const [deviceKey, setDeviceKey] = useState("desktop");
 	const [scriptsEnabled, setScriptsEnabled] = useState(true);
-	const [mode, setMode] = useState<AiChatMode>(initialMode);
+	const [settingsOpen, setSettingsOpen] = useState(false);
+	// 运行期配置：config 作为初始值，设置面板保存后更新（不受 config 后续变化影响）
+	const [runtimeConfig, setRuntimeConfig] = useState<AiRichEditorConfig>(
+		() => ({
+			...DEFAULT_CONFIG,
+			...config,
+		}),
+	);
+	const { autoApply, systemPrompt, previewHead, notify } = runtimeConfig;
 
 	// 流结束回调：AI 生成的 HTML 代码块自动应用到编辑器（保留手动按钮）
 	const handleAiComplete = useCallback(
@@ -44,7 +50,6 @@ export function AiRichEditor({
 	const chat = useAiChat({
 		currentHtml: value,
 		adapter,
-		mode,
 		systemPrompt,
 		onComplete: handleAiComplete,
 	});
@@ -55,10 +60,14 @@ export function AiRichEditor({
 		[onChange],
 	);
 
-	const currentDevice = useMemo(
-		() =>
-			PREVIEW_DEVICES.find((d) => d.key === deviceKey) ?? PREVIEW_DEVICES[0],
-		[deviceKey],
+	// 设置面板保存：回写运行期配置并通知宿主
+	const handleSaveSettings = useCallback(
+		(cfg: AiRichEditorConfig) => {
+			setRuntimeConfig(cfg);
+			onConfigChange?.(cfg);
+			setSettingsOpen(false);
+		},
+		[onConfigChange],
 	);
 
 	return (
@@ -74,43 +83,39 @@ export function AiRichEditor({
 				onToggleChat={() => setShowChat((prev) => !prev)}
 				showPreview={showPreview}
 				onTogglePreview={() => setShowPreview((prev) => !prev)}
-				deviceKey={deviceKey}
-				onDeviceKeyChange={setDeviceKey}
-				scriptsEnabled={scriptsEnabled}
-				onToggleScripts={() => setScriptsEnabled((prev) => !prev)}
-				mode={mode}
-				onModeChange={setMode}
+				onOpenSettings={() => setSettingsOpen(true)}
 				notify={notify}
 			/>
 
-			<div className="flex min-h-0 flex-1">
+			<Splitter className="min-h-0 flex-1" orientation="horizontal">
 				{showChat && (
-					<div
-						className="shrink-0 border-r border-divider"
-						style={{ width: CHAT_PANEL_WIDTH }}
-					>
+					<Splitter.Panel defaultSize={300} min={220} max={480}>
 						<ChatPanel controller={chat} onApplyHtml={handleApplyHtml} />
-					</div>
+					</Splitter.Panel>
 				)}
-
-				<div className="min-w-0 flex-1">
+				<Splitter.Panel>
 					<EditorPanel value={value} onChange={onChange} />
-				</div>
-
+				</Splitter.Panel>
 				{showPreview && (
-					<div
-						className="shrink-0 border-l border-divider"
-						style={{ width: PREVIEW_PANEL_WIDTH }}
-					>
+					<Splitter.Panel defaultSize={440} min={300} max={1200}>
 						<PreviewPanel
 							html={value}
-							mode={mode}
-							device={currentDevice}
+							deviceKey={deviceKey}
+							onDeviceKeyChange={setDeviceKey}
 							scriptsEnabled={scriptsEnabled}
+							onToggleScripts={() => setScriptsEnabled((prev) => !prev)}
+							previewHead={previewHead}
 						/>
-					</div>
+					</Splitter.Panel>
 				)}
-			</div>
+			</Splitter>
+
+			<SettingsPanel
+				open={settingsOpen}
+				config={runtimeConfig}
+				onClose={() => setSettingsOpen(false)}
+				onSave={handleSaveSettings}
+			/>
 		</div>
 	);
 }
