@@ -15,6 +15,7 @@ import { Route as AdminRouteImport } from './routes/admin'
 import { Route as HealthRouteImport } from './routes/health'
 import { Route as MessagesRouteImport } from './routes/messages'
 import { Route as AdminAdminRouteImport } from './routes/admin/_admin'
+import { Route as ApiAiChatRouteImport } from './routes/api/ai-chat'
 import { Route as ApiMetricsRouteImport } from './routes/api/metrics'
 import { Route as ForgotPasswordIndexRouteImport } from './routes/forgot-password/index'
 import { Route as LoginIndexRouteImport } from './routes/login/index'
@@ -27,6 +28,7 @@ import { Route as AdminInitIndexRouteImport } from './routes/admin/init/index'
 import { Route as AdminLoginIndexRouteImport } from './routes/admin/login/index'
 import { Route as FileRIdRouteImport } from './routes/file/r.$id'
 import { Route as AdminAdminAdminRolesIndexRouteImport } from './routes/admin/_admin/admin-roles/index'
+import { Route as AdminAdminAiProvidersIndexRouteImport } from './routes/admin/_admin/ai-providers/index'
 import { Route as AdminAdminClientRolesIndexRouteImport } from './routes/admin/_admin/client-roles/index'
 import { Route as AdminAdminConfigIndexRouteImport } from './routes/admin/_admin/config/index'
 import { Route as AdminAdminDemoAiRouteImport } from './routes/admin/_admin/demo/ai'
@@ -83,6 +85,11 @@ const MessagesRoute = MessagesRouteImport.update({
 const AdminAdminRoute = AdminAdminRouteImport.update({
   id: '/_admin',
   getParentRoute: () => AdminRoute,
+} as any)
+const ApiAiChatRoute = ApiAiChatRouteImport.update({
+  id: '/api/ai-chat',
+  path: '/api/ai-chat',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const ApiMetricsRoute = ApiMetricsRouteImport.update({
   id: '/api/metrics',
@@ -144,6 +151,12 @@ const AdminAdminAdminRolesIndexRoute =
   AdminAdminAdminRolesIndexRouteImport.update({
     id: '/admin-roles/',
     path: '/admin-roles/',
+    getParentRoute: () => AdminAdminRoute,
+  } as any)
+const AdminAdminAiProvidersIndexRoute =
+  AdminAdminAiProvidersIndexRouteImport.update({
+    id: '/ai-providers/',
+    path: '/ai-providers/',
     getParentRoute: () => AdminAdminRoute,
   } as any)
 const AdminAdminClientRolesIndexRoute =
@@ -302,6 +315,7 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AdminRouteWithChildren
   '/health': typeof HealthRoute
   '/messages': typeof MessagesRoute
+  '/api/ai-chat': typeof ApiAiChatRoute
   '/api/metrics': typeof ApiMetricsRoute
   '/news/$slug': typeof NewsSlugRoute
   '/forgot-password/': typeof ForgotPasswordIndexRoute
@@ -325,6 +339,7 @@ export interface FileRoutesByFullPath {
   '/admin/translations/content': typeof AdminAdminTranslationsContentRoute
   '/admin/translations/ui': typeof AdminAdminTranslationsUiRoute
   '/admin/admin-roles/': typeof AdminAdminAdminRolesIndexRoute
+  '/admin/ai-providers/': typeof AdminAdminAiProvidersIndexRoute
   '/admin/client-roles/': typeof AdminAdminClientRolesIndexRoute
   '/admin/config/': typeof AdminAdminConfigIndexRoute
   '/admin/dicts/': typeof AdminAdminDictsIndexRoute
@@ -348,6 +363,7 @@ export interface FileRoutesByTo {
   '/admin': typeof AdminAdminIndexRoute
   '/health': typeof HealthRoute
   '/messages': typeof MessagesRoute
+  '/api/ai-chat': typeof ApiAiChatRoute
   '/api/metrics': typeof ApiMetricsRoute
   '/news/$slug': typeof NewsSlugRoute
   '/forgot-password': typeof ForgotPasswordIndexRoute
@@ -370,6 +386,7 @@ export interface FileRoutesByTo {
   '/admin/translations/content': typeof AdminAdminTranslationsContentRoute
   '/admin/translations/ui': typeof AdminAdminTranslationsUiRoute
   '/admin/admin-roles': typeof AdminAdminAdminRolesIndexRoute
+  '/admin/ai-providers': typeof AdminAdminAiProvidersIndexRoute
   '/admin/client-roles': typeof AdminAdminClientRolesIndexRoute
   '/admin/config': typeof AdminAdminConfigIndexRoute
   '/admin/dicts': typeof AdminAdminDictsIndexRoute
@@ -395,6 +412,7 @@ export interface FileRoutesById {
   '/health': typeof HealthRoute
   '/messages': typeof MessagesRoute
   '/admin/_admin': typeof AdminAdminRouteWithChildren
+  '/api/ai-chat': typeof ApiAiChatRoute
   '/api/metrics': typeof ApiMetricsRoute
   '/news/$slug': typeof NewsSlugRoute
   '/forgot-password/': typeof ForgotPasswordIndexRoute
@@ -418,6 +436,7 @@ export interface FileRoutesById {
   '/admin/_admin/translations/content': typeof AdminAdminTranslationsContentRoute
   '/admin/_admin/translations/ui': typeof AdminAdminTranslationsUiRoute
   '/admin/_admin/admin-roles/': typeof AdminAdminAdminRolesIndexRoute
+  '/admin/_admin/ai-providers/': typeof AdminAdminAiProvidersIndexRoute
   '/admin/_admin/client-roles/': typeof AdminAdminClientRolesIndexRoute
   '/admin/_admin/config/': typeof AdminAdminConfigIndexRoute
   '/admin/_admin/dicts/': typeof AdminAdminDictsIndexRoute
@@ -443,6 +462,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/health'
     | '/messages'
+    | '/api/ai-chat'
     | '/api/metrics'
     | '/news/$slug'
     | '/forgot-password/'
@@ -466,6 +486,7 @@ export interface FileRouteTypes {
     | '/admin/translations/content'
     | '/admin/translations/ui'
     | '/admin/admin-roles/'
+    | '/admin/ai-providers/'
     | '/admin/client-roles/'
     | '/admin/config/'
     | '/admin/dicts/'
@@ -489,6 +510,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/health'
     | '/messages'
+    | '/api/ai-chat'
     | '/api/metrics'
     | '/news/$slug'
     | '/forgot-password'
@@ -511,6 +533,7 @@ export interface FileRouteTypes {
     | '/admin/translations/content'
     | '/admin/translations/ui'
     | '/admin/admin-roles'
+    | '/admin/ai-providers'
     | '/admin/client-roles'
     | '/admin/config'
     | '/admin/dicts'
@@ -535,6 +558,7 @@ export interface FileRouteTypes {
     | '/health'
     | '/messages'
     | '/admin/_admin'
+    | '/api/ai-chat'
     | '/api/metrics'
     | '/news/$slug'
     | '/forgot-password/'
@@ -558,6 +582,7 @@ export interface FileRouteTypes {
     | '/admin/_admin/translations/content'
     | '/admin/_admin/translations/ui'
     | '/admin/_admin/admin-roles/'
+    | '/admin/_admin/ai-providers/'
     | '/admin/_admin/client-roles/'
     | '/admin/_admin/config/'
     | '/admin/_admin/dicts/'
@@ -582,6 +607,7 @@ export interface RootRouteChildren {
   AdminRoute: typeof AdminRouteWithChildren
   HealthRoute: typeof HealthRoute
   MessagesRoute: typeof MessagesRoute
+  ApiAiChatRoute: typeof ApiAiChatRoute
   ApiMetricsRoute: typeof ApiMetricsRoute
   NewsSlugRoute: typeof NewsSlugRoute
   ForgotPasswordIndexRoute: typeof ForgotPasswordIndexRoute
@@ -634,6 +660,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/admin'
       preLoaderRoute: typeof AdminAdminRouteImport
       parentRoute: typeof AdminRoute
+    }
+    '/api/ai-chat': {
+      id: '/api/ai-chat'
+      path: '/api/ai-chat'
+      fullPath: '/api/ai-chat'
+      preLoaderRoute: typeof ApiAiChatRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/api/metrics': {
       id: '/api/metrics'
@@ -717,6 +750,13 @@ declare module '@tanstack/react-router' {
       path: '/admin-roles'
       fullPath: '/admin/admin-roles/'
       preLoaderRoute: typeof AdminAdminAdminRolesIndexRouteImport
+      parentRoute: typeof AdminAdminRoute
+    }
+    '/admin/_admin/ai-providers/': {
+      id: '/admin/_admin/ai-providers/'
+      path: '/ai-providers'
+      fullPath: '/admin/ai-providers/'
+      preLoaderRoute: typeof AdminAdminAiProvidersIndexRouteImport
       parentRoute: typeof AdminAdminRoute
     }
     '/admin/_admin/client-roles/': {
@@ -925,6 +965,7 @@ interface AdminAdminRouteChildren {
   AdminAdminTranslationsContentRoute: typeof AdminAdminTranslationsContentRoute
   AdminAdminTranslationsUiRoute: typeof AdminAdminTranslationsUiRoute
   AdminAdminAdminRolesIndexRoute: typeof AdminAdminAdminRolesIndexRoute
+  AdminAdminAiProvidersIndexRoute: typeof AdminAdminAiProvidersIndexRoute
   AdminAdminClientRolesIndexRoute: typeof AdminAdminClientRolesIndexRoute
   AdminAdminConfigIndexRoute: typeof AdminAdminConfigIndexRoute
   AdminAdminDictsIndexRoute: typeof AdminAdminDictsIndexRoute
@@ -957,6 +998,7 @@ const AdminAdminRouteChildren: AdminAdminRouteChildren = {
   AdminAdminTranslationsContentRoute: AdminAdminTranslationsContentRoute,
   AdminAdminTranslationsUiRoute: AdminAdminTranslationsUiRoute,
   AdminAdminAdminRolesIndexRoute: AdminAdminAdminRolesIndexRoute,
+  AdminAdminAiProvidersIndexRoute: AdminAdminAiProvidersIndexRoute,
   AdminAdminClientRolesIndexRoute: AdminAdminClientRolesIndexRoute,
   AdminAdminConfigIndexRoute: AdminAdminConfigIndexRoute,
   AdminAdminDictsIndexRoute: AdminAdminDictsIndexRoute,
@@ -1002,6 +1044,7 @@ const rootRouteChildren: RootRouteChildren = {
   AdminRoute: AdminRouteWithChildren,
   HealthRoute: HealthRoute,
   MessagesRoute: MessagesRoute,
+  ApiAiChatRoute: ApiAiChatRoute,
   ApiMetricsRoute: ApiMetricsRoute,
   NewsSlugRoute: NewsSlugRoute,
   ForgotPasswordIndexRoute: ForgotPasswordIndexRoute,

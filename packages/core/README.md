@@ -51,13 +51,12 @@
 | `@fsdx/core/batch-writer` | `src/infra/batch-writer/index.ts` | `BatchWriter<T>` 通用批量缓冲写入器（满 `batchSize` 立即刷 / 定时 `flushInterval` 刷 / 超 `maxBufferSize` 丢弃最旧 / `shutdown()` 强制刷） | 构造注入 `insertFn` + logger |
 | `@fsdx/core/request-context` | `src/infra/request-context/index.ts` | `runWithRequestContext(ctx, fn)`（AsyncLocalStorage）、`getRequestContext()`、`getRequestOperator()`（无上下文兜底 `system`）、`RequestOperator` / `OperatorType` 类型 | 纯函数 |
 | `@fsdx/core/scheduler` | `src/infra/scheduler/index.ts` | `registerTask(task)`、`stopTask(name)`、`stopAllTasks()`、`getTaskNames()`（cron；任务支持 `timeZone` 字段，默认 `Asia/Shanghai`） | `setSchedulerLogger(logger)` 注入日志 |
-| `@fsdx/core/ai` | `src/infra/ai/index.ts` | `initAi({ getConfig, logger })`、`deepChat` / `fastChat` / `deepChatStream` / `fastChatStream`（deep 失败自动降级 fast、空内容参数变化重试）、`truncateJsonForLlm`（OpenAI 兼容，配置指纹变更自动重建客户端） | `initAi` fail-fast |
 | `@fsdx/core/semaphore` | `src/infra/semaphore/index.ts` | `Semaphore` 并发限流（`acquire` / `release` / `activeCount` / `queueLength`）、`SemaphoreTimeoutError`；许可打满时有界排队，队列满 / 等待超时拒绝 | 纯逻辑类 |
 | `@fsdx/core/task-manager` | `src/infra/task-manager/index.ts` | `createTaskManager<TState, TEvent>()` 内存任务管理器（状态机 + TTL 惰性清理 + 事件缓冲 / SSE 订阅与断线回放） | 纯逻辑工厂 |
 | `@fsdx/core/mail` | `src/infra/mail/index.ts` | `initMail({ getConfig, logger })`、`sendMail(options)`、`sendCaptchaMail(...)`（nodemailer SMTP） | `initMail` fail-fast |
 | `@fsdx/core/sms` | `src/infra/sms/index.ts` | `initSms({ getConfig, logger })`、`sendSms(phone, code)`（阿里云，服务商工厂模式） | `initSms` fail-fast |
 
-> `ai` / `mail` / `sms` 依赖系统配置表的 `ai_*` / `smtp_*` / `sms_*` 键，由宿主 `bootstrap.ts` 调用对应 `init*` 注入 `getConfig` 回调与 logger；未 init 直接调用会抛错（fail-fast，禁止静默降级）。
+> `mail` / `sms` 依赖系统配置表的 `smtp_*` / `sms_*` 键，由宿主 `bootstrap.ts` 调用对应 `init*` 注入 `getConfig` 回调与 logger；未 init 直接调用会抛错（fail-fast，禁止静默降级）。AI 已下沉为 app 服务层 `services/ai`（基于 TanStack AI），不再由 core 承担。
 
 ## 主要外部依赖
 

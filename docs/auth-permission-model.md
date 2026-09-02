@@ -278,9 +278,9 @@ sequenceDiagram
 
 ### 权限码体系
 
-> 完整清单以 `src/permissions/admin-permissions.ts` 与 `src/permissions/client-permissions.ts` 为准（当前管理端 62 个权限常量）。
+> 完整清单以 `src/permissions/admin-permissions.ts` 与 `src/permissions/client-permissions.ts` 为准（当前管理端 63 个权限常量）。
 
-权限码格式：`{模块}:{操作}`，共定义 **62 个权限常量**，按模块分组：
+权限码格式：`{模块}:{操作}`，共定义 **63 个权限常量**，按模块分组：
 
 | 模块 | 权限码 |
 |------|--------|

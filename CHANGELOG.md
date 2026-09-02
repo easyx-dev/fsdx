@@ -4,6 +4,13 @@
 
 ### Features
 
+- **AI 多厂商适配（OpenAI 协议）**：
+  - **配置重构**：`ai_base_url`/`ai_api_key`/`ai_model` 三键删除，收敛为单 JSON 配置 `ai_providers`（`[{ id, name, baseUrl, apiKey, model, default? }]`，`json` valueType，管理端「AI设置」分组）；支持同时挂 DeepSeek/Moonshot/Qwen/本地 vLLM 等多个 OpenAI 兼容厂商并指定默认
+  - **`services/ai` 升级**：`ai.provider.ts` 提供 `readProviders`/`resolveProvider`/`getAiProvider(providerId?)`/`getAiAdapter(providerId?)`（按「厂商 id + 配置指纹」缓存的跨 bundle `Map`，多厂商互相隔离）；`ai.server.ts` 的 `streamAiChat`/`completeText` 增加 `providerId?`，缺省走默认厂商
+  - **专用「AI 厂商」管理页**：新增 `/admin/ai-providers`（antd 表格 + 弹窗表单，读写 `ai_providers` 键，无新增 DB 表）+ 权限 `ai:provider`（`AI_PROVIDER_MANAGE`）+ 系统管理菜单项；同步 `doc:gen` 权限清单
+  - **调用侧厂商选择**：`@fsdx/ai-rich-editor` 新增 `requestMeta` prop（合并进 `sendMessage` 的 `forwardedProps`），`/api/ai-chat` 读取 `forwardedProps.providerId`；demo（`/admin/demo/ai`、`/admin/demo/ai-rich-editor`）加厂商下拉
+  - AI 翻译走默认厂商（`completeText` 不传 `providerId`）
+
 - **`@fsdx/ai-rich-editor` 优化（fragment-only 定位 + 配置归拢 + 本地打包）**：
   - **定位收敛为 fragment-only**：删除 `AiChatMode` / `AiRichEditorProps.mode` / `AiChatRequest.mode` / 顶栏「片段-完整文档」切换，只输出 HTML 内容片段（另一种形态的富文本）；app 宿主 adapter / ai-chat 服务不依赖 `mode`，不受影响
   - **提示词重写**：默认 system 提示词按富文本片段定位重写（强调「只输出 body 内部片段、不输出整页文档」），删 `MODE_PROMPT_DESCRIPTIONS`，`buildDefaultSystemPrompt()` 去掉入参
@@ -54,7 +61,16 @@
 
 ### Infrastructure
 
-- **[infra] `@fsdx/core` ai/mail/sms/scheduler 依赖注入统一封装跨 bundle 共享存储**：`initAi`/`initMail`/`initSms`/`setSchedulerLogger` 注入的 deps 原为模块级单例，而 Nitro 入口（bootstrap 注入）与 TanStack Start SSR 渲染器会分别打包一份模块实例，导致在 SSR/bundle 内调用（如 SSE 路由、验证码邮件 SFn）抛「模块未初始化」；现新增 `@fsdx/core` 内部 `deps-store`（`createGlobalDepsStore<T>(key)` 工厂，get/set/reset），将注入状态挂载 `globalThis`（`__FSDX_AI_DEPS__` / `__FSDX_MAIL_DEPS__` / `__FSDX_SMS_DEPS__` / `__FSDX_SCHEDULER_LOGGER__`），四个模块消除各自重复的 globalThis 存取样板、统一经 store 访问，任意 bundle 共享同一份依赖。可被衍生项目吸收；现存部署重启后生效
+- **[infra] AI 能力迁移到 TanStack AI（全栈框架式接入，单模型，下沉为 app 服务层）**：
+  - **删除 `@fsdx/core/ai`（AI 不再是 core 基建）**：AI 完全下沉到 app 服务层 `services/ai`——`ai.provider.ts` 负责配置读取（`ai_base_url`/`ai_api_key`/`ai_model`）+ 基于 `@tanstack/ai-openai/compatible` 的 `openaiCompatible` provider 构建 + 按指纹缓存的跨 bundle 单例（globalThis 键 `__FSDX_AI_PROVIDER__`）；`ai.server.ts` 负责 `chat()` 编排。原 `deepChat`/`fastChat`/`deepChatStream`/`fastChatStream`/`AiModelType`/`truncateJsonForLlm`（无消费）一并移除；core 移除 `@tanstack/ai`/`@tanstack/ai-openai` 依赖与 `./ai` 导出
+  - **`bootstrap.ts` 不再 `initAi`**：`@fsdx/core/ai` 的 `initAi` 依赖注入随模块删除消失，AI 配置改由 `services/ai` 直接 `getConfig` 读取
+  - **服务编排 `services/ai/ai.server.ts`**：`streamAiChat`（返回 TanStack AI 流）/ `completeText`（`chat({ stream:false })` 非流式取文本）；`chat()` 编排与流消费收敛在 app 编排层，AI 翻译等业务只依赖 `services/ai`
+  - **新增 Server Route `/api/ai-chat`**：`adminPermRouteGuard(AI_CHAT)` + `chatParamsFromRequest` + `toServerSentEventsResponse`，替代原 Server Function 自定义 SSE 帧协议；前端 `@fsdx/ai-rich-editor` 改用 `useChat`（`@tanstack/ai-react`）消费标准 SSE
+  - **单模型配置**：`ai_deep_model`/`ai_fast_model` 收敛为 `ai_model`（`PRESET_CONFIGS`/初始化表单同步），去掉 deep→fast 自动降级与空内容参数变化重试，交由 TanStack AI 重试/错误处理；不保留旧键迁移（无历史兼容）
+  - **AI 翻译**：`aiTranslateFieldSFn` 由 `fastChat` 改为 `services/ai` 的 `completeText`，保留 `ai_translation_prompt` 模板与友好错误包裹；`FieldTranslationDrawer` 无感知
+  - 依赖新增 `@tanstack/ai` / `@tanstack/ai-react` / `@tanstack/ai-openai`（app、ai-rich-editor）
+
+- **[infra] `@fsdx/core` mail/sms/scheduler 依赖注入统一封装跨 bundle 共享存储**：`initMail`/`initSms`/`setSchedulerLogger` 注入的 deps 原为模块级单例，而 Nitro 入口（bootstrap 注入）与 TanStack Start SSR 渲染器会分别打包一份模块实例，导致在 SSR/bundle 内调用（如验证码邮件 SFn）抛「模块未初始化」；现新增 `@fsdx/core` 内部 `deps-store`（`createGlobalDepsStore<T>(key)` 工厂，get/set/reset），将注入状态挂载 `globalThis`（`__FSDX_MAIL_DEPS__` / `__FSDX_SMS_DEPS__` / `__FSDX_SCHEDULER_LOGGER__`），消除各自重复的 globalThis 存取样板、统一经 store 访问，任意 bundle 共享同一份依赖。AI 相关配置现由 app `services/ai` 经跨 bundle 单例槽（globalThis 键 `__FSDX_AI_PROVIDER__`）缓存。可被衍生项目吸收；现存部署重启后生效
 
 - **[infra] 系统配置缓存挂载 globalThis 跨 bundle 共享**：`configCache`/`configTranslationCache` 原为模块级单例，Nitro 入口（bootstrap 注入 `getConfig`）与 SSR 渲染器分别打包一份实例，启动后经管理端修改的配置只刷新 SSR 侧缓存，注入 `getConfig` 的模块（AI / SMTP / 短信）仍读到启动时空值——表现为运行时填写 AI 配置后 AI 对话仍报「AI 客户端未配置」；现两个缓存实例挂载 `globalThis`（`__FSDX_CONFIG_CACHE__` / `__FSDX_CONFIG_TRANSLATION_CACHE__`），任意 bundle 读写同一实例，运行时配置变更即时生效。可被衍生项目吸收
 

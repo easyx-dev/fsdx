@@ -50,7 +50,7 @@ packages/
 
 - **core 按职责分层**：`@fsdx/core/*` subpath 由 `package.json` exports 扁平映射到 `utils/`、`i18n/`、`cache/`（同构）或 `infra/`（服务端）。core 的服务端保护依赖 `vite.config.ts` 的 import-protection（按 npm 包名拦截 bcryptjs/drizzle-orm/openai）+ 目录约定，而非 `.server.*` 文件后缀；客户端组件禁止引用 `infra/` 对应模块；core 内不得出现 `#/services`、`#/db`、`#/routes` 反向引用
 - **core 零全局单例**：`@fsdx/core/logger` 只导出 `createLogger` 工厂，应用级 `logger` 单例由 app 的 `src/lib/logger/logger.ts` 提供；`@fsdx/core/jwt` 同理（`createJwt` + 惰性单例壳）
-- **有外部配置依赖的模块用 init 注入**：`@fsdx/core/ai|mail|sms` 提供 `initAi/initMail/initSms`，bootstrap 注入 `getConfig` 回调与 logger；未 init 直接调用抛错（fail-fast）；`scheduler` 用 `setSchedulerLogger` 注入
+- **有外部配置依赖的模块用 init 注入**：`@fsdx/core/mail|sms` 提供 `initMail/initSms`，bootstrap 注入 `getConfig` 回调与 logger；未 init 直接调用抛错（fail-fast）；`scheduler` 用 `setSchedulerLogger` 注入。**AI 不属于 core 基建**：基于 TanStack AI 的 AI 能力下沉到 app 服务层 `services/ai`（`ai.provider.ts` 负责配置读取 + provider 构建 + 跨 bundle 单例缓存，`ai.server.ts` 负责 `chat()` 编排），业务层只依赖 `services/ai`
 - **antd 单实例**：`@fsdx/ui-spa` 将 antd 声明为 peerDependency，app 提供唯一实例；`antd-static` 桥接在 app `<App>` 上下文内工作
 - **UI token 宿主注入**：ui 包组件只写 tailwind 类名，颜色 token 由 app 的 `global.css` 定义；Tailwind 通过 `@source` 扫描包源码类名
 - **新增共享逻辑**：纯函数/类入 `@fsdx/core`，shadcn 组件入 `@fsdx/ui-ssr`，antd 组件入 `@fsdx/ui-spa`，业务逻辑留在 `app/src`

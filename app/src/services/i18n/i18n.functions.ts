@@ -2,7 +2,6 @@
  * 国际化 Server Function 包装器：共享查询 + AI 翻译
  */
 
-import { fastChat } from "@fsdx/core/ai";
 import type { Locale } from "@fsdx/core/i18n-types";
 import { DEFAULT_LOCALE, SUPPORTED_LOCALES } from "@fsdx/core/i18n-types";
 import { createServerFn } from "@tanstack/react-start";
@@ -10,6 +9,7 @@ import { z } from "zod";
 import { EDITOR_TYPES } from "#/constants/editor-types";
 import { adminPermGuard } from "#/middleware/admin-auth";
 import { ADMIN_PERMISSIONS } from "#/permissions/admin-permissions";
+import { completeText } from "#/services/ai/ai.server";
 import { getConfig } from "#/services/config/config.server";
 import {
 	getFieldTranslations,
@@ -90,11 +90,11 @@ export const aiTranslateFieldSFn = createServerFn({ method: "POST" })
 			.replace(/\{sourceText\}/g, sourceText);
 
 		try {
-			// fastChat 空内容重试后仍为空会直接抛错，统一转为友好提示
-			const result = await fastChat([{ role: "user", content: prompt }], {
-				temperature: 0.3,
+			// 非流式一次性生成：由 app 编排层消费，统一转为友好提示
+			return await completeText({
+				messages: [{ role: "user", content: prompt }],
+				modelOptions: { temperature: 0.3 },
 			});
-			return result.content;
 		} catch {
 			throw new Error("AI 翻译服务不可用，请检查 AI 配置");
 		}

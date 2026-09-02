@@ -78,13 +78,13 @@ describe("buildInitData", () => {
 			...baseInput,
 			aiBaseUrl: "https://api.test.com",
 			aiApiKey: "sk-test",
-			aiDeepModel: "deep-model",
-			aiFastModel: "fast-model",
+			aiModel: "deepseek-chat",
 		});
 
 		expect(result.ai).toBeDefined();
 		expect(result.ai!.baseUrl).toBe("https://api.test.com");
 		expect(result.ai!.apiKey).toBe("sk-test");
+		expect(result.ai!.model).toBe("deepseek-chat");
 	});
 
 	it("AI 全部字段为 undefined", () => {

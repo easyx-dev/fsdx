@@ -3,7 +3,7 @@
 > 单一事实来源：`src/permissions/admin-permissions.ts`（管理端）、`src/permissions/client-permissions.ts`（客户端）
 > 重新生成：`pnpm doc:gen`
 
-## 管理端权限码（62 个）
+## 管理端权限码（63 个）
 
 | 分组 | 权限码 | 名称 | 说明 |
 |------|--------|------|------|
@@ -17,6 +17,7 @@
 | admin-role | `admin-role:delete` | 删除角色 | 允许删除角色 |
 | ai | `ai:test` | AI 测试 | 允许使用 AI 模型测试页面进行模型调用测试 |
 | ai | `ai:chat` | AI 对话 | 允许使用通用 AI 流式对话能力（供 AI 富编辑器等业务模块调用） |
+| ai | `ai:provider` | AI 厂商管理 | 允许新增、编辑、删除 AI 厂商配置（ai_providers） |
 | client | `client:view` | 查看客户端用户 | 允许查看前台注册用户列表 |
 | client | `client:create` | 创建客户端用户 | 允许创建新的客户端用户账号 |
 | client | `client:edit` | 编辑客户端用户 | 允许编辑客户端用户信息 |

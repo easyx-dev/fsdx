@@ -18,7 +18,8 @@ import { extractHtmlFragments } from "./utils/extract";
 export function AiRichEditor({
 	value = DEFAULT_HTML,
 	onChange,
-	adapter,
+	endpointUrl,
+	requestMeta,
 	height = 640,
 	config,
 	onConfigChange,
@@ -48,9 +49,9 @@ export function AiRichEditor({
 	);
 
 	const chat = useAiChat({
-		currentHtml: value,
-		adapter,
+		endpointUrl,
 		systemPrompt,
+		requestMeta,
 		onComplete: handleAiComplete,
 	});
 

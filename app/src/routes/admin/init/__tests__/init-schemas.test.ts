@@ -58,8 +58,7 @@ describe("initSchema（系统初始化）", () => {
 			email: "admin@example.com",
 			aiBaseUrl: "https://api.openai.com/v1",
 			aiApiKey: "sk-xxx",
-			aiDeepModel: "gpt-4o",
-			aiFastModel: "gpt-4o-mini",
+			aiModel: "gpt-4o",
 		});
 		expect(result.success).toBe(true);
 	});

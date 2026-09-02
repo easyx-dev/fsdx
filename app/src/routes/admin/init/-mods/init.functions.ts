@@ -20,8 +20,7 @@ export const initSchema = z
 		smtpFrom: z.string().optional(),
 		aiBaseUrl: z.string().optional(),
 		aiApiKey: z.string().optional(),
-		aiDeepModel: z.string().optional(),
-		aiFastModel: z.string().optional(),
+		aiModel: z.string().optional(),
 		smsProvider: z.string().optional(),
 		smsAccessKeyId: z.string().optional(),
 		smsAccessKeySecret: z.string().optional(),
@@ -44,12 +43,7 @@ export function buildInitData(data: InitInput): InitData {
 		data.smtpPass ||
 		data.smtpFrom
 	);
-	const aiProvided = !!(
-		data.aiBaseUrl ||
-		data.aiApiKey ||
-		data.aiDeepModel ||
-		data.aiFastModel
-	);
+	const aiProvided = !!(data.aiBaseUrl || data.aiApiKey || data.aiModel);
 	const smsProvided = !!(
 		data.smsProvider ||
 		data.smsAccessKeyId ||
@@ -79,8 +73,7 @@ export function buildInitData(data: InitInput): InitData {
 			? {
 					baseUrl: data.aiBaseUrl,
 					apiKey: data.aiApiKey,
-					deepModel: data.aiDeepModel,
-					fastModel: data.aiFastModel,
+					model: data.aiModel,
 				}
 			: undefined,
 		sms: smsProvided

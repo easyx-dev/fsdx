@@ -322,6 +322,11 @@ export const ADMIN_PERMISSIONS = {
 		"AI 对话",
 		"允许使用通用 AI 流式对话能力（供 AI 富编辑器等业务模块调用）",
 	),
+	AI_PROVIDER_MANAGE: definePermission(
+		"ai:provider",
+		"AI 厂商管理",
+		"允许新增、编辑、删除 AI 厂商配置（ai_providers）",
+	),
 } as const;
 
 // ─── 对外类型 ───

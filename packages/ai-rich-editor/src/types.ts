@@ -1,6 +1,6 @@
 /**
- * AI Rich Editor 开放类型：会话协议、适配器契约与组件 Props
- * 协议层与 UI 库无关，供任意宿主适配实现
+ * AI Rich Editor 开放类型：会话消息、控制器配置与组件 Props
+ * 协议层与 UI 库无关，由宿主透传 SSE 端点（TanStack AI useChat 消费）
  */
 
 /** 对话消息（不含 system，system 由组件的系统提示词注入；assistant 可携带思考内容） */
@@ -11,46 +11,12 @@ export type ChatTurn = {
 	thinking?: string;
 };
 
-/** OpenAI 协议：对话请求（组件 → 适配器） */
-export interface AiChatRequest {
-	/** 完整对话历史（按时间顺序，组件负责裁剪） */
-	messages: ChatTurn[];
-	/** 编辑器当前内容快照 */
-	snapshot?: string;
-	/** system 提示词（组件生成默认值，使用方可通过 config.systemPrompt 覆盖） */
-	systemPrompt: string;
-	/** 请求参数透传（适配器可忽略或映射为 OpenAI 参数） */
-	options?: {
-		temperature?: number;
-		maxTokens?: number;
-		model?: string;
-	};
-}
-
 /** Token 用量统计 */
 export interface AiChatUsage {
 	promptTokens?: number;
 	completionTokens?: number;
 	totalTokens?: number;
 }
-
-/** 流式对话数据单元（适配器产出，组件驱动 UI） */
-export type AiChatChunk =
-	| { type: "delta"; text: string }
-	| { type: "thinking"; text: string }
-	| { type: "attempt"; model: string }
-	| { type: "done"; model: string; usage?: AiChatUsage }
-	| { type: "error"; message: string };
-
-/**
- * 对话方法适配器（核心契约）
- * 由调用方实现：内部可走 OpenAI / 宿主 SFn / SSE / mock，
- * 借助 AsyncIterable 天然支持流式与 abort（signal 中止即停）
- */
-export type AiChatAdapter = (
-	request: AiChatRequest,
-	signal: AbortSignal,
-) => AsyncIterable<AiChatChunk>;
 
 /** 消息提示回调（可选注入；缺省用 antd 静态 message） */
 export type AiRichNotify = (
@@ -60,7 +26,7 @@ export type AiRichNotify = (
 
 /**
  * 统一包配置项（设置面板展示/编辑，保存后生效）
- * adapter、height 为顶层属性，不归入此对象
+ * endpointUrl、height 为顶层属性，不归入此对象
  */
 export interface AiRichEditorConfig {
 	/** AI 回复结束后是否自动把内容应用到编辑器（默认 true，仍保留手动「应用到编辑器」按钮） */
@@ -79,8 +45,10 @@ export interface AiRichEditorProps {
 	value?: string;
 	/** 内容变化回调 */
 	onChange?: (value: string) => void;
-	/** 对话方法适配器（必填，不进设置面板） */
-	adapter: AiChatAdapter;
+	/** 对话流式 SSE 端点 URL（由宿主提供，经 useChat 消费 TanStack AI SSE） */
+	endpointUrl: string;
+	/** 随每次对话请求透传的服务端附加元数据（如 { providerId }，经 forwardedProps 到达服务端） */
+	requestMeta?: Record<string, unknown>;
 	/** 编辑器整体高度（默认 640，宿主布局参数） */
 	height?: number | string;
 	/**

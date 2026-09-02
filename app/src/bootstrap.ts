@@ -2,7 +2,6 @@
  * 服务启动初始化：环境变量加载、错误处理、预置数据、定时任务、优雅关闭
  */
 
-import { initAi } from "@fsdx/core/ai";
 import { initMail } from "@fsdx/core/mail";
 import { setSchedulerLogger } from "@fsdx/core/scheduler";
 import { initSms } from "@fsdx/core/sms";
@@ -27,8 +26,7 @@ import {
 const GRACEFUL_SHUTDOWN_TIMEOUT = 10_000;
 
 export async function bootstrap() {
-	// 模块依赖注入：先注入日志依赖各模块（ai/mail/sms/scheduler），服务起来前完成
-	initAi({ getConfig, logger });
+	// 模块依赖注入：先注入日志依赖各模块（mail/sms/scheduler），服务起来前完成
 	initMail({ getConfig, logger });
 	initSms({ getConfig, logger });
 	setSchedulerLogger(logger);

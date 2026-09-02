@@ -3,7 +3,7 @@
 > 定位：平台组件类 · 人类阅读
 > 单一事实来源：`packages/ai-rich-editor/src/`（以代码为准）
 > 引用关系：← AGENTS「组件约定」分类；→ 被 app 管理端 `/admin/demo/ai-rich-editor` 演示路由引用
-> 更新触发：组件 API、协议（AiChatAdapter/Chunk）、配置项（config/设置面板）变更时
+> 更新触发：组件 API、对话契约（endpointUrl / useChat）、配置项（config/设置面板）变更时
 
 ## 定位与边界
 
@@ -11,7 +11,7 @@ AI 驱动「代码编辑 + 实时预览」三栏工作台，是**另一种形态
 
 - 产物是**可嵌入 CMS 内容字段的 HTML 片段**（fragment），**不输出**整页 HTML 文档（无 `mode` 概念）。
 - 场景：企业官网内容页（新闻、活动、落地页）的 HTML 内容生产。
-- **不持有**任何 HTTP 端点/鉴权知识——对话能力经 `AiChatAdapter` 方法契约由调用方注入实现。
+- **不持有**任何 HTTP 端点/鉴权知识——对话能力经宿主导入的 SSE 端点（`endpointUrl`）由 `useChat`（`@tanstack/ai-react`）消费。
 - UI：antd（peer 单实例）+ tailwind 语义令牌类（宿主 `global.css` 注入，需 `@source` 扫描包源码）。
 
 ## 三栏结构
@@ -23,16 +23,16 @@ AI 驱动「代码编辑 + 实时预览」三栏工作台，是**另一种形态
 - 中栏 `EditorPanel`：自适应面板；Monaco 懒加载（`editor.api` + 仅 html/css/js 词法高亮，无语言服务/worker，本地打包），主题亮暗跟随宿主 `data-theme`。
 - 右栏 `PreviewPanel`：由 `Splitter.Panel` 承载（默认 440，min 300 / max 1200，随 `showPreview` 显隐）；自带头部（设备档位 Segmented、脚本开关、刷新、**新窗口预览**按钮）；桌面拉伸预览（无壳），手机为固定尺寸设备框（375×812，按舞台等比缩放）；iframe sandbox 渲染 `srcDoc`，片段包裹 + 附加代码注入。
 
-## 协议与适配器契约
+## 对话契约（基于 TanStack AI）
 
-- `AiChatAdapter(request, signal) => AsyncIterable<AiChatChunk>`：由适配方实现，天然支持流式与 abort。
-- chunk：`delta`（正文）、`thinking`（推理）、`attempt`（deep→fast 降级）、`done`（model/usage）、`error`。
-- system 提示词由包内生成（`buildDefaultSystemPrompt`），使用方可通过 `config.systemPrompt` 覆盖。
-- subpath `@fsdx/ai-rich-editor/sse`：通用 SSE 帧解析与流消费，供适配器实现复用。
+- 组件经 `useChat`（`@tanstack/ai-react`）消费宿主 SSE 端点（`endpointUrl`），服务端用 `chat()` + `toServerSentEventsResponse` 对接到 TanStack AI 标准 SSE。app 内示例为 `routes/api/ai-chat.tsx`。
+- 将 `UIMessage.parts`（`text`/`thinking`）映射为包内 `ChatTurn`（text 拼接为 `content`，thinking 单独字段）；思考内容流式展示在 `ThinkingBubble`。
+- system 提示词由包内生成（`buildDefaultSystemPrompt`），使用方可通过 `config.systemPrompt` 覆盖；随每次发送经 `sendMessage(text, { body: { systemPrompt } })` 透传为 `forwardedProps.systemPrompt`。
+- `stop` 中止当前生成（AbortController）；`clear` 清空对话。
 
 ## 统一配置与设置面板
 
-包配置项收拢到单一 `config` 属性（`AiRichEditorConfig`），`adapter`、`value/onChange`、`height` 保持顶层：
+包配置项收拢到单一 `config` 属性（`AiRichEditorConfig`），`endpointUrl`、`value/onChange`、`height` 保持顶层：
 
 | 配置项 | 说明 | 默认 |
 |--------|------|------|
@@ -46,13 +46,10 @@ AI 驱动「代码编辑 + 实时预览」三栏工作台，是**另一种形态
 
 ## 对话状态机（`useAiChat`）
 
-发送 → 裁剪历史（保留最近 `CHAT_MAX_TURNS` 轮）→ 消费 AsyncIterable：
-
-- `thinking`/`delta` 累积（delta 走打字机节流逐字推进）。
-- `attempt`（deep→fast 降级）清空已输出的正文与思考，避免残文混入。
-- `done` 记录 model/usage；`error` 暴露错误。
-- 流正常结束且无 error：保存 assistant 消息（含 thinking），触发 `onComplete`（自动应用编辑器）。
-- `stop`/`clear` 通过 AbortSignal 中止；clear 触发的中止不残留错误提示。
+- `send`：调用 `useChat.sendMessage(text, { body: { systemPrompt } })`，system 随请求透传。
+- 流式中的生成中气泡：`isLoading` 且末条为 assistant 时移除出自 `messages`，其 text/thinking parts 暴露为 `streamText`/`thinkingText`，供流式气泡渲染（TanStack tokens 逐字到达，无需打字机节流）。
+- `onFinish` 触发 `onComplete`（自动应用编辑器）；`error` 暴露错误信息。
+- `stop`/`clear` 映射到 `useChat.stop`/`useChat.setMessages([])`。
 
 ## 预览沙箱
 
@@ -62,3 +59,4 @@ AI 驱动「代码编辑 + 实时预览」三栏工作台，是**另一种形态
 
 - 初始：三栏工作台 + `fragment/document` 输出形态切换。
 - 本次优化：定位收敛为 fragment-only（去 `mode`）、提示词重写、新增 `previewHead` 附加代码注入、配置归拢 `config` + 设置面板、Monaco 本地打包、主题暗色联动、测试与文档补齐。
+- 本次迁移：对话传输从自定义 `AiChatAdapter`/SSE 帧协议改为基于 TanStack AI 的 `useChat` + 标准 SSE（`endpointUrl`），删除 `/sse` 子路径与 `AiChatChunk` 协议。

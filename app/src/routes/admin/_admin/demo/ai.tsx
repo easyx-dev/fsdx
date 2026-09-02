@@ -1,5 +1,5 @@
 /**
- * AI 模型测试页面：支持深度思考与快速模型调用测试
+ * AI 模型测试页面（单模型非流式）
  */
 import { RobotOutlined, SendOutlined } from "@ant-design/icons";
 import { message } from "@fsdx/ui-spa/antd-static";
@@ -13,12 +13,13 @@ import {
 	Select,
 	Slider,
 	Space,
-	Tag,
 	Typography,
 } from "antd";
 import { useState } from "react";
 import type { z } from "zod";
 import { AdminPageContent } from "#/components/admin";
+import type { AiProviderConfig } from "#/services/ai/ai.schemas";
+import { getAiProvidersSFn } from "#/services/ai/ai-providers.functions";
 import { type aiTestSchema, aiTestSFn } from "./-mods/ai.functions";
 
 const { Text, Paragraph } = Typography;
@@ -26,24 +27,21 @@ const { Text, Paragraph } = Typography;
 type AiTestInput = z.infer<typeof aiTestSchema>;
 
 export const Route = createFileRoute("/admin/_admin/demo/ai")({
+	loader: async () => {
+		try {
+			return await getAiProvidersSFn();
+		} catch {
+			return [];
+		}
+	},
 	component: AiDemoPage,
 });
 
-/** AI 调用结果 */
-interface CallResult {
-	content: string;
-	model: string;
-	usage?: {
-		promptTokens: number;
-		completionTokens: number;
-		totalTokens: number;
-	};
-}
-
 function AiDemoPage() {
+	const providers = Route.useLoaderData() as AiProviderConfig[];
 	const [form] = Form.useForm<AiTestInput>();
 	const [loading, setLoading] = useState(false);
-	const [result, setResult] = useState<CallResult | null>(null);
+	const [result, setResult] = useState<string | null>(null);
 
 	const handleSubmit = async (values: AiTestInput) => {
 		setLoading(true);
@@ -61,7 +59,7 @@ function AiDemoPage() {
 	return (
 		<AdminPageContent
 			title="AI 模型测试"
-			description="测试深度思考模型和快速模型的调用效果"
+			description="测试默认 AI 厂商的调用效果"
 		>
 			<div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
 				<Card title="请求参数" size="small">
@@ -70,22 +68,21 @@ function AiDemoPage() {
 						layout="vertical"
 						onFinish={handleSubmit}
 						initialValues={{
-							modelType: "deep",
 							temperature: 0.7,
 						}}
 					>
-						<Form.Item
-							name="modelType"
-							label="模型类型"
-							rules={[{ required: true }]}
-						>
-							<Select
-								options={[
-									{ value: "deep", label: "深度思考模型（默认）" },
-									{ value: "fast", label: "快速模型" },
-								]}
-							/>
-						</Form.Item>
+						{providers.length > 0 && (
+							<Form.Item name="providerId" label="AI 厂商">
+								<Select
+									allowClear
+									placeholder="默认厂商"
+									options={providers.map((p) => ({
+										value: p.id,
+										label: p.name,
+									}))}
+								/>
+							</Form.Item>
+						)}
 
 						<Form.Item name="systemMessage" label="System 消息（可选）">
 							<Input.TextArea
@@ -143,24 +140,14 @@ function AiDemoPage() {
 					}
 					size="small"
 				>
-					{result ? (
+					{result !== null ? (
 						<div className="space-y-3">
-							<div className="flex flex-wrap gap-2">
-								<Tag color="blue">{result.model}</Tag>
-								{result.usage && (
-									<>
-										<Tag>输入: {result.usage.promptTokens} tokens</Tag>
-										<Tag>输出: {result.usage.completionTokens} tokens</Tag>
-										<Tag>合计: {result.usage.totalTokens} tokens</Tag>
-									</>
-								)}
-							</div>
 							<Card size="small" className="bg-muted/30">
 								<Paragraph
 									className="mb-0 whitespace-pre-wrap"
 									style={{ whiteSpace: "pre-wrap" }}
 								>
-									{result.content || "(空回复)"}
+									{result || "(空回复)"}
 								</Paragraph>
 							</Card>
 						</div>

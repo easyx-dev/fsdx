@@ -1,31 +1,33 @@
 /**
- * AI 对话状态 hook：消费 AiChatAdapter（AsyncIterable 流）驱动 UI
- * 负责：发送/流式消费/中止/清空，结构化 assistant 消息（含代码块提取）
- * 组件不感知传输层，adapter 由调用方注入
+ * AI 对话状态 hook：基于 @tanstack/ai-react 的 useChat 重实现
+ * 消费宿主透传的 SSE 端点，驱动 UI。把 TanStack 的 UIMessage（parts: text/thinking/tool）
+ * 映射为包内 ChatTurn（text 拼接为 content，thinking 单独字段）。
+ * 组件不感知传输层，端点由调用方注入（endpointUrl）。
  */
-import { useCallback, useEffect, useRef, useState } from "react";
-import { CHAT_MAX_TURNS } from "../constants";
+import {
+	fetchServerSentEvents,
+	type UIMessage,
+	useChat,
+} from "@tanstack/ai-react";
+import { useCallback, useMemo, useRef } from "react";
 import { buildDefaultSystemPrompt } from "../prompts";
-import type { AiChatAdapter, AiChatUsage, ChatTurn } from "../types";
-
-/** 打字机动画每帧最多推进的字符数 */
-const TYPEWRITER_STEP = 12;
+import type { AiChatUsage, ChatTurn } from "../types";
 
 /** useAiChat 入参 */
 export interface UseAiChatOptions {
-	/** 当前编辑器 HTML（每次发送时作为快照注入） */
-	currentHtml: string;
-	/** 对话适配器 */
-	adapter: AiChatAdapter;
-	/** 自定义 system 提示词（可选，缺省用包内置模板） */
+	/** 对话流式 SSE 端点 URL */
+	endpointUrl: string;
+	/** 自定义 system 提示词（可选，缺省用包内置模板；随每次发送透传给服务端） */
 	systemPrompt?: string;
+	/** 随每次发送透传给服务端的附加元数据（合并进 forwardedProps，如 { providerId }） */
+	requestMeta?: Record<string, unknown>;
 	/** 单轮流正常结束时回调（内容为完整回复，供自动应用编辑器等联动） */
 	onComplete?: (content: string) => void;
 }
 
 /** 对话状态与操作 */
 export interface AiChatController {
-	/** 完整对话历史 */
+	/** 完整对话历史（已完成轮次；流式中的生成中气泡不在此列） */
 	messages: ChatTurn[];
 	/** 正在流式输出的文本（流结束前逐字增长） */
 	streamText: string;
@@ -45,227 +47,107 @@ export interface AiChatController {
 	clear: () => void;
 }
 
+/** 提取文本 part 内容 */
+function textOf(message: UIMessage): string {
+	let text = "";
+	for (const part of message.parts) {
+		if (part.type === "text") text += part.content;
+	}
+	return text;
+}
+
+/** 提取思考 part 内容 */
+function thinkingOf(message: UIMessage): string {
+	let thinking = "";
+	for (const part of message.parts) {
+		if (part.type === "thinking") thinking += part.content;
+	}
+	return thinking;
+}
+
+/** 将 UIMessage 映射为包内 ChatTurn */
+function toChatTurn(message: UIMessage): ChatTurn {
+	const thinking = thinkingOf(message);
+	return {
+		role: message.role === "assistant" ? "assistant" : "user",
+		content: textOf(message),
+		thinking: thinking || undefined,
+	};
+}
+
 export function useAiChat({
-	currentHtml,
-	adapter,
+	endpointUrl,
 	systemPrompt,
+	requestMeta,
 	onComplete,
 }: UseAiChatOptions): AiChatController {
-	const [messages, setMessages] = useState<ChatTurn[]>([]);
-	const [streamText, setStreamText] = useState("");
-	const [thinkingText, setThinkingText] = useState("");
-	const [isStreaming, setIsStreaming] = useState(false);
-	const [error, setError] = useState<string | null>(null);
-	const [model, setModel] = useState<string | null>(null);
-	const [usage, setUsage] = useState<AiChatUsage | null>(null);
-
-	// ref 镜像：send 内读取最新值，避免闭包过期导致连发丢消息
-	const messagesRef = useRef<ChatTurn[]>([]);
-	const currentHtmlRef = useRef(currentHtml);
-	const adapterRef = useRef(adapter);
 	const systemPromptRef = useRef(systemPrompt);
-	const isStreamingRef = useRef(false);
-	const abortRef = useRef<AbortController | null>(null);
+	const requestMetaRef = useRef(requestMeta);
 	const onCompleteRef = useRef(onComplete);
+	systemPromptRef.current = systemPrompt;
+	requestMetaRef.current = requestMeta;
+	onCompleteRef.current = onComplete;
 
-	// 打字机节流：streamText 按帧渐进推进，即使后端一次性返回也呈现逐字效果
-	const fullRef = useRef("");
-	const displayRef = useRef("");
-	const rafRef = useRef<number | null>(null);
-
-	useEffect(() => {
-		currentHtmlRef.current = currentHtml;
-	}, [currentHtml]);
-	useEffect(() => {
-		adapterRef.current = adapter;
-	}, [adapter]);
-	useEffect(() => {
-		systemPromptRef.current = systemPrompt;
-	}, [systemPrompt]);
-	useEffect(() => {
-		onCompleteRef.current = onComplete;
-	}, [onComplete]);
-	// 卸载时取消打字机动画
-	useEffect(
-		() => () => {
-			if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
-		},
-		[],
+	// 稳定 connection / onFinish 引用：避免每次渲染重建 ChatClient（会重置消息状态）
+	const connection = useMemo(
+		() => fetchServerSentEvents(endpointUrl),
+		[endpointUrl],
 	);
-
-	/** 启动打字机动画：每帧将 streamText 向 fullRef 推进固定步长 */
-	const startTypewriter = useCallback(() => {
-		if (rafRef.current !== null) return;
-		const tick = () => {
-			rafRef.current = null;
-			const target = fullRef.current;
-			const current = displayRef.current;
-			if (current.length < target.length) {
-				const next = target.slice(0, current.length + TYPEWRITER_STEP);
-				displayRef.current = next;
-				setStreamText(next);
-			}
-			// 仍在生成或有未显示内容时继续推进
-			if (
-				isStreamingRef.current ||
-				displayRef.current.length < fullRef.current.length
-			) {
-				rafRef.current = requestAnimationFrame(tick);
-			}
-		};
-		rafRef.current = requestAnimationFrame(tick);
+	const handleFinish = useCallback((message: UIMessage) => {
+		const content = textOf(message);
+		if (content.trim()) onCompleteRef.current?.(content);
 	}, []);
 
-	/** 立即将打字机文本跳到完整内容（流结束时调用） */
-	const flushTypewriter = useCallback(() => {
-		if (rafRef.current !== null) {
-			cancelAnimationFrame(rafRef.current);
-			rafRef.current = null;
-		}
-		displayRef.current = fullRef.current;
-		setStreamText(fullRef.current);
-	}, []);
+	const {
+		messages: tanMessages,
+		sendMessage,
+		stop: stopFn,
+		setMessages,
+		isLoading,
+		error,
+	} = useChat({
+		connection,
+		onFinish: handleFinish,
+	});
+
+	// 判定「流式中的生成中气泡」：isLoading 且最后一条为 assistant 消息
+	const last =
+		tanMessages.length > 0 ? tanMessages[tanMessages.length - 1] : undefined;
+	const isStreaming = isLoading && !!last && last.role === "assistant";
+
+	// 已完成消息 = 移除流式中的末条 assistant 占位，避免与流式气泡重复渲染
+	const messages = isStreaming
+		? tanMessages.slice(0, -1).map(toChatTurn)
+		: tanMessages.map(toChatTurn);
+	const streamText = isStreaming && last ? textOf(last) : "";
+	const thinkingText = isStreaming && last ? thinkingOf(last) : "";
 
 	const send = useCallback(
 		async (text: string) => {
 			const prompt = text.trim();
-			if (!prompt || isStreamingRef.current) return;
-
-			const userMessage: ChatTurn = { role: "user", content: prompt };
-			const history = [...messagesRef.current, userMessage];
-			messagesRef.current = history;
-			setMessages(history);
-			setStreamText("");
-			setError(null);
-			setModel(null);
-			setUsage(null);
-			isStreamingRef.current = true;
-			setIsStreaming(true);
-
-			const controller = new AbortController();
-			abortRef.current = controller;
-			let full = "";
-			let thinking = "";
-			let errored = false;
-			let saved = false;
-			fullRef.current = "";
-			displayRef.current = "";
-			setThinkingText("");
-			try {
-				// 裁剪最旧轮次（user + assistant 为一轮），保留最近 N 轮
-				const trimmed = history.slice(-CHAT_MAX_TURNS * 2);
-				const request = {
-					messages: trimmed,
-					snapshot: currentHtmlRef.current,
+			if (!prompt || isLoading) return;
+			// 请求元数据先展开、system 提示词兜底，避免宿主误传 systemPrompt 时覆盖包内生成的提示词
+			await sendMessage(prompt, {
+				body: {
+					...requestMetaRef.current,
 					systemPrompt: systemPromptRef.current ?? buildDefaultSystemPrompt(),
-				};
-				for await (const chunk of adapterRef.current(
-					request,
-					controller.signal,
-				)) {
-					if (chunk.type === "thinking") {
-						thinking += chunk.text;
-						setThinkingText(thinking);
-					} else if (chunk.type === "delta") {
-						full += chunk.text;
-						fullRef.current = full;
-						startTypewriter();
-					} else if (chunk.type === "attempt") {
-						// deep→fast 降级：清空残缺的思考片段与已输出的正文，
-						// 避免 deep 已中断的推理过程混入 fast 重新生成的完整结果
-						thinking = "";
-						setThinkingText("");
-						full = "";
-						fullRef.current = "";
-						displayRef.current = "";
-						if (rafRef.current !== null) {
-							cancelAnimationFrame(rafRef.current);
-							rafRef.current = null;
-						}
-						setStreamText("");
-					} else if (chunk.type === "done") {
-						setModel(chunk.model);
-						setUsage(chunk.usage ?? null);
-					} else if (chunk.type === "error") {
-						errored = true;
-						setError(chunk.message);
-					}
-				}
-
-				// 流正常结束且无错误帧：保留累积内容为 assistant 消息
-				if (!errored && full.trim()) {
-					const next = [
-						...messagesRef.current,
-						{
-							role: "assistant",
-							content: full,
-							thinking: thinking.trim() ? thinking : undefined,
-						} as ChatTurn,
-					];
-					messagesRef.current = next;
-					setMessages(next);
-					saved = true;
-					// 触发「自动应用到编辑器」等联动的完成回调
-					onCompleteRef.current?.(full);
-				}
-			} catch (err) {
-				if (controller.signal.aborted) {
-					// 用户清空对话（clear）触发的中止不算错误：messages 已清空时跳过提示
-					if (messagesRef.current.length > 0) setError("已停止生成");
-				} else {
-					setError(err instanceof Error ? err.message : "AI 调用失败");
-				}
-			} finally {
-				if (saved) {
-					// 成功：清除打字机占位，完整内容已由 assistant 消息展示，避免重复
-					if (rafRef.current !== null) {
-						cancelAnimationFrame(rafRef.current);
-						rafRef.current = null;
-					}
-					fullRef.current = "";
-					displayRef.current = "";
-					setStreamText("");
-				} else {
-					// 失败/中止：保留已输出的部分文本供查看
-					flushTypewriter();
-				}
-				isStreamingRef.current = false;
-				setIsStreaming(false);
-				abortRef.current = null;
-			}
+				},
+			});
 		},
-		[startTypewriter, flushTypewriter],
+		[sendMessage, isLoading],
 	);
 
-	const stop = useCallback(() => {
-		abortRef.current?.abort();
-	}, []);
-
-	const clear = useCallback(() => {
-		messagesRef.current = [];
-		abortRef.current?.abort();
-		if (rafRef.current !== null) {
-			cancelAnimationFrame(rafRef.current);
-			rafRef.current = null;
-		}
-		fullRef.current = "";
-		displayRef.current = "";
-		setMessages([]);
-		setStreamText("");
-		setThinkingText("");
-		setError(null);
-		setModel(null);
-		setUsage(null);
-	}, []);
+	const stop = useCallback(() => stopFn(), [stopFn]);
+	const clear = useCallback(() => setMessages([]), [setMessages]);
 
 	return {
 		messages,
 		streamText,
 		thinkingText,
 		isStreaming,
-		error,
-		model,
-		usage,
+		error: error ? error.message : null,
+		model: null,
+		usage: null,
 		send,
 		stop,
 		clear,

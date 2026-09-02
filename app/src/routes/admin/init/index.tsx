@@ -111,8 +111,7 @@ function AdminInitPage() {
 									const ai = json.ai as Record<string, unknown>;
 									if (ai.baseUrl) values.aiBaseUrl = ai.baseUrl;
 									if (ai.apiKey) values.aiApiKey = ai.apiKey;
-									if (ai.deepModel) values.aiDeepModel = ai.deepModel;
-									if (ai.fastModel) values.aiFastModel = ai.fastModel;
+									if (ai.model) values.aiModel = ai.model;
 								}
 								if (json.sms && typeof json.sms === "object") {
 									setSmsExpanded(true);
@@ -266,11 +265,8 @@ function AdminInitPage() {
 										placeholder="API 密钥"
 									/>
 								</Form.Item>
-								<Form.Item name="aiDeepModel">
-									<Input placeholder="深度思考模型，如 gpt-4o" />
-								</Form.Item>
-								<Form.Item name="aiFastModel">
-									<Input placeholder="快速模型，如 gpt-4o-mini" />
+								<Form.Item name="aiModel">
+									<Input placeholder="模型名称，如 deepseek-chat" />
 								</Form.Item>
 							</>
 						)}

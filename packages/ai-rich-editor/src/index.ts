@@ -1,6 +1,6 @@
 /**
  * AI Rich Editor 独立包统一出口
- * 协议层（适配器契约）与 UI 层一并导出，宿主按需引用
+ * UI 层与协议类型一并导出，宿主按需引用
  */
 export { AiRichEditor } from "./AiRichEditor";
 export { ThinkingBubble } from "./components/ThinkingBubble";
@@ -15,9 +15,6 @@ export {
 export { type AiChatController, useAiChat } from "./hooks/useAiChat";
 export { buildDefaultSystemPrompt } from "./prompts";
 export type {
-	AiChatAdapter,
-	AiChatChunk,
-	AiChatRequest,
 	AiChatUsage,
 	AiRichEditorConfig,
 	AiRichEditorProps,

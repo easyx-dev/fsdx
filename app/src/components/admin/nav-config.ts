@@ -85,6 +85,11 @@ export const NAV_GROUPS: NavGroup[] = [
 		label: "系统管理",
 		items: [
 			{ key: "/admin/config", label: "系统配置", icon: SettingOutlined },
+			{
+				key: "/admin/ai-providers",
+				label: "AI 厂商管理",
+				icon: RobotOutlined,
+			},
 			{ key: "/admin/dicts", label: "字典管理", icon: BookOutlined },
 			{
 				key: "/admin/messages/manage",

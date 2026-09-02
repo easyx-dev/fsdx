@@ -27,8 +27,7 @@ export interface InitData {
 	ai?: {
 		baseUrl?: string;
 		apiKey?: string;
-		deepModel?: string;
-		fastModel?: string;
+		model?: string;
 	};
 	sms?: {
 		provider?: string;
@@ -216,40 +215,24 @@ export async function initSystem(data: InitData): Promise<{
 				);
 		}
 
-		// 5. 写入 AI 配置（用户可选填写）
-		if (ai) {
-			if (ai.baseUrl)
-				await upsertConfig(
-					"ai_base_url",
-					ai.baseUrl,
-					"AI API 基础地址",
-					"input",
-					"AI设置",
-				);
-			if (ai.apiKey)
-				await upsertConfig(
-					"ai_api_key",
-					ai.apiKey,
-					"AI API 密钥",
-					"input",
-					"AI设置",
-				);
-			if (ai.deepModel)
-				await upsertConfig(
-					"ai_deep_model",
-					ai.deepModel,
-					"深度思考模型名称",
-					"input",
-					"AI设置",
-				);
-			if (ai.fastModel)
-				await upsertConfig(
-					"ai_fast_model",
-					ai.fastModel,
-					"快速模型名称",
-					"input",
-					"AI设置",
-				);
+		// 5. 写入 AI 配置（用户可选填写：单个厂商）
+		if (ai?.baseUrl && ai.apiKey && ai.model) {
+			await upsertConfig(
+				"ai_providers",
+				JSON.stringify([
+					{
+						id: "default",
+						name: "默认厂商",
+						baseUrl: ai.baseUrl,
+						apiKey: ai.apiKey,
+						model: ai.model,
+						default: true,
+					},
+				]),
+				"AI 厂商配置",
+				"json",
+				"AI设置",
+			);
 		}
 
 		// 6. 写入短信配置（用户可选填写）
