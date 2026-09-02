@@ -13,7 +13,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { Select } from "antd";
 import { useMemo, useState } from "react";
 import { AdminPageContent } from "#/components/admin";
-import type { AiProviderConfig } from "#/services/ai/ai.schemas";
+import type { AiProviderView } from "#/services/ai/ai.schemas";
 import { getAiProvidersSFn } from "#/services/ai/ai-providers.functions";
 
 export const Route = createFileRoute("/admin/_admin/demo/ai-rich-editor")({
@@ -38,7 +38,7 @@ const demoEditorConfig: AiRichEditorConfig = {
 
 function DemoPage() {
 	const [html, setHtml] = useState(DEFAULT_HTML);
-	const providers = Route.useLoaderData() as AiProviderConfig[];
+	const providers = Route.useLoaderData() as AiProviderView[];
 	const [providerId, setProviderId] = useState<string | undefined>(
 		providers.find((p) => p.default)?.id ?? providers[0]?.id,
 	);

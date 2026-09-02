@@ -1,5 +1,6 @@
 /**
- * AI 客户端测试：多厂商配置读取/校验、resolveProvider 命中规则、provider 按厂商缓存构建、adapter 构建
+ * AI 客户端测试：多厂商（对象形式）配置读取/校验与迁移、resolveProvider/resolveModel 命中规则、
+ * provider 按厂商+指纹缓存构建、能力位 → createModel 映射、adapter 构建
  */
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -33,31 +34,56 @@ import {
 	getAiProvider,
 	readProviderConfig,
 	readProviders,
+	resolveModel,
 	resolveProvider,
 } from "../ai.provider";
-import type { AiProviderConfig } from "../ai.schemas";
+import type { AiProvidersConfig, AiProviderView } from "../ai.schemas";
 
-/** 通用厂商列表 */
-const PROVIDERS: AiProviderConfig[] = [
+/** 通用厂商配置（对象形式：key 为厂商 id） */
+const PROVIDERS: AiProvidersConfig = {
+	deepseek: {
+		name: "DeepSeek",
+		baseUrl: "https://api.deepseek.com/v1",
+		apiKey: "sk-ds",
+		default: true,
+		models: {
+			"deepseek-chat": { name: "DeepSeek Chat" },
+			"deepseek-reasoner": {
+				name: "DeepSeek Reasoner",
+				reasoning: true,
+				jsonOutput: true,
+			},
+		},
+	},
+	moonshot: {
+		name: "Moonshot",
+		baseUrl: "https://api.moonshot.ai/v1",
+		apiKey: "sk-ms",
+		models: { "kimi-k2-0711-preview": { name: "Kimi K2 Preview" } },
+	},
+};
+
+/** 与 PROVIDERS 对应的归一化视图数组（resolveProvider/resolveModel 直接用） */
+const VIEWS: AiProviderView[] = [
 	{
 		id: "deepseek",
 		name: "DeepSeek",
 		baseUrl: "https://api.deepseek.com/v1",
 		apiKey: "sk-ds",
-		model: "deepseek-chat",
 		default: true,
+		models: [{ id: "deepseek-chat" }, { id: "deepseek-reasoner" }],
 	},
 	{
 		id: "moonshot",
 		name: "Moonshot",
 		baseUrl: "https://api.moonshot.ai/v1",
 		apiKey: "sk-ms",
-		model: "kimi-k2-0711-preview",
+		models: [{ id: "kimi-k2-0711-preview" }],
 	},
 ];
 
-/** 用给定 providers 配置 getConfig */
-function setConfig(providers: AiProviderConfig[] | string): void {
+/** 用给定配置 getConfig */
+function setConfig(providers: AiProvidersConfig | string): void {
 	mockGetConfig.mockReset();
 	mockGetConfig.mockImplementation((key: string) =>
 		key === "ai_providers"
@@ -76,7 +102,7 @@ beforeEach(() => {
 });
 
 describe("readProviders", () => {
-	it("配置为空/非法 JSON/非数组时降级为空数组", async () => {
+	it("配置为空/非法 JSON/非对象时降级为空数组", async () => {
 		mockGetConfig.mockResolvedValue("");
 		expect(await readProviders()).toEqual([]);
 
@@ -87,48 +113,94 @@ describe("readProviders", () => {
 		expect(await readProviders()).toEqual([]);
 	});
 
-	it("合法 JSON 数组解析为厂商列表", async () => {
-		mockGetConfig.mockResolvedValue(JSON.stringify(PROVIDERS));
-		expect(await readProviders()).toEqual(PROVIDERS);
+	it("合法对象解析为厂商视图数组（id 来自对象键）", async () => {
+		setConfig(PROVIDERS);
+		const views = await readProviders();
+		expect(views.map((p) => p.id)).toEqual(["deepseek", "moonshot"]);
+		expect(views[0]!.models.map((m) => m.id)).toEqual([
+			"deepseek-chat",
+			"deepseek-reasoner",
+		]);
 	});
 
 	it("单项非法时跳过并保留合法项（不影响其它厂商）", async () => {
-		const broken = [
-			{ id: "bad", name: "", baseUrl: "x", apiKey: "y", model: "z" }, // name 为空 → 非法
-			PROVIDERS[0]!,
-			PROVIDERS[1]!,
-		];
-		mockGetConfig.mockResolvedValue(JSON.stringify(broken));
-		const result = await readProviders();
-		expect(result).toHaveLength(2);
-		expect(result.map((p) => p.id)).toEqual(["deepseek", "moonshot"]);
+		const config: AiProvidersConfig = {
+			bad: { name: "", baseUrl: "x", apiKey: "y", models: { z: {} } },
+			deepseek: PROVIDERS.deepseek,
+		};
+		setConfig(config);
+		const views = await readProviders();
+		expect(views.map((p) => p.id)).toEqual(["deepseek"]);
+	});
+
+	it("首版数组存量为对象格式一次性迁移（model 归一化为 models）", async () => {
+		mockGetConfig.mockResolvedValue(
+			JSON.stringify([
+				{
+					id: "deepseek",
+					name: "DeepSeek",
+					baseUrl: "https://api.deepseek.com/v1",
+					apiKey: "sk-ds",
+					model: "deepseek-chat",
+					default: true,
+				},
+			]),
+		);
+		const views = await readProviders();
+		expect(views).toHaveLength(1);
+		expect(views[0]!.id).toBe("deepseek");
+		expect(views[0]!.models.map((m) => m.id)).toEqual(["deepseek-chat"]);
+		expect(views[0]!.models[0]!.default).toBe(true);
 	});
 });
 
 describe("resolveProvider", () => {
 	it("按 providerId 命中", () => {
-		expect(resolveProvider(PROVIDERS, "moonshot")?.id).toBe("moonshot");
+		expect(resolveProvider(VIEWS, "moonshot")?.id).toBe("moonshot");
 	});
 
 	it("无 providerId 时命中 default", () => {
-		expect(resolveProvider(PROVIDERS)?.id).toBe("deepseek");
+		expect(resolveProvider(VIEWS)?.id).toBe("deepseek");
 	});
 
-	it("无 default 时取首个非空", () => {
-		const [a, b] = PROVIDERS;
-		const list = [{ ...a!, default: false }, b!];
-		expect(resolveProvider(list)?.id).toBe("deepseek");
+	it("无 default 时取首个可用", () => {
+		const deepseek = { ...VIEWS[0]!, default: false };
+		expect(resolveProvider([deepseek, VIEWS[1]!])?.id).toBe("deepseek");
 	});
 
 	it("providerId 未命中返回 null", () => {
-		expect(resolveProvider(PROVIDERS, "nope")).toBeNull();
+		expect(resolveProvider(VIEWS, "nope")).toBeNull();
 	});
 
-	it("全部缺少关键字段时返回 null", () => {
-		const broken = [
-			{ id: "x", name: "x", baseUrl: "", apiKey: "", model: "" },
-		] as AiProviderConfig[];
+	it("厂商无可用模型时跳过", () => {
+		const broken: AiProviderView[] = [
+			{ id: "x", name: "x", baseUrl: "", apiKey: "", models: [] },
+		];
 		expect(resolveProvider(broken)).toBeNull();
+	});
+});
+
+describe("resolveModel", () => {
+	it("按模型 id 命中", () => {
+		expect(resolveModel(VIEWS[0]!, "deepseek-reasoner")).toBe(
+			"deepseek-reasoner",
+		);
+	});
+
+	it("无模型 id 取 default 模型", () => {
+		const provider = {
+			...VIEWS[0]!,
+			models: [{ id: "a" }, { id: "b", default: true }],
+		};
+		expect(resolveModel(provider)).toBe("b");
+	});
+
+	it("无 default 模型取首个", () => {
+		expect(resolveModel(VIEWS[0]!)).toBe("deepseek-chat");
+	});
+
+	it("模型 id 未命中返回 null", () => {
+		expect(resolveModel(VIEWS[0]!, "nope")).toBeNull();
 	});
 });
 
@@ -163,25 +235,76 @@ describe("getAiProvider", () => {
 		expect(mockOpenaiCompatible).toHaveBeenCalledTimes(2);
 	});
 
-	it("配置变更时按指纹重建", async () => {
+	it("模型能力位 → createModel（零能力位为裸字符串，声明能力位为对象）", async () => {
 		setConfig(PROVIDERS);
 		await getAiProvider("deepseek");
-		setConfig([
-			{ ...PROVIDERS[0]!, model: "deepseek-reasoner" },
-			PROVIDERS[1]!,
-		]);
+		// deepseek 首次构建（前一次调用 deepseek 已构建 moonshot，故记录在第二个 call）
+		const args = mockOpenaiCompatible.mock.calls.find(
+			(args) => args[0].baseURL === "https://api.deepseek.com/v1",
+		)![0] as { models: unknown[] };
+		// 零能力位 → 裸字符串
+		expect(args.models[0]).toBe("deepseek-chat");
+		// 声明能力位 → createModel 对象
+		expect(args.models[1]).toEqual(
+			expect.objectContaining({ name: "deepseek-reasoner" }),
+		);
+	});
+
+	it("仅声明输入模态时走 createModel 并补齐乐观功能位", async () => {
+		setConfig({
+			deepseek: {
+				name: "DeepSeek",
+				baseUrl: "https://api.deepseek.com/v1",
+				apiKey: "sk-ds",
+				models: { vision: { name: "Vision", input: ["text", "image"] } },
+			},
+		});
+		await getAiProvider("deepseek");
+		const args = mockOpenaiCompatible.mock.calls.find(
+			(args) => args[0].baseURL === "https://api.deepseek.com/v1",
+		)![0] as {
+			models: { name: string; input: string[]; features?: string[] }[];
+		};
+		// input-only → createModel（非裸字符串），并保留乐观功能位
+		expect(args.models[0]).toEqual(
+			expect.objectContaining({
+				name: "vision",
+				input: ["text", "image"],
+				features: expect.arrayContaining([
+					"function_calling",
+					"structured_outputs",
+				]),
+			}),
+		);
+	});
+
+	it("配置变更时按指纹重建（模型新增/变动）", async () => {
+		setConfig(PROVIDERS);
+		await getAiProvider("deepseek");
+		const changed: AiProvidersConfig = {
+			deepseek: {
+				...PROVIDERS.deepseek,
+				models: {
+					"deepseek-chat": {
+						name: "DeepSeek Chat",
+						reasoning: true,
+					},
+				},
+			},
+		};
+		setConfig(changed);
 		await getAiProvider("deepseek");
 		expect(mockOpenaiCompatible).toHaveBeenCalledTimes(2);
 	});
 
 	it("无可命中厂商时返回 null", async () => {
-		mockGetConfig.mockResolvedValue("[]");
+		mockGetConfig.mockResolvedValue("{}");
 		expect(await getAiProvider()).toBeNull();
 	});
 });
 
 describe("getAiAdapter", () => {
-	it("用目标厂商的模型名调用 provider 返回 adapter", async () => {
+	it("用目标厂商默认模型名调用 provider 返回 adapter", async () => {
 		setConfig(PROVIDERS);
 		const provider = vi.fn(() => ({ kind: "text" }));
 		mockOpenaiCompatible.mockReturnValue(provider);
@@ -191,8 +314,17 @@ describe("getAiAdapter", () => {
 		expect(provider).toHaveBeenCalledWith("kimi-k2-0711-preview");
 	});
 
+	it("显式传模型 id 时用对应模型", async () => {
+		setConfig(PROVIDERS);
+		const provider = vi.fn(() => ({ kind: "text" }));
+		mockOpenaiCompatible.mockReturnValue(provider);
+
+		await getAiAdapter("deepseek", "deepseek-reasoner");
+		expect(provider).toHaveBeenCalledWith("deepseek-reasoner");
+	});
+
 	it("未配置时返回 null", async () => {
-		mockGetConfig.mockResolvedValue("[]");
+		mockGetConfig.mockResolvedValue("{}");
 		expect(await getAiAdapter()).toBeNull();
 	});
 });

@@ -1,5 +1,6 @@
 /**
  * AI 厂商管理页面：多厂商配置 CRUD（底层均为 OpenAI 兼容协议）
+ * 配置为对象形式：{ [厂商id]: { name, baseUrl, apiKey, default?, models } }
  */
 import { PlusOutlined } from "@ant-design/icons";
 import { message } from "@fsdx/ui-spa/antd-static";
@@ -8,7 +9,10 @@ import { createFileRoute } from "@tanstack/react-router";
 import { Button, Card, Table, Tag, Tooltip, Typography } from "antd";
 import { useState } from "react";
 import { AdminPageContent } from "#/components/admin";
-import type { AiProviderConfig } from "#/services/ai/ai.schemas";
+import type {
+	AiProviderConfig,
+	AiProviderView,
+} from "#/services/ai/ai.schemas";
 import {
 	getAiProvidersSFn,
 	saveAiProvidersSFn,
@@ -22,15 +26,44 @@ export const Route = createFileRoute("/admin/_admin/ai-providers/")({
 	loader: async () => await getAiProvidersSFn(),
 });
 
-function AiProvidersPage() {
-	const loaderData = Route.useLoaderData();
-	const [providers, setProviders] = useState<AiProviderConfig[]>(loaderData);
-	const [modalOpen, setModalOpen] = useState(false);
-	const [editing, setEditing] = useState<AiProviderConfig | null>(null);
+/** 视图 → 持久化对象（去掉 id 字段，id 作为对象键；models 平移为对象） */
+function toProviderConfig(view: AiProviderView): AiProviderConfig {
+	return {
+		name: view.name,
+		baseUrl: view.baseUrl,
+		apiKey: view.apiKey,
+		default: view.default,
+		models: Object.fromEntries(
+			view.models.map((m) => [
+				m.id,
+				{
+					name: m.name,
+					default: m.default,
+					contextLimit: m.contextLimit,
+					outputLimit: m.outputLimit,
+					jsonOutput: m.jsonOutput,
+					toolCalls: m.toolCalls,
+					reasoning: m.reasoning,
+					input: m.input,
+					output: m.output,
+				},
+			]),
+		),
+	};
+}
 
-	const save = async (next: AiProviderConfig[]) => {
+function AiProvidersPage() {
+	const loaderData = Route.useLoaderData() as AiProviderView[];
+	const [providers, setProviders] = useState<AiProviderView[]>(loaderData);
+	const [modalOpen, setModalOpen] = useState(false);
+	const [editing, setEditing] = useState<AiProviderView | null>(null);
+
+	const save = async (next: AiProviderView[]) => {
 		try {
-			await saveAiProvidersSFn({ data: { providers: next } });
+			const providersObj = Object.fromEntries(
+				next.map((p) => [p.id, toProviderConfig(p)]),
+			);
+			await saveAiProvidersSFn({ data: { providers: providersObj } });
 			setProviders(next);
 			message.success("AI 厂商配置已保存");
 		} catch (err) {
@@ -38,8 +71,8 @@ function AiProvidersPage() {
 		}
 	};
 
-	const handleSubmit = (provider: AiProviderConfig) => {
-		let next: AiProviderConfig[];
+	const handleSubmit = (provider: AiProviderView) => {
+		let next: AiProviderView[];
 		const exists = providers.some((p) => p.id === provider.id);
 		if (exists) {
 			next = providers.map((p) => (p.id === provider.id ? provider : p));
@@ -58,12 +91,12 @@ function AiProvidersPage() {
 		setEditing(null);
 	};
 
-	const handleDelete = (record: AiProviderConfig) => {
+	const handleDelete = (record: AiProviderView) => {
 		const next = providers.filter((p) => p.id !== record.id);
 		void save(next);
 	};
 
-	const handleSetDefault = (record: AiProviderConfig) => {
+	const handleSetDefault = (record: AiProviderView) => {
 		const next = providers.map((p) => ({
 			...p,
 			default: p.id === record.id,
@@ -80,7 +113,21 @@ function AiProvidersPage() {
 			key: "baseUrl",
 			render: (val: string) => <Text className="text-xs">{val}</Text>,
 		},
-		{ title: "模型名", dataIndex: "model", key: "model", width: 180 },
+		{
+			title: "模型",
+			dataIndex: "models",
+			key: "models",
+			render: (models: AiProviderView["models"]) => (
+				<div className="flex flex-wrap gap-1">
+					{models.map((m) => (
+						<Tag key={m.id} color={m.default ? "blue" : undefined}>
+							{m.id}
+							{m.default ? "（默认）" : ""}
+						</Tag>
+					))}
+				</div>
+			),
+		},
 		{
 			title: "默认",
 			dataIndex: "default",
@@ -92,7 +139,7 @@ function AiProvidersPage() {
 			title: "操作",
 			key: "actions",
 			width: 200,
-			render: (_: unknown, record: AiProviderConfig) => (
+			render: (_: unknown, record: AiProviderView) => (
 				<TableOperate>
 					<TableOperate.Edit
 						onClick={() => {
@@ -124,7 +171,7 @@ function AiProvidersPage() {
 	return (
 		<AdminPageContent
 			title="AI 厂商管理"
-			description="配置多个 OpenAI 兼容 API 厂商（DeepSeek / Moonshot / Qwen / 本地 vLLM 等），并指定默认厂商。"
+			description="配置多个 OpenAI 兼容 API 厂商（DeepSeek / Moonshot / Qwen / 本地 vLLM 等），并指定默认厂商与各模型能力位。"
 		>
 			<Card size="small">
 				<div className="mb-3">

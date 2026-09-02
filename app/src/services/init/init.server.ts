@@ -219,16 +219,15 @@ export async function initSystem(data: InitData): Promise<{
 		if (ai?.baseUrl && ai.apiKey && ai.model) {
 			await upsertConfig(
 				"ai_providers",
-				JSON.stringify([
-					{
-						id: "default",
+				JSON.stringify({
+					default: {
 						name: "默认厂商",
 						baseUrl: ai.baseUrl,
 						apiKey: ai.apiKey,
-						model: ai.model,
 						default: true,
+						models: { [ai.model]: { name: ai.model, default: true } },
 					},
-				]),
+				}),
 				"AI 厂商配置",
 				"json",
 				"AI设置",

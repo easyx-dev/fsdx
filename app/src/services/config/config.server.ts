@@ -251,9 +251,9 @@ const PRESET_CONFIGS: {
 	},
 	{
 		key: "ai_providers",
-		value: "[]",
+		value: "{}",
 		description:
-			"AI 厂商配置（JSON 数组）：[{ id, name, baseUrl, apiKey, model, default? }]，底层走 OpenAI 兼容协议",
+			"AI 厂商配置（对象 JSON）：{ [厂商id]: { name, baseUrl, apiKey, default?, models: { [模型名]: { name?, default?, contextLimit?, outputLimit?, jsonOutput?, toolCalls?, reasoning?, input?, output? } } } }，底层走 OpenAI 兼容协议",
 		clientVisible: false,
 		valueType: "json",
 		groupName: "AI设置",

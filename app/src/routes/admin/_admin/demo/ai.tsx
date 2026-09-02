@@ -18,7 +18,7 @@ import {
 import { useState } from "react";
 import type { z } from "zod";
 import { AdminPageContent } from "#/components/admin";
-import type { AiProviderConfig } from "#/services/ai/ai.schemas";
+import type { AiProviderView } from "#/services/ai/ai.schemas";
 import { getAiProvidersSFn } from "#/services/ai/ai-providers.functions";
 import { type aiTestSchema, aiTestSFn } from "./-mods/ai.functions";
 
@@ -38,7 +38,7 @@ export const Route = createFileRoute("/admin/_admin/demo/ai")({
 });
 
 function AiDemoPage() {
-	const providers = Route.useLoaderData() as AiProviderConfig[];
+	const providers = Route.useLoaderData() as AiProviderView[];
 	const [form] = Form.useForm<AiTestInput>();
 	const [loading, setLoading] = useState(false);
 	const [result, setResult] = useState<string | null>(null);

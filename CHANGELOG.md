@@ -5,8 +5,10 @@
 ### Features
 
 - **AI 多厂商适配（OpenAI 协议）**：
-  - **配置重构**：`ai_base_url`/`ai_api_key`/`ai_model` 三键删除，收敛为单 JSON 配置 `ai_providers`（`[{ id, name, baseUrl, apiKey, model, default? }]`，`json` valueType，管理端「AI设置」分组）；支持同时挂 DeepSeek/Moonshot/Qwen/本地 vLLM 等多个 OpenAI 兼容厂商并指定默认
-  - **`services/ai` 升级**：`ai.provider.ts` 提供 `readProviders`/`resolveProvider`/`getAiProvider(providerId?)`/`getAiAdapter(providerId?)`（按「厂商 id + 配置指纹」缓存的跨 bundle `Map`，多厂商互相隔离）；`ai.server.ts` 的 `streamAiChat`/`completeText` 增加 `providerId?`，缺省走默认厂商
+  - **配置重构**：`ai_base_url`/`ai_api_key`/`ai_model` 三键删除，收敛为单 JSON 配置 `ai_providers`（对象形式：`{ [厂商id]: { name, baseUrl, apiKey, default?, models } }`，键为厂商 id，每个厂商可挂多个模型并携带能力位；`json` valueType，管理端「AI设置」分组）；支持同时挂 DeepSeek/Moonshot/Qwen/本地 vLLM 等多个 OpenAI 兼容厂商并指定默认
+  - **模型能力位**：每个模型支持 `name`/`default` 及能力位 `contextLimit`/`outputLimit`/`jsonOutput`/`toolCalls`/`reasoning`/`input`/`output`；声明了 `reasoning`/`jsonOutput`/`toolCalls`/`input` 的模型映射为 TanStack AI `createModel(name, { input, features })`，零能力位走裸字符串（乐观默认，零回归）；`contextLimit`/`outputLimit`/`output` 为项目自身元数据，预留给 UI 展示与裁剪/成本统计
+  - **`services/ai` 升级**：`ai.provider.ts` 提供 `readProviders`/`resolveProvider`/`resolveModel`/`getAiProvider(providerId?)`/`getAiAdapter(providerId?, modelId?)`（按「厂商 id + 配置指纹」缓存的跨 bundle `Map`，多厂商互相隔离）；`ai.server.ts` 的 `streamAiChat`/`completeText` 增加 `providerId?`，缺省走默认厂商
+  - **兼容迁移**：`readProviders()` 对首版数组存量数据做一次性迁移（`id` 取自元素 `id`，`model` 归一化为 `models`），旧部署无需手工改库
   - **专用「AI 厂商」管理页**：新增 `/admin/ai-providers`（antd 表格 + 弹窗表单，读写 `ai_providers` 键，无新增 DB 表）+ 权限 `ai:provider`（`AI_PROVIDER_MANAGE`）+ 系统管理菜单项；同步 `doc:gen` 权限清单
   - **调用侧厂商选择**：`@fsdx/ai-rich-editor` 新增 `requestMeta` prop（合并进 `sendMessage` 的 `forwardedProps`），`/api/ai-chat` 读取 `forwardedProps.providerId`；demo（`/admin/demo/ai`、`/admin/demo/ai-rich-editor`）加厂商下拉
   - AI 翻译走默认厂商（`completeText` 不传 `providerId`）
@@ -129,6 +131,8 @@
   - 影响：依赖减少、入口分流逻辑简化；请求行为等价（未匹配路由仍由 Nitro 兜底）
 
 ### Fix
+
+- **AI 厂商管理弹窗编辑模型不回显**：`AiProviderFormModal` 表单设了 `preserve={false}`，在 `Modal destroyOnHidden` 重挂载下会导致 `Form.List` 的模型行嵌套字段值丢失（真实浏览器复现：厂商字段回显、模型名/展示名为空）。修复为：移除 `preserve={false}`；外层按每次打开自增 `key` 重挂载内容组件（重建表单实例），编辑以当前厂商为 `initialValues`、新增预置一个空模型行；`Form.List` 改用标准解构 `({ key, name, ...restField })`（不再把 `key` spread 进 `Form.Item`）；模型名字段用 `Input` 保证回显
 
 - **前台登录后 Header 登录态不刷新**：客户端登录成功仅 `navigate` 到首页，`ClientAuthProvider` 不重挂载导致 Header 仍显示未登录；登录页 `onSubmit` 成功后补充调用 `useClientAuth().refetch()`，使用户名/消息/退出入口即时更新
 
