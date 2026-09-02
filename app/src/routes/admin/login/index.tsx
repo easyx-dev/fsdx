@@ -3,6 +3,7 @@
  */
 import { LockOutlined, UserOutlined } from "@ant-design/icons";
 import { message } from "@fsdx/ui-spa/antd-static";
+import { AutofillBlocker } from "@fsdx/ui-ssr/form";
 import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
 import { Button, Form, Input } from "antd";
 import { useState } from "react";
@@ -64,6 +65,7 @@ function AdminLoginPage() {
 						size="large"
 						autoComplete="off"
 					>
+						<AutofillBlocker />
 						<Form.Item
 							name="username"
 							rules={[{ required: true, message: "请输入用户名" }]}

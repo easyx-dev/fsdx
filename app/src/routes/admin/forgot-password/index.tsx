@@ -3,6 +3,7 @@
  */
 import { LockOutlined, MailOutlined, ReloadOutlined } from "@ant-design/icons";
 import { message } from "@fsdx/ui-spa/antd-static";
+import { AutofillBlocker } from "@fsdx/ui-ssr/form";
 import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
 import type { InputRef } from "antd";
 import { Button, Form, Input, Modal } from "antd";
@@ -147,6 +148,7 @@ function AdminForgotPasswordPage() {
 						size="large"
 						autoComplete="off"
 					>
+						<AutofillBlocker />
 						<Form.Item
 							name="email"
 							rules={[

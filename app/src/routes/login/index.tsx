@@ -2,6 +2,7 @@
  * 客户端用户登录页面（TanStack Form）
  */
 
+import { AutofillBlocker } from "@fsdx/ui-ssr/form";
 import {
 	Button,
 	Card,
@@ -88,6 +89,7 @@ function ClientLoginPage() {
 							}}
 							className="space-y-3 sm:space-y-4"
 						>
+							<AutofillBlocker />
 							<form.Field
 								name="username"
 								validators={{

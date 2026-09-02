@@ -3,6 +3,7 @@
  * 集成图片验证码防护，禁用浏览器自动填充
  */
 
+import { AutofillBlocker } from "@fsdx/ui-ssr/form";
 import {
 	Button,
 	Card,
@@ -96,6 +97,7 @@ function ClientRegisterPage() {
 							className="space-y-3 sm:space-y-4"
 							autoComplete="off"
 						>
+							<AutofillBlocker />
 							<form.Field
 								name="username"
 								validators={{

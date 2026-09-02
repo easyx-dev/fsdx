@@ -3,6 +3,7 @@
  * 通过邮箱验证码重置密码
  */
 
+import { AutofillBlocker } from "@fsdx/ui-ssr/form";
 import {
 	Button,
 	Card,
@@ -93,6 +94,7 @@ function ForgotPasswordPage() {
 							className="space-y-3 sm:space-y-4"
 							autoComplete="off"
 						>
+							<AutofillBlocker />
 							<form.Field
 								name="email"
 								validators={{
