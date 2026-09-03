@@ -1,10 +1,10 @@
 /**
  * AI 客户端测试：多厂商（对象形式）配置读取/校验与迁移、resolveProvider/resolveModel 命中规则、
- * provider 按厂商+指纹缓存构建、能力位 → createModel 映射、adapter 构建
+ * provider 按厂商+指纹缓存构建（OpenAI client 复用）、推理兼容适配器构建
  */
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const { mockGetConfig, mockLogger, mockOpenaiCompatible } = vi.hoisted(() => ({
+const { mockGetConfig, mockLogger, MockOpenAI } = vi.hoisted(() => ({
 	mockGetConfig: vi.fn(),
 	mockLogger: {
 		error: vi.fn(),
@@ -14,7 +14,7 @@ const { mockGetConfig, mockLogger, mockOpenaiCompatible } = vi.hoisted(() => ({
 		trace: vi.fn(),
 		fatal: vi.fn(),
 	},
-	mockOpenaiCompatible: vi.fn(),
+	MockOpenAI: vi.fn(),
 }));
 
 vi.mock("#/services/config/config.server", () => ({
@@ -25,11 +25,12 @@ vi.mock("#/lib/logger/logger", () => ({
 	logger: mockLogger,
 }));
 
-vi.mock("@tanstack/ai-openai/compatible", () => ({
-	openaiCompatible: mockOpenaiCompatible,
-}));
+vi.mock("openai", () => ({ default: MockOpenAI }));
 
+import { OpenAICompatibleChatAdapter } from "@tanstack/ai-openai/compatible";
 import {
+	AI_MAX_RETRIES,
+	AI_TIMEOUT_MS,
 	getAiAdapter,
 	getAiProvider,
 	readProviderConfig,
@@ -37,6 +38,7 @@ import {
 	resolveModel,
 	resolveProvider,
 } from "../ai.provider";
+import { ReasoningCompatibleChatAdapter } from "../ai.reasoning-adapter";
 import type { AiProvidersConfig, AiProviderView } from "../ai.schemas";
 
 /** 通用厂商配置（对象形式：key 为厂商 id） */
@@ -97,8 +99,7 @@ function setConfig(providers: AiProvidersConfig | string): void {
 beforeEach(() => {
 	// 清理跨用例残留的 globalThis 共享缓存
 	(globalThis as Record<string, unknown>).__FSDX_AI_PROVIDERS__ = undefined;
-	mockOpenaiCompatible.mockClear();
-	mockOpenaiCompatible.mockImplementation(() => vi.fn());
+	MockOpenAI.mockClear();
 });
 
 describe("readProviders", () => {
@@ -213,69 +214,36 @@ describe("readProviderConfig", () => {
 });
 
 describe("getAiProvider", () => {
-	it("按目标厂商构建 openaiCompatible 并按「id+指纹」缓存", async () => {
+	it("按目标厂商构建 OpenAI client 并按「id+指纹」缓存", async () => {
 		setConfig(PROVIDERS);
 		const provider = await getAiProvider("moonshot");
 		expect(provider).not.toBeNull();
-		expect(mockOpenaiCompatible).toHaveBeenCalledTimes(1);
-		expect(mockOpenaiCompatible).toHaveBeenCalledWith(
+		expect(MockOpenAI).toHaveBeenCalledTimes(1);
+		expect(MockOpenAI).toHaveBeenCalledWith(
 			expect.objectContaining({
 				baseURL: "https://api.moonshot.ai/v1",
 				apiKey: "sk-ms",
-				models: ["kimi-k2-0711-preview"],
+				timeout: AI_TIMEOUT_MS,
+				maxRetries: AI_MAX_RETRIES,
 			}),
 		);
 
-		// 同厂商同配置再次调用不重建
+		// 同厂商同配置再次调用不重建 client
 		await getAiProvider("moonshot");
-		expect(mockOpenaiCompatible).toHaveBeenCalledTimes(1);
+		expect(MockOpenAI).toHaveBeenCalledTimes(1);
 
 		// 不同厂商各自独立构建
 		await getAiProvider("deepseek");
-		expect(mockOpenaiCompatible).toHaveBeenCalledTimes(2);
+		expect(MockOpenAI).toHaveBeenCalledTimes(2);
 	});
 
-	it("模型能力位 → createModel（零能力位为裸字符串，声明能力位为对象）", async () => {
+	it("provider 工厂返回推理兼容适配器实例（统一始终用推理子类）", async () => {
 		setConfig(PROVIDERS);
-		await getAiProvider("deepseek");
-		// deepseek 首次构建（前一次调用 deepseek 已构建 moonshot，故记录在第二个 call）
-		const args = mockOpenaiCompatible.mock.calls.find(
-			(args) => args[0].baseURL === "https://api.deepseek.com/v1",
-		)![0] as { models: unknown[] };
-		// 零能力位 → 裸字符串
-		expect(args.models[0]).toBe("deepseek-chat");
-		// 声明能力位 → createModel 对象
-		expect(args.models[1]).toEqual(
-			expect.objectContaining({ name: "deepseek-reasoner" }),
-		);
-	});
-
-	it("仅声明输入模态时走 createModel 并补齐乐观功能位", async () => {
-		setConfig({
-			deepseek: {
-				name: "DeepSeek",
-				baseUrl: "https://api.deepseek.com/v1",
-				apiKey: "sk-ds",
-				models: { vision: { name: "Vision", input: ["text", "image"] } },
-			},
-		});
-		await getAiProvider("deepseek");
-		const args = mockOpenaiCompatible.mock.calls.find(
-			(args) => args[0].baseURL === "https://api.deepseek.com/v1",
-		)![0] as {
-			models: { name: string; input: string[]; features?: string[] }[];
-		};
-		// input-only → createModel（非裸字符串），并保留乐观功能位
-		expect(args.models[0]).toEqual(
-			expect.objectContaining({
-				name: "vision",
-				input: ["text", "image"],
-				features: expect.arrayContaining([
-					"function_calling",
-					"structured_outputs",
-				]),
-			}),
-		);
+		const provider = await getAiProvider("deepseek");
+		const adapter = provider!("deepseek-reasoner");
+		expect(adapter).toBeInstanceOf(ReasoningCompatibleChatAdapter);
+		// 仍是 OpenAI 兼容 Chat Completions 适配器，行为与基类一致
+		expect(adapter).toBeInstanceOf(OpenAICompatibleChatAdapter);
 	});
 
 	it("配置变更时按指纹重建（模型新增/变动）", async () => {
@@ -294,7 +262,7 @@ describe("getAiProvider", () => {
 		};
 		setConfig(changed);
 		await getAiProvider("deepseek");
-		expect(mockOpenaiCompatible).toHaveBeenCalledTimes(2);
+		expect(MockOpenAI).toHaveBeenCalledTimes(2);
 	});
 
 	it("无可命中厂商时返回 null", async () => {
@@ -304,23 +272,19 @@ describe("getAiProvider", () => {
 });
 
 describe("getAiAdapter", () => {
-	it("用目标厂商默认模型名调用 provider 返回 adapter", async () => {
+	it("用目标厂商默认模型名调用 provider 返回推理兼容 adapter", async () => {
 		setConfig(PROVIDERS);
-		const provider = vi.fn(() => ({ kind: "text" }));
-		mockOpenaiCompatible.mockReturnValue(provider);
-
 		const adapter = await getAiAdapter("moonshot");
-		expect(adapter).toEqual({ kind: "text" });
-		expect(provider).toHaveBeenCalledWith("kimi-k2-0711-preview");
+		expect(adapter).toBeInstanceOf(ReasoningCompatibleChatAdapter);
+		// 默认模型为 kimi-k2-0711-preview
+		expect((adapter as { model: string }).model).toBe("kimi-k2-0711-preview");
 	});
 
 	it("显式传模型 id 时用对应模型", async () => {
 		setConfig(PROVIDERS);
-		const provider = vi.fn(() => ({ kind: "text" }));
-		mockOpenaiCompatible.mockReturnValue(provider);
-
-		await getAiAdapter("deepseek", "deepseek-reasoner");
-		expect(provider).toHaveBeenCalledWith("deepseek-reasoner");
+		const adapter = await getAiAdapter("deepseek", "deepseek-reasoner");
+		expect(adapter).toBeInstanceOf(ReasoningCompatibleChatAdapter);
+		expect((adapter as { model: string }).model).toBe("deepseek-reasoner");
 	});
 
 	it("未配置时返回 null", async () => {

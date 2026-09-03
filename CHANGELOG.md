@@ -132,6 +132,12 @@
 
 ### Fix
 
+- **[infra] 修复 OpenAI 兼容（Chat Completions）推理模型思考内容被丢弃**：
+  - **根因**：`@tanstack/ai` 的 OpenAI 兼容适配器在默认 Chat Completions 面上 `extractReasoning` 为空实现，而 DeepSeek-R1/Qwen3/Moonshot 等厂商的思考增量在 `delta.reasoning_content`（部分为 `delta.reasoning`/`reasoning_details`）而非 `delta.content`，故被静默丢弃——导致 `@fsdx/ai-rich-editor` 无「思考中…」气泡，且推理阶段前端全程静默、思考结束后正文才涌入，观感呈「伪流式」（实际服务端/客户端流式链路无缓冲）
+  - **修复**：新增 `services/ai/ai.reasoning-adapter.ts`（`ReasoningCompatibleChatAdapter` 子类重写 `extractReasoning`，兼容 `reasoning_content`/`reasoning`/`reasoning_details` 三种字段与 `{content|text}` 对象形态）；`ai.provider.ts` 由 `openaiCompatible()` 改为自建 OpenAI client + 统一返回该子类，非推理模型无该字段自然返回 undefined、零回归；`openai` 提升为 app 直接依赖
+  - **能力位语义收敛**：`createModel`/`toModelDef` 能力位映射移除，`reasoning/jsonOutput/toolCalls` 等模型元数据保留供管理页展示与解析，`extractReasoning` 改为无条件尝试提取
+  - 前端 `@fsdx/ai-rich-editor` 的 `ThinkingPart` 渲染链路与 `useChat` 已具备，无需改动
+
 - **AI 厂商管理弹窗编辑模型不回显**：`AiProviderFormModal` 表单设了 `preserve={false}`，在 `Modal destroyOnHidden` 重挂载下会导致 `Form.List` 的模型行嵌套字段值丢失（真实浏览器复现：厂商字段回显、模型名/展示名为空）。修复为：移除 `preserve={false}`；外层按每次打开自增 `key` 重挂载内容组件（重建表单实例），编辑以当前厂商为 `initialValues`、新增预置一个空模型行；`Form.List` 改用标准解构 `({ key, name, ...restField })`（不再把 `key` spread 进 `Form.Item`）；模型名字段用 `Input` 保证回显
 
 - **前台登录后 Header 登录态不刷新**：客户端登录成功仅 `navigate` 到首页，`ClientAuthProvider` 不重挂载导致 Header 仍显示未登录；登录页 `onSubmit` 成功后补充调用 `useClientAuth().refetch()`，使用户名/消息/退出入口即时更新
@@ -143,6 +149,20 @@
   - 按天查询：operation-log 列表、埋点事件列表与事件分析的 `startDate/endDate` 边界改用 `toDayRange`（原 `new Date("YYYY-MM-DD")` 按 UTC 解析导致窗口偏移，事件查询页传 `endOf("day")` 再 +1 天造成边界溢出）；schema 增加 `YYYY-MM-DD` 格式校验；事件查询/分析页改传 date-only，与操作日志一致
 
 ### Refactor
+
+- **`@fsdx/ai-rich-editor` 对话区改为 TanStack AI headless UI（`createChatHook`）**：
+  - 对话区用 `@tanstack/ai-react/ui` 的 `createChatHook` 重构：模块作用域注册 `components`（`layout`/`message`/`input`）+ `partsComponents`（`text`→`MarkdownContent`、`thinking`→`ThinkingBubble`、`fallback`），替代原 `useAiChat` + `ChatPanel` 的手写 `UIMessage`→`ChatTurn` 映射与流式占位气泡
+  - `UIMessage.parts` 由 `partsComponents` 自动分发；流式中的生成中消息直接存在于 `messages`，随 token 逐步渲染（无需单独流式占位）
+  - 新增 `EditorCfgContext` 注入 `systemPrompt`/`requestMeta`/`onApplyHtml`；`endpointUrl`/`onComplete`（autoApply）走模块级 ref（单实例假设：一页一个编辑器）
+  - 移除 `useAiChat`/`AiChatController`/`ChatTurn` 等导出；配套升级 `@tanstack/ai-react@^0.23.0`（新增 `/ui` 子路径）、`@tanstack/ai@^0.52.2`；服务端 `/api/ai-chat` 不变
+
+- **`@fsdx/ai-rich-editor` 对话区按参考图重构（消息气泡 / 富文本渲染 / 输入框）**：
+  - 用户消息：右对齐灰底圆角气泡（`bg-background-secondary` + `text-foreground`，不再依赖 `primary`/`primary-fg` 的暗色主题对比度问题）；助手消息：纯文本直接铺在背景上，去头像、去外卡片
+  - 助手消息富文本：`MarkdownContent` 改用 `react-markdown` + `remark-gfm` 渲染（标题/加粗/行内代码灰底圆角块/有序无序列表/引用），```` ```html ```` 仍走专属「可复制/应用到编辑器」代码块
+  - 空态：改为「为你推荐」竖排圆角建议卡片（预设指令，点击即发送），移除输入框上方快速指令 chips
+  - 输入区：大圆角输入框（`rounded-2xl` 描边 + 阴影、无边框 textarea 随内容增高）+ 底部工具栏（快捷键提示 + 停止/清空 + 主色发送）
+  - 依赖：`@fsdx/ai-rich-editor` 新增 `react-markdown` / `remark-gfm`；按参考图采用圆角（此为对话区单独偏离项目「圆角归零」约定）
+  - 布局微调：对话区 `Splitter.Panel` 默认/最小宽度调至 400（原默认 300/最小 220），面板更舒展；空态/输入框间距与内边距优化
 
 - **移除富文本 HTML 消毒（dompurify / isomorphic-dompurify）**：前台新闻详情正文改直接透传渲染，admin 富文本视为受信任内容，删除 `DOMPurify.sanitize` 调用与 `app/package.json` 两个直连依赖（monaco-editor 传递依赖的 dompurify 不受影响）
 

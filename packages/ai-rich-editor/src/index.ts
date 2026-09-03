@@ -12,13 +12,10 @@ export {
 	PREVIEW_DEVICES,
 	type PreviewDevice,
 } from "./constants";
-export { type AiChatController, useAiChat } from "./hooks/useAiChat";
 export { buildDefaultSystemPrompt } from "./prompts";
 export type {
-	AiChatUsage,
 	AiRichEditorConfig,
 	AiRichEditorProps,
 	AiRichNotify,
-	ChatTurn,
 } from "./types";
 export { buildPreviewDocument, extractHtmlFragments } from "./utils/extract";

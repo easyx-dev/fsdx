@@ -1,18 +1,15 @@
 /**
  * AI 客户端（app 服务层）：读取系统配置构建多厂商 provider/adapter
  * 配置为单 JSON 键（ai_providers，对象形式：{ [厂商id]: { name, baseUrl, apiKey, default?, models } }），
- * 底层全部走 TanStack AI 的 OpenAI 兼容协议（openaiCompatible）。
+ * 底层全部走 TanStack AI 的 OpenAI 兼容协议（Chat Completions 面），统一使用推理兼容子类以保留思考内容。
  * provider 按「厂商 id + 配置指纹」缓存为跨 bundle 共享 Map（globalThis，Nitro 入口与 SSR 渲染器共享）。
  * 纯基建职责：只构建 provider/adapter，不编排 chat()、不消费流、不感知业务。
  */
-import {
-	type AnyTextAdapter,
-	createModel,
-	type ExtendedModelDef,
-} from "@tanstack/ai";
-import { openaiCompatible } from "@tanstack/ai-openai/compatible";
+import type { AnyTextAdapter } from "@tanstack/ai";
+import OpenAI from "openai";
 import { logger } from "#/lib/logger/logger";
 import { getConfig } from "#/services/config/config.server";
+import { ReasoningCompatibleChatAdapter } from "./ai.reasoning-adapter";
 import {
 	type AiModelView,
 	type AiProvidersConfig,
@@ -179,29 +176,6 @@ export async function readProviderConfig(
 	return resolveProvider(providers, providerId);
 }
 
-/**
- * 模型配置 → openaiCompatible 的 model 定义：零声明走裸字符串（乐观默认），有声明走 createModel。
- * 能力位（reasoning/jsonOutput/toolCalls/input）映射为 features/input，在声明时影响 provider 请求形态。
- */
-function toModelDef(model: AiModelView): string | ExtendedModelDef {
-	const features: string[] = [];
-	if (model.reasoning) features.push("reasoning");
-	if (model.jsonOutput) features.push("structured_outputs");
-	if (model.toolCalls) features.push("function_calling");
-	const hasInput = Array.isArray(model.input) && model.input.length > 0;
-	// 未声明输入模态且未声明能力位 → 裸字符串（乐观默认）
-	if (!hasInput && features.length === 0) return model.id;
-	// 仅声明输入模态（未声明能力位）时补齐乐观功能位，
-	// 避免丢失裸字符串默认具备的工具调用/结构化输出能力
-	if (features.length === 0) {
-		features.push("function_calling", "structured_outputs");
-	}
-	return createModel(model.id, {
-		input: model.input ?? ["text"],
-		features,
-	});
-}
-
 /** 构建（或命中缓存）某厂商的 provider 函数；配置指纹变更时重建 */
 async function getOrBuildProvider(config: AiProviderView): Promise<AiProvider> {
 	const fingerprint = `${config.baseUrl}||${config.apiKey}||${JSON.stringify(config.models)}`;
@@ -211,17 +185,18 @@ async function getOrBuildProvider(config: AiProviderView): Promise<AiProvider> {
 		return slot.provider;
 	}
 
-	// 适配器底层为 Chat Completions 协议（DeepSeek/Moonshot/Qwen/本地 vLLM 等 OpenAI 兼容端点）
-	const raw = openaiCompatible({
-		name: config.name,
+	// 适配器底层为 Chat Completions 协议（DeepSeek/Moonshot/Qwen/本地 vLLM 等 OpenAI 兼容端点）。
+	// 统一使用「推理兼容子类」：其 extractReasoning 会读取 delta.reasoning_content/reasoning，
+	// 对非推理模型无该字段自然返回 undefined，行为与基类一致，故无需按能力位分叉。
+	const client = new OpenAI({
 		baseURL: config.baseUrl,
 		apiKey: config.apiKey,
-		models: config.models.map(toModelDef),
 		// 客户端超时与重试：超时避免无限挂起，5xx/429 由 SDK 指数退避重试
 		timeout: AI_TIMEOUT_MS,
 		maxRetries: AI_MAX_RETRIES,
 	});
-	const built = raw as unknown as AiProvider;
+	const built: AiProvider = (modelId) =>
+		new ReasoningCompatibleChatAdapter(client, modelId, config.name);
 	cache.set(config.id, { fingerprint, provider: built });
 	logger.info(
 		{

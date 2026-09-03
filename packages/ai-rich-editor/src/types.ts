@@ -3,21 +3,6 @@
  * 协议层与 UI 库无关，由宿主透传 SSE 端点（TanStack AI useChat 消费）
  */
 
-/** 对话消息（不含 system，system 由组件的系统提示词注入；assistant 可携带思考内容） */
-export type ChatTurn = {
-	role: "user" | "assistant";
-	content: string;
-	/** 深度思考模型的思考过程（仅 assistant，流结束后随消息持久化展示） */
-	thinking?: string;
-};
-
-/** Token 用量统计 */
-export interface AiChatUsage {
-	promptTokens?: number;
-	completionTokens?: number;
-	totalTokens?: number;
-}
-
 /** 消息提示回调（可选注入；缺省用 antd 静态 message） */
 export type AiRichNotify = (
 	type: "success" | "warning" | "error",

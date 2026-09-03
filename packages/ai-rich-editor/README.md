@@ -9,7 +9,7 @@ AI 驱动的「代码编辑 + 实时预览」三栏工作台（重客户端组�
 | 产物 | workspace 内部独立包，未来可完全分离（去 antd 依赖） |
 | 场景 | 定制化页面（新闻、活动、落地页等）的 HTML 内容生产 |
 | 输出 | **fragment-only**：只产出 HTML 内容片段，无完整文档切换 |
-| 传输 | **不持有**任何 HTTP 端点/鉴权知识——对话能力经宿主导入的 SSE 端点（`endpointUrl`）由 `useChat`（`@tanstack/ai-react`）消费 |
+| 传输 | **不持有**任何 HTTP 端点/鉴权知识——对话能力经宿主导入的 SSE 端点（`endpointUrl`）由 `createChatHook`（`@tanstack/ai-react/ui`，底层 `fetchServerSentEvents`）消费 |
 | UI | antd（peer 单实例）+ tailwind 语义令牌类（宿主 `global.css` 注入，需 `@source` 扫描包源码） |
 | 依赖 | peer：`antd` / `@ant-design/icons` / `monaco-editor` / `react` / `react-dom`；dep：`@monaco-editor/react`、`@tanstack/ai-react` |
 
@@ -24,7 +24,7 @@ export function MyPage() {
     <AiRichEditor
       value={html}
       onChange={setHtml}
-      endpointUrl="/api/ai-chat" // 宿主提供的流式 SSE 端点（TanStack AI useChat 消费）
+      endpointUrl="/api/ai-chat" // 宿主提供的流式 SSE 端点（TanStack AI createChatHook 消费）
       config={{
         notify: (type, content) => { /* 宿主消息提示 */ },
         previewHead: "<style>body{margin:0}</style>", // 注入预览 head 的附加代码
@@ -38,9 +38,10 @@ export function MyPage() {
 
 ## 对话契约
 
-- 组件经 `useChat`（`@tanstack/ai-react`）消费宿主 SSE 端点，将 TanStack AI 的 `UIMessage.parts`（`text`/`thinking`）映射为包内 `ChatTurn`（text 拼接为 `content`，thinking 单独字段）。思考内容流式展示在 `ThinkingBubble`。
-- system 提示词由**包内生成**（`DEFAULT_SYSTEM_PROMPT_TEMPLATE` / `buildDefaultSystemPrompt`），经 `config.systemPrompt` 覆盖；随每次发送由 `sendMessage(text, { body: { systemPrompt } })` 透传给服务端（`forwardedProps.systemPrompt`）。
-- `stop` 即中止当前生成；`clear` 清空对话。
+- 对话区基于 TanStack AI **headless UI**：`createChatHook` 在模块作用域注册 `components`（`layout`/`message`/`input`）与 `partsComponents`（`text`/`thinking`/`fallback`），`fetchServerSentEvents` 消费宿主 SSE 端点。服务端用 `chat()` + `toServerSentEventsResponse` 对接到 TanStack AI 标准 SSE。
+- `UIMessage.parts` 由 `partsComponents` 自动分发：`text` part → `MarkdownContent`（含代码块「应用到编辑器」）；`thinking` part → `ThinkingBubble`（流式「思考中…/已思考」）。
+- system 提示词由**包内生成**（`DEFAULT_SYSTEM_PROMPT_TEMPLATE` / `buildDefaultSystemPrompt`），经 `config.systemPrompt` 覆盖；随每次发送由 `sendMessage(text, { body: { ...requestMeta, systemPrompt } })` 透传给服务端（`forwardedProps.systemPrompt` / `providerId` 等）。
+- `stop` 即中止当前生成；`clear` 清空对话；`autoApply` 在流结束（`onFinish`）后自动应用回复中的 HTML 代码块。
 
 ## 配置与设置面板
 
@@ -59,11 +60,13 @@ export function MyPage() {
 
 | 导出 | 内容 |
 |------|------|
-| `@fsdx/ai-rich-editor` | `AiRichEditor` + `useAiChat`（`AiChatController`）+ 默认常量与 `extractHtmlFragments`/`buildPreviewDocument` + `buildDefaultSystemPrompt` |
+| `@fsdx/ai-rich-editor` | `AiRichEditor` + 默认常量与 `extractHtmlFragments`/`buildPreviewDocument` + `buildDefaultSystemPrompt` |
+
+> 对话区基于 `createChatHook` 在包内 `src/chat/ChatProvider.tsx` 一次性绑定，宿主无需感知其内部组件结构。
 
 ## 测试
 
-`pnpm --filter @fsdx/ai-rich-editor test`。覆盖代码块提取、预览文档构建（含附加代码注入）、`useAiChat`（基于 `useChat`）的消息映射/流式占位/发送/中止/清空/完成回调。
+`pnpm --filter @fsdx/ai-rich-editor test`。覆盖代码块提取/预览文档构建（含附加代码注入）、`MarkdownContent`（文本/代码块拆分与「应用到编辑器」）、`ThinkingBubble`（思考展示/展开/空内容不渲染）。
 
 ## 相关文档
 

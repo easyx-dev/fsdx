@@ -7,6 +7,9 @@ allowBuilds:
   es5-ext: true
   esbuild: true
 
+minimumReleaseAgeExclude:
+  - '@tanstack/ai@0.52.2'
+
 onlyBuiltDependencies:
   - esbuild
   - lightningcss

@@ -4,14 +4,17 @@
  * 包配置项统一收拢到 config，经设置面板编辑保存生效
  */
 import { Splitter } from "antd";
-import { useCallback, useState } from "react";
-import { ChatPanel } from "./components/ChatPanel";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+	createInstanceChatOverrides,
+	EditorCfgContext,
+	useAppChat,
+} from "./chat/ChatProvider";
 import { EditorPanel } from "./components/EditorPanel";
 import { PreviewPanel } from "./components/PreviewPanel";
 import { SettingsPanel } from "./components/SettingsPanel";
 import { Toolbar } from "./components/Toolbar";
 import { DEFAULT_CONFIG, DEFAULT_HTML } from "./constants";
-import { useAiChat } from "./hooks/useAiChat";
 import type { AiRichEditorConfig, AiRichEditorProps } from "./types";
 import { extractHtmlFragments } from "./utils/extract";
 
@@ -48,17 +51,39 @@ export function AiRichEditor({
 		[autoApply, onChange],
 	);
 
-	const chat = useAiChat({
-		endpointUrl,
-		systemPrompt,
-		requestMeta,
-		onComplete: handleAiComplete,
-	});
-
 	// 「应用到编辑器」：AI 生成的代码块替换当前内容
 	const handleApplyHtml = useCallback(
 		(html: string) => onChange?.(html),
 		[onChange],
+	);
+
+	// 每实例 chat 运行时值：endpointUrl / onComplete（autoApply）经 overrides 注入，多实例互不串线
+	const endpointUrlRef = useRef(endpointUrl);
+	useEffect(() => {
+		endpointUrlRef.current = endpointUrl;
+	}, [endpointUrl]);
+	const onCompleteRef = useRef<((content: string) => void) | undefined>(
+		handleAiComplete,
+	);
+	useEffect(() => {
+		onCompleteRef.current = handleAiComplete;
+	}, [handleAiComplete]);
+
+	const chatOverrides = useMemo(
+		() => createInstanceChatOverrides(endpointUrlRef, onCompleteRef),
+		[],
+	);
+	// 对话实例（headless UI）；connection/onFinish 为库 overrides 类型未收编的字段，此处转义
+	const chat = useAppChat(chatOverrides as never);
+
+	const editorCfg = useMemo(
+		() => ({
+			systemPrompt,
+			requestMeta,
+			onApplyHtml: handleApplyHtml,
+			notify,
+		}),
+		[systemPrompt, requestMeta, handleApplyHtml, notify],
 	);
 
 	// 设置面板保存：回写运行期配置并通知宿主
@@ -90,8 +115,10 @@ export function AiRichEditor({
 
 			<Splitter className="min-h-0 flex-1" orientation="horizontal">
 				{showChat && (
-					<Splitter.Panel defaultSize={300} min={220} max={480}>
-						<ChatPanel controller={chat} onApplyHtml={handleApplyHtml} />
+					<Splitter.Panel defaultSize={400} min={400} max={600}>
+						<EditorCfgContext.Provider value={editorCfg}>
+							<chat.AppChat />
+						</EditorCfgContext.Provider>
 					</Splitter.Panel>
 				)}
 				<Splitter.Panel>
