@@ -5,8 +5,11 @@ import bcrypt from "bcryptjs";
 import { eq } from "drizzle-orm";
 import { db, withTransaction } from "#/db/index";
 import { adminRole, adminUser, clientRole } from "#/db/schema";
-import { logger } from "#/lib/logger/logger";
-import { loadConfigCache, upsertConfig } from "#/services/config/config.server";
+import {
+	loadConfigCache,
+	upsertConfig,
+} from "#/shared-services/config/config.server";
+import { logger } from "#/shared-services/logger";
 
 /** 初始化表单数据 */
 export interface InitData {

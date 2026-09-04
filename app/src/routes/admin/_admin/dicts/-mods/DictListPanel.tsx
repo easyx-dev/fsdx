@@ -4,7 +4,7 @@
 import { DeleteOutlined, EditOutlined, PlusOutlined } from "@ant-design/icons";
 import { Button, Card, Popconfirm, Space } from "antd";
 import type { MouseEvent } from "react";
-import type { DictRecord } from "#/services/dict/dict.server";
+import type { DictRecord } from "#/shared-services/dict/dict.server";
 import { isPresetDict } from "./dictUtils";
 
 interface DictListPanelProps {

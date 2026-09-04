@@ -3,7 +3,7 @@
  * 进入 admin 时一次性加载全部字典，所有 DictSelect/DictTag 组件同步读取
  */
 import { create } from "zustand";
-import { getAllDictOptionsSFn } from "#/services/dict/dict.functions";
+import { getAllDictOptionsSFn } from "#/shared-services/dict/dict.functions";
 
 /** 字典选项 */
 export interface DictOption {

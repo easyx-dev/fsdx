@@ -3,7 +3,7 @@
  * 格式：{模块}:{操作}
  * 使用 definePermission 工厂创建权限常量，分组由 code 前缀自动推导
  */
-import { matchPermission } from "@fsdx/core/match-permission";
+import { matchPermission } from "@fsdx/lib/match-permission";
 
 /**
  * 创建权限码常量

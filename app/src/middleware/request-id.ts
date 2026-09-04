@@ -3,12 +3,12 @@
  * 写入 ALS 上下文并回写响应头 x-request-id，供日志与操作审计链路追踪
  */
 import { randomUUID } from "node:crypto";
-import { runWithRequestContext } from "@fsdx/core/request-context";
 import { createMiddleware } from "@tanstack/react-start";
 import {
 	getRequestHeader,
 	setResponseHeader,
 } from "@tanstack/react-start/server";
+import { runWithRequestContext } from "#/shared-services/request-context";
 
 /** 请求关联 ID 的请求/响应头名称 */
 export const REQUEST_ID_HEADER = "x-request-id";

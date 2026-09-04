@@ -2,7 +2,7 @@
  * shadcn/ui Badge 组件
  */
 
-import { cn } from "@fsdx/core/cn";
+import { cn } from "@fsdx/lib/cn";
 import { cva, type VariantProps } from "class-variance-authority";
 import type { HTMLAttributes, Ref } from "react";
 

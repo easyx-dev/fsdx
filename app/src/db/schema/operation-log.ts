@@ -3,7 +3,6 @@
  * 采用内存缓冲批量写入，避免高频 DB 调用
  */
 
-import type { OperatorType } from "@fsdx/core/request-context";
 import {
 	index,
 	jsonb,
@@ -13,7 +12,8 @@ import {
 	varchar,
 } from "drizzle-orm/pg-core";
 
-export type { OperatorType } from "@fsdx/core/request-context";
+/** 操作者类型：admin / client / system（领域唯一来源，供请求上下文与审计共用） */
+export type OperatorType = "admin" | "client" | "system";
 
 export const operationLog = pgTable(
 	"operation_log",

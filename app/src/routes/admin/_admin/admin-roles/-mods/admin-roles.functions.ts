@@ -16,7 +16,7 @@ import {
 	getAdminRoleList,
 	updateAdminRole,
 } from "#/services/admin-role/admin-role.server";
-import { logCrud } from "#/services/operation-log/operation-log.server";
+import { logCrud } from "#/shared-services/operation-log/operation-log.server";
 
 /** 获取角色列表 */
 export const getAdminRolesSFn = createServerFn({ method: "GET" })

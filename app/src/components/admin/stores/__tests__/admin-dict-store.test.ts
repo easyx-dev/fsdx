@@ -7,7 +7,7 @@ const { mockLoadDicts } = vi.hoisted(() => ({
 	mockLoadDicts: vi.fn(),
 }));
 
-vi.mock("#/services/dict/dict.functions", () => ({
+vi.mock("#/shared-services/dict/dict.functions", () => ({
 	getAllDictOptionsSFn: mockLoadDicts,
 }));
 

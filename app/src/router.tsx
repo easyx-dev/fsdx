@@ -1,6 +1,6 @@
-import { DEFAULT_LOCALE } from "@fsdx/core/i18n-types";
 import type { ErrorComponentProps } from "@tanstack/react-router";
 import { createRouter } from "@tanstack/react-router";
+import { DEFAULT_LOCALE } from "#/shared-services/i18n/i18n-types";
 import {
 	DefaultErrorFallback,
 	NotFoundFallback,

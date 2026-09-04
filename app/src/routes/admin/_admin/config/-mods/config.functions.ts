@@ -2,7 +2,7 @@
  * 系统配置管理路由共享 Server Function
  */
 
-import { toJson } from "@fsdx/core/export";
+import { toJson } from "@fsdx/lib/export";
 import { createServerFn } from "@tanstack/react-start";
 import { adminPermGuard } from "#/middleware/admin-auth";
 import { ADMIN_PERMISSIONS } from "#/permissions/admin-permissions";
@@ -11,15 +11,15 @@ import {
 	createConfigSchema,
 	deleteConfigSchema,
 	updateConfigSchema,
-} from "#/services/config/config.schemas";
+} from "#/shared-services/config/config.schemas";
 import {
 	createConfig,
 	deleteConfig,
 	getConfigList,
 	importConfigs,
 	updateConfig,
-} from "#/services/config/config.server";
-import { logCrud } from "#/services/operation-log/operation-log.server";
+} from "#/shared-services/config/config.server";
+import { logCrud } from "#/shared-services/operation-log/operation-log.server";
 
 /** 获取配置列表 */
 export const getConfigListSFn = createServerFn({ method: "GET" })

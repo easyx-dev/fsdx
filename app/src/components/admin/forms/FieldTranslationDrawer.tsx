@@ -2,11 +2,6 @@
  * 字段翻译抽屉组件：在实体表格中为字段提供国际化翻译编辑入口
  */
 import { RobotOutlined, TranslationOutlined } from "@ant-design/icons";
-import {
-	DEFAULT_LOCALE,
-	type Locale,
-	SUPPORTED_LOCALES,
-} from "@fsdx/core/i18n-types";
 import { message } from "@fsdx/ui-spa/antd-static";
 import { Button, Card, Drawer, Tabs, Tooltip } from "antd";
 import type { MouseEvent } from "react";
@@ -16,7 +11,12 @@ import {
 	aiTranslateFieldSFn,
 	getFieldTranslationsSFn,
 	saveContentTranslationSFn,
-} from "#/services/i18n/i18n.functions";
+} from "#/shared-services/i18n/i18n.functions";
+import {
+	DEFAULT_LOCALE,
+	type Locale,
+	SUPPORTED_LOCALES,
+} from "#/shared-services/i18n/i18n-types";
 import { EditorTypes } from "./editor-type";
 
 /** 可翻译字段定义 */

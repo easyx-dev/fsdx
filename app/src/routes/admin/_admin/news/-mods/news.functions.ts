@@ -27,7 +27,7 @@ import {
 	type NewsUpdateData,
 	updateNewsRecord,
 } from "#/services/news/news.server";
-import { logCrud } from "#/services/operation-log/operation-log.server";
+import { logCrud } from "#/shared-services/operation-log/operation-log.server";
 
 /** 获取新闻列表（分页、筛选、排序） */
 export const getNewsListSFn = createServerFn({ method: "GET" })

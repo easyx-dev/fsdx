@@ -5,7 +5,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const { mockRegisterTask } = vi.hoisted(() => ({ mockRegisterTask: vi.fn() }));
-vi.mock("@fsdx/core/scheduler", () => ({
+vi.mock("#/shared-services/scheduler", () => ({
 	registerTask: mockRegisterTask,
 }));
 
@@ -23,7 +23,7 @@ vi.mock("#/services/logs/logs-cleanup.server", () => ({
 }));
 
 const { mockLoggerInfo } = vi.hoisted(() => ({ mockLoggerInfo: vi.fn() }));
-vi.mock("#/lib/logger/logger", () => ({
+vi.mock("#/shared-services/logger", () => ({
 	logger: { error: vi.fn(), info: mockLoggerInfo, warn: vi.fn() },
 }));
 

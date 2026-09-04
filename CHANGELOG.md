@@ -74,15 +74,15 @@
 ### Infrastructure
 
 - **[infra] AI 能力迁移到 TanStack AI（全栈框架式接入，单模型，下沉为 app 服务层）**：
-  - **删除 `@fsdx/core/ai`（AI 不再是 core 基建）**：AI 完全下沉到 app 服务层 `services/ai`——`ai.provider.ts` 负责配置读取（`ai_base_url`/`ai_api_key`/`ai_model`）+ 基于 `@tanstack/ai-openai/compatible` 的 `openaiCompatible` provider 构建 + 按指纹缓存的跨 bundle 单例（globalThis 键 `__FSDX_AI_PROVIDER__`）；`ai.server.ts` 负责 `chat()` 编排。原 `deepChat`/`fastChat`/`deepChatStream`/`fastChatStream`/`AiModelType`/`truncateJsonForLlm`（无消费）一并移除；core 移除 `@tanstack/ai`/`@tanstack/ai-openai` 依赖与 `./ai` 导出
-  - **`bootstrap.ts` 不再 `initAi`**：`@fsdx/core/ai` 的 `initAi` 依赖注入随模块删除消失，AI 配置改由 `services/ai` 直接 `getConfig` 读取
+  - **删除 `@fsdx/lib/ai`（AI 不再是 core 基建）**：AI 完全下沉到 app 服务层 `services/ai`——`ai.provider.ts` 负责配置读取（`ai_base_url`/`ai_api_key`/`ai_model`）+ 基于 `@tanstack/ai-openai/compatible` 的 `openaiCompatible` provider 构建 + 按指纹缓存的跨 bundle 单例（globalThis 键 `__FSDX_AI_PROVIDER__`）；`ai.server.ts` 负责 `chat()` 编排。原 `deepChat`/`fastChat`/`deepChatStream`/`fastChatStream`/`AiModelType`/`truncateJsonForLlm`（无消费）一并移除；core 移除 `@tanstack/ai`/`@tanstack/ai-openai` 依赖与 `./ai` 导出
+  - **`bootstrap.ts` 不再 `initAi`**：`@fsdx/lib/ai` 的 `initAi` 依赖注入随模块删除消失，AI 配置改由 `services/ai` 直接 `getConfig` 读取
   - **服务编排 `services/ai/ai.server.ts`**：`streamAiChat`（返回 TanStack AI 流）/ `completeText`（`chat({ stream:false })` 非流式取文本）；`chat()` 编排与流消费收敛在 app 编排层，AI 翻译等业务只依赖 `services/ai`
   - **新增 Server Route `/api/ai-chat`**：`adminPermRouteGuard(AI_CHAT)` + `chatParamsFromRequest` + `toServerSentEventsResponse`，替代原 Server Function 自定义 SSE 帧协议；前端 `@fsdx/ai-rich-editor` 改用 `useChat`（`@tanstack/ai-react`）消费标准 SSE
   - **单模型配置**：`ai_deep_model`/`ai_fast_model` 收敛为 `ai_model`（`PRESET_CONFIGS`/初始化表单同步），去掉 deep→fast 自动降级与空内容参数变化重试，交由 TanStack AI 重试/错误处理；不保留旧键迁移（无历史兼容）
   - **AI 翻译**：`aiTranslateFieldSFn` 由 `fastChat` 改为 `services/ai` 的 `completeText`，保留 `ai_translation_prompt` 模板与友好错误包裹；`FieldTranslationDrawer` 无感知
   - 依赖新增 `@tanstack/ai` / `@tanstack/ai-react` / `@tanstack/ai-openai`（app、ai-rich-editor）
 
-- **[infra] `@fsdx/core` mail/sms/scheduler 依赖注入统一封装跨 bundle 共享存储**：`initMail`/`initSms`/`setSchedulerLogger` 注入的 deps 原为模块级单例，而 Nitro 入口（bootstrap 注入）与 TanStack Start SSR 渲染器会分别打包一份模块实例，导致在 SSR/bundle 内调用（如验证码邮件 SFn）抛「模块未初始化」；现新增 `@fsdx/core` 内部 `deps-store`（`createGlobalDepsStore<T>(key)` 工厂，get/set/reset），将注入状态挂载 `globalThis`（`__FSDX_MAIL_DEPS__` / `__FSDX_SMS_DEPS__` / `__FSDX_SCHEDULER_LOGGER__`），消除各自重复的 globalThis 存取样板、统一经 store 访问，任意 bundle 共享同一份依赖。AI 相关配置现由 app `services/ai` 经跨 bundle 单例槽（globalThis 键 `__FSDX_AI_PROVIDER__`）缓存。可被衍生项目吸收；现存部署重启后生效
+- **[infra] `@fsdx/lib` mail/sms/scheduler 依赖注入统一封装跨 bundle 共享存储**：`initMail`/`initSms`/`setSchedulerLogger` 注入的 deps 原为模块级单例，而 Nitro 入口（bootstrap 注入）与 TanStack Start SSR 渲染器会分别打包一份模块实例，导致在 SSR/bundle 内调用（如验证码邮件 SFn）抛「模块未初始化」；现新增 `@fsdx/lib` 内部 `deps-store`（`createGlobalDepsStore<T>(key)` 工厂，get/set/reset），将注入状态挂载 `globalThis`（`__FSDX_MAIL_DEPS__` / `__FSDX_SMS_DEPS__` / `__FSDX_SCHEDULER_LOGGER__`），消除各自重复的 globalThis 存取样板、统一经 store 访问，任意 bundle 共享同一份依赖。AI 相关配置现由 app `services/ai` 经跨 bundle 单例槽（globalThis 键 `__FSDX_AI_PROVIDER__`）缓存。可被衍生项目吸收；现存部署重启后生效
 
 - **[infra] 系统配置缓存挂载 globalThis 跨 bundle 共享**：`configCache`/`configTranslationCache` 原为模块级单例，Nitro 入口（bootstrap 注入 `getConfig`）与 SSR 渲染器分别打包一份实例，启动后经管理端修改的配置只刷新 SSR 侧缓存，注入 `getConfig` 的模块（AI / SMTP / 短信）仍读到启动时空值——表现为运行时填写 AI 配置后 AI 对话仍报「AI 客户端未配置」；现两个缓存实例挂载 `globalThis`（`__FSDX_CONFIG_CACHE__` / `__FSDX_CONFIG_TRANSLATION_CACHE__`），任意 bundle 读写同一实例，运行时配置变更即时生效。可被衍生项目吸收
 
@@ -115,10 +115,10 @@
 - **新增 check-architecture 架构审计命令**：`.agents/commands/check-architecture.md` 按 8 维度（分层/路由/SFn/组件/类型与 DB/安全/错误处理/测试）全量扫描并输出分级报告；配套 `.agents/checklists/` 新增 sfn / route / component 三份精简检查清单
 - **AGENTS.md 新增「对话效率」章节**：约定控制单会话上下文体积（阶段化会话 / explore 子代理 / read 限定行范围 / bash 输出瘦身 / 长文档按需读取），对齐 bom-easy 项目治理实践
 
-- **`@fsdx/core` 基础设施补齐（对照 bom-easy lib 查漏）**：
+- **`@fsdx/lib` 基础设施补齐（对照 bom-easy lib 查漏）**：
   - **`ai` 模块能力对齐**：重构拆分（types / client / chat / chat-stream / truncate，subpath 与既有 API 签名不变）；`ChatOptions` 新增 `extraBody`（如 DeepSeek thinking 控制，思考关闭时不传 temperature）；`deepChat` / `fastChat` 补齐 deep 失败自动降级 fast 重试、空内容参数变化重试（去 `max_tokens` → 改 `temperature=0`，带递增退避），客户端初始化同步超时与 SDK 重试；新增流式 `deepChatStream` / `fastChatStream`（逐 token 回调 + `reasoning_content` 思考流 + 降级通知）；新增 `truncateJsonForLlm` 大体积 JSON 结构截断。**行为变化**：空内容重试后仍为空时 `deepChat`/`fastChat` 直接抛错（原返回空串），`aiTranslateFieldSFn` 捕获后转友好提示，避免用户看到原始错误
-  - **新增 `@fsdx/core/semaphore`**：`Semaphore` 并发限流（许可打满有界排队，队列满 / 等待超时抛 `SemaphoreTimeoutError`）
-  - **新增 `@fsdx/core/task-manager`**：`createTaskManager` 内存任务管理器（pending/running/done/failed 状态机 + TTL 惰性清理 + 事件缓冲 / SSE 订阅与断线回放），供后台任务进度复用
+  - **新增 `@fsdx/lib/semaphore`**：`Semaphore` 并发限流（许可打满有界排队，队列满 / 等待超时抛 `SemaphoreTimeoutError`）
+  - **新增 `@fsdx/lib/task-manager`**：`createTaskManager` 内存任务管理器（pending/running/done/failed 状态机 + TTL 惰性清理 + 事件缓冲 / SSE 订阅与断线回放），供后台任务进度复用
   - **captcha 补齐 `createMathExpr`**：算式验证码生成（`+`/`-`/`+-` 随机），配套 `random.ts` 新增 `mathExpr` 原语
   - 全部新增/增强模块补齐 vitest 测试（ai 降级/重试/流式/截断、semaphore 并发与超时、task-manager 状态机与事件、captcha 算式）
 
@@ -153,7 +153,7 @@
 - **前台登录后 Header 登录态不刷新**：客户端登录成功仅 `navigate` 到首页，`ClientAuthProvider` 不重挂载导致 Header 仍显示未登录；登录页 `onSubmit` 成功后补充调用 `useClientAuth().refetch()`，使用户名/消息/退出入口即时更新
 
 - **统一 Asia/Shanghai 时区基准（定时任务/日志切割/按天查询）**：
-  - `@fsdx/core` 新增 `@fsdx/core/date-format`（dayjs 实现）：`DEFAULT_TASK_TIME_ZONE`（`Asia/Shanghai`）、`DATE_ONLY_REGEX`、`toDateString` / `parseDateOnly` / `toDayRange`，天边界解析不依赖服务器时区（`TZ=UTC` 下已验证）
+  - `@fsdx/lib` 新增 `@fsdx/lib/date-format`（dayjs 实现）：`DEFAULT_TASK_TIME_ZONE`（`Asia/Shanghai`）、`DATE_ONLY_REGEX`、`toDateString` / `parseDateOnly` / `toDayRange`，天边界解析不依赖服务器时区（`TZ=UTC` 下已验证）
   - 定时任务：`registerTask` 支持 `timeZone` 字段，`CronJob` 默认按 `Asia/Shanghai` 调度（原依赖服务器本地时区，UTC 服务器上「每天 3:00」会偏成北京时间 11:00）
   - 日志体系：pino 日志文件名按天切割与 `cleanExpiredLogs()` 清理截止统一按 `Asia/Shanghai` 计算，与任务调度时区一致
   - 按天查询：operation-log 列表、埋点事件列表与事件分析的 `startDate/endDate` 边界改用 `toDayRange`（原 `new Date("YYYY-MM-DD")` 按 UTC 解析导致窗口偏移，事件查询页传 `endOf("day")` 再 +1 天造成边界溢出）；schema 增加 `YYYY-MM-DD` 格式校验；事件查询/分析页改传 date-only，与操作日志一致
@@ -268,9 +268,9 @@
   - 新增 `db-mysql` skill：mysql2 异步驱动，事务与普通查询全部保持 await、日期保持 Date，迁移面最小；覆盖 uuid→char(36)、jsonb→json、json 列默认值限制等 MySQL 特有差异
   - db-schema skill 相关链接、AGENTS.md 数据库章节同步补齐目标库速查与 drizzle v1 基态说明
 - **子包文档补齐 + 文档/技能对齐**：
-  - 新增三个子包 README（`packages/core/README.md` / `packages/ui-ssr/README.md` / `packages/ui-spa/README.md`），含 subpath 导出清单、宿主集成约束与依赖边界；根 README、AGENTS.md、architecture-overview 建立对子包文档的引用
+  - 新增三个子包 README（`packages/lib/README.md` / `packages/ui-ssr/README.md` / `packages/ui-spa/README.md`），含 subpath 导出清单、宿主集成约束与依赖边界；根 README、AGENTS.md、architecture-overview 建立对子包文档的引用
   - 删除已完成的历史方案 `docs/monorepo-restructure.md`（其包边界内容由三个子包 README 承接）
-  - docs 事实对齐：README（17 张表 / 8 个缓存实例 / `db:push`→`db:generate`+`db:migrate`）、cache-system（`@fsdx/core/cache-core` 与实例路径、启动时序）、database-design（`admin_role_ids` / `client_role_ids` JSONB 多角色，无外键）、auth-permission-model（客户端 RBAC、61 个权限常量、`resolveAdminAuthContext` 现状实现）、event-tracking（预置 5 事件 / 11 属性、路径与函数名）、deployment-ops（core 基础设施路径、env 位于 `app/`）
+  - docs 事实对齐：README（17 张表 / 8 个缓存实例 / `db:push`→`db:generate`+`db:migrate`）、cache-system（`@fsdx/lib/cache-core` 与实例路径、启动时序）、database-design（`admin_role_ids` / `client_role_ids` JSONB 多角色，无外键）、auth-permission-model（客户端 RBAC、61 个权限常量、`resolveAdminAuthContext` 现状实现）、event-tracking（预置 5 事件 / 11 属性、路径与函数名）、deployment-ops（core 基础设施路径、env 位于 `app/`）
   - skills 对齐：8 个 skill 修正过时路径与流程（core subpath 迁移、`@fsdx/ui-spa/table` 与 `antd-static` 导入、`logCrud` 一行式审计、mockDb 17 张表清单、`db:generate`+`db:migrate` 迁移流程）
   - **文档瘦身**：AGENTS.md 552 → 276 行（与 skill 重复的细节压缩为「硬规则 + skill 链接」，删除已修复的历史节；`src/services/` 准入门槛、就近原则、Server Route 例外补入 server-function skill，jsonb `$type` 约定补入 db-schema skill，`logExternalRequest` 字段语义补入 architecture skill）；`auth-permission-model.md` 640 → 552 行（删除重复性角色关系/客户端缓存 flow 与散乱文字，保留并时效修正整体架构、管理员登录、客户端注册登录、系统初始化四张图，按查考级组织）
   - 文档 review 修正：README 快速开始 env 路径指向 `app/.env.example`；i18n skill「支持的语言」片段去掉与导入重复的本地声明；cache-system 启动时序图更正 dict 缓存为懒加载（仅 config/track 元数据启动热加载）
@@ -309,7 +309,7 @@
 - **workspace peer 对齐单实例**：ui-spa/ui-ssr 的 `react`/`react-dom` peer 收紧至 `^19.2.8`，ui-spa 的 `antd`/`@ant-design/icons`/`@tanstack/react-router`/`monaco-editor` peer 同步对齐 app 实际版本
 - **共享依赖上移根 package.json**（私有 monorepo，版本统一在根管理）：
   - `dependencies`：`react`/`react-dom`/`i18next`（app + ui 包 / core 多包直接使用）；`devDependencies`：共享工具链 `vitest`/`@types/react*`/`@types/node`/`@testing-library/*`/`jsdom`
-  - app 删除 16 个冗余声明（`pino`/`jose`/`openai` 等仅经 `@fsdx/core` 间接使用，不直接 import）
+  - app 删除 16 个冗余声明（`pino`/`jose`/`openai` 等仅经 `@fsdx/lib` 间接使用，不直接 import）
   - core/ui-ssr/ui-spa 移除 `react`/`react-dom` peer 声明，单实例由根 `node_modules` 唯一副本保证（依赖根 hoisting 隐式解析）
   - ui-spa 保留 `antd`/`@ant-design/icons`/`@tanstack/react-router`/`monaco-editor`/`@wangeditor/*`/`dayjs` peer（单实例约束不变）
 - **移除 changeset 工具链**：库包全部 `private: true` 不发布，删除根 `changeset`/`version`/`release` 脚本、`@changesets/cli` 依赖与 `.changeset/` 目录
@@ -323,12 +323,29 @@
 
 - **Monorepo 重构**：单仓库单应用 → 单仓库多包（pnpm workspace）
   - 目录迁移：`src/` 整体移入 `app/src/`（`@fsdx/web`），根 `package.json` 改为 `--filter` 编排壳；`server.ts`/`public/`/`drizzle/`/配置文件移入 `app/`
-  - 新增 `@fsdx/core`（subpath exports，`pure/` 同构 + `node/` 仅服务端）：ms / export / cache-core / match-permission / error-utils / i18n-types / i18n-config / cn / logger / jwt / storage / captcha / batch-writer / request-context / scheduler / ai / mail / sms
+  - 新增 `@fsdx/lib`（subpath exports，`pure/` 同构 + `node/` 仅服务端）：ms / export / cache-core / match-permission / error-utils / i18n-types / i18n-config / cn / logger / jwt / storage / captcha / batch-writer / request-context / scheduler / ai / mail / sms
   - 新增 `@fsdx/ui-ssr`（shadcn button/card/badge/input/textarea + AutofillBlocker）与 `@fsdx/ui-spa`（antd 基础组件，antd 为 peerDependency）
   - logger 改 `createLogger` 工厂：app 保留 `#/lib/logger/logger` 单例壳，27 处引用零改动；jwt 改 `createJwt` 工厂 + app 惰性单例壳，`COOKIE_NAMES` 迁至 `src/constants/cookie-names.ts`
   - ai/mail/sms 改 `initX` 依赖注入（bootstrap 注入 `getConfig` + logger），未 init 直接调用抛错；scheduler 改 `setSchedulerLogger`
   - `matchPermission` 迁入 core；`OperatorType` 迁入 core request-context，`db/schema/operation-log.ts` re-export；`log-reader.ts` 就近迁至 `services/logs/`
   - antd-static 迁入 ui-spa，app 删除 `#/components/antd-static` 壳、各端直接经 `@fsdx/ui-spa/antd-static` 导入；Tailwind 经 `@source` 扫描 ui 包源码类名
+
+### Infrastructure
+
+- **[infra] 层次重构：`@fsdx/core` → `@fsdx/lib` + `src/shared-services/`**：将混装「纯可复用逻辑 + app 绑定单例/DI」的 core 拆为三层单向 DAG（可被衍生项目吸收）：
+  - **`@fsdx/lib`（原 `@fsdx/core`，`packages/core` → `packages/lib`）**：仅保留纯可复用逻辑——utils（ms/export/cn/match-permission/error-utils/date-format）、`@fsdx/lib/cache`（原 `cache-core`）、infra 通用非单例（captcha/semaphore/task-manager/batch-writer）+ `StorageAdapter` 纯契约（`@fsdx/lib/storage`）。**零全局态、不读 env/db、不做日志耦合**（错误向上抛出，警告经 `onEvent` 钩子或 `console`，如 `batch-writer`）。第三方依赖收敛为 clsx / tailwind-merge / opentype.js
+  - **`src/shared-services/`（app 层）**：承载 app 绑定单例/DI——`logger` / `jwt` / `metrics` / `storage`（`LocalStorageAdapter` + 单例）/ `scheduler` / `mail` / `sms` / `request-context` / `deps-store`；跨 bundle 单例统一经 `createGlobalDepsStore`（globalThis）共享，由 `bootstrap.ts` 注入 `init*` / `setSchedulerLogger`；`app/src/lib/` 目录删除（track 并入 services，其余并入 shared-services）
+  - **i18n 单模块化**：`i18n-types` / `i18n-config` 并入 `src/services/i18n/`（保持同构纯 `.ts`），客户端（providers/routes）可引用
+  - **track SDK**：`app/src/lib/track` → `src/services/track/track.ts`（客户端 SDK）
+  - **`OperatorType` 下沉 db**：自携带于 `db/schema/operation-log.ts`，`request-context` 以 type-only 引用，拆除 `db → core` 反向依赖
+  - **npm 依赖迁移**：`pino`/`pino-pretty`/`jose`/`nodemailer`/`cron`/`@alicloud/*` 自 lib 移入 app，lib 保留 clsx / tailwind-merge / opentype.js
+  - 方案文档：`.opencode/plan/lib-shared-services-layer-rework.md`
+
+- **[infra] shared-services 整合：高共享 service 下沉 + 移除 init/DI 透传**：把被大范围共享的系统级 service 从 `src/services/` 下沉到 `src/shared-services/`（定位为「高共享性的一类 service」，可被 routes/middleware/bootstrap/client/其它 service 直接引用，**绝不引用 services**）：
+  - **下沉模块**：`config`、`dict`、`i18n`（整包含 `i18n.functions`）、`ai`（整包含 `ai-providers.functions`）、`query-utils`、`operation-log` → `shared-services/{config,dict,i18n,ai,query,operation-log}`；相关 import / 测试 `#/services/*` → `#/shared-services/*`
+  - **去 DI 透传**：`mail` / `sms` / `scheduler` 直接 `import { logger }`，`mail` / `sms` 直接 `import { getConfig }`；删除 `initMail` / `initSms` / `setSchedulerLogger` 与 `createGlobalDepsStore`（`shared-services/deps-store` 无使用者后删除）；`bootstrap.ts` 清空依赖注入，`getConfig` 直引 `shared-services/config/config.server`
+  - **判断标准**：一个 `services` 模块被大范围引用共享 → 具备成为 shared-services 的条件
+  - 方案文档：`.opencode/plan/shared-services-consolidation.md`
 
 ## [v1.1.0] - 2026-08-24
 

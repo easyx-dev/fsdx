@@ -3,7 +3,6 @@
  * GlobalStore 测试：GlobalStoreProvider 渲染 + useGlobalStore 上下文取值
  */
 
-import type { Locale, Translations } from "@fsdx/core/i18n-types";
 import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 import {
@@ -11,6 +10,7 @@ import {
 	globalStoreContext,
 	useGlobalStore,
 } from "#/components/providers";
+import type { Locale, Translations } from "#/shared-services/i18n/i18n-types";
 
 afterEach(cleanup);
 

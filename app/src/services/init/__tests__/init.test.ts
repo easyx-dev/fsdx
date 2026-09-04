@@ -4,11 +4,11 @@
 
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-vi.mock("#/lib/logger/logger", () => ({
+vi.mock("#/shared-services/logger", () => ({
 	logger: { error: vi.fn(), info: vi.fn(), warn: vi.fn() },
 }));
 
-vi.mock("#/services/config/config.server", () => ({
+vi.mock("#/shared-services/config/config.server", () => ({
 	upsertConfig: vi.fn(),
 	loadConfigCache: vi.fn(),
 }));
@@ -147,7 +147,9 @@ describe("initSystem", () => {
 	});
 
 	it("未传入站点名称时不写入 site_name 配置", async () => {
-		const { upsertConfig } = await import("#/services/config/config.server");
+		const { upsertConfig } = await import(
+			"#/shared-services/config/config.server"
+		);
 
 		mockDb.transaction.mockImplementation(async (cb: CallableFunction) => {
 			const { tx, txRows } = mockTx();
@@ -176,7 +178,9 @@ describe("initSystem", () => {
 	});
 
 	it("传入 SMTP 配置时写入对应配置项", async () => {
-		const { upsertConfig } = await import("#/services/config/config.server");
+		const { upsertConfig } = await import(
+			"#/shared-services/config/config.server"
+		);
 
 		mockDb.transaction.mockImplementation(async (cb: CallableFunction) => {
 			const { tx, txRows } = mockTx();
@@ -251,7 +255,9 @@ describe("initSystem", () => {
 	});
 
 	it("SMTP 配置中 secure 为 false 时写入 'false' 字符串", async () => {
-		const { upsertConfig } = await import("#/services/config/config.server");
+		const { upsertConfig } = await import(
+			"#/shared-services/config/config.server"
+		);
 
 		mockDb.transaction.mockImplementation(async (cb: CallableFunction) => {
 			const { tx, txRows } = mockTx();
@@ -284,7 +290,9 @@ describe("initSystem", () => {
 	});
 
 	it("SMTP 配置中的可选字段为空时不写入对应配置", async () => {
-		const { upsertConfig } = await import("#/services/config/config.server");
+		const { upsertConfig } = await import(
+			"#/shared-services/config/config.server"
+		);
 
 		mockDb.transaction.mockImplementation(async (cb: CallableFunction) => {
 			const { tx, txRows } = mockTx();
@@ -346,7 +354,9 @@ describe("initSystem", () => {
 	});
 
 	it("初始化成功后重新加载配置缓存", async () => {
-		const { loadConfigCache } = await import("#/services/config/config.server");
+		const { loadConfigCache } = await import(
+			"#/shared-services/config/config.server"
+		);
 
 		mockDb.transaction.mockImplementation(async (cb: CallableFunction) => {
 			const { tx, txRows } = mockTx();

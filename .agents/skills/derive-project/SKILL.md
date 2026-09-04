@@ -44,7 +44,7 @@ description: >
 
 ### Step 1：A 包名面
 
-1. 改根 `package.json` 与各包（`app/`、`packages/core`、`packages/ui-ssr`、`packages/ui-spa`）的 `name`；
+1. 改根 `package.json` 与各包（`app/`、`packages/lib`、`packages/ui-ssr`、`packages/ui-spa`）的 `name`；
 2. 全局搜索替换 `@fsdx/` → `@{包名前缀}/`（跳过 `node_modules`、`.git`、`pnpm-lock.yaml`、`docs/archive`）；
 3. `pnpm install` 再生 `pnpm-lock.yaml`；
 4. 检查 `tsconfig*.json`、`vite.config.ts`、`biome.json` 中是否引用旧包名。

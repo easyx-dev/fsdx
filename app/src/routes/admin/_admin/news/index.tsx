@@ -6,7 +6,7 @@ import {
 	FileTextOutlined,
 	PlusOutlined,
 } from "@ant-design/icons";
-import { downloadFile } from "@fsdx/core/export";
+import { downloadFile } from "@fsdx/lib/export";
 import { message } from "@fsdx/ui-spa/antd-static";
 import { JsonImportButton } from "@fsdx/ui-spa/json-import-button";
 import { ProTable } from "@fsdx/ui-spa/table";

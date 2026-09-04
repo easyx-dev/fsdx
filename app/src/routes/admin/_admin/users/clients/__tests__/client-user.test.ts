@@ -5,7 +5,7 @@
 import bcrypt from "bcryptjs";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-vi.mock("#/lib/logger/logger", () => ({
+vi.mock("#/shared-services/logger", () => ({
 	logger: { error: vi.fn(), info: vi.fn(), warn: vi.fn() },
 }));
 

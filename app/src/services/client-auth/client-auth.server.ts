@@ -6,8 +6,6 @@ import bcrypt from "bcryptjs";
 import { and, eq, inArray, isNull, or } from "drizzle-orm";
 import { db } from "#/db/index";
 import { clientRole, clientUser } from "#/db/schema";
-import { type JwtPayload, jwt } from "#/lib/jwt/jwt";
-import { logger } from "#/lib/logger/logger";
 import { verifyCaptcha } from "#/services/captcha/captcha.server";
 import type {
 	ClientLoginResult,
@@ -18,6 +16,8 @@ import {
 	type CachedClientUser,
 	clientUserCache,
 } from "#/services/client-auth/client-user.cache";
+import { type JwtPayload, jwt } from "#/shared-services/jwt";
+import { logger } from "#/shared-services/logger";
 
 /** 合并多个客户端角色的权限并去重（未分配角色时返回空数组） */
 async function getClientRolePermissions(

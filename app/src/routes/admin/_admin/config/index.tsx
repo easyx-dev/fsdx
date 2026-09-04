@@ -2,7 +2,7 @@
  * 系统配置管理页面：键值对 CRUD（antd Table + Form + Modal）
  */
 import { DownloadOutlined, PlusOutlined } from "@ant-design/icons";
-import { downloadFile } from "@fsdx/core/export";
+import { downloadFile } from "@fsdx/lib/export";
 import { message } from "@fsdx/ui-spa/antd-static";
 import { JsonImportButton } from "@fsdx/ui-spa/json-import-button";
 import { ProTable } from "@fsdx/ui-spa/table";
@@ -12,7 +12,7 @@ import dayjs from "dayjs";
 import type { ChangeEvent } from "react";
 import { useMemo, useState } from "react";
 import { AdminPageContent } from "#/components/admin";
-import type { ConfigRecord } from "#/services/config/config.server";
+import type { ConfigRecord } from "#/shared-services/config/config.server";
 import { ConfigFormModal } from "./-mods/ConfigFormModal";
 import {
 	createConfigSFn,

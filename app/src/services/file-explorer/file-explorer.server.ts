@@ -15,8 +15,8 @@ import {
 	unlink,
 } from "node:fs/promises";
 import { basename, dirname, join, resolve, sep } from "node:path";
-import { logger } from "#/lib/logger/logger";
-import { getConfig } from "#/services/config/config.server";
+import { getConfig } from "#/shared-services/config/config.server";
+import { logger } from "#/shared-services/logger";
 
 /** 系统配置中存储写保护路径列表的 key */
 const WRITE_PROTECTED_CONFIG_KEY = "file_explorer_write_protected_paths";

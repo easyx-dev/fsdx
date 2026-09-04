@@ -3,7 +3,7 @@
  * 对外暴露的值始终为毫秒数（number | null），可直接嵌入 antd Form.Item 受控使用
  */
 
-import { format, parse, type StringValue } from "@fsdx/core/ms";
+import { format, parse, type StringValue } from "@fsdx/lib/ms";
 import { Input, type InputProps, Tooltip } from "antd";
 import { useEffect, useState } from "react";
 

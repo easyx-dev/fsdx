@@ -7,7 +7,7 @@ import {
 	createConfigSchema,
 	deleteConfigSchema,
 	updateConfigSchema,
-} from "#/services/config/config.schemas";
+} from "#/shared-services/config/config.schemas";
 
 describe("createConfigSchema", () => {
 	it("合法输入通过", () => {

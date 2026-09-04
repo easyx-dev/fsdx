@@ -2,7 +2,7 @@
  * 埋点事件校验模块：属性值类型与安全校验、上报频控、服务端时间钳制
  * 纯逻辑，不依赖数据库，供 trackEvent 上报链路使用
  */
-import { MemoryCache } from "@fsdx/core/cache-core";
+import { MemoryCache } from "@fsdx/lib/cache";
 
 // ═══════════════════════════════════════════════════
 // 属性值类型与安全校验

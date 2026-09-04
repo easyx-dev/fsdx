@@ -16,7 +16,7 @@ export const ROOT = resolve(
 );
 
 /** 缓存实例源码目录（app/src/services，含子目录，如 track.validate.ts 内嵌频控实例） */
-const CACHE_SRC_DIR = join(ROOT, "app/src/services");
+const CACHE_SRC_DIR = join(ROOT, "app/src");
 
 /** skill 规则目录（.agents/skills，每个子目录一个 SKILL.md） */
 const SKILLS_DIR = join(ROOT, ".agents/skills");

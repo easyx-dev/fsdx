@@ -1,7 +1,7 @@
 # 事件埋点系统
 
 > 定位：平台机制类 · 人类阅读
-> 单一事实来源：`src/lib/track/track.ts`（客户端 SDK）+ `src/services/track/`（服务端校验/缓冲/分析，含预置事件/属性常量）
+> 单一事实来源：`src/services/track/track.ts`（客户端 SDK）+ `src/services/track/`（服务端校验/缓冲/分析，含预置事件/属性常量）
 > 引用关系：← 被 architecture-overview 引用、AGENTS「事件埋点」条目链接；→ 引用埋点代码单一事实来源
 > 更新触发：埋点 SDK、服务端校验链、预置事件/属性、BatchWriter 参数变更时
 
@@ -46,7 +46,7 @@
 
 ## 客户端 SDK
 
-位于 `src/lib/track/track.ts`，核心 API：
+位于 `src/services/track/track.ts`，核心 API：
 
 ### 初始化
 
@@ -220,7 +220,7 @@ flowchart TD
 
 | 文件 | 职责 |
 |------|------|
-| `src/lib/track/track.ts` | 客户端埋点 SDK |
+| `src/services/track/track.ts` | 客户端埋点 SDK |
 | `src/services/track/track.server.ts` | 服务层入口（barrel）：事件上报缓冲写入 + 统一导出 |
 | `src/services/track/track.validate.ts` | 属性值类型校验、per-session 频控、服务端时间钳制（纯逻辑） |
 | `src/services/track/track.meta.ts` | 元事件/元属性管理（预设、CRUD、`loadTrackMetaCache()`） |

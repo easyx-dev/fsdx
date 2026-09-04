@@ -11,7 +11,7 @@ RUN npm install -g pnpm@11
 
 COPY pnpm-lock.yaml package.json pnpm-workspace.yaml .npmrc ./
 COPY app/package.json ./app/package.json
-COPY packages/core/package.json ./packages/core/package.json
+COPY packages/lib/package.json ./packages/lib/package.json
 COPY packages/ui-ssr/package.json ./packages/ui-ssr/package.json
 COPY packages/ui-spa/package.json ./packages/ui-spa/package.json
 

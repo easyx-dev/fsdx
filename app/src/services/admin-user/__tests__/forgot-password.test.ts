@@ -57,7 +57,7 @@ vi.mock("#/services/captcha/captcha.server", () => ({
 vi.mock("#/services/admin-auth/admin-auth.server", () => ({
 	clearAdminUserCache: mockClearAdminUserCache,
 }));
-vi.mock("#/lib/logger/logger", () => ({ logger: mockLogger }));
+vi.mock("#/shared-services/logger", () => ({ logger: mockLogger }));
 
 import { resetAdminPasswordByEmail } from "../admin-user.server";
 

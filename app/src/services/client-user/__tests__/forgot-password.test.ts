@@ -57,7 +57,7 @@ vi.mock("#/services/captcha/captcha.server", () => ({
 vi.mock("#/services/client-auth/client-auth.server", () => ({
 	clearClientUserCache: mockClearClientUserCache,
 }));
-vi.mock("#/lib/logger/logger", () => ({ logger: mockLogger }));
+vi.mock("#/shared-services/logger", () => ({ logger: mockLogger }));
 
 import { resetClientPasswordByEmail } from "../client-user.server";
 

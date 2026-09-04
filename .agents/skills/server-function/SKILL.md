@@ -78,7 +78,7 @@ import {
   getProductById,
   deleteProduct,
 } from "#/services/product/product.server";
-import { logCrud } from "#/services/operation-log/operation-log.server";
+import { logCrud } from "#/shared-services/operation-log/operation-log.server";
 
 // ── Zod Schema ──
 const listSchema = z.object({
@@ -113,7 +113,7 @@ const deleteProductSFn = createServerFn({ method: "POST" })
 
 ## 目录组织规则
 
-`src/lib/` 和 `src/services/` 下**禁止**直接放置文件，所有模块必须组织到独立子目录中：
+`src/shared-services/` 和 `src/services/` 下**禁止**直接放置文件，所有模块必须组织到独立子目录中：
 
 - `news/news.server.ts`（✅ 正确）
 - `news.ts`（❌ 错误）
@@ -269,7 +269,7 @@ async function handleSubmit() {
 | 实体 server/schemas/cache 拆在路由 `-mods/` | 服务层应统一收编进 `services/<module>/` |
 | 路由 `-mods/` 下出现 `*.server.ts` | `-mods/` 只收纳 SFn / 路由局部 schema / 组件 / 纯函数 / 常量，`*.server.ts` 按实体归属收编进 `services/<module>/` |
 | 有页面消费的 SFn 堆在 services（未就近放路由） | SFn 应就近放消费页面的 `-mods/`，仅跨端共享无页面消费的留 services |
-| services 反向 import 路由（`routes/**` 或路由 `-mods/`） | 服务层禁止依赖表现层，保持 `routes → services → (core 基础库) → db` 单向调用 |
+| services 反向 import 路由（`routes/**` 或路由 `-mods/`） | 服务层禁止依赖表现层，保持 `routes → services → (lib 基础库) → db` 单向调用 |
 | `.server.ts` 反向 import `.functions.ts` | RPC 边界只能被调用方引用，服务逻辑禁止反向引用 |
 
 ## 相关 Skill

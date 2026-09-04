@@ -4,15 +4,15 @@
  * 鉴权失败记 warn（审计需要），系统异常记 error
  */
 
-import { sanitizeError, toClientError } from "@fsdx/core/error-utils";
+import { sanitizeError, toClientError } from "@fsdx/lib/error-utils";
 import { createMiddleware } from "@tanstack/react-start";
-import { logger } from "#/lib/logger/logger";
+import { AdminAuthError } from "#/middleware/admin-auth";
+import { ClientAuthError } from "#/middleware/client-auth";
+import { logger } from "#/shared-services/logger";
 import {
 	serverFunctionDurationSeconds,
 	serverFunctionRequestsTotal,
-} from "#/lib/metrics/metrics";
-import { AdminAuthError } from "#/middleware/admin-auth";
-import { ClientAuthError } from "#/middleware/client-auth";
+} from "#/shared-services/metrics";
 
 export const sfErrorLogger = createMiddleware({ type: "function" }).server(
 	async ({ next }) => {

@@ -2,15 +2,15 @@
  * 前台首页 Server Functions
  */
 
-import type { Locale } from "@fsdx/core/i18n-types";
+import { createServerFn } from "@tanstack/react-start";
+import { getCookie } from "@tanstack/react-start/server";
+import { getNewsList, translateNewsRecords } from "#/services/news/news.server";
+import type { Locale } from "#/shared-services/i18n/i18n-types";
 import {
 	DEFAULT_LOCALE,
 	LOCALE_COOKIE,
 	SUPPORTED_LOCALES,
-} from "@fsdx/core/i18n-types";
-import { createServerFn } from "@tanstack/react-start";
-import { getCookie } from "@tanstack/react-start/server";
-import { getNewsList, translateNewsRecords } from "#/services/news/news.server";
+} from "#/shared-services/i18n/i18n-types";
 
 export const getLatestNewsSFn = createServerFn({ method: "GET" }).handler(
 	async () => {

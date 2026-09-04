@@ -2,7 +2,7 @@
  * 埋点元数据缓存实例：trackEventMetaCache + trackPropertyMetaCache
  * 仅允许 src/services/track/track.server.ts 直接操作
  */
-import { MemoryCache } from "@fsdx/core/cache-core";
+import { MemoryCache } from "@fsdx/lib/cache";
 
 /** 元事件缓存：key = 事件名，value = true，无过期（随元数据变更主动失效） */
 export const trackEventMetaCache = new MemoryCache<boolean>({

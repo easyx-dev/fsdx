@@ -2,18 +2,18 @@
  * 文件管理：服务端辅助函数（上传逻辑、存储、清理、列表、删除）
  */
 import { createHash, randomUUID } from "node:crypto";
-import { storage } from "@fsdx/core/storage";
 import dayjs from "dayjs";
 import { and, eq, ilike, lt } from "drizzle-orm";
 import { db } from "#/db/index";
 import { file } from "#/db/schema";
-import { logger } from "#/lib/logger/logger";
+import { logger } from "#/shared-services/logger";
 import {
 	buildSortClause,
 	executePaginatedQuery,
 	notDeleted,
 	paginationOffset,
-} from "#/services/query/query-utils.server";
+} from "#/shared-services/query/query-utils.server";
+import { storage } from "#/shared-services/storage";
 import type { PaginatedResult, PaginatedSortParams } from "#/types/query";
 
 export type FileRecord = typeof file.$inferSelect;

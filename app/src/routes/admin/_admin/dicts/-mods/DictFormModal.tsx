@@ -4,7 +4,7 @@
 
 import type { FormInstance } from "antd";
 import { Button, Form, Input, Modal, Space } from "antd";
-import type { DictRecord } from "#/services/dict/dict.server";
+import type { DictRecord } from "#/shared-services/dict/dict.server";
 
 interface DictFormModalProps {
 	open: boolean;

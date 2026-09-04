@@ -17,7 +17,7 @@ import {
 } from "antd";
 import { EditorTypes } from "#/components/admin";
 import type { EditorType } from "#/constants/editor-types";
-import type { DictItemRecord } from "#/services/dict/dict.server";
+import type { DictItemRecord } from "#/shared-services/dict/dict.server";
 
 interface DictItemFormModalProps {
 	open: boolean;

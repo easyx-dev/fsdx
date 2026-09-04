@@ -2,7 +2,7 @@
  * 字典管理路由共享 Server Function
  */
 
-import { toJson } from "@fsdx/core/export";
+import { toJson } from "@fsdx/lib/export";
 import { createServerFn } from "@tanstack/react-start";
 import { adminPermGuard } from "#/middleware/admin-auth";
 import { ADMIN_PERMISSIONS } from "#/permissions/admin-permissions";
@@ -14,7 +14,7 @@ import {
 	idSchema,
 	updateDictSchema,
 	updateItemSchema,
-} from "#/services/dict/dict.schemas";
+} from "#/shared-services/dict/dict.schemas";
 import {
 	createDict,
 	createDictItemData,
@@ -26,9 +26,9 @@ import {
 	importDicts,
 	updateDictItemRecord,
 	updateDictRecord,
-} from "#/services/dict/dict.server";
-import type { DictImportData } from "#/services/dict/dict.types";
-import { logCrud } from "#/services/operation-log/operation-log.server";
+} from "#/shared-services/dict/dict.server";
+import type { DictImportData } from "#/shared-services/dict/dict.types";
+import { logCrud } from "#/shared-services/operation-log/operation-log.server";
 
 /** 获取字典列表 */
 export const getDictListSFn = createServerFn({ method: "GET" })

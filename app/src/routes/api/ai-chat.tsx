@@ -5,7 +5,6 @@
  * 鉴权：管理端 AI_CHAT 权限；审计：每次生成写入操作日志。
  */
 
-import { getRequestOperator } from "@fsdx/core/request-context";
 import {
 	chatParamsFromRequest,
 	toServerSentEventsResponse,
@@ -13,8 +12,9 @@ import {
 import { createFileRoute } from "@tanstack/react-router";
 import { adminPermRouteGuard } from "#/middleware/admin-auth";
 import { ADMIN_PERMISSIONS } from "#/permissions/admin-permissions";
-import { streamAiChat } from "#/services/ai/ai.server";
-import { logOperation } from "#/services/operation-log/operation-log.server";
+import { streamAiChat } from "#/shared-services/ai/ai.server";
+import { logOperation } from "#/shared-services/operation-log/operation-log.server";
+import { getRequestOperator } from "#/shared-services/request-context";
 
 export const Route = createFileRoute("/api/ai-chat")({
 	server: {

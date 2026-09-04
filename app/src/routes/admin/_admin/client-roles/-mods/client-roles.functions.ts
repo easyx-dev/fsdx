@@ -16,7 +16,7 @@ import {
 	getClientRoleList,
 	updateClientRole,
 } from "#/services/client-role/client-role.server";
-import { logCrud } from "#/services/operation-log/operation-log.server";
+import { logCrud } from "#/shared-services/operation-log/operation-log.server";
 
 /** 获取客户端角色列表 */
 export const getClientRolesSFn = createServerFn({ method: "GET" })

@@ -4,7 +4,7 @@
 
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-vi.mock("#/lib/logger/logger", () => ({
+vi.mock("#/shared-services/logger", () => ({
 	logger: { error: vi.fn(), info: vi.fn(), warn: vi.fn() },
 }));
 
@@ -14,9 +14,9 @@ const { mockGetContentTranslations } = vi.hoisted(() => {
 	};
 });
 
-vi.mock("#/services/i18n/i18n.server", async (importOriginal) => {
+vi.mock("#/shared-services/i18n/i18n.server", async (importOriginal) => {
 	const actual =
-		await importOriginal<typeof import("#/services/i18n/i18n.server")>();
+		await importOriginal<typeof import("#/shared-services/i18n/i18n.server")>();
 	return {
 		...actual,
 		getContentTranslations: mockGetContentTranslations,

@@ -134,7 +134,7 @@ function AdminPage() {
 
 ## 权限匹配逻辑
 
-匹配纯函数 `matchPermission()` 在 `@fsdx/core/match-permission`（`#/permissions/admin-permissions` 的 `hasAdminPermission` 等基于它实现）：
+匹配纯函数 `matchPermission()` 在 `@fsdx/lib/match-permission`（`#/permissions/admin-permissions` 的 `hasAdminPermission` 等基于它实现）：
 优先级：`**` → 精确匹配 → `group:*`
 
 ```ts

@@ -13,8 +13,8 @@ import { createFileRoute } from "@tanstack/react-router";
 import { Select } from "antd";
 import { useMemo, useState } from "react";
 import { AdminPageContent } from "#/components/admin";
-import type { AiProviderView } from "#/services/ai/ai.schemas";
-import { getAiProvidersSFn } from "#/services/ai/ai-providers.functions";
+import type { AiProviderView } from "#/shared-services/ai/ai.schemas";
+import { getAiProvidersSFn } from "#/shared-services/ai/ai-providers.functions";
 
 export const Route = createFileRoute("/admin/_admin/demo/ai-rich-editor")({
 	loader: async () => {

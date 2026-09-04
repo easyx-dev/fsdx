@@ -22,8 +22,8 @@ import {
 import { toast } from "sonner";
 import { CaptchaInput } from "#/components/client";
 import { useTranslation } from "#/components/providers";
-import { track } from "#/lib/track/track";
 import { getCurrentClientSFn } from "#/services/client-auth/client-auth.functions";
+import { track } from "#/services/track/track";
 import { clientRegisterSFn } from "./-mods/register.functions";
 
 function RegisterError({ error }: { error: unknown }) {

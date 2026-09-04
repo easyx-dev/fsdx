@@ -5,7 +5,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { adminPermGuard } from "#/middleware/admin-auth";
 import { ADMIN_PERMISSIONS } from "#/permissions/admin-permissions";
-import { logCrud } from "#/services/operation-log/operation-log.server";
+import { logCrud } from "#/shared-services/operation-log/operation-log.server";
 import { getFileInfo, getFileList, uploadFile } from "./file.server";
 
 /** 文件列表查询参数 schema */

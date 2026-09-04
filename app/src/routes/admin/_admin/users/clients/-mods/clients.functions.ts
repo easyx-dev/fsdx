@@ -20,7 +20,7 @@ import {
 	resetClientPassword,
 	updateClientUser,
 } from "#/services/client-user/client-user.server";
-import { logCrud } from "#/services/operation-log/operation-log.server";
+import { logCrud } from "#/shared-services/operation-log/operation-log.server";
 
 /** 获取客户端角色下拉列表 */
 export const getClientRolesForSelectSFn = createServerFn({ method: "GET" })

@@ -52,10 +52,10 @@
 │  └────────────────────────┬──────────────────────────────────┘    │
 │                           │                                        │
 │  ┌────────────────────────▼──────────────────────────────────┐    │
-│  │          基础库 (@fsdx/core + src/lib 薄壳)                 │    │
-│  │   utils / i18n / cache 为同构层，infra 为服务端基础设施                │    │
-│  │   导出清单见 @fsdx/core README；src/lib 为应用级单例壳                 │    │
-│  │   （logger / jwt / metrics / track 四个薄壳）                   │    │
+│  │      @fsdx/lib（纯可复用）+ src/shared-services（app 单例/DI）  │    │
+│  │   lib: utils / cache / infra(通用非单例)；零全局态·不读 env-db·无日志   │    │
+│  │   导出清单见 @fsdx/lib README；shared-services 承载 logger/jwt/      │    │
+│  │   metrics/storage/scheduler/mail/sms/request-context/deps-store     │    │
 │  └────────────────────────┬──────────────────────────────────┘    │
 │                           │                                        │
 │  ┌────────────────────────▼──────────────────────────────────┐    │
@@ -131,12 +131,12 @@ __root.tsx                    # HTML shell，按 pathname 前缀分发 AdminRoot
 
 ### 5. 缓存分层
 
-`MemoryCache<T>` 通用基类在 `@fsdx/core/cache-core`（基于 Map，支持 TTL 过期与命名空间），实例按模块拆分在 `services/<module>/<module>.cache.ts`。全系统共 **9 个实例**（8 个领域数据缓存 + 1 个埋点频控内部实例）：
+`MemoryCache<T>` 通用基类在 `@fsdx/lib/cache`（基于 Map，支持 TTL 过期与命名空间），实例按模块拆分在 `services/<module>/<module>.cache.ts`。全系统共 **9 个实例**（8 个领域数据缓存 + 1 个埋点频控内部实例）：
 
 | 缓存实例 | 所属模块 |
 |----------|----------|
-| `dictCache` / `configCache` / `configTranslationCache` | `services/dict/`、`services/config/` |
-| `uiTranslationCache` | `services/i18n/` |
+| `dictCache` / `configCache` / `configTranslationCache` | `shared-services/dict/`、`shared-services/config/` |
+| `uiTranslationCache` | `shared-services/i18n/` |
 | `clientUserCache` / `adminUserCache` | `services/client-auth/`、`services/admin-auth/` |
 | `trackEventMetaCache` / `trackPropertyMetaCache` | `services/track/` |
 | `sessionRateCache`（埋点频控，内部实例） | `services/track/track.validate.ts` |
@@ -145,13 +145,13 @@ __root.tsx                    # HTML shell，按 pathname 前缀分发 AdminRoot
 
 ### 6. 缓冲写入策略
 
-两类高频写入数据（事件埋点 `trackEvent()`、操作日志 `logOperation()`）统一复用 `@fsdx/core/batch-writer` 的 `BatchWriter`：fire-and-forget 入内存队列，满批/定时刷新、超上限丢弃最旧、进程退出强制刷入（参数见 [AGENTS.md](../AGENTS.md) 与 [事件埋点](event-tracking.md)）。
+两类高频写入数据（事件埋点 `trackEvent()`、操作日志 `logOperation()`）统一复用 `@fsdx/lib/batch-writer` 的 `BatchWriter`：fire-and-forget 入内存队列，满批/定时刷新、超上限丢弃最旧、进程退出强制刷入（参数见 [AGENTS.md](../AGENTS.md) 与 [事件埋点](event-tracking.md)）。
 
 ### 7. 请求链路与可观测性
 
 **请求 ID 贯通**：`requestIdMiddleware`（`src/middleware/request-id.ts`）注册于 requestMiddleware 首位，优先透传上游 `x-request-id`（超长截断至 100）否则生成 UUID，写入 ALS 上下文并回写响应头。logger mixin 自动注入 requestId，操作审计落库 `operation_log.request_id`，实现日志与审计全链路追踪。
 
-**Prometheus 指标**：`src/lib/metrics/metrics.ts` 进程内注册表（`Counter` + `Histogram`，无第三方依赖），预置 3 个指标：
+**Prometheus 指标**：`src/shared-services/metrics` 进程内注册表（`Counter` + `Histogram`，无第三方依赖），预置 3 个指标：
 
 | 指标 | 类型 | 标签 |
 |------|------|------|
@@ -187,13 +187,13 @@ __root.tsx                    # HTML shell，按 pathname 前缀分发 AdminRoot
 
 ## 目录职责
 
-目录层级与各目录职责见 [AGENTS.md「工程结构」](../AGENTS.md)（唯一目录树）与「包边界约定」章节；跨目录依赖遵循 [AGENTS.md「Server Function 依赖方向」](../AGENTS.md) 硬规则（`routes → services → (core 基础库) → db`），缓存实例归属与可导入方约束见「内存缓存约定」。包级导出清单与集成约束见各子包 README（[core](../packages/core/README.md) / [ui-ssr](../packages/ui-ssr/README.md) / [ui-spa](../packages/ui-spa/README.md)）。
+目录层级与各目录职责见 [AGENTS.md「工程结构」](../AGENTS.md)（唯一目录树）与「包边界约定」章节；跨目录依赖遵循 [AGENTS.md「Server Function 依赖方向」](../AGENTS.md) 硬规则（`routes → services → (lib 基础库) → db`），缓存实例归属与可导入方约束见「内存缓存约定」。包级导出清单与集成约束见各子包 README（[lib](../packages/lib/README.md) / [ui-ssr](../packages/ui-ssr/README.md) / [ui-spa](../packages/ui-spa/README.md)）。
 
 ## 相关文档
 
 | 文档 | 说明 |
 |------|------|
-| [@fsdx/core README](../packages/core/README.md) | @fsdx/core 导出清单与边界 |
+| [@fsdx/lib README](../packages/lib/README.md) | @fsdx/lib 导出清单与边界 |
 | [@fsdx/ui-ssr README](../packages/ui-ssr/README.md) | @fsdx/ui-ssr 组件清单与集成约定 |
 | [@fsdx/ui-spa README](../packages/ui-spa/README.md) | @fsdx/ui-spa 组件清单与集成约定 |
 | [认证与权限](auth-permission-model.md) | 双用户体系、RBAC、JWT、中间件链路 |

@@ -54,7 +54,7 @@ L5  docs/               背景与设计（人类向），按性质分四子类�
 | 路由树 | `src/routeTree.gen.ts` + `src/routes/` | — | architecture-overview（仅概览）、routing 约定在 AGENTS |
 | 定时任务清单 | `src/services/tasks/tasks.server.ts` | — | deployment-ops |
 | 预置埋点（事件/属性） | `src/services/track/*` 的 `PRESET_*` | — | event-tracking、database-design |
-| 预置数据（字典/配置） | `src/services/dict` / `src/services/config` 的 `ensurePreset*` | — | database-design |
+| 预置数据（字典/配置） | `src/shared-services/dict` / `src/shared-services/config` 的 `ensurePreset*` | — | database-design |
 | 主题家族 / 品牌色 | `src/theme/themes.ts` + `global.css` | — | AGENTS 视觉章节 |
 | 技术栈版本 | `package.json` | — | AGENTS、README（标注"以 package.json 为准"） |
 

@@ -4,7 +4,7 @@
  * 注意：禁止直接 import src/server.ts（会绕过 Vite SSR runner 惰性路由，导致路由 eager 加载）
  */
 import { bootstrap } from "./src/bootstrap";
-import { httpRequestsTotal } from "./src/lib/metrics/metrics";
+import { httpRequestsTotal } from "./src/shared-services/metrics";
 
 await bootstrap();
 

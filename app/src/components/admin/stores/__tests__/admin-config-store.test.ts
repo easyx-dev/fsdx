@@ -7,7 +7,7 @@ const { mockLoadConfig } = vi.hoisted(() => ({
 	mockLoadConfig: vi.fn(),
 }));
 
-vi.mock("#/services/config/config.functions", () => ({
+vi.mock("#/shared-services/config/config.functions", () => ({
 	getVisibleConfigsSFn: mockLoadConfig,
 }));
 

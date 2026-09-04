@@ -2,8 +2,7 @@
  * UI 翻译管理页：维护 ui_translation 表
  */
 import { DownloadOutlined, PlusOutlined } from "@ant-design/icons";
-import { downloadFile } from "@fsdx/core/export";
-import { type Locale, SUPPORTED_LOCALES } from "@fsdx/core/i18n-types";
+import { downloadFile } from "@fsdx/lib/export";
 import { message } from "@fsdx/ui-spa/antd-static";
 import { JsonImportButton } from "@fsdx/ui-spa/json-import-button";
 import { ProTable, TableOperate } from "@fsdx/ui-spa/table";
@@ -15,7 +14,11 @@ import type { ChangeEvent } from "react";
 import { useCallback, useEffect, useState } from "react";
 import { AdminPageContent, EditorTypes } from "#/components/admin";
 import type { uiTranslation } from "#/db/schema";
-import { formSchema } from "#/services/i18n/ui-translation.schemas";
+import {
+	type Locale,
+	SUPPORTED_LOCALES,
+} from "#/shared-services/i18n/i18n-types";
+import { formSchema } from "#/shared-services/i18n/ui-translation.schemas";
 import type { SortOrder } from "#/types/query";
 import {
 	deleteSFn,

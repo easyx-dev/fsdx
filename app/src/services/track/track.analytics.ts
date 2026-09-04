@@ -1,7 +1,7 @@
 /**
  * 埋点事件查询与分析模块：分页查询、事件名列表、趋势/分布/排行聚合
  */
-import { toDayRange } from "@fsdx/core/date-format";
+import { toDayRange } from "@fsdx/lib/date-format";
 import { and, eq, gte, ilike, lt, or, type SQLWrapper, sql } from "drizzle-orm";
 import { db } from "#/db/index";
 import { trackEvent as trackEventTable } from "#/db/schema";
@@ -9,7 +9,7 @@ import {
 	buildSortClause,
 	executePaginatedQuery,
 	paginationOffset,
-} from "#/services/query/query-utils.server";
+} from "#/shared-services/query/query-utils.server";
 import type {
 	JsonProperties,
 	TimeSeriesItem,

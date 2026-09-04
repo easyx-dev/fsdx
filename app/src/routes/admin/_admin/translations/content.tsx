@@ -2,8 +2,7 @@
  * 实体翻译管理页：维护 content_translation 表
  */
 import { DownloadOutlined, PlusOutlined } from "@ant-design/icons";
-import { downloadFile } from "@fsdx/core/export";
-import { type Locale, SUPPORTED_LOCALES } from "@fsdx/core/i18n-types";
+import { downloadFile } from "@fsdx/lib/export";
 import { message } from "@fsdx/ui-spa/antd-static";
 import { JsonImportButton } from "@fsdx/ui-spa/json-import-button";
 import { ProTable, TableOperate } from "@fsdx/ui-spa/table";
@@ -15,7 +14,11 @@ import type { ChangeEvent } from "react";
 import { useEffect, useState } from "react";
 import { AdminPageContent, EditorTypes } from "#/components/admin";
 import type { contentTranslation } from "#/db/schema";
-import { formSchema } from "#/services/i18n/content-translation.schemas";
+import { formSchema } from "#/shared-services/i18n/content-translation.schemas";
+import {
+	type Locale,
+	SUPPORTED_LOCALES,
+} from "#/shared-services/i18n/i18n-types";
 import type { SortOrder } from "#/types/query";
 import {
 	deleteSFn,

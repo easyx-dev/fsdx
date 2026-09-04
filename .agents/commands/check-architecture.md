@@ -114,7 +114,7 @@ pnpm test    # 全部包 Vitest 测试
 #### ⑧ 测试覆盖 → [test-writing](../skills/test-writing/SKILL.md)
 
 扫描：
-- 每个 `src/services/` 和 `src/lib/` 模块是否有 `__tests__/`
+- 每个 `src/services/` 和 `src/shared-services/` 模块是否有 `__tests__/`
 - 每个导出函数是否覆盖正常/边界/错误路径
 - 测试是否为三段式 `vi.hoisted()` + `vi.mock()` 结构
 - 路由层 schema 校验测试是否就近放置

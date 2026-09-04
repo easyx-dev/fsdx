@@ -17,7 +17,7 @@ import {
 	executePaginatedQuery,
 	notDeleted,
 	paginationOffset,
-} from "#/services/query/query-utils.server";
+} from "#/shared-services/query/query-utils.server";
 import type { PaginatedResult } from "#/types/query";
 
 /** 消息接收者：管理端或客户端用户 */

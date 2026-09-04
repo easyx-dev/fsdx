@@ -21,8 +21,8 @@ import {
 import { toast } from "sonner";
 import { useClientAuth } from "#/components/client";
 import { useTranslation } from "#/components/providers";
-import { track } from "#/lib/track/track";
 import { getCurrentClientSFn } from "#/services/client-auth/client-auth.functions";
+import { track } from "#/services/track/track";
 import { clientLoginSFn } from "./-mods/login.functions";
 
 function LoginError({ error }: { error: unknown }) {

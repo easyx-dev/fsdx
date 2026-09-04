@@ -16,7 +16,7 @@ import {
 	startRouteTracking,
 	stopRouteTracking,
 	init as trackInit,
-} from "#/lib/track/track";
+} from "#/services/track/track";
 import adminGlobalCss from "#/styles/admin.global.css?url";
 import ssrGlobalCss from "#/styles/ssr.global.css?inline";
 import { ADMIN_THEME, CLIENT_THEME } from "#/theme/themes";

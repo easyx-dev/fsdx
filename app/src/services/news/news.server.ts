@@ -4,8 +4,7 @@
  * 国际化数据通过 translateNewsRecord / translateNewsRecords 按需组合获取
  */
 
-import { toCsv, toJson } from "@fsdx/core/export";
-import { DEFAULT_LOCALE, type Locale } from "@fsdx/core/i18n-types";
+import { toCsv, toJson } from "@fsdx/lib/export";
 import { and, desc, eq, inArray, ne } from "drizzle-orm";
 import type { z } from "zod";
 import { db } from "#/db/index";
@@ -13,13 +12,14 @@ import { news } from "#/db/schema";
 import {
 	applyTranslations,
 	getContentTranslations,
-} from "#/services/i18n/i18n.server";
+} from "#/shared-services/i18n/i18n.server";
+import { DEFAULT_LOCALE, type Locale } from "#/shared-services/i18n/i18n-types";
 import {
 	buildSortClause,
 	executePaginatedQuery,
 	notDeleted,
 	paginationOffset,
-} from "#/services/query/query-utils.server";
+} from "#/shared-services/query/query-utils.server";
 import type { PaginatedSortParams } from "#/types/query";
 import type { statusSchema } from "./news.schemas";
 

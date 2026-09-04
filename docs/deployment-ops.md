@@ -1,7 +1,7 @@
 # 部署运维
 
 > 定位：平台机制类 · 人类阅读
-> 单一事实来源：`src/bootstrap.ts`（启动流程/优雅关闭）、`src/services/tasks/tasks.server.ts`（定时任务）、`src/lib/logger/logger.ts`（日志）
+> 单一事实来源：`src/bootstrap.ts`（启动流程/优雅关闭）、`src/services/tasks/tasks.server.ts`（定时任务）、`src/shared-services/logger`（日志）
 > 引用关系：← 被 architecture-overview 引用、README「文档」索引；→ 引用启动/任务/日志代码单一事实来源
 > 更新触发：启动流程、定时任务、日志策略、部署/环境变量变更时
 
@@ -95,7 +95,7 @@ SMTP 邮件配置存储于系统配置表，通过 `/admin/config` 页面管理�
 
 ## 定时任务
 
-通过 `@fsdx/core/scheduler` 的 `registerTask()` 注册 cron 任务（调度器日志经 `setSchedulerLogger` 注入）：
+通过 `#/shared-services/scheduler` 的 `registerTask()` 注册 cron 任务（调度器日志经 `setSchedulerLogger` 注入）：
 
 | 任务 | Cron | 处理函数 | 说明 |
 |------|------|----------|------|
@@ -104,7 +104,7 @@ SMTP 邮件配置存储于系统配置表，通过 `/admin/config` 页面管理�
 
 定时任务在 `bootstrap()` 末尾通过 `registerAllTasks()` 统一注册。
 
-> **时区约定**：cron 执行与日志按天切割均以 `Asia/Shanghai` 为统一时区基准（`@fsdx/core/date-format` 的 `DEFAULT_TASK_TIME_ZONE`），**不依赖服务器系统时区**。部署环境无需设置 `TZ`，服务器时区变更不影响任务执行时间与日志文件名日期。
+> **时区约定**：cron 执行与日志按天切割均以 `Asia/Shanghai` 为统一时区基准（`@fsdx/lib/date-format` 的 `DEFAULT_TASK_TIME_ZONE`），**不依赖服务器系统时区**。部署环境无需设置 `TZ`，服务器时区变更不影响任务执行时间与日志文件名日期。
 
 ---
 
@@ -153,7 +153,7 @@ logger.error/warn/info/debug
 
 ## 监控（Prometheus）
 
-`src/lib/metrics/metrics.ts` 为进程内指标注册表（`Counter` + `Histogram`，无第三方依赖），HTTP 入口与 SF 中间件自动埋点：
+`src/shared-services/metrics` 为进程内指标注册表（`Counter` + `Histogram`，无第三方依赖），HTTP 入口与 SF 中间件自动埋点：
 
 | 指标 | 类型 | 标签 | 埋点位置 |
 |------|------|------|----------|
@@ -169,7 +169,7 @@ logger.error/warn/info/debug
 
 ## 文件存储
 
-`@fsdx/core/storage` 提供文件存储抽象层（`StorageAdapter` 接口 + `LocalStorageAdapter`，当前仅本地存储实现），存储基址为 `{STORAGE_DIR}/uploads/`：
+`#/shared-services/storage` 提供文件存储实现层（`LocalStorageAdapter` + `storage` 单例，基于 `@fsdx/lib/storage` 的 `StorageAdapter` 契约），存储基址为 `{STORAGE_DIR}/uploads/`：
 
 ```
 上传文件
@@ -322,13 +322,13 @@ GET /health → 200
 | `src/server.ts` | TanStack Start 服务端入口 |
 | `src/start.ts` | 全局中间件注册（requestId + locale + CSRF + sfErrorLogger） |
 | `src/middleware/request-id.ts` | 请求 ID 中间件 |
-| `src/lib/metrics/metrics.ts` | Prometheus 进程内指标注册表 |
+| `src/shared-services/metrics` | Prometheus 进程内指标注册表 |
 | `src/routes/api/metrics.tsx` | `/api/metrics` 指标端点（无鉴权） |
 | `src/services/tasks/tasks.server.ts` | 定时任务注册 |
-| `packages/core/src/infra/scheduler/index.ts` | 定时任务调度器（`@fsdx/core/scheduler`） |
-| `src/lib/logger/logger.ts` | Pino 日志单例壳（`createLogger` 在 `@fsdx/core/logger`） |
+| `src/shared-services/scheduler` | 定时任务调度器（`registerTask` / `setSchedulerLogger`） |
+| `src/shared-services/logger` | Pino 日志单例壳（`createLogger` + `logger` 单例） |
 | `src/middleware/sf-error-logger.ts` | SF 错误日志中间件 |
-| `packages/core/src/infra/storage/index.ts` | 文件存储抽象层（`@fsdx/core/storage`） |
+| `src/shared-services/storage` | 文件存储实现层（`LocalStorageAdapter` + `storage` 单例，`@fsdx/lib/storage` 契约） |
 | `src/services/init/init.server.ts` | 系统初始化逻辑 |
 | `src/services/logs/logs.server.ts` | 日志查询服务 |
 | `src/services/logs/log-reader.ts` | 日志文件读取 |

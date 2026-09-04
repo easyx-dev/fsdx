@@ -4,7 +4,7 @@
 import { createReadStream, existsSync, readdirSync } from "node:fs";
 import { resolve } from "node:path";
 import { createInterface } from "node:readline";
-import { logger } from "#/lib/logger/logger";
+import { logger } from "#/shared-services/logger";
 
 /** 日志目录路径 */
 function getLogDir(): string {

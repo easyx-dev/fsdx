@@ -6,7 +6,7 @@ import { z } from "zod";
 import { adminPermGuard } from "#/middleware/admin-auth";
 import { ADMIN_PERMISSIONS } from "#/permissions/admin-permissions";
 import { deleteFile, makePermanent } from "#/services/file/file.server";
-import { logCrud } from "#/services/operation-log/operation-log.server";
+import { logCrud } from "#/shared-services/operation-log/operation-log.server";
 
 export const idSchema = z.object({ id: z.string().min(1) });
 

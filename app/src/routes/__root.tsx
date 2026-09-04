@@ -3,7 +3,6 @@
  * locale 由 localeMiddleware 注入 request context，通过 getLocaleBundleSFn 读取
  */
 
-import type { Locale } from "@fsdx/core/i18n-types";
 import { TanStackDevtools } from "@tanstack/react-devtools";
 import {
 	createRootRouteWithContext,
@@ -14,8 +13,9 @@ import { Fragment } from "react";
 import { ClientAuthProvider } from "#/components/client";
 import { AdminRootDocument, SSRRootDocument } from "#/components/Document";
 import { GlobalStoreProvider } from "#/components/providers";
-import { getVisibleConfigsSFn } from "#/services/config/config.functions";
-import { getLocaleBundleSFn } from "#/services/i18n/i18n.functions";
+import { getVisibleConfigsSFn } from "#/shared-services/config/config.functions";
+import { getLocaleBundleSFn } from "#/shared-services/i18n/i18n.functions";
+import type { Locale } from "#/shared-services/i18n/i18n-types";
 
 export const Route = createRootRouteWithContext<{
 	locale: Locale;

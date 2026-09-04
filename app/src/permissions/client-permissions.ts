@@ -3,7 +3,7 @@
  * 格式 {模块}:{操作}，分组由 code 前缀自动推导
  * 当前无业务模块，权限码集为空；业务模块扩展时在此填充并配套 client_role 表初始化
  */
-import { matchPermission } from "@fsdx/core/match-permission";
+import { matchPermission } from "@fsdx/lib/match-permission";
 
 /**
  * 创建权限码常量

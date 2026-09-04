@@ -4,24 +4,26 @@
 
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-vi.mock("#/lib/logger/logger", () => ({
+vi.mock("#/shared-services/logger", () => ({
 	logger: { error: vi.fn(), info: vi.fn(), warn: vi.fn(), debug: vi.fn() },
 }));
 
 const { mockSendCaptchaMail } = vi.hoisted(() => ({
 	mockSendCaptchaMail: vi.fn(),
 }));
-vi.mock("@fsdx/core/mail", () => ({ sendCaptchaMail: mockSendCaptchaMail }));
+vi.mock("#/shared-services/mail", () => ({
+	sendCaptchaMail: mockSendCaptchaMail,
+}));
 
 const { mockSendSms } = vi.hoisted(() => ({
 	mockSendSms: vi.fn(),
 }));
-vi.mock("@fsdx/core/sms", () => ({ sendSms: mockSendSms }));
+vi.mock("#/shared-services/sms", () => ({ sendSms: mockSendSms }));
 
 const { mockCreateCaptcha } = vi.hoisted(() => ({
 	mockCreateCaptcha: vi.fn(),
 }));
-vi.mock("@fsdx/core/captcha", () => ({ create: mockCreateCaptcha }));
+vi.mock("@fsdx/lib/captcha", () => ({ create: mockCreateCaptcha }));
 
 const { mockDb, mockRows } = vi.hoisted(() => {
 	const rows = vi.fn().mockResolvedValue([]);

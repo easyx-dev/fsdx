@@ -28,7 +28,7 @@ vi.mock("node:path", () => ({
 	resolve: mockResolve,
 }));
 
-import { toDateString } from "@fsdx/core/date-format";
+import { toDateString } from "@fsdx/lib/date-format";
 
 import { cleanExpiredLogs } from "#/services/logs/logs-cleanup.server";
 

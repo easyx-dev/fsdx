@@ -6,15 +6,15 @@ import { and, eq, ilike, inArray, isNull, or } from "drizzle-orm";
 import type { z } from "zod";
 import { db } from "#/db/index";
 import { adminRole, adminUser } from "#/db/schema";
-import { logger } from "#/lib/logger/logger";
 import { clearAdminUserCache } from "#/services/admin-auth/admin-auth.server";
 import { verifyCaptcha } from "#/services/captcha/captcha.server";
+import { logger } from "#/shared-services/logger";
 import {
 	buildSortClause,
 	executePaginatedQuery,
 	notDeleted,
 	paginationOffset,
-} from "#/services/query/query-utils.server";
+} from "#/shared-services/query/query-utils.server";
 import type {
 	createSchema,
 	listSchema,

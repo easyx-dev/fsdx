@@ -12,11 +12,11 @@ import { AdminPageContent } from "#/components/admin";
 import type {
 	AiProviderConfig,
 	AiProviderView,
-} from "#/services/ai/ai.schemas";
+} from "#/shared-services/ai/ai.schemas";
 import {
 	getAiProvidersSFn,
 	saveAiProvidersSFn,
-} from "#/services/ai/ai-providers.functions";
+} from "#/shared-services/ai/ai-providers.functions";
 import { AiProviderFormModal } from "./-mods/AiProviderFormModal";
 
 const { Text } = Typography;

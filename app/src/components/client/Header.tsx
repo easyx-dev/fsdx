@@ -11,7 +11,7 @@ import { Bell, LogOut, Menu, User, X } from "lucide-react";
 import { useState } from "react";
 import { ClientLogo, useClientAuth } from "#/components/client";
 import { useGlobalStore, useTranslation } from "#/components/providers";
-import { track } from "#/lib/track/track";
+import { track } from "#/services/track/track";
 import { CLIENT_THEME } from "#/theme/themes";
 
 export function Header() {

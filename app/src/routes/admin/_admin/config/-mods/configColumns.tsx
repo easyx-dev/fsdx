@@ -8,7 +8,7 @@ import {
 	FieldTranslationDrawer,
 	type TranslatableField,
 } from "#/components/admin";
-import type { ConfigRecord } from "#/services/config/config.server";
+import type { ConfigRecord } from "#/shared-services/config/config.server";
 import { toBool } from "#/utils/bool";
 
 /** 系统配置可翻译字段定义 */

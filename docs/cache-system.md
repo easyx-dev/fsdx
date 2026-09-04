@@ -1,7 +1,7 @@
 # 缓存体系
 
 > 定位：平台机制类 · 人类阅读
-> 单一事实来源：`@fsdx/core/cache-core`（MemoryCache 类）+ `src/services/*/*.cache.ts`（缓存实例）
+> 单一事实来源：`@fsdx/lib/cache`（MemoryCache 类）+ `src/services/*/*.cache.ts`（缓存实例）
 > 引用关系：← 被 architecture-overview 引用、AGENTS「内存缓存约定」章节链接；→ 引用缓存实例代码单一事实来源
 > 更新触发：新增/调整缓存实例、缓存策略（失效/懒加载）变更时
 
@@ -11,10 +11,10 @@
 
 ## MemoryCache 通用类
 
-泛型类在 `@fsdx/core/cache-core`（`MemoryCache<T>`），实例按模块拆分在 `services/<module>/<module>.cache.ts`：
+泛型类在 `@fsdx/lib/cache`（`MemoryCache<T>`），实例按模块拆分在 `services/<module>/<module>.cache.ts`：
 
 ```
-@fsdx/core/cache-core (MemoryCache)
+@fsdx/lib/cache (MemoryCache)
 
 class MemoryCache<T> {
     constructor(options?: { defaultTTL?: number; name?: string })
@@ -79,7 +79,7 @@ SMTP 邮件配置存储于数据库，通过此缓存获取。管理端修改配
 | 加载 | `loadUITranslations()` |
 | 查询 | `getUITranslations(locale)` |
 
-启动时不预热，按 locale 首次访问懒加载；管理端修改翻译后触发局部刷新。归属模块：`src/services/i18n/`（UI 翻译逻辑在 `i18n-ui.server.ts`，实体字段翻译在 `i18n-content.server.ts`）。
+启动时不预热，按 locale 首次访问懒加载；管理端修改翻译后触发局部刷新。归属模块：`src/shared-services/i18n/`（UI 翻译逻辑在 `i18n-ui.server.ts`，实体字段翻译在 `i18n-content.server.ts`）。
 
 ### 配置翻译缓存 (`configTranslationCache`)
 
@@ -91,7 +91,7 @@ SMTP 邮件配置存储于数据库，通过此缓存获取。管理端修改配
 | 加载 | `getConfigTranslations(locale)`（懒加载回填） |
 | 刷新 | `refreshConfigTranslationCache(locale?)` |
 
-为系统配置项（如站点名称）提供多语言翻译支持，读取 `content_translation` 表 `entity_type = 'system_config'` 的记录。归属模块：`src/services/config/config.server.ts`（非 i18n 模块）。
+为系统配置项（如站点名称）提供多语言翻译支持，读取 `content_translation` 表 `entity_type = 'system_config'` 的记录。归属模块：`src/shared-services/config/config.server.ts`（非 i18n 模块）。
 
 ### 客户端用户缓存 (`clientUserCache`)
 
@@ -222,12 +222,12 @@ Server Function handler
 
 | 文件 | 职责 |
 |------|------|
-| `packages/core/src/cache/cache-core/index.ts` | `MemoryCache<T>` 通用类（`@fsdx/core/cache-core`） |
+| `packages/lib/src/cache/cache/index.ts` | `MemoryCache<T>` 通用类（`@fsdx/lib/cache`） |
 | `services/<module>/<module>.cache.ts` | 按模块拆分的缓存实例（config / dict / i18n / client-auth / admin-auth / track） |
-| `packages/core/src/cache/cache-core/__tests__/cache-core.test.ts` | 缓存单元测试 |
-| `src/services/config/config.server.ts` | `loadConfigCache()` / `getConfigTranslations()` 配置与配置翻译缓存管理 |
-| `src/services/dict/dict.server.ts` | `loadDictCache()` / `ensureCache()` 字典缓存管理（懒加载） |
-| `src/services/i18n/i18n-ui.server.ts` | `getUITranslations()` / `refreshUITranslationCache()` UI 翻译缓存管理 |
+| `packages/lib/src/cache/cache/__tests__/cache-core.test.ts` | 缓存单元测试 |
+| `src/shared-services/config/config.server.ts` | `loadConfigCache()` / `getConfigTranslations()` 配置与配置翻译缓存管理 |
+| `src/shared-services/dict/dict.server.ts` | `loadDictCache()` / `ensureCache()` 字典缓存管理（懒加载） |
+| `src/shared-services/i18n/i18n-ui.server.ts` | `getUITranslations()` / `refreshUITranslationCache()` UI 翻译缓存管理 |
 | `src/services/client-auth/client-auth.server.ts` | 客户端用户缓存使用 |
 | `src/services/track/track.meta.ts` | `loadTrackMetaCache()` 元事件/元属性缓存管理 |
 | `src/services/track/track.validate.ts` | `sessionRateCache` 埋点频控内部实例 |

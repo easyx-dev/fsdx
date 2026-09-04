@@ -6,7 +6,7 @@ import type { FormInstance } from "antd";
 import { Button, Form, Input, Modal, Space, Switch } from "antd";
 import { EditorTypes } from "#/components/admin";
 import type { EditorType } from "#/constants/editor-types";
-import type { ConfigRecord } from "#/services/config/config.server";
+import type { ConfigRecord } from "#/shared-services/config/config.server";
 
 interface ConfigFormModalProps {
 	open: boolean;

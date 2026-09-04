@@ -18,8 +18,8 @@ import {
 import { useState } from "react";
 import type { z } from "zod";
 import { AdminPageContent } from "#/components/admin";
-import type { AiProviderView } from "#/services/ai/ai.schemas";
-import { getAiProvidersSFn } from "#/services/ai/ai-providers.functions";
+import type { AiProviderView } from "#/shared-services/ai/ai.schemas";
+import { getAiProvidersSFn } from "#/shared-services/ai/ai-providers.functions";
 import { type aiTestSchema, aiTestSFn } from "./-mods/ai.functions";
 
 const { Text, Paragraph } = Typography;

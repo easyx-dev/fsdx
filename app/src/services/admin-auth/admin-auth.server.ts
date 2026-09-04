@@ -6,8 +6,6 @@ import bcrypt from "bcryptjs";
 import { and, eq, inArray, isNull } from "drizzle-orm";
 import { db } from "#/db/index";
 import { adminRole, adminUser } from "#/db/schema";
-import { type JwtPayload, jwt } from "#/lib/jwt/jwt";
-import { logger } from "#/lib/logger/logger";
 import type {
 	AdminLoginResult,
 	AdminUser,
@@ -16,6 +14,8 @@ import {
 	adminUserCache,
 	type CachedAdminUser,
 } from "#/services/admin-auth/admin-user.cache";
+import { type JwtPayload, jwt } from "#/shared-services/jwt";
+import { logger } from "#/shared-services/logger";
 
 /** 合并多个角色的权限并去重（未分配角色时返回空数组） */
 async function getAdminRolePermissions(

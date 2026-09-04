@@ -51,6 +51,12 @@ importers:
 
   app:
     dependencies:
+      '@alicloud/dysmsapi20170525':
+        specifier: ^4.6.0
+        version: 4.6.0
+      '@alicloud/openapi-client':
+        specifier: ^0.4.15
+        version: 0.4.15
       '@ant-design/charts':
         specifier: ^2.6.7
         version: 2.6.7(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
@@ -63,9 +69,9 @@ importers:
       '@fsdx/ai-rich-editor':
         specifier: workspace:*
         version: link:../packages/ai-rich-editor
-      '@fsdx/core':
+      '@fsdx/lib':
         specifier: workspace:*
-        version: link:../packages/core
+        version: link:../packages/lib
       '@fsdx/ui-spa':
         specifier: workspace:*
         version: link:../packages/ui-spa
@@ -120,21 +126,36 @@ importers:
       bcryptjs:
         specifier: ^3.0.3
         version: 3.0.3
+      cron:
+        specifier: ^4.4.0
+        version: 4.4.0
       dotenv:
         specifier: ^17.4.2
         version: 17.4.2
       drizzle-orm:
         specifier: 1.0.0-rc.4
         version: 1.0.0-rc.4(@types/pg@8.20.4)(pg@8.22.0)(zod@4.4.3)
+      jose:
+        specifier: ^6.2.8
+        version: 6.2.8
       lucide-react:
         specifier: ^1.29.0
         version: 1.29.0(react@19.2.8)
+      nodemailer:
+        specifier: ^9.0.4
+        version: 9.0.4
       openai:
         specifier: ^6.49.0
         version: 6.49.0(ws@8.21.0)(zod@4.4.3)
       pg:
         specifier: ^8.22.0
         version: 8.22.0
+      pino:
+        specifier: ^10.3.1
+        version: 10.3.1
+      pino-pretty:
+        specifier: ^13.1.3
+        version: 13.1.3
       react-i18next:
         specifier: ^17.0.11
         version: 17.0.11(i18next@26.3.6(typescript@7.0.2))(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(typescript@7.0.2)
@@ -163,6 +184,9 @@ importers:
       '@tanstack/devtools-vite':
         specifier: ^0.8.3
         version: 0.8.3(@emnapi/core@1.10.0)(@emnapi/runtime@1.10.0)(vite@8.2.1(@types/node@24.13.3)(esbuild@0.28.0)(jiti@2.7.0)(tsx@4.23.9))
+      '@types/nodemailer':
+        specifier: ^8.0.1
+        version: 8.0.1
       '@types/pg':
         specifier: ^8.20.4
         version: 8.20.4
@@ -222,42 +246,18 @@ importers:
         specifier: ^0.56.0
         version: 0.56.0
 
-  packages/core:
+  packages/lib:
     dependencies:
-      '@alicloud/dysmsapi20170525':
-        specifier: ^4.6.0
-        version: 4.6.0
-      '@alicloud/openapi-client':
-        specifier: ^0.4.15
-        version: 0.4.15
       clsx:
         specifier: ^2.1.1
         version: 2.1.1
-      cron:
-        specifier: ^4.4.0
-        version: 4.4.0
-      jose:
-        specifier: ^6.2.8
-        version: 6.2.8
-      nodemailer:
-        specifier: ^9.0.4
-        version: 9.0.4
       opentype.js:
         specifier: ^2.0.0
         version: 2.0.0
-      pino:
-        specifier: ^10.3.1
-        version: 10.3.1
-      pino-pretty:
-        specifier: ^13.1.3
-        version: 13.1.3
       tailwind-merge:
         specifier: ^3.6.0
         version: 3.6.0
     devDependencies:
-      '@types/nodemailer':
-        specifier: ^8.0.1
-        version: 8.0.1
       '@types/opentype.js':
         specifier: ^1.3.10
         version: 1.3.10
@@ -267,9 +267,9 @@ importers:
       '@ant-design/icons':
         specifier: ^6.3.2
         version: 6.3.2(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
-      '@fsdx/core':
+      '@fsdx/lib':
         specifier: workspace:*
-        version: link:../core
+        version: link:../lib
       '@monaco-editor/react':
         specifier: ^4.7.0
         version: 4.7.0(monaco-editor@0.56.0)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
@@ -295,9 +295,9 @@ importers:
 
   packages/ui-ssr:
     dependencies:
-      '@fsdx/core':
+      '@fsdx/lib':
         specifier: workspace:*
-        version: link:../core
+        version: link:../lib
       '@radix-ui/react-slot':
         specifier: ^1.3.3
         version: 1.3.3(@types/react@19.2.18)(react@19.2.8)

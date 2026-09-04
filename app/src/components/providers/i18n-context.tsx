@@ -3,9 +3,6 @@
  * 封装 useTranslation / useLocale，中文文本作为翻译 key
  */
 
-import { createI18nInstance } from "@fsdx/core/i18n-config";
-import type { Locale, Translations } from "@fsdx/core/i18n-types";
-import { DEFAULT_LOCALE } from "@fsdx/core/i18n-types";
 import type { TFunction } from "i18next";
 import {
 	createContext,
@@ -18,6 +15,9 @@ import {
 	I18nextProvider,
 	useTranslation as useI18nTranslation,
 } from "react-i18next";
+import { createI18nInstance } from "#/shared-services/i18n/i18n-config";
+import type { Locale, Translations } from "#/shared-services/i18n/i18n-types";
+import { DEFAULT_LOCALE } from "#/shared-services/i18n/i18n-types";
 
 interface I18nContextValue {
 	locale: Locale;

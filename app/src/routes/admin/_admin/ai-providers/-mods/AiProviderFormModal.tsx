@@ -19,8 +19,11 @@ import {
 	Switch,
 } from "antd";
 import { useEffect, useMemo, useState } from "react";
-import type { AiModality, AiProviderView } from "#/services/ai/ai.schemas";
-import { fetchProviderModelsSFn } from "#/services/ai/ai-providers.functions";
+import type {
+	AiModality,
+	AiProviderView,
+} from "#/shared-services/ai/ai.schemas";
+import { fetchProviderModelsSFn } from "#/shared-services/ai/ai-providers.functions";
 
 interface Props {
 	open: boolean;

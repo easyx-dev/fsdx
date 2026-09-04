@@ -16,7 +16,7 @@
     "lint:fix": "biome check --write"
   },
   "dependencies": {
-    "@fsdx/core": "workspace:*",
+    "@fsdx/lib": "workspace:*",
     "@radix-ui/react-slot": "^1.3.3",
     "class-variance-authority": "^0.7.1"
   }

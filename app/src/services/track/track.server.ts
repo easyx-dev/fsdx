@@ -2,14 +2,14 @@
  * 埋点事件服务层入口：事件上报缓冲写入 + 各子模块统一导出（barrel）
  * 事件校验/频控/时间钳制 → track.validate；元数据管理 → track.meta；查询分析 → track.analytics
  */
-import { BatchWriter } from "@fsdx/core/batch-writer";
+import { BatchWriter, type BatchWriterEvent } from "@fsdx/lib/batch-writer";
 import { db } from "#/db/index";
 import { trackEvent as trackEventTable } from "#/db/schema";
-import { logger } from "#/lib/logger/logger";
 import {
 	trackEventMetaCache,
 	trackPropertyMetaCache,
 } from "#/services/track/track.cache";
+import { logger } from "#/shared-services/logger";
 import { isTrackMetaCacheLoaded, loadTrackMetaCache } from "./track.meta";
 import type { TrackEventInput } from "./track.types";
 import {
@@ -30,10 +30,27 @@ interface TrackEventBufferItem {
 	properties: Record<string, unknown>;
 }
 
+/** 包装 batch-writer 事件到 app 日志单例（warn → info 级别告警，error → error 级别） */
+const logBatchEvent = (event: BatchWriterEvent): void => {
+	if (event.level === "warn") {
+		logger.warn(event.message);
+	} else {
+		logger.error(
+			{
+				error:
+					event.error instanceof Error
+						? event.error.message
+						: String(event.error),
+			},
+			event.message,
+		);
+	}
+};
+
 /** 埋点事件批量写入器：满 100 条或 5 秒定时刷新，上限 1000 */
 const eventWriter = new BatchWriter<TrackEventBufferItem>({
-	logger,
 	logLabel: "埋点事件",
+	onEvent: logBatchEvent,
 	insertFn: async (batch) => {
 		await db.insert(trackEventTable).values(
 			batch.map((item) => ({
@@ -142,9 +159,13 @@ function pushToBuffer(input: TrackEventInput, time: number): void {
 	});
 }
 
-/** 强制刷新缓冲（服务关闭前兜底） */
+/** 强制刷新缓冲（服务关闭前兜底；失败仅记日志，不阻断优雅关闭） */
 export async function flushTrackEvents(): Promise<void> {
-	await eventWriter.shutdown();
+	try {
+		await eventWriter.shutdown();
+	} catch (err) {
+		logger.error({ err }, "埋点事件缓冲刷入失败（优雅关闭继续）");
+	}
 }
 
 // ═══════════════════════════════════════════════════

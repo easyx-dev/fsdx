@@ -21,7 +21,7 @@ const { mockGetConfig } = vi.hoisted(() => ({
 	mockGetConfig: vi.fn(),
 }));
 
-vi.mock("#/services/config/config.server", () => ({
+vi.mock("#/shared-services/config/config.server", () => ({
 	getConfig: mockGetConfig,
 }));
 

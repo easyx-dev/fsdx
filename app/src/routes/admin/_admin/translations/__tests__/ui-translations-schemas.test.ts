@@ -6,7 +6,7 @@ import {
 	deleteSchema,
 	formSchema,
 	getListSchema,
-} from "#/services/i18n/ui-translation.schemas";
+} from "#/shared-services/i18n/ui-translation.schemas";
 import { importUITranslationsSchema } from "../-mods/ui-translations.functions";
 
 describe("getListSchema", () => {

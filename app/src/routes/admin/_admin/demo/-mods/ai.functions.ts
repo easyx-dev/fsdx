@@ -5,7 +5,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { adminPermGuard } from "#/middleware/admin-auth";
 import { ADMIN_PERMISSIONS } from "#/permissions/admin-permissions";
-import { completeText } from "#/services/ai/ai.server";
+import { completeText } from "#/shared-services/ai/ai.server";
 
 export const aiTestSchema = z.object({
 	systemMessage: z.string().optional(),

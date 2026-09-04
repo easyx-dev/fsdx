@@ -2,7 +2,7 @@
  * UI 翻译页面 Server Function
  */
 
-import { toJson } from "@fsdx/core/export";
+import { toJson } from "@fsdx/lib/export";
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { adminPermGuard } from "#/middleware/admin-auth";
@@ -15,13 +15,13 @@ import {
 	type TranslationImportResult,
 	type UiTranslationExportData,
 	upsertUITranslation,
-} from "#/services/i18n/i18n.server";
+} from "#/shared-services/i18n/i18n.server";
 import {
 	deleteSchema,
 	formSchema,
 	getListSchema,
-} from "#/services/i18n/ui-translation.schemas";
-import { logCrud } from "#/services/operation-log/operation-log.server";
+} from "#/shared-services/i18n/ui-translation.schemas";
+import { logCrud } from "#/shared-services/operation-log/operation-log.server";
 
 export const getListSFn = createServerFn({ method: "GET" })
 	.middleware([adminPermGuard(ADMIN_PERMISSIONS.TRANSLATION_VIEW)])

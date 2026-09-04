@@ -3,7 +3,7 @@
  */
 
 import { DownloadOutlined, PlusOutlined } from "@ant-design/icons";
-import { downloadFile } from "@fsdx/core/export";
+import { downloadFile } from "@fsdx/lib/export";
 import { message } from "@fsdx/ui-spa/antd-static";
 import { JsonImportButton } from "@fsdx/ui-spa/json-import-button";
 import { ProTable } from "@fsdx/ui-spa/table";
@@ -12,7 +12,10 @@ import { Button, Card, Flex, Form, Space } from "antd";
 import dayjs from "dayjs";
 import { useState } from "react";
 import { AdminPageContent } from "#/components/admin";
-import type { DictItemRecord, DictRecord } from "#/services/dict/dict.server";
+import type {
+	DictItemRecord,
+	DictRecord,
+} from "#/shared-services/dict/dict.server";
 import { DictFormModal } from "./-mods/DictFormModal";
 import { DictItemFormModal } from "./-mods/DictItemFormModal";
 import { DictListPanel } from "./-mods/DictListPanel";

@@ -2,10 +2,10 @@
  * 定时任务注册：在服务启动时调用
  */
 
-import { registerTask } from "@fsdx/core/scheduler";
-import { logger } from "#/lib/logger/logger";
 import { cleanExpiredFiles } from "#/services/file/file.server";
 import { cleanExpiredLogs } from "#/services/logs/logs-cleanup.server";
+import { logger } from "#/shared-services/logger";
+import { registerTask } from "#/shared-services/scheduler";
 
 /** 注册所有定时任务 */
 export function registerAllTasks(): void {

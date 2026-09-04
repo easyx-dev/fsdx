@@ -3,13 +3,13 @@
  * 注入 context.locale 供下游 beforeLoad 使用
  */
 
+import { createMiddleware } from "@tanstack/react-start";
+import { getCookie } from "@tanstack/react-start/server";
 import {
 	DEFAULT_LOCALE,
 	LOCALE_COOKIE,
 	type Locale,
-} from "@fsdx/core/i18n-types";
-import { createMiddleware } from "@tanstack/react-start";
-import { getCookie } from "@tanstack/react-start/server";
+} from "#/shared-services/i18n/i18n-types";
 
 /**
  * 全局语言中间件：解析 locale 并注入 context

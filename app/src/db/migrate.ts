@@ -5,7 +5,7 @@ import { existsSync } from "node:fs";
 import { resolve } from "node:path";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { migrate } from "drizzle-orm/node-postgres/migrator";
-import { logger } from "#/lib/logger/logger";
+import { logger } from "#/shared-services/logger";
 
 export async function runMigrations() {
 	const migrationsFolder = resolve(process.cwd(), "drizzle");

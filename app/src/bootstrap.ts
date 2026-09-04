@@ -2,18 +2,7 @@
  * 服务启动初始化：环境变量加载、错误处理、预置数据、定时任务、优雅关闭
  */
 
-import { initMail } from "@fsdx/core/mail";
-import { setSchedulerLogger } from "@fsdx/core/scheduler";
-import { initSms } from "@fsdx/core/sms";
 import { runMigrations } from "#/db/migrate";
-import { logger } from "#/lib/logger/logger";
-import {
-	ensurePresetConfigs,
-	getConfig,
-} from "#/services/config/config.server";
-import { ensurePresetDicts } from "#/services/dict/dict.server";
-import { ensurePresetTranslations } from "#/services/i18n/i18n-seed";
-import { flushOperationLogs } from "#/services/operation-log/operation-log.server";
 import { registerAllTasks } from "#/services/tasks/tasks.server";
 import {
 	ensurePresetEvents,
@@ -21,16 +10,16 @@ import {
 	flushTrackEvents,
 	loadTrackMetaCache,
 } from "#/services/track/track.server";
+import { ensurePresetConfigs } from "#/shared-services/config/config.server";
+import { ensurePresetDicts } from "#/shared-services/dict/dict.server";
+import { ensurePresetTranslations } from "#/shared-services/i18n/i18n-seed";
+import { logger } from "#/shared-services/logger";
+import { flushOperationLogs } from "#/shared-services/operation-log/operation-log.server";
 
 /** 优雅关闭超时时间（毫秒），防止缓冲刷入挂起导致进程无法退出 */
 const GRACEFUL_SHUTDOWN_TIMEOUT = 10_000;
 
 export async function bootstrap() {
-	// 模块依赖注入：先注入日志依赖各模块（mail/sms/scheduler），服务起来前完成
-	initMail({ getConfig, logger });
-	initSms({ getConfig, logger });
-	setSchedulerLogger(logger);
-
 	logger.info("服务启动初始化开始");
 	// 程序化数据库迁移（fail-fast：迁移失败即应用启动失败，避免 schema 不一致静默运行，
 	// 生产部署由 deploy.sh 通过健康检查捕获迁移结果）

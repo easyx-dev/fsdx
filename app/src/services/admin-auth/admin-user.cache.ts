@@ -1,7 +1,7 @@
 /**
  * 管理员用户缓存实例
  */
-import { MemoryCache } from "@fsdx/core/cache-core";
+import { MemoryCache } from "@fsdx/lib/cache";
 
 /** 缓存的管理员用户信息 */
 export interface CachedAdminUser {

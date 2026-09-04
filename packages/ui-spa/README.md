@@ -9,7 +9,7 @@ antd 管理端组件库，面向数据密集型后台场景（表单、表格、
 | 使用场景 | 管理端 `/admin/*` 页面 |
 | antd 单实例 | antd 声明为 peerDependency，宿主提供唯一实例；`antd-static` 桥接必须在宿主 `<App>` 上下文内工作，双实例会导致 message/modal 脱离 ConfigProvider |
 | 样式 | 直角风格（`borderRadius: 0`）、统一语义令牌（`--s-*`），同 AGENTS.md 视觉约定 |
-| 依赖 | `@fsdx/core`、`@monaco-editor/react`；peer：`antd` / `@ant-design/icons` / `@tanstack/react-router` / `dayjs` / `monaco-editor` / `@wangeditor/editor` / `@wangeditor/editor-for-react` |
+| 依赖 | `@fsdx/lib`、`@monaco-editor/react`；peer：`antd` / `@ant-design/icons` / `@tanstack/react-router` / `dayjs` / `monaco-editor` / `@wangeditor/editor` / `@wangeditor/editor-for-react` |
 | 测试 | 无独立测试脚本 |
 
 ## subpath 导出
@@ -22,7 +22,7 @@ antd 管理端组件库，面向数据密集型后台场景（表单、表格、
 | `@fsdx/ui-spa/editor` | 编辑器 | `CodeEditor`（Monaco）、`RichEditor`（WangEditor 5，`valueType` 对接 `EditorType`） |
 | `@fsdx/ui-spa/permission-tags` | 权限展示 | `PermissionTags`（通配符优先排序、绿色标识、超 `maxVisible` 折叠，元信息由宿主传入 `PermissionMetaMap`） |
 | `@fsdx/ui-spa/json-import-button` | JSON 导入 | `JsonImportButton`（弹窗 + 拖拽 + JSON 编辑器预览，`onImport` 回调） |
-| `@fsdx/ui-spa/ms-input` | 时长输入 | `MSInput`（以 `"30s"` / `"10min"` / `"1d"` 展示、以毫秒值提交，`min` / `max` / `allowZero` 约束，复用 `@fsdx/core/ms`） |
+| `@fsdx/ui-spa/ms-input` | 时长输入 | `MSInput`（以 `"30s"` / `"10min"` / `"1d"` 展示、以毫秒值提交，`min` / `max` / `allowZero` 约束，复用 `@fsdx/lib/ms`） |
 | `@fsdx/ui-spa/sfn-helpers` | SFn 调用辅助 | `safeSfnCall(promise, fallbackMsg?)`（自动 `message.error` 并继续抛出）、`unwrapSfn(...)`（返回 `[data, null] | [null, error]`） |
 
 ## 使用约束
@@ -33,6 +33,6 @@ antd 管理端组件库，面向数据密集型后台场景（表单、表格、
 
 ## 相关文档
 
-- 纯逻辑底座：[@fsdx/core](../core/README.md)
+- 纯逻辑底座：[@fsdx/lib](../core/README.md)
 - shadcn 前台组件库：[@fsdx/ui-ssr](../ui-ssr/README.md)
 - 应用层架构、组件选型与视觉令牌约定：[docs/architecture-overview.md](../../docs/architecture-overview.md)、[AGENTS.md](../../AGENTS.md)

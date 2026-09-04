@@ -25,35 +25,34 @@ app/                          # @fsdx/web —— 应用 package（业务代码 +
     ├── db/                   # Drizzle 客户端 + schema（17 张表，以 src/db/schema/ 为准）
     ├── permissions/          # RBAC 权限码常量与匹配（admin + client 双端）
     ├── theme/                # 主题注册表（themes.ts：各端亮暗主题预设，单一事实来源）
-    ├── lib/                  # 仅基础设施单例壳 + 客户端 SDK（logger/jwt/metrics/track 四个薄壳，其余基础库在 packages/core）
+    ├── shared-services/      # 高共享的 service（app 绑定单例/DI + 系统级共享域：logger/jwt/metrics/storage/scheduler/mail·sms/request-context/config/dict/i18n/ai/query-utils/operation-log）
     ├── middleware/           # admin-auth / client-auth / locale / request-id / sf-error-logger
-    ├── services/             # 服务端共享业务逻辑（config/dict/file/news/track/...）
+    ├── services/             # 业务服务（admin-auth/client-auth/admin-user/file/news/track/tasks/...）
     ├── routes/               # 前台 + /admin 全部路由页面与 SFn
     └── styles/ test-utils/ types/ validators/ utils/
 
 packages/
-├── core/                     # @fsdx/core —— 纯逻辑库（subpath exports，无根桶）
+├── lib/                      # @fsdx/lib —— 纯可复用逻辑库（subpath exports，无根桶，零全局态/不读 env-db/不做日志耦合）
 │   └── src/
 │       ├── utils/            # 同构纯工具
-│       ├── i18n/             # 同构国际化
-│       ├── cache/            # 缓存抽象（cache-core/ MemoryCache）
-│       └── infra/            # 仅服务端基础设施
+│       ├── cache/            # 缓存抽象（cache/ MemoryCache）
+│       └── infra/            # 通用非单例基础设施（captcha/semaphore/task-manager/batch-writer/storage 契约）
 ├── ui-ssr/                   # @fsdx/ui-ssr —— shadcn 基础组件（ui/ theme/ form 三桶）
 └── ui-spa/                   # @fsdx/ui-spa —— antd 管理端组件（antd 为 peerDependency）
 ```
 
 `#/*` 别名仅在 app 内生效（`#/*` → `./src/*`）。跨包引用一律使用 `@fsdx/*` subpath import。
 
-> 每个子包的导出清单、API 与宿主集成约束见各自 README：[core](packages/core/README.md) / [ui-ssr](packages/ui-ssr/README.md) / [ui-spa](packages/ui-spa/README.md)，是包边界的权威文档。
+> 每个子包的导出清单、API 与宿主集成约束见各自 README：[lib](packages/lib/README.md) / [ui-ssr](packages/ui-ssr/README.md) / [ui-spa](packages/ui-spa/README.md)，是包边界的权威文档。
 
 ### 包边界约定
 
-- **core 按职责分层**：`@fsdx/core/*` subpath 由 `package.json` exports 扁平映射到 `utils/`、`i18n/`、`cache/`（同构）或 `infra/`（服务端）。core 的服务端保护依赖 `vite.config.ts` 的 import-protection（按 npm 包名拦截 bcryptjs/drizzle-orm/openai）+ 目录约定，而非 `.server.*` 文件后缀；客户端组件禁止引用 `infra/` 对应模块；core 内不得出现 `#/services`、`#/db`、`#/routes` 反向引用
-- **core 零全局单例**：`@fsdx/core/logger` 只导出 `createLogger` 工厂，应用级 `logger` 单例由 app 的 `src/lib/logger/logger.ts` 提供；`@fsdx/core/jwt` 同理（`createJwt` + 惰性单例壳）
-- **有外部配置依赖的模块用 init 注入**：`@fsdx/core/mail|sms` 提供 `initMail/initSms`，bootstrap 注入 `getConfig` 回调与 logger；未 init 直接调用抛错（fail-fast）；`scheduler` 用 `setSchedulerLogger` 注入。**AI 不属于 core 基建**：基于 TanStack AI 的 AI 能力下沉到 app 服务层 `services/ai`（`ai.provider.ts` 负责配置读取 + provider 构建 + 跨 bundle 单例缓存，`ai.server.ts` 负责 `chat()` 编排），业务层只依赖 `services/ai`
+- **lib 按职责分层**：`@fsdx/lib/*` subpath 由 `package.json` exports 扁平映射到 `utils/`、`cache/`（同构）或 `infra/`（通用非单例）。lib 的服务端保护依赖 `vite.config.ts` 的 import-protection（按 npm 包名拦截 bcryptjs/drizzle-orm/openai）+ 目录约定，而非 `.server.*` 文件后缀；客户端组件禁止引用 `infra/` 对应模块；lib 内不得出现 `#/services`、`#/shared-services`、`#/db`、`#/routes` 反向引用
+- **lib 零全局单例 + 零日志耦合**：lib 内禁止读取 `process.env` / DB、禁止创建模块级或 globalThis 单例、禁止 import 任何 logger。错误一律向上抛出（throw/reject），警告用 `console` 直接输出或经可选 `onEvent` 钩子推事件（供宿主接管，如 `batch-writer`）。凡需单例/读环境/引日志的模块一律下沉到 `src/shared-services/`
+- **shared-services = 高共享的 service**：位于 `src/shared-services/`，被 routes / middleware / bootstrap / client / 其它 service **直接引用**，承载 app 绑定单例（logger/jwt/metrics/storage/scheduler/mail·sms/request-context）+ 系统级共享域（config/dict/i18n/ai/query-utils/operation-log）。**只依赖 `lib`/`db`/本层，绝不引用 services**（避免循环依赖）；`mail`/`sms`/`scheduler` 直接 `import { logger }`、`mail`/`sms` 直接 `import { getConfig }`，无 `init*`/`setSchedulerLogger` 透传；跨 bundle 一致性靠 globalThis（metrics 注册表、config / AI provider 缓存）。判断标准：**一个 `services` 模块被大范围引用共享 → 具备成为 shared-services 的条件**
 - **antd 单实例**：`@fsdx/ui-spa` 将 antd 声明为 peerDependency，app 提供唯一实例；`antd-static` 桥接在 app `<App>` 上下文内工作
 - **UI token 宿主注入**：ui 包组件只写 tailwind 类名，颜色 token 由 app 的 `global.css` 定义；Tailwind 通过 `@source` 扫描包源码类名
-- **新增共享逻辑**：纯函数/类入 `@fsdx/core`，shadcn 组件入 `@fsdx/ui-ssr`，antd 组件入 `@fsdx/ui-spa`，业务逻辑留在 `app/src`
+- **新增共享逻辑**：纯函数/类（非单例、不读 env）入 `@fsdx/lib`，shadcn 组件入 `@fsdx/ui-ssr`，antd 组件入 `@fsdx/ui-spa`，app 绑定单例/DI 入 `src/shared-services/`，业务逻辑留在 `app/src`
 
 ## 技术栈
 
@@ -102,12 +101,12 @@ packages/
 ### 其他基础设施
 
 - **请求 ID 贯通**：`requestIdMiddleware` 注册于 requestMiddleware 首位，透传上游 `x-request-id`（超长截断至 100）或生成 UUID，写入 ALS 上下文并回写响应头；logger mixin 自动注入 requestId，操作审计落库 `operation_log.request_id`，实现日志与审计全链路追踪
-- **Prometheus 指标**：`src/lib/metrics/metrics.ts` 注册表挂载于 globalThis（Nitro 入口与 SSR 各 bundle 共享同一实例，`Counter` + `Histogram`，无第三方依赖），预置 `http_requests_total` / `server_function_requests_total` / `server_function_duration_seconds`；`/api/metrics` 端点（Server Route，无鉴权）输出 Prometheus text 格式，多实例部署需实例层聚合
+- **Prometheus 指标**：`src/shared-services/metrics` 注册表挂载于 globalThis（Nitro 入口与 SSR 各 bundle 共享同一实例，`Counter` + `Histogram`，无第三方依赖），预置 `http_requests_total` / `server_function_requests_total` / `server_function_duration_seconds`；`/api/metrics` 端点（Server Route，无鉴权）输出 Prometheus text 格式，多实例部署需实例层聚合
 - **Nitro server entry**：`app/server.ts` 只承担 bootstrap + HTTP 入口埋点，`fetch` 一律返回 `undefined` 交还请求流转至 TanStack Start SSR；**禁止直接 import `./src/server`**（会绕过 Vite SSR runner 惰性路由机制，导致全部路由 eager 加载，dev 下服务端不兼容的浏览器库（如 wangeditor）在启动即崩溃）
 - **CSRF**：`src/start.ts` 注册 `createCsrfMiddleware`，仅对 ServerFn 生效，校验 Origin / Referer / Sec-Fetch-Site
 - **SF 错误日志**：`sfErrorLogger` 注册于 `functionMiddleware` 自动覆盖所有 SF；鉴权失败（`AdminAuthError`/`ClientAuthError`）记 warn、系统异常记 error（`sanitizeError()` 脱敏），并埋入耗时/结果指标；错误经 `toClientError()` 归一化后重新抛出
 - **Import Protection**：客户端构建禁止导入 `*.server.*` 与 `bcryptjs` / `drizzle-orm` / `openai`；服务端禁止 `*.client.*`；type-only import 不触发
-- **事件埋点**：`track_event` + 元事件/元属性三表；客户端 SDK `src/lib/track/track.ts` 自动采集 PageView；服务端校验链：per-session 频控（60 条/分）→ 时间钳制 → 事件/属性名校验 → 值类型校验；BatchWriter 5 秒/100 条/上限 1000；预置 5 元事件（PageView、FormSubmit、Login、Register、Logout）+ 11 元属性（含 7 个 `$` 系统属性，以 `src/services/track/` 为准）→ 详见 [event-tracking](docs/event-tracking.md)
+- **事件埋点**：`track_event` + 元事件/元属性三表；客户端 SDK `src/services/track/track.ts` 自动采集 PageView；服务端校验链：per-session 频控（60 条/分）→ 时间钳制 → 事件/属性名校验 → 值类型校验；BatchWriter 5 秒/100 条/上限 1000；预置 5 元事件（PageView、FormSubmit、Login、Register、Logout）+ 11 元属性（含 7 个 `$` 系统属性，以 `src/services/track/` 为准）→ 详见 [event-tracking](docs/event-tracking.md)
 - **操作日志审计**：`logOperation()` fire-and-forget；SFn 写 CRUD 审计**必须**用同模块 `logCrud()` 一行式封装（自动装配操作人 + targetType 默认值）；CRUD 审计与外部调用日志使用独立 BatchWriter（上限 1000 / 5000）；操作者身份经 request-context（AsyncLocalStorage）注入，requestId 自动从 ALS 捕获落库，进程退出自动刷新
 - **系统初始化**：首次部署自动跳转 `/admin/init`，以 `admin_user.is_root`（数据库部分唯一索引）判断是否已初始化；事务内完成角色 → root 用户 → 系统配置，已初始化后禁止重复操作
 - **环境变量**：位于 `app/.env` / `app/.env.example`，Vite 以 app 为 root 加载并注入 `process.env`；SMTP 邮件配置已迁系统配置表，不再通过环境变量管理
@@ -151,7 +150,7 @@ packages/
 
 ## 内存缓存约定
 
-- `MemoryCache<T>` 泛型类在 `@fsdx/core/cache-core`，实例按模块拆分在 `services/<module>/<module>.cache.ts`
+- `MemoryCache<T>` 泛型类在 `@fsdx/lib/cache`，实例按模块拆分在 `services/<module>/<module>.cache.ts`
 - 每个缓存实例只能在唯一一个服务端模块中直接操作，禁止跨模块 import；外部模块通过所属模块的导出函数访问
 - 读缓存函数必须实现懒加载模式：cache miss → 查库 → 写缓存 → 返回
 
@@ -159,7 +158,7 @@ packages/
 
 ## 测试约定
 
-- 测试文件与被测模块同目录，放在 `__tests__/` 子目录，命名 `<模块名>.test.ts`；每个 `src/services/` 和 `src/lib/` 模块必须覆盖其所有导出函数的测试
+- 测试文件与被测模块同目录，放在 `__tests__/` 子目录，命名 `<模块名>.test.ts`；每个 `src/services/` 和 `src/shared-services/` 模块必须覆盖其所有导出函数的测试
 - 使用 `vi.hoisted()` + `vi.mock()` 三段式结构：静态 mock → hoisted 创建 mock 对象 → 用 hoisted 值 mock DB → 最后 import 被测模块；`mockDb.select` 返回可 await 的查询链（from/where/orderBy/limit/offset 均返回自身），`await` 链时 resolve 到 `mockRows` 控制的行数组，`mockRows` 默认 `mockResolvedValue([])` 且跨用例残留需显式重置；`beforeEach` 中 `vi.clearAllMocks()`
 - `describe` 名称对应被测函数名，`it` 名称描述具体场景（中文）；每个导出函数至少覆盖正常 / 边界 / 错误路径
 - 路由层 schema 校验测试就近放置（路由或 schema 所属模块 `__tests__/`），优先 import 真实 schema
@@ -205,10 +204,10 @@ packages/
 | `pnpm check` | 全部包 tsc --noEmit + Biome 检查 + 文档事实校验（`doc:check`，防 docs/generated 与数字漂移） |
 | `pnpm format` | 全部包 Biome 格式化 |
 | `pnpm lint` / `pnpm lint:fix` | 全部包 Biome 检查 / 自动修复 |
-| `pnpm test` | 全部包 Vitest 测试（app + core） |
+| `pnpm test` | 全部包 Vitest 测试（app + lib） |
 | `pnpm e2e` | Playwright e2e 测试（专用隔离库 `{开发库名}_e2e`，webServer 端口 3100；需先 `pnpm --filter @fsdx/web exec playwright install chromium`） |
 | `pnpm db:generate` / `pnpm db:migrate` / `pnpm db:pull` / `pnpm db:studio` | app 数据库迁移流程 |
-| `pnpm --filter @fsdx/core test` | 仅 core 包测试 |
+| `pnpm --filter @fsdx/lib test` | 仅 lib 包测试 |
 | `/deploy`（`.agents/commands/deploy.md`） | 版本发布：联动提交 → 确定版本（未发布直接用当前版本，已发布则 bump patch）→ 更新 CHANGELOG → 打 tag（含 commit 摘要）→ 推送 |
 | `/check-architecture`（`.agents/commands/check-architecture.md`） | 全量架构审计：8 维度扫描并输出分级报告 |
 

@@ -20,7 +20,7 @@
     "lint:fix": "biome check --write"
   },
   "dependencies": {
-    "@fsdx/core": "workspace:*",
+    "@fsdx/lib": "workspace:*",
     "@monaco-editor/react": "^4.7.0"
   },
   "peerDependencies": {

@@ -8,7 +8,9 @@ const { mockVerifyToken, mockGetAdminUserForAuth } = vi.hoisted(() => ({
 	mockGetAdminUserForAuth: vi.fn(),
 }));
 
-vi.mock("#/lib/jwt/jwt", () => ({ jwt: { verifyToken: mockVerifyToken } }));
+vi.mock("#/shared-services/jwt", () => ({
+	jwt: { verifyToken: mockVerifyToken },
+}));
 
 vi.mock("#/services/admin-auth/admin-auth.server", () => ({
 	getAdminUserForAuth: mockGetAdminUserForAuth,

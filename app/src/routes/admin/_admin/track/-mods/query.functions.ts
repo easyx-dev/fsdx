@@ -2,7 +2,7 @@
  * 埋点事件查询 Server Function
  */
 
-import { DATE_ONLY_REGEX, isValidDateStr } from "@fsdx/core/date-format";
+import { DATE_ONLY_REGEX, isValidDateStr } from "@fsdx/lib/date-format";
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { adminPermGuard } from "#/middleware/admin-auth";

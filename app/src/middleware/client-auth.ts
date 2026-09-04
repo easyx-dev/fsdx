@@ -3,7 +3,6 @@
  * 统一为 request middleware，同时支持 Server Function 和 Server Route
  */
 
-import { runWithRequestContext } from "@fsdx/core/request-context";
 import { createMiddleware } from "@tanstack/react-start";
 import { getCookie } from "@tanstack/react-start/server";
 import { COOKIE_NAMES } from "#/constants/cookie-names";
@@ -11,6 +10,7 @@ import {
 	type ClientPermissionDef,
 	hasClientPermission,
 } from "#/permissions/client-permissions";
+import { runWithRequestContext } from "#/shared-services/request-context";
 
 /** 通过中间件注入 handler 的客户端用户上下文 */
 export interface ClientAuthContext {

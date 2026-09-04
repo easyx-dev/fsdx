@@ -19,14 +19,14 @@ description: >
 
 ## 缓存实例所有权
 
-`MemoryCache<T>` 泛型类在 `@fsdx/core/cache-core`，各实例按模块拆分在 `services/<module>/<module>.cache.ts`，每个实例**只能在唯一一个服务端模块中直接操作**：
+`MemoryCache<T>` 泛型类在 `@fsdx/lib/cache`，各实例按模块拆分在 `services/<module>/<module>.cache.ts`，每个实例**只能在唯一一个服务端模块中直接操作**：
 
 | 缓存实例 | 实例文件 | 所属模块 | 存储内容 |
 |----------|----------|----------|----------|
-| `configCache` | `config.cache.ts` | `src/services/config/config.server.ts` | 系统配置全量列表（key=`"all"`） |
-| `configTranslationCache` | `config.cache.ts` | `src/services/config/config.server.ts` | 系统配置的 content_translation 翻译 |
-| `dictCache` | `dict.cache.ts` | `src/services/dict/dict.server.ts` | 字典条目（按 slug 分片） |
-| `uiTranslationCache` | `ui-translation.cache.ts` | `src/services/i18n/i18n-ui.server.ts` | UI 文案翻译（按 locale 分片） |
+| `configCache` | `config.cache.ts` | `src/shared-services/config/config.server.ts` | 系统配置全量列表（key=`"all"`） |
+| `configTranslationCache` | `config.cache.ts` | `src/shared-services/config/config.server.ts` | 系统配置的 content_translation 翻译 |
+| `dictCache` | `dict.cache.ts` | `src/shared-services/dict/dict.server.ts` | 字典条目（按 slug 分片） |
+| `uiTranslationCache` | `ui-translation.cache.ts` | `src/shared-services/i18n/i18n-ui.server.ts` | UI 文案翻译（按 locale 分片） |
 | `clientUserCache` | `client-user.cache.ts` | `src/services/client-auth/client-auth.server.ts` | 客户端用户（按 userId，TTL 5 分钟） |
 | `adminUserCache` | `admin-user.cache.ts` | `src/services/admin-auth/admin-auth.server.ts` | 管理员用户（按 userId，TTL 5 分钟） |
 | `trackEventMetaCache` | `track.cache.ts` | `src/services/track/track.server.ts` | 元事件名校验 |
@@ -62,15 +62,15 @@ export async function getXxx(key: string): Promise<string> {
 - 再次查缓存获取结果并返回 — 双查模式确保缓存数据一定存在
 
 已符合此模式的示例：
-- `src/services/config/config.server.ts` 中的 `getConfig(key)` — 先查 `configCache`，miss 则 `await loadConfigCache()`
-- `src/services/dict/dict.server.ts` 中的 `getDictLabel(slug, value)` — 先 `ensureCache()` 再查 `dictCache`
-- `src/services/i18n/i18n-ui.server.ts` 中的 `getUITranslations(locale)` — 先查 `uiTranslationCache`，miss 则查库回填
+- `src/shared-services/config/config.server.ts` 中的 `getConfig(key)` — 先查 `configCache`，miss 则 `await loadConfigCache()`
+- `src/shared-services/dict/dict.server.ts` 中的 `getDictLabel(slug, value)` — 先 `ensureCache()` 再查 `dictCache`
+- `src/shared-services/i18n/i18n-ui.server.ts` 中的 `getUITranslations(locale)` — 先查 `uiTranslationCache`，miss 则查库回填
 
 ## 新增缓存实例
 
 当需要新的内存缓存时，按以下步骤操作：
 
-1. 在所属服务端模块目录下新建 `<模块名>.cache.ts`（如 `services/config/config.cache.ts`），定义 `MemoryCache` 实例并导出缓存条目类型，指定 `name` 和合适的 `defaultTTL`
+1. 在所属服务端模块目录下新建 `<模块名>.cache.ts`（如 `shared-services/config/config.cache.ts`），定义 `MemoryCache` 实例并导出缓存条目类型，指定 `name` 和合适的 `defaultTTL`
 2. 明确其所属服务端模块（一个模块可以拥有多个缓存，但每个缓存只能属于一个模块）
 3. 在所属模块中：
    - 实现 `load*Cache()` 函数（清空旧缓存 + 从数据库加载 + 写入缓存）
@@ -94,10 +94,10 @@ const { mockCache } = vi.hoisted(() => ({
     keys: vi.fn(() => []),
   },
 }));
-vi.mock("#/services/config/config.cache", () => ({ configCache: mockCache }));
+vi.mock("#/shared-services/config/config.cache", () => ({ configCache: mockCache }));
 
 // 错误：直接 import 并操作
-import { configCache } from "#/services/config/config.cache";
+import { configCache } from "#/shared-services/config/config.cache";
 beforeEach(() => configCache.clear());
 ```
 

@@ -162,7 +162,7 @@ import {
   executePaginatedQuery,
   notDeleted,
   paginationOffset,
-} from "#/services/query/query-utils.server";
+} from "#/shared-services/query/query-utils.server";
 
 export type ProductRecord = typeof product.$inferSelect;
 
@@ -325,7 +325,7 @@ export const updateProductSchema = z.object({
 import { createServerFn } from "@tanstack/react-start";
 import { ADMIN_PERMISSIONS } from "#/permissions/admin-permissions";
 import { adminPermGuard } from "#/middleware/admin-auth";
-import { logCrud } from "#/services/operation-log/operation-log.server";
+import { logCrud } from "#/shared-services/operation-log/operation-log.server";
 import {
   createProduct,
   getProductById,
@@ -553,7 +553,7 @@ import {
   getProductById,
   getProductList,
 } from "#/services/product/product.server";
-import { logCrud } from "#/services/operation-log/operation-log.server";
+import { logCrud } from "#/shared-services/operation-log/operation-log.server";
 import { ProductForm } from "./-mods/ProductForm";
 
 // ═══ Zod Schema ═══

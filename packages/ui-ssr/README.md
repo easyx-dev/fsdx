@@ -9,7 +9,7 @@ shadcn 风格基础组件库，面向前台 SSR 展示型场景。无运行时�
 | 使用场景 | 前台（非 `/admin/*`）SSR 页面、两端共用组件 |
 | 样式 | 组件只写 tailwind 类名，不引入样式文件；颜色 token（`--s-*` 语义令牌）由宿主 `global.css` 定义 |
 | 编译 | 宿主 Tailwind 通过 `@source "../../packages/ui-ssr/src"` 扫描包源码类名 |
-| 依赖 | `@fsdx/core`（cn / match-permission 等）、`@radix-ui/react-slot`、`class-variance-authority`；react / react-dom 由宿主工作区提供 |
+| 依赖 | `@fsdx/lib`（cn / match-permission 等）、`@radix-ui/react-slot`、`class-variance-authority`；react / react-dom 由宿主工作区提供 |
 
 ## subpath 导出
 
@@ -32,6 +32,6 @@ shadcn 风格基础组件库，面向前台 SSR 展示型场景。无运行时�
 
 ## 相关文档
 
-- 纯逻辑底座：[@fsdx/core](../core/README.md)
+- 纯逻辑底座：[@fsdx/lib](../core/README.md)
 - antd 管理端组件库：[@fsdx/ui-spa](../ui-spa/README.md)
 - 应用层架构与主题机制：[docs/architecture-overview.md](../../docs/architecture-overview.md)

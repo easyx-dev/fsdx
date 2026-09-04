@@ -2,13 +2,13 @@
  * 验证码模块：生成、发送、校验验证码
  */
 import { randomUUID } from "node:crypto";
-import { create } from "@fsdx/core/captcha";
-import { sendCaptchaMail } from "@fsdx/core/mail";
-import { sendSms } from "@fsdx/core/sms";
+import { create } from "@fsdx/lib/captcha";
 import { and, desc, eq, gt } from "drizzle-orm";
 import { db } from "#/db/index";
 import { captchaCode } from "#/db/schema";
-import { logger } from "#/lib/logger/logger";
+import { logger } from "#/shared-services/logger";
+import { sendCaptchaMail } from "#/shared-services/mail";
+import { sendSms } from "#/shared-services/sms";
 
 /** 验证码有效期（5 分钟） */
 const CAPTCHA_EXPIRE_MINUTES = 5;
