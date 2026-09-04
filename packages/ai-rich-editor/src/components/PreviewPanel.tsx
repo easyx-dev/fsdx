@@ -49,6 +49,7 @@ export function PreviewPanel({
 		? "allow-scripts allow-same-origin"
 		: "allow-same-origin";
 
+	// 预览直接使用已完成作用域化的 value（应用时刻已 scoped），保证「预览 = 最终渲染」
 	const renderScreen = (
 		<iframe
 			key={reloadKey}

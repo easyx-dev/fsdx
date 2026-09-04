@@ -4,6 +4,7 @@
 
 ### Features
 
+- **`@fsdx/ai-rich-editor` 样式作用域化（[infra]）**：AI 生成片段顶层的内嵌 `<style>` 全局选择器直接注入正文会污染宿主全局样式；在「应用到编辑器」/`autoApply` 时刻由包内 `scopedRichContent` 给片段根注入作用域前缀（编辑器实例创建时 `generateScopePrefix` 生成一次并一直沿用）并改写 `<style>` 内选择器为 `.{prefix} …`，产物自带 scope 前缀，宿主直接当作 HTML 引入（`dangerouslySetInnerHTML`）即不污染全局，端侧零处理；system prompt 收紧为内联优先 + 禁用 `body`/`*`/`:root`/`html` 全局选择器；预览 iframe 与新窗口直接使用该 `value`，所见即所得。
 - **AI 多厂商适配（OpenAI 协议）**：
   - **配置重构**：`ai_base_url`/`ai_api_key`/`ai_model` 三键删除，收敛为单 JSON 配置 `ai_providers`（对象形式：`{ [厂商id]: { name, baseUrl, apiKey, default?, models } }`，键为厂商 id，每个厂商可挂多个模型并携带能力位；`json` valueType，管理端「AI设置」分组）；支持同时挂 DeepSeek/Moonshot/Qwen/本地 vLLM 等多个 OpenAI 兼容厂商并指定默认
   - **模型能力位**：每个模型支持 `name`/`default` 及能力位 `contextLimit`/`outputLimit`/`jsonOutput`/`toolCalls`/`reasoning`/`input`/`output`；声明了 `reasoning`/`jsonOutput`/`toolCalls`/`input` 的模型映射为 TanStack AI `createModel(name, { input, features })`，零能力位走裸字符串（乐观默认，零回归）；`contextLimit`/`outputLimit`/`output` 为项目自身元数据，预留给 UI 展示与裁剪/成本统计

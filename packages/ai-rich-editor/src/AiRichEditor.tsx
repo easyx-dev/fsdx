@@ -18,6 +18,7 @@ import { Toolbar } from "./components/Toolbar";
 import { DEFAULT_CONFIG, DEFAULT_HTML } from "./constants";
 import type { AiRichEditorConfig, AiRichEditorProps } from "./types";
 import { buildPreviewDocument, extractHtmlFragments } from "./utils/extract";
+import { generateScopePrefix, scopedRichContent } from "./utils/scope";
 
 export function AiRichEditor({
 	value = DEFAULT_HTML,
@@ -28,6 +29,8 @@ export function AiRichEditor({
 	config,
 	onConfigChange,
 }: AiRichEditorProps) {
+	// 作用域前缀：实例（会话）创建时生成一次并一直沿用，避免每次应用换随机前缀导致前缀漂移/重复包裹
+	const [scopePrefix] = useState(() => generateScopePrefix());
 	const [showEditor, setShowEditor] = useState(false);
 	const [deviceKey, setDeviceKey] = useState("desktop");
 	const [scriptsEnabled, setScriptsEnabled] = useState(true);
@@ -42,20 +45,21 @@ export function AiRichEditor({
 	);
 	const { autoApply, systemPrompt, previewHead, notify } = runtimeConfig;
 
-	// 流结束回调：AI 生成的 HTML 代码块自动应用到编辑器（保留手动按钮）
+	// 流结束回调：AI 生成的 HTML 代码块自动应用到编辑器（保留手动按钮）；
+	// 应用前先做样式作用域化（沿用实例级 scopePrefix），使产物自带 scope 前缀，宿主可直接当作 HTML 引入（不污染全局）
 	const handleAiComplete = useCallback(
 		(content: string) => {
 			if (!autoApply) return;
 			const html = extractHtmlFragments(content)[0];
-			if (html) onChange?.(html);
+			if (html) onChange?.(scopedRichContent(html, scopePrefix));
 		},
-		[autoApply, onChange],
+		[autoApply, onChange, scopePrefix],
 	);
 
-	// 「应用到编辑器」：AI 生成的代码块替换当前内容
+	// 「应用到编辑器」：AI 生成的代码块替换当前内容（同样先作用域化）
 	const handleApplyHtml = useCallback(
-		(html: string) => onChange?.(html),
-		[onChange],
+		(html: string) => onChange?.(scopedRichContent(html, scopePrefix)),
+		[onChange, scopePrefix],
 	);
 
 	// 顶栏「新窗口预览」：以同源 about:blank 写入完整文档。
@@ -65,6 +69,7 @@ export function AiRichEditor({
 		const win = window.open("", "_blank");
 		if (!win) return;
 		win.document.open();
+		// value 在应用时刻已作用域化，此处直接构造文档外壳
 		win.document.write(buildPreviewDocument(value, previewHead));
 		win.document.close();
 	}, [value, previewHead]);
