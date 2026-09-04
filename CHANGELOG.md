@@ -62,6 +62,15 @@
   - 菜单渲染自 AdminLayout 抽至 `AdminNav.tsx`（`AdminNav` + `useNavCollapse`）：分组支持折叠（CSS grid 0fr↔1fr 动画），折叠状态持久化到 localStorage（key `admin-nav-collapsed-groups`），路由切换自动展开包含激活项的分组，侧边栏图标模式下强制展开全部分组
   - 滚动条样式统一：`admin.global.css` 新增 `--s-scrollbar-thumb` 语义令牌（亮暗自适应）与 `.scrollbar-thin` 类，应用于侧边栏导航与 `AdminPageContent` 内容区
 
+### Fix
+
+- **`@fsdx/ai-rich-editor` 对话状态与自动应用修复**：
+  - **「思考中/已思考」按消息判定**：思考气泡的 loading/标题由全局 `chat.isLoading` 改为按「该消息是否为正在流式生成的最后一条」判定（经 `MessageStreamContext` 注入），避免已完成消息在后续生成期间误显示「思考中…」、与进行中的串了
+  - **`autoApply` 取最后一个 HTML 代码块**：流结束回调改为取回复中最后一个代码块（而非第一个），修改类回复（先贴旧/分块再给最终产物）能正确应用改动后的完整片段；新增 `lastHtmlFragment` 纯函数与单测
+  - **提取失败可感知**：`autoApply` 开启但回复未检测到 HTML 代码块时，经 `notify` 提示「已跳过自动应用」，不再静默不生效
+  - **发送后过渡 loading**：发送消息后、首个 assistant 内容到达前，消息区末尾显示「请求中…」加载占位（TanStack AI 的 assistant 消息为惰性创建，等待期 messages 末尾仍是 user），消除模型反馈前的空白等待
+  - **HTML 代码块流式实时同步**：`autoApply` 开启时，AI 流式生成中的 HTML 代码块累计新增达到阈值（默认 200 字符）即同步到编辑器与预览，边生成边看到成型效果；新增 `currentHtmlFragment`（支持未闭合代码块提取）纯函数与单测
+
 ### Infrastructure
 
 - **[infra] AI 能力迁移到 TanStack AI（全栈框架式接入，单模型，下沉为 app 服务层）**：

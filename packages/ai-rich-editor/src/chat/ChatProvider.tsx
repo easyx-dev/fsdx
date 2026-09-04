@@ -9,7 +9,11 @@
  * 单实例假设：编辑器一页一个；createChatHook 的 options 在模块作用域固定，
  * 故 endpointUrl / onComplete 通过模块级 ref 由宿主导入。
  */
-import { DeleteOutlined, RobotOutlined } from "@ant-design/icons";
+import {
+	DeleteOutlined,
+	LoadingOutlined,
+	RobotOutlined,
+} from "@ant-design/icons";
 // 用子路径导入 Ant Design X 组件，避免从根入口拉入 code-highlighter/mermaid（会阻断构建）
 import Bubble from "@ant-design/x/es/bubble";
 import Prompts from "@ant-design/x/es/prompts";
@@ -94,8 +98,12 @@ const chatOptions = {};
 
 // ---- UI 组件 ----
 
+/** 标记某条消息当前是否正在流式生成（区分「思考中」与「已思考」） */
+const MessageStreamContext = createContext(false);
+
 /** 消息壳：user 右对齐填充气泡；assistant 无边框气泡（Parts 自动分发 text/thinking/fallback） */
 function ChatMessage({ message, Parts }: MessageProps<typeof chatOptions>) {
+	const chat = useChatContext();
 	if (message.role === "user") {
 		return (
 			<Bubble
@@ -110,13 +118,20 @@ function ChatMessage({ message, Parts }: MessageProps<typeof chatOptions>) {
 			/>
 		);
 	}
-	// 助手消息：正文/代码块/思考气泡由 Parts 独立铺在背景上
+	// 正在流式生成的必然是消息列表最后一条；按消息判定而非全局 isLoading，
+	// 避免「已完成消息」也显示「思考中」，与进行中的串了
+	const last = chat.messages.at(-1);
+	const isStreaming = Boolean(chat.isLoading && last?.id === message.id);
 	return (
 		<Bubble
 			placement="start"
 			variant="borderless"
 			shape="default"
-			content={<Parts />}
+			content={
+				<MessageStreamContext.Provider value={isStreaming}>
+					<Parts />
+				</MessageStreamContext.Provider>
+			}
 		/>
 	);
 }
@@ -133,10 +148,10 @@ function TextPart({ part }: PartProps<typeof chatOptions, "text">) {
 	);
 }
 
-/** 思考 part：Think（流式中显示「思考中…」；默认折叠，展开后做 markdown 渲染 + 限高滚动 + 自动触底） */
+/** 思考 part：Think（本消息流式中显示「思考中…」；默认折叠，展开后做 markdown 渲染 + 限高滚动 + 自动触底） */
 function ThinkingPart({ part }: PartProps<typeof chatOptions, "thinking">) {
-	const chat = useChatContext();
 	const cfg = useEditorCfg();
+	const isStreaming = useContext(MessageStreamContext);
 	const content = typeof part.content === "string" ? part.content : "";
 	const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -150,8 +165,8 @@ function ThinkingPart({ part }: PartProps<typeof chatOptions, "thinking">) {
 	if (!content.trim()) return null;
 	return (
 		<Think
-			loading={chat.isLoading}
-			title={chat.isLoading ? "思考中…" : "已思考"}
+			loading={isStreaming}
+			title={isStreaming ? "思考中…" : "已思考"}
 			defaultExpanded={false}
 		>
 			<div
@@ -211,6 +226,11 @@ function ChatLayout({
 	const chat = useChatContext();
 	const cfg = useEditorCfg();
 	const scrollRef = useRef<HTMLDivElement>(null);
+
+	// 发送后、首个 assistant 内容到达前的过渡 loading：
+	// assistant 消息为惰性创建（首个 content chunk 才生成），等待期 messages 末尾仍是 user
+	const awaitingFirstToken =
+		chat.isLoading && chat.messages.at(-1)?.role === "user";
 
 	// 消息数量变化（含流式增量、新会话清空）时自动滚动到底部
 	useEffect(() => {
@@ -279,6 +299,20 @@ function ChatLayout({
 				) : (
 					<div className="space-y-4">
 						<Messages />
+						{/* 模型反馈期间的过渡状态：首个 assistant 内容到达前显示加载占位 */}
+						{awaitingFirstToken && (
+							<Bubble
+								placement="start"
+								variant="borderless"
+								shape="default"
+								content={
+									<div className="flex items-center gap-2 text-sm text-foreground-tertiary">
+										<LoadingOutlined spin />
+										<span>请求中…</span>
+									</div>
+								}
+							/>
+						)}
 					</div>
 				)}
 			</div>

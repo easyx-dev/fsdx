@@ -17,8 +17,15 @@ import { SettingsPanel } from "./components/SettingsPanel";
 import { Toolbar } from "./components/Toolbar";
 import { DEFAULT_CONFIG, DEFAULT_HTML } from "./constants";
 import type { AiRichEditorConfig, AiRichEditorProps } from "./types";
-import { buildPreviewDocument, extractHtmlFragments } from "./utils/extract";
+import {
+	buildPreviewDocument,
+	currentHtmlFragment,
+	lastHtmlFragment,
+} from "./utils/extract";
 import { generateScopePrefix, scopedRichContent } from "./utils/scope";
+
+/** 流式实时同步阈值：HTML 代码块累计新增达到该字符数时同步到编辑器+预览 */
+const LIVE_SYNC_CHAR_THRESHOLD = 200;
 
 export function AiRichEditor({
 	value = DEFAULT_HTML,
@@ -44,16 +51,26 @@ export function AiRichEditor({
 		}),
 	);
 	const { autoApply, systemPrompt, previewHead, notify } = runtimeConfig;
+	// 已应用过的 HTML 片段（用于流式实时同步判断「累计新增」的基准）
+	const lastAppliedRef = useRef("");
+	// 当前流式处理中的 assistant 消息 id（新一轮消息出现时重置同步基准）
+	const lastStreamMsgIdRef = useRef<string | null>(null);
 
 	// 流结束回调：AI 生成的 HTML 代码块自动应用到编辑器（保留手动按钮）；
 	// 应用前先做样式作用域化（沿用实例级 scopePrefix），使产物自带 scope 前缀，宿主可直接当作 HTML 引入（不污染全局）
 	const handleAiComplete = useCallback(
 		(content: string) => {
 			if (!autoApply) return;
-			const html = extractHtmlFragments(content)[0];
-			if (html) onChange?.(scopedRichContent(html, scopePrefix));
+			// 修改类回复可能先贴旧/分块内容再给最终产物，取最后一个代码块更贴近「改动后的完整片段」
+			const html = lastHtmlFragment(content);
+			if (html) {
+				lastAppliedRef.current = html;
+				onChange?.(scopedRichContent(html, scopePrefix));
+			} else {
+				notify?.("warning", "本次回复未检测到 HTML 代码块，已跳过自动应用");
+			}
 		},
-		[autoApply, onChange, scopePrefix],
+		[autoApply, onChange, scopePrefix, notify],
 	);
 
 	// 「应用到编辑器」：AI 生成的代码块替换当前内容（同样先作用域化）
@@ -92,6 +109,35 @@ export function AiRichEditor({
 	);
 	// 对话实例（headless UI）；connection/onFinish 为库 overrides 类型未收编的字段，此处转义
 	const chat = useAppChat(chatOverrides as never);
+
+	// 流式实时同步：AI 生成中，最后一条 assistant 消息的 HTML 代码块累计新增达到阈值，
+	// 即把当前已生成片段同步到编辑器与预览（作用域化沿用实例级 scopePrefix）
+	useEffect(() => {
+		if (!autoApply) return;
+		const lastMsg = chat.messages.at(-1);
+		if (lastMsg?.role !== "assistant") return;
+		// 新一轮 assistant 消息（如二次修改重写）出现时重置基准，避免因新片段更短导致长度差为负而漏同步
+		if (lastStreamMsgIdRef.current !== lastMsg.id) {
+			lastStreamMsgIdRef.current = lastMsg.id;
+			lastAppliedRef.current = "";
+		}
+		let full = "";
+		for (const part of lastMsg.parts) {
+			if (part.type === "text" && typeof part.content === "string") {
+				full += part.content;
+			}
+		}
+		const frag = currentHtmlFragment(full);
+		if (!frag) return;
+		if (
+			frag.length - lastAppliedRef.current.length <
+			LIVE_SYNC_CHAR_THRESHOLD
+		) {
+			return;
+		}
+		lastAppliedRef.current = frag;
+		onChange?.(scopedRichContent(frag, scopePrefix));
+	}, [chat.messages, autoApply, onChange, scopePrefix]);
 
 	const editorCfg = useMemo(
 		() => ({
