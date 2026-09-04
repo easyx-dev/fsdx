@@ -14,21 +14,23 @@ AI 驱动「代码编辑 + 实时预览」三栏工作台，是**另一种形态
 - **不持有**任何 HTTP 端点/鉴权知识——对话能力经宿主导入的 SSE 端点（`endpointUrl`）由 `createChatHook`（`@tanstack/ai-react/ui`，底层 `fetchServerSentEvents`）消费。
 - UI：antd（peer 单实例）+ tailwind 语义令牌类（宿主 `global.css` 注入，需 `@source` 扫描包源码）。
 
-## 三栏结构
+## 两栏结构
 
-顶栏 + antd `Splitter`（水平拖拽分割）：左（AI 对话面板）｜中（Monaco 代码编辑）｜右（iframe 实时预览）。
+顶栏 + antd `Splitter`（水平拖拽分割）：左（预览区，可选编辑器）｜右（AI 对话面板，min 400 / max 600）。
 
-- 顶栏：复制、**设置**（下拉：对话/预览面板显隐开关联动 Splitter + 「更多配置」打开设置面板）。
-- 左栏 headless 对话区：由 `Splitter.Panel` 承载（默认 300，min 220 / max 480，随 `showChat` 显隐）；`src/chat/ChatProvider.tsx` 用 `createChatHook` 注册 `components`（`layout`/`message`/`input`）与 `partsComponents`（`text`/`thinking`/`fallback`）驱动的预设指令 + 消息列表 + 输入区。
-- 中栏 `EditorPanel`：自适应面板；Monaco 懒加载（`editor.api` + 仅 html/css/js 词法高亮，无语言服务/worker，本地打包），主题亮暗跟随宿主 `data-theme`。
-- 右栏 `PreviewPanel`：由 `Splitter.Panel` 承载（默认 440，min 300 / max 1200，随 `showPreview` 显隐）；自带头部（设备档位 Segmented、脚本开关、刷新、**新窗口预览**按钮）；桌面拉伸预览（无壳），手机为固定尺寸设备框（375×812，按舞台等比缩放）；iframe sandbox 渲染 `srcDoc`，片段包裹 + 附加代码注入。
+- 顶栏：预览控件「设备档位 Segmented / 脚本开关 / 刷新 / 新窗口预览」+ **编辑器**开关（打开后在左栏与预览并排）+ 复制 + **设置**（下拉「更多配置」打开设置面板）。
+- 左栏：默认整个区域为 `PreviewPanel`（带背景色与内边距的内容卡片，iframe 实时预览）；顶栏开启「编辑器」后，左栏变为 `[EditorPanel (Monaco) | PreviewPanel]` 内层横向 `Splitter`。
+- 右栏：AI 对话面板（默认 420，min 400 / max 600），头部为「AI 助手」+「新会话」，`src/chat/ChatProvider.tsx` 用 `createChatHook` 注册 `components`（`layout`/`message`/`input`）与 `partsComponents`（`text`/`thinking`/`fallback`），渲染用 Ant Design X（`Bubble`/`Sender`/`Welcome`/`Prompts`/`Think`）驱动预设指令 + 消息列表 + 输入区。
+- 中栏 `EditorPanel`：Monaco 懒加载（`editor.api` + 仅 html/css/js 词法高亮，无语言服务/worker，本地打包），主题亮暗跟随宿主 `data-theme`；随顶栏开关显隐。
+- `PreviewPanel`：自身不含头部控制条（控件在主顶栏）；内容卡片桌面拉伸、手机为固定尺寸设备框（375×812，按舞台等比缩放）；外层带 `bg-background-secondary` 背景与 `p-6` 内边距；iframe sandbox 渲染 `srcDoc`，片段包裹 + 附加代码注入。
 
-## 对话契约（基于 TanStack AI headless UI）
+## 对话契约（基于 TanStack AI headless UI + Ant Design X）
 
-- 对话区基于 `createChatHook`（`@tanstack/ai-react/ui`）：包内在模块作用域一次性绑定 `components`（`layout`/`message`/`input`）与 `partsComponents`（`text`/`thinking`/`fallback`），`fetchServerSentEvents` 消费宿主 SSE 端点（`endpointUrl`），服务端用 `chat()` + `toServerSentEventsResponse` 对接到 TanStack AI 标准 SSE。app 内示例为 `routes/api/ai-chat.tsx`。
-- `UIMessage.parts` 由 `partsComponents` 自动分发，不再映射为包内 `ChatTurn`：`text` part → `MarkdownContent`（含代码块「应用到编辑器」）；`thinking` part → `ThinkingBubble`（流式「思考中…/已思考 (N 字)」）。
+- 对话区数据流基于 `createChatHook`（`@tanstack/ai-react/ui`）：包内在模块作用域一次性绑定 `components`（`layout`/`message`/`input`）与 `partsComponents`（`text`/`thinking`/`fallback`），`fetchServerSentEvents` 消费宿主 SSE 端点（`endpointUrl`），服务端用 `chat()` + `toServerSentEventsResponse` 对接到 TanStack AI 标准 SSE。app 内示例为 `routes/api/ai-chat.tsx`。
+- **渲染侧**用 Ant Design X：`Bubble`（消息）、`Sender`（输入）、`Welcome`+`Prompts`（空态）、`Think`（思考）、`Alert`（错误）。TanStack AI 只提供数据（`messages`/`sendMessage`/`stop`/`isLoading`/`error`），外观由 Ant Design X 负责；两者通过模块作用域 `createChatHook` 绑定解耦。
+- `UIMessage.parts` 由 `partsComponents` 自动分发，不再映射为包内 `ChatTurn`：`text` part → `MarkdownContent`（基于 `@ant-design/x-markdown` 的 `XMarkdown`，含 ```html 代码块「应用到编辑器」）；`thinking` part → `Think`（流式「思考中…/已思考」）。
 - system 提示词由包内生成（`buildDefaultSystemPrompt`），使用方可通过 `config.systemPrompt` 覆盖；随每次发送经 `sendMessage(text, { body: { ...requestMeta, systemPrompt } })` 透传为 `forwardedProps.systemPrompt` / `providerId` 等。
-- `stop` 中止当前生成（AbortController）；`clear` 清空对话；`autoApply` 在流结束（`onFinish`）后自动应用回复中的 HTML 代码块。
+- `stop` 中止当前生成（AbortController）；`clear` / 「新会话」清空对话；`autoApply` 在流结束（`onFinish`）后自动应用回复中的 HTML 代码块。
 
 ## 统一配置与设置面板
 
@@ -62,3 +64,4 @@ AI 驱动「代码编辑 + 实时预览」三栏工作台，是**另一种形态
 - 本次优化：定位收敛为 fragment-only（去 `mode`）、提示词重写、新增 `previewHead` 附加代码注入、配置归拢 `config` + 设置面板、Monaco 本地打包、主题暗色联动、测试与文档补齐。
 - 本次迁移：对话传输从自定义 `AiChatAdapter`/SSE 帧协议改为基于 TanStack AI 的 `useChat` + 标准 SSE（`endpointUrl`），删除 `/sse` 子路径与 `AiChatChunk` 协议。
 - 本次重构：对话区 UI 改为 `@tanstack/ai-react/ui` 的 `createChatHook`（headless，组件注册 `components`/`partsComponents`），移除 `useAiChat`/`ChatPanel`/`ChatTurn`；配套升级 `@tanstack/ai-react@^0.23.0`、`@tanstack/ai@^0.52.2`。
+- 本次 UI 迁移：对话区改用 Ant Design X（`Bubble`/`Sender`/`Welcome`/`Prompts`/`Think`），消息渲染改用 `@ant-design/x-markdown` 的 `XMarkdown`（替换 react-markdown + `splitContentBlocks`）；布局由三栏改为两栏（左=预览、右=AI 对话面板，min 400 / max 600），编辑器改为顶栏开关（打开后与预览并排）；移除 `ThinkingBubble` 导出。

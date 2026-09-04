@@ -1,20 +1,41 @@
 /**
- * 三栏编辑器顶栏：复制 / 设置
- * 高度固定，营造"工作台"式统一操作区；「设置」下拉联动分割面板显隐
+ * 编辑器主顶栏：预览控件（设备/脚本/刷新/新窗口）+ 编辑器开关 + 复制 + 设置
+ * 预览面板自身不含头部控制条，控件统一收拢到主顶栏
  */
-import { CopyOutlined, SettingOutlined } from "@ant-design/icons";
+import {
+	CodeOutlined,
+	CopyOutlined,
+	ExportOutlined,
+	ReloadOutlined,
+	SettingOutlined,
+} from "@ant-design/icons";
 import type { MenuProps } from "antd";
-import { Button, Divider, Dropdown, Switch, Typography } from "antd";
+import {
+	Button,
+	Divider,
+	Dropdown,
+	Segmented,
+	Switch,
+	Tooltip,
+	Typography,
+} from "antd";
+import { PREVIEW_DEVICES } from "../constants";
 import type { AiRichNotify } from "../types";
 
 const { Text } = Typography;
 
 interface ToolbarProps {
 	html: string;
-	showChat: boolean;
-	onToggleChat: () => void;
-	showPreview: boolean;
-	onTogglePreview: () => void;
+	// 预览控件
+	deviceKey: string;
+	onDeviceKeyChange: (key: string) => void;
+	scriptsEnabled: boolean;
+	onToggleScripts: () => void;
+	onRefresh: () => void;
+	onOpenInNewWindow: () => void;
+	// 编辑器开关
+	showEditor: boolean;
+	onToggleEditor: () => void;
 	/** 打开设置面板 */
 	onOpenSettings: () => void;
 	notify?: AiRichNotify;
@@ -22,10 +43,14 @@ interface ToolbarProps {
 
 export function Toolbar({
 	html,
-	showChat,
-	onToggleChat,
-	showPreview,
-	onTogglePreview,
+	deviceKey,
+	onDeviceKeyChange,
+	scriptsEnabled,
+	onToggleScripts,
+	onRefresh,
+	onOpenInNewWindow,
+	showEditor,
+	onToggleEditor,
 	onOpenSettings,
 	notify,
 }: ToolbarProps) {
@@ -42,37 +67,8 @@ export function Toolbar({
 		}
 	};
 
-	// 「设置」下拉：对话/预览面板显隐开关（联动 Splitter）+ 更多配置
+	// 「设置」下拉：更多配置
 	const settingsItems: MenuProps["items"] = [
-		{
-			key: "chat",
-			label: (
-				<div
-					className="flex w-full items-center justify-between gap-3"
-					onClick={(e) => e.stopPropagation()}
-				>
-					<span>对话面板</span>
-					<Switch size="small" checked={showChat} onChange={onToggleChat} />
-				</div>
-			),
-		},
-		{
-			key: "preview",
-			label: (
-				<div
-					className="flex w-full items-center justify-between gap-3"
-					onClick={(e) => e.stopPropagation()}
-				>
-					<span>预览面板</span>
-					<Switch
-						size="small"
-						checked={showPreview}
-						onChange={onTogglePreview}
-					/>
-				</div>
-			),
-		},
-		{ type: "divider" },
 		{ key: "more", label: "更多配置…" },
 	];
 
@@ -85,6 +81,54 @@ export function Toolbar({
 			<Text className="truncate text-sm font-medium">HTML 页面编辑器</Text>
 
 			<div className="flex min-w-0 shrink-0 items-center gap-1">
+				{/* 预览控件组 */}
+				<Segmented<string>
+					size="small"
+					value={deviceKey}
+					onChange={(val) => onDeviceKeyChange(val)}
+					options={PREVIEW_DEVICES.map((d) => ({
+						label: d.label,
+						value: d.key,
+					}))}
+				/>
+				<Tooltip title="允许预览中的脚本执行">
+					<Switch
+						size="small"
+						checked={scriptsEnabled}
+						onChange={onToggleScripts}
+						checkedChildren="JS"
+						unCheckedChildren="JS"
+					/>
+				</Tooltip>
+				<Tooltip title="刷新预览（重新执行脚本）">
+					<Button
+						type="text"
+						size="small"
+						icon={<ReloadOutlined />}
+						aria-label="刷新预览"
+						onClick={onRefresh}
+					/>
+				</Tooltip>
+				<Tooltip title="新窗口预览">
+					<Button
+						type="text"
+						size="small"
+						icon={<ExportOutlined />}
+						aria-label="新窗口预览"
+						onClick={onOpenInNewWindow}
+					/>
+				</Tooltip>
+
+				<Divider type="vertical" />
+
+				{/* 编辑器开关 */}
+				<span className="mr-1 flex items-center gap-1.5 text-xs text-foreground-secondary">
+					<CodeOutlined /> 编辑器
+				</span>
+				<Switch size="small" checked={showEditor} onChange={onToggleEditor} />
+
+				<Divider type="vertical" />
+
 				<Button
 					size="small"
 					type="text"

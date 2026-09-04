@@ -3,7 +3,6 @@
  * UI 层与协议类型一并导出，宿主按需引用
  */
 export { AiRichEditor } from "./AiRichEditor";
-export { ThinkingBubble } from "./components/ThinkingBubble";
 export {
 	DEFAULT_CONFIG,
 	DEFAULT_HTML,

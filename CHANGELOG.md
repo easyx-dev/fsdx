@@ -150,6 +150,14 @@
 
 ### Refactor
 
+- **`@fsdx/ai-rich-editor` 对话区 UI 迁移至 Ant Design X + 两栏布局（[infra]）**：
+  - 对话区渲染改用 **Ant Design X**：消息 `Bubble` / 输入 `Sender` / 空态 `Welcome`+`Prompts` / 思考 `Think` / 错误 `Alert`；数据流仍为 TanStack AI headless（`createChatHook` + `fetchServerSentEvents`，SSE 契约与 `/api/ai-chat` 不变）
+  - 消息 markdown 渲染改用 **`@ant-design/x-markdown`** 的 `XMarkdown`（替换 `react-markdown`+`remark-gfm`+手写 `splitContentBlocks`；```html 代码块「应用到编辑器」保留，经 `components.code` 拦截）
+  - 布局由三栏改为**两栏**：左=预览区、右=AI 对话面板（默认 420，min 400 / max 600）；「编辑器」（Monaco）改为顶栏开关项，打开后在左栏与预览并排（移除 `showChat`/`showPreview`，新增 `showEditor`）
+  - 依赖：新增 `@ant-design/x`、`@ant-design/x-markdown`，移除 `react-markdown`、`remark-gfm`；移除 `ThinkingBubble` 导出（包内私用、host 未引用）
+  - **`@source` Tailwind 扫描路径修正**：`app/src/styles/{admin,ssr}.global.css` 三条 `@source "../../packages/*/src"` 原从 CSS 文件解析到不存在的 `app/packages/...`，改为 `../../../packages/*/src` 正确指向仓库根；使三个 ui 包独有工具类正常生成（修复 `shadow-md` 等悬浮投影无效果）
+  - 样式微调：空态去掉 `Welcome` 灰底块改居中纯文字，推荐指令由 `wrap` 两列改 `vertical` 纵向单列；XMarkdown 代码块 `lang` 判定放宽为 `startsWith("html")`；代码卡片跳过挂载首轮滚动（流式增量触底、完整代码块停在顶部）
+
 - **`@fsdx/ai-rich-editor` 对话区改为 TanStack AI headless UI（`createChatHook`）**：
   - 对话区用 `@tanstack/ai-react/ui` 的 `createChatHook` 重构：模块作用域注册 `components`（`layout`/`message`/`input`）+ `partsComponents`（`text`→`MarkdownContent`、`thinking`→`ThinkingBubble`、`fallback`），替代原 `useAiChat` + `ChatPanel` 的手写 `UIMessage`→`ChatTurn` 映射与流式占位气泡
   - `UIMessage.parts` 由 `partsComponents` 自动分发；流式中的生成中消息直接存在于 `messages`，随 token 逐步渲染（无需单独流式占位）

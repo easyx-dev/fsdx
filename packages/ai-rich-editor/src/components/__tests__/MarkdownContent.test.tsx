@@ -1,38 +1,15 @@
 /**
- * MarkdownContent 渲染测试：文本块 / ```html 代码块拆分与「应用到编辑器」回调
+ * MarkdownContent 渲染测试：XMarkdown 文本 / ```html 代码块「应用到编辑器」回调 / 空回复占位
  */
 // @vitest-environment jsdom
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { MarkdownContent, splitContentBlocks } from "../MarkdownContent";
+import { MarkdownContent } from "../MarkdownContent";
 
 afterEach(() => cleanup());
 
-describe("splitContentBlocks", () => {
-	it("把内容拆分为文本块与 html 代码块", () => {
-		const blocks = splitContentBlocks(
-			"说明\n```html\n<div>hi</div>\n```\n尾部",
-		);
-		expect(blocks).toEqual([
-			{ kind: "text", text: "说明" },
-			{ kind: "code", html: "<div>hi</div>" },
-			{ kind: "text", text: "尾部" },
-		]);
-	});
-
-	it("无代码块时仅文本块", () => {
-		expect(splitContentBlocks("只文本")).toEqual([
-			{ kind: "text", text: "只文本" },
-		]);
-	});
-
-	it("空回复返回空数组", () => {
-		expect(splitContentBlocks("")).toEqual([]);
-	});
-});
-
 describe("MarkdownContent", () => {
-	it("渲染文本块与代码块，点击「应用到编辑器」回调代码块内容", () => {
+	it("渲染文本与 ```html 代码块，点击「应用到编辑器」回调代码块内容", () => {
 		const onApplyHtml = vi.fn();
 		render(
 			<MarkdownContent
@@ -68,17 +45,19 @@ describe("MarkdownContent", () => {
 		const { container } = render(
 			<MarkdownContent content={"```\nline1\nline2\n```"} />,
 		);
+		// 块级代码落入 pre code（带等宽块样式类）
 		const blockCode = container.querySelector("pre code");
 		expect(blockCode).toBeTruthy();
-		expect(blockCode!.className).toContain("block");
+		expect(blockCode!.textContent).toContain("line1");
 	});
 
-	it("行内代码渲染为圆角块", () => {
+	it("html 代码块渲染「HTML」标签与代码内容", () => {
 		const { container } = render(
-			<MarkdownContent content={"用 `inline` 表示"} />,
+			<MarkdownContent content={"```html\n<div>x</div>\n```"} />,
 		);
-		const inlineCode = container.querySelector("p code");
-		expect(inlineCode).toBeTruthy();
-		expect(inlineCode!.className).toContain("rounded");
+		expect(screen.getByText("HTML")).toBeTruthy();
+		expect(screen.getByText("<div>x</div>")).toBeTruthy();
+		// 头部含复制按钮
+		expect(container.querySelectorAll("button").length).toBeGreaterThan(0);
 	});
 });

@@ -1,5 +1,6 @@
 /**
- * AI Rich Editor 主容器：顶栏 + 左(AI 对话) / 中(Monaco) / 右(iframe 预览) 三栏
+ * AI Rich Editor 主容器：顶栏 + 左(预览，可选编辑器)/右(AI 对话) 两栏工作台
+ * 默认两栏：左=预览区、右=AI 对话面板（min400/max600）；「编辑器」为顶栏开关，打开后在左栏与预览并排。
  * value / onChange 兼容受控注入；对话能力由调用方通过 adapter 注入；
  * 包配置项统一收拢到 config，经设置面板编辑保存生效
  */
@@ -16,7 +17,7 @@ import { SettingsPanel } from "./components/SettingsPanel";
 import { Toolbar } from "./components/Toolbar";
 import { DEFAULT_CONFIG, DEFAULT_HTML } from "./constants";
 import type { AiRichEditorConfig, AiRichEditorProps } from "./types";
-import { extractHtmlFragments } from "./utils/extract";
+import { buildPreviewDocument, extractHtmlFragments } from "./utils/extract";
 
 export function AiRichEditor({
 	value = DEFAULT_HTML,
@@ -27,10 +28,10 @@ export function AiRichEditor({
 	config,
 	onConfigChange,
 }: AiRichEditorProps) {
-	const [showChat, setShowChat] = useState(true);
-	const [showPreview, setShowPreview] = useState(true);
+	const [showEditor, setShowEditor] = useState(false);
 	const [deviceKey, setDeviceKey] = useState("desktop");
 	const [scriptsEnabled, setScriptsEnabled] = useState(true);
+	const [reloadKey, setReloadKey] = useState(0);
 	const [settingsOpen, setSettingsOpen] = useState(false);
 	// 运行期配置：config 作为初始值，设置面板保存后更新（不受 config 后续变化影响）
 	const [runtimeConfig, setRuntimeConfig] = useState<AiRichEditorConfig>(
@@ -56,6 +57,17 @@ export function AiRichEditor({
 		(html: string) => onChange?.(html),
 		[onChange],
 	);
+
+	// 顶栏「新窗口预览」：以同源 about:blank 写入完整文档。
+	// 说明：内容为受信编辑器产物，与预览 iframe（allow-scripts + allow-same-origin）同权；
+	// 采用 document.write 是为保住 /file 相对资源（Blob URL 会脱离同源导致资源失效）。
+	const handleOpenInNewWindow = useCallback(() => {
+		const win = window.open("", "_blank");
+		if (!win) return;
+		win.document.open();
+		win.document.write(buildPreviewDocument(value, previewHead));
+		win.document.close();
+	}, [value, previewHead]);
 
 	// 每实例 chat 运行时值：endpointUrl / onComplete（autoApply）经 overrides 注入，多实例互不串线
 	const endpointUrlRef = useRef(endpointUrl);
@@ -105,37 +117,53 @@ export function AiRichEditor({
 		>
 			<Toolbar
 				html={value}
-				showChat={showChat}
-				onToggleChat={() => setShowChat((prev) => !prev)}
-				showPreview={showPreview}
-				onTogglePreview={() => setShowPreview((prev) => !prev)}
+				deviceKey={deviceKey}
+				onDeviceKeyChange={setDeviceKey}
+				scriptsEnabled={scriptsEnabled}
+				onToggleScripts={() => setScriptsEnabled((prev) => !prev)}
+				onRefresh={() => setReloadKey((k) => k + 1)}
+				onOpenInNewWindow={handleOpenInNewWindow}
+				showEditor={showEditor}
+				onToggleEditor={() => setShowEditor((prev) => !prev)}
 				onOpenSettings={() => setSettingsOpen(true)}
 				notify={notify}
 			/>
 
 			<Splitter className="min-h-0 flex-1" orientation="horizontal">
-				{showChat && (
-					<Splitter.Panel defaultSize={400} min={400} max={600}>
-						<EditorCfgContext.Provider value={editorCfg}>
-							<chat.AppChat />
-						</EditorCfgContext.Provider>
-					</Splitter.Panel>
-				)}
+				{/* 左栏：预览区（编辑器开启时与编辑器并排） */}
 				<Splitter.Panel>
-					<EditorPanel value={value} onChange={onChange} />
-				</Splitter.Panel>
-				{showPreview && (
-					<Splitter.Panel defaultSize={440} min={300} max={1200}>
+					{showEditor ? (
+						<Splitter className="h-full" orientation="horizontal">
+							<Splitter.Panel min={300}>
+								<EditorPanel value={value} onChange={onChange} />
+							</Splitter.Panel>
+							<Splitter.Panel min={320}>
+								<PreviewPanel
+									html={value}
+									deviceKey={deviceKey}
+									scriptsEnabled={scriptsEnabled}
+									reloadKey={reloadKey}
+									previewHead={previewHead}
+								/>
+							</Splitter.Panel>
+						</Splitter>
+					) : (
 						<PreviewPanel
 							html={value}
 							deviceKey={deviceKey}
-							onDeviceKeyChange={setDeviceKey}
 							scriptsEnabled={scriptsEnabled}
-							onToggleScripts={() => setScriptsEnabled((prev) => !prev)}
+							reloadKey={reloadKey}
 							previewHead={previewHead}
 						/>
-					</Splitter.Panel>
-				)}
+					)}
+				</Splitter.Panel>
+
+				{/* 右栏：AI 对话面板 */}
+				<Splitter.Panel defaultSize={420} min={400} max={600}>
+					<EditorCfgContext.Provider value={editorCfg}>
+						<chat.AppChat />
+					</EditorCfgContext.Provider>
+				</Splitter.Panel>
 			</Splitter>
 
 			<SettingsPanel

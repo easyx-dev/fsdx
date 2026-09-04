@@ -1,6 +1,6 @@
 # @fsdx/ai-rich-editor
 
-AI 驱动的「代码编辑 + 实时预览」三栏工作台（重客户端组件）。定位为**另一种形态的富文本**：只产出可嵌入内容字段的 HTML 片段（fragment），不输出整页文档。对标仓库现有 `RichEditor`（WangEditor 传统富文本）的 AI 进化形态：由对话生成自由 HTML 片段，所见即所得预览。
+AI 驱动的「代码编辑 + 实时预览」工作台（重客户端组件）。定位为**另一种形态的富文本**：只产出可嵌入内容字段的 HTML 片段（fragment），不输出整页文档。对标仓库现有 `RichEditor`（WangEditor 传统富文本）的 AI 进化形态：由对话生成自由 HTML 片段，所见即所得预览。布局为**两栏**：左=预览区，右=AI 对话面板；「编辑器」（Monaco）为顶栏开关项，打开后在左栏与预览并排。
 
 ## 定位与边界
 
@@ -10,8 +10,8 @@ AI 驱动的「代码编辑 + 实时预览」三栏工作台（重客户端组�
 | 场景 | 定制化页面（新闻、活动、落地页等）的 HTML 内容生产 |
 | 输出 | **fragment-only**：只产出 HTML 内容片段，无完整文档切换 |
 | 传输 | **不持有**任何 HTTP 端点/鉴权知识——对话能力经宿主导入的 SSE 端点（`endpointUrl`）由 `createChatHook`（`@tanstack/ai-react/ui`，底层 `fetchServerSentEvents`）消费 |
-| UI | antd（peer 单实例）+ tailwind 语义令牌类（宿主 `global.css` 注入，需 `@source` 扫描包源码） |
-| 依赖 | peer：`antd` / `@ant-design/icons` / `monaco-editor` / `react` / `react-dom`；dep：`@monaco-editor/react`、`@tanstack/ai-react` |
+| UI | antd（peer 单实例）+ Ant Design X（`Bubble`/`Sender`/`Welcome`/`Prompts`/`Think`）+ `@ant-design/x-markdown`（XMarkdown）+ tailwind 语义令牌类（宿主 `global.css` 注入，需 `@source` 扫描包源码） |
+| 依赖 | peer：`antd` / `@ant-design/icons` / `monaco-editor` / `react` / `react-dom`；dep：`@monaco-editor/react`、`@tanstack/ai-react`、`@ant-design/x`、`@ant-design/x-markdown` |
 
 ## 使用
 
@@ -38,10 +38,11 @@ export function MyPage() {
 
 ## 对话契约
 
-- 对话区基于 TanStack AI **headless UI**：`createChatHook` 在模块作用域注册 `components`（`layout`/`message`/`input`）与 `partsComponents`（`text`/`thinking`/`fallback`），`fetchServerSentEvents` 消费宿主 SSE 端点。服务端用 `chat()` + `toServerSentEventsResponse` 对接到 TanStack AI 标准 SSE。
-- `UIMessage.parts` 由 `partsComponents` 自动分发：`text` part → `MarkdownContent`（含代码块「应用到编辑器」）；`thinking` part → `ThinkingBubble`（流式「思考中…/已思考」）。
+- 对话区数据流基于 TanStack AI **headless UI**：`createChatHook` 在模块作用域注册 `components`（`layout`/`message`/`input`）与 `partsComponents`（`text`/`thinking`/`fallback`），`fetchServerSentEvents` 消费宿主 SSE 端点。服务端用 `chat()` + `toServerSentEventsResponse` 对接到 TanStack AI 标准 SSE。
+- **渲染侧**使用 Ant Design X：消息 → `Bubble`（user 填充 / assistant 无边框）、输入 → `Sender`（内置发送/停止/Enter）、空态 → `Welcome` + `Prompts`、思考 → `Think`、错误 → antd `Alert`；对话面板头部含「AI 助手」+「新会话」。数据流与 UI 组件解耦（TanStack AI 只喂数据，Ant Design X 负责外观）。
+- `UIMessage.parts` 由 `partsComponents` 自动分发：`text` part → `MarkdownContent`（基于 `@ant-design/x-markdown` 的 `XMarkdown`，含 ```html 代码块「应用到编辑器」）；`thinking` part → `Think`（流式「思考中…/已思考」）。
 - system 提示词由**包内生成**（`DEFAULT_SYSTEM_PROMPT_TEMPLATE` / `buildDefaultSystemPrompt`），经 `config.systemPrompt` 覆盖；随每次发送由 `sendMessage(text, { body: { ...requestMeta, systemPrompt } })` 透传给服务端（`forwardedProps.systemPrompt` / `providerId` 等）。
-- `stop` 即中止当前生成；`clear` 清空对话；`autoApply` 在流结束（`onFinish`）后自动应用回复中的 HTML 代码块。
+- `stop` 即中止当前生成；`clear` / `新会话` 清空对话；`autoApply` 在流结束（`onFinish`）后自动应用回复中的 HTML 代码块。
 
 ## 配置与设置面板
 
@@ -66,7 +67,7 @@ export function MyPage() {
 
 ## 测试
 
-`pnpm --filter @fsdx/ai-rich-editor test`。覆盖代码块提取/预览文档构建（含附加代码注入）、`MarkdownContent`（文本/代码块拆分与「应用到编辑器」）、`ThinkingBubble`（思考展示/展开/空内容不渲染）。
+`pnpm --filter @fsdx/ai-rich-editor test`。覆盖代码块提取/预览文档构建（含附加代码注入）、`MarkdownContent`（XMarkdown 文本/```html 代码块「应用到编辑器」/空回复占位）。
 
 ## 相关文档
 
