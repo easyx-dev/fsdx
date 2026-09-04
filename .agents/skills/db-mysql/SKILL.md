@@ -230,7 +230,7 @@ import { resolve } from "node:path";
 import mysql from "mysql2/promise";
 import { drizzle } from "drizzle-orm/mysql2";
 import { migrate } from "drizzle-orm/mysql2/migrator";
-import { logger } from "#/lib/logger/logger";
+import { logger } from "#/shared-services/logger";
 
 export async function runMigrations() {
 	const migrationsFolder = resolve(process.cwd(), "drizzle");

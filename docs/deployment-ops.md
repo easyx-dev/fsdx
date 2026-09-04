@@ -28,7 +28,6 @@
 app/server.ts (Nitro entry)
     │
     ├── bootstrap()                          # src/bootstrap.ts
-    │   ├── init 注入                        # initAi / initMail / initSms / setSchedulerLogger（先于一切）
     │   ├── runMigrations()                 程序化数据库迁移（fail-fast：失败即应用启动失败）
     │   ├── await Promise.all([ensurePresetDicts(), ensurePresetConfigs()])
     │   │       等待预置字典和系统配置完成（同步等待，config 缓存随之热加载）
@@ -95,7 +94,7 @@ SMTP 邮件配置存储于系统配置表，通过 `/admin/config` 页面管理�
 
 ## 定时任务
 
-通过 `#/shared-services/scheduler` 的 `registerTask()` 注册 cron 任务（调度器日志经 `setSchedulerLogger` 注入）：
+通过 `#/shared-services/scheduler` 的 `registerTask()` 注册 cron 任务：
 
 | 任务 | Cron | 处理函数 | 说明 |
 |------|------|----------|------|
@@ -325,7 +324,7 @@ GET /health → 200
 | `src/shared-services/metrics` | Prometheus 进程内指标注册表 |
 | `src/routes/api/metrics.tsx` | `/api/metrics` 指标端点（无鉴权） |
 | `src/services/tasks/tasks.server.ts` | 定时任务注册 |
-| `src/shared-services/scheduler` | 定时任务调度器（`registerTask` / `setSchedulerLogger`） |
+| `src/shared-services/scheduler` | 定时任务调度器（`registerTask`） |
 | `src/shared-services/logger` | Pino 日志单例壳（`createLogger` + `logger` 单例） |
 | `src/middleware/sf-error-logger.ts` | SF 错误日志中间件 |
 | `src/shared-services/storage` | 文件存储实现层（`LocalStorageAdapter` + `storage` 单例，`@fsdx/lib/storage` 契约） |
@@ -338,3 +337,5 @@ GET /health → 200
 | `.dockerignore` | Docker 构建排除规则 |
 | `docker-compose.yml` | 开发环境 docker compose（build from source） |
 | `.gitlab-ci.yml` | GitLab CI/CD（构建 + 自动部署） |
+
+

@@ -321,31 +321,15 @@
   - 管理员/客户端用户管理页角色字段改多选；新增 `/admin/client-roles` 客户端角色管理页（含 `client-role:view/create/edit/delete` 权限码与菜单项）
   - `AdminUser.roleName` → `roleNames: string[]`；`getAdminRolePermissions` / `getClientRolePermissions` 改为按角色 id 数组合并权限
 
-- **Monorepo 重构**：单仓库单应用 → 单仓库多包（pnpm workspace）
-  - 目录迁移：`src/` 整体移入 `app/src/`（`@fsdx/web`），根 `package.json` 改为 `--filter` 编排壳；`server.ts`/`public/`/`drizzle/`/配置文件移入 `app/`
-  - 新增 `@fsdx/lib`（subpath exports，`pure/` 同构 + `node/` 仅服务端）：ms / export / cache-core / match-permission / error-utils / i18n-types / i18n-config / cn / logger / jwt / storage / captcha / batch-writer / request-context / scheduler / ai / mail / sms
-  - 新增 `@fsdx/ui-ssr`（shadcn button/card/badge/input/textarea + AutofillBlocker）与 `@fsdx/ui-spa`（antd 基础组件，antd 为 peerDependency）
-  - logger 改 `createLogger` 工厂：app 保留 `#/lib/logger/logger` 单例壳，27 处引用零改动；jwt 改 `createJwt` 工厂 + app 惰性单例壳，`COOKIE_NAMES` 迁至 `src/constants/cookie-names.ts`
-  - ai/mail/sms 改 `initX` 依赖注入（bootstrap 注入 `getConfig` + logger），未 init 直接调用抛错；scheduler 改 `setSchedulerLogger`
-  - `matchPermission` 迁入 core；`OperatorType` 迁入 core request-context，`db/schema/operation-log.ts` re-export；`log-reader.ts` 就近迁至 `services/logs/`
-  - antd-static 迁入 ui-spa，app 删除 `#/components/antd-static` 壳、各端直接经 `@fsdx/ui-spa/antd-static` 导入；Tailwind 经 `@source` 扫描 ui 包源码类名
-
 ### Infrastructure
 
-- **[infra] 层次重构：`@fsdx/core` → `@fsdx/lib` + `src/shared-services/`**：将混装「纯可复用逻辑 + app 绑定单例/DI」的 core 拆为三层单向 DAG（可被衍生项目吸收）：
-  - **`@fsdx/lib`（原 `@fsdx/core`，`packages/core` → `packages/lib`）**：仅保留纯可复用逻辑——utils（ms/export/cn/match-permission/error-utils/date-format）、`@fsdx/lib/cache`（原 `cache-core`）、infra 通用非单例（captcha/semaphore/task-manager/batch-writer）+ `StorageAdapter` 纯契约（`@fsdx/lib/storage`）。**零全局态、不读 env/db、不做日志耦合**（错误向上抛出，警告经 `onEvent` 钩子或 `console`，如 `batch-writer`）。第三方依赖收敛为 clsx / tailwind-merge / opentype.js
-  - **`src/shared-services/`（app 层）**：承载 app 绑定单例/DI——`logger` / `jwt` / `metrics` / `storage`（`LocalStorageAdapter` + 单例）/ `scheduler` / `mail` / `sms` / `request-context` / `deps-store`；跨 bundle 单例统一经 `createGlobalDepsStore`（globalThis）共享，由 `bootstrap.ts` 注入 `init*` / `setSchedulerLogger`；`app/src/lib/` 目录删除（track 并入 services，其余并入 shared-services）
-  - **i18n 单模块化**：`i18n-types` / `i18n-config` 并入 `src/services/i18n/`（保持同构纯 `.ts`），客户端（providers/routes）可引用
-  - **track SDK**：`app/src/lib/track` → `src/services/track/track.ts`（客户端 SDK）
-  - **`OperatorType` 下沉 db**：自携带于 `db/schema/operation-log.ts`，`request-context` 以 type-only 引用，拆除 `db → core` 反向依赖
-  - **npm 依赖迁移**：`pino`/`pino-pretty`/`jose`/`nodemailer`/`cron`/`@alicloud/*` 自 lib 移入 app，lib 保留 clsx / tailwind-merge / opentype.js
-  - 方案文档：`.opencode/plan/lib-shared-services-layer-rework.md`
-
-- **[infra] shared-services 整合：高共享 service 下沉 + 移除 init/DI 透传**：把被大范围共享的系统级 service 从 `src/services/` 下沉到 `src/shared-services/`（定位为「高共享性的一类 service」，可被 routes/middleware/bootstrap/client/其它 service 直接引用，**绝不引用 services**）：
-  - **下沉模块**：`config`、`dict`、`i18n`（整包含 `i18n.functions`）、`ai`（整包含 `ai-providers.functions`）、`query-utils`、`operation-log` → `shared-services/{config,dict,i18n,ai,query,operation-log}`；相关 import / 测试 `#/services/*` → `#/shared-services/*`
-  - **去 DI 透传**：`mail` / `sms` / `scheduler` 直接 `import { logger }`，`mail` / `sms` 直接 `import { getConfig }`；删除 `initMail` / `initSms` / `setSchedulerLogger` 与 `createGlobalDepsStore`（`shared-services/deps-store` 无使用者后删除）；`bootstrap.ts` 清空依赖注入，`getConfig` 直引 `shared-services/config/config.server`
-  - **判断标准**：一个 `services` 模块被大范围引用共享 → 具备成为 shared-services 的条件
-  - 方案文档：`.opencode/plan/shared-services-consolidation.md`
+- **[infra] 分层重构：单仓库多包 + `@fsdx/lib` + `src/shared-services/`（可被衍生项目吸收）**：把原混装「纯可复用逻辑 + app 绑定单例/DI + 业务 service」的 monorepo 拆为单向分层 DAG——`routes → services → shared-services → (lib → db)`：
+  - **单仓库多包**：`src/` 整体移入 `app/src/`（`@fsdx/web`），根 `package.json` 为 `--filter` 编排壳；`server.ts`/`public/`/`drizzle/`/配置文件移入 `app/`
+  - **`@fsdx/lib`（subpath exports、无根桶，原 `@fsdx/core`，`packages/core` → `packages/lib`）**：仅保留纯可复用逻辑——utils（ms/export/cn/match-permission/error-utils/date-format）、`@fsdx/lib/cache`（原 `cache-core`）、infra 通用非单例（captcha/semaphore/task-manager/batch-writer）+ `StorageAdapter` 纯契约（`@fsdx/lib/storage`）；**零全局态、不读 env/db、不做日志耦合**（错误向上抛出，警告经 `onEvent` 钩子或 `console`，如 `batch-writer`）；第三方依赖收敛为 clsx / tailwind-merge / opentype.js；新增 `@fsdx/ui-ssr`（shadcn button/card/badge/input/textarea + AutofillBlocker）与 `@fsdx/ui-spa`（antd 基础组件，antd 为 peerDependency）
+  - **`src/shared-services/`（app 层，高共享 service 归属）**：承载 app 绑定单例——`logger` / `jwt` / `metrics` / `storage`（`LocalStorageAdapter` + 单例）/ `scheduler` / `mail` / `sms` / `request-context` + 系统级共享域 `config` / `dict` / `i18n`（含 `i18n.functions`）/ `ai`（含 `ai-providers.functions`）/ `query-utils` / `operation-log`；**只依赖 `lib`/`db`/本层，绝不引用 `services`**（依赖图无环；判断标准：一个 `services` 模块被大范围引用共享 → 具备成为 shared-services 的条件）；`app/src/lib/` 目录删除（track 并入 `services/track/track.ts`，其余并入 shared-services）
+  - **去依赖注入透传**：`mail` / `sms` / `scheduler` 直接 `import { logger }`，`mail` / `sms` 直接 `import { getConfig }`（`shared-services/config/config.server`）；删除 `initMail` / `initSms` / `setSchedulerLogger` 与 `createGlobalDepsStore`（`shared-services/deps-store` 删除）；`bootstrap.ts` 清空依赖注入；跨 bundle 一致性靠 globalThis（metrics 注册表、config / AI provider 缓存）
+  - **其它**：logger 改 `createLogger` 工厂；jwt 改 `createJwt` 工厂；`COOKIE_NAMES` 迁至 `src/constants/cookie-names.ts`；`matchPermission` 迁入 lib；`OperatorType` 下沉 `db/schema/operation-log`（`request-context` type-only 引用，拆除 `db → core` 反向依赖）；`antd-static` 迁入 ui-spa、app 删除 `#/components/antd-static` 壳；Tailwind 经 `@source` 扫描 ui 包源码类名；i18n 单模块化；npm 依赖迁移（`pino`/`pino-pretty`/`jose`/`nodemailer`/`cron`/`@alicloud/*` 自 lib 移入 app）
+  - 影响：`app/src/lib` 与 `#/lib/*` 路径废弃；整体目录/包布局与 import 路径变更；方案文档 `.opencode/plan/lib-shared-services-layer-rework.md` / `shared-services-consolidation.md`
 
 ## [v1.1.0] - 2026-08-24
 

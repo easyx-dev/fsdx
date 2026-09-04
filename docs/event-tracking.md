@@ -51,7 +51,7 @@
 ### 初始化
 
 ```typescript
-import { init, setUserId, track } from '#/lib/track/track'
+import { init, setUserId, track } from '#/services/track/track'
 
 // 初始化（自动采集 PageView 并生成 sessionId）
 init({ autoPageView: true })

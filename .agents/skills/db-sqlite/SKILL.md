@@ -335,7 +335,7 @@ import { dirname, resolve } from "node:path";
 import { DatabaseSync } from "node:sqlite";
 import { drizzle } from "drizzle-orm/node-sqlite";
 import { migrate } from "drizzle-orm/node-sqlite/migrator";
-import { logger } from "#/lib/logger/logger";
+import { logger } from "#/shared-services/logger";
 
 function getDbPath(): string {
 	const url = process.env.DATABASE_URL || "./data/data.db";

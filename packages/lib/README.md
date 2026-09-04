@@ -14,7 +14,7 @@
 | 服务端保护 | `infra/` 仅服务端；`vite.config.ts` 的 import-protection 拦截 `bcryptjs` / `drizzle-orm` / `openai` 进入客户端 bundle，客户端组件禁止引用 `infra/` 对应模块 |
 | 反向依赖 | lib 内不得出现 `#/services`、`#/shared-services`、`#/db`、`#/routes` 反向引用 |
 
-> app 绑定单例/DI（logger / jwt / metrics / storage / scheduler / mail / sms / request-context / deps-store）已迁至宿主 `src/shared-services/`；i18n 类型与配置已并入 `src/services/i18n/`，均不在 lib 内。
+> app 绑定单例（logger / jwt / metrics / storage / scheduler / mail / sms / request-context）已迁至宿主 `src/shared-services/`；i18n 类型与配置已并入 `src/shared-services/i18n/`，均不在 lib 内。
 
 ## 目录分层与 subpath 导出
 

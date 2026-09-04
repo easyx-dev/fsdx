@@ -30,7 +30,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 // ═══════════════════════════════════════════════════
 // 第 1 段：静态 vi.mock（无运行时依赖的模块）
 // ═══════════════════════════════════════════════════
-vi.mock("#/lib/logger/logger", () => ({
+vi.mock("#/shared-services/logger", () => ({
   logger: { error: vi.fn(), info: vi.fn(), warn: vi.fn() },
 }));
 

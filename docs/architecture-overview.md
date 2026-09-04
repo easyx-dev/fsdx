@@ -52,10 +52,10 @@
 │  └────────────────────────┬──────────────────────────────────┘    │
 │                           │                                        │
 │  ┌────────────────────────▼──────────────────────────────────┐    │
-│  │      @fsdx/lib（纯可复用）+ src/shared-services（app 单例/DI）  │    │
+│  │      @fsdx/lib（纯可复用）+ src/shared-services（app 单例）     │    │
 │  │   lib: utils / cache / infra(通用非单例)；零全局态·不读 env-db·无日志   │    │
 │  │   导出清单见 @fsdx/lib README；shared-services 承载 logger/jwt/      │    │
-│  │   metrics/storage/scheduler/mail/sms/request-context/deps-store     │    │
+│  │   metrics/storage/scheduler/mail/sms/request-context                │    │
 │  └────────────────────────┬──────────────────────────────────┘    │
 │                           │                                        │
 │  ┌────────────────────────▼──────────────────────────────────┐    │
