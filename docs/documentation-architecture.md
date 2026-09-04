@@ -129,9 +129,13 @@ docs/ 内部：
 
 ### 7.6 CHANGELOG 结构规则
 
-- 分类固定为 `Features` / `Infrastructure` / `Fix` / `Refactor` / `Docs` / `依赖升级` / `Breaking Changes`，按此顺序排列
+- **骨架**：文件头为 `# CHANGELOG`（H1）+ 一句简介（格式基于 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)、版本遵循 [Semantic Versioning](https://semver.org/spec/v2.0.0.html)）；版本段自上而下 `[Unreleased]` → 最近发布版本 → 「历史版本」索引（可选：文件尾 compare/release 链接区，仅当存在可公开引用的远端时启用）
+- **分类固定顺序**：`Features` → `Infrastructure` → `Refactor` → `Fix` → `Docs` → `依赖升级` → `Breaking Changes`，按此顺序排列（先「新增」后「变更/修复」再「维护/破坏」）
 - **每个版本段内每个分类只允许一个标题块**（新增条目归入既有块，禁止追加重复标题）
-- 版本段自上而下递减：`[Unreleased]` → 最近发布版本 → 「历史版本」索引；主文件只保留 `[Unreleased]` + 最近 3 个版本，更早版本归档至 `docs/archive/changelog/`
+- **版本头**：`## [Unreleased]` 放未发布变更；发布后升为 `## [vX.Y.Z] - YYYY-MM-DD`（SemVer：MAJOR=破坏性、MINOR=新特性、PATCH=修复）
+- **单条语法**：一行导语 `- **标题**：做了什么 + 影响范围` + 缩进子项；禁止单行超长段（超约 3 行拆到 `  - ` 子项）；`[infra]` 前缀标记可被衍生项目吸收的基建变更（`Infrastructure`/`Fix` 分类）；`Breaking Changes` 条目加 `⚠️` 与迁移/升级注意；代码/标识符用反引号
+- **主文件保留** `[Unreleased]` + 最近 3 个版本 + 「历史版本」索引链接；更早版本归档至 `docs/archive/changelog/v1.x.x.md`（保留各版本标题，归档文件头注明版本范围）
+- CHANGELOG 属历史记录，**不参与 doc-facts 数量比对**（`doc:check` 已排除）
 
 ### 7.7 结构模板
 

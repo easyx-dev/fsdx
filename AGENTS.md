@@ -208,7 +208,7 @@ packages/
 | `pnpm e2e` | Playwright e2e 测试（专用隔离库 `{开发库名}_e2e`，webServer 端口 3100；需先 `pnpm --filter @fsdx/web exec playwright install chromium`） |
 | `pnpm db:generate` / `pnpm db:migrate` / `pnpm db:pull` / `pnpm db:studio` | app 数据库迁移流程 |
 | `pnpm --filter @fsdx/lib test` | 仅 lib 包测试 |
-| `/deploy`（`.agents/commands/deploy.md`） | 版本发布：联动提交 → 确定版本（未发布直接用当前版本，已发布则 bump patch）→ 更新 CHANGELOG → 打 tag（含 commit 摘要）→ 推送 |
+| `/deploy`（`.agents/commands/deploy.md`） | 版本发布：联动提交 → 确定版本（未发布直接用当前版本，已发布则按 SemVer 定号段）→ 更新 CHANGELOG → 打 tag（含 commit 摘要）→ 推送 |
 | `/check-architecture`（`.agents/commands/check-architecture.md`） | 全量架构审计：8 维度扫描并输出分级报告 |
 
 ## 对话效率
@@ -222,11 +222,11 @@ packages/
 
 ## 变更日志（CHANGELOG）
 
-- 版本号统一 `v1.x.y`，与 git tag 一致；版本号挂在应用包 `app/package.json`（`@fsdx/web`），根 `package.json` 为 workspace 编排壳不设版本；`app/package.json` 中版本即「下一个待发布版本」——首次发布直接以当前版本打 tag，已发布过则 bump patch 后发布（见 `/deploy` 命令）
-- 每次 `chore: release v1.x.y` 发布时，把 `[Unreleased]` 升为 `[v1.x.y] - {当天日期}`（日期格式如 `2026-08-21`），顶部新增空 `[Unreleased]` 段
-- 新变更一律写入 `[Unreleased]`，归入固定分类（`Features` / `Infrastructure` / `Fix` / `Refactor` / `Docs` / `依赖升级` / `Breaking Changes`），禁止各自追加重复标题块
+- 版本号统一 `v1.x.y`，与 git tag 一致；版本号挂在应用包 `app/package.json`（`@fsdx/web`），根 `package.json` 为 workspace 编排壳不设版本；`app/package.json` 中版本即「下一个待发布版本」——首次发布直接以当前版本打 tag，已发布过则按变更性质定号段（破坏性→MAJOR、新特性→MINOR、修复→PATCH，见 `/deploy` 命令）
+- 新变更一律写入 `[Unreleased]`；格式基于 Keep a Changelog，遵循 SemVer；分类固定顺序 `Features` → `Infrastructure` → `Refactor` → `Fix` → `Docs` → `依赖升级` → `Breaking Changes`，每个版本段每类仅一个标题块；单条一行导语 + 缩进子项，`[infra]` 标可被衍生项目吸收、`Breaking Changes` 加 `⚠️`
+- 发布时（`chore: release vX.Y.Z`）把 `[Unreleased]` 升为 `[vX.Y.Z] - {当天日期}`（如 `2026-08-21`），顶部新增空 `[Unreleased]` 段
 - 主 `CHANGELOG.md` 只保留 `[Unreleased]` + 最近 3 个版本 + 「历史版本」索引链接；更早版本归档到 `docs/archive/changelog/v1.x.x.md`（保留各版本标题），归档文件头部注明对应版本范围
-- 单条描述一句话讲清「做了什么 + 影响范围」，拆分子项用缩进列表，避免多页说明塞进一行
+- 「CHANGELOG 结构/语法/生命周期」完整规范见 [documentation-architecture](docs/documentation-architecture.md) 第 7.6 节（SSOT）；CHANGELOG 属历史记录，不参与 doc:check 事实比对
 
 ## 文档体系
 

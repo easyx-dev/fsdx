@@ -1,14 +1,33 @@
 # CHANGELOG
 
+> 本项目所有重要变更记录于此文件。格式遵循 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)，版本遵循 [Semantic Versioning](https://semver.org/spec/v2.0.0.html)。
+
 ## [Unreleased]
 
 ### Features
 
+### Infrastructure
+
+### Refactor
+
+### Fix
+
+### Docs
+
+### 依赖升级
+
+### Breaking Changes
+
+## [v2.0.0] - 2026-09-04
+
+### Features
+
 - **`@fsdx/ai-rich-editor` 样式作用域化（[infra]）**：AI 生成片段顶层的内嵌 `<style>` 全局选择器直接注入正文会污染宿主全局样式；在「应用到编辑器」/`autoApply` 时刻由包内 `scopedRichContent` 给片段根注入作用域前缀（编辑器实例创建时 `generateScopePrefix` 生成一次并一直沿用）并改写 `<style>` 内选择器为 `.{prefix} …`，产物自带 scope 前缀，宿主直接当作 HTML 引入（`dangerouslySetInnerHTML`）即不污染全局，端侧零处理；system prompt 收紧为内联优先 + 禁用 `body`/`*`/`:root`/`html` 全局选择器；预览 iframe 与新窗口直接使用该 `value`，所见即所得。
+
 - **AI 多厂商适配（OpenAI 协议）**：
   - **配置重构**：`ai_base_url`/`ai_api_key`/`ai_model` 三键删除，收敛为单 JSON 配置 `ai_providers`（对象形式：`{ [厂商id]: { name, baseUrl, apiKey, default?, models } }`，键为厂商 id，每个厂商可挂多个模型并携带能力位；`json` valueType，管理端「AI设置」分组）；支持同时挂 DeepSeek/Moonshot/Qwen/本地 vLLM 等多个 OpenAI 兼容厂商并指定默认
   - **模型能力位**：每个模型支持 `name`/`default` 及能力位 `contextLimit`/`outputLimit`/`jsonOutput`/`toolCalls`/`reasoning`/`input`/`output`；声明了 `reasoning`/`jsonOutput`/`toolCalls`/`input` 的模型映射为 TanStack AI `createModel(name, { input, features })`，零能力位走裸字符串（乐观默认，零回归）；`contextLimit`/`outputLimit`/`output` 为项目自身元数据，预留给 UI 展示与裁剪/成本统计
-  - **`services/ai` 升级**：`ai.provider.ts` 提供 `readProviders`/`resolveProvider`/`resolveModel`/`getAiProvider(providerId?)`/`getAiAdapter(providerId?, modelId?)`（按「厂商 id + 配置指纹」缓存的跨 bundle `Map`，多厂商互相隔离）；`ai.server.ts` 的 `streamAiChat`/`completeText` 增加 `providerId?`，缺省走默认厂商
+  - **`shared-services/ai` 升级**：`ai.provider.ts` 提供 `readProviders`/`resolveProvider`/`resolveModel`/`getAiProvider(providerId?)`/`getAiAdapter(providerId?, modelId?)`（按「厂商 id + 配置指纹」缓存的跨 bundle `Map`，多厂商互相隔离）；`ai.server.ts` 的 `streamAiChat`/`completeText` 增加 `providerId?`，缺省走默认厂商
   - **兼容迁移**：`readProviders()` 对首版数组存量数据做一次性迁移（`id` 取自元素 `id`，`model` 归一化为 `models`），旧部署无需手工改库
   - **专用「AI 厂商」管理页**：新增 `/admin/ai-providers`（antd 表格 + 弹窗表单，读写 `ai_providers` 键，无新增 DB 表）+ 权限 `ai:provider`（`AI_PROVIDER_MANAGE`）+ 系统管理菜单项；同步 `doc:gen` 权限清单
   - **调用侧厂商选择**：`@fsdx/ai-rich-editor` 新增 `requestMeta` prop（合并进 `sendMessage` 的 `forwardedProps`），`/api/ai-chat` 读取 `forwardedProps.providerId`；demo（`/admin/demo/ai`、`/admin/demo/ai-rich-editor`）加厂商下拉
@@ -43,46 +62,47 @@
   - **提示词归包**：`buildHtmlSystemPrompt` 自 `html-editor.server.ts` 移除，改由 `@fsdx/ai-rich-editor` 包的 `buildDefaultSystemPrompt(mode)` 按输出形态生成（组合 `DEFAULT_SYSTEM_PROMPT_TEMPLATE` + `MODE_PROMPT_DESCRIPTIONS`）；`AiChatRequest.systemPrompt` / `AiRichEditorProps.systemPrompt` 暴露自定义配置项（覆盖默认），app server 仅透传注入 system 消息、不再持有提示词业务语义
 
 - **新增自定义 head 配置**：预置 `custom_head_config` 系统配置（`clientVisible`、`json` 类型），管理端可直接编辑 JSON（结构同 TanStack head()：`{ meta, links, scripts, styles }`，如百度统计、JSON-LD）；`parseCustomHeadConfig` 解析并校验 `scripts/styles.children` 为字符串，前台 `SSRRootDocument` head 全局注入，管理端不生效
+
 - **资源管理器页面 UI 优化 + 夜间模式适配**：
   - 顶部面包屑改为可编辑路径输入框（`AdminPageContent` 新增可选 `titleTrailing` 插槽，路径输入 + 前往按钮，回车/按钮跳转，`normalizePath` 规范化输入）
   - 表格名称列定宽 320px，操作列不再强制 240px 宽度（按内容自适应，保留 `fixed: right`）；空态增加图标
   - 硬编码颜色全部替换为 antd 语义色 token（`--ant-color-text*`/`warning`）与 `--s-surface-tertiary`/`--s-text`，文本预览区明暗双主题自适应
   - 侧边栏菜单「目录浏览」更名为「资源管理器」（与页面标题一致）
+
 - **接入 PWA manifest + 浏览器主题色跟随**：
   - 前台 `SSRRootDocument` head 引入 `/manifest.json`（theme_color/background_color 对齐前台亮色表面 `#ffffff`，start_url/scope 归一至 `/`），提供「添加到主屏幕 / 图标 / 地址栏主题色」能力
   - `ThemeScheme` 新增 `themeColor` 字段（与各端 `--s-surface` 同色，见 themes.ts 双写注释），`applyThemeToDom` 同步更新 `<meta name="theme-color">`，明暗切换 / 跨标签页 / 系统偏好联动时浏览器地址栏颜色跟随；前台与管理端 head 均挂载 meta，管理端不接 manifest
+
 - **前台图标品牌色修正 + 暗色可见性适配**：
   - `favicon.svg` 描边与 F 文字由 antd 蓝 `#1677ff` 改为中性灰 `#212121`；`logo192.png` / `logo512.png` 由 React 默认青色原子 logo 重绘为中性灰六边形 F（Python 标准库几何渲染，一次性脚本见 `.tmp/`）
   - `Logo` 组件拆分 `ClientLogo`（前台）/ `AdminLogo`（管理端）并统一改为内联 SVG：前台 `currentColor` + `text-foreground` 随明暗主题自动取前景色，解决深灰 `logo.svg` 在暗色下不可见；管理端 fill 取 `--s-primary`、F 取 `--s-primary-fg`，随亮暗品牌色自动切换，替代固定棕色的 `logo-admin.svg`
   - `favicon.svg` 保留供亮色模式、新增 `favicon-dark.svg`（前台暗色主色 `#f5f5f5`），前台 head 双 favicon 按 `prefers-color-scheme` 切换
   - 删除不再引用的 `logo.svg`、`logo-admin.svg` 与无消费方的 `drizzle.svg` 死资源
+
 - **管理端侧边栏菜单优化**：
   - `nav-config.ts` 重新组合分组：合并「用户管理 + 权限管理」为「用户与权限」，文件类、翻译类、日志类各自独立成组，解决原「系统管理」9 项杂物袋问题
   - 菜单命名对齐：角色管理 → 管理端角色（与客户端角色对称）、文件资源管理器 → 目录浏览、日志查询 → 运行日志；同组内重复图标差异化（IdcardOutlined/AuditOutlined/FileSearchOutlined/GlobalOutlined）
   - 菜单渲染自 AdminLayout 抽至 `AdminNav.tsx`（`AdminNav` + `useNavCollapse`）：分组支持折叠（CSS grid 0fr↔1fr 动画），折叠状态持久化到 localStorage（key `admin-nav-collapsed-groups`），路由切换自动展开包含激活项的分组，侧边栏图标模式下强制展开全部分组
   - 滚动条样式统一：`admin.global.css` 新增 `--s-scrollbar-thumb` 语义令牌（亮暗自适应）与 `.scrollbar-thin` 类，应用于侧边栏导航与 `AdminPageContent` 内容区
 
-### Fix
+- **消息中心（message）**：`message` 表（`recipient_type` + `recipient_id` 无外键）+ 服务层 10 函数 + 三组 SFn（客户端自助/管理端收件箱/管理端管理）+ 前台 `/messages`（shadcn/ui SSR）+ 管理端 `/admin/messages`（收件箱）与 `/admin/messages/manage`（管理）+ Header/AdminLayout 消息铃铛（30 秒轮询）+ `message:view/send/delete` 权限
 
-- **`@fsdx/ai-rich-editor` 对话状态与自动应用修复**：
-  - **「思考中/已思考」按消息判定**：思考气泡的 loading/标题由全局 `chat.isLoading` 改为按「该消息是否为正在流式生成的最后一条」判定（经 `MessageStreamContext` 注入），避免已完成消息在后续生成期间误显示「思考中…」、与进行中的串了
-  - **`autoApply` 取最后一个 HTML 代码块**：流结束回调改为取回复中最后一个代码块（而非第一个），修改类回复（先贴旧/分块再给最终产物）能正确应用改动后的完整片段；新增 `lastHtmlFragment` 纯函数与单测
-  - **提取失败可感知**：`autoApply` 开启但回复未检测到 HTML 代码块时，经 `notify` 提示「已跳过自动应用」，不再静默不生效
-  - **发送后过渡 loading**：发送消息后、首个 assistant 内容到达前，消息区末尾显示「请求中…」加载占位（TanStack AI 的 assistant 消息为惰性创建，等待期 messages 末尾仍是 user），消除模型反馈前的空白等待
-  - **HTML 代码块流式实时同步**：`autoApply` 开启时，AI 流式生成中的 HTML 代码块累计新增达到阈值（默认 200 字符）即同步到编辑器与预览，边生成边看到成型效果；新增 `currentHtmlFragment`（支持未闭合代码块提取）纯函数与单测
+- **文件资源管理器（file-explorer）**：`STORAGE_DIR` 目录浏览 + 路径穿越防护 + 写保护 + `/admin/file-explorer` 页面 + `/api/download/file-explorer/*` 下载路由 + `file_explorer:*` 权限
+
+- **lib/ms + MSInput**：vercel/ms 移植（parse/parseStrict/format/ms）+ 4 个测试文件 + antd 时长输入组件
+
+- 修复既有测试失败：jwt 测试 logger mock 缺 `debug`；news 测试 i18n.server mock 缺 `applyTranslations`（改用 `importOriginal`）
 
 ### Infrastructure
 
 - **[infra] AI 能力迁移到 TanStack AI（全栈框架式接入，单模型，下沉为 app 服务层）**：
-  - **删除 `@fsdx/lib/ai`（AI 不再是 core 基建）**：AI 完全下沉到 app 服务层 `services/ai`——`ai.provider.ts` 负责配置读取（`ai_base_url`/`ai_api_key`/`ai_model`）+ 基于 `@tanstack/ai-openai/compatible` 的 `openaiCompatible` provider 构建 + 按指纹缓存的跨 bundle 单例（globalThis 键 `__FSDX_AI_PROVIDER__`）；`ai.server.ts` 负责 `chat()` 编排。原 `deepChat`/`fastChat`/`deepChatStream`/`fastChatStream`/`AiModelType`/`truncateJsonForLlm`（无消费）一并移除；core 移除 `@tanstack/ai`/`@tanstack/ai-openai` 依赖与 `./ai` 导出
-  - **`bootstrap.ts` 不再 `initAi`**：`@fsdx/lib/ai` 的 `initAi` 依赖注入随模块删除消失，AI 配置改由 `services/ai` 直接 `getConfig` 读取
-  - **服务编排 `services/ai/ai.server.ts`**：`streamAiChat`（返回 TanStack AI 流）/ `completeText`（`chat({ stream:false })` 非流式取文本）；`chat()` 编排与流消费收敛在 app 编排层，AI 翻译等业务只依赖 `services/ai`
+  - **删除 `@fsdx/lib/ai`（AI 不再是 core 基建）**：AI 完全下沉到 app 服务层 `shared-services/ai`——`ai.provider.ts` 负责配置读取（`ai_base_url`/`ai_api_key`/`ai_model`）+ 基于 `@tanstack/ai-openai/compatible` 的 `openaiCompatible` provider 构建 + 按指纹缓存的跨 bundle 单例（globalThis 键 `__FSDX_AI_PROVIDER__`）；`ai.server.ts` 负责 `chat()` 编排。原 `deepChat`/`fastChat`/`deepChatStream`/`fastChatStream`/`AiModelType`/`truncateJsonForLlm`（无消费）一并移除；core 移除 `@tanstack/ai`/`@tanstack/ai-openai` 依赖与 `./ai` 导出
+  - **`bootstrap.ts` 不再 `initAi`**：`@fsdx/lib/ai` 的 `initAi` 依赖注入随模块删除消失，AI 配置改由 `shared-services/ai` 直接 `getConfig` 读取
+  - **服务编排 `shared-services/ai/ai.server.ts`**：`streamAiChat`（返回 TanStack AI 流）/ `completeText`（`chat({ stream:false })` 非流式取文本）；`chat()` 编排与流消费收敛在 app 编排层，AI 翻译等业务只依赖 `shared-services/ai`
   - **新增 Server Route `/api/ai-chat`**：`adminPermRouteGuard(AI_CHAT)` + `chatParamsFromRequest` + `toServerSentEventsResponse`，替代原 Server Function 自定义 SSE 帧协议；前端 `@fsdx/ai-rich-editor` 改用 `useChat`（`@tanstack/ai-react`）消费标准 SSE
   - **单模型配置**：`ai_deep_model`/`ai_fast_model` 收敛为 `ai_model`（`PRESET_CONFIGS`/初始化表单同步），去掉 deep→fast 自动降级与空内容参数变化重试，交由 TanStack AI 重试/错误处理；不保留旧键迁移（无历史兼容）
-  - **AI 翻译**：`aiTranslateFieldSFn` 由 `fastChat` 改为 `services/ai` 的 `completeText`，保留 `ai_translation_prompt` 模板与友好错误包裹；`FieldTranslationDrawer` 无感知
+  - **AI 翻译**：`aiTranslateFieldSFn` 由 `fastChat` 改为 `shared-services/ai` 的 `completeText`，保留 `ai_translation_prompt` 模板与友好错误包裹；`FieldTranslationDrawer` 无感知
   - 依赖新增 `@tanstack/ai` / `@tanstack/ai-react` / `@tanstack/ai-openai`（app、ai-rich-editor）
-
-- **[infra] `@fsdx/lib` mail/sms/scheduler 依赖注入统一封装跨 bundle 共享存储**：`initMail`/`initSms`/`setSchedulerLogger` 注入的 deps 原为模块级单例，而 Nitro 入口（bootstrap 注入）与 TanStack Start SSR 渲染器会分别打包一份模块实例，导致在 SSR/bundle 内调用（如验证码邮件 SFn）抛「模块未初始化」；现新增 `@fsdx/lib` 内部 `deps-store`（`createGlobalDepsStore<T>(key)` 工厂，get/set/reset），将注入状态挂载 `globalThis`（`__FSDX_MAIL_DEPS__` / `__FSDX_SMS_DEPS__` / `__FSDX_SCHEDULER_LOGGER__`），消除各自重复的 globalThis 存取样板、统一经 store 访问，任意 bundle 共享同一份依赖。AI 相关配置现由 app `services/ai` 经跨 bundle 单例槽（globalThis 键 `__FSDX_AI_PROVIDER__`）缓存。可被衍生项目吸收；现存部署重启后生效
 
 - **[infra] 系统配置缓存挂载 globalThis 跨 bundle 共享**：`configCache`/`configTranslationCache` 原为模块级单例，Nitro 入口（bootstrap 注入 `getConfig`）与 SSR 渲染器分别打包一份实例，启动后经管理端修改的配置只刷新 SSR 侧缓存，注入 `getConfig` 的模块（AI / SMTP / 短信）仍读到启动时空值——表现为运行时填写 AI 配置后 AI 对话仍报「AI 客户端未配置」；现两个缓存实例挂载 `globalThis`（`__FSDX_CONFIG_CACHE__` / `__FSDX_CONFIG_TRANSLATION_CACHE__`），任意 bundle 读写同一实例，运行时配置变更即时生效。可被衍生项目吸收
 
@@ -112,7 +132,9 @@
   - `[1.0.0]` 历史版本归档至 `docs/archive/changelog/v1.0.0.md`，主 CHANGELOG 历史索引链接指向归档
 
 - **favicon ?url import 缓存治理**：favicon.svg / favicon-dark.svg / favicon-admin.svg 自 `public/` 移入 `src/assets/` 并以 `?url` import（`Document.tsx` 内联为带 hash 的资源，图标变更不再受浏览器 URL 缓存影响）；`manifest.json` 移除对已删除 `favicon.svg` 的图标引用（PWA 图标保留 png）
+
 - **新增 check-architecture 架构审计命令**：`.agents/commands/check-architecture.md` 按 8 维度（分层/路由/SFn/组件/类型与 DB/安全/错误处理/测试）全量扫描并输出分级报告；配套 `.agents/checklists/` 新增 sfn / route / component 三份精简检查清单
+
 - **AGENTS.md 新增「对话效率」章节**：约定控制单会话上下文体积（阶段化会话 / explore 子代理 / read 限定行范围 / bash 输出瘦身 / 长文档按需读取），对齐 bom-easy 项目治理实践
 
 - **`@fsdx/lib` 基础设施补齐（对照 bom-easy lib 查漏）**：
@@ -140,23 +162,19 @@
   - `http_requests_total` 入口埋点修复：指标注册表挂载于 globalThis，解决 Nitro 入口与 SSR 渲染器分别打包 metrics.ts 导致入口计数不可见的问题（配套 vitest 覆盖跨模块图共享）
   - 影响：依赖减少、入口分流逻辑简化；请求行为等价（未匹配路由仍由 Nitro 兜底）
 
-### Fix
+- **[infra] 分层重构：单仓库多包 + `@fsdx/lib` + `src/shared-services/`（可被衍生项目吸收）**：把原混装「纯可复用逻辑 + app 绑定单例/DI + 业务 service」的 monorepo 拆为单向分层 DAG——`routes → services → shared-services → (lib → db)`：
+  - **单仓库多包**：`src/` 整体移入 `app/src/`（`@fsdx/web`），根 `package.json` 为 `--filter` 编排壳；`server.ts`/`public/`/`drizzle/`/配置文件移入 `app/`
+  - **`@fsdx/lib`（subpath exports、无根桶，原 `@fsdx/core`，`packages/core` → `packages/lib`）**：仅保留纯可复用逻辑——utils（ms/export/cn/match-permission/error-utils/date-format）、`@fsdx/lib/cache`（原 `cache-core`）、infra 通用非单例（captcha/semaphore/task-manager/batch-writer）+ `StorageAdapter` 纯契约（`@fsdx/lib/storage`）；**零全局态、不读 env/db、不做日志耦合**（错误向上抛出，警告经 `onEvent` 钩子或 `console`，如 `batch-writer`）；第三方依赖收敛为 clsx / tailwind-merge / opentype.js；新增 `@fsdx/ui-ssr`（shadcn button/card/badge/input/textarea + AutofillBlocker）与 `@fsdx/ui-spa`（antd 基础组件，antd 为 peerDependency）
+  - **`src/shared-services/`（app 层，高共享 service 归属）**：承载 app 绑定单例——`logger` / `jwt` / `metrics` / `storage`（`LocalStorageAdapter` + 单例）/ `scheduler` / `mail` / `sms` / `request-context` + 系统级共享域 `config` / `dict` / `i18n`（含 `i18n.functions`）/ `ai`（含 `ai-providers.functions`）/ `query-utils` / `operation-log`；**只依赖 `lib`/`db`/本层，绝不引用 `services`**（依赖图无环；判断标准：一个 `services` 模块被大范围引用共享 → 具备成为 shared-services 的条件）；`app/src/lib/` 目录删除（track 并入 `services/track/track.ts`，其余并入 shared-services）
+  - **去依赖注入透传**：`mail` / `sms` / `scheduler` 直接 `import { logger }`，`mail` / `sms` 直接 `import { getConfig }`（`shared-services/config/config.server`）；删除 `initMail` / `initSms` / `setSchedulerLogger` 与 `createGlobalDepsStore`（`shared-services/deps-store` 删除）；`bootstrap.ts` 清空依赖注入；跨 bundle 一致性靠 globalThis（metrics 注册表、config / AI provider 缓存）
+  - **其它**：logger 改 `createLogger` 工厂；jwt 改 `createJwt` 工厂；`COOKIE_NAMES` 迁至 `src/constants/cookie-names.ts`；`matchPermission` 迁入 lib；`OperatorType` 下沉 `db/schema/operation-log`（`request-context` type-only 引用，拆除 `db → core` 反向依赖）；`antd-static` 迁入 ui-spa、app 删除 `#/components/antd-static` 壳；Tailwind 经 `@source` 扫描 ui 包源码类名；i18n 单模块化；npm 依赖迁移（`pino`/`pino-pretty`/`jose`/`nodemailer`/`cron`/`@alicloud/*` 自 lib 移入 app）
+  - 影响：`app/src/lib` 与 `#/lib/*` 路径废弃；整体目录/包布局与 import 路径变更；方案文档 `.opencode/plan/lib-shared-services-layer-rework.md` / `shared-services-consolidation.md`
 
-- **[infra] 修复 OpenAI 兼容（Chat Completions）推理模型思考内容被丢弃**：
-  - **根因**：`@tanstack/ai` 的 OpenAI 兼容适配器在默认 Chat Completions 面上 `extractReasoning` 为空实现，而 DeepSeek-R1/Qwen3/Moonshot 等厂商的思考增量在 `delta.reasoning_content`（部分为 `delta.reasoning`/`reasoning_details`）而非 `delta.content`，故被静默丢弃——导致 `@fsdx/ai-rich-editor` 无「思考中…」气泡，且推理阶段前端全程静默、思考结束后正文才涌入，观感呈「伪流式」（实际服务端/客户端流式链路无缓冲）
-  - **修复**：新增 `services/ai/ai.reasoning-adapter.ts`（`ReasoningCompatibleChatAdapter` 子类重写 `extractReasoning`，兼容 `reasoning_content`/`reasoning`/`reasoning_details` 三种字段与 `{content|text}` 对象形态）；`ai.provider.ts` 由 `openaiCompatible()` 改为自建 OpenAI client + 统一返回该子类，非推理模型无该字段自然返回 undefined、零回归；`openai` 提升为 app 直接依赖
-  - **能力位语义收敛**：`createModel`/`toModelDef` 能力位映射移除，`reasoning/jsonOutput/toolCalls` 等模型元数据保留供管理页展示与解析，`extractReasoning` 改为无条件尝试提取
-  - 前端 `@fsdx/ai-rich-editor` 的 `ThinkingPart` 渲染链路与 `useChat` 已具备，无需改动
+- PostgreSQL + Drizzle ORM（17 张表，uuid 主键，软删除，timestamptz）
 
-- **AI 厂商管理弹窗编辑模型不回显**：`AiProviderFormModal` 表单设了 `preserve={false}`，在 `Modal destroyOnHidden` 重挂载下会导致 `Form.List` 的模型行嵌套字段值丢失（真实浏览器复现：厂商字段回显、模型名/展示名为空）。修复为：移除 `preserve={false}`；外层按每次打开自增 `key` 重挂载内容组件（重建表单实例），编辑以当前厂商为 `initialValues`、新增预置一个空模型行；`Form.List` 改用标准解构 `({ key, name, ...restField })`（不再把 `key` spread 进 `Form.Item`）；模型名字段用 `Input` 保证回显
+- Vitest 测试（79 个测试文件，822 条测试）
 
-- **前台登录后 Header 登录态不刷新**：客户端登录成功仅 `navigate` 到首页，`ClientAuthProvider` 不重挂载导致 Header 仍显示未登录；登录页 `onSubmit` 成功后补充调用 `useClientAuth().refetch()`，使用户名/消息/退出入口即时更新
-
-- **统一 Asia/Shanghai 时区基准（定时任务/日志切割/按天查询）**：
-  - `@fsdx/lib` 新增 `@fsdx/lib/date-format`（dayjs 实现）：`DEFAULT_TASK_TIME_ZONE`（`Asia/Shanghai`）、`DATE_ONLY_REGEX`、`toDateString` / `parseDateOnly` / `toDayRange`，天边界解析不依赖服务器时区（`TZ=UTC` 下已验证）
-  - 定时任务：`registerTask` 支持 `timeZone` 字段，`CronJob` 默认按 `Asia/Shanghai` 调度（原依赖服务器本地时区，UTC 服务器上「每天 3:00」会偏成北京时间 11:00）
-  - 日志体系：pino 日志文件名按天切割与 `cleanExpiredLogs()` 清理截止统一按 `Asia/Shanghai` 计算，与任务调度时区一致
-  - 按天查询：operation-log 列表、埋点事件列表与事件分析的 `startDate/endDate` 边界改用 `toDayRange`（原 `new Date("YYYY-MM-DD")` 按 UTC 解析导致窗口偏移，事件查询页传 `endOf("day")` 再 +1 天造成边界溢出）；schema 增加 `YYYY-MM-DD` 格式校验；事件查询/分析页改传 date-only，与操作日志一致
+- 迁移流程：`pnpm db:generate` + `pnpm db:migrate`（bootstrap 启动自动执行）
 
 ### Refactor
 
@@ -249,6 +267,99 @@
   - `db:migrate` 改走程序化迁移（新增 `src/db/migrate-cli.ts`）：drizzle-kit v1.0.0-rc.4 的 migrate 命令存在 CREATE SCHEMA 断连 bug（ECONNRESET），程序化路径与生产 bootstrap 的 `runMigrations()` 完全一致
   - `drizzle.config.ts` 的 schema 指向 `src/db/schema/index.ts`：目录扫描会重复收集表导致 `drizzle-kit generate` 失败
 
+- **用户/认证/日志/操作日志向 bom-easy 对齐**：
+  - 中间件：新增 `clientPermRouteGuard`（客户端 Server Route 权限守卫，捕获 `ClientAuthError` 转状态码 JSON）；`/api/download/log/$id` 改用 `adminPermRouteGuard` 中间件，删除 `api-auth.ts`（`verifyAdminPerm`/`ApiAuthError`），`sf-error-logger` 同步移除 `ApiAuthError` 分支
+  - 操作日志：`logExternalRequest()` 落库字段语义对齐——`module`=外部系统标识（调用方传入）、`action`=`login`/`request`（按请求类型）、`targetType`=接口来源类型（默认 `openapi`，调用方可指定）、`targetName`=接口路径，`detail` 含 system/success 并展开 extra
+  - 鉴权：`getCurrentAdmin`/`getCurrentClient` 将未删除约束下沉到 SQL 层（`and(eq, isNull)`），保留 JS 侧防御校验；管理员找回密码重置后补 `clearAdminUserCache`
+  - 基础设施：`sanitizeError()` 递归脱敏 `error.cause`（含非 Error 对象，防敏感字段透传 + 循环/深度防护）
+  - 测试补强：操作日志 `logCrud`/`logExternalRequest` 覆盖（默认 admin、ALS 上下文、system 兜底），admin/client `getCurrent*` 的 where 条件哨兵断言（EQ + ISNULL 防 `&&` 吞条件）
+
+- **埋点模块重构为神策简化模型（track 命名体系）**：表/服务/路由/权限码统一更名
+  - 表：`event`→`track_event`（列 `event`→`name`）、`preset_event`→`track_event_meta`、`preset_property`→`track_property_meta`，Schema 合并为 `src/db/schema/track.ts`
+  - 服务：`src/services/event/`→`src/services/track/`，`trackEvent()` 增加 per-session 频控（60 条/分钟）与时间钳制（过去 1 天 ~ 未来 5 分钟）
+  - 路由：`/admin/events/*`→`/admin/track/*`（`/admin/track/query`、`/admin/track/analytics`、`/admin/track/event-meta`、`/admin/track/property-meta`），菜单「预设事件/预设属性」→「元事件/元属性」
+  - 权限码：`event:view/query/manage`→`track:view/query/manage`
+  - SDK 入参：`trackEventSFn` payload 字段 `event`→`name`
+  - 预置清单裁剪：元事件 9→5、元属性 16→11，`ensurePreset*` 增补清理逻辑
+
+- **管理端角色改名 `role`→`admin_role`**：表、`admin_user.role_id`→`admin_role_id`、模块 `src/services/admin-role/`、路由 `/admin/admin-roles`、权限码 `role:*`→`admin-role:*`、审计模块名 `admin_role`
+
+- **DB 迁移基线重置**：统一 generate+migrate（移除 db:push），重建 `drizzle/0000_initial.sql`（17 张表全量建表，允许清库）
+
+- **主题体系重构（对齐 bom-easy）**：
+  - 具名主题注册表 `app/src/theme/themes.ts`：每个端一个主题预设（`ThemePreset`），`data-theme` 承载完整主题名（如 `admin-brown-light`）；管理端棕 `#795548`、前台中性灰
+  - CSS 令牌链路：新增 `shared-tokens.css` 共享中性令牌（`--t-*`），两端 `--t-brand-*` 品牌色阶 → `--s-*` 语义令牌 → `@theme` 映射；`@custom-variant dark (&:is([data-theme$="-dark"] *))` 统一暗色变体，废弃 `.dark` class 双轨
+  - `use-theme-mode` 重写为 `useSyncExternalStore`（跨标签页 + 系统主题联动），签名改为 `useThemeMode(preset)`，返回 `scheme`（dataTheme + antd 主色）
+  - 管理端品牌色由绿 `#00b96b` 换棕 `#795548`（暗色 `#a1887f`），antd `colorPrimary`/`colorInfo` 从注册表读取（`colorInfo` 派生 Link 链接色）；`borderRadius: 0` 直角风格，Tailwind radius 全 0（保留 `rounded-full`）
+  - 管理端侧边栏主题按钮保持三态循环（亮/暗/跟随系统）
+  - `AdminRootDocument` 补齐主题 init 脚本（修复首屏闪烁），两个 `<head>` 增加内联 `@layer` 顺序声明；init 脚本由 `themes.ts` 注册表推导 storageKey 与 dataTheme，杜绝脚本与注册表手工双写漂移
+  - `use-theme-mode` 的 DOM 应用改为直接读取 localStorage/媒体查询最新值（规避 SSR 水合首帧用服务端快照覆盖主题），`storage` 监听按主题键过滤
+  - 硬编码颜色清理：`#1677ff`→`var(--s-primary)`、`zinc/blue/gray`→语义令牌类；Monaco 暗色检测改 `data-theme` 判断；内联非零圆角归零
+  - 管理端 logo/favicon 蓝 `#1677ff`→棕 `#795548`；前台 storageKey `theme`→`client-theme`
+
+- **AdminPageContent 挪回 app**：布局组件（标题栏 + 内容区）自 `@fsdx/ui-spa` 迁至 `app/src/components/admin/AdminPageContent.tsx`，26 处路由页面导入改 `#/components/admin/AdminPageContent`，ui-spa 移除对应导出；标题栏定高改 CSS 变量 `--admin-header-height`，内容区高度按 `calc(100vh - var(--admin-header-height))` 计算内部滚动，便于子元素按已知高度布局
+
+- 目录分层：新增 `src/constants/`、`src/validators/`、`src/utils/`、`src/types/`；`lib/query` 类型迁入 `types/query.ts`；删除 `format-date` 改用 dayjs 内联
+
+- 缓存拆分：`lib/cache/cache.ts`→`core.ts` + 按模块 `*.cache.ts` 实例文件，新增 `adminUserCache`
+
+- 新增 `lib/request-context`（AsyncLocalStorage 操作者身份）+ `lib/buffer/batch-writer`（通用缓冲写入器，event/operation-log 复用）
+
+- 操作日志：`logCrud()` 一行式审计封装 + `logExternalRequest()`（从 ALS 读操作者），`operation_log` 新增 `operator_type` 列；32 处 CRUD 审计调用迁移
+
+- 中间件统一：`resolveAdminAuthContext()` 一步校验 + `adminPermRouteGuard`（Server Route）+ api-auth 复用；中间件不直接查 DB，委托 `getAdminUserForAuth()`/`getClientUserForAuth()`（带缓存）
+
+- 新增客户端 RBAC 框架：`client_role` 表 + `client-permissions.ts` + `clientAuthGuard`/`clientPermGuard`，init 种子 `client-super-admin`/`normal-user`，注册分配默认角色
+
+- Schema 单一来源：admins/clients/admin-role 服务输入类型改 `z.infer` 派生，消除 `as XxxInput` 桥接断言
+
+- 分层违规清理：captcha/file/forgot-password 的 DB 逻辑从 `.functions.ts` 提取到 `.server.ts`；news `generateSlug` 去重（消除循环依赖）
+
+- antd-static 桥接：message/modal/notification 经 `App.useApp` 捕获，31 处静态 message 调用迁移；AdminProvider 加 `<StyleProvider layer>` + 品牌色 `#00b96b`
+
+- 样式分层：两份 global.css 预声明 `@layer theme, base, antd, components, utilities` + 裸 `a` 语义色兜底
+
+- 新增 `sfn-helpers.ts`（safeSfnCall/unwrapSfn）+ `hooks/use-sfn-call.ts` + `PermissionTags` + `useCrudPage`
+
+- **权限模块迁至顶层 `src/permissions/`**：权限码从 `src/constants/permissions/` 提升为顶层领域模块（与 `src/db/` 同级），30 处 `#/constants/permissions/*` 引用改为 `#/permissions/*`，同步更新 AGENTS.md 与 skill 文档路径
+
+- **权限命名全对称（破坏性重构）**：`permissions.ts` → `admin-permissions.ts`，符号全量加 `Admin` 前缀（`PERMISSIONS`→`ADMIN_PERMISSIONS`、`PermissionDef`→`AdminPermissionDef`、`hasPermission`→`hasAdminPermission` 等），与 `client-permissions.ts` 的 `Client*` 命名对齐
+
+- **权限码分隔符规范化**：`file_explorer:*`→`file-explorer:*`、`dict:*_item`→`dict:*-item`；审计模块名 `file_explorer`/`admin_role` 同步为 kebab（`operation_log.module` 数据格式变更）
+
+- **组件命名规范化**：`components/admin/nav-config.tsx` → `NavConfig.tsx`
+
+### Fix
+
+- **`@fsdx/ai-rich-editor` 对话状态与自动应用修复**：
+  - **「思考中/已思考」按消息判定**：思考气泡的 loading/标题由全局 `chat.isLoading` 改为按「该消息是否为正在流式生成的最后一条」判定（经 `MessageStreamContext` 注入），避免已完成消息在后续生成期间误显示「思考中…」、与进行中的串了
+  - **`autoApply` 取最后一个 HTML 代码块**：流结束回调改为取回复中最后一个代码块（而非第一个），修改类回复（先贴旧/分块再给最终产物）能正确应用改动后的完整片段；新增 `lastHtmlFragment` 纯函数与单测
+  - **提取失败可感知**：`autoApply` 开启但回复未检测到 HTML 代码块时，经 `notify` 提示「已跳过自动应用」，不再静默不生效
+  - **发送后过渡 loading**：发送消息后、首个 assistant 内容到达前，消息区末尾显示「请求中…」加载占位（TanStack AI 的 assistant 消息为惰性创建，等待期 messages 末尾仍是 user），消除模型反馈前的空白等待
+  - **HTML 代码块流式实时同步**：`autoApply` 开启时，AI 流式生成中的 HTML 代码块累计新增达到阈值（默认 200 字符）即同步到编辑器与预览，边生成边看到成型效果；新增 `currentHtmlFragment`（支持未闭合代码块提取）纯函数与单测
+
+- **[infra] 修复 OpenAI 兼容（Chat Completions）推理模型思考内容被丢弃**：
+  - **根因**：`@tanstack/ai` 的 OpenAI 兼容适配器在默认 Chat Completions 面上 `extractReasoning` 为空实现，而 DeepSeek-R1/Qwen3/Moonshot 等厂商的思考增量在 `delta.reasoning_content`（部分为 `delta.reasoning`/`reasoning_details`）而非 `delta.content`，故被静默丢弃——导致 `@fsdx/ai-rich-editor` 无「思考中…」气泡，且推理阶段前端全程静默、思考结束后正文才涌入，观感呈「伪流式」（实际服务端/客户端流式链路无缓冲）
+  - **修复**：新增 `shared-services/ai/ai.reasoning-adapter.ts`（`ReasoningCompatibleChatAdapter` 子类重写 `extractReasoning`，兼容 `reasoning_content`/`reasoning`/`reasoning_details` 三种字段与 `{content|text}` 对象形态）；`ai.provider.ts` 由 `openaiCompatible()` 改为自建 OpenAI client + 统一返回该子类，非推理模型无该字段自然返回 undefined、零回归；`openai` 提升为 app 直接依赖
+  - **能力位语义收敛**：`createModel`/`toModelDef` 能力位映射移除，`reasoning/jsonOutput/toolCalls` 等模型元数据保留供管理页展示与解析，`extractReasoning` 改为无条件尝试提取
+  - 前端 `@fsdx/ai-rich-editor` 的 `ThinkingPart` 渲染链路与 `useChat` 已具备，无需改动
+
+- **AI 厂商管理弹窗编辑模型不回显**：`AiProviderFormModal` 表单设了 `preserve={false}`，在 `Modal destroyOnHidden` 重挂载下会导致 `Form.List` 的模型行嵌套字段值丢失（真实浏览器复现：厂商字段回显、模型名/展示名为空）。修复为：移除 `preserve={false}`；外层按每次打开自增 `key` 重挂载内容组件（重建表单实例），编辑以当前厂商为 `initialValues`、新增预置一个空模型行；`Form.List` 改用标准解构 `({ key, name, ...restField })`（不再把 `key` spread 进 `Form.Item`）；模型名字段用 `Input` 保证回显
+
+- **前台登录后 Header 登录态不刷新**：客户端登录成功仅 `navigate` 到首页，`ClientAuthProvider` 不重挂载导致 Header 仍显示未登录；登录页 `onSubmit` 成功后补充调用 `useClientAuth().refetch()`，使用户名/消息/退出入口即时更新
+
+- **统一 Asia/Shanghai 时区基准（定时任务/日志切割/按天查询）**：
+  - `@fsdx/lib` 新增 `@fsdx/lib/date-format`（dayjs 实现）：`DEFAULT_TASK_TIME_ZONE`（`Asia/Shanghai`）、`DATE_ONLY_REGEX`、`toDateString` / `parseDateOnly` / `toDayRange`，天边界解析不依赖服务器时区（`TZ=UTC` 下已验证）
+  - 定时任务：`registerTask` 支持 `timeZone` 字段，`CronJob` 默认按 `Asia/Shanghai` 调度（原依赖服务器本地时区，UTC 服务器上「每天 3:00」会偏成北京时间 11:00）
+  - 日志体系：pino 日志文件名按天切割与 `cleanExpiredLogs()` 清理截止统一按 `Asia/Shanghai` 计算，与任务调度时区一致
+  - 按天查询：operation-log 列表、埋点事件列表与事件分析的 `startDate/endDate` 边界改用 `toDayRange`（原 `new Date("YYYY-MM-DD")` 按 UTC 解析导致窗口偏移，事件查询页传 `endOf("day")` 再 +1 天造成边界溢出）；schema 增加 `YYYY-MM-DD` 格式校验；事件查询/分析页改传 date-only，与操作日志一致
+
+- **中间件 import-protection 告警**：`resolveAdminAuthContext`/`resolveClientAuthContext` 下沉到 `middleware/*.server.ts`，中间件 guard 在 `.server()` 回调内动态导入；客户端构建剥离回调后不再残留 `.server` 依赖（此前 admin 侧因函数被 export 无法被死代码消除而告警）
+
+- **AdminRootDocument `<title>` 告警**：`{siteName} 管理后台` 两个 children 改为模板字符串，消除 React title 数组警告
+
+- **登录/注册/找回密码页 tsc 报错**：`form.Subscribe` 的 `selector` 泛型推断被 `NoInfer` + 默认值阻断（TS 6），改为全量 FormState 订阅（去掉 selector），`state.canSubmit`/`state.isSubmitting`/`state.values.email` 直接读取，消除 FormState 类型不匹配
+
 ### Docs
 
 - **文档体系边界治理（对齐 bom-easy documentation-architecture）**：
@@ -259,14 +370,16 @@
   - 数量/清单类事实收敛：README 与 docs 中「17 张表」「9 个缓存实例」「61 个权限常量」等改为「当前值 + 以代码为准」标注，数字准确性由权威文档兜底
 
 - **文档全面校准 + 去重收敛**（对齐请求 ID 贯通、Prometheus 指标、routes/services 分层重构、i18n/track 服务拆分、TS 7 / Biome 2.5 等代码现状）：
-  - 事实校准：AGENTS / README 技术栈版本（TypeScript 7、Biome 2.5）、删除已移除的 `pnpm changeset` 命令、README 命令表精简为常用项；缓存实例数 8 → **9**（新增 track 频控 `sessionRateCache`）；迁移失败行为按代码改为 `try/catch` + `logger.warn` 容错（非 fail-fast）；Server Route 例外补充 `routes/api/metrics.tsx`；`operation_log` ER 图补充 `request_id` 列并注明该表 camelCase 列命名例外；`dict` 缓存启动加载描述修正为懒加载；`configTranslationCache` 归属修正为 `services/config/`；i18n 拆分后路径更新（`i18n-ui.server.ts` / `i18n-content.server.ts`）；track 服务子文件索引（meta/validate/analytics）；SF 错误日志移除已删除的 `ApiAuthError`、补充 `ClientAuthError` 与埋指标/`toClientError` 归一化；环境变量补充 `DB_POOL_*` 连接池参数；文件存储物理路径修正为 `{STORAGE_DIR}/uploads/{date}/{name}`；登录时序图 SFn 命名统一 `SFn` 后缀
+  - 事实校准：AGENTS / README 技术栈版本（TypeScript 7、Biome 2.5）、删除已移除的 `pnpm changeset` 命令、README 命令表精简为常用项；缓存实例数 8 → **9**（新增 track 频控 `sessionRateCache`）；迁移失败行为按代码改为 `try/catch` + `logger.warn` 容错（非 fail-fast）；Server Route 例外补充 `routes/api/metrics.tsx`；`operation_log` ER 图补充 `request_id` 列并注明该表 camelCase 列命名例外；`dict` 缓存启动加载描述修正为懒加载；`configTranslationCache` 归属修正为 `shared-services/config/`；i18n 拆分后路径更新（`i18n-ui.server.ts` / `i18n-content.server.ts`）；track 服务子文件索引（meta/validate/analytics）；SF 错误日志移除已删除的 `ApiAuthError`、补充 `ClientAuthError` 与埋指标/`toClientError` 归一化；环境变量补充 `DB_POOL_*` 连接池参数；文件存储物理路径修正为 `{STORAGE_DIR}/uploads/{date}/{name}`；登录时序图 SFn 命名统一 `SFn` 后缀
   - 新增基础设施入文档：请求 ID 贯通（requestIdMiddleware / `x-request-id` / `operation_log.request_id`）与 Prometheus 指标（`/api/metrics`、3 个预置指标、进程内聚合边界）写入 AGENTS / architecture-overview / deployment-ops / architecture skill
   - 去重收敛：技术栈版本、命令表、缓存实例清单、中间件执行链路、单实例一致性边界、服务层三层契约等重复声明各收敛为单一事实来源 + 交叉引用（auth-permission-model / server-function skill / cache-system / deployment-ops 各为权威载体，其余改链接）
   - skills 同步：cache 实例表 8→9 并与 cache-system 互标同步提示；server-function 全局错误日志改 `AdminAuthError`/`ClientAuthError` + `toClientError`；architecture 补 `lib/metrics`、请求 ID、Prometheus；permission 补权限清单引用
+
 - **新增数据库迁移 skills（db-sqlite / db-mysql）**：
   - 沉淀 PostgreSQL → SQLite 完整迁移指南为 `db-sqlite` skill：基于 drizzle v1.0-rc.4 + node:sqlite 异步驱动基态，覆盖驱动选型、pg-core→sqlite-core 类型映射、约束差异（部分唯一索引/ON UPDATE CASCADE/降序索引）、**事务同步化（node-sqlite 'sync' kind 事务回调必须同步，否则提前提交）**、时间序列 SQL 改写、日期类型 Date→number、测试 mock 终结符适配与迁移执行流程
   - 新增 `db-mysql` skill：mysql2 异步驱动，事务与普通查询全部保持 await、日期保持 Date，迁移面最小；覆盖 uuid→char(36)、jsonb→json、json 列默认值限制等 MySQL 特有差异
   - db-schema skill 相关链接、AGENTS.md 数据库章节同步补齐目标库速查与 drizzle v1 基态说明
+
 - **子包文档补齐 + 文档/技能对齐**：
   - 新增三个子包 README（`packages/lib/README.md` / `packages/ui-ssr/README.md` / `packages/ui-spa/README.md`），含 subpath 导出清单、宿主集成约束与依赖边界；根 README、AGENTS.md、architecture-overview 建立对子包文档的引用
   - 删除已完成的历史方案 `docs/monorepo-restructure.md`（其包边界内容由三个子包 README 承接）
@@ -274,17 +387,20 @@
   - skills 对齐：8 个 skill 修正过时路径与流程（core subpath 迁移、`@fsdx/ui-spa/table` 与 `antd-static` 导入、`logCrud` 一行式审计、mockDb 17 张表清单、`db:generate`+`db:migrate` 迁移流程）
   - **文档瘦身**：AGENTS.md 552 → 276 行（与 skill 重复的细节压缩为「硬规则 + skill 链接」，删除已修复的历史节；`src/services/` 准入门槛、就近原则、Server Route 例外补入 server-function skill，jsonb `$type` 约定补入 db-schema skill，`logExternalRequest` 字段语义补入 architecture skill）；`auth-permission-model.md` 640 → 552 行（删除重复性角色关系/客户端缓存 flow 与散乱文字，保留并时效修正整体架构、管理员登录、客户端注册登录、系统初始化四张图，按查考级组织）
   - 文档 review 修正：README 快速开始 env 路径指向 `app/.env.example`；i18n skill「支持的语言」片段去掉与导入重复的本地声明；cache-system 启动时序图更正 dict 缓存为懒加载（仅 config/track 元数据启动热加载）
+
 - **文档引用源与事实校准（`.agents` 为引用权威，`.opencode` 不再作为文档引用来源）**：
   - AGENTS 命令表 `/deploy` 与 CHANGELOG 条目中 `.opencode/commands/*` 引用改为 `.agents/commands/*`；软链机制描述保留并明确内容以 `.agents/` 为准
   - 事实修正：缓存清单口径统一（`sessionRateCache` 位于 `track.validate.ts`，AGENTS / cache-system / README 三处一致）；`operation_log` 操作者列名 `operator_id`→`operatorId`（camelCase 例外）；auth-permission-model 登录/初始化页路径补 `index.tsx`、bcrypt cost 表述补自助重置=12（明确排除 init 的 cost=10）；deployment-ops init 页路径修正
   - 规则层补全：db-schema skill 补 `track_event_meta` / `track_property_meta` varchar 主键例外；test-writing skill 补按子模块/子功能拆分测试文件命名说明；命令表补 `/check-architecture`；documentation-architecture skills 清单补全至 10 个（AGENTS core 目录树模块明细已移交给 core README，见下条收敛记录）
   - 清理 `.opencode/` 未入库残留（node_modules / package.json / package-lock.json / .DS_Store），仅保留指向 `.agents/` 的软链视图
+
 - **工程结构描述收敛（消除重复罗列）**：
   - AGENTS「工程结构」树去重：`lib/` 段删文件明细（薄壳名保留在注释）、core 段删模块明细只留 `utils/i18n/cache/infra` 四桶分层（导出清单指向 core README），避免与包 README 双份维护
   - architecture-overview 删除「目录职责矩阵」与「关键文件索引」两节（前者职责/规则与 AGENTS 树及既有章节重复，后者前 10 行即 AGENTS 树注释、后 9 行系文档导航）：改为「目录职责」引用段（指向 AGENTS 工程结构/包边界/依赖方向）+「相关文档」导航表，文件级职责不再重复罗列
   - architecture-overview「系统分层架构」图与「路由分层」树收敛为概览：删除 services 22 个模块名、core 模块清单与「17 张表 + 9 个缓存」等易漂移枚举（图内改指向 `src/services/`、core README、database-design、cache-system），路由树改分组概览并以 `src/routes/`（`routeTree.gen.ts`）为 SSOT
+
 - **文档体系统一治理（doc:check 守门补强 + markdown 风格成文）**：
-  - CHANGELOG 结构重整：历史积压条目拆为 `[v1.1.0] - 2026-08-24` 版本段并合并重复分类标题，恢复「每个分类仅一个块」规则；AGENTS / deploy command 的 CHANGELOG 规则一致
+  - CHANGELOG 结构重整：历史积压条目按分类拆分为版本段并合并重复分类标题，恢复「每个分类仅一个块」规则；AGENTS / deploy command 的 CHANGELOG 规则一致
   - doc:check 守门补强：新增 skill 数量事实（`computeFacts` 扫描 `.agents/skills`，拦截「N 个 skill」漂移），扫描范围扩展至 `.agents/` 规则文档、子包 README 与 deploy README（CHANGELOG 为历史记录不参与当前事实比对）
   - documentation-architecture 新增「markdown 风格规范」章节（文件结构/标题层级/表格/代码块/中文排版/CHANGELOG 结构/skill 与 command 结构模板），AGENTS 文档体系章节补引用；修正 skill 清单 10→12（补 derive-project / upstream-sync）
   - deploy command 补 H1 标题，与其余 command 结构对齐
@@ -299,19 +415,24 @@
   - **jsdom 28→30.0.1**：3 处 `@vitest-environment jsdom` 测试验证通过
   - **@types/node 22→24**：对齐 node v24 运行时（非 26，避免超前类型）
   - **@biomejs/biome 2.4.5→2.5.7**：新规则自动修复（`organizeImports` 导出排序、`useOptionalChain` 5 处语义等价变换），schema 同步 2.5.7
+
 - **批量升级 patch + minor 依赖（29 个）**：
   - TanStack 全家桶：react-router 1.170.21、react-start 1.168.38、router-plugin 1.168.26、react-form/react-form-start 1.33.3、router-devtools 1.167.1、react-devtools 0.10.9、devtools-vite 0.8.3
   - React 生态：react/react-dom 19.2.8、@types/react 19.2.18、@vitejs/plugin-react 6.0.5、vite 8.2.1
   - antd 生态：antd 6.5.3、@ant-design/icons 6.3.2
   - 核心库：i18next 26.3.6、react-i18next 17.0.11、jose 6.2.8、hono 4.13.0、@hono/node-server 2.1.0、pg 8.22.0、dompurify 3.4.13、isomorphic-dompurify 3.22.0、@alicloud/dysmsapi20170525 4.6.0
   - 构建/工具：tailwindcss 4.3.3、vitest 4.1.10、tsx 4.23.9、monaco-editor 0.56.0、nitro 260610-beta、@radix-ui/react-slot 1.3.3、@types/pg 8.20.4、@types/nodemailer 8.0.1
+
 - **antd 6.5.3 已官方修复 Card/Image 复合组件 JSX 声明缺陷**：删除 `app/src/types/antd-fix.d.ts` 与 `packages/ui-spa/src/antd-fix.d.ts`，移除 `Select`/`DictSelect` 的 `role="combobox"` 及 `UploadFile` aria 空串等绕过
+
 - **workspace peer 对齐单实例**：ui-spa/ui-ssr 的 `react`/`react-dom` peer 收紧至 `^19.2.8`，ui-spa 的 `antd`/`@ant-design/icons`/`@tanstack/react-router`/`monaco-editor` peer 同步对齐 app 实际版本
+
 - **共享依赖上移根 package.json**（私有 monorepo，版本统一在根管理）：
   - `dependencies`：`react`/`react-dom`/`i18next`（app + ui 包 / core 多包直接使用）；`devDependencies`：共享工具链 `vitest`/`@types/react*`/`@types/node`/`@testing-library/*`/`jsdom`
   - app 删除 16 个冗余声明（`pino`/`jose`/`openai` 等仅经 `@fsdx/lib` 间接使用，不直接 import）
   - core/ui-ssr/ui-spa 移除 `react`/`react-dom` peer 声明，单实例由根 `node_modules` 唯一副本保证（依赖根 hoisting 隐式解析）
   - ui-spa 保留 `antd`/`@ant-design/icons`/`@tanstack/react-router`/`monaco-editor`/`@wangeditor/*`/`dayjs` peer（单实例约束不变）
+
 - **移除 changeset 工具链**：库包全部 `private: true` 不发布，删除根 `changeset`/`version`/`release` 脚本、`@changesets/cli` 依赖与 `.changeset/` 目录
 
 ### Breaking Changes
@@ -320,81 +441,6 @@
   - 迁移 `0001_curious_maximus.sql`：新增 jsonb 数组列并回填旧单角色数据后删除旧列
   - 管理员/客户端用户管理页角色字段改多选；新增 `/admin/client-roles` 客户端角色管理页（含 `client-role:view/create/edit/delete` 权限码与菜单项）
   - `AdminUser.roleName` → `roleNames: string[]`；`getAdminRolePermissions` / `getClientRolePermissions` 改为按角色 id 数组合并权限
-
-### Infrastructure
-
-- **[infra] 分层重构：单仓库多包 + `@fsdx/lib` + `src/shared-services/`（可被衍生项目吸收）**：把原混装「纯可复用逻辑 + app 绑定单例/DI + 业务 service」的 monorepo 拆为单向分层 DAG——`routes → services → shared-services → (lib → db)`：
-  - **单仓库多包**：`src/` 整体移入 `app/src/`（`@fsdx/web`），根 `package.json` 为 `--filter` 编排壳；`server.ts`/`public/`/`drizzle/`/配置文件移入 `app/`
-  - **`@fsdx/lib`（subpath exports、无根桶，原 `@fsdx/core`，`packages/core` → `packages/lib`）**：仅保留纯可复用逻辑——utils（ms/export/cn/match-permission/error-utils/date-format）、`@fsdx/lib/cache`（原 `cache-core`）、infra 通用非单例（captcha/semaphore/task-manager/batch-writer）+ `StorageAdapter` 纯契约（`@fsdx/lib/storage`）；**零全局态、不读 env/db、不做日志耦合**（错误向上抛出，警告经 `onEvent` 钩子或 `console`，如 `batch-writer`）；第三方依赖收敛为 clsx / tailwind-merge / opentype.js；新增 `@fsdx/ui-ssr`（shadcn button/card/badge/input/textarea + AutofillBlocker）与 `@fsdx/ui-spa`（antd 基础组件，antd 为 peerDependency）
-  - **`src/shared-services/`（app 层，高共享 service 归属）**：承载 app 绑定单例——`logger` / `jwt` / `metrics` / `storage`（`LocalStorageAdapter` + 单例）/ `scheduler` / `mail` / `sms` / `request-context` + 系统级共享域 `config` / `dict` / `i18n`（含 `i18n.functions`）/ `ai`（含 `ai-providers.functions`）/ `query-utils` / `operation-log`；**只依赖 `lib`/`db`/本层，绝不引用 `services`**（依赖图无环；判断标准：一个 `services` 模块被大范围引用共享 → 具备成为 shared-services 的条件）；`app/src/lib/` 目录删除（track 并入 `services/track/track.ts`，其余并入 shared-services）
-  - **去依赖注入透传**：`mail` / `sms` / `scheduler` 直接 `import { logger }`，`mail` / `sms` 直接 `import { getConfig }`（`shared-services/config/config.server`）；删除 `initMail` / `initSms` / `setSchedulerLogger` 与 `createGlobalDepsStore`（`shared-services/deps-store` 删除）；`bootstrap.ts` 清空依赖注入；跨 bundle 一致性靠 globalThis（metrics 注册表、config / AI provider 缓存）
-  - **其它**：logger 改 `createLogger` 工厂；jwt 改 `createJwt` 工厂；`COOKIE_NAMES` 迁至 `src/constants/cookie-names.ts`；`matchPermission` 迁入 lib；`OperatorType` 下沉 `db/schema/operation-log`（`request-context` type-only 引用，拆除 `db → core` 反向依赖）；`antd-static` 迁入 ui-spa、app 删除 `#/components/antd-static` 壳；Tailwind 经 `@source` 扫描 ui 包源码类名；i18n 单模块化；npm 依赖迁移（`pino`/`pino-pretty`/`jose`/`nodemailer`/`cron`/`@alicloud/*` 自 lib 移入 app）
-  - 影响：`app/src/lib` 与 `#/lib/*` 路径废弃；整体目录/包布局与 import 路径变更；方案文档 `.opencode/plan/lib-shared-services-layer-rework.md` / `shared-services-consolidation.md`
-
-## [v1.1.0] - 2026-08-24
-
-### Features
-
-- **消息中心（message）**：`message` 表（`recipient_type` + `recipient_id` 无外键）+ 服务层 10 函数 + 三组 SFn（客户端自助/管理端收件箱/管理端管理）+ 前台 `/messages`（shadcn/ui SSR）+ 管理端 `/admin/messages`（收件箱）与 `/admin/messages/manage`（管理）+ Header/AdminLayout 消息铃铛（30 秒轮询）+ `message:view/send/delete` 权限
-- **文件资源管理器（file-explorer）**：`STORAGE_DIR` 目录浏览 + 路径穿越防护 + 写保护 + `/admin/file-explorer` 页面 + `/api/download/file-explorer/*` 下载路由 + `file_explorer:*` 权限
-- **lib/ms + MSInput**：vercel/ms 移植（parse/parseStrict/format/ms）+ 4 个测试文件 + antd 时长输入组件
-- 修复既有测试失败：jwt 测试 logger mock 缺 `debug`；news 测试 i18n.server mock 缺 `applyTranslations`（改用 `importOriginal`）
-
-### Infrastructure
-
-- PostgreSQL + Drizzle ORM（17 张表，uuid 主键，软删除，timestamptz）
-- Vitest 测试（79 个测试文件，822 条测试）
-- 迁移流程：`pnpm db:generate` + `pnpm db:migrate`（bootstrap 启动自动执行）
-
-### Fix
-
-- **中间件 import-protection 告警**：`resolveAdminAuthContext`/`resolveClientAuthContext` 下沉到 `middleware/*.server.ts`，中间件 guard 在 `.server()` 回调内动态导入；客户端构建剥离回调后不再残留 `.server` 依赖（此前 admin 侧因函数被 export 无法被死代码消除而告警）
-- **AdminRootDocument `<title>` 告警**：`{siteName} 管理后台` 两个 children 改为模板字符串，消除 React title 数组警告
-- **登录/注册/找回密码页 tsc 报错**：`form.Subscribe` 的 `selector` 泛型推断被 `NoInfer` + 默认值阻断（TS 6），改为全量 FormState 订阅（去掉 selector），`state.canSubmit`/`state.isSubmitting`/`state.values.email` 直接读取，消除 FormState 类型不匹配
-
-### Refactor
-
-- **用户/认证/日志/操作日志向 bom-easy 对齐**：
-  - 中间件：新增 `clientPermRouteGuard`（客户端 Server Route 权限守卫，捕获 `ClientAuthError` 转状态码 JSON）；`/api/download/log/$id` 改用 `adminPermRouteGuard` 中间件，删除 `api-auth.ts`（`verifyAdminPerm`/`ApiAuthError`），`sf-error-logger` 同步移除 `ApiAuthError` 分支
-  - 操作日志：`logExternalRequest()` 落库字段语义对齐——`module`=外部系统标识（调用方传入）、`action`=`login`/`request`（按请求类型）、`targetType`=接口来源类型（默认 `openapi`，调用方可指定）、`targetName`=接口路径，`detail` 含 system/success 并展开 extra
-  - 鉴权：`getCurrentAdmin`/`getCurrentClient` 将未删除约束下沉到 SQL 层（`and(eq, isNull)`），保留 JS 侧防御校验；管理员找回密码重置后补 `clearAdminUserCache`
-  - 基础设施：`sanitizeError()` 递归脱敏 `error.cause`（含非 Error 对象，防敏感字段透传 + 循环/深度防护）
-  - 测试补强：操作日志 `logCrud`/`logExternalRequest` 覆盖（默认 admin、ALS 上下文、system 兜底），admin/client `getCurrent*` 的 where 条件哨兵断言（EQ + ISNULL 防 `&&` 吞条件）
-- **埋点模块重构为神策简化模型（track 命名体系）**：表/服务/路由/权限码统一更名
-  - 表：`event`→`track_event`（列 `event`→`name`）、`preset_event`→`track_event_meta`、`preset_property`→`track_property_meta`，Schema 合并为 `src/db/schema/track.ts`
-  - 服务：`src/services/event/`→`src/services/track/`，`trackEvent()` 增加 per-session 频控（60 条/分钟）与时间钳制（过去 1 天 ~ 未来 5 分钟）
-  - 路由：`/admin/events/*`→`/admin/track/*`（`/admin/track/query`、`/admin/track/analytics`、`/admin/track/event-meta`、`/admin/track/property-meta`），菜单「预设事件/预设属性」→「元事件/元属性」
-  - 权限码：`event:view/query/manage`→`track:view/query/manage`
-  - SDK 入参：`trackEventSFn` payload 字段 `event`→`name`
-  - 预置清单裁剪：元事件 9→5、元属性 16→11，`ensurePreset*` 增补清理逻辑
-- **管理端角色改名 `role`→`admin_role`**：表、`admin_user.role_id`→`admin_role_id`、模块 `src/services/admin-role/`、路由 `/admin/admin-roles`、权限码 `role:*`→`admin-role:*`、审计模块名 `admin_role`
-- **DB 迁移基线重置**：统一 generate+migrate（移除 db:push），重建 `drizzle/0000_initial.sql`（17 张表全量建表，允许清库）
-- **主题体系重构（对齐 bom-easy）**：
-  - 具名主题注册表 `app/src/theme/themes.ts`：每个端一个主题预设（`ThemePreset`），`data-theme` 承载完整主题名（如 `admin-brown-light`）；管理端棕 `#795548`、前台中性灰
-  - CSS 令牌链路：新增 `shared-tokens.css` 共享中性令牌（`--t-*`），两端 `--t-brand-*` 品牌色阶 → `--s-*` 语义令牌 → `@theme` 映射；`@custom-variant dark (&:is([data-theme$="-dark"] *))` 统一暗色变体，废弃 `.dark` class 双轨
-  - `use-theme-mode` 重写为 `useSyncExternalStore`（跨标签页 + 系统主题联动），签名改为 `useThemeMode(preset)`，返回 `scheme`（dataTheme + antd 主色）
-  - 管理端品牌色由绿 `#00b96b` 换棕 `#795548`（暗色 `#a1887f`），antd `colorPrimary`/`colorInfo` 从注册表读取（`colorInfo` 派生 Link 链接色）；`borderRadius: 0` 直角风格，Tailwind radius 全 0（保留 `rounded-full`）
-  - 管理端侧边栏主题按钮保持三态循环（亮/暗/跟随系统）
-  - `AdminRootDocument` 补齐主题 init 脚本（修复首屏闪烁），两个 `<head>` 增加内联 `@layer` 顺序声明；init 脚本由 `themes.ts` 注册表推导 storageKey 与 dataTheme，杜绝脚本与注册表手工双写漂移
-  - `use-theme-mode` 的 DOM 应用改为直接读取 localStorage/媒体查询最新值（规避 SSR 水合首帧用服务端快照覆盖主题），`storage` 监听按主题键过滤
-  - 硬编码颜色清理：`#1677ff`→`var(--s-primary)`、`zinc/blue/gray`→语义令牌类；Monaco 暗色检测改 `data-theme` 判断；内联非零圆角归零
-  - 管理端 logo/favicon 蓝 `#1677ff`→棕 `#795548`；前台 storageKey `theme`→`client-theme`
-- **AdminPageContent 挪回 app**：布局组件（标题栏 + 内容区）自 `@fsdx/ui-spa` 迁至 `app/src/components/admin/AdminPageContent.tsx`，26 处路由页面导入改 `#/components/admin/AdminPageContent`，ui-spa 移除对应导出；标题栏定高改 CSS 变量 `--admin-header-height`，内容区高度按 `calc(100vh - var(--admin-header-height))` 计算内部滚动，便于子元素按已知高度布局
-- 目录分层：新增 `src/constants/`、`src/validators/`、`src/utils/`、`src/types/`；`lib/query` 类型迁入 `types/query.ts`；删除 `format-date` 改用 dayjs 内联
-- 缓存拆分：`lib/cache/cache.ts`→`core.ts` + 按模块 `*.cache.ts` 实例文件，新增 `adminUserCache`
-- 新增 `lib/request-context`（AsyncLocalStorage 操作者身份）+ `lib/buffer/batch-writer`（通用缓冲写入器，event/operation-log 复用）
-- 操作日志：`logCrud()` 一行式审计封装 + `logExternalRequest()`（从 ALS 读操作者），`operation_log` 新增 `operator_type` 列；32 处 CRUD 审计调用迁移
-- 中间件统一：`resolveAdminAuthContext()` 一步校验 + `adminPermRouteGuard`（Server Route）+ api-auth 复用；中间件不直接查 DB，委托 `getAdminUserForAuth()`/`getClientUserForAuth()`（带缓存）
-- 新增客户端 RBAC 框架：`client_role` 表 + `client-permissions.ts` + `clientAuthGuard`/`clientPermGuard`，init 种子 `client-super-admin`/`normal-user`，注册分配默认角色
-- Schema 单一来源：admins/clients/admin-role 服务输入类型改 `z.infer` 派生，消除 `as XxxInput` 桥接断言
-- 分层违规清理：captcha/file/forgot-password 的 DB 逻辑从 `.functions.ts` 提取到 `.server.ts`；news `generateSlug` 去重（消除循环依赖）
-- antd-static 桥接：message/modal/notification 经 `App.useApp` 捕获，31 处静态 message 调用迁移；AdminProvider 加 `<StyleProvider layer>` + 品牌色 `#00b96b`
-- 样式分层：两份 global.css 预声明 `@layer theme, base, antd, components, utilities` + 裸 `a` 语义色兜底
-- 新增 `sfn-helpers.ts`（safeSfnCall/unwrapSfn）+ `hooks/use-sfn-call.ts` + `PermissionTags` + `useCrudPage`
-- **权限模块迁至顶层 `src/permissions/`**：权限码从 `src/constants/permissions/` 提升为顶层领域模块（与 `src/db/` 同级），30 处 `#/constants/permissions/*` 引用改为 `#/permissions/*`，同步更新 AGENTS.md 与 skill 文档路径
-- **权限命名全对称（破坏性重构）**：`permissions.ts` → `admin-permissions.ts`，符号全量加 `Admin` 前缀（`PERMISSIONS`→`ADMIN_PERMISSIONS`、`PermissionDef`→`AdminPermissionDef`、`hasPermission`→`hasAdminPermission` 等），与 `client-permissions.ts` 的 `Client*` 命名对齐
-- **权限码分隔符规范化**：`file_explorer:*`→`file-explorer:*`、`dict:*_item`→`dict:*-item`；审计模块名 `file_explorer`/`admin_role` 同步为 kebab（`operation_log.module` 数据格式变更）
-- **组件命名规范化**：`components/admin/nav-config.tsx` → `NavConfig.tsx`
 
 ## 历史版本
 

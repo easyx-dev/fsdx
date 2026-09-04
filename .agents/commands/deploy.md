@@ -11,7 +11,7 @@ description: 版本发布：联动 commit 流程提交业务变更、确定新�
 2. 确定新版本号：
    - 读取 app/package.json（@fsdx/web）当前版本号，记为 `{当前版本}`
    - 检查是否存在对应 tag：`git rev-parse -q --verify refs/tags/v{当前版本}`
-   - 若 tag 已存在（当前版本已发布过）：将补丁版本号（PATCH）加 1 作为新版本号（例如 1.1.0 → 1.1.1），更新 app/package.json 的 version 字段
+   - 若 tag 已存在（当前版本已发布过）：按本次变更性质决定新版本号——破坏性变更→MAJOR、新特性→MINOR、缺陷修复→PATCH，遵循 Semantic Versioning，然后更新 app/package.json 的 version 字段
    - 若 tag 不存在（当前版本尚未发布，如仓库初始状态 `1.1.0`）：直接以当前版本作为新版本号，不改动 version 字段
 3. 更新 CHANGELOG.md（规则见 AGENTS.md「变更日志（CHANGELOG）」章节）：
    - 把 `[Unreleased]` 升为 `[v{新版本号}] - {当天日期}`（日期格式如 `2026-08-21`），顶部新增空 `[Unreleased]` 段
