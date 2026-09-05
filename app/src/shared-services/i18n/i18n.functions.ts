@@ -15,7 +15,6 @@ import {
 	upsertContentTranslation,
 } from "#/shared-services/i18n/i18n.server";
 import { logCrud } from "#/shared-services/operation-log/operation-log.server";
-import type { Locale } from "./i18n-types";
 import { DEFAULT_LOCALE, SUPPORTED_LOCALES } from "./i18n-types";
 
 const localeSchema = z.enum(SUPPORTED_LOCALES).default(DEFAULT_LOCALE);
@@ -23,7 +22,7 @@ const localeSchema = z.enum(SUPPORTED_LOCALES).default(DEFAULT_LOCALE);
 /** 获取当前请求的 locale 及对应翻译（从 requestMiddleware context 读取 Cookie locale） */
 export const getLocaleBundleSFn = createServerFn({ method: "GET" }).handler(
 	async ({ context }) => {
-		const locale: Locale = (context.locale as Locale) || DEFAULT_LOCALE;
+		const locale = context.locale;
 		const translations = await getUITranslations(locale);
 		return { locale, translations };
 	},

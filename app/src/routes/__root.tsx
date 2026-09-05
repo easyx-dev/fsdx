@@ -4,10 +4,7 @@
  */
 
 import { TanStackDevtools } from "@tanstack/react-devtools";
-import {
-	createRootRouteWithContext,
-	useLocation,
-} from "@tanstack/react-router";
+import { createRootRoute, useLocation } from "@tanstack/react-router";
 import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
 import { Fragment } from "react";
 import { ClientAuthProvider } from "#/components/client";
@@ -15,11 +12,8 @@ import { AdminRootDocument, SSRRootDocument } from "#/components/Document";
 import { GlobalStoreProvider } from "#/components/providers";
 import { getVisibleConfigsSFn } from "#/shared-services/config/config.functions";
 import { getLocaleBundleSFn } from "#/shared-services/i18n/i18n.functions";
-import type { Locale } from "#/shared-services/i18n/i18n-types";
 
-export const Route = createRootRouteWithContext<{
-	locale: Locale;
-}>()({
+export const Route = createRootRoute({
 	head: () => {
 		return {
 			meta: [
@@ -31,8 +25,7 @@ export const Route = createRootRouteWithContext<{
 			],
 		};
 	},
-	async loader({ context }) {
-		void context.locale;
+	async loader() {
 		const [bundle, systemConfig] = await Promise.all([
 			getLocaleBundleSFn(),
 			getVisibleConfigsSFn(),

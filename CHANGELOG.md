@@ -12,6 +12,10 @@
 
 ### Fix
 
+- **前台 locale 读取来源统一至 `context.locale` 并去冗余类型断言（[infra]）**：`getLatestNewsSFn` 原直接 `getCookie(LOCALE_COOKIE)` 重读并自行校验 `SUPPORTED_LOCALES`，与其它 SFn（`news.functions.ts`）读取 `context.locale` 的路径不一致；改为统一从请求中间件注入的 `context.locale` 读取。由于 `routeTree.gen.ts` 的 `Register.config` 增强使全局 requestMiddleware 类型流入 SFn 上下文，`context.locale` 已能推断为 `Locale`，一并移除 `getLatestNewsSFn` / `getLocaleBundleSFn` / `getVisibleConfigsSFn` 中冗余的 `(context.locale as Locale)` 断言、`context.locale || DEFAULT_LOCALE` 兜底（默认值已由 `localeMiddleware` 权威注入）与相关未用类型导入（`Locale` / `LOCALE_COOKIE` / `SUPPORTED_LOCALES`），语义行为不变。
+
+- **locale 默认值收敛至 `localeMiddleware` 单一权威来源（[infra]）**：`router.tsx` 的 `createRouter({ context: { locale: DEFAULT_LOCALE } })` 是静态占位值（SSR 时不被改写，路由 loader 的 `context.locale` 恒为 `"zh"`），且 `__root.tsx` 的 `createRootRouteWithContext<{ locale: Locale }>` 与 `void context.locale` 均属休眠死配置；予以移除（`createRouter` 不再传 `context`，根路由改 `createRootRoute()`，loader 不再引用路由 `context.locale`）。同时 `localeMiddleware` 由盲目 `getCookie(...) as Locale` 改为 `SUPPORTED_LOCALES` 运行时校验，非法 Cookie 值回退 `DEFAULT_LOCALE`（成为 locale 默认值的唯一权威来源），并更新过时注释。`Header` 语言切换按钮改用 `LOCALE_COOKIE` / `SUPPORTED_LOCALES` / `DEFAULT_LOCALE` 常量（替换硬编码 `"lang"` / `"zh"` / `"en"`），消除魔法字符串并提升语言扩展健壮性。
+
 ### Docs
 
 ### 依赖升级

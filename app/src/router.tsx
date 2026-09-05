@@ -1,6 +1,5 @@
 import type { ErrorComponentProps } from "@tanstack/react-router";
 import { createRouter } from "@tanstack/react-router";
-import { DEFAULT_LOCALE } from "#/shared-services/i18n/i18n-types";
 import {
 	DefaultErrorFallback,
 	NotFoundFallback,
@@ -18,9 +17,6 @@ export function getRouter() {
 		),
 		defaultNotFoundComponent: () => {
 			return <NotFoundFallback />;
-		},
-		context: {
-			locale: DEFAULT_LOCALE,
 		},
 	});
 

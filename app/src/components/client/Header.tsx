@@ -12,6 +12,11 @@ import { useState } from "react";
 import { ClientLogo, useClientAuth } from "#/components/client";
 import { useGlobalStore, useTranslation } from "#/components/providers";
 import { track } from "#/services/track/track";
+import {
+	DEFAULT_LOCALE,
+	LOCALE_COOKIE,
+	SUPPORTED_LOCALES,
+} from "#/shared-services/i18n/i18n-types";
 import { CLIENT_THEME } from "#/theme/themes";
 
 export function Header() {
@@ -71,8 +76,11 @@ export function Header() {
 							variant="ghost"
 							size="sm"
 							onClick={async () => {
-								const l = await cookieStore.get("lang");
-								await cookieStore.set("lang", l?.value === "zh" ? "en" : "zh");
+								const l = await cookieStore.get(LOCALE_COOKIE);
+								const next =
+									SUPPORTED_LOCALES.find((x) => x !== l?.value) ??
+									DEFAULT_LOCALE;
+								await cookieStore.set(LOCALE_COOKIE, next);
 								window.location.reload();
 							}}
 							title={t("切换语言")}
