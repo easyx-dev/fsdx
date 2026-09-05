@@ -38,12 +38,13 @@ packages/
 │       ├── cache/            # 缓存抽象（cache/ MemoryCache）
 │       └── infra/            # 通用非单例基础设施（captcha/semaphore/task-manager/batch-writer/storage 契约）
 ├── ui-ssr/                   # @fsdx/ui-ssr —— shadcn 基础组件（ui/ theme/ form 三桶）
-└── ui-spa/                   # @fsdx/ui-spa —— antd 管理端组件（antd 为 peerDependency）
+├── ui-spa/                   # @fsdx/ui-spa —— antd 管理端组件（antd 为 peerDependency）
+└── ai-rich-editor/           # @fsdx/ai-rich-editor —— AI 驱动「代码编辑+实时预览」富文本工作台（重客户端组件，antd 单实例）
 ```
 
 `#/*` 别名仅在 app 内生效（`#/*` → `./src/*`）。跨包引用一律使用 `@fsdx/*` subpath import。
 
-> 每个子包的导出清单、API 与宿主集成约束见各自 README：[lib](packages/lib/README.md) / [ui-ssr](packages/ui-ssr/README.md) / [ui-spa](packages/ui-spa/README.md)，是包边界的权威文档。
+> 每个子包的导出清单、API 与宿主集成约束见各自 README：[lib](packages/lib/README.md) / [ui-ssr](packages/ui-ssr/README.md) / [ui-spa](packages/ui-spa/README.md) / [ai-rich-editor](packages/ai-rich-editor/README.md)，是包边界的权威文档。
 
 ### 包边界约定
 
@@ -52,7 +53,7 @@ packages/
 - **shared-services = 高共享的 service**：位于 `src/shared-services/`，被 routes / middleware / bootstrap / client / 其它 service **直接引用**，承载 app 绑定单例（logger/jwt/metrics/storage/scheduler/mail·sms/request-context）+ 系统级共享域（config/dict/i18n/ai/query-utils/operation-log）。**只依赖 `lib`/`db`/本层，绝不引用 services**（避免循环依赖）；`mail`/`sms`/`scheduler` 直接 `import { logger }`、`mail`/`sms` 直接 `import { getConfig }`，无 `init*`/`setSchedulerLogger` 透传；跨 bundle 一致性靠 globalThis（metrics 注册表、config / AI provider 缓存）。判断标准：**一个 `services` 模块被大范围引用共享 → 具备成为 shared-services 的条件**
 - **antd 单实例**：`@fsdx/ui-spa` 将 antd 声明为 peerDependency，app 提供唯一实例；`antd-static` 桥接在 app `<App>` 上下文内工作
 - **UI token 宿主注入**：ui 包组件只写 tailwind 类名，颜色 token 由 app 的 `global.css` 定义；Tailwind 通过 `@source` 扫描包源码类名
-- **新增共享逻辑**：纯函数/类（非单例、不读 env）入 `@fsdx/lib`，shadcn 组件入 `@fsdx/ui-ssr`，antd 组件入 `@fsdx/ui-spa`，app 绑定单例/DI 入 `src/shared-services/`，业务逻辑留在 `app/src`
+- **新增共享逻辑**：纯函数/类（非单例、不读 env）入 `@fsdx/lib`，shadcn 组件入 `@fsdx/ui-ssr`，antd 组件入 `@fsdx/ui-spa`，AI 富文本工作台入 `@fsdx/ai-rich-editor`，app 绑定单例/DI 入 `src/shared-services/`，业务逻辑留在 `app/src`
 
 ## 技术栈
 
@@ -80,7 +81,7 @@ packages/
 
 ### Server Function
 
-- 所有 Server Function 的 `validator` **必须**使用 zod schema，禁止裸函数校验（FormData 上传类 SFn 除外，zod 无法直接校验 `FormData`，允许用裸函数做类型守卫）；格式 `createServerFn({ method: "GET" | "POST" }).validator(schema).handler(async ({ data }) => ...)`；调用方通过 `{ data: ... }` 传参
+- 所有 Server Function 的 `validator` **必须**使用 zod schema，禁止裸函数校验（FormData 上传类 SFn 除外，zod 无法直接校验 `FormData`，允许用裸函数做类型守卫）；格式 `createServerFn({ method: "GET" | "POST" }).validator(schema).handler(async ({ data }) => ...)`；调用方通过 `{ data: ... }` 传参；**无入参的 SFn 豁免**（如 `getCurrentAdminSFn()`、`checkInitStatusSFn()`、`getStatsSFn()` 等零参调用）可省略 `validator`，无需 `z.void()`
 - `createServerFn` 定义的函数**必须**以 `SFn` 为后缀；`.server.ts` 中的辅助函数**禁止**使用 `SFn` 后缀；`.functions.ts` 中未被引用的包装器视为死代码
 - **三层分离**：`.server.ts`（服务逻辑）/ `.functions.ts`（SFn 包装）/ `.schemas.ts`（zod schema 单一来源，服务层用 `z.infer` 派生类型）；路由文件与组件**禁止**直接 import `.server.ts`
 - **依赖方向（硬规则）**：单向分层 `routes → services → (core 基础库) → db`，服务层不得反向依赖表现层——`services/**` **禁止** import `routes/**`（含路由 `-mods/`、路由组件与路由局部 schema）；services 的上游仅限表现层入口（routes / middleware / bootstrap / lib SDK）与服务间协作（如 `logCrud`、`query-utils`）
@@ -173,8 +174,8 @@ packages/
 
 ### 视觉风格与主题约定
 
-- **圆角**：项目为直角风格，圆角统一归零——antd 令牌 `borderRadius: 0`，Tailwind 侧 `rounded*` 均为 0；仅圆形元素（头像、徽章、未读红点、加载圈）可用 `rounded-full`；内联 `borderRadius` 一律写 `0`
-- **颜色**：统一使用语义令牌类（`primary` / `primary-bg` / `primary-fg` / `foreground` / `foreground-secondary` / `foreground-tertiary` / `background` / `background-secondary` / `border` / `divider` / `accent`），禁止硬编码色值；令牌链路 `--t-*` 基础令牌 → `--s-*` 语义令牌 → `@theme` 映射
+- **圆角（以渲染结果为准，由令牌归零）**：项目为直角风格，圆角统一归零——antd 令牌 `borderRadius: 0`；Tailwind 侧由 `--radius-*` 令牌归零（`admin.global.css`/`ssr.global.css`/`shared-tokens.css` 中 `--radius*: 0`），**`rounded-*` 类名本身保留、运行时渲染为 0**；仅圆形元素（头像、徽章、未读红点、加载圈）可用 `rounded-full`；内联 `borderRadius` 一律写 `0`。审样式时按「渲染结果」判，勿仅按类名在场判违规；邮件等不解析令牌的场景可用内联 `0`
+- **颜色**：统一使用语义令牌类（`primary` / `primary-bg` / `primary-fg` / `foreground` / `foreground-secondary` / `foreground-tertiary` / `background` / `background-secondary` / `border` / `divider` / `accent`），禁止硬编码状态色值（`var(--s-*)`）；令牌链路 `--t-*` 基础令牌 → `--s-*` 语义令牌 → `@theme` 映射。**例外**：装饰性品牌视觉（如 AI 功能入口渐变）、`<meta name="theme-color">` SSR 初始值、邮件/富文本内联样式（客户端不解析令牌），属可接受具名色值
 - **主题机制**：每个端对应一个 `ThemePreset`（见 `app/src/theme/themes.ts` 单一事实来源），`data-theme` 承载完整主题名，两端共用 `@custom-variant dark (&:is([data-theme$="-dark"] *))` 暗色变体；antd `colorPrimary` 与 CSS `--s-primary` 同色需双写；`Document.tsx` 内联 init 脚本从注册表推导 storageKey 与 dataTheme，禁止手工双写
 - **双主题**：前台与管理端各自独立明暗主题（`client-theme` / `admin-theme` 两个 storageKey），三态（亮/暗/跟随系统）持久化于 localStorage；所有颜色必须走语义令牌保证暗色自适应
 - **品牌色**：管理端为棕色 `#795548`（暗色 `#a1887f`）；前台为中性灰（「文字即主色」）；antd `colorPrimary`/`colorInfo` 由各端 ConfigProvider 从注册表读取

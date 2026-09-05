@@ -10,15 +10,28 @@
 
 - **聚合代码审查命令至 `/code-review`（[infra]）**：原 `/check-architecture` 与代码一致性审查合并为单一入口 `.agents/commands/code-review.md`——默认全量扫描整个项目（`app/` + `packages/`），不做 diff 限定；按 10 维度（分层/路由/SFn/组件/类型与 DB/安全/错误处理/测试/命名与一致性/注释规范）输出严重度分级报告，并沉淀「一致性/Style Guide」（命名/分层/状态/错误处理/样式/注释与文档），目标让全仓库像一个人写的；`--diff` 需显式传参。删除 `.agents/commands/check-architecture.md`，并把 `AGENTS.md` 命令表、`.agents/guide.md`、`docs/documentation-architecture.md` 中的 `/check-architecture` 引用统一改为 `/code-review`（CHANGELOG 历史记录保留原词）。
 
+- **代码审查整改：测试基线修复（[infra]）**：`@fsdx/ui-ssr` Vitest 配置补 `environment: "jsdom"` 并新增 `src/test-setup.ts`（内存版 `localStorage`/`sessionStorage`/`matchMedia` 豁免），修复 Node 22+ WebStorage 全局变量遮蔽 jsdom `window.localStorage` 导致 16 条主题测试全挂的问题；`services/dashboard` 的 `getStats` 测试从路由旁 `_admin/__tests__/stats.test.ts` 迁至模块同目录 `services/dashboard/__tests__/dashboard.test.ts`，满足「测试与被测模块同目录」约定。
+
 ### Refactor
 
+- **全量代码审查整改：命名一致性收敛（[infra]）**：
+  - `-mods/` 逻辑文件 camelCase → kebab：`dictUtils.ts → dict.utils.ts`、`fileExplorerUtils.ts → file-explorer.utils.ts`（含对应测试与引用更新）
+  - 裸 `interface Props` → `XxxProps`：`FieldTranslationDrawerProps` / `RichEditorProps` / `AiProviderFormProps`（后两者共用）
+  - 布尔 prop 统一 `is/has/should` 前缀：`recipientSearching → isSearching`、`valueDisabled → isValueDisabled`、`advancedExpanded → isAdvancedExpanded`、`slugDisabled → isSlugDisabled`
+- **超限文件按职责拆分（[infra]）**：`config.server.ts` 预置配置抽至 `config.presets.ts`；`news.server.ts` slug 逻辑抽至 `news.slug.ts`；`i18n-content.server.ts` 导入导出抽至 `i18n-content-io.ts`；`ai-providers/-mods/AiProviderFormModal.tsx` 表单数据模型抽至 `ai-provider-form.model.ts`；`ui-spa/upload/FileUpload.tsx` 纯工具抽至 `file-upload.utils.ts`，各文件压回 400 行阈值内。
+- **圆角归零与语义令牌化（[infra]）**：圆角沿用已有的主题层归零约定（`--radius-*` 均为 0，`rounded-*` 类名保留、运行时归零，仅 `rounded-full` 保留圆形），未改动类名；`ErrorFallback`、管理端仪表盘统计色、`files` 成功色、`newsColumns` 占位色改走语义令牌（`var(--s-*)`）；邮件模板内联色值注明「客户端不解析令牌」豁免。
+
 ### Fix
+
+- **错误兜底组件语义令牌化（[infra]）**：`ErrorFallback` 的 `DefaultErrorFallback`/`NotFoundFallback` 硬编码 zinc 色值换为语义令牌（`bg-background`/`text-foreground-secondary`/`bg-danger` 等）并删除注释掉的死代码，修复暗色主题下 404/错误页失控与直角风格不一致。
 
 - **前台 locale 读取来源统一至 `context.locale` 并去冗余类型断言（[infra]）**：`getLatestNewsSFn` 原直接 `getCookie(LOCALE_COOKIE)` 重读并自行校验 `SUPPORTED_LOCALES`，与其它 SFn（`news.functions.ts`）读取 `context.locale` 的路径不一致；改为统一从请求中间件注入的 `context.locale` 读取。由于 `routeTree.gen.ts` 的 `Register.config` 增强使全局 requestMiddleware 类型流入 SFn 上下文，`context.locale` 已能推断为 `Locale`，一并移除 `getLatestNewsSFn` / `getLocaleBundleSFn` / `getVisibleConfigsSFn` 中冗余的 `(context.locale as Locale)` 断言、`context.locale || DEFAULT_LOCALE` 兜底（默认值已由 `localeMiddleware` 权威注入）与相关未用类型导入（`Locale` / `LOCALE_COOKIE` / `SUPPORTED_LOCALES`），语义行为不变。
 
 - **locale 默认值收敛至 `localeMiddleware` 单一权威来源（[infra]）**：`router.tsx` 的 `createRouter({ context: { locale: DEFAULT_LOCALE } })` 是静态占位值（SSR 时不被改写，路由 loader 的 `context.locale` 恒为 `"zh"`），且 `__root.tsx` 的 `createRootRouteWithContext<{ locale: Locale }>` 与 `void context.locale` 均属休眠死配置；予以移除（`createRouter` 不再传 `context`，根路由改 `createRootRoute()`，loader 不再引用路由 `context.locale`）。同时 `localeMiddleware` 由盲目 `getCookie(...) as Locale` 改为 `SUPPORTED_LOCALES` 运行时校验，非法 Cookie 值回退 `DEFAULT_LOCALE`（成为 locale 默认值的唯一权威来源），并更新过时注释。`Header` 语言切换按钮改用 `LOCALE_COOKIE` / `SUPPORTED_LOCALES` / `DEFAULT_LOCALE` 常量（替换硬编码 `"lang"` / `"zh"` / `"en"`），消除魔法字符串并提升语言扩展健壮性。
 
 ### Docs
+
+- **AGENTS.md 包边界与说明补充**：结构树、README 链接清单与「新增共享逻辑」纳入 `@fsdx/ai-rich-editor`（AI 富文本工作台）；Server Function 章节明确「无入参 SFn（零参调用）可省略 `validator`」豁免，与现有零参 SFn 实践对齐。
 
 ### 依赖升级
 

@@ -31,13 +31,29 @@ description: 全量代码审查命令：扫描全项目，按 10 维度审查并
 
 ## 审查前置约定（规则即事实，以 AGENTS.md 与现有代码为判据）
 
-- **文件/目录命名**：路由 `kebab-case`（`news/$slug.tsx`）；路径参数 `$id/$slug/download.$`；布局分组 `_admin.tsx`；伴生文件进 `-mods/`；`-mods/` 内逻辑文件 `模块名.类型.ts`（kebab，如 `config.functions.ts`/`newsColumns.tsx`，不允许 camelCase 如 `dictUtils.ts`）；服务层按 `.server.ts`/`.schemas.ts`/`.functions.ts`/`.types.ts`/`.cache.ts` 后缀分层。
+- **文件/目录命名**：路由 `kebab-case`（`news/$slug.tsx`）；路径参数 `$id/$slug/download.$`；布局分组 `_admin.tsx`；伴生文件进 `-mods/`；服务层按 `.server.ts`/`.schemas.ts`/`.functions.ts`/`.types.ts`/`.cache.ts` 后缀分层。`-mods/` 内命名判定表：
+  - `模块名.类型.ts`：kebab（`news.functions.ts` / `dict.utils.ts`），禁 camelCase（如 `dictUtils.ts` / `fileExplorerUtils.ts`）
+  - `xxxColumns.tsx`（列定义）与 `PascalCase.tsx`（路由级组件，`NewsForm.tsx`）：为**认可例外**，不按 kebab 要求，逐类标注在豁免清单
 - **三层分离（硬规则）**：`.server.ts`（服务逻辑，禁止 `SFn` 后缀）/`.functions.ts`（SFn 包装，**必须** `SFn` 后缀）/`.schemas.ts`（zod 单一来源）。依赖单向 `routes → services → (lib/db)`；`services/**` 禁止 import `routes/**`；`.server.ts` 禁止 import `.functions.ts`；路由/组件禁止直接 import `.server.ts`；SFn 必须 `createServerFn({ method }).validator(schema)`，调用方 `{ data: ... }` 传参。
 - **组件命名**：`components/admin/`（antd 数据密集）、`components/client/`（shadcn 展示）、`components/providers/`（global-store/i18n-context）。Props 接口必须 `XxxProps`（禁止裸 `Props`）；布尔 Props `is/has/should` 前缀；对外回调 `onXxx`、内部实现 `handleXxx`；Hook 统一 `useXxx`。
 - **管理端表格操作列必须用 `TableOperate` 容器**，操作按钮统一「图标 + 文字」，`Delete` 内置信 `Popconfirm`。
-- **主题/样式**：颜色仅语义令牌（`primary`/`primary-fg`/`foreground`/`background-secondary`/`border`/`divider`/`accent`…），禁止硬编码色值；圆角归 0（仅圆形元素 `rounded-full`）；主题三态 `useAdminTheme()`/`useThemeMode()`。
+- **主题/样式（以渲染结果为准）**：颜色仅语义令牌（`var(--s-*)`），禁止硬编码状态色；**圆角由 `--radius-*` 令牌归零**——`rounded-*` 类名本身允许，只要最终渲染为 0，仅 `rounded-full` 保留圆形；主题三态 `useAdminTheme()`/`useThemeMode()`。
+- **机制感知准入（先判机制再判类名）**：审样式/命名前，先确认该实现是否已由「主题令牌 / 组件机制 / 构建工具（import-protection / tsc / Biome）」兜底。凡「规则意图已达成、只是实现方式不同」的，**一律不算偏离、不报**——典型如 `rounded-md` 类名 + `--radius-*` 归零、语义令牌映射、`import type` 引 `.server.ts`、shadcn/antd 自带类名、装饰性品牌渐变、邮件模板内联色。
 - **命名面收敛**：禁止硬编码 `fsdx_*`；Cookie 名走 `src/constants/cookie-names.ts` 集中常量。
 - **代码体积**：函数 >60 行、文件 >400 行即需拆分（按职责拆，禁止压缩排版）。
+
+## 已知豁免 / 例外（只列已认可项，不报违规）
+
+这些实现已达成规则意图、且改动成本低或确有必要，**默认不列为偏离**；仅在相关规则被真正违反（如新引入非令牌硬编码色值、新命名违反 kebab）时才报告：
+
+- **圆角**：`rounded-*` 类名 + `--radius-*` 令牌归零（`admin.global.css`/`ssr.global.css`/`shared-tokens.css` 中 `--radius*: 0`），仅 `rounded-full` 保留圆形。
+- **列定义文件**：`xxxColumns.tsx`（`newsColumns.tsx`/`configColumns.tsx`/`messageManageColumns.tsx`）为认可的 camelCase 例外；**纯逻辑/工具**文件（`xxxUtils.ts`）不在豁免内，须 kebab。
+- **`import type` 引 `.server.ts`**：路由/组件 type-only 导入类型不触发 import-protection，属允许；仅 VALUE 导入且非 Server Route 豁免路径才判违规。
+- **Server Route 例外**：`routes/file/r.$id.tsx`、`routes/admin/_admin/logs/download.$id.tsx`、`routes/admin/_admin/file-explorer/download.$.tsx`、`routes/api/metrics.tsx`、`routes/health.tsx` 允许在 `server.handlers` 内引 `.server.ts`。
+- **无入参 SFn**：零参调用（`getCurrentAdminSFn()` 等）可省略 `validator`。
+- **装饰性品牌视觉**：AI 功能入口的品牌渐变、`<meta name="theme-color">` SSR 初始值等非状态语义色，属可接受的具名色值。
+- **邮件模板/富文本内联样式**：HTML 邮件与 wangEditor 等客户端不解析令牌，内联色值/样式为跨客户端唯一可靠方案。
+- **shadcn/antd 自带类名**：`@fsdx/ui-ssr`/`@fsdx/ui-spa` 与 antd 组件类名由宿主 token 注入，属性名/类名不按业务命名规则要求。
 
 ## 审查维度（10 维度全量扫描）
 
@@ -52,13 +68,13 @@ description: 全量代码审查命令：扫描全项目，按 10 维度审查并
 - 路由文件是否独立可访问视图（URL/菜单/深链/前进后退可达）
 
 #### ③ SFn 合规 → [server-function](../skills/server-function/SKILL.md)
-- `createServerFn` 是否以 `SFn` 后缀命名；是否都有 zod `validator`（FormData 上传类允许裸函数类型守卫）
+- `createServerFn` 是否以 `SFn` 后缀命名；是否都有 zod `validator`（FormData 上传类允许裸函数类型守卫；**无入参零参调用豁免**）
 - 是否都有鉴权 middleware（`adminPermGuard`/`clientPermGuard`）；handler 是否有静默返回 null
 - `.functions.ts` 未引用的包装器是否已删（死代码）；路由/组件是否直接从 `.server.ts` 导入
 
 #### ④ 组件合规 → [AGENTS.md「组件约定」章节](../../AGENTS.md)
 - admin/ 下是否混用 Tailwind 同源组件（应 antd）；client/ 下是否混用 antd 同类组件（应 shadcn/ui）
-- 表格操作列是否用 `TableOperate`；操作按钮是否统一「图标 + 文字」；圆角是否归零；颜色是否走语义令牌
+- 表格操作列是否用 `TableOperate`；操作按钮是否统一「图标 + 文字」；颜色是否走语义令牌（`var(--s-*)`）；**圆角按渲染结果**判（`--radius-*` 令牌归零，`rounded-*` 类名不算违规，仅 `rounded-full` 保圆形）
 - `message`/`modal`/`notification` 是否经 `@fsdx/ui-spa/antd-static` 导入
 
 #### ⑤ 类型/DB 合规 → [db-schema](../skills/db-schema/SKILL.md)
@@ -76,15 +92,15 @@ description: 全量代码审查命令：扫描全项目，按 10 维度审查并
 - 通知分层是否正确（管理端 antd message / 前台 sonner toast）；SFn 是否走统一错误处理（`sfErrorLogger` 自动覆盖）
 
 #### ⑧ 测试覆盖 → [test-writing](../skills/test-writing/SKILL.md)
-- 每个 `src/services/` 和 `src/shared-services/` 模块是否有 `__tests__/`；每个导出函数是否覆盖正常/边界/错误路径
-- 测试是否为三段式 `vi.hoisted()` + `vi.mock()`；路由层 schema 校验测试是否就近放置
+- **仓库级搜索被测符号**：确认每个 `src/services/` / `src/shared-services/` 模块的导出函数在**全仓库**是否有测试（**勿只看模块 `__tests__/`**）。区分两类独立发现：① 全仓库无任何测试 → 真缺覆盖率；② 已有测试但未与被测模块同目录 → 位置漂移（单独记录，勿误报成缺测）
+- 测试是否为三段式 `vi.hoisted()` + `vi.mock()`；路由层 schema 校验测试是否就近放置；每个导出函数是否覆盖正常/边界/错误路径
 
 #### ⑨ 命名与一致性 → 文末「一致性 · Style Guide」
 （面向「像一个人写的」风格统一，同源偏离先归并再标注影响面）
 - `-mods/` 内逻辑文件是否 kebab（禁止 camelCase，如 `dictUtils.ts`/`fileExplorerUtils.ts`）
 - Props 接口是否 `XxxProps`（禁止裸 `Props`）；布尔 `is/has/should`；回调 `onXxx`/`handleXxx`；Hook `useXxx`
 - SFn 是否 `xxxSFn`；服务动词 `get/create/update/delete` 统一；常量 `SCREAMING_SNAKE_CASE`；schema `xxxCreateSchema` 对称
-- 同一模块后缀是否同层统一、无同义漂移（`.analytics` vs 短后缀）；语义令牌/圆角归零从一致性角度归并
+- 同一模块后缀是否同层统一、无同义漂移（`.analytics` vs 短后缀）；色彩/圆角按「渲染结果 + 归并原则」处理——`rounded-*` 类名不算偏离；同源偏离先归并并做成本/收益过滤，改动大/值近零的归入「低置信度 · 建议人工确认」（勿一律列违规）
 
 #### ⑩ 注释规范 → [AGENTS.md「语言规范」章节](../../AGENTS.md)
 - 注释/文档/页面文字/git commit 是否均用**简体中文**
@@ -100,8 +116,17 @@ description: 全量代码审查命令：扫描全项目，按 10 维度审查并
 ### 基线
 - TypeScript: ✅/❌   Biome: ✅/❌   测试: ✅/❌ (N passed, N failed)
 
-### 🔴 Critical (N) / 🟠 High / 🟡 Medium / 🔵 Low
-| # | 文件 | 违规 | 规则来源 | 修复方案 |
+### 严重度分级标准（客观判据，勿靠感觉）
+- 🔴 **Critical**：安全/数据完整性问题（鉴权绕过、密钥泄漏、危险 SQL、敏感数据暴露）
+- 🟠 **High**：破坏硬规则（分层反向依赖、守卫缺失、SFn 无 zod 校验但有入参）或**测试/构建基线失败**（`pnpm check` / `pnpm test` 不绿）
+- 🟡 **Medium**：命名/类型/代码体积超标、真实一致性漂移（同源两种写法）
+- 🔵 **Low**：风格/注释/文档/纯凝练
+
+### 严重度报告
+| # | 文件 | 违规 | 严重度 | 规则来源 | 修复方案 |
+
+### 低置信度 · 建议人工确认（不强制）
+仅列「可选的一致性优化」：改动面大、值近零、或会破坏原语义意图（如删类名丢失将来可回改性）。这类**不作为违规**，供人裁决是否值得做。置顶标注「非必修」。
 
 ### 按模块统计
 | 模块 | Critical | High | Medium | Low |
@@ -139,7 +164,7 @@ description: 全量代码审查命令：扫描全项目，按 10 维度审查并
 - 管理端 `message/modal/notification` 只经 `@fsdx/ui-spa/antd-static`；前台 `sonner toast`；SFn 错误经 `toClientError()` 归一化再抛；禁止吞错静默失败
 
 ### 样式
-- 颜色仅语义令牌；圆角归 0（仅圆形元素 `rounded-full`）；主题三态 `useAdminTheme()`/`useThemeMode()`
+- 颜色仅语义令牌（`var(--s-*)`）；圆角由 `--radius-*` 令牌归零（`rounded-*` 类名允许，仅 `rounded-full` 保圆形）；主题三态 `useAdminTheme()`/`useThemeMode()`
 
 ### 注释与文档
 - 注释/文档/页面文字/git commit 均用简体中文；文件级注释置于文件第一行（概述职责，不写文件名）
@@ -148,17 +173,24 @@ description: 全量代码审查命令：扫描全项目，按 10 维度审查并
 ## 注意事项
 
 - **默认全量扫描整个项目**；仅显式传 `--diff` 且说明意图时才收窄，否则勿只审 diff。
+- **先跑自动化基线，再手动审语义**：命令开头先执行 `pnpm check`（含 import-protection）与 `pnpm test`，把已通过项从手动维度排除。**工具已门禁的项不重复手扫**：格式/import 顺序/类型/包边界/裸 `#/*` 跨包/`db.query`（RQB）/`db:push` 等——出现即引用工具结论，手动只聚焦语义越界（分层反向依赖、守卫缺失、静默失败、真实行为变更）。
+- **机制感知 → 算不算违规**：先按「已知豁免注册表」过滤；再用「机制感知准入」判断是否已由令牌/组件/构建工具兜底；仍存疑才判违规。
+- **一致性发现做成本/收益过滤**：改动面大、值近零、或破坏原语义意图的，降为「低置信度 · 建议人工确认」，不列入违规。
+- **每条违规引用具体规则来源**；同源偏离归并后标注影响面；只报「真实不一致」，不报「个人偏好」。
 - 审查基于 AGENTS.md 与 `.agents/skills/` 规则，以现有代码为准（代码与文档不一致以代码为准）。
-- 每条违规引用具体规则来源；同源偏离归并后标注影响面；只报「真实不一致」，不报「个人偏好」。
-- Biome/tsc/import-protection 已自动兜底的（格式/import 顺序/类型/包边界）从简，重点审语义越界。
+- **文档/CHANGELOG 结构校验**：`doc:check` 不校验 CHANGELOG，需单独检查——每个版本段每类标题仅出现一次、分类顺序固定（Features → Infrastructure → Refactor → Fix → Docs → 依赖升级 → Breaking）、条目归位正确。
 - 本命令为唯一全量审查入口，聚合分层 / 命名 / 契约各维度扫描。
 
 ## 完成标准
 
 - [ ] 默认全量范围已扫描（或已按 `--diff` 收窄并在报告开头声明）
-- [ ] 10 维度全部扫描；违规按严重度分级并按模块统计
+- [ ] 先执行 `pnpm check` + `pnpm test` 作为自动化基线，已通过项从手动维度排除
+- [ ] 10 维度全部扫描；违规按客观严重度分级并按模块统计；工具已门禁项不重复手扫
+- [ ] 已按「已知豁免注册表」+「机制感知准入」过滤，合法机制实现未误报
+- [ ] 一致性发现已做成本/收益过滤，低价值/破坏原意的归入「低置信度 · 建议人工确认」
 - [ ] 偏离清单按「当前实现 → 冲突规则 → 建议规则」三列对齐，同源偏离已归并标注影响面
 - [ ] 高优先级重构建议含具体重命名示例
+- [ ] CHANGELOG/文档标题结构已校验（单标题块、分类顺序正确、条目归位）
 - [ ] Style Guide 只沉淀本仓库认可规则，不引入冲突新规
 
 ## 引用关联
