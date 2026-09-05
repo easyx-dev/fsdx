@@ -22,8 +22,12 @@ import {
 } from "#/shared-services/query/query-utils.server";
 import type { PaginatedSortParams } from "#/types/query";
 import type { statusSchema } from "./news.schemas";
+import { ensureUniqueSlug, generateSlug } from "./news.slug";
 
 export type NewsRecord = typeof news.$inferSelect;
+
+// 转发共享的 slug 工具（路由层经 news.server 统一引用，避免改多处导入路径）
+export { ensureUniqueSlug, generateSlug } from "./news.slug";
 
 /** 新闻状态（单一来源：statusSchema） */
 export type NewsStatus = z.infer<typeof statusSchema>["status"];
@@ -49,59 +53,6 @@ export const NEWS_EXPORT_COLUMNS: { key: string; title: string }[] = [
 
 /** 新闻详情返回类型（扁平结构，避免 SF 序列化嵌套问题） */
 export type NewsDetail = NewsRecord & { html: string };
-
-/**
- * 根据标题生成 slug：中文字符用时间戳后缀，ASCII 直接 slugify
- */
-export function generateSlug(title: string): string {
-	const hasChinese = /[\u4e00-\u9fff]/.test(title);
-	if (hasChinese) {
-		return `news-${Date.now()}`;
-	}
-	return (
-		title
-			.toLowerCase()
-			.replace(/[^\w\s-]/g, "")
-			.replace(/\s+/g, "-")
-			.replace(/-+/g, "-")
-			.replace(/^-|-$/g, "")
-			.slice(0, 100) || `news-${Date.now()}`
-	);
-}
-
-/** 确保 slug 唯一，重复时追加数字后缀 */
-export async function ensureUniqueSlug(
-	slug: string,
-	excludeId?: string,
-): Promise<string> {
-	let uniqueSlug = slug;
-	let counter = 1;
-	const MAX_ATTEMPTS = 100;
-
-	while (counter <= MAX_ATTEMPTS) {
-		const conditions = [eq(news.slug, uniqueSlug), notDeleted(news.deletedAt)];
-		if (excludeId) conditions.push(ne(news.id, excludeId));
-
-		const [existing] = await db
-			.select()
-			.from(news)
-			.where(and(...conditions))
-			.limit(1);
-
-		if (!existing) break;
-		uniqueSlug = `${slug}-${counter}`;
-		counter++;
-	}
-
-	// 超过最大尝试次数仍未找到唯一 slug
-	if (counter > MAX_ATTEMPTS) {
-		throw new Error(
-			`无法为 slug "${slug}" 生成唯一标识（已尝试 ${MAX_ATTEMPTS} 次）`,
-		);
-	}
-
-	return uniqueSlug;
-}
 
 /**
  * 校验推荐上限，additionalCount 用于导入场景计入待插入条目

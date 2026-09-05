@@ -8,7 +8,7 @@ import {
 	formatSize,
 	isTextFile,
 	normalizePath,
-} from "../fileExplorerUtils";
+} from "../file-explorer.utils";
 
 describe("formatDisplayPath", () => {
 	it("根目录展示为 /", () => {

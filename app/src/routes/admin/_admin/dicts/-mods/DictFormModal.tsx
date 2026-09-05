@@ -11,7 +11,7 @@ interface DictFormModalProps {
 	editing: DictRecord | null;
 	form: FormInstance;
 	/** slug 输入是否禁用（预置字典不可改标识） */
-	slugDisabled: boolean;
+	isSlugDisabled: boolean;
 	onCancel: () => void;
 	onSubmit: (values: Record<string, unknown>) => void;
 }
@@ -21,7 +21,7 @@ export function DictFormModal({
 	open,
 	editing,
 	form,
-	slugDisabled,
+	isSlugDisabled,
 	onCancel,
 	onSubmit,
 }: DictFormModalProps) {
@@ -46,7 +46,7 @@ export function DictFormModal({
 					label="标识 (slug)"
 					rules={[{ required: true, message: "请输入字典标识" }]}
 				>
-					<Input placeholder="唯一标识" disabled={slugDisabled} />
+					<Input placeholder="唯一标识" disabled={isSlugDisabled} />
 				</Form.Item>
 				<Form.Item name="description" label="描述">
 					<Input.TextArea rows={2} placeholder="字典描述（可选）" />

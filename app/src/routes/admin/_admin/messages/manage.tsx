@@ -246,7 +246,7 @@ function MessageManagePage() {
 				sending={sending}
 				form={sendForm}
 				recipientOptions={recipientOptions}
-				recipientSearching={recipientSearching}
+				isSearching={recipientSearching}
 				onRecipientTypeChange={handleRecipientTypeChange}
 				onRecipientSearch={(keyword: string) => fetchRecipients(keyword)}
 				onOk={handleSend}

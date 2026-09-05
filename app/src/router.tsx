@@ -1,3 +1,6 @@
+/**
+ * Router 实例创建工厂：组装路由树，挂载全局错误回退与 404 回退组件
+ */
 import type { ErrorComponentProps } from "@tanstack/react-router";
 import { createRouter } from "@tanstack/react-router";
 import {

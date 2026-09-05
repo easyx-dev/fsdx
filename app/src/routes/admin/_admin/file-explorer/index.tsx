@@ -27,13 +27,13 @@ import {
 } from "#/services/file-explorer/file-explorer.functions";
 import type { FsEntry } from "#/services/file-explorer/file-explorer.server";
 import { MkdirModal, PreviewModal, RenameModal } from "./-mods/FileModals";
-import { fileExplorerColumns } from "./-mods/fileExplorerColumns";
 import {
 	type DirData,
 	entryPath,
 	formatDisplayPath,
 	normalizePath,
-} from "./-mods/fileExplorerUtils";
+} from "./-mods/file-explorer.utils";
+import { fileExplorerColumns } from "./-mods/fileExplorerColumns";
 
 export const Route = createFileRoute("/admin/_admin/file-explorer/")({
 	component: FileExplorerPage,

@@ -19,6 +19,7 @@ import type {
 import { DictFormModal } from "./-mods/DictFormModal";
 import { DictItemFormModal } from "./-mods/DictItemFormModal";
 import { DictListPanel } from "./-mods/DictListPanel";
+import { isPresetDict } from "./-mods/dict.utils";
 import { dictItemColumns } from "./-mods/dictColumns";
 import {
 	createDictItemSFn,
@@ -32,7 +33,6 @@ import {
 	updateDictItemSFn,
 	updateDictSFn,
 } from "./-mods/dicts.functions";
-import { isPresetDict } from "./-mods/dictUtils";
 
 export const Route = createFileRoute("/admin/_admin/dicts/")({
 	component: DictsPage,
@@ -318,7 +318,7 @@ function DictsPage() {
 				open={dictModalOpen}
 				editing={editingDict}
 				form={dictForm}
-				slugDisabled={!!editingDict && isPresetDict(editingDict.slug)}
+				isSlugDisabled={!!editingDict && isPresetDict(editingDict.slug)}
 				onCancel={closeDictModal}
 				onSubmit={handleDictSubmit}
 			/>
@@ -327,8 +327,8 @@ function DictsPage() {
 				open={itemModalOpen}
 				editing={editingItem}
 				form={itemForm}
-				valueDisabled={!!editingItem && isPresetDict(editingItem.dictSlug)}
-				advancedExpanded={advancedExpanded}
+				isValueDisabled={!!editingItem && isPresetDict(editingItem.dictSlug)}
+				isAdvancedExpanded={advancedExpanded}
 				onToggleAdvanced={() => setAdvancedExpanded(!advancedExpanded)}
 				onCancel={closeItemModal}
 				onSubmit={handleItemSubmit}

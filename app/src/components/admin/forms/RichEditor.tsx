@@ -9,12 +9,12 @@ import { RichEditor as RichEditorBase } from "@fsdx/ui-spa/editor";
 import { useCallback } from "react";
 import { uploadFileSFn } from "#/services/file/file.functions";
 
-interface Props {
+interface RichEditorProps {
 	value?: string;
 	onChange?: (html: string) => void;
 }
 
-export function RichEditor({ value = "", onChange }: Props) {
+export function RichEditor({ value = "", onChange }: RichEditorProps) {
 	/** 注入统一上传：写入文件库并返回下载地址；失败时提示用户并向上抛出 */
 	const uploadImage = useCallback(async (file: File): Promise<string> => {
 		const fd = new FormData();

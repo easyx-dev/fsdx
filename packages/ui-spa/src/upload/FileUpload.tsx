@@ -14,6 +14,11 @@ import type { MouseEvent } from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { message } from "../antd-static";
 import { renderUploadItem } from "./FileUploadRender";
+import {
+	extractIds,
+	idToUploadFile,
+	valueToFileList,
+} from "./file-upload.utils";
 import { type FetchFiles, SelectFileModal } from "./SelectFileModal";
 
 /** 上传回调的返回结果 */
@@ -52,34 +57,6 @@ interface FileUploadProps {
 	fetchFiles: FetchFiles;
 	/** 根据文件 ID 生成读取地址（宿主注入，用于内联预览/打开） */
 	readUrl: (id: string) => string;
-}
-
-/** 将文件 ID 转为 UploadFile 对象（用于展示） */
-function idToUploadFile(
-	id: string,
-	readUrl: (id: string) => string,
-): UploadFile {
-	return {
-		uid: id,
-		name: id,
-		status: "done",
-		url: readUrl(id),
-	};
-}
-
-/** 将 value 转为 UploadFile[] */
-function valueToFileList(
-	value: string | string[] | undefined,
-	readUrl: (id: string) => string,
-): UploadFile[] {
-	if (!value) return [];
-	const ids = Array.isArray(value) ? value : [value];
-	return ids.filter(Boolean).map((id) => idToUploadFile(id, readUrl));
-}
-
-/** 从 UploadFile 列表提取文件 ID */
-function extractIds(list: UploadFile[]): string[] {
-	return list.filter((f) => f.status === "done" && f.uid).map((f) => f.uid);
 }
 
 export function FileUpload({

@@ -24,8 +24,8 @@ interface DictItemFormModalProps {
 	editing: DictItemRecord | null;
 	form: FormInstance;
 	/** 值输入是否禁用（预置字典条目不可改值） */
-	valueDisabled: boolean;
-	advancedExpanded: boolean;
+	isValueDisabled: boolean;
+	isAdvancedExpanded: boolean;
 	onToggleAdvanced: () => void;
 	onCancel: () => void;
 	onSubmit: (values: Record<string, unknown>) => void;
@@ -36,8 +36,8 @@ export function DictItemFormModal({
 	open,
 	editing,
 	form,
-	valueDisabled,
-	advancedExpanded,
+	isValueDisabled,
+	isAdvancedExpanded,
 	onToggleAdvanced,
 	onCancel,
 	onSubmit,
@@ -52,7 +52,7 @@ export function DictItemFormModal({
 			open={open}
 			onCancel={onCancel}
 			footer={null}
-			width={advancedExpanded ? 720 : 520}
+			width={isAdvancedExpanded ? 720 : 520}
 			destroyOnHidden
 		>
 			<Form
@@ -73,7 +73,7 @@ export function DictItemFormModal({
 					label="值"
 					rules={[{ required: true, message: "请输入值" }]}
 				>
-					<Input placeholder="存储值" disabled={valueDisabled} />
+					<Input placeholder="存储值" disabled={isValueDisabled} />
 				</Form.Item>
 				<Divider plain style={{ margin: "8px 0 12px" }}>
 					<Button
@@ -81,14 +81,14 @@ export function DictItemFormModal({
 						size="small"
 						className="px-0 text-xs"
 						icon={
-							advancedExpanded ? <CaretUpOutlined /> : <CaretDownOutlined />
+							isAdvancedExpanded ? <CaretUpOutlined /> : <CaretDownOutlined />
 						}
 						onClick={onToggleAdvanced}
 					>
 						高级配置
 					</Button>
 				</Divider>
-				{advancedExpanded && (
+				{isAdvancedExpanded && (
 					<>
 						<Row gutter={16}>
 							<Col span={12}>

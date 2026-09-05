@@ -5,7 +5,7 @@ import { FileOutlined, FolderOutlined } from "@ant-design/icons";
 import { TableOperate } from "@fsdx/ui-spa/table";
 import { Button, Typography } from "antd";
 import type { FsEntry } from "#/services/file-explorer/file-explorer.server";
-import { entryPath, formatSize, isTextFile } from "./fileExplorerUtils";
+import { entryPath, formatSize, isTextFile } from "./file-explorer.utils";
 
 interface FileExplorerColumnsOptions {
 	currentPath: string;

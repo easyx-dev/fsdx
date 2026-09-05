@@ -47,25 +47,25 @@ function Dashboard() {
 			value: stats.newsTotal,
 			suffix: `已发布 ${stats.publishedNews} 篇`,
 			icon: <FileTextOutlined />,
-			color: "#1677ff",
+			color: "var(--s-info)",
 		},
 		{
 			title: "管理员",
 			value: stats.adminTotal,
 			icon: <SafetyOutlined />,
-			color: "#722ed1",
+			color: "var(--s-primary)",
 		},
 		{
 			title: "客户端用户",
 			value: stats.clientTotal,
 			icon: <TeamOutlined />,
-			color: "#52c41a",
+			color: "var(--s-success)",
 		},
 		{
 			title: "存储用量",
 			value: formatStorage(stats.storageTotal),
 			icon: <DashboardOutlined />,
-			color: "#fa8c16",
+			color: "var(--s-warning)",
 		},
 	];
 

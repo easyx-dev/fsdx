@@ -83,11 +83,14 @@ export async function sendCaptchaMail(
 	to: string,
 	code: string,
 ): Promise<boolean> {
+	// 邮件模板使用内联样式 + 十六进制色值：邮件客户端不解析 CSS 变量/语义令牌，
+	// 且内联样式是跨客户端唯一可靠方案，故在样式令牌规则上属例外。
+	// 圆角遵循项目直角风格统一归零。
 	const html = `
-     <div style="max-width: 480px; margin: 0 auto; padding: 32px; font-family: sans-serif; background: #f9fafb; border-radius: 8px;">
+     <div style="max-width: 480px; margin: 0 auto; padding: 32px; font-family: sans-serif; background: #f9fafb; border-radius: 0;">
        <h2 style="color: #1f2937; margin-top: 0;">验证码</h2>
        <p style="color: #6b7280;">您的验证码是：</p>
-       <div style="font-size: 28px; font-weight: 700; letter-spacing: 4px; color: #111827; background: #fff; padding: 12px 24px; border-radius: 6px; display: inline-block; margin: 12px 0;">
+       <div style="font-size: 28px; font-weight: 700; letter-spacing: 4px; color: #111827; background: #fff; padding: 12px 24px; border-radius: 0; display: inline-block; margin: 12px 0;">
          ${code}
        </div>
        <p style="color: #9ca3af; font-size: 13px; margin-top: 24px;">有效期 5 分钟，请勿向他人泄露。</p>

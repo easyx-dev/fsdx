@@ -187,8 +187,8 @@ function FilesPage() {
 								<Button
 									type="text"
 									size="small"
-									icon={<SwapOutlined style={{ color: "#52c41a" }} />}
-									style={{ paddingInline: 4, color: "#52c41a" }}
+									icon={<SwapOutlined style={{ color: "var(--s-success)" }} />}
+									style={{ paddingInline: 4, color: "var(--s-success)" }}
 									onClick={async () => {
 										try {
 											await makePermanentSFn({ data: { id: record.id } });

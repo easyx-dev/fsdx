@@ -26,7 +26,7 @@ export interface TranslatableField {
 	valueType: EditorType;
 }
 
-interface Props {
+interface FieldTranslationDrawerProps {
 	entityType: string;
 	entityId: string;
 	fields: TranslatableField[];
@@ -48,7 +48,7 @@ export function FieldTranslationDrawer({
 	fields,
 	activeField,
 	originalValues,
-}: Props) {
+}: FieldTranslationDrawerProps) {
 	const [open, setOpen] = useState(false);
 	const [activeTab, setActiveTab] = useState(
 		activeField ?? fields[0]?.name ?? "",
@@ -175,6 +175,8 @@ export function FieldTranslationDrawer({
 
 	return (
 		<>
+			{/* AI 品牌装饰渐变：为 AI 功能入口的视觉标识，属装饰性品牌色（非状态语义色），
+			    暂无对应语义令牌，此处保留具名色值并在暗色主题下由 UI 层统一定制。 */}
 			<svg width="0" height="0" aria-hidden="true">
 				<defs>
 					<linearGradient id={gradientId} x1="0%" y1="0%" x2="100%" y2="100%">

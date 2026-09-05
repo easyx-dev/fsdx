@@ -4,8 +4,8 @@
  */
 
 import { and, eq, inArray, like, or, type SQLWrapper } from "drizzle-orm";
-import { EDITOR_TYPES, type EditorType } from "#/constants/editor-types";
-import { db, withTransaction } from "#/db/index";
+import type { EditorType } from "#/constants/editor-types";
+import { db } from "#/db/index";
 import { contentTranslation } from "#/db/schema";
 import { refreshConfigTranslationCache } from "#/shared-services/config/config.server";
 import {
@@ -15,99 +15,13 @@ import {
 } from "#/shared-services/query/query-utils.server";
 import type { PaginatedSortParams } from "#/types/query";
 import { DEFAULT_LOCALE, type Locale } from "./i18n-types";
-import type { TranslationImportResult } from "./i18n-ui.server";
 
-// ═══════════════════════════════════════════════════
-// 实体翻译导出 / 导入
-// ═══════════════════════════════════════════════════
-
-/** 实体翻译导出数据格式 */
-export interface ContentTranslationExportData {
-	translations: {
-		entityType: string;
-		entityId: string;
-		fieldName: string;
-		locale: string;
-		value: string;
-		valueType: string;
-	}[];
-}
-
-/** 获取所有实体翻译（用于导出） */
-export async function getAllContentTranslationsForExport(): Promise<
-	ContentTranslationExportData["translations"]
-> {
-	const rows = await db
-		.select()
-		.from(contentTranslation)
-		.orderBy(
-			contentTranslation.entityType,
-			contentTranslation.entityId,
-			contentTranslation.fieldName,
-			contentTranslation.locale,
-		);
-	return rows.map((row) => ({
-		entityType: row.entityType,
-		entityId: row.entityId,
-		fieldName: row.fieldName,
-		locale: row.locale,
-		value: row.value,
-		valueType: row.valueType,
-	}));
-}
-
-/** 导入实体翻译（逐个 upsert，在事务中完成） */
-export async function importContentTranslations(
-	data: ContentTranslationExportData,
-): Promise<TranslationImportResult> {
-	let created = 0;
-	let updated = 0;
-
-	await withTransaction(async (tx) => {
-		for (const item of data.translations) {
-			if (!EDITOR_TYPES.includes(item.valueType as EditorType)) {
-				item.valueType = "text";
-			}
-
-			const [existing] = await tx
-				.select()
-				.from(contentTranslation)
-				.where(
-					and(
-						eq(contentTranslation.entityType, item.entityType),
-						eq(contentTranslation.entityId, item.entityId),
-						eq(contentTranslation.fieldName, item.fieldName),
-						eq(contentTranslation.locale, item.locale),
-					),
-				)
-				.limit(1);
-
-			if (existing) {
-				await tx
-					.update(contentTranslation)
-					.set({
-						value: item.value,
-						valueType: item.valueType,
-						updatedAt: new Date(),
-					})
-					.where(eq(contentTranslation.id, existing.id));
-				updated++;
-			} else {
-				await tx.insert(contentTranslation).values({
-					entityType: item.entityType,
-					entityId: item.entityId,
-					fieldName: item.fieldName,
-					locale: item.locale,
-					value: item.value,
-					valueType: item.valueType,
-				});
-				created++;
-			}
-		}
-	});
-
-	return { created, updated };
-}
+export type { ContentTranslationExportData } from "./i18n-content-io";
+// 转发共享的实体翻译导出/导入（路由层经 i18n.server 统一引用）
+export {
+	getAllContentTranslationsForExport,
+	importContentTranslations,
+} from "./i18n-content-io";
 
 // ═══════════════════════════════════════════════════
 // 实体字段翻译查询

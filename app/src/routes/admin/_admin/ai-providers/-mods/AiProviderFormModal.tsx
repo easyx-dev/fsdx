@@ -19,51 +19,21 @@ import {
 	Switch,
 } from "antd";
 import { useEffect, useMemo, useState } from "react";
-import type {
-	AiModality,
-	AiProviderView,
-} from "#/shared-services/ai/ai.schemas";
+import type { AiProviderView } from "#/shared-services/ai/ai.schemas";
 import { fetchProviderModelsSFn } from "#/shared-services/ai/ai-providers.functions";
+import {
+	type FormInitialValues,
+	type FormValues,
+	MODALITY_OPTIONS,
+	type ModelFormValues,
+} from "./ai-provider-form.model";
 
-interface Props {
+interface AiProviderFormProps {
 	open: boolean;
 	editing: AiProviderView | null;
 	onSubmit: (provider: AiProviderView) => void;
 	onCancel: () => void;
 }
-
-/** 单个模型表单值 */
-interface ModelFormValues {
-	id: string;
-	name?: string;
-	default?: boolean;
-	contextLimit?: number;
-	outputLimit?: number;
-	jsonOutput?: boolean;
-	toolCalls?: boolean;
-	reasoning?: boolean;
-	input?: AiModality[];
-	output?: AiModality[];
-}
-
-/** 表单值（id 为厂商对象键，default 由整列表保存时统一处理读回） */
-interface FormValues {
-	id: string;
-	name: string;
-	baseUrl: string;
-	apiKey: string;
-	default?: boolean;
-	models: ModelFormValues[];
-}
-
-/** 表单初始值：厂商级字段可缺省（新增时为空），models 至少一个空行 */
-type FormInitialValues = Partial<FormValues> & { models: ModelFormValues[] };
-
-/** 输入/输出模态可选项 */
-const MODALITY_OPTIONS: { value: AiModality; label: string }[] = [
-	{ value: "text", label: "文本" },
-	{ value: "image", label: "图片" },
-];
 
 /**
  * AI 厂商 新增/编辑弹窗（外层）
@@ -76,7 +46,7 @@ export function AiProviderFormModal({
 	editing,
 	onSubmit,
 	onCancel,
-}: Props) {
+}: AiProviderFormProps) {
 	const [seq, setSeq] = useState(0);
 	useEffect(() => {
 		if (open) setSeq((s) => s + 1);
@@ -93,7 +63,12 @@ export function AiProviderFormModal({
 	);
 }
 
-function AiProviderFormContent({ open, editing, onSubmit, onCancel }: Props) {
+function AiProviderFormContent({
+	open,
+	editing,
+	onSubmit,
+	onCancel,
+}: AiProviderFormProps) {
 	const [form] = Form.useForm<FormValues>();
 	const [fetching, setFetching] = useState(false);
 	const [availableModels, setAvailableModels] = useState<string[]>([]);

@@ -5,7 +5,7 @@ import { TableOperate } from "@fsdx/ui-spa/table";
 import { InputNumber, Switch, Tag } from "antd";
 import { EditorTypes, FieldTranslationDrawer } from "#/components/admin";
 import type { DictItemRecord } from "#/shared-services/dict/dict.server";
-import { isPresetDict } from "./dictUtils";
+import { isPresetDict } from "./dict.utils";
 
 /** 字典条目可翻译字段定义 */
 const DICT_ITEM_TRANSLATABLE_FIELDS = [

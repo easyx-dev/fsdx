@@ -43,7 +43,7 @@ export function newsColumns(options: NewsColumnsOptions) {
 			width: 80,
 			render: (_: unknown, record: NewsRecord) => {
 				if (!record.coverImageId)
-					return <span style={{ color: "#5A6478" }}>—</span>;
+					return <span style={{ color: "var(--s-text-tertiary)" }}>—</span>;
 				return (
 					<Image
 						src={`/file/r/${record.coverImageId}`}

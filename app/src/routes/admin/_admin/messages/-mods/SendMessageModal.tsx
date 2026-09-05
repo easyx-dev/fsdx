@@ -11,7 +11,7 @@ interface SendMessageModalProps {
 	sending: boolean;
 	form: FormInstance;
 	recipientOptions: RecipientOption[];
-	recipientSearching: boolean;
+	isSearching: boolean;
 	onRecipientTypeChange: () => void;
 	onRecipientSearch: (keyword: string) => void;
 	onOk: () => void;
@@ -24,7 +24,7 @@ export function SendMessageModal({
 	sending,
 	form,
 	recipientOptions,
-	recipientSearching,
+	isSearching,
 	onRecipientTypeChange,
 	onRecipientSearch,
 	onOk,
@@ -66,9 +66,9 @@ export function SendMessageModal({
 						mode="multiple"
 						placeholder="输入用户名或邮箱搜索，可多选"
 						options={recipientOptions}
-						loading={recipientSearching}
+						loading={isSearching}
 						onSearch={onRecipientSearch}
-						notFoundContent={recipientSearching ? null : "未找到匹配用户"}
+						notFoundContent={isSearching ? null : "未找到匹配用户"}
 						filterOption={false}
 						showSearch
 						optionFilterProp="label"
