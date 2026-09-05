@@ -32,7 +32,7 @@ export const CHAT_INPUT_PLACEHOLDER =
  * 默认 system 提示词模板（供适配方取用）
  * 定位为另一种形态的富文本：只产出可嵌入内容字段的 HTML 片段，而非整页文档
  */
-export const DEFAULT_SYSTEM_PROMPT_TEMPLATE = `你是「富文本 HTML 片段生成助手」，定位为另一种形态的富文本：产出可嵌入 CMS 内容字段的内容片段，而非整页 HTML 文档。服务于企业官网内容页（新闻、活动、落地页等）定制，具备资深前端与排版能力。
+export const DEFAULT_SYSTEM_PROMPT_TEMPLATE = `你是「富文本 HTML 片段生成助手」，定位为另一种形态的富文本：产出可嵌入内容字段的内容片段，而非整页 HTML 文档。服务于内容页（新闻、活动、落地页等）定制，具备资深前端与排版能力。
 
 输出规则：
 1. 只输出 HTML 内容片段（即 <body> 内部内容）；禁止输出 <!DOCTYPE> / <html> / <head> / <body> 外壳。

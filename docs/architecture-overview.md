@@ -5,7 +5,7 @@
 > 引用关系：← 被 README 引用；→ 引用 database-design / cache-system / auth-permission-model / deployment-ops / event-tracking（均只引用不复制）
 > 更新触发：目录分层、基础设施（缓存/埋点/审计/请求上下文）、路由体系变更时
 
-基于 TanStack Start 的全栈 Web 应用框架，开箱内置 CMS 示例与 RBAC 认证、事件埋点、操作审计、国际化等基础设施。
+基于 TanStack Start 的全栈开发工程基座，内置 RBAC 认证、事件埋点、操作审计、国际化等基础设施，并附 news（新闻）业务示例。
 
 > 除特别说明外，文件路径均相对 `app/` 目录（单仓库多包，业务代码在 `app/`，库包在 `packages/`）。
 
@@ -113,8 +113,8 @@ __root.tsx                    # HTML shell，按 pathname 前缀分发 AdminRoot
 └── admin.tsx                 # 管理端 SPA 根（SSR=false）；admin/login · admin/init · admin/forgot-password 无布局外壳
     └── admin/_admin.tsx      # 管理端鉴权布局（beforeLoad + SSR=false）
         ├── 仪表盘 / 用户（admins · clients）/ 角色（admin-roles · client-roles）
-        ├── news · dicts · config · files · file-explorer · logs · operation-logs
-        └── translations · track · messages · demo
+        ├── news（业务示例）/ dicts · config · files · file-explorer · logs · operation-logs
+        └── translations · track · messages · demo（基建能力）
 ```
 
 路由目录组织约定（`-mods/` companion 收纳、单页 vs 子路由决策矩阵、页面本体必须是路由文件、首页不目录化等）详见 [AGENTS.md](../AGENTS.md)；完整路由树以 `src/routes/` 目录（`src/routeTree.gen.ts`）为准。

@@ -15,7 +15,7 @@ description: >
 
 **层次判定**：
 - 基建层：`@fsdx/lib` 库、认证/RBAC/权限、缓存、埋点、审计、i18n、文件存储、日志、错误处理、部署/CI、UI 基础组件、测试基础设施、文档体系、命名收敛化改造；
-- 业务层：CMS 示例业务模块（news/dict/file-explorer 等）、具体业务表/字段、具体业务路由、示例内容。
+- 业务层：业务示例模块（news）、具体业务表/字段、具体业务路由、示例内容（dict / files · file-explorer / messages / config / translations / track / operation-logs / ai-providers / ai-rich-editor / demo 等均为基建能力）。
 
 **性质判定**（命中任一「是」即为基建）：
 1. 脱离本项目的业务示例是否依然成立？
@@ -70,7 +70,7 @@ description: >
 | 上游修复了一个认证缺陷 | 基建 → 下游应吸收（`/import-upstream`） |
 | 下游实现了一个通用工具函数 | 基建 → 回灌上游并归入 `@fsdx/lib`（`/backport`） |
 | 下游新增业务表/业务页面 | 业务 → 不回灌 |
-| 上游新增 CMS 示例模块 | 业务 → 下游不吸收 |
+| 上游新增业务示例模块（如 news） | 业务 → 下游不吸收 |
 | 下游调整了品牌色/站点名 | 品牌 → 不回灌（模板保持默认品牌） |
 
 > 详细背景见 [docs/project-ecosystem.md](../../../docs/project-ecosystem.md)；更名流程见 [derive-project](../derive-project/SKILL.md)；验证见 [upstream-sync-checklist](../../checklists/upstream-sync-checklist.md)。

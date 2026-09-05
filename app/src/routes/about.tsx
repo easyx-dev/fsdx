@@ -17,12 +17,14 @@ function About() {
 		<main className="mx-auto max-w-3xl px-4 py-8 sm:py-16">
 			<Card>
 				<CardHeader className="p-4 sm:p-6">
-					<CardTitle className="text-xl sm:text-2xl">{t("关于 CMS")}</CardTitle>
+					<CardTitle className="text-xl sm:text-2xl">
+						{t("关于本项目")}
+					</CardTitle>
 				</CardHeader>
 				<CardContent className="space-y-4 p-4 pt-0 sm:space-y-6 sm:p-6 sm:pt-0">
 					<p className="text-sm leading-6 text-muted-foreground sm:text-base sm:leading-7">
 						{t(
-							"CMS 内容管理系统是一个基于 TanStack Start 构建的全栈内容管理平台。支持类型安全路由、Server Functions、SSR 流式渲染，并配备强大的管理后台。",
+							"本项目是基于 TanStack Start 构建的全栈开发工程基座。内置双端认证/RBAC、缓存、事件埋点、操作审计、国际化、文件存储等基础设施，并附新闻业务示例，可快速扩展为任意业务系统。",
 						)}
 					</p>
 					<div className="grid gap-4 sm:grid-cols-2">

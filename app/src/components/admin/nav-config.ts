@@ -50,7 +50,7 @@ export const NAV_GROUPS: NavGroup[] = [
 		items: [{ key: "/admin", label: "仪表盘", icon: DashboardOutlined }],
 	},
 	{
-		label: "内容管理",
+		label: "业务示例",
 		items: [{ key: "/admin/news", label: "新闻管理", icon: ReadOutlined }],
 	},
 	{

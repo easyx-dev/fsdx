@@ -101,7 +101,7 @@ describe("createI18nInstance", () => {
 	describe("实际种子数据集成测试", () => {
 		/** 模拟 en locale 的种子数据 */
 		const seedTranslations: Translations = {
-			"CMS 内容管理系统": "CMS Content Management System",
+			全栈开发工程基座: "Full-Stack Development Base",
 			浏览新闻: "Browse News",
 			暂无数据: "No Data",
 			"共 {total} 篇": "{total} articles",
@@ -109,13 +109,13 @@ describe("createI18nInstance", () => {
 
 		it("中文 + 空翻译：直接返回原文", () => {
 			const i18n = createI18nInstance("zh", {});
-			expect(i18n.t("CMS 内容管理系统")).toBe("CMS 内容管理系统");
+			expect(i18n.t("全栈开发工程基座")).toBe("全栈开发工程基座");
 			expect(i18n.t("浏览新闻")).toBe("浏览新闻");
 		});
 
 		it("英文返回对应翻译", () => {
 			const i18n = createI18nInstance("en", seedTranslations);
-			expect(i18n.t("CMS 内容管理系统")).toBe("CMS Content Management System");
+			expect(i18n.t("全栈开发工程基座")).toBe("Full-Stack Development Base");
 			expect(i18n.t("浏览新闻")).toBe("Browse News");
 		});
 

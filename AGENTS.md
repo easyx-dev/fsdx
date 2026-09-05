@@ -2,7 +2,7 @@
 
 ## 项目概况
 
-基于 TanStack Start 构建的全栈 Web 应用框架，涵盖管理端（/admin，SPA + antd）和客户端前台（/，SSR + shadcn/ui），开箱内置 CMS 示例。
+基于 TanStack Start 构建的全栈开发工程基座，涵盖管理端（/admin，SPA + antd）和客户端前台（/，SSR + shadcn/ui），内置完整开发基础设施，并附 news（新闻）业务示例。
 提供双用户认证 + 双端 RBAC、Server Function 三层分离、内存缓存、事件埋点、操作审计、国际化、文件存储、日志运维等基础设施，可快速扩展为任意业务系统。
 
 ## 工程结构
@@ -240,9 +240,9 @@ packages/
 
 ## 衍生项目与协同进化
 
-- **双重定位**：本项目既是可独立运行的产品（CMS 示例），也是**基座模板（upstream）**；衍生项目（downstream，当前为 bom-easy）可持续吸收本项目的基建变更，本项目也可回灌衍生项目的优秀实践，互相整合进化。背景模型 → [project-ecosystem](docs/project-ecosystem.md)
+- **双重定位**：本项目既是可独立运行的全栈开发工程基座（内置基础设施 + 业务示例），也是**基座模板（upstream）**；衍生项目（downstream，当前为 bom-easy）可持续吸收本项目的基建变更，本项目也可回灌衍生项目的优秀实践，互相整合进化。背景模型 → [project-ecosystem](docs/project-ecosystem.md)
 - **命名面收敛（硬规则）**：运行期标识**禁止硬编码** `fsdx_*`——Cookie 名收敛为集中常量（`src/constants/cookie-names.ts`，中性默认 `admin_token`/`client_token`，项目更名集中修改点）；e2e 库名/账号邮箱配置注入（env，库名随 `DATABASE_URL`、邮箱默认 example.com 域）；包名/部署/品牌等无法配置化的面保留清单替换（见 [derive-project](.agents/skills/derive-project/SKILL.md)）
-- **基建/业务分层**：基建层（core 库、认证/RBAC、缓存、埋点、审计、i18n、文件存储、日志、错误处理、部署/CI、UI 基础组件、测试基础设施、文档体系、命名收敛）可跨项目流通；业务层（CMS 示例模块、具体业务表/路由）留在项目内。判定准则（脱离业务示例是否成立 / 是否依赖业务表 / 是否对所有衍生系统有价值 / 是否纯缺陷修复）见 [upstream-sync](.agents/skills/upstream-sync/SKILL.md)
+- **基建/业务分层**：基建层（core 库、认证/RBAC、缓存、埋点、审计、i18n、文件存储、日志、错误处理、部署/CI、UI 基础组件、测试基础设施、文档体系、命名收敛）可跨项目流通；业务层（业务示例模块 news、具体业务表/路由）留在项目内，其余模块（dict / files · file-explorer / messages / config / translations / track / operation-logs / ai-providers / ai-rich-editor / demo 等）均为基建能力。判定准则（脱离业务示例是否成立 / 是否依赖业务表 / 是否对所有衍生系统有价值 / 是否纯缺陷修复）见 [upstream-sync](.agents/skills/upstream-sync/SKILL.md)
 - **CHANGELOG `[infra]` 标记**：基建层变更条目加 `[infra]` 前缀（`Infrastructure` / `Fix` 分类），描述注明「可被衍生项目吸收」的影响面；commit 约定 `feat(infra)` / `fix(infra)` scope。衍生项目以此作为吸收候选主渠道（git 历史可能被重写，不作为唯一事实）
 - **回灌净化**：上游吸收下游实践时执行「去业务化 → 去命名化（翻译回模板中性命名）→ 通用化（对齐模板分层与约定）」三步
 - **同步命令**：`/derive`（派生新项目）、`/import-upstream`（下游吸收上游）、`/backport`（上游吸收下游）；每个衍生项目根目录维护 `UPSTREAM.md`（基线 + 配置映射 + 同步历史）

@@ -9,8 +9,8 @@
 
 AI 驱动「代码编辑 + 实时预览」三栏工作台，是**另一种形态的富文本**：
 
-- 产物是**可嵌入 CMS 内容字段的 HTML 片段**（fragment），**不输出**整页 HTML 文档（无 `mode` 概念）。
-- 场景：企业官网内容页（新闻、活动、落地页）的 HTML 内容生产。
+- 产物是**可嵌入内容字段的 HTML 片段**（fragment），**不输出**整页 HTML 文档（无 `mode` 概念）。
+- 场景：内容页（新闻、活动、落地页等）的 HTML 内容生产。
 - **不持有**任何 HTTP 端点/鉴权知识——对话能力经宿主导入的 SSE 端点（`endpointUrl`）由 `createChatHook`（`@tanstack/ai-react/ui`，底层 `fetchServerSentEvents`）消费。
 - UI：antd（peer 单实例）+ tailwind 语义令牌类（宿主 `global.css` 注入，需 `@source` 扫描包源码）。
 

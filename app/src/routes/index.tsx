@@ -53,7 +53,7 @@ function HomeError({ error }: { error: unknown }) {
 		<main className="mx-auto max-w-5xl px-4 py-8 sm:py-16">
 			<section className="mb-12 text-center sm:mb-20">
 				<h1 className="text-3xl font-bold tracking-tight text-foreground sm:text-5xl">
-					CMS 内容管理系统
+					全栈开发工程基座
 				</h1>
 			</section>
 			<section className="mb-12 grid gap-4 sm:mb-20 sm:grid-cols-2 sm:gap-6 lg:grid-cols-3">
@@ -114,11 +114,11 @@ function HomePage() {
 			{/* Hero 区域 */}
 			<section className="mb-12 text-center sm:mb-20">
 				<h1 className="text-3xl font-bold tracking-tight text-foreground sm:text-5xl">
-					{t("CMS 内容管理系统")}
+					{t("全栈开发工程基座")}
 				</h1>
 				<p className="mx-auto mt-3 max-w-2xl text-base text-muted-foreground sm:mt-4 sm:text-lg">
 					{t(
-						"轻量、安全、可扩展的全栈内容管理解决方案，基于 TanStack Start 构建，支持 SSR 与强大的管理后台。",
+						"基于 TanStack Start 构建的全栈开发工程基座，内置双端认证/RBAC、缓存、埋点、审计、国际化等基础设施，支持 SSR 与强大的管理后台。",
 					)}
 				</p>
 				<div className="mt-6 flex flex-col items-center justify-center gap-3 sm:mt-8 sm:flex-row sm:gap-4">

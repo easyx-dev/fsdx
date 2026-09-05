@@ -31,6 +31,8 @@
 
 ### Docs
 
+- **项目定位重定向为「全栈开发工程基座」**：移除「内置 CMS 示例」的产品绑定叙事，改为强调全栈开发工程基座定位，CMS 降为支撑能力；业务示例收敛为单一 news（新闻），其余模块（dict / file / file-explorer / messages / config / translations / track / operation-logs / ai-providers / ai-rich-editor / demo）统一归入基建能力。同步更新 `AGENTS.md`、`README.md`、`docs/architecture-overview.md`、`docs/project-ecosystem.md`、`docs/ai-rich-editor.md`、上游同步/国际化 skill 与客户端可见产品文案（首页/关于页、i18n-seed、e2e 断言、i18n 单测、管理端导航分组标签），文案统一改为「全栈开发工程基座」口径。
+
 - **AGENTS.md 包边界与说明补充**：结构树、README 链接清单与「新增共享逻辑」纳入 `@fsdx/ai-rich-editor`（AI 富文本工作台）；Server Function 章节明确「无入参 SFn（零参调用）可省略 `validator`」豁免，与现有零参 SFn 实践对齐。
 
 ### 依赖升级

@@ -41,14 +41,14 @@ const SEED_EN: SeedRow[] = [
 	// home
 	{
 		locale: "en",
-		key: "CMS 内容管理系统",
-		value: "CMS Content Management System",
+		key: "全栈开发工程基座",
+		value: "Full-Stack Development Base",
 	},
 	{
 		locale: "en",
-		key: "轻量、安全、可扩展的全栈内容管理解决方案，基于 TanStack Start 构建，支持 SSR 与强大的管理后台。",
+		key: "基于 TanStack Start 构建的全栈开发工程基座，内置双端认证/RBAC、缓存、埋点、审计、国际化等基础设施，支持 SSR 与强大的管理后台。",
 		value:
-			"Lightweight, secure, and scalable full-stack CMS built with TanStack Start, featuring SSR and a powerful admin panel.",
+			"A full-stack development base built with TanStack Start, featuring admin/client auth, RBAC, caching, tracking, audit, and i18n infrastructure, plus SSR and a powerful admin panel.",
 	},
 	{ locale: "en", key: "浏览新闻", value: "Browse News" },
 	{ locale: "en", key: "了解更多", value: "Learn More" },
@@ -147,12 +147,12 @@ const SEED_EN: SeedRow[] = [
 	},
 
 	// about
-	{ locale: "en", key: "关于 CMS", value: "About CMS" },
+	{ locale: "en", key: "关于本项目", value: "About This Project" },
 	{
 		locale: "en",
-		key: "CMS 内容管理系统是一个基于 TanStack Start 构建的全栈内容管理平台。支持类型安全路由、Server Functions、SSR 流式渲染，并配备强大的管理后台。",
+		key: "本项目是基于 TanStack Start 构建的全栈开发工程基座。内置双端认证/RBAC、缓存、事件埋点、操作审计、国际化、文件存储等基础设施，并附新闻业务示例，可快速扩展为任意业务系统。",
 		value:
-			"CMS is a full-stack content management platform built with TanStack Start. It features type-safe routing, Server Functions, SSR streaming, and a powerful admin panel.",
+			"This is a full-stack development base built with TanStack Start. It ships with dual-auth/RBAC, caching, event tracking, operation audit, i18n, and file storage infrastructure, plus a news business example that shows how to extend into any business system.",
 	},
 	{ locale: "en", key: "技术栈", value: "Tech Stack" },
 	{ locale: "en", key: "核心功能", value: "Core Features" },

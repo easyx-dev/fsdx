@@ -26,7 +26,7 @@ const DEMO_VALUES: Record<EditorType, string | number> = {
 		null,
 		2,
 	),
-	code: 'function hello(name: string) {\n  console.log("Hello, " + name + "!");\n}\n\nhello("CMS");',
+	code: 'function hello(name: string) {\n  console.log("Hello, " + name + "!");\n}\n\nhello("fsdx");',
 	rich: "<h2>富文本演示</h2><p>这是一段<strong>富文本</strong>内容，支持各种排版样式。</p><ul><li>列表项一</li><li>列表项二</li></ul>",
 	image: "",
 	file: "",

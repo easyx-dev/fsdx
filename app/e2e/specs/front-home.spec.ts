@@ -9,16 +9,16 @@ test.describe("前台首页", () => {
 		const res = await request.get("/");
 		expect(res.ok()).toBeTruthy();
 		const html = await res.text();
-		expect(html).toContain("CMS 内容管理系统");
+		expect(html).toContain("全栈开发工程基座");
 	});
 
 	test("Hero 区标题与副标题可见", async ({ page }) => {
 		await goto(page, "/");
 		await expect(
-			page.getByRole("heading", { name: "CMS 内容管理系统" }),
+			page.getByRole("heading", { name: "全栈开发工程基座" }),
 		).toBeVisible();
 		await expect(
-			page.getByText("轻量、安全、可扩展的全栈内容管理解决方案"),
+			page.getByText("基于 TanStack Start 构建的全栈开发工程基座"),
 		).toBeVisible();
 	});
 
