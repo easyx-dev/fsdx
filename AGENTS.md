@@ -209,7 +209,7 @@ packages/
 | `pnpm db:generate` / `pnpm db:migrate` / `pnpm db:pull` / `pnpm db:studio` | app 数据库迁移流程 |
 | `pnpm --filter @fsdx/lib test` | 仅 lib 包测试 |
 | `/deploy`（`.agents/commands/deploy.md`） | 版本发布：联动提交 → 确定版本（未发布直接用当前版本，已发布则按 SemVer 定号段）→ 更新 CHANGELOG → 打 tag（含 commit 摘要）→ 推送 |
-| `/check-architecture`（`.agents/commands/check-architecture.md`） | 全量架构审计：8 维度扫描并输出分级报告 |
+| `/code-review`（`.agents/commands/code-review.md`） | 全量代码审查：10 维度扫描并输出分级报告 + 一致性/Style Guide |
 
 ## 对话效率
 
