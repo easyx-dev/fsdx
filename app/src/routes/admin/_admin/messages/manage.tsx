@@ -18,7 +18,7 @@ import {
 	sendMessageSFn,
 } from "#/services/message/message.functions";
 import type {
-	MessageWithRecipient,
+	MessageWithUser,
 	RecipientOption,
 } from "#/services/message/message.server";
 import { messageManageColumns } from "./-mods/messageManageColumns";
@@ -31,14 +31,14 @@ export const Route = createFileRoute("/admin/_admin/messages/manage")({
 const PAGE_SIZE = 20;
 
 interface MessageManageFormValues {
-	recipientType?: "admin" | "client";
+	userType?: "admin" | "client";
 	status?: "unread" | "read";
 	keyword?: string;
 }
 
 interface SendMessageFormValues {
-	recipientType: "admin" | "client";
-	recipientIds: string[];
+	userType: "admin" | "client";
+	userIds: string[];
 	title: string;
 	content?: string;
 	type?: string;
@@ -47,7 +47,7 @@ interface SendMessageFormValues {
 
 function MessageManagePage() {
 	const [result, setResult] = useState<{
-		records: MessageWithRecipient[];
+		records: MessageWithUser[];
 		total: number;
 		page: number;
 		pageSize: number;
@@ -72,7 +72,7 @@ function MessageManagePage() {
 				const values = searchForm.getFieldsValue();
 				const data = await listAllMessagesSFn({
 					data: {
-						recipientType: values.recipientType || undefined,
+						userType: values.userType || undefined,
 						status: values.status || undefined,
 						keyword: values.keyword || undefined,
 						page: targetPage,
@@ -103,11 +103,11 @@ function MessageManagePage() {
 	/** 加载收件人候选（发送消息选择器数据源） */
 	const fetchRecipients = useCallback(
 		async (keyword?: string) => {
-			const recipientType = sendForm.getFieldValue("recipientType") ?? "client";
+			const userType = sendForm.getFieldValue("userType") ?? "client";
 			setRecipientSearching(true);
 			try {
 				const options = await searchRecipientsSFn({
-					data: { recipientType, keyword: keyword || undefined },
+					data: { userType, keyword: keyword || undefined },
 				});
 				setRecipientOptions(options);
 			} catch {
@@ -127,9 +127,9 @@ function MessageManagePage() {
 		fetchRecipients();
 	};
 
-	/** 切换接收者类型时重新加载候选 */
-	const handleRecipientTypeChange = () => {
-		sendForm.setFieldValue("recipientIds", []);
+	/** 切换用户类型时重新加载候选 */
+	const handleUserTypeChange = () => {
+		sendForm.setFieldValue("userIds", []);
 		setRecipientOptions([]);
 		fetchRecipients();
 	};
@@ -180,7 +180,7 @@ function MessageManagePage() {
 				onFinish={() => doSearch()}
 				style={{ marginBottom: 16, flexWrap: "wrap", gap: 8 }}
 			>
-				<Form.Item name="recipientType" label="接收者类型">
+				<Form.Item name="userType" label="用户类型">
 					<Select
 						options={[
 							{ label: "全部", value: "" },
@@ -247,7 +247,7 @@ function MessageManagePage() {
 				form={sendForm}
 				recipientOptions={recipientOptions}
 				isSearching={recipientSearching}
-				onRecipientTypeChange={handleRecipientTypeChange}
+				onUserTypeChange={handleUserTypeChange}
 				onRecipientSearch={(keyword: string) => fetchRecipients(keyword)}
 				onOk={handleSend}
 				onCancel={() => setSendOpen(false)}

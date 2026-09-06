@@ -3,7 +3,7 @@
 > 单一事实来源：`src/db/schema/index.ts`（表定义汇总）与 `src/db/schema/*.ts`（逐表定义）
 > 重新生成：`pnpm doc:gen`
 
-共 17 张表
+共 18 张表
 
 | 表名 | 列数 | Schema 文件 |
 |------|------|-------------|
@@ -24,3 +24,4 @@
 | track_event_meta | 7 | `src/db/schema/track.ts` |
 | track_property_meta | 7 | `src/db/schema/track.ts` |
 | ui_translation | 7 | `src/db/schema/translation.ts` |
+| user_config | 7 | `src/db/schema/user-config.ts` |

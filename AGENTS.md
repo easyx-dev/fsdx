@@ -13,7 +13,7 @@
 app/                          # @fsdx/web —— 应用 package（业务代码 + 运行时配置）
 ├── package.json              # imports #/* → ./src/*
 ├── vite.config.ts / vitest.config.ts / drizzle.config.ts / tsconfig.json
-├── drizzle/                  # 迁移文件（17 张表基线，以 src/db/schema/ 为准）
+├── drizzle/                  # 迁移文件（18 张表基线，以 src/db/schema/ 为准）
 ├── server.ts                 # Nitro server entry（bootstrap + 透传 SSR）
 ├── public/                   # 静态资源
 └── src/
@@ -22,7 +22,7 @@ app/                          # @fsdx/web —— 应用 package（业务代码 +
     ├── router.tsx / start.ts # Router 实例 / 全局中间件注册（requestId + locale + CSRF + sfErrorLogger）
     ├── components/           # admin/（antd 业务组件）、client/（前台）、providers/（global-store+i18n-context）
     ├── constants/            # 项目级常量（cookie-names、editor-types）
-    ├── db/                   # Drizzle 客户端 + schema（17 张表，以 src/db/schema/ 为准）
+    ├── db/                   # Drizzle 客户端 + schema（18 张表，以 src/db/schema/ 为准）
     ├── permissions/          # RBAC 权限码常量与匹配（admin + client 双端）
     ├── theme/                # 主题注册表（themes.ts：各端亮暗主题预设，单一事实来源）
     ├── shared-services/      # 高共享的 service（app 绑定单例/DI + 系统级共享域：logger/jwt/metrics/storage/scheduler/mail·sms/request-context/config/dict/i18n/ai/query-utils/operation-log）

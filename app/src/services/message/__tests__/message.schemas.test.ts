@@ -6,6 +6,7 @@ import {
 	adminMessageListSchema,
 	messageIdSchema,
 	messageListSchema,
+	notifyChannelsSchema,
 	searchRecipientsSchema,
 	sendMessageSchema,
 } from "../message.schemas";
@@ -47,9 +48,9 @@ describe("adminMessageListSchema", () => {
 		expect(adminMessageListSchema.safeParse({}).success).toBe(true);
 	});
 
-	it("非法 recipientType 校验失败", () => {
+	it("非法 userType 校验失败", () => {
 		expect(
-			adminMessageListSchema.safeParse({ recipientType: "system" }).success,
+			adminMessageListSchema.safeParse({ userType: "system" }).success,
 		).toBe(false);
 	});
 
@@ -62,8 +63,8 @@ describe("adminMessageListSchema", () => {
 
 describe("sendMessageSchema", () => {
 	const base = {
-		recipientType: "client",
-		recipientIds: ["a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11"],
+		userType: "client",
+		userIds: ["a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11"],
 		title: "通知标题",
 	};
 
@@ -71,16 +72,16 @@ describe("sendMessageSchema", () => {
 		expect(sendMessageSchema.safeParse(base).success).toBe(true);
 	});
 
-	it("recipientIds 非 uuid 校验失败", () => {
+	it("userIds 非 uuid 校验失败", () => {
 		expect(
-			sendMessageSchema.safeParse({ ...base, recipientIds: ["abc"] }).success,
+			sendMessageSchema.safeParse({ ...base, userIds: ["abc"] }).success,
 		).toBe(false);
 	});
 
-	it("recipientIds 为空数组校验失败", () => {
-		expect(
-			sendMessageSchema.safeParse({ ...base, recipientIds: [] }).success,
-		).toBe(false);
+	it("userIds 为空数组校验失败", () => {
+		expect(sendMessageSchema.safeParse({ ...base, userIds: [] }).success).toBe(
+			false,
+		);
 	});
 
 	it("title 为空校验失败", () => {
@@ -93,11 +94,32 @@ describe("sendMessageSchema", () => {
 describe("searchRecipientsSchema", () => {
 	it("合法参数通过校验", () => {
 		expect(
-			searchRecipientsSchema.safeParse({ recipientType: "admin" }).success,
+			searchRecipientsSchema.safeParse({ userType: "admin" }).success,
 		).toBe(true);
 	});
 
-	it("缺少 recipientType 校验失败", () => {
+	it("缺少 userType 校验失败", () => {
 		expect(searchRecipientsSchema.safeParse({}).success).toBe(false);
+	});
+});
+
+describe("notifyChannelsSchema", () => {
+	it("空配置通过校验", () => {
+		expect(notifyChannelsSchema.safeParse({}).success).toBe(true);
+	});
+
+	it("合法渠道配置通过校验", () => {
+		expect(
+			notifyChannelsSchema.safeParse({
+				email: { enabled: true, value: "a@b.com" },
+				feishu: { enabled: true, value: "https://open.feishu.cn/hook/x" },
+			}).success,
+		).toBe(true);
+	});
+
+	it("渠道缺少 enabled 时按停用兜底通过校验", () => {
+		expect(
+			notifyChannelsSchema.safeParse({ email: { value: "a@b.com" } }).success,
+		).toBe(true);
 	});
 });

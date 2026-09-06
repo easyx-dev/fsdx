@@ -7,9 +7,9 @@
 
 ## 表总览
 
-> 完整清单与数量以 `src/db/schema/index.ts` 为准（当前 17 张表）。
+> 完整清单与数量以 `src/db/schema/index.ts` 为准（当前 18 张表）。
 
-共 17 张表，按用途分为三组：
+共 18 张表，按用途分为三组：
 
 ### 业务表（8 张）
 
@@ -360,7 +360,7 @@ erDiagram
 
 | 文件 | 职责 |
 |------|------|
-| `src/db/schema/index.ts` | 全部表统一导出（当前 17 张，以代码为准） |
+| `src/db/schema/index.ts` | 全部表统一导出（当前 18 张，以代码为准） |
 | `src/db/index.ts` | Drizzle 客户端懒加载实例 |
 | `src/db/schema/*.ts` | 各表 Drizzle Schema 定义 |
 | `drizzle/` | 迁移 SQL + meta snapshot（`pnpm db:generate` 生成，bootstrap 启动自动执行） |

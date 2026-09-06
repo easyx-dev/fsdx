@@ -1,7 +1,8 @@
 /**
- * 消息 Server Functions：客户端自助 + 管理端个人收件箱 + 管理端消息管理
+ * 消息 Server Functions：客户端自助 + 管理端个人收件箱 + 管理端消息管理 + 用户通知渠道配置
  */
 import { createServerFn } from "@tanstack/react-start";
+import type { UserNotifyChannels } from "#/db/schema";
 import { adminAuthGuard, adminPermGuard } from "#/middleware/admin-auth";
 import { clientAuthGuard } from "#/middleware/client-auth";
 import { ADMIN_PERMISSIONS } from "#/permissions/admin-permissions";
@@ -10,6 +11,7 @@ import {
 	adminMessageListSchema,
 	messageIdSchema,
 	messageListSchema,
+	notifyChannelsSchema,
 	searchRecipientsSchema,
 	sendMessageSchema,
 } from "./message.schemas";
@@ -17,13 +19,31 @@ import {
 	deleteMessage,
 	deleteMessageById,
 	getMessages,
+	getNotifyChannels,
 	getUnreadCount,
 	listMessages,
 	markAllRead,
 	markAsRead,
+	saveNotifyChannels,
 	searchRecipients,
 	sendMessages,
 } from "./message.server";
+
+/** 邮件渠道回填注册邮箱默认值（value 未设置时） */
+function normalizeChannels(
+	channels: UserNotifyChannels,
+	defaultEmail: string,
+): UserNotifyChannels {
+	if (channels.email?.value) return channels;
+	return {
+		...channels,
+		email: {
+			enabled: channels.email?.enabled ?? false,
+			value: defaultEmail,
+			secret: channels.email?.secret,
+		},
+	};
+}
 
 // ═══════════════════════════════════════════════════
 // 客户端用户自助（登录即可，操作自己的消息）
@@ -35,7 +55,7 @@ export const getMyMessagesSFn = createServerFn({ method: "GET" })
 	.validator(messageListSchema)
 	.handler(async ({ data, context }) =>
 		getMessages({
-			recipient: { type: "client", id: context.userId },
+			user: { type: "client", id: context.userId },
 			status: data.status,
 			page: data.page,
 			pageSize: data.pageSize,
@@ -81,6 +101,25 @@ export const deleteMyMessageSFn = createServerFn({ method: "POST" })
 		return { success: ok };
 	});
 
+/** 查询自己的通知渠道配置（邮件 value 回填注册邮箱） */
+export const getMyNotifyChannelsSFn = createServerFn({ method: "GET" })
+	.middleware([clientAuthGuard])
+	.handler(async ({ context }) =>
+		normalizeChannels(
+			await getNotifyChannels({ type: "client", id: context.userId }),
+			context.email,
+		),
+	);
+
+/** 保存自己的通知渠道配置 */
+export const saveMyNotifyChannelsSFn = createServerFn({ method: "POST" })
+	.middleware([clientAuthGuard])
+	.validator(notifyChannelsSchema)
+	.handler(async ({ data, context }) => {
+		await saveNotifyChannels({ type: "client", id: context.userId }, data);
+		return { success: true };
+	});
+
 // ═══════════════════════════════════════════════════
 // 管理端个人收件箱（登录即可，操作自己的消息）
 // ═══════════════════════════════════════════════════
@@ -91,7 +130,7 @@ export const getAdminMessagesSFn = createServerFn({ method: "GET" })
 	.validator(messageListSchema)
 	.handler(async ({ data, context }) =>
 		getMessages({
-			recipient: { type: "admin", id: context.user.id },
+			user: { type: "admin", id: context.user.id },
 			status: data.status,
 			page: data.page,
 			pageSize: data.pageSize,
@@ -137,6 +176,25 @@ export const deleteAdminMessageSFn = createServerFn({ method: "POST" })
 		return { success: ok };
 	});
 
+/** 查询管理端自己的通知渠道配置（邮件 value 回填注册邮箱） */
+export const getAdminNotifyChannelsSFn = createServerFn({ method: "GET" })
+	.middleware([adminAuthGuard])
+	.handler(async ({ context }) =>
+		normalizeChannels(
+			await getNotifyChannels({ type: "admin", id: context.user.id }),
+			context.user.email,
+		),
+	);
+
+/** 保存管理端自己的通知渠道配置 */
+export const saveAdminNotifyChannelsSFn = createServerFn({ method: "POST" })
+	.middleware([adminAuthGuard])
+	.validator(notifyChannelsSchema)
+	.handler(async ({ data, context }) => {
+		await saveNotifyChannels({ type: "admin", id: context.user.id }, data);
+		return { success: true };
+	});
+
 // ═══════════════════════════════════════════════════
 // 管理端消息管理（message:view / message:send / message:delete）
 // ═══════════════════════════════════════════════════
@@ -147,7 +205,7 @@ export const listAllMessagesSFn = createServerFn({ method: "GET" })
 	.validator(adminMessageListSchema)
 	.handler(async ({ data }) =>
 		listMessages({
-			recipientType: data.recipientType,
+			userType: data.userType,
 			status: data.status,
 			type: data.type,
 			keyword: data.keyword,
@@ -156,7 +214,7 @@ export const listAllMessagesSFn = createServerFn({ method: "GET" })
 		}),
 	);
 
-/** 向用户批量发送消息 */
+/** 向用户批量发送消息（站内信 + 按用户配置分发外发渠道） */
 export const sendMessageSFn = createServerFn({ method: "POST" })
 	.middleware([adminPermGuard(ADMIN_PERMISSIONS.MESSAGE_SEND)])
 	.validator(sendMessageSchema)
@@ -166,10 +224,10 @@ export const sendMessageSFn = createServerFn({ method: "POST" })
 			context.user,
 			"message",
 			"send_message",
-			{ id: data.recipientIds.join(","), name: data.title },
+			{ id: data.userIds.join(","), name: data.title },
 			{
 				detail: {
-					recipientType: data.recipientType,
+					userType: data.userType,
 					recipientCount: count,
 				},
 			},
@@ -191,4 +249,6 @@ export const deleteAnyMessageSFn = createServerFn({ method: "POST" })
 export const searchRecipientsSFn = createServerFn({ method: "GET" })
 	.middleware([adminPermGuard(ADMIN_PERMISSIONS.MESSAGE_SEND)])
 	.validator(searchRecipientsSchema)
-	.handler(async ({ data }) => searchRecipients(data));
+	.handler(async ({ data }) =>
+		searchRecipients({ userType: data.userType, keyword: data.keyword }),
+	);

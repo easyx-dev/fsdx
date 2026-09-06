@@ -12,7 +12,7 @@ interface SendMessageModalProps {
 	form: FormInstance;
 	recipientOptions: RecipientOption[];
 	isSearching: boolean;
-	onRecipientTypeChange: () => void;
+	onUserTypeChange: () => void;
 	onRecipientSearch: (keyword: string) => void;
 	onOk: () => void;
 	onCancel: () => void;
@@ -25,7 +25,7 @@ export function SendMessageModal({
 	form,
 	recipientOptions,
 	isSearching,
-	onRecipientTypeChange,
+	onUserTypeChange,
 	onRecipientSearch,
 	onOk,
 	onCancel,
@@ -44,23 +44,23 @@ export function SendMessageModal({
 			<Form
 				form={form}
 				layout="vertical"
-				initialValues={{ recipientType: "client" }}
+				initialValues={{ userType: "client" }}
 			>
 				<Form.Item
-					name="recipientType"
-					label="接收者类型"
-					rules={[{ required: true, message: "请选择接收者类型" }]}
+					name="userType"
+					label="用户类型"
+					rules={[{ required: true, message: "请选择用户类型" }]}
 				>
-					<Radio.Group onChange={onRecipientTypeChange}>
+					<Radio.Group onChange={onUserTypeChange}>
 						<Radio value="client">客户端用户</Radio>
 						<Radio value="admin">管理端用户</Radio>
 					</Radio.Group>
 				</Form.Item>
 
 				<Form.Item
-					name="recipientIds"
-					label="接收者"
-					rules={[{ required: true, message: "请选择接收者" }]}
+					name="userIds"
+					label="用户"
+					rules={[{ required: true, message: "请选择用户" }]}
 				>
 					<Select
 						mode="multiple"
@@ -93,8 +93,8 @@ export function SendMessageModal({
 					/>
 				</Form.Item>
 
-				<Form.Item name="type" label="消息类型">
-					<Input placeholder="如 system / ppt / task（默认 system）" />
+				<Form.Item name="type" label="消息类型" initialValue="system">
+					<Input placeholder="消息类型（默认 system）" />
 				</Form.Item>
 
 				<Form.Item name="relatedLink" label="相关链接">

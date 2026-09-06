@@ -180,4 +180,13 @@ export const PRESET_CONFIGS: PresetConfig[] = [
 		valueType: "json",
 		groupName: "站点设置",
 	},
+	{
+		key: "notify_enabled",
+		value: "false",
+		description:
+			"通知外发渠道总闸：关闭后所有外发渠道（邮件/飞书/企微/钉钉/通用 webhook）一律不发送，站内信不受影响",
+		clientVisible: false,
+		valueType: "boolean",
+		groupName: "通知设置",
+	},
 ];

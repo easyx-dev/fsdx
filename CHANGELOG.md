@@ -6,6 +6,8 @@
 
 ### Features
 
+- **通知多渠道下发 + 每用户渠道配置（[infra]）**：站内信（`message` 表）为恒定义必达的主渠道，外发渠道 email / 飞书 / 企微 / 钉钉 / 通用 webhook 作为可插拔切面，由**单个全局总闸** `notify_enabled`（系统配置，默认关闭）与**每用户配置** `user_config.notify_channels`（启用 + 目标地址）双重驱动；短信渠道仅预留适配器接口（`sendChannelSms` 占位）。新增 `shared-services/notify`（webhook 按 variant 生成 payload/签名、邮件复用 mail）、`services/user-config`（通用 jsonb 配置存取）与 `user_config` 表；通知域多态引用统一命名 `user_type/user_id`，消息类型收敛至 `constants/message-types.ts`（清理死类型 `ppt`）。管理端与客户端各提供「通知渠道设置」UI。
+
 ### Infrastructure
 
 - **聚合代码审查命令至 `/code-review`（[infra]）**：原 `/check-architecture` 与代码一致性审查合并为单一入口 `.agents/commands/code-review.md`——默认全量扫描整个项目（`app/` + `packages/`），不做 diff 限定；按 10 维度（分层/路由/SFn/组件/类型与 DB/安全/错误处理/测试/命名与一致性/注释规范）输出严重度分级报告，并沉淀「一致性/Style Guide」（命名/分层/状态/错误处理/样式/注释与文档），目标让全仓库像一个人写的；`--diff` 需显式传参。删除 `.agents/commands/check-architecture.md`，并把 `AGENTS.md` 命令表、`.agents/guide.md`、`docs/documentation-architecture.md` 中的 `/check-architecture` 引用统一改为 `/code-review`（CHANGELOG 历史记录保留原词）。
@@ -38,6 +40,8 @@
 ### 依赖升级
 
 ### Breaking Changes
+
+- ⚠️ **消息模块字段统一命名（[infra]）**：`message` 表列 `recipient_type/recipient_id` 重命名为 `user_type/user_id`；对应 SFn 入参 `recipientType/recipientIds` 改为 `userType/userIds`，管理列表返回字段 `recipientName` 改为 `userName`。
 
 ## [v2.0.0] - 2026-09-04
 

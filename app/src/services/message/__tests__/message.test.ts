@@ -7,6 +7,18 @@ vi.mock("#/shared-services/logger", () => ({
 	logger: { error: vi.fn(), info: vi.fn(), warn: vi.fn() },
 }));
 
+// 全局总闸默认关闭（notify_enabled 为空即 false），使外发渠道分发被跳过
+vi.mock("#/shared-services/config/config.server", () => ({
+	getConfig: vi.fn().mockResolvedValue(""),
+}));
+
+// 用户配置批量读取默认返回空 Map
+vi.mock("#/services/user-config/user-config.server", () => ({
+	getNotifyChannelsMap: vi.fn().mockResolvedValue(new Map()),
+	getUserConfig: vi.fn().mockResolvedValue({}),
+	setUserConfig: vi.fn().mockResolvedValue(undefined),
+}));
+
 const { mockDb } = vi.hoisted(() => {
 	const q = () => ({ findFirst: vi.fn(), findMany: vi.fn() });
 	return {
@@ -49,10 +61,10 @@ import {
 	sendMessages,
 } from "#/services/message/message.server";
 
-/** 接收者：客户端用户（测试默认） */
-const clientRecipient = { type: "client" as const, id: "user-1" };
-/** 接收者：管理端用户 */
-const adminRecipient = { type: "admin" as const, id: "admin-1" };
+/** 用户：客户端用户（测试默认） */
+const clientUser = { type: "client" as const, id: "user-1" };
+/** 用户：管理端用户 */
+const adminUser = { type: "admin" as const, id: "admin-1" };
 
 /** 构造以 offset 结尾的 select 链（分页查询用） */
 function chainResolveOffset(value: unknown) {
@@ -93,8 +105,8 @@ function chainResolveWhere(value: unknown) {
 function makeRecord(overrides: Partial<Record<string, unknown>> = {}) {
 	return {
 		id: "msg-1",
-		recipientType: "client",
-		recipientId: "user-1",
+		userId: "user-1",
+		userType: "client",
 		title: "消息1",
 		content: null,
 		type: "system",
@@ -120,7 +132,7 @@ describe("createMessage", () => {
 		});
 
 		const id = await createMessage({
-			recipient: clientRecipient,
+			user: clientUser,
 			title: "测试消息",
 			content: "内容",
 			type: "system",
@@ -138,7 +150,7 @@ describe("createMessage", () => {
 		});
 
 		const id = await createMessage({
-			recipient: adminRecipient,
+			user: adminUser,
 			title: "无内容消息",
 		});
 
@@ -153,7 +165,7 @@ describe("createMessage", () => {
 		});
 
 		const id = await createMessage({
-			recipient: clientRecipient,
+			user: clientUser,
 			title: "带链接消息",
 			relatedLink: "/api/download/ppt-output/t1/html",
 		});
@@ -166,21 +178,21 @@ describe("getUnreadCount", () => {
 	it("返回未读数", async () => {
 		mockDb.$count.mockResolvedValue(5);
 
-		const count = await getUnreadCount(clientRecipient);
+		const count = await getUnreadCount(clientUser);
 		expect(count).toBe(5);
 	});
 
 	it("无未读消息返回 0", async () => {
 		mockDb.$count.mockResolvedValue(0);
 
-		const count = await getUnreadCount(clientRecipient);
+		const count = await getUnreadCount(clientUser);
 		expect(count).toBe(0);
 	});
 
-	it("按管理端接收者统计未读数", async () => {
+	it("按管理端用户统计未读数", async () => {
 		mockDb.$count.mockResolvedValue(2);
 
-		const count = await getUnreadCount(adminRecipient);
+		const count = await getUnreadCount(adminUser);
 		expect(count).toBe(2);
 	});
 });
@@ -191,7 +203,7 @@ describe("getMessages", () => {
 		mockDb.select.mockReturnValue(chainResolveOffset(fakeRecords));
 		mockDb.$count.mockResolvedValue(1);
 
-		const result = await getMessages({ recipient: clientRecipient });
+		const result = await getMessages({ user: clientUser });
 		expect(result.records).toEqual(fakeRecords);
 		expect(result.total).toBe(1);
 		expect(result.page).toBe(1);
@@ -202,7 +214,7 @@ describe("getMessages", () => {
 		mockDb.$count.mockResolvedValue(0);
 
 		const result = await getMessages({
-			recipient: clientRecipient,
+			user: clientUser,
 			status: "unread",
 		});
 		expect(result.records).toEqual([]);
@@ -218,7 +230,7 @@ describe("markAsRead", () => {
 			})),
 		});
 
-		const ok = await markAsRead("msg-1", clientRecipient);
+		const ok = await markAsRead("msg-1", clientUser);
 		expect(ok).toBe(true);
 	});
 
@@ -229,7 +241,7 @@ describe("markAsRead", () => {
 			})),
 		});
 
-		const ok = await markAsRead("msg-none", clientRecipient);
+		const ok = await markAsRead("msg-none", clientUser);
 		expect(ok).toBe(false);
 	});
 });
@@ -242,7 +254,7 @@ describe("markAllRead", () => {
 			})),
 		});
 
-		const count = await markAllRead(clientRecipient);
+		const count = await markAllRead(clientUser);
 		expect(count).toBe(3);
 	});
 });
@@ -255,7 +267,7 @@ describe("deleteMessage", () => {
 			})),
 		});
 
-		const ok = await deleteMessage("msg-1", clientRecipient);
+		const ok = await deleteMessage("msg-1", clientUser);
 		expect(ok).toBe(true);
 	});
 
@@ -266,16 +278,16 @@ describe("deleteMessage", () => {
 			})),
 		});
 
-		const ok = await deleteMessage("msg-none", clientRecipient);
+		const ok = await deleteMessage("msg-none", clientUser);
 		expect(ok).toBe(false);
 	});
 });
 
 describe("listMessages", () => {
-	it("全量分页查询并解析接收者名称", async () => {
+	it("全量分页查询并解析用户名称", async () => {
 		const records = [
-			makeRecord({ id: "m1", recipientType: "admin", recipientId: "a1" }),
-			makeRecord({ id: "m2", recipientType: "client", recipientId: "c1" }),
+			makeRecord({ id: "m1", userType: "admin", userId: "a1" }),
+			makeRecord({ id: "m2", userType: "client", userId: "c1" }),
 		];
 		mockDb.select
 			.mockReturnValueOnce(chainResolveOffset(records))
@@ -293,20 +305,20 @@ describe("listMessages", () => {
 		expect(result.total).toBe(2);
 		expect(result.records[0]).toMatchObject({
 			id: "m1",
-			recipientName: "管理员A",
+			userName: "管理员A",
 		});
 		expect(result.records[1]).toMatchObject({
 			id: "m2",
-			recipientName: "客户C",
+			userName: "客户C",
 		});
 	});
 
-	it("按接收者类型与状态筛选", async () => {
+	it("按用户类型与状态筛选", async () => {
 		mockDb.select.mockReturnValue(chainResolveOffset([]));
 		mockDb.$count.mockResolvedValue(0);
 
 		const result = await listMessages({
-			recipientType: "client",
+			userType: "client",
 			status: "read",
 		});
 		expect(result.records).toEqual([]);
@@ -315,7 +327,7 @@ describe("listMessages", () => {
 
 	it("未匹配到用户名称时兜底为未知用户", async () => {
 		const records = [
-			makeRecord({ id: "m1", recipientType: "admin", recipientId: "ghost" }),
+			makeRecord({ id: "m1", userType: "admin", userId: "ghost" }),
 		];
 		mockDb.select
 			.mockReturnValueOnce(chainResolveOffset(records))
@@ -324,7 +336,7 @@ describe("listMessages", () => {
 		mockDb.$count.mockResolvedValue(1);
 
 		const result = await listMessages({});
-		expect(result.records[0].recipientName).toBe("未知用户");
+		expect(result.records[0].userName).toBe("未知用户");
 	});
 });
 
@@ -335,8 +347,8 @@ describe("sendMessages", () => {
 		});
 
 		const count = await sendMessages({
-			recipientType: "client",
-			recipientIds: ["u1", "u2"],
+			userType: "client",
+			userIds: ["u1", "u2"],
 			title: "通知",
 		});
 
@@ -349,8 +361,8 @@ describe("sendMessages", () => {
 		});
 
 		const count = await sendMessages({
-			recipientType: "admin",
-			recipientIds: ["u1"],
+			userType: "admin",
+			userIds: ["u1"],
 			title: "通知",
 		});
 
@@ -391,7 +403,7 @@ describe("searchRecipients", () => {
 		);
 
 		const options = await searchRecipients({
-			recipientType: "client",
+			userType: "client",
 			keyword: "张三",
 		});
 
@@ -403,7 +415,7 @@ describe("searchRecipients", () => {
 			chainResolveLimit([{ id: "a1", username: "admin", email: "a@test.com" }]),
 		);
 
-		const options = await searchRecipients({ recipientType: "admin" });
+		const options = await searchRecipients({ userType: "admin" });
 
 		expect(options).toEqual([{ id: "a1", label: "admin（a@test.com）" }]);
 	});
@@ -412,7 +424,7 @@ describe("searchRecipients", () => {
 		mockDb.select.mockReturnValue(chainResolveLimit([]));
 
 		const options = await searchRecipients({
-			recipientType: "client",
+			userType: "client",
 			keyword: "不存在",
 		});
 

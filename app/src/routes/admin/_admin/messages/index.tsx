@@ -32,6 +32,7 @@ import {
 	markAllAdminMessagesAsReadSFn,
 } from "#/services/message/message.functions";
 import type { MessageRecord } from "#/services/message/message.server";
+import { NotifyChannelSettingsModal } from "./-mods/NotifyChannelSettingsModal";
 
 const { Text, Paragraph } = Typography;
 
@@ -59,6 +60,7 @@ function AdminInboxPage() {
 	const [page, setPage] = useState(1);
 	const [total, setTotal] = useState(0);
 	const [unreadCount, setUnreadCount] = useState(0);
+	const [notifyOpen, setNotifyOpen] = useState(false);
 
 	const fetchMessages = useCallback(async () => {
 		setLoading(true);
@@ -147,15 +149,24 @@ function AdminInboxPage() {
 			title="我的消息"
 			description="查看系统推送给你的通知消息"
 			extra={
-				unreadCount > 0 && (
+				<Space>
 					<Button
 						type="link"
 						icon={<CheckOutlined />}
-						onClick={handleMarkAllRead}
+						onClick={() => setNotifyOpen(true)}
 					>
-						全部已读
+						通知设置
 					</Button>
-				)
+					{unreadCount > 0 && (
+						<Button
+							type="link"
+							icon={<CheckOutlined />}
+							onClick={handleMarkAllRead}
+						>
+							全部已读
+						</Button>
+					)}
+				</Space>
 			}
 		>
 			<Tabs activeKey={tab} onChange={handleTabChange} items={tabItems} />
@@ -264,6 +275,10 @@ function AdminInboxPage() {
 					</>
 				)}
 			</Spin>
+			<NotifyChannelSettingsModal
+				open={notifyOpen}
+				onClose={() => setNotifyOpen(false)}
+			/>
 		</AdminPageContent>
 	);
 }

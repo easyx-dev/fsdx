@@ -1,6 +1,6 @@
 /**
- * 通用消息表：管理端与客户端用户消息
- * 通过 recipientType + recipientId 定位接收者（无外键，仿 operation_log 的 operatorId 模式）
+ * 通用消息表：管理端与客户端用户消息（站内信，通知模块主渠道）
+ * 通过 userType + userId 定位用户（无外键，仿 operation_log 的 operatorId 模式）
  */
 import {
 	index,
@@ -10,9 +10,7 @@ import {
 	uuid,
 	varchar,
 } from "drizzle-orm/pg-core";
-
-/** 消息接收者类型 */
-export type MessageRecipientType = "admin" | "client";
+import type { UserType } from "#/types/user";
 
 /** 消息状态 */
 export type MessageStatus = "unread" | "read";
@@ -21,10 +19,8 @@ export const message = pgTable(
 	"message",
 	{
 		id: uuid().defaultRandom().primaryKey(),
-		recipientType: varchar("recipient_type", { length: 20 })
-			.$type<MessageRecipientType>()
-			.notNull(),
-		recipientId: uuid("recipient_id").notNull(),
+		userId: uuid("user_id").notNull(),
+		userType: varchar("user_type", { length: 20 }).$type<UserType>().notNull(),
 		title: varchar({ length: 200 }).notNull(),
 		content: text(),
 		type: varchar({ length: 50 }).default("system").notNull(),
@@ -41,7 +37,5 @@ export const message = pgTable(
 			.notNull(),
 		deletedAt: timestamp("deleted_at", { withTimezone: true }),
 	},
-	(table) => [
-		index("idx_message_recipient").on(table.recipientType, table.recipientId),
-	],
+	(table) => [index("idx_message_user").on(table.userType, table.userId)],
 );

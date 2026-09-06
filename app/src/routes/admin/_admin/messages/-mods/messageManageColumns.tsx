@@ -4,16 +4,17 @@
 import { TableOperate } from "@fsdx/ui-spa/table";
 import { Tag } from "antd";
 import dayjs from "dayjs";
-import type { MessageWithRecipient } from "#/services/message/message.server";
+import { MESSAGE_TYPE_LABELS } from "#/constants/message-types";
+import type { MessageWithUser } from "#/services/message/message.server";
 
-/** 接收者类型展示映射 */
-const RECIPIENT_TYPE_LABELS: Record<string, string> = {
+/** 用户类型展示映射 */
+const USER_TYPE_LABELS: Record<string, string> = {
 	admin: "管理端",
 	client: "客户端",
 };
 
-/** 接收者类型 Tag 颜色 */
-const RECIPIENT_TYPE_COLORS: Record<string, string> = {
+/** 用户类型 Tag 颜色 */
+const USER_TYPE_COLORS: Record<string, string> = {
 	admin: "purple",
 	client: "cyan",
 };
@@ -24,29 +25,22 @@ const STATUS_COLORS: Record<string, string> = {
 	read: "default",
 };
 
-/** 消息类型展示映射 */
-const TYPE_LABELS: Record<string, string> = {
-	system: "系统",
-	ppt: "PPT",
-	task: "任务",
-};
-
 interface MessageManageColumnsOptions {
 	onDelete: (id: string) => void;
 }
 
-/** 消息管理表格列：接收者/标题/类型/状态/时间 + 删除 */
+/** 消息管理表格列：用户/标题/类型/状态/时间 + 删除 */
 export function messageManageColumns(options: MessageManageColumnsOptions) {
 	return [
 		{
-			title: "接收者",
-			dataIndex: "recipientName",
-			key: "recipientName",
+			title: "用户",
+			dataIndex: "userName",
+			key: "userName",
 			width: 200,
-			render: (name: string, record: MessageWithRecipient) => (
+			render: (name: string, record: MessageWithUser) => (
 				<>
-					<Tag color={RECIPIENT_TYPE_COLORS[record.recipientType]}>
-						{RECIPIENT_TYPE_LABELS[record.recipientType]}
+					<Tag color={USER_TYPE_COLORS[record.userType]}>
+						{USER_TYPE_LABELS[record.userType]}
 					</Tag>
 					{name}
 				</>
@@ -63,7 +57,7 @@ export function messageManageColumns(options: MessageManageColumnsOptions) {
 			dataIndex: "type",
 			key: "type",
 			width: 90,
-			render: (v: string) => TYPE_LABELS[v] ?? v,
+			render: (v: string) => MESSAGE_TYPE_LABELS[v] ?? v,
 		},
 		{
 			title: "状态",
@@ -87,7 +81,7 @@ export function messageManageColumns(options: MessageManageColumnsOptions) {
 			title: "操作",
 			key: "action",
 			width: 100,
-			render: (_: unknown, record: MessageWithRecipient) => (
+			render: (_: unknown, record: MessageWithUser) => (
 				<TableOperate>
 					<TableOperate.Delete
 						recordName="该消息"

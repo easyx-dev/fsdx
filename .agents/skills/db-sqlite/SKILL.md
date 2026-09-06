@@ -124,7 +124,7 @@ data/
 
 ### 3.1 import 源变更
 
-所有 `src/db/schema/*.ts` 文件（13 个，17 张表）：
+所有 `src/db/schema/*.ts` 文件（14 个，18 张表）：
 
 ```diff
 - import { pgTable, uuid, varchar, timestamp, boolean, jsonb, integer, bigint, index, uniqueIndex, unique, sql } from "drizzle-orm/pg-core";
@@ -728,7 +728,7 @@ mkdir -p app/data/
 # 4. 生成新的 SQLite 迁移
 DATABASE_URL="./data/data.db" pnpm --filter @fsdx/web db:generate
 
-# 5. 审查生成的 migration.sql（确认 17 张表 CREATE TABLE + 无破坏性操作）
+# 5. 审查生成的 migration.sql（确认 18 张表 CREATE TABLE + 无破坏性操作）
 
 # 6. 执行程序化迁移（开发环境；与生产 bootstrap 路径一致）
 DATABASE_URL="./data/data.db" pnpm --filter @fsdx/web db:migrate
@@ -849,7 +849,7 @@ pnpm --filter @fsdx/web exec tsx ../.agents/skills/db-sqlite/scripts/db-migratio
 | 分类 | 数量 | 说明 |
 |------|------|------|
 | 配置文件 | 5 | drizzle.config.ts、app/.env.example、src/env.d.ts、.gitignore、vitest.config.ts |
-| Schema 文件 | 13 | 全部 `src/db/schema/*.ts`（17 张表），pg-core → sqlite-core |
+| Schema 文件 | 14 | 全部 `src/db/schema/*.ts`（18 张表），pg-core → sqlite-core |
 | DB 客户端 | 2 | src/db/index.ts、src/db/migrate.ts（migrate-cli.ts 不动） |
 | 服务端 SQL | 9 | `ilike→like`（8 个文件）、`db.execute→db.all` + 时间序列改写（track）、`rowCount→changes`（message） |
 | 日期时间 | ~30 处 | `new Date()`/`new Date(expr)` → `Date.now()`/`.getTime()`，类型 `Date` → `number` |

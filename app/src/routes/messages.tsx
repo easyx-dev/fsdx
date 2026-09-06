@@ -1,6 +1,6 @@
 /**
  * 客户端消息中心页面（SSR）
- * 列表分页展示消息，支持标记已读/删除
+ * 列表分页展示消息，支持标记已读/删除；含「通知渠道设置」
  */
 
 import {
@@ -14,6 +14,9 @@ import {
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { useCallback, useState } from "react";
 import { toast } from "sonner";
+import { NotifyChannelSettings } from "#/components/client/NotifyChannelSettings";
+import { useTranslation } from "#/components/providers";
+import { MESSAGE_TYPE_LABELS } from "#/constants/message-types";
 import { getCurrentClientSFn } from "#/services/client-auth/client-auth.functions";
 import {
 	deleteMyMessageSFn,
@@ -41,14 +44,13 @@ export const Route = createFileRoute("/messages")({
 
 const PAGE_SIZE = 10;
 
-/** 消息类型图标与颜色映射 */
-const TYPE_META: Record<string, { badge: string; label: string }> = {
-	ppt: { badge: "bg-blue-500", label: "报表" },
-	task: { badge: "bg-orange-500", label: "任务" },
-	system: { badge: "bg-neutral-400", label: "系统" },
+/** 消息类型点颜色映射 */
+const TYPE_DOT_COLORS: Record<string, string> = {
+	system: "bg-neutral-400",
 };
 
 function MessagesPage() {
+	const { t } = useTranslation();
 	const initial = Route.useLoaderData();
 	const [records, setRecords] = useState<MessageRecord[]>(
 		initial.result.records,
@@ -60,25 +62,28 @@ function MessagesPage() {
 	const [loading, setLoading] = useState(false);
 
 	/** 拉取消息列表 */
-	const load = useCallback(async (p: number, s: typeof status) => {
-		setLoading(true);
-		try {
-			const result = await getMyMessagesSFn({
-				data: {
-					page: p,
-					pageSize: PAGE_SIZE,
-					status: s === "all" ? undefined : s,
-				},
-			});
-			setRecords(result.records);
-			setPage(result.page);
-			setTotal(result.total);
-		} catch (err) {
-			toast.error(err instanceof Error ? err.message : "加载消息失败");
-		} finally {
-			setLoading(false);
-		}
-	}, []);
+	const load = useCallback(
+		async (p: number, s: typeof status) => {
+			setLoading(true);
+			try {
+				const result = await getMyMessagesSFn({
+					data: {
+						page: p,
+						pageSize: PAGE_SIZE,
+						status: s === "all" ? undefined : s,
+					},
+				});
+				setRecords(result.records);
+				setPage(result.page);
+				setTotal(result.total);
+			} catch (err) {
+				toast.error(err instanceof Error ? err.message : t("加载消息失败"));
+			} finally {
+				setLoading(false);
+			}
+		},
+		[t],
+	);
 
 	/** 刷新未读数 */
 	const refreshUnread = useCallback(async () => {
@@ -98,7 +103,7 @@ function MessagesPage() {
 			);
 			await refreshUnread();
 		} catch (err) {
-			toast.error(err instanceof Error ? err.message : "操作失败");
+			toast.error(err instanceof Error ? err.message : t("操作失败"));
 		}
 	};
 
@@ -108,9 +113,9 @@ function MessagesPage() {
 			await markAllMyMessagesAsReadSFn();
 			setRecords((prev) => prev.map((r) => ({ ...r, status: "read" })));
 			await refreshUnread();
-			toast.success("已全部标记为已读");
+			toast.success(t("已全部标记为已读"));
 		} catch (err) {
-			toast.error(err instanceof Error ? err.message : "操作失败");
+			toast.error(err instanceof Error ? err.message : t("操作失败"));
 		}
 	};
 
@@ -120,24 +125,29 @@ function MessagesPage() {
 			const { success } = await deleteMyMessageSFn({ data: { id } });
 			if (success) {
 				setRecords((prev) => prev.filter((r) => r.id !== id));
-				setTotal((t: number) => Math.max(0, t - 1));
+				setTotal((v: number) => Math.max(0, v - 1));
 				await refreshUnread();
-				toast.success("已删除");
+				toast.success(t("已删除"));
 			}
 		} catch (err) {
-			toast.error(err instanceof Error ? err.message : "删除失败");
+			toast.error(err instanceof Error ? err.message : t("删除失败"));
 		}
 	};
 
 	return (
 		<main className="mx-auto max-w-3xl px-4 py-8 sm:py-12">
-			<header className="mb-6 flex items-center justify-between sm:mb-8">
-				<h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
-					消息中心
-				</h1>
+			<header className="mb-6 flex items-center justify-between gap-3 sm:mb-8">
+				<div>
+					<h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
+						{t("消息中心")}
+					</h1>
+					<div className="mt-2">
+						<NotifyChannelSettings />
+					</div>
+				</div>
 				{unread > 0 && (
 					<Button variant="outline" size="sm" onClick={handleMarkAllRead}>
-						全部已读
+						{t("全部已读")}
 					</Button>
 				)}
 			</header>
@@ -154,9 +164,10 @@ function MessagesPage() {
 							void load(1, s);
 						}}
 					>
-						{s === "all" && "全部"}
-						{s === "unread" && `未读${unread > 0 ? ` (${unread})` : ""}`}
-						{s === "read" && "已读"}
+						{s === "all" && t("全部")}
+						{s === "unread" &&
+							`${t("未读")}${unread > 0 ? ` (${unread})` : ""}`}
+						{s === "read" && t("已读")}
 					</Button>
 				))}
 			</div>
@@ -164,7 +175,6 @@ function MessagesPage() {
 			{/* 消息列表 */}
 			<div className="space-y-3">
 				{records.map((msg) => {
-					const meta = TYPE_META[msg.type] ?? TYPE_META.system;
 					return (
 						<Card
 							key={msg.id}
@@ -175,13 +185,13 @@ function MessagesPage() {
 									<CardTitle className="flex items-center gap-2 text-base">
 										{msg.status === "unread" && (
 											<span
-												className={`h-2 w-2 shrink-0 rounded-full ${meta.badge}`}
+												className={`h-2 w-2 shrink-0 rounded-full ${TYPE_DOT_COLORS[msg.type] ?? "bg-neutral-400"}`}
 											/>
 										)}
 										<span className="truncate">{msg.title}</span>
 									</CardTitle>
 									<Badge variant="secondary" className="shrink-0 text-xs">
-										{meta.label}
+										{MESSAGE_TYPE_LABELS[msg.type] ?? msg.type}
 									</Badge>
 								</div>
 							</CardHeader>
@@ -202,7 +212,7 @@ function MessagesPage() {
 												size="sm"
 												onClick={() => void handleMarkRead(msg.id)}
 											>
-												已读
+												{t("已读")}
 											</Button>
 										)}
 										<Button
@@ -211,7 +221,7 @@ function MessagesPage() {
 											className="text-destructive hover:text-destructive"
 											onClick={() => void handleDelete(msg.id)}
 										>
-											删除
+											{t("删除")}
 										</Button>
 									</div>
 								</div>
@@ -221,7 +231,7 @@ function MessagesPage() {
 				})}
 				{records.length === 0 && !loading && (
 					<div className="py-16 text-center text-sm text-muted-foreground">
-						暂无消息
+						{t("暂无消息")}
 					</div>
 				)}
 			</div>
@@ -235,7 +245,7 @@ function MessagesPage() {
 						disabled={page <= 1 || loading}
 						onClick={() => void load(page - 1, status)}
 					>
-						上一页
+						{t("上一页")}
 					</Button>
 					<span className="text-sm text-muted-foreground">
 						{page} / {Math.max(1, Math.ceil(total / PAGE_SIZE))}
@@ -246,7 +256,7 @@ function MessagesPage() {
 						disabled={page >= Math.ceil(total / PAGE_SIZE) || loading}
 						onClick={() => void load(page + 1, status)}
 					>
-						下一页
+						{t("下一页")}
 					</Button>
 				</div>
 			)}
