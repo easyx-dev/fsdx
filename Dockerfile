@@ -6,6 +6,8 @@ WORKDIR /app
 
 ENV npm_config_registry=$NPM_REGISTRY
 ENV PNPM_HOME=/tmp/pnpm-home
+# CI 环境：pnpm 在无 TTY 时自动确认模块目录清理，避免 ERR_PNPM_ABORTED_REMOVE_MODULES_DIR_NO_TTY
+ENV CI=true
 
 RUN npm install -g pnpm@11
 
@@ -14,6 +16,7 @@ COPY app/package.json ./app/package.json
 COPY packages/lib/package.json ./packages/lib/package.json
 COPY packages/ui-ssr/package.json ./packages/ui-ssr/package.json
 COPY packages/ui-spa/package.json ./packages/ui-spa/package.json
+COPY packages/ai-rich-editor/package.json ./packages/ai-rich-editor/package.json
 
 RUN pnpm install --frozen-lockfile --store-dir /tmp/pnpm-store --config.package-import-method=copy
 
