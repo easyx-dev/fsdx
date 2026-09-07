@@ -41,7 +41,7 @@ class MemoryCache<T> {
 
 ## 缓存实例清单（`MemoryCache` 类 + 按模块实例文件）
 
-> 实例数量与清单以 [cache skill](../.agents/skills/cache/SKILL.md) 为准（当前 9 个：8 个领域数据缓存位于 `src/services/*/*.cache.ts` + 1 个埋点频控内部实例 `sessionRateCache` 位于 `src/services/track/track.validate.ts`）。
+> 实例清单以代码为准（领域数据缓存位于 `src/services/*/*.cache.ts` + 埋点频控内部实例 `sessionRateCache` 位于 `src/services/track/track.validate.ts`）。
 
 > 每个实例只能在唯一一个服务端模块中直接操作（get/set/delete），禁止跨模块 import 缓存实例；外部模块通过所属模块的导出函数访问。
 
@@ -212,7 +212,7 @@ Server Function handler
 
 ## 单实例与数据一致性边界
 
-- 所有缓存实例（当前 9 个）均为进程内 `MemoryCache`，缓存失效仅作用于当前实例，多实例部署时实例间缓存会短暂不一致；进程退出后缓存自动丢失，重启后按需懒加载重建。
+- 所有缓存实例均为进程内 `MemoryCache`，缓存失效仅作用于当前实例，多实例部署时实例间缓存会短暂不一致；进程退出后缓存自动丢失，重启后按需懒加载重建。
 - `MemoryCache` 已实现 `CacheAdapter` 接口，未来升级多实例可用 Redis 等分布式缓存适配器替换内存实现而不改动业务层。
 - 完整的单实例边界、崩溃丢数据窗口与扩容路径 → [部署运维](deployment-ops.md)。
 

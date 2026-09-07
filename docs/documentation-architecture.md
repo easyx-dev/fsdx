@@ -6,9 +6,9 @@
 ## 1. 目标
 
 - 每份文档有明确角色与内容边界，不重复维护同一事实
-- 「数量/清单」类事实一律指向代码或生成物，从机制上消灭数字漂移
+- 「数量/清单」类事实一律指向代码，文档禁止复制与生成快照，从机制上消灭数字漂移
 - 文档间引用单向、可追踪；索引层（guide.md / README.md）只做导航不重复内容
-- 数字写入文档时标注「以代码为准」，事实变更时手动同步引用方文档（校验守门见 AGENTS「开发边界」）
+- 文档只做解释不搬事实；事实变更仅需改代码，无需同步数字
 
 ## 2. 文档体系分层
 
@@ -16,15 +16,14 @@
 L0  AGENTS.md           规则本体（唯一自动加载）
                          只放跨模块规则、约定、索引；清单/机制详解一律外迁
 L1  .agents/guide.md    任务导航（任务 → 读什么/用什么），不重复规则
-L2  .agents/skills      「怎么做/禁止什么」规则展开（12 个 skill：架构/服务函数/权限/缓存/数据库/测试/国际化/CRUD + db-sqlite/db-mysql 衍生技能 + derive-project/upstream-sync 协同技能；数量以代码为准）
+L2  .agents/skills      「怎么做/禁止什么」规则展开（清单以 `.agents/skills/` 目录为准）
 L3  .agents/commands    固定流程执行（deploy 发布 / code-review 全量审查，引用 skills / docs）
 L4  .agents/checklists  验证清单（skills 的浓缩：sfn / route / component）
-L5  docs/               背景与设计（人类向），按性质分四子类：
+L5  docs/               背景与设计（人类向），按性质分三子类：
     ├─ 平台机制类   architecture-overview / database-design / auth-permission-model /
     │               cache-system / event-tracking / deployment-ops / project-ecosystem
     ├─ 决策档案类   （ADR，当前暂无，新增时置于 docs/decisions.md）
-    ├─ archive/     历史档案（被推翻的设计、已完成计划）
-    └─ generated/   事实快照（doc-facts 脚本生成：`pnpm doc:gen`，禁止手改；`pnpm check` 自动校验漂移）
+    └─ archive/     历史档案（被推翻的设计、已完成计划）
 ```
 
 > fsdx-web 无 `.agents/templates` 层（代码骨架由 skills 内嵌示例承载）。skills / commands / checklists 实体均在 `.agents/` 下；`.opencode/` 内为指向 `.agents/` 的软链视图（`.opencode/skills` / `.opencode/commands`），供 opencode 工具识别与加载（opencode 约定仅识别这两类）；checklists 为 AI 自查参考，无 opencode 软链视图，内容修改一律以 `.agents/` 为准。
@@ -37,7 +36,7 @@ L5  docs/               背景与设计（人类向），按性质分四子类�
 |---------|--------|------|---------|
 | 规则 / 禁令 / 约定 | AGENTS.md + skills | 代码审查即时依赖、低频变更 | SFn 命名后缀、JSONB `.$type` 约束、`TableOperate` 操作列 |
 | 机制 / 设计解释（为什么） | docs 平台类 | 讲「为什么」，低频变更 | 缓存失效策略、BatchWriter 动机、认证模型 |
-| 事实清单（数量 / 有哪些） | 代码 或 docs/generated | 高频变更，防漂移 | 表清单、权限码、缓存实例、定时任务、预置埋点 |
+| 事实清单（数量 / 有哪些） | 代码 | 高频变更 | 表清单、权限码、缓存实例、定时任务、预置埋点 |
 | 流程 / 步骤执行 | .agents/commands | 固定顺序的多步操作 | 版本发布、架构审计 |
 | 验证条目 | .agents/checklists | 规则的浓缩可勾选项 | SFn 自查、路由自查 |
 | 被推翻的设计 / 已完成计划 | docs/archive | 只追溯，不引用为现行依据 | 迁移方案、重构计划 |
@@ -46,19 +45,19 @@ L5  docs/               背景与设计（人类向），按性质分四子类�
 
 每个事实有唯一 owner，其余文档只能引用（链接/指向），禁止复制清单：
 
-| 事实 | 唯一 owner（代码） | 可读快照 | 引用方（只引用，不复制） |
-|------|-------------------|---------|--------------------------|
-| 权限码清单 | `src/permissions/admin-permissions.ts` + `client-permissions.ts` | [docs/generated/permissions.md](generated/permissions.md)（`pnpm doc:gen`） | auth-permission-model、AGENTS、architecture-overview |
-| 数据表清单 / 数量 | `src/db/schema/`（index.ts 汇总） | [docs/generated/tables.md](generated/tables.md)（`pnpm doc:gen`） | database-design、architecture-overview、README、AGENTS |
-| 内存缓存实例 | `src/services/*/*.cache.ts`（领域缓存）+ `src/services/track/track.validate.ts`（频控内部实例 `sessionRateCache`） | — | cache-system、architecture-overview、AGENTS |
-| 路由树 | `src/routeTree.gen.ts` + `src/routes/` | — | architecture-overview（仅概览）、routing 约定在 AGENTS |
-| 定时任务清单 | `src/services/tasks/tasks.server.ts` | — | deployment-ops |
-| 预置埋点（事件/属性） | `src/services/track/*` 的 `PRESET_*` | — | event-tracking、database-design |
-| 预置数据（字典/配置） | `src/shared-services/dict` / `src/shared-services/config` 的 `ensurePreset*` | — | database-design |
-| 主题家族 / 品牌色 | `src/theme/themes.ts` + `global.css` | — | AGENTS 视觉章节 |
-| 技术栈版本 | `package.json` | — | AGENTS、README（标注"以 package.json 为准"） |
+| 事实 | 唯一 owner（代码） | 引用方（只引用，不复制） |
+|------|-------------------|--------------------------|
+| 权限码清单 | `src/permissions/admin-permissions.ts` + `client-permissions.ts` | auth-permission-model、AGENTS、architecture-overview |
+| 数据表清单 / 数量 | `src/db/schema/`（index.ts 汇总） | database-design、architecture-overview、README、AGENTS |
+| 内存缓存实例 | `src/services/*/*.cache.ts`（领域缓存）+ `src/services/track/track.validate.ts`（频控内部实例 `sessionRateCache`） | cache-system、architecture-overview、AGENTS |
+| 路由树 | `src/routeTree.gen.ts` + `src/routes/` | architecture-overview（仅概览）、routing 约定在 AGENTS |
+| 定时任务清单 | `src/services/tasks/tasks.server.ts` | deployment-ops |
+| 预置埋点（事件/属性） | `src/services/track/*` 的 `PRESET_*` | event-tracking、database-design |
+| 预置数据（字典/配置） | `src/shared-services/dict` / `src/shared-services/config` 的 `ensurePreset*` | database-design |
+| 主题家族 / 品牌色 | `src/theme/themes.ts` + `global.css` | AGENTS 视觉章节 |
+| 技术栈版本 | `package.json` | AGENTS、README（标注"以 package.json 为准"） |
 
-> 事实数字（表数、缓存实例数、权限码数、测试条数等）写入文档时，必须与代码一致并标注「以代码为准」；新增事实时按 AGENTS「开发边界」同步更新引用方文档。
+> 事实数字一律不写入文档（表数、权限码数、缓存实例数等数量以代码为准）；新增事实时按 AGENTS「开发边界」同步更新引用方文档。
 
 ## 5. 引用图（谁引用谁）
 
@@ -135,7 +134,7 @@ docs/ 内部：
 - **版本头**：`## [Unreleased]` 放未发布变更；发布后升为 `## [vX.Y.Z] - YYYY-MM-DD`（SemVer：MAJOR=破坏性、MINOR=新特性、PATCH=修复）
 - **单条语法**：一行导语 `- **标题**：做了什么 + 影响范围` + 缩进子项；禁止单行超长段（超约 3 行拆到 `  - ` 子项）；`[infra]` 前缀标记可被衍生项目吸收的基建变更（`Infrastructure`/`Fix` 分类）；`Breaking Changes` 条目加 `⚠️` 与迁移/升级注意；代码/标识符用反引号
 - **主文件保留** `[Unreleased]` + 最近 3 个版本 + 「历史版本」索引链接；更早版本归档至 `docs/archive/changelog/v1.x.x.md`（保留各版本标题，归档文件头注明版本范围）
-- CHANGELOG 属历史记录，**不参与 doc-facts 数量比对**（`doc:check` 已排除）
+- CHANGELOG 属历史记录，不参与当前事实比对
 
 ### 7.7 结构模板
 
@@ -155,10 +154,9 @@ docs/ 内部：
 
 ### 事实变更（改表/权限码/缓存等）
 
-1. 修改代码
-2. 运行 `pnpm doc:gen` 重新生成 docs/generated 快照
-3. 触发更新引用方文档的元信息块「更新触发」中的对应项
-4. 若引用方文档中有残留的硬编码数量，手动同步为「当前值 + 以代码为准」标注（`pnpm check` 内置 doc:check 自动拦截漂移）
+1. 修改代码（详情以代码为准，文档不搬数字）
+2. 若引用方文档含解释性描述（如按分组的表说明），按需同步该设计说明
+3. 文档正文不得出现硬编码数量/清单
 
 ### 已弃用 / 历史内容
 

@@ -37,6 +37,8 @@
 
 - **AGENTS.md 包边界与说明补充**：结构树、README 链接清单与「新增共享逻辑」纳入 `@fsdx/ai-rich-editor`（AI 富文本工作台）；Server Function 章节明确「无入参 SFn（零参调用）可省略 `validator`」豁免，与现有零参 SFn 实践对齐。
 
+- **文档统计计数硬编码与 doc-facts 机制移除（[infra]）**：正文不再硬编码易漂移的统计计数（表数 / 权限码数 / 缓存实例数 / skill 数 / schema 文件数），一律指向代码（`src/db/schema/`、`src/permissions/`），设计文档（`database-design` / `auth-permission-model`）仅保留解释性分组说明；删除 doc-facts 全套（`app/scripts/{doc-facts,gen-doc-facts,check-doc-facts}.ts` + `docs/generated/` + `doc:gen` / `doc:check` 脚本，根 `package.json` 的 `check` 移除 `doc:check`），文档体系收敛为「事实在代码、文档只解释」，同步更新 `documentation-architecture`、`db-sqlite` / `db-mysql` skill 与命令并清理迁移流程中的 doc-facts 引用。可被衍生项目吸收
+
 ### 依赖升级
 
 ### Breaking Changes

@@ -88,7 +88,7 @@ drizzle-orm / drizzle-kit 保持 `1.0.0-rc.4` 不动。
 
 ### 3.1 import 源变更
 
-所有 `src/db/schema/*.ts` 文件（14 个，18 张表）：
+所有 `src/db/schema/*.ts` 文件（数量以 `src/db/schema/` 实际为准）：
 
 ```diff
 - import { pgTable, uuid, varchar, timestamp, boolean, jsonb, integer, bigint, index, uniqueIndex, unique } from "drizzle-orm/pg-core";
@@ -349,7 +349,7 @@ rm -rf app/drizzle/
 # 3. 生成新的 MySQL 迁移
 DATABASE_URL="mysql://user:password@localhost:3306/fsdx_web" pnpm --filter @fsdx/web db:generate
 
-# 4. 审查生成的 migration.sql（18 张表 CREATE TABLE + 外键 + 索引）
+# 4. 审查生成的 migration.sql（全量表 CREATE TABLE + 外键 + 索引）
 
 # 5. 执行程序化迁移（开发环境；与生产 bootstrap 路径一致）
 DATABASE_URL="mysql://user:password@localhost:3306/fsdx_web" pnpm --filter @fsdx/web db:migrate
@@ -386,7 +386,7 @@ DATABASE_URL="mysql://user:password@localhost:3306/fsdx_web" pnpm --filter @fsdx
 | 分类 | 数量 | 说明 |
 |------|------|------|
 | 配置文件 | 5 | drizzle.config.ts、app/.env.example、src/env.d.ts、.gitignore、vitest.config.ts |
-| Schema 文件 | 14 | 全部 `src/db/schema/*.ts`（18 张表），pg-core → mysql-core |
+| Schema 文件 | 以实际为准 | 全部 `src/db/schema/*.ts`，pg-core → mysql-core |
 | DB 客户端 | 2 | src/db/index.ts（mysql2 pool）、src/db/migrate.ts（mysql2/migrator） |
 | 服务端 SQL | 8 | `ilike→like`（7 个文件）、`db.execute` 返回形状 + 时间序列改写（track） |
 | 事务 / 日期 / 测试 | 0 | 全部保持不动 |

@@ -131,17 +131,7 @@ __root.tsx                    # HTML shell，按 pathname 前缀分发 AdminRoot
 
 ### 5. 缓存分层
 
-`MemoryCache<T>` 通用基类在 `@fsdx/lib/cache`（基于 Map，支持 TTL 过期与命名空间），实例按模块拆分在 `services/<module>/<module>.cache.ts`。全系统共 **9 个实例**（8 个领域数据缓存 + 1 个埋点频控内部实例）：
-
-| 缓存实例 | 所属模块 |
-|----------|----------|
-| `dictCache` / `configCache` / `configTranslationCache` | `shared-services/dict/`、`shared-services/config/` |
-| `uiTranslationCache` | `shared-services/i18n/` |
-| `clientUserCache` / `adminUserCache` | `services/client-auth/`、`services/admin-auth/` |
-| `trackEventMetaCache` / `trackPropertyMetaCache` | `services/track/` |
-| `sessionRateCache`（埋点频控，内部实例） | `services/track/track.validate.ts` |
-
-每个实例只能在唯一服务模块中直接操作；读缓存函数必须懒加载（miss → 查库 → 写缓存 → 返回）。完整设计、生命周期与失效策略 → [缓存体系](cache-system.md)。
+`MemoryCache<T>` 通用基类在 `@fsdx/lib/cache`（基于 Map，支持 TTL 过期与命名空间），实例按模块拆分在 `services/<module>/<module>.cache.ts`。每个实例只能在唯一服务模块中直接操作；读缓存函数必须懒加载（miss → 查库 → 写缓存 → 返回）。完整实例清单、设计、生命周期与失效策略 → [缓存体系](cache-system.md)。
 
 ### 6. 缓冲写入策略
 
@@ -151,7 +141,7 @@ __root.tsx                    # HTML shell，按 pathname 前缀分发 AdminRoot
 
 **请求 ID 贯通**：`requestIdMiddleware`（`src/middleware/request-id.ts`）注册于 requestMiddleware 首位，优先透传上游 `x-request-id`（超长截断至 100）否则生成 UUID，写入 ALS 上下文并回写响应头。logger mixin 自动注入 requestId，操作审计落库 `operation_log.request_id`，实现日志与审计全链路追踪。
 
-**Prometheus 指标**：`src/shared-services/metrics` 进程内注册表（`Counter` + `Histogram`，无第三方依赖），预置 3 个指标：
+**Prometheus 指标**：`src/shared-services/metrics` 进程内注册表（`Counter` + `Histogram`，无第三方依赖），预置指标（清单以代码为准）：
 
 | 指标 | 类型 | 标签 |
 |------|------|------|

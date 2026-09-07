@@ -7,11 +7,11 @@
 
 ## 表总览
 
-> 完整清单与数量以 `src/db/schema/index.ts` 为准（当前 18 张表）。
+> 完整清单与数量以 `src/db/schema/index.ts` 为准，本文件仅说明分组与设计意图。
 
-共 18 张表，按用途分为三组：
+按用途分为三组（分组归属为设计意图，表清单与数量以代码为准）：
 
-### 业务表（8 张）
+### 业务表
 
 | 表名 | 主键 | 软删除 | 核心职责 |
 |------|------|--------|----------|
@@ -24,7 +24,7 @@
 | `dict` | UUID | `deleted_at` | 字典类型（`name` + `slug`） |
 | `dict_item` | UUID | `deleted_at` | 字典条目，`dict_slug` FK → dict.slug，唯一约束 `(dict_slug, value)` |
 
-### 系统表（5 张）
+### 系统表
 
 | 表名 | 主键 | 软删除 | 核心职责 |
 |------|------|--------|----------|
@@ -34,7 +34,7 @@
 | `content_translation` | UUID | — | 实体字段翻译，唯一约束 `(entity_type, entity_id, field_name, locale)` |
 | `captcha_code` | UUID | — | 验证码记录（邮箱/SMS/图形） |
 
-### 埋点与审计表（4 张）
+### 埋点与审计表
 
 | 表名 | 主键 | 软删除 | 核心职责 |
 |------|------|--------|----------|
@@ -346,9 +346,9 @@ erDiagram
 | 预置类型 | 入口函数 | 数据内容 |
 |----------|----------|----------|
 | 字典 | `ensurePresetDicts()` | 预置字典类型和条目 |
-| 系统配置 | `ensurePresetConfigs()` | 22 个预置配置项（站点设置 6、SMTP 6、AI 5、短信 5） |
-| 元事件 | `ensurePresetEvents()` | 5 个元事件（PageView、FormSubmit、Login、Register、Logout），清理被裁剪项 |
-| 元属性 | `ensurePresetProperties()` | 11 个元属性（包含 7 个 `$` 系统属性），清理被裁剪项 |
+| 系统配置 | `ensurePresetConfigs()` | 预置配置项（站点/SMTP/AI/短信，数量以代码为准） |
+| 元事件 | `ensurePresetEvents()` | 预置元事件（PageView、FormSubmit、Login、Register、Logout），清理被裁剪项 |
+| 元属性 | `ensurePresetProperties()` | 预置元属性（含 `$` 系统属性，数量以代码为准），清理被裁剪项 |
 | 客户端角色 | `initSystem()` | `client-super-admin`（`**`）与 `normal-user`（空权限） |
 | UI 翻译 | `ensurePresetTranslations()` | 英文翻译种子数据 |
 
@@ -360,7 +360,7 @@ erDiagram
 
 | 文件 | 职责 |
 |------|------|
-| `src/db/schema/index.ts` | 全部表统一导出（当前 18 张，以代码为准） |
+| `src/db/schema/index.ts` | 全部表统一导出（清单以代码为准） |
 | `src/db/index.ts` | Drizzle 客户端懒加载实例 |
 | `src/db/schema/*.ts` | 各表 Drizzle Schema 定义 |
 | `drizzle/` | 迁移 SQL + meta snapshot（`pnpm db:generate` 生成，bootstrap 启动自动执行） |

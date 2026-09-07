@@ -178,7 +178,7 @@ description: 全量代码审查命令：扫描全项目，按 10 维度审查并
 - **一致性发现做成本/收益过滤**：改动面大、值近零、或破坏原语义意图的，降为「低置信度 · 建议人工确认」，不列入违规。
 - **每条违规引用具体规则来源**；同源偏离归并后标注影响面；只报「真实不一致」，不报「个人偏好」。
 - 审查基于 AGENTS.md 与 `.agents/skills/` 规则，以现有代码为准（代码与文档不一致以代码为准）。
-- **文档/CHANGELOG 结构校验**：`doc:check` 不校验 CHANGELOG，需单独检查——每个版本段每类标题仅出现一次、分类顺序固定（Features → Infrastructure → Refactor → Fix → Docs → 依赖升级 → Breaking）、条目归位正确。
+- **CHANGELOG 结构校验**：每个版本段每类标题仅出现一次、分类顺序固定（Features → Infrastructure → Refactor → Fix → Docs → 依赖升级 → Breaking）、条目归位正确。
 - 本命令为唯一全量审查入口，聚合分层 / 命名 / 契约各维度扫描。
 
 ## 完成标准

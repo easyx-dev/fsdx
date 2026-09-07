@@ -124,7 +124,7 @@ data/
 
 ### 3.1 import 源变更
 
-所有 `src/db/schema/*.ts` 文件（14 个，18 张表）：
+所有 `src/db/schema/*.ts` 文件（数量以实际为准）：
 
 ```diff
 - import { pgTable, uuid, varchar, timestamp, boolean, jsonb, integer, bigint, index, uniqueIndex, unique, sql } from "drizzle-orm/pg-core";
@@ -728,7 +728,7 @@ mkdir -p app/data/
 # 4. 生成新的 SQLite 迁移
 DATABASE_URL="./data/data.db" pnpm --filter @fsdx/web db:generate
 
-# 5. 审查生成的 migration.sql（确认 18 张表 CREATE TABLE + 无破坏性操作）
+# 5. 审查生成的 migration.sql（确认全量表 CREATE TABLE + 无破坏性操作）
 
 # 6. 执行程序化迁移（开发环境；与生产 bootstrap 路径一致）
 DATABASE_URL="./data/data.db" pnpm --filter @fsdx/web db:migrate
@@ -736,18 +736,11 @@ DATABASE_URL="./data/data.db" pnpm --filter @fsdx/web db:migrate
 # 7. 迁移后校验：断言「必改」模式 0 命中 + 配置断言（见 §10.2）
 pnpm --filter @fsdx/web exec tsx ../.agents/skills/db-sqlite/scripts/db-migration.ts verify
 
-# 7.1 重建 doc 事实产物（schema 表定义函数改名后 doc-facts 正则失配，须人工同步 + 重新生成，见下方说明）
-#   ① 改 app/scripts/doc-facts.ts 的 buildTableFileMap() 正则：pgTable( → sqliteTable(
-#   ② 重新生成 docs/generated/{permissions,tables}.md
-pnpm --filter @fsdx/web doc:gen
-
 # 8. 全量回归
 pnpm check && pnpm test
 
 # 9. 更新 CHANGELOG（基建变更按 AGENTS.md 在 [Unreleased] Infrastructure 追加 [infra] 条目，说明影响面）
 ```
-
-> ⚠️ **doc-facts 必须人工同步**：`app/scripts/doc-facts.ts` 的 `buildTableFileMap()` 用 `/pgTable\(\s*"([^"]+)"/` 映射表名 → schema 文件。全部 schema 改 `sqliteTable(` 后正则失配，`tables.md` 的「Schema 文件」列全部变空，且 `doc:check` 与生成物同向漂移**仍会通过**（校验脚本和提交物一起漂移，掩盖文档 SSOT 退化）。务必改正则并重新 `doc:gen`；`doc-check` 此形态不拦截，需人工复核 `tables.md` 中有无空列。
 
 > ⚠️ **不要用 `db:push`**：push 直接建表会跳过迁移记录，随后 bootstrap 的 `runMigrations()` 对已存在的表重复执行 `CREATE TABLE` 而 fail-fast（`table already exists`），与项目「禁止 db:push」约定冲突。SQLite 目标统一走 `db:migrate`（`migrate-cli.ts` → `runMigrations()`）。
 
@@ -771,7 +764,7 @@ pnpm --filter @fsdx/web exec tsx ../.agents/skills/db-sqlite/scripts/db-migratio
 | `verify` | 断言「必改」模式 0 命中 + 固定配置断言（`package.json` 无 pg、`drizzle.config.ts` 为 sqlite、schema 无 pg-core） | 任一失败即 1 |
 | `fix` | 安全机械改写（默认 dry-run 预览，加 `--write` 落盘，幂等） | 未知目标/缺参数即 1 |
 
-**「必改」模式**（迁移必须处理，供 audit/verify 门禁）：`ilike`、`db.execute`、`rowCount`、`pg`/`node-postgres`/`pg-core` 导入、`pgTable(`（正则 `/pgTable\\?\(/` 同时命中源码调用 `pgTable("...` 与正则字面量形态 `pgTable\(`，如 doc-facts.ts 的映射正则）、`postgresql://`、`TO_CHAR`、`AT TIME ZONE`、`->>`、`::int`/`::text`/`::bigint`。
+**「必改」模式**（迁移必须处理，供 audit/verify 门禁）：`ilike`、`db.execute`、`rowCount`、`pg`/`node-postgres`/`pg-core` 导入、`pgTable(`（正则 `/pgTable\\?\(/` 同时命中源码调用 `pgTable("...` 与正则字面量形态 `pgTable\(`）、`postgresql://`、`TO_CHAR`、`AT TIME ZONE`、`->>`、`::int`/`::text`/`::bigint`。
 
 **「甄别」模式**（仅列出位置，需人工判断）：`new Date(`、`withTransaction`、`db.transaction`、`timestamp(`/`jsonb(`/`uuid(`/`boolean(`。
 
@@ -849,7 +842,7 @@ pnpm --filter @fsdx/web exec tsx ../.agents/skills/db-sqlite/scripts/db-migratio
 | 分类 | 数量 | 说明 |
 |------|------|------|
 | 配置文件 | 5 | drizzle.config.ts、app/.env.example、src/env.d.ts、.gitignore、vitest.config.ts |
-| Schema 文件 | 14 | 全部 `src/db/schema/*.ts`（18 张表），pg-core → sqlite-core |
+| Schema 文件 | 以实际为准 | 全部 `src/db/schema/*.ts`，pg-core → sqlite-core |
 | DB 客户端 | 2 | src/db/index.ts、src/db/migrate.ts（migrate-cli.ts 不动） |
 | 服务端 SQL | 9 | `ilike→like`（8 个文件）、`db.execute→db.all` + 时间序列改写（track）、`rowCount→changes`（message） |
 | 日期时间 | ~30 处 | `new Date()`/`new Date(expr)` → `Date.now()`/`.getTime()`，类型 `Date` → `number` |

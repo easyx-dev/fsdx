@@ -45,7 +45,7 @@ pnpm dev
 | `pnpm build` | 生产构建 |
 | `pnpm preview` | 预览生产构建 |
 | `pnpm test` | 运行测试 |
-| `pnpm check` | TypeScript + Biome + 文档事实校验（doc:check） |
+| `pnpm check` | TypeScript + Biome 检查 |
 | `pnpm lint` | Biome 检查 |
 | `pnpm lint:fix` | Biome 自动修复 |
 | `pnpm format` | Biome 格式化 |

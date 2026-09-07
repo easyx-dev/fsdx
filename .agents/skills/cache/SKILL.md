@@ -33,7 +33,7 @@ description: >
 | `trackPropertyMetaCache` | `track.cache.ts` | `src/services/track/track.server.ts` | 元属性键及数据类型 |
 | `sessionRateCache` | `track.validate.ts` | `src/services/track/track.validate.ts` | 埋点 per-session 频控计数（TTL 60s，**内部实例**，不遵循懒加载/新增流程） |
 
-> 共 9 个实例（8 个领域数据缓存 + 1 个内部频控缓存）。新增缓存实例时须**同步**更新本表与 [docs/cache-system.md](../../../docs/cache-system.md)。
+> 实例清单以代码为准（领域数据缓存 + 内部频控缓存）。新增缓存实例时须**同步**更新本表与 [docs/cache-system.md](../../../docs/cache-system.md)。
 
 ## 核心规则
 

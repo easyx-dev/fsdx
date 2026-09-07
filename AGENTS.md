@@ -13,7 +13,7 @@
 app/                          # @fsdx/web —— 应用 package（业务代码 + 运行时配置）
 ├── package.json              # imports #/* → ./src/*
 ├── vite.config.ts / vitest.config.ts / drizzle.config.ts / tsconfig.json
-├── drizzle/                  # 迁移文件（18 张表基线，以 src/db/schema/ 为准）
+├── drizzle/                  # 迁移文件（基线以 src/db/schema/ 为准）
 ├── server.ts                 # Nitro server entry（bootstrap + 透传 SSR）
 ├── public/                   # 静态资源
 └── src/
@@ -22,7 +22,7 @@ app/                          # @fsdx/web —— 应用 package（业务代码 +
     ├── router.tsx / start.ts # Router 实例 / 全局中间件注册（requestId + locale + CSRF + sfErrorLogger）
     ├── components/           # admin/（antd 业务组件）、client/（前台）、providers/（global-store+i18n-context）
     ├── constants/            # 项目级常量（cookie-names、editor-types）
-    ├── db/                   # Drizzle 客户端 + schema（18 张表，以 src/db/schema/ 为准）
+    ├── db/                   # Drizzle 客户端 + schema（表定义以 src/db/schema/ 为准）
     ├── permissions/          # RBAC 权限码常量与匹配（admin + client 双端）
     ├── theme/                # 主题注册表（themes.ts：各端亮暗主题预设，单一事实来源）
     ├── shared-services/      # 高共享的 service（app 绑定单例/DI + 系统级共享域：logger/jwt/metrics/storage/scheduler/mail·sms/request-context/config/dict/i18n/ai/query-utils/operation-log）
@@ -155,7 +155,7 @@ packages/
 - 每个缓存实例只能在唯一一个服务端模块中直接操作，禁止跨模块 import；外部模块通过所属模块的导出函数访问
 - 读缓存函数必须实现懒加载模式：cache miss → 查库 → 写缓存 → 返回
 
-> 9 个缓存实例清单（8 个领域数据缓存位于 `src/services/*/*.cache.ts` + 1 个埋点频控内部实例 `sessionRateCache` 位于 `src/services/track/track.validate.ts`）、新增缓存步骤、测试 mock 模式 → [cache](.agents/skills/cache/SKILL.md)，清单详情 → [cache-system](docs/cache-system.md)
+> 缓存实例清单（领域数据缓存位于 `src/services/*/*.cache.ts`、埋点频控内部实例 `sessionRateCache` 位于 `src/services/track/track.validate.ts`，数量以代码为准）、新增缓存步骤、测试 mock 模式 → [cache](.agents/skills/cache/SKILL.md)，清单详情 → [cache-system](docs/cache-system.md)
 
 ## 测试约定
 
@@ -202,7 +202,7 @@ packages/
 | `pnpm dev` | 启动开发服务器（端口 3000，`--filter @fsdx/web`） |
 | `pnpm build` | 生产构建 app |
 | `pnpm preview` | 预览生产构建 |
-| `pnpm check` | 全部包 tsc --noEmit + Biome 检查 + 文档事实校验（`doc:check`，防 docs/generated 与数字漂移） |
+| `pnpm check` | 全部包 tsc --noEmit + Biome 检查 |
 | `pnpm format` | 全部包 Biome 格式化 |
 | `pnpm lint` / `pnpm lint:fix` | 全部包 Biome 检查 / 自动修复 |
 | `pnpm test` | 全部包 Vitest 测试（app + lib） |
@@ -227,14 +227,14 @@ packages/
 - 新变更一律写入 `[Unreleased]`；格式基于 Keep a Changelog，遵循 SemVer；分类固定顺序 `Features` → `Infrastructure` → `Refactor` → `Fix` → `Docs` → `依赖升级` → `Breaking Changes`，每个版本段每类仅一个标题块；单条一行导语 + 缩进子项，`[infra]` 标可被衍生项目吸收、`Breaking Changes` 加 `⚠️`
 - 发布时（`chore: release vX.Y.Z`）把 `[Unreleased]` 升为 `[vX.Y.Z] - {当天日期}`（如 `2026-08-21`），顶部新增空 `[Unreleased]` 段
 - 主 `CHANGELOG.md` 只保留 `[Unreleased]` + 最近 3 个版本 + 「历史版本」索引链接；更早版本归档到 `docs/archive/changelog/v1.x.x.md`（保留各版本标题），归档文件头部注明对应版本范围
-- 「CHANGELOG 结构/语法/生命周期」完整规范见 [documentation-architecture](docs/documentation-architecture.md) 第 7.6 节（SSOT）；CHANGELOG 属历史记录，不参与 doc:check 事实比对
+- 「CHANGELOG 结构/语法/生命周期」完整规范见 [documentation-architecture](docs/documentation-architecture.md) 第 7.6 节（SSOT）；CHANGELOG 属历史记录，不参与当前事实比对
 
 ## 文档体系
 
 - **边界模型单一事实来源**：文档角色、内容性质 → 归属映射、事实 SSOT 表、引用图、维护规则 → [documentation-architecture](docs/documentation-architecture.md)
 - **六层体系**：`AGENTS.md`（规则本体，唯一自动加载）→ `.agents/guide.md`（任务导航）→ `.agents/skills`（规则展开）→ `.agents/commands`（固定流程）→ `.agents/checklists`（验证清单）→ `docs/`（背景与设计，人类向）；`.opencode/{skills,commands}` 为指向 `.agents/` 的软链视图（opencode 约定仅识别这两类，checklists 无软链视图），内容以 `.agents/` 为准
 - **归属判定**：规则/禁令 → AGENTS + skills；机制/设计解释 → docs 平台类；事实清单 → 指向代码；流程 → commands；验证 → checklists；历史 → docs/archive
-- **事实不复制**：表数/权限码数/缓存实例数等「数量/清单」一律指向代码（标注以代码为准），禁止在文档中硬编码复制
+- **事实不复制**：表数/权限码数/缓存实例数等「数量/清单」一律指向代码，禁止在文档中硬编码复制，亦不另建快照/生成物；文档只做解释，不搬运事实
 - **文档间引用单向可追踪**：索引层（guide.md / README）只导航不重复内容；docs 平台类文档头部填写元信息块（定位/SSOT/引用关系/更新触发）
 - **markdown 风格统一**：H1 首行、标题层级、表格/代码块、中文排版、CHANGELOG 结构（每分类一个块）与 skill/command 结构模板 → [documentation-architecture](docs/documentation-architecture.md) 第 7 节「markdown 风格规范」（SSOT）
 
