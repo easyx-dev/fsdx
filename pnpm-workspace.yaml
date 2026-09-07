@@ -9,6 +9,7 @@ allowBuilds:
 
 minimumReleaseAgeExclude:
   - '@tanstack/ai@0.52.2'
+  - '@easyx/editor@1.1.1 || 1.1.2'
 
 onlyBuiltDependencies:
   - esbuild

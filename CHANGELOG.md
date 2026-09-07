@@ -10,6 +10,8 @@
 
 ### Infrastructure
 
+- **富文本编辑器迁移至 @easyx/editor（[infra]）**：`@fsdx/ui-spa/editor` 的 `RichEditor` 由 WangEditor v5（`@wangeditor/editor` + `@wangeditor/editor-for-react`）替换为 Tiptap 内核、零框架依赖的 `@easyx/editor`（命令式 `createEditor(container, options)`，样式内联无需引入 CSS）——重写 base 组件为 React 命令式包装（生命周期管理、受控 `value/onChange` 同步、`data-theme` 变化主题跟随、卸载销毁），并装配媒体能力：图片/视频/音频/附件上传（`uploadImage` 保留回调兼容，其余经 `media` 注入，宿主返回 URL 内部映射为媒体项）+ 媒体库列表（`getList` 按类型前缀筛选，供编辑器「媒体库」选择 Tab）；配套调整 `app` 与 `ui-spa` 依赖（移除 wangeditor、新增 `@easyx/editor`），在 `admin.global.css` 以 `--easyx-editor-*` 变量接入项目主色（`--s-primary`）并统一直角风格（圆角归零），app 业务壳将上传/媒体库对接项目文件管理（`uploadFileSFn` / `getFileListSFn`）。`AiRichEditor`（AI 代码工作台）不属传统富文本，保持 Monaco 不变。
+
 - **聚合代码审查命令至 `/code-review`（[infra]）**：原 `/check-architecture` 与代码一致性审查合并为单一入口 `.agents/commands/code-review.md`——默认全量扫描整个项目（`app/` + `packages/`），不做 diff 限定；按 10 维度（分层/路由/SFn/组件/类型与 DB/安全/错误处理/测试/命名与一致性/注释规范）输出严重度分级报告，并沉淀「一致性/Style Guide」（命名/分层/状态/错误处理/样式/注释与文档），目标让全仓库像一个人写的；`--diff` 需显式传参。删除 `.agents/commands/check-architecture.md`，并把 `AGENTS.md` 命令表、`.agents/guide.md`、`docs/documentation-architecture.md` 中的 `/check-architecture` 引用统一改为 `/code-review`（CHANGELOG 历史记录保留原词）。
 
 - **代码审查整改：测试基线修复（[infra]）**：`@fsdx/ui-ssr` Vitest 配置补 `environment: "jsdom"` 并新增 `src/test-setup.ts`（内存版 `localStorage`/`sessionStorage`/`matchMedia` 豁免），修复 Node 22+ WebStorage 全局变量遮蔽 jsdom `window.localStorage` 导致 16 条主题测试全挂的问题；`services/dashboard` 的 `getStats` 测试从路由旁 `_admin/__tests__/stats.test.ts` 迁至模块同目录 `services/dashboard/__tests__/dashboard.test.ts`，满足「测试与被测模块同目录」约定。
@@ -24,6 +26,8 @@
 - **圆角归零与语义令牌化（[infra]）**：圆角沿用已有的主题层归零约定（`--radius-*` 均为 0，`rounded-*` 类名保留、运行时归零，仅 `rounded-full` 保留圆形），未改动类名；`ErrorFallback`、管理端仪表盘统计色、`files` 成功色、`newsColumns` 占位色改走语义令牌（`var(--s-*)`）；邮件模板内联色值注明「客户端不解析令牌」豁免。
 
 ### Fix
+
+- **富文本编辑器占位符修复（[infra]）**：`@easyx/editor@1.1.1` 的 Placeholder 扩展生成的空段落属性名为 `data-data-placeholder`（双 `data-` 前缀），但其自带 CSS 用 `attr(data-placeholder)` 读取导致取空、占位文本不显示。该缺陷由升级 `@easyx/editor` 至 `1.1.2` 在包内修复（空段落改为单前缀 `data-placeholder`），占位符正常显示（浏览器实测）；此前在 `admin.global.css` 添加的本地覆盖 workaround 已随包升级移除。
 
 - **错误兜底组件语义令牌化（[infra]）**：`ErrorFallback` 的 `DefaultErrorFallback`/`NotFoundFallback` 硬编码 zinc 色值换为语义令牌（`bg-background`/`text-foreground-secondary`/`bg-danger` 等）并删除注释掉的死代码，修复暗色主题下 404/错误页失控与直角风格不一致。
 

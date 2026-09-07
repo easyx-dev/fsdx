@@ -52,7 +52,7 @@ description: 全量代码审查命令：扫描全项目，按 10 维度审查并
 - **Server Route 例外**：`routes/file/r.$id.tsx`、`routes/admin/_admin/logs/download.$id.tsx`、`routes/admin/_admin/file-explorer/download.$.tsx`、`routes/api/metrics.tsx`、`routes/health.tsx` 允许在 `server.handlers` 内引 `.server.ts`。
 - **无入参 SFn**：零参调用（`getCurrentAdminSFn()` 等）可省略 `validator`。
 - **装饰性品牌视觉**：AI 功能入口的品牌渐变、`<meta name="theme-color">` SSR 初始值等非状态语义色，属可接受的具名色值。
-- **邮件模板/富文本内联样式**：HTML 邮件与 wangEditor 等客户端不解析令牌，内联色值/样式为跨客户端唯一可靠方案。
+- **邮件模板/富文本内联样式**：HTML 邮件与富文本编辑器等客户端不解析令牌，内联色值/样式为跨客户端唯一可靠方案。
 - **shadcn/antd 自带类名**：`@fsdx/ui-ssr`/`@fsdx/ui-spa` 与 antd 组件类名由宿主 token 注入，属性名/类名不按业务命名规则要求。
 
 ## 审查维度（10 维度全量扫描）

@@ -310,3 +310,26 @@
 .scrollbar-thin::-webkit-scrollbar-corner {
 	background: transparent;
 }
+
+/* ========================================
+ * @easyx/editor 富文本编辑器主题定制（仅圆角 + 品牌色）
+ * 编辑器在运行时注入 <style>（晚于本文件），故用高特异性选择器覆盖其 --easyx-editor-* 变量，
+ * 无需 !important；变量映射到项目语义令牌 --s-*（随 [data-theme] 自动切换亮暗）。
+ * ======================================== */
+[data-theme] .easyx-editor.easyx-editor {
+	/* 直角风格：编辑器相关圆角归零 */
+	--easyx-editor-radius: 0;
+	--easyx-editor-toolbar-btn-radius: 0;
+	--easyx-editor-bubble-radius: 0;
+	--easyx-editor-bubble-btn-radius: 0;
+	--easyx-editor-tooltip-radius: 0;
+	--easyx-editor-image-radius: 0;
+	--easyx-editor-video-radius: 0;
+	--easyx-editor-audio-radius: 0;
+
+	/* 品牌色：对齐管理端棕色主色 */
+	--easyx-editor-primary: var(--s-primary);
+	--easyx-editor-primary-hover: var(--s-primary-hover);
+	--easyx-editor-primary-light: var(--s-primary-bg);
+	--easyx-editor-border-focus: var(--s-primary);
+}

@@ -9,7 +9,7 @@ antd 管理端组件库，面向数据密集型后台场景（表单、表格、
 | 使用场景 | 管理端 `/admin/*` 页面 |
 | antd 单实例 | antd 声明为 peerDependency，宿主提供唯一实例；`antd-static` 桥接必须在宿主 `<App>` 上下文内工作，双实例会导致 message/modal 脱离 ConfigProvider |
 | 样式 | 直角风格（`borderRadius: 0`）、统一语义令牌（`--s-*`），同 AGENTS.md 视觉约定 |
-| 依赖 | `@fsdx/lib`、`@monaco-editor/react`；peer：`antd` / `@ant-design/icons` / `@tanstack/react-router` / `dayjs` / `monaco-editor` / `@wangeditor/editor` / `@wangeditor/editor-for-react` |
+| 依赖 | `@fsdx/lib`、`@monaco-editor/react`；peer：`antd` / `@ant-design/icons` / `@tanstack/react-router` / `dayjs` / `monaco-editor` / `@easyx/editor` |
 | 测试 | 无独立测试脚本 |
 
 ## subpath 导出
@@ -19,7 +19,7 @@ antd 管理端组件库，面向数据密集型后台场景（表单、表格、
 | `@fsdx/ui-spa/antd-static` | antd 静态方法桥接 | `AntdStaticBridge`（挂载于宿主 `<App>` 内，从 `App.useApp()` 捕获实例）、`message` / `modal` / `notification`（未挂载即调用会抛错） |
 | `@fsdx/ui-spa/table` | 表格 | `ProTable`（`ProColumnType` / `ProTableProps`，增强 antd Table）、`TableOperate`（操作列容器：`Edit` / `Delete` / `Link` / `Custom`，按钮统一「图标 + 文字」风格） |
 | `@fsdx/ui-spa/upload` | 上传 | `FileUpload`（`UploadFileFn` / `UploadResult`，上传/文件库/下载回调注入）、`ImageUpload`、`PhotoWall`（`ImageItem`）、`SelectFileModal`（`FetchFiles` / `SelectableFile` / `acceptToMimePrefix` / `formatSize`）、`renderUploadItem` |
-| `@fsdx/ui-spa/editor` | 编辑器 | `CodeEditor`（Monaco）、`RichEditor`（WangEditor 5，`valueType` 对接 `EditorType`） |
+| `@fsdx/ui-spa/editor` | 编辑器 | `CodeEditor`（Monaco）、`RichEditor`（`@easyx/editor` Tiptap 内核，经 `RichEditorMedia` 注入图片/视频/音频/附件上传 + 媒体库列表，`valueType` 对接 `EditorType`） |
 | `@fsdx/ui-spa/permission-tags` | 权限展示 | `PermissionTags`（通配符优先排序、绿色标识、超 `maxVisible` 折叠，元信息由宿主传入 `PermissionMetaMap`） |
 | `@fsdx/ui-spa/json-import-button` | JSON 导入 | `JsonImportButton`（弹窗 + 拖拽 + JSON 编辑器预览，`onImport` 回调） |
 | `@fsdx/ui-spa/ms-input` | 时长输入 | `MSInput`（以 `"30s"` / `"10min"` / `"1d"` 展示、以毫秒值提交，`min` / `max` / `allowZero` 约束，复用 `@fsdx/lib/ms`） |

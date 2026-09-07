@@ -13,6 +13,8 @@ export const fileListSchema = z.object({
 	status: z.enum(["temp", "permanent"]).optional(),
 	keyword: z.string().optional(),
 	mimePrefix: z.string().optional(),
+	/** 需要排除的 mime 前缀（如附件媒体库排除 image/ video/ audio/） */
+	excludeMimePrefixes: z.array(z.string()).optional(),
 	sortField: z.string().optional(),
 	sortOrder: z.enum(["ascend", "descend"]).optional(),
 	page: z.number().optional(),

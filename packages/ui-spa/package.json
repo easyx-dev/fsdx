@@ -25,15 +25,13 @@
   },
   "peerDependencies": {
     "@ant-design/icons": "^6.3.2",
+    "@easyx/editor": "^1.1.2",
     "@tanstack/react-router": "^1.170.21",
-    "@wangeditor/editor": "^5.1.23",
-    "@wangeditor/editor-for-react": "^1.0.6",
     "antd": "^6.5.3",
     "dayjs": "^1",
     "monaco-editor": "^0.56"
   },
   "devDependencies": {
-    "@wangeditor/editor": "^5.1.23",
-    "@wangeditor/editor-for-react": "^1.0.6"
+    "@easyx/editor": "^1.1.2"
   }
 }

@@ -73,7 +73,7 @@ packages/
 | 包管理 | pnpm | - |
 | 日志 | pino（multistream，按天写入文件） | - |
 | 认证 | JWT（jose）+ bcryptjs | - |
-| 编辑器 | WangEditor（@wangeditor/editor） | 5.x |
+| 编辑器 | @easyx/editor（Tiptap 内核） | 1.x |
 | 定时任务 | cron | - |
 | 邮件 | nodemailer（SMTP 配置由初始化流程写入系统配置表） | - |
 
@@ -103,7 +103,7 @@ packages/
 
 - **请求 ID 贯通**：`requestIdMiddleware` 注册于 requestMiddleware 首位，透传上游 `x-request-id`（超长截断至 100）或生成 UUID，写入 ALS 上下文并回写响应头；logger mixin 自动注入 requestId，操作审计落库 `operation_log.request_id`，实现日志与审计全链路追踪
 - **Prometheus 指标**：`src/shared-services/metrics` 注册表挂载于 globalThis（Nitro 入口与 SSR 各 bundle 共享同一实例，`Counter` + `Histogram`，无第三方依赖），预置 `http_requests_total` / `server_function_requests_total` / `server_function_duration_seconds`；`/api/metrics` 端点（Server Route，无鉴权）输出 Prometheus text 格式，多实例部署需实例层聚合
-- **Nitro server entry**：`app/server.ts` 只承担 bootstrap + HTTP 入口埋点，`fetch` 一律返回 `undefined` 交还请求流转至 TanStack Start SSR；**禁止直接 import `./src/server`**（会绕过 Vite SSR runner 惰性路由机制，导致全部路由 eager 加载，dev 下服务端不兼容的浏览器库（如 wangeditor）在启动即崩溃）
+- **Nitro server entry**：`app/server.ts` 只承担 bootstrap + HTTP 入口埋点，`fetch` 一律返回 `undefined` 交还请求流转至 TanStack Start SSR；**禁止直接 import `./src/server`**（会绕过 Vite SSR runner 惰性路由机制，导致全部路由 eager 加载，dev 下服务端不兼容的浏览器库（如富文本编辑器）在启动即崩溃）
 - **CSRF**：`src/start.ts` 注册 `createCsrfMiddleware`，仅对 ServerFn 生效，校验 Origin / Referer / Sec-Fetch-Site
 - **SF 错误日志**：`sfErrorLogger` 注册于 `functionMiddleware` 自动覆盖所有 SF；鉴权失败（`AdminAuthError`/`ClientAuthError`）记 warn、系统异常记 error（`sanitizeError()` 脱敏），并埋入耗时/结果指标；错误经 `toClientError()` 归一化后重新抛出
 - **Import Protection**：客户端构建禁止导入 `*.server.*` 与 `bcryptjs` / `drizzle-orm` / `openai`；服务端禁止 `*.client.*`；type-only import 不触发

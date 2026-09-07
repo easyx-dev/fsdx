@@ -3,7 +3,7 @@
  */
 import { createHash, randomUUID } from "node:crypto";
 import dayjs from "dayjs";
-import { and, eq, ilike, lt } from "drizzle-orm";
+import { and, eq, ilike, lt, not } from "drizzle-orm";
 import { db } from "#/db/index";
 import { file } from "#/db/schema";
 import { logger } from "#/shared-services/logger";
@@ -82,12 +82,14 @@ export async function getFileList(
 		status?: string;
 		keyword?: string;
 		mimePrefix?: string;
+		excludeMimePrefixes?: string[];
 	},
 ): Promise<PaginatedResult<FileRecord>> {
 	const {
 		status,
 		keyword,
 		mimePrefix,
+		excludeMimePrefixes,
 		sortField,
 		sortOrder = "descend",
 		page = 1,
@@ -99,6 +101,10 @@ export async function getFileList(
 	if (keyword) conditions.push(ilike(file.originalName, `%${keyword}%`));
 
 	if (mimePrefix) conditions.push(ilike(file.mimeType, `${mimePrefix}%`));
+	// 排除指定 mime 前缀（如附件媒体库排除图片/视频/音频）
+	for (const prefix of excludeMimePrefixes ?? []) {
+		conditions.push(not(ilike(file.mimeType, `${prefix}%`)));
+	}
 
 	const sortOrderClause = buildSortClause(
 		{ size: file.size, createdAt: file.createdAt },
