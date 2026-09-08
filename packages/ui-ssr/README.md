@@ -32,6 +32,6 @@ shadcn 风格基础组件库，面向前台 SSR 展示型场景。无运行时�
 
 ## 相关文档
 
-- 纯逻辑底座：[@fsdx/lib](../core/README.md)
+- 纯逻辑底座：[@fsdx/lib](../lib/README.md)
 - antd 管理端组件库：[@fsdx/ui-spa](../ui-spa/README.md)
 - 应用层架构与主题机制：[docs/architecture-overview.md](../../docs/architecture-overview.md)

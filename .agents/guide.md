@@ -56,5 +56,5 @@
 |----|------|------|
 | 规则本体 | [AGENTS.md](../AGENTS.md) | 唯一自动加载，跨模块规则/约定/索引 |
 | 边界模型 | [documentation-architecture](../docs/documentation-architecture.md) | 文档体系边界与事实 SSOT 表 |
-| 平台机制 | [docs/](../docs/) 7 篇 | architecture-overview / database-design / auth-permission-model / cache-system / event-tracking / deployment-ops / project-ecosystem |
+| 平台机制 | [docs/](../docs/) | architecture-overview / database-design / auth-permission-model / cache-system / event-tracking / deployment-ops / project-ecosystem |
 | 历史档案 | [docs/archive/](../docs/archive/) | 已归档版本与历史方案 |

@@ -59,18 +59,19 @@ pnpm dev
 
 | 包 | 说明 |
 |----|------|
-| [@fsdx/lib](packages/lib/README.md) | 纯逻辑库：同构纯工具（ms/export/cn/match-permission/date-format）+ 服务端基础设施（logger/jwt/ai/mail/sms/semaphore/task-manager 等），无 React |
+| [@fsdx/lib](packages/lib/README.md) | 纯逻辑库：同构纯工具（ms/export/cn/match-permission/date-format/error-utils）+ 通用非单例基础设施（cache/captcha/semaphore/task-manager/batch-writer/storage 契约），无 React |
 | [@fsdx/ui-ssr](packages/ui-ssr/README.md) | shadcn 基础组件（前台 SSR），颜色 token 由宿主注入 |
 | [@fsdx/ui-spa](packages/ui-spa/README.md) | antd 管理端组件（表格/上传/编辑器/静态方法桥接），antd 单实例 |
+| [@fsdx/ai-rich-editor](packages/ai-rich-editor/README.md) | AI 驱动「代码编辑 + 实时预览」富文本工作台（重客户端组件，antd 单实例） |
 
 ## 文档
 
 | 文档 | 说明 |
 |------|------|
 | [架构总览](docs/architecture-overview.md) | 系统分层架构、数据流、路由体系 |
-| [数据库设计](docs/database-design.md) | 表清单（以 `src/db/schema/` 为准）ER 图、列命名约定、约束汇总 |
+| [数据库设计](docs/database-design.md) | 表清单（以 `src/db/schema/` 为准）、ER 图、列命名约定、约束汇总 |
 | [认证与权限](docs/auth-permission-model.md) | 双用户体系、RBAC、JWT、中间件链路 |
-| [缓存体系](docs/cache-system.md) | MemoryCache 设计、缓存实例清单（8 个领域缓存位于 `src/services/*/*.cache.ts`，含 `track.validate.ts` 频控内部实例）、生命周期 |
+| [缓存体系](docs/cache-system.md) | MemoryCache 设计、缓存实例清单（以代码为准，部分位 `src/services/`、部分位 `src/shared-services/`）、生命周期 |
 | [事件埋点](docs/event-tracking.md) | 客户端 SDK、服务端校验、缓冲写入、查询分析 |
 | [部署运维](docs/deployment-ops.md) | 启动流程、定时任务、日志、优雅关闭 |
 | [项目生态与衍生协同](docs/project-ecosystem.md) | 基座模板定位、衍生项目双向同步、命名面收敛、回灌净化 |

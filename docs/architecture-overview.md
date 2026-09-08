@@ -114,7 +114,7 @@ __root.tsx                    # HTML shell，按 pathname 前缀分发 AdminRoot
     └── admin/_admin.tsx      # 管理端鉴权布局（beforeLoad + SSR=false）
         ├── 仪表盘 / 用户（admins · clients）/ 角色（admin-roles · client-roles）
         ├── news（业务示例）/ dicts · config · files · file-explorer · logs · operation-logs
-        └── translations · track · messages · demo（基建能力）
+        └── ai-providers · translations · track · messages · demo（基建能力）
 ```
 
 路由目录组织约定（`-mods/` companion 收纳、单页 vs 子路由决策矩阵、页面本体必须是路由文件、首页不目录化等）详见 [AGENTS.md](../AGENTS.md)；完整路由树以 `src/routes/` 目录（`src/routeTree.gen.ts`）为准。
@@ -131,7 +131,7 @@ __root.tsx                    # HTML shell，按 pathname 前缀分发 AdminRoot
 
 ### 5. 缓存分层
 
-`MemoryCache<T>` 通用基类在 `@fsdx/lib/cache`（基于 Map，支持 TTL 过期与命名空间），实例按模块拆分在 `services/<module>/<module>.cache.ts`。每个实例只能在唯一服务模块中直接操作；读缓存函数必须懒加载（miss → 查库 → 写缓存 → 返回）。完整实例清单、设计、生命周期与失效策略 → [缓存体系](cache-system.md)。
+`MemoryCache<T>` 通用基类在 `@fsdx/lib/cache`（基于 Map，支持 TTL 过期与命名空间），实例按模块拆分在 `services/<module>/<module>.cache.ts`（config/dict/i18n 等系统域在 `shared-services/`）。每个实例只能在唯一服务模块中直接操作；读缓存函数必须懒加载（miss → 查库 → 写缓存 → 返回）。完整实例清单、设计、生命周期与失效策略 → [缓存体系](cache-system.md)。
 
 ### 6. 缓冲写入策略
 
@@ -177,7 +177,7 @@ __root.tsx                    # HTML shell，按 pathname 前缀分发 AdminRoot
 
 ## 目录职责
 
-目录层级与各目录职责见 [AGENTS.md「工程结构」](../AGENTS.md)（唯一目录树）与「包边界约定」章节；跨目录依赖遵循 [AGENTS.md「Server Function 依赖方向」](../AGENTS.md) 硬规则（`routes → services → (lib 基础库) → db`），缓存实例归属与可导入方约束见「内存缓存约定」。包级导出清单与集成约束见各子包 README（[lib](../packages/lib/README.md) / [ui-ssr](../packages/ui-ssr/README.md) / [ui-spa](../packages/ui-spa/README.md)）。
+目录层级与各目录职责见 [AGENTS.md「工程结构」](../AGENTS.md)（唯一目录树）与「包边界约定」章节；跨目录依赖遵循 [AGENTS.md「Server Function 依赖方向」](../AGENTS.md) 硬规则（`routes → services → (lib 基础库) → db`），缓存实例归属与可导入方约束见「内存缓存约定」。包级导出清单与集成约束见各子包 README（[lib](../packages/lib/README.md) / [ui-ssr](../packages/ui-ssr/README.md) / [ui-spa](../packages/ui-spa/README.md) / [ai-rich-editor](../packages/ai-rich-editor/README.md)）。
 
 ## 相关文档
 
@@ -186,6 +186,7 @@ __root.tsx                    # HTML shell，按 pathname 前缀分发 AdminRoot
 | [@fsdx/lib README](../packages/lib/README.md) | @fsdx/lib 导出清单与边界 |
 | [@fsdx/ui-ssr README](../packages/ui-ssr/README.md) | @fsdx/ui-ssr 组件清单与集成约定 |
 | [@fsdx/ui-spa README](../packages/ui-spa/README.md) | @fsdx/ui-spa 组件清单与集成约定 |
+| [@fsdx/ai-rich-editor README](../packages/ai-rich-editor/README.md) | @fsdx/ai-rich-editor 定位、布局、对话契约、样式作用域化 |
 | [认证与权限](auth-permission-model.md) | 双用户体系、RBAC、JWT、中间件链路 |
 | [数据库设计](database-design.md) | 表清单、ER 图、列命名约定、约束汇总 |
 | [缓存体系](cache-system.md) | MemoryCache 与缓存实例 |

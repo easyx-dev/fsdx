@@ -1,7 +1,7 @@
 # 缓存体系
 
 > 定位：平台机制类 · 人类阅读
-> 单一事实来源：`@fsdx/lib/cache`（MemoryCache 类）+ `src/services/*/*.cache.ts`（缓存实例）
+> 单一事实来源：`@fsdx/lib/cache`（MemoryCache 类）+ `src/services/*/*.cache.ts` / `src/shared-services/*/*.cache.ts`（缓存实例）
 > 引用关系：← 被 architecture-overview 引用、AGENTS「内存缓存约定」章节链接；→ 引用缓存实例代码单一事实来源
 > 更新触发：新增/调整缓存实例、缓存策略（失效/懒加载）变更时
 
@@ -11,7 +11,7 @@
 
 ## MemoryCache 通用类
 
-泛型类在 `@fsdx/lib/cache`（`MemoryCache<T>`），实例按模块拆分在 `services/<module>/<module>.cache.ts`：
+泛型类在 `@fsdx/lib/cache`（`MemoryCache<T>`），实例按模块拆分在 `services/<module>/<module>.cache.ts`（config/dict/i18n 等系统域在 `shared-services/<module>/<module>.cache.ts`）：
 
 ```
 @fsdx/lib/cache (MemoryCache)
@@ -222,9 +222,9 @@ Server Function handler
 
 | 文件 | 职责 |
 |------|------|
-| `packages/lib/src/cache/cache/index.ts` | `MemoryCache<T>` 通用类（`@fsdx/lib/cache`） |
+| `packages/lib/src/cache/index.ts` | `MemoryCache<T>` 通用类（`@fsdx/lib/cache`） |
 | `services/<module>/<module>.cache.ts` | 按模块拆分的缓存实例（config / dict / i18n / client-auth / admin-auth / track） |
-| `packages/lib/src/cache/cache/__tests__/cache-core.test.ts` | 缓存单元测试 |
+| `packages/lib/src/cache/__tests__/cache.test.ts` | 缓存单元测试 |
 | `src/shared-services/config/config.server.ts` | `loadConfigCache()` / `getConfigTranslations()` 配置与配置翻译缓存管理 |
 | `src/shared-services/dict/dict.server.ts` | `loadDictCache()` / `ensureCache()` 字典缓存管理（懒加载） |
 | `src/shared-services/i18n/i18n-ui.server.ts` | `getUITranslations()` / `refreshUITranslationCache()` UI 翻译缓存管理 |

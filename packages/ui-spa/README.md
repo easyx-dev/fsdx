@@ -33,6 +33,6 @@ antd 管理端组件库，面向数据密集型后台场景（表单、表格、
 
 ## 相关文档
 
-- 纯逻辑底座：[@fsdx/lib](../core/README.md)
+- 纯逻辑底座：[@fsdx/lib](../lib/README.md)
 - shadcn 前台组件库：[@fsdx/ui-ssr](../ui-ssr/README.md)
 - 应用层架构、组件选型与视觉令牌约定：[docs/architecture-overview.md](../../docs/architecture-overview.md)、[AGENTS.md](../../AGENTS.md)

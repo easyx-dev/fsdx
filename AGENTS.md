@@ -155,7 +155,7 @@ packages/
 - 每个缓存实例只能在唯一一个服务端模块中直接操作，禁止跨模块 import；外部模块通过所属模块的导出函数访问
 - 读缓存函数必须实现懒加载模式：cache miss → 查库 → 写缓存 → 返回
 
-> 缓存实例清单（领域数据缓存位于 `src/services/*/*.cache.ts`、埋点频控内部实例 `sessionRateCache` 位于 `src/services/track/track.validate.ts`，数量以代码为准）、新增缓存步骤、测试 mock 模式 → [cache](.agents/skills/cache/SKILL.md)，清单详情 → [cache-system](docs/cache-system.md)
+> 缓存实例清单（领域数据缓存位于 `src/services/*/*.cache.ts` 与 `src/shared-services/*/*.cache.ts`、埋点频控内部实例 `sessionRateCache` 位于 `src/services/track/track.validate.ts`，数量以代码为准）、新增缓存步骤、测试 mock 模式 → [cache](.agents/skills/cache/SKILL.md)，清单详情 → [cache-system](docs/cache-system.md)
 
 ## 测试约定
 

@@ -14,6 +14,15 @@ AI 驱动的「代码编辑 + 实时预览」工作台（重客户端组件）�
 | UI | antd（peer 单实例）+ Ant Design X（`Bubble`/`Sender`/`Welcome`/`Prompts`/`Think`）+ `@ant-design/x-markdown`（XMarkdown）+ tailwind 语义令牌类（宿主 `global.css` 注入，需 `@source` 扫描包源码） |
 | 依赖 | peer：`antd` / `@ant-design/icons` / `monaco-editor` / `react` / `react-dom`；dep：`@monaco-editor/react`、`@tanstack/ai-react`、`@ant-design/x`、`@ant-design/x-markdown` |
 
+## 布局结构
+
+顶栏 + antd `Splitter`（水平拖拽分割）：左（预览区，可选编辑器）｜右（AI 对话面板，默认 420，min 400 / max 600）。
+
+- **顶栏**：预览控件「设备档位 Segmented / 脚本开关 / 刷新 / 新窗口预览」+ **编辑器**开关（打开后在左栏与预览并排）+ 复制 + **设置**（下拉「更多配置」打开设置面板）。
+- **左栏**：默认整个区域为 `PreviewPanel`（带背景色与内边距的内容卡片，iframe 实时预览）；顶栏开启「编辑器」后，左栏变为 `[EditorPanel (Monaco) | PreviewPanel]` 内层横向 `Splitter`。
+- **中栏 `EditorPanel`**：Monaco 懒加载（`editor.api` + 仅 html/css/js 词法高亮，无语言服务/worker，本地打包），主题亮暗跟随宿主 `data-theme`；随顶栏开关显隐。
+- **`PreviewPanel`**：自身不含头部控制条（控件在主顶栏）；内容卡片桌面拉伸、手机为固定尺寸设备框（375×812，按舞台等比缩放）；外层带 `bg-background-secondary` 背景与 `p-6` 内边距；iframe sandbox 渲染 `srcDoc`，片段包裹 + 附加代码注入。
+
 ## 使用
 
 ```tsx
@@ -48,6 +57,8 @@ AI 生成的片段在「应用到编辑器」（含 `autoApply`）时已做**样
 
 作用域化保证片段内嵌 `<style>` 只作用于该片段根，不污染宿主全局；内联 `style=""` 天然隔离。预览 iframe / 新窗口直接使用该 value，所见即所得。
 
+> **源头约束**（`DEFAULT_SYSTEM_PROMPT_TEMPLATE`）：要求内联样式优先；确需 `<style>` 时仅用可作用于片段内部的选择器，禁用 `body`/`*`/`:root`/`html`；类名语义化。
+
 ## 对话契约
 
 - 对话区数据流基于 TanStack AI **headless UI**：`createChatHook` 在模块作用域注册 `components`（`layout`/`message`/`input`）与 `partsComponents`（`text`/`thinking`/`fallback`），`fetchServerSentEvents` 消费宿主 SSE 端点。服务端用 `chat()` + `toServerSentEventsResponse` 对接到 TanStack AI 标准 SSE。
@@ -55,6 +66,20 @@ AI 生成的片段在「应用到编辑器」（含 `autoApply`）时已做**样
 - `UIMessage.parts` 由 `partsComponents` 自动分发：`text` part → `MarkdownContent`（基于 `@ant-design/x-markdown` 的 `XMarkdown`，含 ```html 代码块「应用到编辑器」）；`thinking` part → `Think`（流式「思考中…/已思考」）。
 - system 提示词由**包内生成**（`DEFAULT_SYSTEM_PROMPT_TEMPLATE` / `buildDefaultSystemPrompt`），经 `config.systemPrompt` 覆盖；随每次发送由 `sendMessage(text, { body: { ...requestMeta, systemPrompt } })` 透传给服务端（`forwardedProps.systemPrompt` / `providerId` 等）。
 - `stop` 即中止当前生成；`clear` / `新会话` 清空对话；`autoApply` 在流结束（`onFinish`）后自动应用回复中的 HTML 代码块。
+
+## 对话状态（createChatHook）
+
+- `sendMessage(text, { body })` 由 `components.input`/`layout` 的预设指令与输入区调用，`body` 合并 `requestMeta` 与 `systemPrompt`。
+- 流式中的生成中消息直接存在于 `messages`（末条 assistant 的 text/thinking parts 逐字增长），`message`/`parts` 组件持续渲染，无需再单独拆流出「流式占位气泡」。
+- `onFinish`（`options`）读取模块级 `onCompleteRef` 触发 `handleAiComplete`（autoApply 应用编辑器）；`error` 暴露错误信息。
+- `stop`/`clear` 映射到 `useChat.stop`/`useChat.setMessages([])`。
+- 模块级 ref 注入（`src/chat/ChatProvider.tsx`）：`endpointUrlRef`（`fetchServerSentEvents(函数形式)`）与 `onCompleteRef`；`systemPrompt`/`requestMeta`/`onApplyHtml` 经 `EditorCfgContext` 注入（单实例假设：编辑器一页一个）。
+
+## 预览沙箱
+
+`iframe` 使用 `sandbox` 隔离；默认允许脚本（受信编辑器环境）时 `allow-scripts allow-same-origin`（后者用于加载 `/file/r/` 资源），脚本可在顶栏关闭。
+
+> 安全边界：`allow-scripts` + `allow-same-origin` 组合会使 iframe 内容与宿主同源、获得 `parent.document` 写权（OWASP 反模式）。当前保留 `allow-same-origin` 是为在预览内加载同源 `/file/r/` 资源，二者不可兼得，故以「受信编辑器产物」为前提，宿主仅在内置 admin 工作台使用，勿把该 mode 用于不可信内容。
 
 ## 配置与设置面板
 
@@ -87,5 +112,4 @@ AI 生成的片段在「应用到编辑器」（含 `autoApply`）时已做**样
 
 ## 相关文档
 
-- 组件方案与设计记录：[docs/ai-rich-editor.md](../../docs/ai-rich-editor.md)
-- antd 管理端组件库：[ui-spa](../ui-spa/README.md)；纯逻辑底座：[core](../core/README.md)
+- antd 管理端组件库：[ui-spa](../ui-spa/README.md)；纯逻辑底座：[lib](../lib/README.md)

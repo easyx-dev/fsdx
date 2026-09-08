@@ -47,7 +47,7 @@
 | `@fsdx/lib/semaphore` | `src/semaphore/index.ts` | `Semaphore` 并发限流（`acquire` / `release` / `activeCount` / `queueLength`）、`SemaphoreTimeoutError`；许可打满时有界排队，队列满 / 等待超时拒绝 | 纯逻辑类 |
 | `@fsdx/lib/task-manager` | `src/task-manager/index.ts` | `createTaskManager<TState, TEvent>()` 内存任务管理器（状态机 + TTL 惰性清理 + 事件缓冲 / SSE 订阅与断线回放） | 纯逻辑工厂 |
 
-> 原属 lib 的 app 绑定模块（logger / jwt / request-context / scheduler / mail / sms / storage 实现）已迁至宿主 `src/shared-services/`；`i18n-types` / `i18n-config` 已并入 `src/services/i18n/`。AI 已下沉为 app 服务层 `services/ai`（基于 TanStack AI），均由宿主承担，lib 保持纯可复用。
+> 原属 lib 的 app 绑定模块（logger / jwt / request-context / scheduler / mail / sms / storage 实现）已迁至宿主 `src/shared-services/`；`i18n-types` / `i18n-config` 已并入 `src/shared-services/i18n/`。AI 已下沉为 app 服务层 `src/shared-services/ai`（基于 TanStack AI），均由宿主承担，lib 保持纯可复用。
 
 ## 主要外部依赖
 

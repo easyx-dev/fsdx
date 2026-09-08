@@ -298,7 +298,7 @@ sequenceDiagram
 | `track` | `view`, `query`, `manage` |
 | `message` | `view`, `send`, `delete` |
 | `translation` | `view`, `manage`, `export`, `import` |
-| `ai` | `test`, `chat` |
+| `ai` | `test`, `chat`, `provider` |
 
 每个权限常量通过 `definePermission(code, name, desc)` 创建，返回 `{ code, name, desc, group }` 结构（`group` 由 code 前缀自动推导）。
 
@@ -534,11 +534,10 @@ const csrfMiddleware = createCsrfMiddleware({
 
 | 文件 | 职责 |
 |------|------|
-| `packages/lib/src/infra/jwt/index.ts` | JWT 签发/校验（`createJwt`，`#/shared-services/jwt`） |
-| `src/shared-services/jwt` | JWT 应用级单例壳（惰性） |
+| `src/shared-services/jwt` | JWT 签发/校验与应用级单例壳（惰性） |
 | `src/constants/cookie-names.ts` | Cookie 名称常量（`COOKIE_NAMES`，模板中性默认 `admin_token` / `client_token`，项目更名集中修改点） |
 | `src/permissions/admin-permissions.ts` | 管理端权限码常量（`ADMIN_PERMISSIONS` / `ADMIN_PERMISSIONS_BY_GROUP` / `hasAdminPermission` 等） |
-| `packages/lib/src/utils/match-permission/index.ts` | 权限匹配纯函数（`matchPermission`，`@fsdx/lib/match-permission`） |
+| `packages/lib/src/match-permission/index.ts` | 权限匹配纯函数（`matchPermission`，`@fsdx/lib/match-permission`） |
 | `src/middleware/admin-auth.ts` | `adminAuthGuard` / `adminPermGuard` / `adminPermRouteGuard` 中间件 |
 | `src/middleware/admin-auth.server.ts` | `resolveAdminAuthContext()` 登录校验 + 权限解析 |
 | `src/middleware/client-auth.ts` | `clientAuthGuard` / `clientPermGuard` / `clientPermRouteGuard` 中间件 |

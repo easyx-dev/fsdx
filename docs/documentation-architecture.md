@@ -26,6 +26,8 @@ L5  docs/               背景与设计（人类向），按性质分三子类�
     └─ archive/     历史档案（被推翻的设计、已完成计划）
 ```
 
+> 组件/包级 API 与方案详解归各包 README（subpath README 为包边界权威文档，如 `@fsdx/ai-rich-editor/README.md`），`docs/` 仅作索引指引，不重复维护。
+
 > fsdx-web 无 `.agents/templates` 层（代码骨架由 skills 内嵌示例承载）。skills / commands / checklists 实体均在 `.agents/` 下；`.opencode/` 内为指向 `.agents/` 的软链视图（`.opencode/skills` / `.opencode/commands`），供 opencode 工具识别与加载（opencode 约定仅识别这两类）；checklists 为 AI 自查参考，无 opencode 软链视图，内容修改一律以 `.agents/` 为准。
 
 ## 3. 内容性质 → 归属映射
@@ -49,7 +51,7 @@ L5  docs/               背景与设计（人类向），按性质分三子类�
 |------|-------------------|--------------------------|
 | 权限码清单 | `src/permissions/admin-permissions.ts` + `client-permissions.ts` | auth-permission-model、AGENTS、architecture-overview |
 | 数据表清单 / 数量 | `src/db/schema/`（index.ts 汇总） | database-design、architecture-overview、README、AGENTS |
-| 内存缓存实例 | `src/services/*/*.cache.ts`（领域缓存）+ `src/services/track/track.validate.ts`（频控内部实例 `sessionRateCache`） | cache-system、architecture-overview、AGENTS |
+| 内存缓存实例 | `src/services/*/*.cache.ts` + `src/shared-services/*/*.cache.ts`（领域缓存）+ `src/services/track/track.validate.ts`（频控内部实例 `sessionRateCache`） | cache-system、architecture-overview、AGENTS |
 | 路由树 | `src/routeTree.gen.ts` + `src/routes/` | architecture-overview（仅概览）、routing 约定在 AGENTS |
 | 定时任务清单 | `src/services/tasks/tasks.server.ts` | deployment-ops |
 | 预置埋点（事件/属性） | `src/services/track/*` 的 `PRESET_*` | event-tracking、database-design |

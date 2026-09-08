@@ -16,6 +16,8 @@
 
 - **代码审查整改：测试基线修复（[infra]）**：`@fsdx/ui-ssr` Vitest 配置补 `environment: "jsdom"` 并新增 `src/test-setup.ts`（内存版 `localStorage`/`sessionStorage`/`matchMedia` 豁免），修复 Node 22+ WebStorage 全局变量遮蔽 jsdom `window.localStorage` 导致 16 条主题测试全挂的问题；`services/dashboard` 的 `getStats` 测试从路由旁 `_admin/__tests__/stats.test.ts` 迁至模块同目录 `services/dashboard/__tests__/dashboard.test.ts`，满足「测试与被测模块同目录」约定。
 
+- **模板去业务化：清理客户端权限示例泄漏（[infra]）**：`src/permissions/client-permissions.ts` 的「业务模块权限码预留位（例）」示例仍含下游业务域专属名词（`bam:view` / 「经分会」），属 `packages/lib` 与 `bom-easy` 回灌净化的遗留；改为与模板 `demo` 基建模块一致的中性抽象示例（`demo:view` / 「示例」）。可被衍生项目吸收
+
 ### Refactor
 
 - **全量代码审查整改：命名一致性收敛（[infra]）**：
@@ -42,6 +44,16 @@
 - **AGENTS.md 包边界与说明补充**：结构树、README 链接清单与「新增共享逻辑」纳入 `@fsdx/ai-rich-editor`（AI 富文本工作台）；Server Function 章节明确「无入参 SFn（零参调用）可省略 `validator`」豁免，与现有零参 SFn 实践对齐。
 
 - **文档统计计数硬编码与 doc-facts 机制移除（[infra]）**：正文不再硬编码易漂移的统计计数（表数 / 权限码数 / 缓存实例数 / skill 数 / schema 文件数），一律指向代码（`src/db/schema/`、`src/permissions/`），设计文档（`database-design` / `auth-permission-model`）仅保留解释性分组说明；删除 doc-facts 全套（`app/scripts/{doc-facts,gen-doc-facts,check-doc-facts}.ts` + `docs/generated/` + `doc:gen` / `doc:check` 脚本，根 `package.json` 的 `check` 移除 `doc:check`），文档体系收敛为「事实在代码、文档只解释」，同步更新 `documentation-architecture`、`db-sqlite` / `db-mysql` skill 与命令并清理迁移流程中的 doc-facts 引用。可被衍生项目吸收
+
+- **文档偏移治理：历史性描述与路径漂移清理**：以当前代码为事实源全量比对文档，剔除描述旧状态的措辞与失效路径——
+  - `README.md` 的 `@fsdx/lib` 描述去掉已下沉至 `src/shared-services/` 的 logger/jwt/ai/mail/sms；子包表补 `@fsdx/ai-rich-editor`；缓存行改为「以代码为准，部分位 `src/services/`、部分位 `src/shared-services/`」
+  - `docs/database-design.md` 的 `message` 表列 `recipient_type/recipient_id` 改为 `user_type/user_id`（对齐已发布 Breaking），补全新表 `user_config`（表总览 + ER），`operation_log` 列名描述修正为 camelCase `operatorType`
+  - `docs/auth-permission-model.md` 删除不存在的 `packages/lib/src/infra/jwt` 引用（JWT 在 `src/shared-services/jwt`）、修正 `match-permission` 实际路径、`ai` 权限补 `provider`
+  - `docs/cache-system.md` 修正 `@fsdx/lib/cache` 实际路径（扁平结构，无嵌套 `cache/cache/`）
+  - 三份包 README（`ui-spa`/`ui-ssr`/`ai-rich-editor`）的 `../core/README.md` 死链改为 `../lib/README.md`；`lib/README.md` 内 i18n/ai 路径修正为 `src/shared-services/`
+  - `.agents/guide.md`、`docs/documentation-architecture.md` 文档清单去除硬编码数量；路由树补 `ai-providers`；缓存位置引用统一补 `src/shared-services/`；`project-ecosystem.md` 去旧包名「core 基础设施」表述
+
+- **`ai-rich-editor` 文档归口包 README（[infra]）**：`docs/ai-rich-editor.md` 属组件级方案，改为合并进 `@fsdx/ai-rich-editor/README.md`（单一事实来源，贴近代码），删除独立 docs 文件；`docs/` 与 `README` 文档表仅经子包 README 索引，不再单独维护。合并时剔除原 docs 中的「演进记录」历史流水（由 CHANGELOG v2.0.0 承载），并把布局结构 / 对话状态 / 预览沙箱安全边界补进包 README；`documentation-architecture` 明确「组件/包级 API 与方案详解归各包 README，docs/ 仅作索引，不重复维护」。
 
 ### 依赖升级
 

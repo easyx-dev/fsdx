@@ -19,7 +19,7 @@
 | `client_user` | UUID | `deleted_at` | 前台注册用户，`client_role_ids`（JSONB 角色数组） |
 | `admin_role` | UUID | `deleted_at` | 管理端 RBAC 角色，`permissions` 为 JSONB 字符串数组 |
 | `client_role` | UUID | `deleted_at` | 客户端 RBAC 角色，`permissions` 为 JSONB 字符串数组 |
-| `message` | UUID | `deleted_at` | 通用消息，`recipient_type` + `recipient_id` 定位接收者（无外键） |
+| `message` | UUID | `deleted_at` | 通用消息（站内信），`user_type` + `user_id` 定位接收用户（无外键） |
 | `news` | UUID | `deleted_at` | 新闻文章，`content` 为 TipTap JSON |
 | `dict` | UUID | `deleted_at` | 字典类型（`name` + `slug`） |
 | `dict_item` | UUID | `deleted_at` | 字典条目，`dict_slug` FK → dict.slug，唯一约束 `(dict_slug, value)` |
@@ -33,6 +33,7 @@
 | `ui_translation` | UUID | — | UI 固定文案翻译，唯一约束 `(locale, key)` |
 | `content_translation` | UUID | — | 实体字段翻译，唯一约束 `(entity_type, entity_id, field_name, locale)` |
 | `captcha_code` | UUID | — | 验证码记录（邮箱/SMS/图形） |
+| `user_config` | UUID | `deleted_at` | 通用用户配置（通知渠道等，jsonb `config`），`user_type` + `user_id` 定位用户，唯一约束 `(user_type, user_id)` |
 
 ### 埋点与审计表
 
@@ -41,7 +42,7 @@
 | `track_event` | UUID | — | 埋点原始事件，`name` 为事件名，`properties` 为 JSONB |
 | `track_event_meta` | name (varchar) | — | 元事件定义，`is_preset` 标记是否系统预置 |
 | `track_property_meta` | key (varchar) | — | 元属性定义，`data_type` 声明值类型 |
-| `operation_log` | UUID | — | 操作审计日志（含外部调用），`operator_type` 区分 admin/client/system，`request_id` 贯通请求链路，`detail` 为 JSONB |
+| `operation_log` | UUID | — | 操作审计日志（含外部调用），`operatorType`（camelCase 列）区分 admin/client/system，`request_id` 贯通请求链路，`detail` 为 JSONB |
 
 ---
 
@@ -103,8 +104,8 @@ erDiagram
 
     message {
         uuid id PK
-        varchar recipient_type "admin/client"
-        uuid recipient_id "无外键"
+        varchar user_type "admin/client"
+        uuid user_id "无外键"
         varchar title
         text content
         varchar type "system/..."
@@ -267,6 +268,16 @@ erDiagram
         timestamp created_at
     }
 
+    user_config {
+        uuid id PK
+        uuid user_id "无外键"
+        varchar user_type "admin/client"
+        jsonb config "用户配置，如 notify_channels"
+        timestamp created_at
+        timestamp updated_at
+        timestamp deleted_at
+    }
+
     admin_role ||..o{ admin_user : "admin_role_ids (jsonb 数组，无外键)"
     client_role ||..o{ client_user : "client_role_ids (jsonb 数组，无外键)"
     dict ||--o{ dict_item : "dict_slug FK (CASCADE)"
@@ -315,11 +326,12 @@ erDiagram
 | `system_config` | `key` | 普通唯一 |
 | `ui_translation` | `(locale, key)` | 复合唯一 |
 | `content_translation` | `(entity_type, entity_id, field_name, locale)` | 复合唯一 |
+| `user_config` | `(user_type, user_id)` | 复合唯一 |
 
 ### 软删除策略
 
 以下表使用 `deleted_at` 软删除：
-`admin_user`、`client_user`、`admin_role`、`client_role`、`message`、`news`、`dict`、`dict_item`、`file`、`system_config`
+`admin_user`、`client_user`、`admin_role`、`client_role`、`user_config`、`message`、`news`、`dict`、`dict_item`、`file`、`system_config`
 
 查询时通过 `notDeleted(col)` 工具函数过滤（`isNull(deleted_at)`）。
 
@@ -335,7 +347,7 @@ erDiagram
 | `news` | `updated_by_id` | `admin_user.id` | 否 |
 | `dict_item` | `dict_slug` | `dict.slug` | 仅 UPDATE |
 
-> 用户与角色的关联**无外键**：`admin_user.admin_role_ids` / `client_user.client_role_ids` 为 JSONB 角色 id 数组（多角色，角色被删时数组遗留失效 id，查询时按 id 过滤）。`message` 与 `operation_log` 的接收者/操作者列同样无外键（`operatorId`、`recipient_id` 指向不同类型用户），避免跨表约束。
+> 用户与角色的关联**无外键**：`admin_user.admin_role_ids` / `client_user.client_role_ids` 为 JSONB 角色 id 数组（多角色，角色被删时数组遗留失效 id，查询时按 id 过滤）。`message`、`user_config` 与 `operation_log` 的接收者/操作者列同样无外键（`userId`、`operatorId`、`user_id` 指向不同类型用户），避免跨表约束。
 
 ---
 

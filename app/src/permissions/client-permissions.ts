@@ -23,7 +23,7 @@ export type ClientPermissionDef = ReturnType<typeof definePermission>;
 
 export const CLIENT_PERMISSIONS: Record<string, ClientPermissionDef> = {
 	// 业务模块权限码预留位（例）：
-	// BAM_VIEW: definePermission("bam:view", "经分会查看", "允许查看经分会数据"),
+	// DEMO_VIEW: definePermission("demo:view", "示例查看", "允许查看示例数据"),
 };
 
 /** 客户端权限码字符串类型 */
