@@ -18,6 +18,13 @@
 
 - **模板去业务化：清理客户端权限示例泄漏（[infra]）**：`src/permissions/client-permissions.ts` 的「业务模块权限码预留位（例）」示例仍含下游业务域专属名词（`bam:view` / 「经分会」），属 `packages/lib` 与 `bom-easy` 回灌净化的遗留；改为与模板 `demo` 基建模块一致的中性抽象示例（`demo:view` / 「示例」）。可被衍生项目吸收
 
+- **i18n 模块结构与写路径优化（[infra]）**：
+  - 依赖收敛：内容翻译模块按 `entityType === "system_config"` 直接依赖 config 服务刷新配置翻译缓存（架构上可接受，不引入额外抽象）；并修复「导入 system_config 翻译后配置翻译缓存未同步」的隐患（导入后对受影响语言刷新配置翻译缓存）。
+  - 结构收敛：`TranslationImportResult` 上移至 `i18n-types` 作为 UI/Content 共用契约（消除 `i18n-content-io` 反向依赖 `i18n-ui.server`）；`i18n.server` barrel 由三层 re-export 收敛为直接引 ui/content/io；`localeSchema` 收敛为单一来源供各层复用。
+  - 写路径优化：`upsertUITranslation` / `upsertContentTranslation` 新建路径改为原子 `onConflictDoUpdate`，消除并发 select-then-write 唯一约束竞态；UI/Content 导入改为「单次预查询统计新增/更新 + 批量 `onConflictDoUpdate`」消除逐条 select，并按唯一键去重、拷贝数据避免污染入参。
+  - 读取路径优化：`getUITranslations` 对默认语言（zh）短路返回空资源免查库；`refreshUITranslationCache` 改为仅失效缓存 key、由下一次读取懒加载重建。
+  - 插值前缀由自定义单大括号 `{` 恢复为 i18next 默认 `{{}}`（种子与调用点同步更新），避免含 `{ }` 的文案被误判为插值。可被衍生项目吸收
+
 ### Refactor
 
 - **全量代码审查整改：命名一致性收敛（[infra]）**：
@@ -26,6 +33,7 @@
   - 布尔 prop 统一 `is/has/should` 前缀：`recipientSearching → isSearching`、`valueDisabled → isValueDisabled`、`advancedExpanded → isAdvancedExpanded`、`slugDisabled → isSlugDisabled`
 - **超限文件按职责拆分（[infra]）**：`config.server.ts` 预置配置抽至 `config.presets.ts`；`news.server.ts` slug 逻辑抽至 `news.slug.ts`；`i18n-content.server.ts` 导入导出抽至 `i18n-content-io.ts`；`ai-providers/-mods/AiProviderFormModal.tsx` 表单数据模型抽至 `ai-provider-form.model.ts`；`ui-spa/upload/FileUpload.tsx` 纯工具抽至 `file-upload.utils.ts`，各文件压回 400 行阈值内。
 - **圆角归零与语义令牌化（[infra]）**：圆角沿用已有的主题层归零约定（`--radius-*` 均为 0，`rounded-*` 类名保留、运行时归零，仅 `rounded-full` 保留圆形），未改动类名；`ErrorFallback`、管理端仪表盘统计色、`files` 成功色、`newsColumns` 占位色改走语义令牌（`var(--s-*)`）；邮件模板内联色值注明「客户端不解析令牌」豁免。
+- **i18n 实体翻译去业务耦合：统一通用入口（[infra]）**：`shared-services/i18n` 新增通用 `translateRecord` / `translateRecords`（按 entityType + locale 查询 `content_translation` 并合并，默认语言/空数组短路，批量一次查询避免 N+1），业务侧无需声明可翻译字段且不再自写包装器——`news.server.ts` 删除 `translateNewsRecord` / `translateNewsRecords`，前台 `news` / 首页路由改调用 `translateRecords(records, "news", locale)`。`valueType` 确认仅为 UI 层选编辑器的字符串（透传给 `FieldTranslationDrawer`），不进入服务端契约。实体翻译扩展收敛为「组件定义字段 + 调 `translateRecords`」两个动作。可被衍生项目吸收
 
 ### Fix
 
@@ -36,6 +44,8 @@
 - **前台 locale 读取来源统一至 `context.locale` 并去冗余类型断言（[infra]）**：`getLatestNewsSFn` 原直接 `getCookie(LOCALE_COOKIE)` 重读并自行校验 `SUPPORTED_LOCALES`，与其它 SFn（`news.functions.ts`）读取 `context.locale` 的路径不一致；改为统一从请求中间件注入的 `context.locale` 读取。由于 `routeTree.gen.ts` 的 `Register.config` 增强使全局 requestMiddleware 类型流入 SFn 上下文，`context.locale` 已能推断为 `Locale`，一并移除 `getLatestNewsSFn` / `getLocaleBundleSFn` / `getVisibleConfigsSFn` 中冗余的 `(context.locale as Locale)` 断言、`context.locale || DEFAULT_LOCALE` 兜底（默认值已由 `localeMiddleware` 权威注入）与相关未用类型导入（`Locale` / `LOCALE_COOKIE` / `SUPPORTED_LOCALES`），语义行为不变。
 
 - **locale 默认值收敛至 `localeMiddleware` 单一权威来源（[infra]）**：`router.tsx` 的 `createRouter({ context: { locale: DEFAULT_LOCALE } })` 是静态占位值（SSR 时不被改写，路由 loader 的 `context.locale` 恒为 `"zh"`），且 `__root.tsx` 的 `createRootRouteWithContext<{ locale: Locale }>` 与 `void context.locale` 均属休眠死配置；予以移除（`createRouter` 不再传 `context`，根路由改 `createRootRoute()`，loader 不再引用路由 `context.locale`）。同时 `localeMiddleware` 由盲目 `getCookie(...) as Locale` 改为 `SUPPORTED_LOCALES` 运行时校验，非法 Cookie 值回退 `DEFAULT_LOCALE`（成为 locale 默认值的唯一权威来源），并更新过时注释。`Header` 语言切换按钮改用 `LOCALE_COOKIE` / `SUPPORTED_LOCALES` / `DEFAULT_LOCALE` 常量（替换硬编码 `"lang"` / `"zh"` / `"en"`），消除魔法字符串并提升语言扩展健壮性。
+
+- **补全前台英文种子翻译并新增完整性守卫（[infra]）**：前台大量 `t("中文")` 文案缺失英文种子（消息中心/退出登录/忘记密码/各类失败提示/分页/已读未读/重置相关等），致使英文站静默回退中文；已补齐 `i18n-seed.ts` 缺失条目，并新增 `i18n-seed.test.ts` 静态扫描守卫，自动校验前台所有 `t()` 字面量均存在于 `SEED_DATA`（en），防止后续新增文案遗漏种子。另修正 `translation.ts` / 缓存注释 / 翻译管理页占位符与「中文作为 key」约定不符的过时表述。
 
 ### Docs
 
@@ -54,6 +64,8 @@
   - `.agents/guide.md`、`docs/documentation-architecture.md` 文档清单去除硬编码数量；路由树补 `ai-providers`；缓存位置引用统一补 `src/shared-services/`；`project-ecosystem.md` 去旧包名「core 基础设施」表述
 
 - **`ai-rich-editor` 文档归口包 README（[infra]）**：`docs/ai-rich-editor.md` 属组件级方案，改为合并进 `@fsdx/ai-rich-editor/README.md`（单一事实来源，贴近代码），删除独立 docs 文件；`docs/` 与 `README` 文档表仅经子包 README 索引，不再单独维护。合并时剔除原 docs 中的「演进记录」历史流水（由 CHANGELOG v2.0.0 承载），并把布局结构 / 对话状态 / 预览沙箱安全边界补进包 README；`documentation-architecture` 明确「组件/包级 API 与方案详解归各包 README，docs/ 仅作索引，不重复维护」。
+
+- **新增国际化架构文档（[infra]）**：新增 `docs/i18n.md`（平台机制类），面向人类阅读——含两层翻译模型（`ui_translation` / `content_translation`）、语言检测与 SSR 加载时序、服务层关键文件、缓存与写路径（懒加载缓存/原子 upsert/批量导入）、实体翻译接入、管理端维护与扩展新语言要点；并挂入 README「文档」索引、architecture-overview「相关文档」与文档体系清单、`.agents/guide.md` 任务导航，i18n skill 增加指向该文档的链接。
 
 ### 依赖升级
 

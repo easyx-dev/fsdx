@@ -1,7 +1,7 @@
 /**
  * 新闻管理：CRUD + 导入导出 + slug 自动生成（领域实体唯一归属）
  * wangEditor 直接存储 HTML，无需服务端渲染转换
- * 国际化数据通过 translateNewsRecord / translateNewsRecords 按需组合获取
+ * 国际化数据由路由层调用 i18n 通用 translateRecords 按需组合获取
  */
 
 import { toCsv, toJson } from "@fsdx/lib/export";
@@ -9,11 +9,6 @@ import { and, desc, eq, inArray, ne } from "drizzle-orm";
 import type { z } from "zod";
 import { db } from "#/db/index";
 import { news } from "#/db/schema";
-import {
-	applyTranslations,
-	getContentTranslations,
-} from "#/shared-services/i18n/i18n.server";
-import { DEFAULT_LOCALE, type Locale } from "#/shared-services/i18n/i18n-types";
 import {
 	buildSortClause,
 	executePaginatedQuery,
@@ -72,21 +67,6 @@ export async function checkRecommendedLimit(
 	if (recommendedCount + additionalCount > MAX_RECOMMENDED) {
 		throw new Error(`最多推荐 ${MAX_RECOMMENDED} 条新闻`);
 	}
-}
-
-/**
- * 对单条新闻记录应用 content_translation 翻译
- * 仅非默认语言时调用，zh 直接从主表读取
- */
-export async function translateNewsRecord(
-	record: NewsRecord,
-	locale: Locale,
-): Promise<NewsRecord> {
-	if (locale === DEFAULT_LOCALE) return record;
-
-	const translations = await getContentTranslations("news", record.id, locale);
-
-	return applyTranslations(record, translations);
 }
 
 /** 获取新闻列表（支持排序） */
@@ -253,20 +233,6 @@ export async function deleteNews(id: string): Promise<boolean> {
 	await db.update(news).set({ deletedAt: new Date() }).where(eq(news.id, id));
 
 	return true;
-}
-
-/** 批量翻译新闻记录（一次查询获取所有翻译，避免 N+1） */
-export async function translateNewsRecords(
-	records: NewsRecord[],
-	locale: Locale,
-): Promise<NewsRecord[]> {
-	if (locale === DEFAULT_LOCALE) return records;
-	if (records.length === 0) return records;
-
-	const ids = records.map((r) => r.id);
-	const translationsMap = await getContentTranslations("news", ids, locale);
-
-	return applyTranslations(records, translationsMap);
 }
 
 /** 更新新闻记录并返回更新后的记录 */

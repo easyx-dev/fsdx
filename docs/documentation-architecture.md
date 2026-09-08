@@ -21,7 +21,7 @@ L3  .agents/commands    固定流程执行（deploy 发布 / code-review 全量�
 L4  .agents/checklists  验证清单（skills 的浓缩：sfn / route / component）
 L5  docs/               背景与设计（人类向），按性质分三子类：
     ├─ 平台机制类   architecture-overview / database-design / auth-permission-model /
-    │               cache-system / event-tracking / deployment-ops / project-ecosystem
+    │               cache-system / event-tracking / i18n / deployment-ops / project-ecosystem
     ├─ 决策档案类   （ADR，当前暂无，新增时置于 docs/decisions.md）
     └─ archive/     历史档案（被推翻的设计、已完成计划）
 ```
@@ -74,7 +74,7 @@ AGENTS.md ──规则──► .agents/skills（architecture / server-function 
   └─ docs ──背景──► 代码（单一事实来源，反向链接）
 
 docs/ 内部：
-  architecture-overview ──概览──► database-design / cache-system / auth-permission-model / deployment-ops / event-tracking（均只引用不复制）
+  architecture-overview ──概览──► database-design / cache-system / auth-permission-model / deployment-ops / event-tracking / i18n（均只引用不复制）
 ```
 
 ## 6. 文档元信息块约定

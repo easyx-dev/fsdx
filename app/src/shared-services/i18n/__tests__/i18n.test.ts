@@ -28,41 +28,52 @@ vi.mock("#/shared-services/i18n/ui-translation.cache", () => ({
 	uiTranslationCache: mockCache,
 }));
 
-const { mockDb, mockRows } = vi.hoisted(() => {
-	const rows = vi.fn().mockResolvedValue([]);
-	const chain: any = {
-		from: vi.fn(() => chain),
-		where: vi.fn(() => chain),
-		orderBy: vi.fn(() => chain),
-		limit: vi.fn(() => chain),
-		offset: vi.fn(() => chain),
-		innerJoin: vi.fn(() => chain),
-	};
-	Object.defineProperty(chain, "then", {
-		value: (onFulfilled: (value: unknown) => unknown) =>
-			rows().then(onFulfilled),
-	});
-	return {
-		mockRows: rows,
-		mockDb: {
-			select: vi.fn(() => chain),
-			$count: vi.fn(),
-			insert: vi.fn(() => ({ values: vi.fn() })),
-			update: vi.fn(() => ({ set: vi.fn(() => ({ where: vi.fn() })) })),
-			delete: vi.fn(() => ({ where: vi.fn() })),
-			transaction: vi.fn(async (cb: (tx: unknown) => Promise<unknown>) =>
-				cb(mockDb),
-			),
-		},
-	};
-});
+const { mockDb, mockRows, insertValues, onConflictDoUpdate } = vi.hoisted(
+	() => {
+		const rows = vi.fn().mockResolvedValue([]);
+		const chain: any = {
+			from: vi.fn(() => chain),
+			where: vi.fn(() => chain),
+			orderBy: vi.fn(() => chain),
+			limit: vi.fn(() => chain),
+			offset: vi.fn(() => chain),
+			innerJoin: vi.fn(() => chain),
+		};
+		Object.defineProperty(chain, "then", {
+			value: (onFulfilled: (value: unknown) => unknown) =>
+				rows().then(onFulfilled),
+		});
+		const onConflictDoUpdate = vi.fn();
+		// insert(...).values(batch) 返回 { onConflictDoUpdate } 供 upsert / 导入链式调用
+		const insertValues = vi.fn((..._args: unknown[]) => ({
+			onConflictDoUpdate,
+		}));
+		return {
+			mockRows: rows,
+			insertValues,
+			onConflictDoUpdate,
+			mockDb: {
+				select: vi.fn(() => chain),
+				$count: vi.fn(),
+				insert: vi.fn(() => ({ values: insertValues })),
+				update: vi.fn(() => ({ set: vi.fn(() => ({ where: vi.fn() })) })),
+				delete: vi.fn(() => ({ where: vi.fn() })),
+				transaction: vi.fn(async (cb: (tx: unknown) => Promise<unknown>) =>
+					cb(mockDb),
+				),
+			},
+		};
+	},
+);
 vi.mock("#/db", () => ({ db: mockDb, withTransaction: mockDb.transaction }));
 
 import {
+	applyTranslations,
 	deleteContentTranslation,
 	deleteUITranslation,
 	getAllContentTranslationsForExport,
 	getAllUITranslationsForExport,
+	getContentTranslations,
 	getFieldTranslations,
 	getUITranslations,
 	importContentTranslations,
@@ -71,6 +82,8 @@ import {
 	listUITranslations,
 	loadUITranslations,
 	refreshUITranslationCache,
+	translateRecord,
+	translateRecords,
 	upsertContentTranslation,
 	upsertUITranslation,
 } from "#/shared-services/i18n/i18n.server";
@@ -111,9 +124,7 @@ describe("listUITranslations", () => {
 
 describe("upsertUITranslation", () => {
 	beforeEach(() => vi.clearAllMocks());
-	it("新建 UI 翻译", async () => {
-		mockRows.mockResolvedValue([]);
-		mockCache.keys.mockReturnValue([]);
+	it("新建 UI 翻译（原子 upsert，无 select 竞态）", async () => {
 		const result = await upsertUITranslation({
 			locale: "en",
 			key: "test.key",
@@ -122,6 +133,7 @@ describe("upsertUITranslation", () => {
 		expect(result.success).toBe(true);
 		expect(mockDb.insert).toHaveBeenCalled();
 		expect(mockDb.update).not.toHaveBeenCalled();
+		expect(onConflictDoUpdate).toHaveBeenCalledTimes(1);
 	});
 	it("更新已有 UI 翻译", async () => {
 		mockRows.mockResolvedValue([uiRecord]);
@@ -164,8 +176,7 @@ describe("listContentTranslations", () => {
 
 describe("upsertContentTranslation", () => {
 	beforeEach(() => vi.clearAllMocks());
-	it("新建实体翻译", async () => {
-		mockRows.mockResolvedValue([]);
+	it("新建实体翻译（原子 upsert，无 select 竞态）", async () => {
 		const result = await upsertContentTranslation({
 			entityType: "news",
 			entityId: "n-1",
@@ -176,6 +187,7 @@ describe("upsertContentTranslation", () => {
 		expect(result.success).toBe(true);
 		expect(mockDb.insert).toHaveBeenCalled();
 		expect(mockDb.update).not.toHaveBeenCalled();
+		expect(onConflictDoUpdate).toHaveBeenCalledTimes(1);
 	});
 	it("更新已有实体翻译", async () => {
 		mockRows.mockResolvedValue([ctRecord]);
@@ -254,13 +266,12 @@ describe("getUITranslations", () => {
 });
 
 describe("refreshUITranslationCache", () => {
-	it("指定语言时删除该语言缓存并重新加载", async () => {
-		mockRows.mockResolvedValue([uiRecord]);
-
+	it("指定语言时仅失效该语言缓存（懒加载重建）", async () => {
 		await refreshUITranslationCache("en");
 
 		expect(mockCache.delete).toHaveBeenCalledWith("en");
-		expect(mockCache.set).toHaveBeenCalled();
+		expect(mockCache.set).not.toHaveBeenCalled();
+		expect(mockDb.select).not.toHaveBeenCalled();
 	});
 
 	it("不指定语言时清空全部缓存", async () => {
@@ -288,13 +299,9 @@ describe("getAllUITranslationsForExport", () => {
 describe("importUiTranslations", () => {
 	beforeEach(() => vi.clearAllMocks());
 
-	it("逐个 upsert 并统计创建与更新数量", async () => {
-		// 两个翻译条目：第一条已存在（更新），第二条不存在（创建），refresh 阶段返回空
-		mockRows
-			.mockReset()
-			.mockResolvedValueOnce([uiRecord])
-			.mockResolvedValueOnce([])
-			.mockResolvedValue([]);
+	it("批量导入：单次预查询统计新增/更新，按唯一键去重", async () => {
+		// 预查询已有 (locale, key)：仅 en::home.title 存在 → 该条更新，zh::new.key 新增
+		mockRows.mockReset().mockResolvedValue([uiRecord]);
 
 		const result = await importUiTranslations({
 			translations: [
@@ -304,20 +311,40 @@ describe("importUiTranslations", () => {
 		});
 
 		expect(result).toEqual({ created: 1, updated: 1 });
+		// 单次批量写入 + 原子冲突更新（无逐条 select）
+		expect(mockDb.select).toHaveBeenCalledTimes(1);
+		expect(insertValues).toHaveBeenCalledTimes(1);
+		expect(insertValues.mock.calls[0][0]).toHaveLength(2);
+		expect(onConflictDoUpdate).toHaveBeenCalledTimes(1);
 	});
 
-	it("非法的 valueType 回退到 input", async () => {
+	it("导入数据中含重复唯一键时按一条去重", async () => {
 		mockRows.mockReset().mockResolvedValue([]);
-		const valuesMock = vi.fn();
-		mockDb.insert.mockReturnValue({ values: valuesMock });
 
-		await importUiTranslations({
+		const result = await importUiTranslations({
 			translations: [
-				{ locale: "en", key: "k", value: "v", valueType: "bad-type" },
+				{ locale: "en", key: "dup", value: "v1", valueType: "input" },
+				{ locale: "en", key: "dup", value: "v2", valueType: "input" },
 			],
 		});
 
-		expect(valuesMock.mock.calls[0][0].valueType).toBe("input");
+		expect(result).toEqual({ created: 1, updated: 0 });
+		expect(insertValues.mock.calls[0][0]).toHaveLength(1);
+	});
+
+	it("非法的 valueType 回退到 input，且不污染入参", async () => {
+		mockRows.mockReset().mockResolvedValue([]);
+		const input = {
+			translations: [
+				{ locale: "en", key: "k", value: "v", valueType: "bad-type" },
+			],
+		};
+
+		await importUiTranslations(input);
+
+		const inserted = insertValues.mock.calls[0][0] as { valueType: string }[];
+		expect(inserted[0].valueType).toBe("input");
+		expect(input.translations[0].valueType).toBe("bad-type");
 	});
 });
 
@@ -343,13 +370,9 @@ describe("getAllContentTranslationsForExport", () => {
 describe("importContentTranslations", () => {
 	beforeEach(() => vi.clearAllMocks());
 
-	it("在事务中逐个 upsert 并统计数量", async () => {
-		// 两条翻译：第一条已存在（更新），第二条不存在（创建），事务内 select 复用 mockDb 链
-		mockRows
-			.mockReset()
-			.mockResolvedValueOnce([ctRecord])
-			.mockResolvedValueOnce([])
-			.mockResolvedValue([]);
+	it("在事务中批量导入并统计新增/更新", async () => {
+		// 预查询已有唯一键：仅 news::n-1::title::en 存在 → 该条更新，n-2 新增
+		mockRows.mockReset().mockResolvedValue([ctRecord]);
 
 		const result = await importContentTranslations({
 			translations: [
@@ -374,14 +397,14 @@ describe("importContentTranslations", () => {
 
 		expect(result).toEqual({ created: 1, updated: 1 });
 		expect(mockDb.transaction).toHaveBeenCalledTimes(1);
+		expect(insertValues).toHaveBeenCalledTimes(1);
+		expect(insertValues.mock.calls[0][0]).toHaveLength(2);
+		expect(onConflictDoUpdate).toHaveBeenCalledTimes(1);
 	});
 
-	it("非法的 valueType 回退到 text", async () => {
+	it("非法的 valueType 回退到 text，且不污染入参", async () => {
 		mockRows.mockReset().mockResolvedValue([]);
-		const valuesMock = vi.fn();
-		mockDb.insert.mockReturnValue({ values: valuesMock });
-
-		await importContentTranslations({
+		const input = {
 			translations: [
 				{
 					entityType: "news",
@@ -392,8 +415,149 @@ describe("importContentTranslations", () => {
 					valueType: "bad-type",
 				},
 			],
-		});
+		};
 
-		expect(valuesMock.mock.calls[0][0].valueType).toBe("text");
+		await importContentTranslations(input);
+
+		const inserted = insertValues.mock.calls[0][0] as { valueType: string }[];
+		expect(inserted[0].valueType).toBe("text");
+		expect(input.translations[0].valueType).toBe("bad-type");
+	});
+});
+
+describe("getContentTranslations", () => {
+	beforeEach(() => vi.clearAllMocks());
+
+	it("单条查询：非默认语言返回字段翻译映射", async () => {
+		mockRows.mockResolvedValue([
+			{ ...ctRecord, fieldName: "title", value: "Hello" },
+			{ ...ctRecord, fieldName: "summary", value: "Snippet" },
+		]);
+
+		const result = await getContentTranslations("news", "n-1", "en");
+
+		expect(result).toEqual({
+			title: { fieldName: "title", value: "Hello", valueType: "text" },
+			summary: { fieldName: "summary", value: "Snippet", valueType: "text" },
+		});
+	});
+
+	it("默认语言（zh）直接返回空对象，不查库", async () => {
+		const result = await getContentTranslations("news", "n-1", "zh");
+		expect(result).toEqual({});
+		expect(mockDb.select).not.toHaveBeenCalled();
+	});
+
+	it("批量查询：按 entityId 分组返回", async () => {
+		mockRows.mockResolvedValue([
+			{ ...ctRecord, entityId: "n-1", fieldName: "title", value: "A" },
+			{ ...ctRecord, entityId: "n-2", fieldName: "title", value: "B" },
+		]);
+
+		const result = await getContentTranslations("news", ["n-1", "n-2"], "en");
+
+		expect(result).toEqual({
+			"n-1": { title: { fieldName: "title", value: "A", valueType: "text" } },
+			"n-2": { title: { fieldName: "title", value: "B", valueType: "text" } },
+		});
+	});
+});
+
+describe("translateRecord", () => {
+	beforeEach(() => vi.clearAllMocks());
+
+	it("默认语言返回原记录，不查询翻译", async () => {
+		const record = { id: "n-1", title: "原" };
+		const result = await translateRecord(record, "news", "zh");
+		expect(result).toEqual(record);
+		expect(mockDb.select).not.toHaveBeenCalled();
+	});
+
+	it("非默认语言查询并覆盖字段", async () => {
+		mockRows.mockResolvedValue([
+			{ ...ctRecord, entityId: "n-1", fieldName: "title", value: "T" },
+		]);
+		const result = await translateRecord(
+			{ id: "n-1", title: "原" },
+			"news",
+			"en",
+		);
+		expect(result.title).toBe("T");
+	});
+
+	it("无翻译时返回原记录", async () => {
+		mockRows.mockResolvedValue([]);
+		const record = { id: "n-1", title: "原" };
+		const result = await translateRecord(record, "news", "en");
+		expect(result).toEqual(record);
+	});
+});
+
+describe("translateRecords", () => {
+	beforeEach(() => vi.clearAllMocks());
+
+	it("默认语言直接返回，不查询翻译", async () => {
+		const records = [{ id: "n-1", title: "a" }];
+		const result = await translateRecords(records, "news", "zh");
+		expect(result).toEqual(records);
+		expect(mockDb.select).not.toHaveBeenCalled();
+	});
+
+	it("空数组直接返回", async () => {
+		const result = await translateRecords([], "news", "en");
+		expect(result).toEqual([]);
+		expect(mockDb.select).not.toHaveBeenCalled();
+	});
+
+	it("批量按 entityId 分组翻译，单次查询", async () => {
+		mockRows.mockResolvedValue([
+			{ ...ctRecord, entityId: "n-1", fieldName: "title", value: "A" },
+			{ ...ctRecord, entityId: "n-2", fieldName: "title", value: "B" },
+		]);
+		const records = [
+			{ id: "n-1", title: "a" },
+			{ id: "n-2", title: "b" },
+		];
+		const result = await translateRecords(records, "news", "en");
+		expect(result[0].title).toBe("A");
+		expect(result[1].title).toBe("B");
+		expect(mockDb.select).toHaveBeenCalledTimes(1);
+	});
+});
+
+describe("applyTranslations", () => {
+	it("单条记录：将翻译覆盖到对应字段", () => {
+		const record = { id: "n-1", title: "原", summary: "原摘要" };
+		const translations = {
+			title: { fieldName: "title", value: "T", valueType: "text" as const },
+		};
+		const result = applyTranslations(record, translations);
+		expect(result).toEqual({ id: "n-1", title: "T", summary: "原摘要" });
+	});
+
+	it("批量记录：按 record.id 查找对应翻译并覆盖", () => {
+		const records = [
+			{ id: "n-1", title: "原1" },
+			{ id: "n-2", title: "原2" },
+		];
+		const translationsMap = {
+			"n-1": {
+				title: { fieldName: "title", value: "T1", valueType: "text" as const },
+			},
+		};
+		const result = applyTranslations(records, translationsMap);
+		expect(result).toEqual([
+			{ id: "n-1", title: "T1" },
+			{ id: "n-2", title: "原2" },
+		]);
+	});
+
+	it("不修改原记录（返回新对象）", () => {
+		const record = { id: "n-1", title: "原" };
+		const result = applyTranslations(record, {
+			title: { fieldName: "title", value: "T", valueType: "text" as const },
+		});
+		expect(record.title).toBe("原");
+		expect(result).not.toBe(record);
 	});
 });

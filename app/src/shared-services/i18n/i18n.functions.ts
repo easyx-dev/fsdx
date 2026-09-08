@@ -15,9 +15,10 @@ import {
 	upsertContentTranslation,
 } from "#/shared-services/i18n/i18n.server";
 import { logCrud } from "#/shared-services/operation-log/operation-log.server";
-import { DEFAULT_LOCALE, SUPPORTED_LOCALES } from "./i18n-types";
+import { DEFAULT_LOCALE, localeSchema } from "./i18n-types";
 
-const localeSchema = z.enum(SUPPORTED_LOCALES).default(DEFAULT_LOCALE);
+/** 带默认值的 locale schema（供路由层/服务层复用） */
+const defaultLocaleSchema = localeSchema.default(DEFAULT_LOCALE);
 
 /** 获取当前请求的 locale 及对应翻译（从 requestMiddleware context 读取 Cookie locale） */
 export const getLocaleBundleSFn = createServerFn({ method: "GET" }).handler(
@@ -51,7 +52,7 @@ export const saveContentTranslationSFn = createServerFn({ method: "POST" })
 			entityType: z.string().min(1),
 			entityId: z.string().min(1),
 			fieldName: z.string().min(1),
-			locale: localeSchema,
+			locale: defaultLocaleSchema,
 			value: z.string().min(1),
 			valueType: z.enum(EDITOR_TYPES).optional(),
 		}),

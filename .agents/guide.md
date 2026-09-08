@@ -15,7 +15,7 @@
 | 新增/修改数据表 / Drizzle Schema | [db-schema](skills/db-schema/SKILL.md)、[docs/database-design.md](../docs/database-design.md) |
 | 缓存读写 / 新增缓存实例 | [cache](skills/cache/SKILL.md)、[docs/cache-system.md](../docs/cache-system.md) |
 | 编写单元测试 / 修复测试 | [test-writing](skills/test-writing/SKILL.md) |
-| 国际化 / 翻译文案 / 实体字段翻译 | [i18n](skills/i18n/SKILL.md) |
+| 国际化 / 翻译文案 / 实体字段翻译 | [i18n](skills/i18n/SKILL.md)、[docs/i18n.md](../docs/i18n.md) |
 | 新增管理端 CRUD 模块 | [admin-crud](skills/admin-crud/SKILL.md) |
 | 埋点 / 事件分析 | [docs/event-tracking.md](../docs/event-tracking.md)、`src/services/track/` |
 | 部署 / 定时任务 / 日志 | [docs/deployment-ops.md](../docs/deployment-ops.md)；生产部署运维见 [deploy/README.md](../deploy/README.md)（子仓库 fsdx-deploy） |
@@ -56,5 +56,5 @@
 |----|------|------|
 | 规则本体 | [AGENTS.md](../AGENTS.md) | 唯一自动加载，跨模块规则/约定/索引 |
 | 边界模型 | [documentation-architecture](../docs/documentation-architecture.md) | 文档体系边界与事实 SSOT 表 |
-| 平台机制 | [docs/](../docs/) | architecture-overview / database-design / auth-permission-model / cache-system / event-tracking / deployment-ops / project-ecosystem |
+| 平台机制 | [docs/](../docs/) | architecture-overview / database-design / auth-permission-model / cache-system / event-tracking / i18n / deployment-ops / project-ecosystem |
 | 历史档案 | [docs/archive/](../docs/archive/) | 已归档版本与历史方案 |

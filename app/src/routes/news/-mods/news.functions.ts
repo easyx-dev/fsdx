@@ -3,12 +3,11 @@
  */
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import { getNewsBySlug, getNewsList } from "#/services/news/news.server";
 import {
-	getNewsBySlug,
-	getNewsList,
-	translateNewsRecord,
-	translateNewsRecords,
-} from "#/services/news/news.server";
+	translateRecord,
+	translateRecords,
+} from "#/shared-services/i18n/i18n.server";
 
 /** 前台新闻列表分页 */
 export const publishedNewsSchema = z.object({
@@ -27,7 +26,7 @@ export const getPublishedNewsSFn = createServerFn({ method: "GET" })
 			...data,
 		});
 		return {
-			records: await translateNewsRecords(records, context.locale),
+			records: await translateRecords(records, "news", context.locale),
 			...rest,
 		};
 	});
@@ -37,7 +36,7 @@ export const getNewsDetailSFn = createServerFn({ method: "GET" })
 	.handler(async ({ data: { slug }, context }) => {
 		const record = await getNewsBySlug(slug);
 		if (!record) return null;
-		const translated = await translateNewsRecord(record, context.locale);
+		const translated = await translateRecord(record, "news", context.locale);
 		// admin 富文本视为受信任内容，正文直接透传
 		return { ...translated, html: translated.content ?? "" };
 	});

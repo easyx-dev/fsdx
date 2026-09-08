@@ -24,9 +24,7 @@ export function createI18nInstance(
 		fallbackLng,
 		interpolation: {
 			escapeValue: false,
-			// i18next v26 默认前缀为 {{，种子数据使用单大括号 {key}
-			prefix: "{",
-			suffix: "}",
+			// 使用 i18next 默认 {{key}} 前缀：单大括号不会被误判为插值，避免含 { } 的文案被替换
 		},
 		returnNull: false,
 		returnEmptyString: false,

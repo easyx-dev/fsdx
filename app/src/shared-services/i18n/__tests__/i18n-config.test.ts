@@ -75,9 +75,9 @@ describe("createI18nInstance", () => {
 
 	it("带插值的翻译正常工作", () => {
 		const i18n = createI18nInstance("en", {
-			"共 {total} 篇": "{total} articles",
+			"共 {{total}} 篇": "{{total}} articles",
 		});
-		expect(i18n.t("共 {total} 篇", { total: 10 })).toBe("10 articles");
+		expect(i18n.t("共 {{total}} 篇", { total: 10 })).toBe("10 articles");
 	});
 
 	it("关闭 fallback 后未翻译 key 仍返回 key 本身（returnNull: false）", () => {
@@ -104,7 +104,7 @@ describe("createI18nInstance", () => {
 			全栈开发工程基座: "Full-Stack Development Base",
 			浏览新闻: "Browse News",
 			暂无数据: "No Data",
-			"共 {total} 篇": "{total} articles",
+			"共 {{total}} 篇": "{{total}} articles",
 		};
 
 		it("中文 + 空翻译：直接返回原文", () => {
@@ -121,7 +121,7 @@ describe("createI18nInstance", () => {
 
 		it("插值 + 翻译组合正常", () => {
 			const i18n = createI18nInstance("en", seedTranslations);
-			expect(i18n.t("共 {total} 篇", { total: 5 })).toBe("5 articles");
+			expect(i18n.t("共 {{total}} 篇", { total: 5 })).toBe("5 articles");
 		});
 	});
 });

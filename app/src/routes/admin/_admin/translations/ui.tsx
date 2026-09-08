@@ -15,6 +15,7 @@ import { useCallback, useEffect, useState } from "react";
 import { AdminPageContent, EditorTypes } from "#/components/admin";
 import type { uiTranslation } from "#/db/schema";
 import {
+	DEFAULT_LOCALE,
 	type Locale,
 	SUPPORTED_LOCALES,
 } from "#/shared-services/i18n/i18n-types";
@@ -30,6 +31,11 @@ import {
 
 /** UI 翻译行记录类型 */
 type UiTranslationRow = typeof uiTranslation.$inferSelect;
+
+/** 可管理的翻译语言：排除默认语言（zh 为源语言，key 即原文，不入库管理） */
+const MANAGED_LOCALES = SUPPORTED_LOCALES.filter(
+	(l): l is Locale => l !== DEFAULT_LOCALE,
+);
 
 export const Route = createFileRoute("/admin/_admin/translations/ui")({
 	component: UITranslationPage,
@@ -194,12 +200,16 @@ function UITranslationPage() {
 			title: "操作",
 			key: "actions",
 			fixed: "right" as const,
-			render: (_: unknown, record: UiTranslationRow) => (
-				<TableOperate>
-					<TableOperate.Edit onClick={() => openEdit(record)} />
-					<TableOperate.Delete onConfirm={() => handleDelete(record.id)} />
-				</TableOperate>
-			),
+			render: (_: unknown, record: UiTranslationRow) =>
+				record.locale === DEFAULT_LOCALE ? (
+					// 默认语言为源语言，key 即原文，禁止编辑/删除
+					<span className="text-xs text-muted-foreground">源语言（只读）</span>
+				) : (
+					<TableOperate>
+						<TableOperate.Edit onClick={() => openEdit(record)} />
+						<TableOperate.Delete onConfirm={() => handleDelete(record.id)} />
+					</TableOperate>
+				),
 		},
 	];
 
@@ -252,7 +262,7 @@ function UITranslationPage() {
 						style={{ width: 120 }}
 						value={filterLocale}
 						onChange={(v?: Locale) => setFilterLocale(v)}
-						options={SUPPORTED_LOCALES.map((l) => ({
+						options={MANAGED_LOCALES.map((l) => ({
 							label: l.toUpperCase(),
 							value: l,
 						}))}
@@ -298,14 +308,14 @@ function UITranslationPage() {
 				<Form form={form} layout="vertical" onFinish={handleSubmit}>
 					<Form.Item name="locale" label="语言" rules={[{ required: true }]}>
 						<Select
-							options={SUPPORTED_LOCALES.map((l) => ({
+							options={MANAGED_LOCALES.map((l) => ({
 								label: l.toUpperCase(),
 								value: l,
 							}))}
 						/>
 					</Form.Item>
 					<Form.Item name="key" label="Key" rules={[{ required: true }]}>
-						<Input placeholder="例如：home.heroTitle" />
+						<Input placeholder="例如：首页" />
 					</Form.Item>
 					<Form.Item name="value" label="翻译值" rules={[{ required: true }]}>
 						<Input.TextArea rows={3} />

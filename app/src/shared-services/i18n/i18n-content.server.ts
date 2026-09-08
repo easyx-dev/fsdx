@@ -16,13 +16,6 @@ import {
 import type { PaginatedSortParams } from "#/types/query";
 import { DEFAULT_LOCALE, type Locale } from "./i18n-types";
 
-export type { ContentTranslationExportData } from "./i18n-content-io";
-// 转发共享的实体翻译导出/导入（路由层经 i18n.server 统一引用）
-export {
-	getAllContentTranslationsForExport,
-	importContentTranslations,
-} from "./i18n-content-io";
-
 // ═══════════════════════════════════════════════════
 // 实体字段翻译查询
 // ═══════════════════════════════════════════════════
@@ -152,6 +145,39 @@ export async function getContentTranslations(
 }
 
 /**
+ * 对单条记录应用内容翻译（按 entityType 查询并覆盖字段）
+ * 默认语言直接返回原记录；非默认语言查询 content_translation 中实际存在的记录做合并，
+ * 业务侧无需声明可翻译字段——存在即生效
+ */
+export async function translateRecord<
+	T extends Record<string, unknown> & { id: string },
+>(record: T, entityType: string, locale: Locale): Promise<T> {
+	if (locale === DEFAULT_LOCALE) return record;
+	const translations = await getContentTranslations(
+		entityType,
+		record.id,
+		locale,
+	);
+	return applyTranslations(record, translations);
+}
+
+/**
+ * 批量对记录应用内容翻译（一次查询按 entityId 分组，避免 N+1）
+ * 默认语言或空数组直接返回原记录
+ */
+export async function translateRecords<
+	T extends Record<string, unknown> & { id: string },
+>(records: T[], entityType: string, locale: Locale): Promise<T[]> {
+	if (locale === DEFAULT_LOCALE || records.length === 0) return records;
+	const translationsMap = await getContentTranslations(
+		entityType,
+		records.map((r) => r.id),
+		locale,
+	);
+	return applyTranslations(records, translationsMap);
+}
+
+/**
  * 获取某实体某个字段的所有语言翻译（管理端抽屉用）
  */
 export async function getFieldTranslations(
@@ -275,33 +301,31 @@ export async function upsertContentTranslation(params: {
 			})
 			.where(eq(contentTranslation.id, params.id));
 	} else {
-		const [existing] = await db
-			.select()
-			.from(contentTranslation)
-			.where(
-				and(
-					eq(contentTranslation.entityType, params.entityType),
-					eq(contentTranslation.entityId, params.entityId),
-					eq(contentTranslation.fieldName, params.fieldName),
-					eq(contentTranslation.locale, params.locale),
-				),
-			)
-			.limit(1);
-		if (existing) {
-			await db
-				.update(contentTranslation)
-				.set({ value: params.value, valueType, updatedAt: new Date() })
-				.where(eq(contentTranslation.id, existing.id));
-		} else {
-			await db.insert(contentTranslation).values({
+		// 新建：基于 (entityType, entityId, fieldName, locale) 唯一约束做原子 upsert，
+		// 避免并发 select-then-write 竞态
+		await db
+			.insert(contentTranslation)
+			.values({
 				entityType: params.entityType,
 				entityId: params.entityId,
 				fieldName: params.fieldName,
 				locale: params.locale,
 				value: params.value,
 				valueType,
+			})
+			.onConflictDoUpdate({
+				target: [
+					contentTranslation.entityType,
+					contentTranslation.entityId,
+					contentTranslation.fieldName,
+					contentTranslation.locale,
+				],
+				set: {
+					value: params.value,
+					valueType,
+					updatedAt: new Date(),
+				},
 			});
-		}
 	}
 
 	// 系统配置翻译变更时刷新对应缓存

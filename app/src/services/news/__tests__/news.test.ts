@@ -8,21 +8,6 @@ vi.mock("#/shared-services/logger", () => ({
 	logger: { error: vi.fn(), info: vi.fn(), warn: vi.fn() },
 }));
 
-const { mockGetContentTranslations } = vi.hoisted(() => {
-	return {
-		mockGetContentTranslations: vi.fn(),
-	};
-});
-
-vi.mock("#/shared-services/i18n/i18n.server", async (importOriginal) => {
-	const actual =
-		await importOriginal<typeof import("#/shared-services/i18n/i18n.server")>();
-	return {
-		...actual,
-		getContentTranslations: mockGetContentTranslations,
-	};
-});
-
 const { mockDb, mockRows } = vi.hoisted(() => {
 	const rows = vi.fn().mockResolvedValue([]);
 	const chain: any = {
@@ -59,8 +44,6 @@ import {
 	getNewsById,
 	getNewsBySlug,
 	getNewsList,
-	translateNewsRecord,
-	translateNewsRecords,
 } from "#/services/news/news.server";
 
 const newsRecord = {
@@ -295,76 +278,6 @@ describe("changeNewsStatus", () => {
 		expect(mockDb.select).not.toHaveBeenCalled();
 		const updateData = setMock.mock.calls[0][0] as { status: string };
 		expect(updateData.status).toBe("archived");
-	});
-});
-
-describe("translateNewsRecord", () => {
-	beforeEach(() => vi.clearAllMocks());
-
-	it("默认语言返回原记录，不查询翻译", async () => {
-		const result = await translateNewsRecord(newsRecord, "zh");
-		expect(result).toEqual(newsRecord);
-		expect(mockGetContentTranslations).not.toHaveBeenCalled();
-	});
-
-	it("非默认语言时查询并覆盖字段", async () => {
-		mockGetContentTranslations.mockResolvedValue({
-			title: { fieldName: "title", value: "Test News", valueType: "text" },
-			description: {
-				fieldName: "description",
-				value: "English description",
-				valueType: "text",
-			},
-		});
-
-		const result = await translateNewsRecord(newsRecord, "en");
-		expect(result.title).toBe("Test News");
-		expect(result.description).toBe("English description");
-		expect(mockGetContentTranslations).toHaveBeenCalledWith(
-			"news",
-			"n-1",
-			"en",
-		);
-	});
-
-	it("无翻译时返回原记录", async () => {
-		mockGetContentTranslations.mockResolvedValue({});
-
-		const result = await translateNewsRecord(newsRecord, "en");
-		expect(result).toEqual(newsRecord);
-	});
-});
-describe("translateNewsRecords", () => {
-	beforeEach(() => vi.clearAllMocks());
-
-	it("批量翻译多条记录", async () => {
-		const records = [newsRecord, { ...newsRecord, id: "n-2" }];
-		mockGetContentTranslations.mockResolvedValue({
-			"n-1": {
-				title: { fieldName: "title", value: "Translated", valueType: "text" },
-			},
-			"n-2": {
-				title: { fieldName: "title", value: "Translated", valueType: "text" },
-			},
-		});
-
-		const results = await translateNewsRecords(records, "en");
-		expect(results).toHaveLength(2);
-		expect(results[0].title).toBe("Translated");
-		expect(results[1].title).toBe("Translated");
-		expect(mockGetContentTranslations).toHaveBeenCalledTimes(1);
-		expect(mockGetContentTranslations).toHaveBeenCalledWith(
-			"news",
-			["n-1", "n-2"],
-			"en",
-		);
-	});
-
-	it("默认语言直接返回，不查询翻译", async () => {
-		const records = [newsRecord, { ...newsRecord, id: "n-2" }];
-		const results = await translateNewsRecords(records, "zh");
-		expect(results).toEqual(records);
-		expect(mockGetContentTranslations).not.toHaveBeenCalled();
 	});
 });
 

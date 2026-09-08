@@ -4,21 +4,21 @@
 
 import { z } from "zod";
 import { EDITOR_TYPES } from "#/constants/editor-types";
-import { SUPPORTED_LOCALES } from "./i18n-types";
+import { localeSchema } from "./i18n-types";
 
 export const formSchema = z.object({
 	id: z.string().optional(),
 	entityType: z.string().min(1),
 	entityId: z.string().min(1),
 	fieldName: z.string().min(1),
-	locale: z.enum(SUPPORTED_LOCALES),
+	locale: localeSchema,
 	value: z.string().min(1),
 	valueType: z.enum(EDITOR_TYPES).optional(),
 });
 
 export const getListSchema = z.object({
 	entityType: z.string().optional(),
-	locale: z.enum(SUPPORTED_LOCALES).optional(),
+	locale: localeSchema.optional(),
 	keyword: z.string().optional(),
 	page: z.number().optional(),
 	sortField: z.string().optional(),

@@ -16,6 +16,7 @@ import { AdminPageContent, EditorTypes } from "#/components/admin";
 import type { contentTranslation } from "#/db/schema";
 import { formSchema } from "#/shared-services/i18n/content-translation.schemas";
 import {
+	DEFAULT_LOCALE,
 	type Locale,
 	SUPPORTED_LOCALES,
 } from "#/shared-services/i18n/i18n-types";
@@ -30,6 +31,11 @@ import {
 
 /** 实体翻译行记录类型 */
 type ContentTranslationRow = typeof contentTranslation.$inferSelect;
+
+/** 可管理的翻译语言：排除默认语言（zh 为源语言，存储于主表，不入库管理） */
+const MANAGED_LOCALES = SUPPORTED_LOCALES.filter(
+	(l): l is Locale => l !== DEFAULT_LOCALE,
+);
 
 export const Route = createFileRoute("/admin/_admin/translations/content")({
 	component: ContentTranslationPage,
@@ -225,12 +231,16 @@ function ContentTranslationPage() {
 			title: "操作",
 			key: "actions",
 			fixed: "right" as const,
-			render: (_: unknown, record: ContentTranslationRow) => (
-				<TableOperate>
-					<TableOperate.Edit onClick={() => openEdit(record)} />
-					<TableOperate.Delete onConfirm={() => handleDelete(record.id)} />
-				</TableOperate>
-			),
+			render: (_: unknown, record: ContentTranslationRow) =>
+				record.locale === DEFAULT_LOCALE ? (
+					// 默认语言为源语言，值存主表原字段，禁止编辑/删除
+					<span className="text-xs text-muted-foreground">源语言（只读）</span>
+				) : (
+					<TableOperate>
+						<TableOperate.Edit onClick={() => openEdit(record)} />
+						<TableOperate.Delete onConfirm={() => handleDelete(record.id)} />
+					</TableOperate>
+				),
 		},
 	];
 
@@ -297,7 +307,7 @@ function ContentTranslationPage() {
 						onChange={(v?: Locale) => {
 							setFilterLocale(v);
 						}}
-						options={SUPPORTED_LOCALES.map((l) => ({
+						options={MANAGED_LOCALES.map((l) => ({
 							label: l.toUpperCase(),
 							value: l,
 						}))}
@@ -365,7 +375,7 @@ function ContentTranslationPage() {
 					</Form.Item>
 					<Form.Item name="locale" label="语言" rules={[{ required: true }]}>
 						<Select
-							options={SUPPORTED_LOCALES.map((l) => ({
+							options={MANAGED_LOCALES.map((l) => ({
 								label: l.toUpperCase(),
 								value: l,
 							}))}

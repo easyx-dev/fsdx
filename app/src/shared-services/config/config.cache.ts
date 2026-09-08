@@ -1,6 +1,6 @@
 /**
  * 系统配置缓存实例：configCache（全量配置列表）+ configTranslationCache（配置翻译）
- * 仅允许 src/services/config/config.server.ts 直接操作
+ * 仅允许 src/shared-services/config/config.server.ts 直接操作
  * 实例挂载于 globalThis 跨 bundle 共享：Nitro 入口（bootstrap 注入 getConfig）与 SSR 渲染器
  * 分别打包本模块，模块级单例会分裂导致启动后修改的配置在另一侧读不到空值。
  * 与 metrics 同模式的 globalThis 存取样板（见 config.cache）。

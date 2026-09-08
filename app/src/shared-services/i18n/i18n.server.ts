@@ -1,26 +1,31 @@
 /**
  * 国际化服务层统一导出（barrel）
- * UI 翻译 → i18n-ui.server；实体字段翻译 → i18n-content.server
+ * UI 翻译 → i18n-ui.server；实体字段翻译 → i18n-content.server；
+ * 实体翻译导入导出 → i18n-content-io；共享类型 → i18n-types
  */
 
 export type {
-	ContentTranslationExportData,
 	ContentTranslationResult,
 	ListContentTranslationsParams,
 } from "./i18n-content.server";
 export {
 	applyTranslations,
 	deleteContentTranslation,
-	getAllContentTranslationsForExport,
 	getContentTranslations,
 	getFieldTranslations,
-	importContentTranslations,
 	listContentTranslations,
+	translateRecord,
+	translateRecords,
 	upsertContentTranslation,
 } from "./i18n-content.server";
+export type { ContentTranslationExportData } from "./i18n-content-io";
+export {
+	getAllContentTranslationsForExport,
+	importContentTranslations,
+} from "./i18n-content-io";
+export type { TranslationImportResult } from "./i18n-types";
 export type {
 	ListUITranslationsParams,
-	TranslationImportResult,
 	UiTranslationExportData,
 } from "./i18n-ui.server";
 export {

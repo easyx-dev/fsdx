@@ -72,6 +72,7 @@ pnpm dev
 | [数据库设计](docs/database-design.md) | 表清单（以 `src/db/schema/` 为准）、ER 图、列命名约定、约束汇总 |
 | [认证与权限](docs/auth-permission-model.md) | 双用户体系、RBAC、JWT、中间件链路 |
 | [缓存体系](docs/cache-system.md) | MemoryCache 设计、缓存实例清单（以代码为准，部分位 `src/services/`、部分位 `src/shared-services/`）、生命周期 |
+| [国际化](docs/i18n.md) | 两层翻译模型、语言检测链路、缓存与写路径、实体翻译接入 |
 | [事件埋点](docs/event-tracking.md) | 客户端 SDK、服务端校验、缓冲写入、查询分析 |
 | [部署运维](docs/deployment-ops.md) | 启动流程、定时任务、日志、优雅关闭 |
 | [项目生态与衍生协同](docs/project-ecosystem.md) | 基座模板定位、衍生项目双向同步、命名面收敛、回灌净化 |

@@ -20,8 +20,10 @@ description: 本项目国际化开发指南。当需要添加多语言支持、�
 请求进入 → localeMiddleware 解析 Cookie
          → __root.tsx beforeLoad 加载 UI 翻译并注入 GlobalStoreProvider
          → 组件调用 useTranslation() / useLocale()
-         → 服务端实体翻译通过 translateXxxRecord 按需拼接
+         → 服务端实体翻译通过 i18n 通用 translateRecords 按需拼接
 ```
+
+> 分层、语言检测链路、缓存与写路径的完整架构说明 → [docs/i18n.md](../../../docs/i18n.md)。
 
 ## 核心概念
 
@@ -186,15 +188,18 @@ const { t } = useTranslation();
 
 ### 带插值的文案
 
-如果文案包含动态数据，使用 i18next 插值语法：
+如果文案包含动态数据，使用 i18next 插值语法（默认前缀 `{{key}}`，勿自定义单大括号以免误判含 `{ }` 的文案）：
 
 ```tsx
 // 种子数据
-{ locale: "en", key: "共 {total} 篇", value: "{total} articles" }
+{ locale: "en", key: "共 {{total}} 篇", value: "{{total}} articles" }
 
 // 组件中使用
-t("共 {total} 篇", { total: 10 }) // → "10 articles"
+t("共 {{total}} 篇", { total: 10 }) // → "10 articles"
 ```
+
+> 完整性守卫：前台所有 `t("中文")` 字面量必须存在于 `i18n-seed.ts` 的 `SEED_DATA`（en）中，
+> 由 `__tests__/i18n-seed.test.ts` 自动扫描校验，遗漏种子会导致英文站静默回退中文。
 
 ## 实体字段翻译模式
 
@@ -207,9 +212,9 @@ t("共 {total} 篇", { total: 10 }) // → "10 articles"
 - `content_translation` 通过 `(entityType, entityId, fieldName, locale)` 唯一确定一条翻译
 - `valueType` 字段复用 `EditorType` 枚举，控制管理端编辑器和渲染方式
 
-### Step 1：定义可翻译字段
+### Step 1：定义可翻译字段（UI 层）
 
-在实体对应的管理页面中，定义字段数组供 `FieldTranslationDrawer` 使用：
+在实体对应的管理页面中，定义字段数组供 `FieldTranslationDrawer` 使用，由调用方**直接透传**：
 
 ```tsx
 const NEWS_TRANSLATABLE_FIELDS = [
@@ -219,57 +224,30 @@ const NEWS_TRANSLATABLE_FIELDS = [
 ];
 ```
 
-`valueType` 取值对应 `src/constants/editor-types.ts` 中的 `EditorType`。
+`valueType` 取值对应 `src/constants/editor-types.ts` 中的 `EditorType`，它**只是 UI 层选编辑器的字符串**，不进入服务端契约（服务端合并靠 `content_translation` 实际存在的记录，无需字段声明）。
 
-### Step 2：服务端添加翻译函数
+### Step 2：服务端调用通用翻译 API
 
-实体翻译的核心 API 在 `src/shared-services/i18n/i18n.server.ts` 中：
+实体翻译的核心 API 在 `src/shared-services/i18n/i18n.server.ts` 中，**业务侧无需自写包装器，也不需声明可翻译字段**（`content_translation` 中实际存在的记录即被合并）：
 
 | API | 说明 |
 |-----|------|
+| `translateRecord(record, entityType, locale)` | 单条：按 entityType + id + locale 查询翻译并合并；默认语言直接返回 |
+| `translateRecords(records, entityType, locale)` | **批量**：一次查询按 entityId 分组（避免 N+1）；默认语言/空数组直接返回 |
 | `getContentTranslations(entityType, id, locale)` | 查询单个实体的翻译（返回 `Record<fieldName, result>`） |
-| `getContentTranslations(entityType, ids[], locale)` | **批量查询**多个实体的翻译（返回按 entityId 分组的 Map，避免 N+1） |
+| `getContentTranslations(entityType, ids[], locale)` | 批量查询多个实体的翻译（返回按 entityId 分组的 Map） |
 | `applyTranslations(record, translations)` | 将翻译合并到单条记录 |
 | `applyTranslations(records, translationsMap)` | 批量合并，内部按 `record.id` 查找对应翻译 |
-
-```ts
-// src/services/news/news.server.ts
-import { applyTranslations, getContentTranslations } from "#/shared-services/i18n/i18n.server";
-
-/** 对单条记录应用 content_translation 翻译 */
-export async function translateNewsRecord(
-  record: NewsRecord,
-  locale: Locale,
-): Promise<NewsRecord> {
-  if (locale === DEFAULT_LOCALE) return record; // 默认语言直接返回
-
-  const translations = await getContentTranslations("news", record.id, locale);
-
-  return applyTranslations(record, translations);
-}
-
-/** 批量翻译（一次查询获取所有翻译，避免 N+1） */
-export async function translateNewsRecords(
-  records: NewsRecord[],
-  locale: Locale,
-): Promise<NewsRecord[]> {
-  if (locale === DEFAULT_LOCALE || records.length === 0) return records;
-
-  const ids = records.map((r) => r.id);
-  const translationsMap = await getContentTranslations("news", ids, locale);
-
-  return applyTranslations(records, translationsMap);
-}
-```
 
 ### Step 3：路由 loader 中调用翻译
 
 ```tsx
-// 路由内的 createServerFn handler 中
-const getLatestNews = createServerFn({ method: "GET" }).handler(async () => {
-  const locale = getLocaleFromCookie(); // 从 Cookie 读取当前语言
+// 路由内的 createServerFn handler 中，直接调用 i18n 通用入口（无需自写包装器）
+import { translateRecords } from "#/shared-services/i18n/i18n.server";
+
+const getLatestNews = createServerFn({ method: "GET" }).handler(async ({ context }) => {
   const { records, ...rest } = await getNewsList({ status: "published", pageSize: 6 });
-  return { records: await translateNewsRecords(records, locale), ...rest };
+  return { records: await translateRecords(records, "news", context.locale), ...rest };
 });
 ```
 
@@ -311,6 +289,8 @@ import { FieldTranslationDrawer } from "#/components/admin";
 
 功能：按语言筛选、按关键词搜索、创建/编辑/删除 UI 翻译条目。编辑后自动刷新内存缓存。
 
+> 默认语言（zh）为源语言（key 即原文），在管理端**只读**：不出现在新增/筛选的语言下拉中，表中的 zh 条目仅可查看不可编辑/删除。
+
 ### 内容翻译管理
 
 路由：`/admin/translations/content`
@@ -336,9 +316,9 @@ export const uiTranslationCache = new MemoryCache<Record<string, string>>({
 
 ### 缓存行为
 
-- **载入**：`getUITranslations(locale)` 优先读缓存，未命中时查库并写入缓存（种子数据已在启动阶段通过 `onConflictDoNothing` 预先写入数据库）
-- **刷新**：管理端保存/删除 UI 翻译时，调用 `refreshUITranslationCache(locale)` 清除并重新加载
-- **范围**：按 locale 独立缓存，`en` 和 `zh` 各一份
+- **载入**：`getUITranslations(locale)` 优先读缓存，未命中时查库并写入缓存（种子数据已在启动阶段通过 `onConflictDoNothing` 预先写入数据库）；**默认语言（zh）作为源语言直接返回 `{}`，不查库**
+- **刷新**：管理端保存/删除 UI 翻译时，调用 `refreshUITranslationCache(locale)` 仅失效缓存 key，由下一次读取懒加载重建
+- **范围**：按 locale 独立缓存，仅 `en` 等非默认语言实际缓存；zh 恒为空资源
 - **生命周期**：进程级内存缓存，服务重启后从库重新加载
 
 ### 实体翻译无缓存

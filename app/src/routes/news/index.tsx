@@ -51,7 +51,7 @@ function NewsListPage() {
 					{t("新闻资讯")}
 				</h1>
 				<p className="mt-1 text-sm text-muted-foreground sm:mt-2">
-					{t("共 {total} 篇", { total })}
+					{t("共 {{total}} 篇", { total })}
 				</p>
 			</header>
 

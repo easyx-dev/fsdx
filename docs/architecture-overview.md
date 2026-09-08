@@ -2,7 +2,7 @@
 
 > 定位：平台机制类 · 人类阅读
 > 单一事实来源：代码（`app/src/` 目录结构、`src/db/schema/`、`src/permissions/`）
-> 引用关系：← 被 README 引用；→ 引用 database-design / cache-system / auth-permission-model / deployment-ops / event-tracking（均只引用不复制）
+> 引用关系：← 被 README 引用；→ 引用 database-design / cache-system / auth-permission-model / deployment-ops / event-tracking / i18n（均只引用不复制）
 > 更新触发：目录分层、基础设施（缓存/埋点/审计/请求上下文）、路由体系变更时
 
 基于 TanStack Start 的全栈开发工程基座，内置 RBAC 认证、事件埋点、操作审计、国际化等基础设施，并附 news（新闻）业务示例。
@@ -190,6 +190,7 @@ __root.tsx                    # HTML shell，按 pathname 前缀分发 AdminRoot
 | [认证与权限](auth-permission-model.md) | 双用户体系、RBAC、JWT、中间件链路 |
 | [数据库设计](database-design.md) | 表清单、ER 图、列命名约定、约束汇总 |
 | [缓存体系](cache-system.md) | MemoryCache 与缓存实例 |
+| [国际化](i18n.md) | 两层翻译模型、语言检测链路、缓存与写路径 |
 | [事件埋点](event-tracking.md) | 埋点链路与预置元数据 |
 | [部署运维](deployment-ops.md) | 启动流程、定时任务、日志、部署 |
 

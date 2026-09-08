@@ -3,7 +3,8 @@
  */
 
 import { createServerFn } from "@tanstack/react-start";
-import { getNewsList, translateNewsRecords } from "#/services/news/news.server";
+import { getNewsList } from "#/services/news/news.server";
+import { translateRecords } from "#/shared-services/i18n/i18n.server";
 
 export const getLatestNewsSFn = createServerFn({ method: "GET" }).handler(
 	async ({ context }) => {
@@ -12,7 +13,7 @@ export const getLatestNewsSFn = createServerFn({ method: "GET" }).handler(
 			pageSize: 6,
 		});
 		return {
-			records: await translateNewsRecords(records, context.locale),
+			records: await translateRecords(records, "news", context.locale),
 			...rest,
 		};
 	},

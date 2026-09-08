@@ -98,7 +98,7 @@ const SEED_EN: SeedRow[] = [
 
 	// news list
 	{ locale: "en", key: "新闻资讯", value: "News" },
-	{ locale: "en", key: "共 {total} 篇", value: "{total} articles" },
+	{ locale: "en", key: "共 {{total}} 篇", value: "{{total}} articles" },
 	{ locale: "en", key: "暂无新闻", value: "No news yet" },
 	{ locale: "en", key: "置顶", value: "Pinned" },
 
@@ -117,9 +117,14 @@ const SEED_EN: SeedRow[] = [
 	{ locale: "en", key: "邮箱", value: "Email" },
 	{ locale: "en", key: "邮箱验证码", value: "Email Verification Code" },
 	{ locale: "en", key: "登录", value: "Login" },
-	{ locale: "en", key: "登录中...", value: "Logging in..." },
+	{ locale: "en", key: "登录中", value: "Logging in..." },
+	{ locale: "en", key: "登录失败", value: "Login failed" },
+	{ locale: "en", key: "登录成功", value: "Login successful" },
+	{ locale: "en", key: "忘记密码？", value: "Forgot password?" },
 	{ locale: "en", key: "注册", value: "Register" },
-	{ locale: "en", key: "注册中...", value: "Registering..." },
+	{ locale: "en", key: "注册中", value: "Registering..." },
+	{ locale: "en", key: "注册失败", value: "Registration failed" },
+	{ locale: "en", key: "注册成功", value: "Registration successful" },
 	{ locale: "en", key: "还没有账号？", value: "Don't have an account?" },
 	{ locale: "en", key: "立即注册", value: "Register Now" },
 	{ locale: "en", key: "已有账号？", value: "Already have an account?" },
@@ -168,6 +173,36 @@ const SEED_EN: SeedRow[] = [
 	},
 	{ locale: "en", key: "文件上传管理", value: "File Upload Management" },
 	{ locale: "en", key: "日志查询分析", value: "Log Query and Analysis" },
+
+	// header / 用户区
+	{ locale: "en", key: "消息中心", value: "Messages" },
+	{ locale: "en", key: "退出登录", value: "Log out" },
+
+	// forgot password
+	{ locale: "en", key: "忘记密码", value: "Forgot Password" },
+	{ locale: "en", key: "返回登录", value: "Back to Login" },
+	{ locale: "en", key: "新密码", value: "New Password" },
+	{ locale: "en", key: "请输入新密码", value: "Please enter new password" },
+	{ locale: "en", key: "确认新密码", value: "Confirm New Password" },
+	{ locale: "en", key: "请确认新密码", value: "Please confirm new password" },
+	{ locale: "en", key: "重置中", value: "Resetting..." },
+	{ locale: "en", key: "重置密码", value: "Reset Password" },
+	{ locale: "en", key: "重置失败", value: "Reset failed" },
+
+	// messages
+	{ locale: "en", key: "全部已读", value: "Mark All Read" },
+	{ locale: "en", key: "全部", value: "All" },
+	{ locale: "en", key: "未读", value: "Unread" },
+	{ locale: "en", key: "已读", value: "Read" },
+	{ locale: "en", key: "删除", value: "Delete" },
+	{ locale: "en", key: "已删除", value: "Deleted" },
+	{ locale: "en", key: "暂无消息", value: "No messages" },
+	{ locale: "en", key: "上一页", value: "Previous" },
+	{ locale: "en", key: "下一页", value: "Next" },
+	{ locale: "en", key: "加载消息失败", value: "Failed to load messages" },
+	{ locale: "en", key: "操作失败", value: "Operation failed" },
+	{ locale: "en", key: "删除失败", value: "Delete failed" },
+	{ locale: "en", key: "已全部标记为已读", value: "All marked as read" },
 ];
 
 export const SEED_DATA: SeedRow[] = [...SEED_EN];
