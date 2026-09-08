@@ -20,7 +20,7 @@
 
 - **i18n 模块结构与写路径优化（[infra]）**：
   - 依赖收敛：内容翻译模块按 `entityType === "system_config"` 直接依赖 config 服务刷新配置翻译缓存（架构上可接受，不引入额外抽象）；并修复「导入 system_config 翻译后配置翻译缓存未同步」的隐患（导入后对受影响语言刷新配置翻译缓存）。
-  - 结构收敛：`TranslationImportResult` 上移至 `i18n-types` 作为 UI/Content 共用契约（消除 `i18n-content-io` 反向依赖 `i18n-ui.server`）；`i18n.server` barrel 由三层 re-export 收敛为直接引 ui/content/io；`localeSchema` 收敛为单一来源供各层复用。
+  - 结构收敛：`TranslationImportResult` 上移至 `i18n.types` 作为 UI/Content 共用契约（消除 `i18n.content-io` 反向依赖 `i18n.ui.server`）；`i18n.server` barrel 由三层 re-export 收敛为直接引 ui/content/io；`localeSchema` 收敛为单一来源供各层复用。
   - 写路径优化：`upsertUITranslation` / `upsertContentTranslation` 新建路径改为原子 `onConflictDoUpdate`，消除并发 select-then-write 唯一约束竞态；UI/Content 导入改为「单次预查询统计新增/更新 + 批量 `onConflictDoUpdate`」消除逐条 select，并按唯一键去重、拷贝数据避免污染入参。
   - 读取路径优化：`getUITranslations` 对默认语言（zh）短路返回空资源免查库；`refreshUITranslationCache` 改为仅失效缓存 key、由下一次读取懒加载重建。
   - 插值前缀由自定义单大括号 `{` 恢复为 i18next 默认 `{{}}`（种子与调用点同步更新），避免含 `{ }` 的文案被误判为插值。可被衍生项目吸收
@@ -31,9 +31,11 @@
   - `-mods/` 逻辑文件 camelCase → kebab：`dictUtils.ts → dict.utils.ts`、`fileExplorerUtils.ts → file-explorer.utils.ts`（含对应测试与引用更新）
   - 裸 `interface Props` → `XxxProps`：`FieldTranslationDrawerProps` / `RichEditorProps` / `AiProviderFormProps`（后两者共用）
   - 布尔 prop 统一 `is/has/should` 前缀：`recipientSearching → isSearching`、`valueDisabled → isValueDisabled`、`advancedExpanded → isAdvancedExpanded`、`slugDisabled → isSlugDisabled`
-- **超限文件按职责拆分（[infra]）**：`config.server.ts` 预置配置抽至 `config.presets.ts`；`news.server.ts` slug 逻辑抽至 `news.slug.ts`；`i18n-content.server.ts` 导入导出抽至 `i18n-content-io.ts`；`ai-providers/-mods/AiProviderFormModal.tsx` 表单数据模型抽至 `ai-provider-form.model.ts`；`ui-spa/upload/FileUpload.tsx` 纯工具抽至 `file-upload.utils.ts`，各文件压回 400 行阈值内。
+- **超限文件按职责拆分（[infra]）**：`config.server.ts` 预置配置抽至 `config.presets.ts`；`news.server.ts` slug 逻辑抽至 `news.slug.ts`；`i18n.content.server.ts` 导入导出抽至 `i18n.content-io.ts`；`ai-providers/-mods/AiProviderFormModal.tsx` 表单数据模型抽至 `ai-provider-form.model.ts`；`ui-spa/upload/FileUpload.tsx` 纯工具抽至 `file-upload.utils.ts`，各文件压回 400 行阈值内。
 - **圆角归零与语义令牌化（[infra]）**：圆角沿用已有的主题层归零约定（`--radius-*` 均为 0，`rounded-*` 类名保留、运行时归零，仅 `rounded-full` 保留圆形），未改动类名；`ErrorFallback`、管理端仪表盘统计色、`files` 成功色、`newsColumns` 占位色改走语义令牌（`var(--s-*)`）；邮件模板内联色值注明「客户端不解析令牌」豁免。
 - **i18n 实体翻译去业务耦合：统一通用入口（[infra]）**：`shared-services/i18n` 新增通用 `translateRecord` / `translateRecords`（按 entityType + locale 查询 `content_translation` 并合并，默认语言/空数组短路，批量一次查询避免 N+1），业务侧无需声明可翻译字段且不再自写包装器——`news.server.ts` 删除 `translateNewsRecord` / `translateNewsRecords`，前台 `news` / 首页路由改调用 `translateRecords(records, "news", locale)`。`valueType` 确认仅为 UI 层选编辑器的字符串（透传给 `FieldTranslationDrawer`），不进入服务端契约。实体翻译扩展收敛为「组件定义字段 + 调 `translateRecords`」两个动作。可被衍生项目吸收
+
+- **i18n 模块语义化命名规整（[infra]）**：`shared-services/i18n` 文件名由 `i18n-<role>` 破折号与按表命名的 `ui-translation.*`/`content-translation.*` 混用，统一为点号约定 `<module>.<子域>.<role>.ts`——`i18n-types`→`i18n.types`、`i18n-config`→`i18n.config`、`i18n-seed`→`i18n.seed`、`i18n-ui.server`→`i18n.ui.server`、`i18n-content.server`→`i18n.content.server`、`i18n-content-io`→`i18n.content-io`、`ui-translation.cache/schemas`→`i18n.ui.cache/schemas`、`content-translation.schemas`→`i18n.content.schemas`，与 `config.*`/`dict.*` 命名一致；服务层 barrel `i18n.server.ts` 保留 `.server` 分界标记（`importProtection` 依赖该后缀区分服务端）。同步更新全部引用、`docs/i18n.md`（按「基础件 / UI 翻译 / 内容翻译」重组并补充 `.server` 约束与 barrel 说明）、i18n / cache / db-sqlite skill 与 `cache-system` 文档。纯命名规整、无行为变更。可被衍生项目吸收
 
 ### Fix
 
@@ -45,11 +47,11 @@
 
 - **locale 默认值收敛至 `localeMiddleware` 单一权威来源（[infra]）**：`router.tsx` 的 `createRouter({ context: { locale: DEFAULT_LOCALE } })` 是静态占位值（SSR 时不被改写，路由 loader 的 `context.locale` 恒为 `"zh"`），且 `__root.tsx` 的 `createRootRouteWithContext<{ locale: Locale }>` 与 `void context.locale` 均属休眠死配置；予以移除（`createRouter` 不再传 `context`，根路由改 `createRootRoute()`，loader 不再引用路由 `context.locale`）。同时 `localeMiddleware` 由盲目 `getCookie(...) as Locale` 改为 `SUPPORTED_LOCALES` 运行时校验，非法 Cookie 值回退 `DEFAULT_LOCALE`（成为 locale 默认值的唯一权威来源），并更新过时注释。`Header` 语言切换按钮改用 `LOCALE_COOKIE` / `SUPPORTED_LOCALES` / `DEFAULT_LOCALE` 常量（替换硬编码 `"lang"` / `"zh"` / `"en"`），消除魔法字符串并提升语言扩展健壮性。
 
-- **补全前台英文种子翻译并新增完整性守卫（[infra]）**：前台大量 `t("中文")` 文案缺失英文种子（消息中心/退出登录/忘记密码/各类失败提示/分页/已读未读/重置相关等），致使英文站静默回退中文；已补齐 `i18n-seed.ts` 缺失条目，并新增 `i18n-seed.test.ts` 静态扫描守卫，自动校验前台所有 `t()` 字面量均存在于 `SEED_DATA`（en），防止后续新增文案遗漏种子。另修正 `translation.ts` / 缓存注释 / 翻译管理页占位符与「中文作为 key」约定不符的过时表述。
+- **补全前台英文种子翻译并新增完整性守卫（[infra]）**：前台大量 `t("中文")` 文案缺失英文种子（消息中心/退出登录/忘记密码/各类失败提示/分页/已读未读/重置相关等），致使英文站静默回退中文；已补齐 `i18n.seed.ts` 缺失条目，并新增 `i18n.seed.test.ts` 静态扫描守卫，自动校验前台所有 `t()` 字面量均存在于 `SEED_DATA`（en），防止后续新增文案遗漏种子。另修正 `translation.ts` / 缓存注释 / 翻译管理页占位符与「中文作为 key」约定不符的过时表述。
 
 ### Docs
 
-- **项目定位重定向为「全栈开发工程基座」**：移除「内置 CMS 示例」的产品绑定叙事，改为强调全栈开发工程基座定位，CMS 降为支撑能力；业务示例收敛为单一 news（新闻），其余模块（dict / file / file-explorer / messages / config / translations / track / operation-logs / ai-providers / ai-rich-editor / demo）统一归入基建能力。同步更新 `AGENTS.md`、`README.md`、`docs/architecture-overview.md`、`docs/project-ecosystem.md`、`docs/ai-rich-editor.md`、上游同步/国际化 skill 与客户端可见产品文案（首页/关于页、i18n-seed、e2e 断言、i18n 单测、管理端导航分组标签），文案统一改为「全栈开发工程基座」口径。
+- **项目定位重定向为「全栈开发工程基座」**：移除「内置 CMS 示例」的产品绑定叙事，改为强调全栈开发工程基座定位，CMS 降为支撑能力；业务示例收敛为单一 news（新闻），其余模块（dict / file / file-explorer / messages / config / translations / track / operation-logs / ai-providers / ai-rich-editor / demo）统一归入基建能力。同步更新 `AGENTS.md`、`README.md`、`docs/architecture-overview.md`、`docs/project-ecosystem.md`、`docs/ai-rich-editor.md`、上游同步/国际化 skill 与客户端可见产品文案（首页/关于页、i18n.seed、e2e 断言、i18n 单测、管理端导航分组标签），文案统一改为「全栈开发工程基座」口径。
 
 - **AGENTS.md 包边界与说明补充**：结构树、README 链接清单与「新增共享逻辑」纳入 `@fsdx/ai-rich-editor`（AI 富文本工作台）；Server Function 章节明确「无入参 SFn（零参调用）可省略 `validator`」豁免，与现有零参 SFn 实践对齐。
 

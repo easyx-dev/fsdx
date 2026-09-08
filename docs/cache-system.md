@@ -79,7 +79,7 @@ SMTP 邮件配置存储于数据库，通过此缓存获取。管理端修改配
 | 加载 | `loadUITranslations()` |
 | 查询 | `getUITranslations(locale)` |
 
-启动时不预热，按 locale 首次访问懒加载；管理端修改翻译后触发局部刷新。归属模块：`src/shared-services/i18n/`（UI 翻译逻辑在 `i18n-ui.server.ts`，实体字段翻译在 `i18n-content.server.ts`）。
+启动时不预热，按 locale 首次访问懒加载；管理端修改翻译后触发局部刷新。归属模块：`src/shared-services/i18n/`（UI 翻译逻辑在 `i18n.ui.server.ts`，实体字段翻译在 `i18n.content.server.ts`）。
 
 ### 配置翻译缓存 (`configTranslationCache`)
 
@@ -158,7 +158,7 @@ sequenceDiagram
     participant Bootstrap as bootstrap.ts
     participant Dict as dict.server.ts
     participant Config as config.server.ts
-    participant Seed as i18n-seed.ts
+    participant Seed as i18n.seed.ts
     participant Track as track.server.ts
     participant Cache as MemoryCache
     participant DB as PostgreSQL
@@ -227,7 +227,7 @@ Server Function handler
 | `packages/lib/src/cache/__tests__/cache.test.ts` | 缓存单元测试 |
 | `src/shared-services/config/config.server.ts` | `loadConfigCache()` / `getConfigTranslations()` 配置与配置翻译缓存管理 |
 | `src/shared-services/dict/dict.server.ts` | `loadDictCache()` / `ensureCache()` 字典缓存管理（懒加载） |
-| `src/shared-services/i18n/i18n-ui.server.ts` | `getUITranslations()` / `refreshUITranslationCache()` UI 翻译缓存管理 |
+| `src/shared-services/i18n/i18n.ui.server.ts` | `getUITranslations()` / `refreshUITranslationCache()` UI 翻译缓存管理 |
 | `src/services/client-auth/client-auth.server.ts` | 客户端用户缓存使用 |
 | `src/services/track/track.meta.ts` | `loadTrackMetaCache()` 元事件/元属性缓存管理 |
 | `src/services/track/track.validate.ts` | `sessionRateCache` 埋点频控内部实例 |

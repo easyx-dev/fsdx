@@ -12,7 +12,7 @@ import { AdminRootDocument, SSRRootDocument } from "#/components/Document";
 import { GlobalStoreProvider } from "#/components/providers";
 import { getVisibleConfigsSFn } from "#/shared-services/config/config.functions";
 import { getLocaleBundleSFn } from "#/shared-services/i18n/i18n.functions";
-import { DEFAULT_LOCALE } from "#/shared-services/i18n/i18n-types";
+import { DEFAULT_LOCALE } from "#/shared-services/i18n/i18n.types";
 
 export const Route = createRootRoute({
 	head: () => {

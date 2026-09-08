@@ -6,7 +6,7 @@ import {
 	deleteSchema,
 	formSchema,
 	getListSchema,
-} from "#/shared-services/i18n/content-translation.schemas";
+} from "#/shared-services/i18n/i18n.content.schemas";
 import { importContentTranslationsSchema } from "../-mods/content-translations.functions";
 
 describe("getListSchema", () => {

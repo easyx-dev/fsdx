@@ -12,7 +12,7 @@ import {
 } from "#/services/track/track.server";
 import { ensurePresetConfigs } from "#/shared-services/config/config.server";
 import { ensurePresetDicts } from "#/shared-services/dict/dict.server";
-import { ensurePresetTranslations } from "#/shared-services/i18n/i18n-seed";
+import { ensurePresetTranslations } from "#/shared-services/i18n/i18n.seed";
 import { logger } from "#/shared-services/logger";
 import { flushOperationLogs } from "#/shared-services/operation-log/operation-log.server";
 

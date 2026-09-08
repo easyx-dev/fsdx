@@ -5,13 +5,13 @@
  */
 
 import { describe, expect, it } from "vitest";
-import { createI18nInstance } from "../i18n-config";
-import type { Translations } from "../i18n-types";
+import { createI18nInstance } from "../i18n.config";
+import type { Translations } from "../i18n.types";
 import {
 	DEFAULT_LOCALE,
 	LOCALE_COOKIE,
 	SUPPORTED_LOCALES,
-} from "../i18n-types";
+} from "../i18n.types";
 
 // ═══════════════════════════════════════════════════════════════════
 // i18n.types — 常量

@@ -18,8 +18,8 @@ import {
 	DEFAULT_LOCALE,
 	type Locale,
 	SUPPORTED_LOCALES,
-} from "#/shared-services/i18n/i18n-types";
-import { formSchema } from "#/shared-services/i18n/ui-translation.schemas";
+} from "#/shared-services/i18n/i18n.types";
+import { formSchema } from "#/shared-services/i18n/i18n.ui.schemas";
 import type { SortOrder } from "#/types/query";
 import {
 	deleteSFn,

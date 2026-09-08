@@ -14,7 +14,7 @@ import {
 	paginationOffset,
 } from "#/shared-services/query/query-utils.server";
 import type { PaginatedSortParams } from "#/types/query";
-import { DEFAULT_LOCALE, type Locale } from "./i18n-types";
+import { DEFAULT_LOCALE, type Locale } from "./i18n.types";
 
 // ═══════════════════════════════════════════════════
 // 实体字段翻译查询

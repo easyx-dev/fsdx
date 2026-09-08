@@ -10,7 +10,7 @@ import {
 	LOCALE_COOKIE,
 	type Locale,
 	SUPPORTED_LOCALES,
-} from "#/shared-services/i18n/i18n-types";
+} from "#/shared-services/i18n/i18n.types";
 
 /**
  * 全局语言中间件：解析 locale 并注入 context（locale 默认值的唯一权威来源）

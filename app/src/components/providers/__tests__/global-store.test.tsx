@@ -10,7 +10,7 @@ import {
 	globalStoreContext,
 	useGlobalStore,
 } from "#/components/providers";
-import type { Locale, Translations } from "#/shared-services/i18n/i18n-types";
+import type { Locale, Translations } from "#/shared-services/i18n/i18n.types";
 
 afterEach(cleanup);
 

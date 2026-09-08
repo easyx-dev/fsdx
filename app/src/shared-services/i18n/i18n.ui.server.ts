@@ -7,7 +7,7 @@ import { and, eq, inArray, like, or, type SQLWrapper, sql } from "drizzle-orm";
 import { EDITOR_TYPES, type EditorType } from "#/constants/editor-types";
 import { db } from "#/db/index";
 import { uiTranslation } from "#/db/schema";
-import { uiTranslationCache } from "#/shared-services/i18n/ui-translation.cache";
+import { uiTranslationCache } from "#/shared-services/i18n/i18n.ui.cache";
 import { logger } from "#/shared-services/logger";
 import {
 	buildSortClause,
@@ -19,7 +19,7 @@ import {
 	DEFAULT_LOCALE,
 	type Locale,
 	type TranslationImportResult,
-} from "./i18n-types";
+} from "./i18n.types";
 
 // ═══════════════════════════════════════════════════
 // UI 翻译查询

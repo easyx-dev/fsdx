@@ -16,7 +16,7 @@ import {
 	DEFAULT_LOCALE,
 	type Locale,
 	SUPPORTED_LOCALES,
-} from "#/shared-services/i18n/i18n-types";
+} from "#/shared-services/i18n/i18n.types";
 import { EditorTypes } from "./editor-type";
 
 /** 可翻译字段定义 */

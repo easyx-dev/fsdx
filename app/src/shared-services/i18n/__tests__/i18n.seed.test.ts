@@ -41,7 +41,7 @@ const { mockDb } = vi.hoisted(() => {
 
 vi.mock("#/db", () => ({ db: mockDb }));
 
-import { ensurePresetTranslations, SEED_DATA } from "../i18n-seed";
+import { ensurePresetTranslations, SEED_DATA } from "../i18n.seed";
 
 /** 递归收集目录下 .ts/.tsx 源文件（跳过 admin 与 __tests__） */
 function collectSourceFiles(dir: string, out: string[] = []): string[] {

@@ -15,9 +15,9 @@ import {
 	I18nextProvider,
 	useTranslation as useI18nTranslation,
 } from "react-i18next";
-import { createI18nInstance } from "#/shared-services/i18n/i18n-config";
-import type { Locale, Translations } from "#/shared-services/i18n/i18n-types";
-import { DEFAULT_LOCALE } from "#/shared-services/i18n/i18n-types";
+import { createI18nInstance } from "#/shared-services/i18n/i18n.config";
+import type { Locale, Translations } from "#/shared-services/i18n/i18n.types";
+import { DEFAULT_LOCALE } from "#/shared-services/i18n/i18n.types";
 
 interface I18nContextValue {
 	locale: Locale;

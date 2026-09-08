@@ -44,7 +44,7 @@ i18next 查找逻辑：当前语言为 `zh` 时直接返回 key 本身；其他�
 
 ### 支持的语言
 
-定义在 `#/shared-services/i18n/i18n-types`，业务代码直接 import 使用，禁止本地重复定义：
+定义在 `#/shared-services/i18n/i18n.types`，业务代码直接 import 使用，禁止本地重复定义：
 
 ```ts
 import {
@@ -52,21 +52,21 @@ import {
   LOCALE_COOKIE,         // "lang"
   SUPPORTED_LOCALES,     // ["zh", "en"] as const
   type Locale,           // "zh" | "en"
-} from "#/shared-services/i18n/i18n-types";
+} from "#/shared-services/i18n/i18n.types";
 ```
 
 ### 关键文件索引
 
 | 文件 | 职责 |
 |------|------|
-| `#/shared-services/i18n/i18n-types` | 类型定义、支持语言、Cookie 名 |
-| `#/shared-services/i18n/i18n-config` | i18next 实例创建（`createI18nInstance`） |
+| `#/shared-services/i18n/i18n.types` | 类型定义、支持语言、Cookie 名 |
+| `#/shared-services/i18n/i18n.config` | i18next 实例创建（`createI18nInstance`） |
 | `src/components/providers/i18n-context.tsx` | React Context Provider + `useTranslation` / `useLocale` hooks |
 | `src/components/providers/global-store.tsx` | GlobalStore：组合 locale + translations 并注入 I18nProvider |
 | `src/middleware/locale-middleware.ts` | 请求级语言检测中间件 |
-| `src/shared-services/i18n/i18n.server.ts` | 翻译查询与维护的核心逻辑 |
+| `src/shared-services/i18n/i18n.server.ts` | 服务层统一导出（barrel），聚合 UI/内容翻译服务与类型 |
 | `src/shared-services/i18n/i18n.functions.ts` | Server Function 包装器（含权限守卫） |
-| `src/shared-services/i18n/i18n-seed.ts` | 预设英文 UI 翻译种子数据（每次启动增量写入） |
+| `src/shared-services/i18n/i18n.seed.ts` | 预设英文 UI 翻译种子数据（每次启动增量写入） |
 | `src/db/schema/translation.ts` | 数据库表定义 |
 | `src/constants/editor-types.ts` | `EditorType` 枚举（富文本/输入类型） |
 | `src/components/admin/forms/FieldTranslationDrawer.tsx` | 实体字段翻译编辑抽屉 |
@@ -174,7 +174,7 @@ const { t } = useTranslation();
 
 ### Step 2：在种子数据中添加翻译
 
-编辑 `src/shared-services/i18n/i18n-seed.ts`，在 `SEED_EN` 数组中追加：
+编辑 `src/shared-services/i18n/i18n.seed.ts`，在 `SEED_EN` 数组中追加：
 
 ```ts
 { locale: "en", key: "提交", value: "Submit" },
@@ -198,8 +198,8 @@ const { t } = useTranslation();
 t("共 {{total}} 篇", { total: 10 }) // → "10 articles"
 ```
 
-> 完整性守卫：前台所有 `t("中文")` 字面量必须存在于 `i18n-seed.ts` 的 `SEED_DATA`（en）中，
-> 由 `__tests__/i18n-seed.test.ts` 自动扫描校验，遗漏种子会导致英文站静默回退中文。
+> 完整性守卫：前台所有 `t("中文")` 字面量必须存在于 `i18n.seed.ts` 的 `SEED_DATA`（en）中，
+> 由 `__tests__/i18n.seed.test.ts` 自动扫描校验，遗漏种子会导致英文站静默回退中文。
 
 ## 实体字段翻译模式
 
@@ -228,7 +228,7 @@ const NEWS_TRANSLATABLE_FIELDS = [
 
 ### Step 2：服务端调用通用翻译 API
 
-实体翻译的核心 API 在 `src/shared-services/i18n/i18n.server.ts` 中，**业务侧无需自写包装器，也不需声明可翻译字段**（`content_translation` 中实际存在的记录即被合并）：
+实体翻译的核心 API 由 `shared-services/i18n` 统一提供（`translateRecord` / `translateRecords` 等定义于 `i18n.content.server.ts`，经 `i18n.server.ts` barrel 导出），**业务侧无需自写包装器，也不需声明可翻译字段**（`content_translation` 中实际存在的记录即被合并）：
 
 | API | 说明 |
 |-----|------|
@@ -306,7 +306,7 @@ import { FieldTranslationDrawer } from "#/components/admin";
 
 ## 缓存机制
 
-UI 翻译使用 `MemoryCache` 全量缓存，定义在 `src/shared-services/i18n/ui-translation.cache.ts`：
+UI 翻译使用 `MemoryCache` 全量缓存，定义在 `src/shared-services/i18n/i18n.ui.cache.ts`：
 
 ```ts
 export const uiTranslationCache = new MemoryCache<Record<string, string>>({
@@ -336,9 +336,9 @@ export const uiTranslationCache = new MemoryCache<Record<string, string>>({
 
 目前仅支持 `zh` 和 `en`。如需添加新语言（例如 `ja`），需要以下改动：
 
-1. `#/shared-services/i18n/i18n-types` — `SUPPORTED_LOCALES` 数组追加 `"ja"`
+1. `#/shared-services/i18n/i18n.types` — `SUPPORTED_LOCALES` 数组追加 `"ja"`
 2. `src/components/admin/forms/FieldTranslationDrawer.tsx` — `LOCALE_LABELS` 追加语言标签
-3. `src/shared-services/i18n/i18n-seed.ts` — 为新语言添加 `SEED_XX` 数组并追加到 `SEED_DATA`
+3. `src/shared-services/i18n/i18n.seed.ts` — 为新语言添加 `SEED_XX` 数组并追加到 `SEED_DATA`
 4. 管理端翻译页面自动支持新语言（语言选择器基于 `SUPPORTED_LOCALES` 渲染）
 
 ## 常见任务速查
@@ -347,7 +347,7 @@ export const uiTranslationCache = new MemoryCache<Record<string, string>>({
 |------|------|
 | 前台组件显示翻译文本 | `import { useTranslation }` → `const { t } = useTranslation()` → `t("中文")` |
 | 获取当前语言 | `import { useLocale }` → `const locale = useLocale()` |
-| 新增 UI 翻译条目 | 组件用 `t()` 包裹 → 在 `i18n-seed.ts` 添加翻译 → 管理端可编辑 |
+| 新增 UI 翻译条目 | 组件用 `t()` 包裹 → 在 `i18n.seed.ts` 添加翻译 → 管理端可编辑 |
 | 为实体添加字段翻译 | 调用 `getContentTranslations(entityType, ids[], locale)` 批量查询翻译 → `applyTranslations(record, translations)` 合并翻译数据 → 管理端集成 `FieldTranslationDrawer` |
 | 刷新 UI 翻译缓存 | 管理端保存翻译时自动刷新；手动调用 `refreshUITranslationCache(locale)` |
 | 切换语言 | 修改 `lang` Cookie → `window.location.reload()` |

@@ -542,7 +542,7 @@ export interface EventRecord {
 - `new Date(Date.now() ± X)`（如 captcha `expiredAt`、file 临时文件过期时间）→ `Date.now() ± X`
 - `new Date(params.xxx)`（字符串转时间戳，如 news `publishedAt`）→ `new Date(params.xxx).getTime()`
 - 纯 JS 日期计算（`logs-cleanup.server.ts` 的 `toDateString(new Date())`、`track.validate.ts` 的 `new Date(value)` 校验）**保留不动**
-- 搜索范围覆盖**所有 `.ts`**（含非 `.server.ts` 的 `track.meta.ts`、`i18n-seed.ts`），本项目约 30 处写操作点
+- 搜索范围覆盖**所有 `.ts`**（含非 `.server.ts` 的 `track.meta.ts`、`i18n.seed.ts`），本项目约 30 处写操作点
 
 > 可先用迁移脚本的 `audit` 子命令一次性列出全部 `new Date(` 位置再逐一甄别（见 [§10.2](#102-迁移辅助脚本scriptsdb-migrationts)）。
 
@@ -649,7 +649,7 @@ try {
 |------|------|---------|
 | `src/shared-services/dict/dict.server.ts` `deleteDict` | `db.transaction(async (tx) => ...)` | 同步回调（8.2 示例） |
 | `src/shared-services/dict/dict.server.ts` `importDicts` | 同上 | 同步回调；内部 `tx.select().from()` → `.all()`、`tx.insert().values()` → `.run()` |
-| `src/shared-services/i18n/i18n-content.server.ts` `importContentTranslations` | 同上 | 同步回调；`tx.select().limit(1)` → `.get()`、`tx.update().set().where()` → `.run()`、`tx.insert().values()` → `.run()` |
+| `src/shared-services/i18n/i18n.content-io.ts` `importContentTranslations` | 同上 | 同步回调；`tx.select().limit(1)` → `.get()`、`tx.update().set().where()` → `.run()`、`tx.insert().values()` → `.run()` |
 | `src/services/init/init.server.ts` `initSystem` | 内含 `bcrypt.hash` + `upsertConfig`×N + `loadConfigCache` | 手动 BEGIN/COMMIT（8.3），`upsertConfig`/`loadConfigCache` 保持 await |
 
 ## 9. 测试迁移

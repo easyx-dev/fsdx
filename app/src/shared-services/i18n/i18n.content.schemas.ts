@@ -4,7 +4,7 @@
 
 import { z } from "zod";
 import { EDITOR_TYPES } from "#/constants/editor-types";
-import { localeSchema } from "./i18n-types";
+import { localeSchema } from "./i18n.types";
 
 export const formSchema = z.object({
 	id: z.string().optional(),

@@ -3,7 +3,7 @@
  */
 
 import { createContext, useContext } from "react";
-import type { Locale, Translations } from "#/shared-services/i18n/i18n-types";
+import type { Locale, Translations } from "#/shared-services/i18n/i18n.types";
 import { I18nProvider } from "./i18n-context";
 
 interface GlobalStoreValue {

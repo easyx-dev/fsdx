@@ -2,8 +2,8 @@
  * i18next 实例创建辅助：将翻译数据注入 i18next resource 格式
  */
 import i18next, { type i18n } from "i18next";
-import type { Locale, Translations } from "./i18n-types";
-import { DEFAULT_LOCALE } from "./i18n-types";
+import type { Locale, Translations } from "./i18n.types";
+import { DEFAULT_LOCALE } from "./i18n.types";
 
 export type I18nInstance = i18n;
 

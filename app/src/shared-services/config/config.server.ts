@@ -10,7 +10,7 @@ import {
 	configCache,
 	configTranslationCache,
 } from "#/shared-services/config/config.cache";
-import { DEFAULT_LOCALE, type Locale } from "#/shared-services/i18n/i18n-types";
+import { DEFAULT_LOCALE, type Locale } from "#/shared-services/i18n/i18n.types";
 import { logger } from "#/shared-services/logger";
 import { PRESET_CONFIGS } from "./config.presets";
 import type { configImportSchema } from "./config.schemas";

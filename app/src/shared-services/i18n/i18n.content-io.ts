@@ -7,7 +7,7 @@ import { EDITOR_TYPES, type EditorType } from "#/constants/editor-types";
 import { db, withTransaction } from "#/db/index";
 import { contentTranslation } from "#/db/schema";
 import { refreshConfigTranslationCache } from "#/shared-services/config/config.server";
-import type { Locale, TranslationImportResult } from "./i18n-types";
+import type { Locale, TranslationImportResult } from "./i18n.types";
 
 /** 实体翻译导出数据格式 */
 export interface ContentTranslationExportData {

@@ -26,7 +26,7 @@ description: >
 | `configCache` | `config.cache.ts` | `src/shared-services/config/config.server.ts` | 系统配置全量列表（key=`"all"`） |
 | `configTranslationCache` | `config.cache.ts` | `src/shared-services/config/config.server.ts` | 系统配置的 content_translation 翻译 |
 | `dictCache` | `dict.cache.ts` | `src/shared-services/dict/dict.server.ts` | 字典条目（按 slug 分片） |
-| `uiTranslationCache` | `ui-translation.cache.ts` | `src/shared-services/i18n/i18n-ui.server.ts` | UI 文案翻译（按 locale 分片） |
+| `uiTranslationCache` | `i18n.ui.cache.ts` | `src/shared-services/i18n/i18n.ui.server.ts` | UI 文案翻译（按 locale 分片） |
 | `clientUserCache` | `client-user.cache.ts` | `src/services/client-auth/client-auth.server.ts` | 客户端用户（按 userId，TTL 5 分钟） |
 | `adminUserCache` | `admin-user.cache.ts` | `src/services/admin-auth/admin-auth.server.ts` | 管理员用户（按 userId，TTL 5 分钟） |
 | `trackEventMetaCache` | `track.cache.ts` | `src/services/track/track.server.ts` | 元事件名校验 |
@@ -64,7 +64,7 @@ export async function getXxx(key: string): Promise<string> {
 已符合此模式的示例：
 - `src/shared-services/config/config.server.ts` 中的 `getConfig(key)` — 先查 `configCache`，miss 则 `await loadConfigCache()`
 - `src/shared-services/dict/dict.server.ts` 中的 `getDictLabel(slug, value)` — 先 `ensureCache()` 再查 `dictCache`
-- `src/shared-services/i18n/i18n-ui.server.ts` 中的 `getUITranslations(locale)` — 先查 `uiTranslationCache`，miss 则查库回填
+- `src/shared-services/i18n/i18n.ui.server.ts` 中的 `getUITranslations(locale)` — 先查 `uiTranslationCache`，miss 则查库回填
 
 ## 新增缓存实例
 

@@ -15,7 +15,7 @@ import {
 	upsertContentTranslation,
 } from "#/shared-services/i18n/i18n.server";
 import { logCrud } from "#/shared-services/operation-log/operation-log.server";
-import { DEFAULT_LOCALE, localeSchema } from "./i18n-types";
+import { DEFAULT_LOCALE, localeSchema } from "./i18n.types";
 
 /** 带默认值的 locale schema（供路由层/服务层复用） */
 const defaultLocaleSchema = localeSchema.default(DEFAULT_LOCALE);

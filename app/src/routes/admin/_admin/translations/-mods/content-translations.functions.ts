@@ -11,7 +11,7 @@ import {
 	deleteSchema,
 	formSchema,
 	getListSchema,
-} from "#/shared-services/i18n/content-translation.schemas";
+} from "#/shared-services/i18n/i18n.content.schemas";
 import {
 	type ContentTranslationExportData,
 	deleteContentTranslation,

@@ -16,7 +16,7 @@ import {
 	DEFAULT_LOCALE,
 	LOCALE_COOKIE,
 	SUPPORTED_LOCALES,
-} from "#/shared-services/i18n/i18n-types";
+} from "#/shared-services/i18n/i18n.types";
 import { CLIENT_THEME } from "#/theme/themes";
 
 export function Header() {

@@ -14,12 +14,12 @@ import type { ChangeEvent } from "react";
 import { useEffect, useState } from "react";
 import { AdminPageContent, EditorTypes } from "#/components/admin";
 import type { contentTranslation } from "#/db/schema";
-import { formSchema } from "#/shared-services/i18n/content-translation.schemas";
+import { formSchema } from "#/shared-services/i18n/i18n.content.schemas";
 import {
 	DEFAULT_LOCALE,
 	type Locale,
 	SUPPORTED_LOCALES,
-} from "#/shared-services/i18n/i18n-types";
+} from "#/shared-services/i18n/i18n.types";
 import type { SortOrder } from "#/types/query";
 import {
 	deleteSFn,
