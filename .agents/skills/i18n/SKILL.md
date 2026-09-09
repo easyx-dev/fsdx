@@ -352,7 +352,7 @@ export const uiTranslationCache = new MemoryCache<Record<string, string>>({
 | 刷新 UI 翻译缓存 | 管理端保存翻译时自动刷新；手动调用 `refreshUITranslationCache(locale)` |
 | 切换语言 | 修改 `lang` Cookie → `window.location.reload()` |
 | 添加新支持语言 | 修改 `SUPPORTED_LOCALES` → 添加种子数据 → 更新语言标签 |
-| AI 自动翻译字段 | `FieldTranslationDrawer` 中点击 AI 翻译按钮 → 调用 `aiTranslateFieldFn` 使用 fast 模型翻译 |
+| AI 自动翻译字段 | `FieldTranslationDrawer` 内单字段「AI 翻译」→ `aiTranslateFieldSFn`（非流式）；「AI 批量翻译」→ `aiBatchTranslateSFn`（流式，fill 补齐 / correct 校正，按 batchSize 打包 JSON） |
 | 导出/导入翻译 | 访问翻译管理页面 → 使用导出/导入按钮（需 `translation:export` / `translation:import` 权限） |
 | 查看/编辑 UI 翻译 | 访问 `/admin/translations/ui`（需 `translation:view` 权限） |
 | 查看/编辑实体翻译 | 访问 `/admin/translations/content`（需 `translation:view` 权限） |

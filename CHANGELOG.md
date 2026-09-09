@@ -10,6 +10,16 @@
 
 ### Infrastructure
 
+- **i18n AI 翻译重构 + 批量流式翻译（[infra]）**：AI 翻译三层分离落地，并新增单实体/全量批量翻译 + SSE 流式。
+  - **三层分离**：AI 翻译服务逻辑下沉 `shared-services/i18n/i18n.ai.server.ts`（prompt 构建、错误分类、组批、流式执行），入参 schema 收敛 `i18n.ai.schemas.ts`（`aiTranslateFieldSchema` / `aiBatchTranslateReqSchema`），共享类型收敛客户端安全的 `i18n.ai.types.ts`（服务端与客户端 SSE 消费共用，避免服务端类型进客户端 bundle）；`i18n.functions.ts` 的 `aiTranslateFieldSFn` 精简为校验 + 调 `translateWithAi`，入参由中文语言标签改为 locale 码。可被衍生项目吸收
+  - **修复 `$` 替换注入 Bug**：`buildTranslationPrompt` / `buildBatchPrompt` 改用函数 replacer，规避源文本含 `$&` / `$'` / `` $` `` 时污染 prompt（`String.replace` 字符串替换会把 `$` 当特殊模式）。
+  - **语言名集中**：`LOCALE_LABELS` / `getLocaleLabel()` 上移 `i18n.types`（单字段/批量翻译、抽屉展示共用，扩展语言只改一处）。
+  - **提示词 fail-fast**：`ai_translation_prompt` / 新增 `ai_translation_batch_prompt` 系统配置为空时直接报错，不设内置兜底。
+  - **批量翻译能力（抽屉单实体 + SFn 流式）**：`FieldTranslationDrawer` 的「AI 批量翻译」以 **Server Function** 实现，handler 返回 `Response`（TanStack Start 置 `x-tss-raw` 透传，客户端直接拿到流式响应）——统一 `aiBatchTranslateSFn`（`shared-services/i18n`，客户端把要翻译的 `records`（id+源字段值）与字段声明传入，`writeBack=false` 仅回填编辑器）；按 `batchSize`（默认 10）把多实体打包为一个 JSON 一次 AI 调用，逐批 `streamAiChat`（`@tanstack/ai` 流式）生成，转发 `text-delta`（实时原文）+ 批进度，批末 `extractJsonFromText` 解析（**纯文本 JSON 提取，不依赖厂商 `response_format`，OpenAI 兼容通用**），`writeBack=true` 时可经 `upsertContentTranslations` 落库，整批失败收集后继续。**未做全表批量翻译**——取数由前端提供（客户端拥有数据），不耦合 `services`。
+  - **服务层新能力**：`i18n.content.server` 新增 `getExistingTranslations`（按 entity+locale 分组查已存在字段，供 fill/correct 判定）与 `upsertContentTranslations`（批量原子 `onConflictDoUpdate` 写回）。
+  - **前端**：`FieldTranslationDrawer` 新增「AI 批量翻译」（补齐/校正模式 + 流式预览 + 保存全部）；新增客户端 SSE 消费工具 `utils/sse-client.ts`（读取 SFn 流式返回的 `Response`）。
+  - 测试：新增 `i18n.ai.test.ts`（prompt 构建含 `$` 注入防御、`extractJsonFromText`、`buildBatchTasks` 双模式、`runBatchTasks` 流式与失败收集、`translateWithAi`）；`i18n.test.ts` 补 `getExistingTranslations` / `upsertContentTranslations`。可被衍生项目吸收
+
 - **富文本编辑器迁移至 @easyx/editor（[infra]）**：`@fsdx/ui-spa/editor` 的 `RichEditor` 由 WangEditor v5（`@wangeditor/editor` + `@wangeditor/editor-for-react`）替换为 Tiptap 内核、零框架依赖的 `@easyx/editor`（命令式 `createEditor(container, options)`，样式内联无需引入 CSS）——重写 base 组件为 React 命令式包装（生命周期管理、受控 `value/onChange` 同步、`data-theme` 变化主题跟随、卸载销毁），并装配媒体能力：图片/视频/音频/附件上传（`uploadImage` 保留回调兼容，其余经 `media` 注入，宿主返回 URL 内部映射为媒体项）+ 媒体库列表（`getList` 按类型前缀筛选，供编辑器「媒体库」选择 Tab）；配套调整 `app` 与 `ui-spa` 依赖（移除 wangeditor、新增 `@easyx/editor`），在 `admin.global.css` 以 `--easyx-editor-*` 变量接入项目主色（`--s-primary`）并统一直角风格（圆角归零），app 业务壳将上传/媒体库对接项目文件管理（`uploadFileSFn` / `getFileListSFn`）。`AiRichEditor`（AI 代码工作台）不属传统富文本，保持 Monaco 不变。
 
 - **聚合代码审查命令至 `/code-review`（[infra]）**：原 `/check-architecture` 与代码一致性审查合并为单一入口 `.agents/commands/code-review.md`——默认全量扫描整个项目（`app/` + `packages/`），不做 diff 限定；按 10 维度（分层/路由/SFn/组件/类型与 DB/安全/错误处理/测试/命名与一致性/注释规范）输出严重度分级报告，并沉淀「一致性/Style Guide」（命名/分层/状态/错误处理/样式/注释与文档），目标让全仓库像一个人写的；`--diff` 需显式传参。删除 `.agents/commands/check-architecture.md`，并把 `AGENTS.md` 命令表、`.agents/guide.md`、`docs/documentation-architecture.md` 中的 `/check-architecture` 引用统一改为 `/code-review`（CHANGELOG 历史记录保留原词）。

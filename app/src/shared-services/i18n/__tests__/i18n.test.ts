@@ -74,6 +74,7 @@ import {
 	getAllContentTranslationsForExport,
 	getAllUITranslationsForExport,
 	getContentTranslations,
+	getExistingTranslations,
 	getFieldTranslations,
 	getUITranslations,
 	importContentTranslations,
@@ -85,6 +86,7 @@ import {
 	translateRecord,
 	translateRecords,
 	upsertContentTranslation,
+	upsertContentTranslations,
 	upsertUITranslation,
 } from "#/shared-services/i18n/i18n.server";
 
@@ -559,5 +561,64 @@ describe("applyTranslations", () => {
 		});
 		expect(record.title).toBe("原");
 		expect(result).not.toBe(record);
+	});
+});
+
+describe("getExistingTranslations", () => {
+	beforeEach(() => vi.clearAllMocks());
+
+	it("按实体与语言分组返回已存在字段", async () => {
+		mockRows.mockResolvedValue([
+			{ entityId: "n1", fieldName: "title", locale: "en" },
+			{ entityId: "n1", fieldName: "description", locale: "en" },
+			{ entityId: "n2", fieldName: "title", locale: "en" },
+		]);
+		const result = await getExistingTranslations("news", ["n1", "n2"], ["en"]);
+		expect(result).toEqual({
+			n1: { en: ["title", "description"] },
+			n2: { en: ["title"] },
+		});
+		expect(mockDb.select).toHaveBeenCalledTimes(1);
+	});
+
+	it("空实体/空语言直接返回空映射，不查库", async () => {
+		expect(await getExistingTranslations("news", [], ["en"])).toEqual({});
+		expect(await getExistingTranslations("news", ["n1"], [])).toEqual({});
+		expect(mockDb.select).not.toHaveBeenCalled();
+	});
+});
+
+describe("upsertContentTranslations", () => {
+	beforeEach(() => vi.clearAllMocks());
+
+	it("批量原子写入，基于唯一约束冲突更新", async () => {
+		const result = await upsertContentTranslations([
+			{
+				entityType: "news",
+				entityId: "n1",
+				fieldName: "title",
+				locale: "en",
+				value: "T",
+			},
+			{
+				entityType: "news",
+				entityId: "n1",
+				fieldName: "description",
+				locale: "en",
+				value: "D",
+				valueType: "text",
+			},
+		]);
+		expect(result.success).toBe(true);
+		expect(mockDb.insert).toHaveBeenCalled();
+		expect(mockDb.update).not.toHaveBeenCalled();
+		expect(onConflictDoUpdate).toHaveBeenCalledTimes(1);
+		expect(insertValues.mock.calls[0][0]).toHaveLength(2);
+	});
+
+	it("为空数组直接返回，不查库", async () => {
+		const result = await upsertContentTranslations([]);
+		expect(result.success).toBe(true);
+		expect(mockDb.insert).not.toHaveBeenCalled();
 	});
 });

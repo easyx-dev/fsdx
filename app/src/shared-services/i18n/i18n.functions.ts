@@ -7,9 +7,17 @@ import { z } from "zod";
 import { EDITOR_TYPES } from "#/constants/editor-types";
 import { adminPermGuard } from "#/middleware/admin-auth";
 import { ADMIN_PERMISSIONS } from "#/permissions/admin-permissions";
-import { completeText } from "#/shared-services/ai/ai.server";
-import { getConfig } from "#/shared-services/config/config.server";
 import {
+	aiBatchTranslateSchema,
+	aiTranslateFieldSchema,
+} from "#/shared-services/i18n/i18n.ai.schemas";
+import {
+	createBatchTranslateResponse,
+	resolveTargetLocales,
+	translateWithAi,
+} from "#/shared-services/i18n/i18n.ai.server";
+import {
+	getExistingTranslations,
 	getFieldTranslations,
 	getUITranslations,
 	upsertContentTranslation,
@@ -67,35 +75,44 @@ export const saveContentTranslationSFn = createServerFn({ method: "POST" })
 
 // ══════════════════ AI 翻译 ══════════════════
 
-/** AI 翻译字段内容（使用 fast 模型） */
+/** AI 翻译单个字段（使用 ai_translation_prompt 模板，非流式生成） */
 export const aiTranslateFieldSFn = createServerFn({ method: "POST" })
 	.middleware([adminPermGuard(ADMIN_PERMISSIONS.TRANSLATION_MANAGE)])
-	.validator(
-		z.object({
-			sourceText: z.string().min(1, "源文本不能为空"),
-			targetLang: z.string().min(1),
-			sourceLang: z.string().min(1),
-		}),
-	)
-	.handler(async ({ data: { sourceText, targetLang, sourceLang } }) => {
-		const promptTemplate = await getConfig("ai_translation_prompt");
-		if (!promptTemplate) {
-			throw new Error(
-				"AI 翻译提示词未配置，请在系统配置中设置 ai_translation_prompt",
-			);
-		}
-		const prompt = promptTemplate
-			.replace(/\{sourceLang\}/g, sourceLang)
-			.replace(/\{targetLang\}/g, targetLang)
-			.replace(/\{sourceText\}/g, sourceText);
+	.validator(aiTranslateFieldSchema)
+	.handler(async ({ data }) => translateWithAi(data));
 
-		try {
-			// 非流式一次性生成：由 app 编排层消费，统一转为友好提示
-			return await completeText({
-				messages: [{ role: "user", content: prompt }],
-				modelOptions: { temperature: 0.3 },
-			});
-		} catch {
-			throw new Error("AI 翻译服务不可用，请检查 AI 配置");
-		}
+/**
+ * 批量 AI 翻译（组件/抽屉共用）：客户端把要翻译的记录（id + 源字段值）与字段声明传入，
+ * 服务端查询已有翻译后按 mode(fill/correct) 组批，流式返回 SSE（writeBack=true 落库 / false 仅回填编辑器）。
+ * handler 返回 Response，TanStack Start 置 x-tss-raw 透传流式响应。
+ */
+export const aiBatchTranslateSFn = createServerFn({ method: "POST" })
+	.middleware([adminPermGuard(ADMIN_PERMISSIONS.TRANSLATION_MANAGE)])
+	.validator(aiBatchTranslateSchema)
+	.handler(async ({ data }) => {
+		const {
+			entityType,
+			mode,
+			fields,
+			records,
+			targetLocales,
+			batchSize,
+			writeBack,
+		} = data;
+		const locales = resolveTargetLocales(targetLocales);
+		const existing = await getExistingTranslations(
+			entityType,
+			records.map((r) => r.id),
+			locales,
+		);
+		return createBatchTranslateResponse({
+			entityType,
+			mode,
+			fields,
+			records,
+			targetLocales: locales,
+			batchSize: batchSize ?? 10,
+			writeBack,
+			existing,
+		});
 	});

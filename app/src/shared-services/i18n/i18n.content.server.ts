@@ -3,7 +3,7 @@
  * 翻译按需查询（单条/批量/按字段），合并到主表记录后覆盖对应字段值
  */
 
-import { and, eq, inArray, like, or, type SQLWrapper } from "drizzle-orm";
+import { and, eq, inArray, like, or, type SQLWrapper, sql } from "drizzle-orm";
 import type { EditorType } from "#/constants/editor-types";
 import { db } from "#/db/index";
 import { contentTranslation } from "#/db/schema";
@@ -332,6 +332,97 @@ export async function upsertContentTranslation(params: {
 	if (params.entityType === "system_config") {
 		await refreshConfigTranslationCache(params.locale);
 	}
+
+	return { success: true };
+}
+
+/**
+ * 批量查询某实体类型、某批实体、若干语言下「已存在翻译」的字段清单
+ * 返回 { entityId -> locale -> fieldName[] }，供批量 AI 翻译按 fill/correct 模式筛选任务集，
+ * 避免逐条 select（一次查询按 entityId + locale 分组）
+ */
+export async function getExistingTranslations(
+	entityType: string,
+	entityIds: string[],
+	locales: Locale[],
+): Promise<Record<string, Record<string, string[]>>> {
+	if (entityIds.length === 0 || locales.length === 0) return {};
+
+	const rows = await db
+		.select({
+			entityId: contentTranslation.entityId,
+			fieldName: contentTranslation.fieldName,
+			locale: contentTranslation.locale,
+		})
+		.from(contentTranslation)
+		.where(
+			and(
+				eq(contentTranslation.entityType, entityType),
+				inArray(contentTranslation.entityId, entityIds),
+				inArray(contentTranslation.locale, locales),
+			),
+		);
+
+	const result: Record<string, Record<string, string[]>> = {};
+	for (const row of rows) {
+		if (!result[row.entityId]) result[row.entityId] = {};
+		if (!result[row.entityId][row.locale])
+			result[row.entityId][row.locale] = [];
+		result[row.entityId][row.locale].push(row.fieldName);
+	}
+	return result;
+}
+
+/**
+ * 批量创建或更新实体翻译（基于 entityType + entityId + fieldName + locale 唯一约束做原子 upsert）
+ * 一次写入多条，冲突时更新 value/valueType；涉及 system_config 时刷新对应语言配置翻译缓存
+ */
+export async function upsertContentTranslations(
+	entries: {
+		entityType: string;
+		entityId: string;
+		fieldName: string;
+		locale: Locale;
+		value: string;
+		valueType?: EditorType;
+	}[],
+): Promise<{ success: boolean }> {
+	if (entries.length === 0) return { success: true };
+
+	await db
+		.insert(contentTranslation)
+		.values(
+			entries.map((e) => ({
+				entityType: e.entityType,
+				entityId: e.entityId,
+				fieldName: e.fieldName,
+				locale: e.locale,
+				value: e.value,
+				valueType: e.valueType ?? "text",
+			})),
+		)
+		.onConflictDoUpdate({
+			target: [
+				contentTranslation.entityType,
+				contentTranslation.entityId,
+				contentTranslation.fieldName,
+				contentTranslation.locale,
+			],
+			set: {
+				value: sql`excluded.value`,
+				valueType: sql`excluded.value_type`,
+				updatedAt: new Date(),
+			},
+		});
+
+	// 批量写回可能改写 system_config 翻译，刷新对应语言配置翻译缓存
+	const configLocales = new Set<Locale>();
+	for (const e of entries) {
+		if (e.entityType === "system_config") configLocales.add(e.locale);
+	}
+	await Promise.all(
+		[...configLocales].map((locale) => refreshConfigTranslationCache(locale)),
+	);
 
 	return { success: true };
 }

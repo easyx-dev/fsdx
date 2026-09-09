@@ -3,20 +3,23 @@
  */
 import { RobotOutlined, TranslationOutlined } from "@ant-design/icons";
 import { message } from "@fsdx/ui-spa/antd-static";
-import { Button, Card, Drawer, Tabs, Tooltip } from "antd";
+import { Button, Card, Drawer, Progress, Segmented, Tabs, Tooltip } from "antd";
 import type { MouseEvent } from "react";
 import { useCallback, useEffect, useId, useState } from "react";
 import type { EditorType } from "#/constants/editor-types";
 import {
+	aiBatchTranslateSFn,
 	aiTranslateFieldSFn,
 	getFieldTranslationsSFn,
 	saveContentTranslationSFn,
 } from "#/shared-services/i18n/i18n.functions";
 import {
 	DEFAULT_LOCALE,
+	LOCALE_LABELS,
 	type Locale,
 	SUPPORTED_LOCALES,
 } from "#/shared-services/i18n/i18n.types";
+import { readSSEStream } from "#/utils/sse-client";
 import { EditorTypes } from "./editor-type";
 
 /** 可翻译字段定义 */
@@ -35,11 +38,13 @@ interface FieldTranslationDrawerProps {
 	originalValues?: Record<string, string>;
 }
 
-/** 语言对应中文标签 */
-const LOCALE_LABELS: Record<string, string> = {
-	zh: "中文（默认）",
-	en: "English",
-};
+/** 可管理（非默认）语言：批量翻译与「保存全部」的目标 */
+const MANAGED_LOCALES = SUPPORTED_LOCALES.filter(
+	(l): l is Locale => l !== DEFAULT_LOCALE,
+);
+
+/** 批量翻译模式 */
+type BatchMode = "fill" | "correct";
 
 /** 字段翻译抽屉组件 */
 export function FieldTranslationDrawer({
@@ -58,6 +63,14 @@ export function FieldTranslationDrawer({
 	>({});
 	const [saving, setSaving] = useState<string | null>(null);
 	const [aiTranslating, setAiTranslating] = useState<string | null>(null);
+	const [batchMode, setBatchMode] = useState<BatchMode>("fill");
+	const [batchTranslating, setBatchTranslating] = useState(false);
+	const [batchProgress, setBatchProgress] = useState<{
+		total: number;
+		done: number;
+		failedCount: number;
+	} | null>(null);
+	const [streamText, setStreamText] = useState("");
 
 	const loadTranslations = useCallback(
 		async (fieldName: string) => {
@@ -115,7 +128,7 @@ export function FieldTranslationDrawer({
 		}
 	}
 
-	async function handleAiTranslate(fieldName: string, targetLocale: string) {
+	async function handleAiTranslate(fieldName: string, targetLocale: Locale) {
 		const sourceText = originalValues?.[fieldName];
 		if (!sourceText?.trim()) {
 			message.warning("源文本为空，无法翻译");
@@ -126,11 +139,7 @@ export function FieldTranslationDrawer({
 		setAiTranslating(key);
 		try {
 			const translated = await aiTranslateFieldSFn({
-				data: {
-					sourceText,
-					targetLang: LOCALE_LABELS[targetLocale] ?? targetLocale,
-					sourceLang: LOCALE_LABELS[DEFAULT_LOCALE] ?? DEFAULT_LOCALE,
-				},
+				data: { sourceText, sourceLocale: DEFAULT_LOCALE, targetLocale },
 			});
 			if (translated) {
 				updateValue(fieldName, targetLocale, translated);
@@ -141,6 +150,108 @@ export function FieldTranslationDrawer({
 			);
 		} finally {
 			setAiTranslating(null);
+		}
+	}
+
+	/** 单实体批量翻译：流式消费 SSE，实时展示 AI 原文与进度，完成后回填编辑器（不自动保存） */
+	async function handleBatchTranslate() {
+		const hasSource = Object.values(originalValues ?? {}).some((v) =>
+			v?.trim(),
+		);
+		if (!hasSource) {
+			message.warning("无可用源文本，无法批量翻译");
+			return;
+		}
+
+		setBatchTranslating(true);
+		setStreamText("");
+		setBatchProgress(null);
+		try {
+			const response = await aiBatchTranslateSFn({
+				data: {
+					entityType,
+					mode: batchMode,
+					fields: fields.map((f) => ({
+						name: f.name,
+						valueType: f.valueType,
+					})),
+					records: [{ id: entityId, values: originalValues ?? {} }],
+					targetLocales: MANAGED_LOCALES,
+					writeBack: false,
+				},
+			});
+			await readSSEStream(response, (event) => {
+				if (event.type === "text-delta") {
+					setStreamText((prev) => prev + event.delta);
+				} else if (event.type === "batch-done") {
+					setBatchProgress({
+						total: event.total,
+						done: event.batchIndex + 1,
+						failedCount: event.failedCount,
+					});
+				} else if (event.type === "failed") {
+					message.error(
+						`批次 ${event.batchIndex + 1} 翻译失败：${event.reason}`,
+					);
+				} else if (event.type === "done") {
+					const {
+						translations: results,
+						created,
+						updated,
+						failedCount,
+					} = event.summary;
+					const merged: Record<string, Record<string, string>> = {};
+					for (const t of results ?? []) {
+						if (!merged[t.fieldName]) merged[t.fieldName] = {};
+						merged[t.fieldName][t.locale] = t.value;
+					}
+					setTranslations((prev) => {
+						const next = { ...prev };
+						for (const [f, vals] of Object.entries(merged)) {
+							next[f] = { ...(next[f] ?? {}), ...vals };
+						}
+						return next;
+					});
+					message.success(
+						`AI 批量翻译完成（新增 ${created} / 更新 ${updated}${failedCount ? `，失败 ${failedCount}` : ""}）`,
+					);
+				} else if (event.type === "error") {
+					message.error(`批量翻译出错：${event.reason}`);
+				}
+			});
+		} catch (err: unknown) {
+			message.error(err instanceof Error ? err.message : "批量翻译失败");
+		} finally {
+			setBatchTranslating(false);
+			setBatchProgress(null);
+		}
+	}
+
+	/** 保存全部非默认语言翻译（一条条走现有保存 SFn） */
+	async function handleSaveAll() {
+		setSaving("__ALL__");
+		try {
+			for (const field of fields) {
+				for (const locale of MANAGED_LOCALES) {
+					const value = translations[field.name]?.[locale];
+					if (!value) continue;
+					await saveContentTranslationSFn({
+						data: {
+							entityType,
+							entityId,
+							fieldName: field.name,
+							locale,
+							value,
+							valueType: field.valueType,
+						},
+					});
+				}
+			}
+			message.success("全部翻译已保存");
+		} catch (err: unknown) {
+			message.error(err instanceof Error ? err.message : "保存失败");
+		} finally {
+			setSaving(null);
 		}
 	}
 
@@ -196,12 +307,66 @@ export function FieldTranslationDrawer({
 				open={open}
 				onClose={() => setOpen(false)}
 				size={680}
+				extra={
+					<Button
+						type="primary"
+						loading={saving === "__ALL__"}
+						onClick={handleSaveAll}
+					>
+						保存全部
+					</Button>
+				}
 				styles={{
 					body: {
 						paddingTop: 0,
 					},
 				}}
 			>
+				{MANAGED_LOCALES.length > 0 && (
+					<div className="mb-4 rounded border p-3">
+						<div className="flex flex-wrap items-center gap-2">
+							<Segmented
+								value={batchMode}
+								onChange={(v) => setBatchMode(v as BatchMode)}
+								options={[
+									{ label: "补齐缺失", value: "fill" },
+									{ label: "AI 校正", value: "correct" },
+								]}
+							/>
+							<Button
+								type="primary"
+								icon={<RobotOutlined />}
+								loading={batchTranslating}
+								onClick={handleBatchTranslate}
+							>
+								AI 批量翻译
+							</Button>
+						</div>
+						{batchTranslating && (
+							<div className="mt-3 space-y-2">
+								<Progress
+									percent={
+										batchProgress?.total
+											? Math.round(
+													(batchProgress.done / batchProgress.total) * 100,
+												)
+											: undefined
+									}
+									status="active"
+									size="small"
+								/>
+								<div className="text-xs text-muted-foreground">
+									{streamText ? "AI 正在实时生成翻译…" : "正在准备翻译任务…"}
+								</div>
+								{streamText && (
+									<pre className="max-h-48 overflow-auto whitespace-pre-wrap break-words rounded border bg-muted p-2 text-xs">
+										{streamText}
+									</pre>
+								)}
+							</div>
+						)}
+					</div>
+				)}
 				<Tabs
 					activeKey={activeTab}
 					onChange={(key: string) => {

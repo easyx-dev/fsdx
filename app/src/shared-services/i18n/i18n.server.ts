@@ -12,11 +12,13 @@ export {
 	applyTranslations,
 	deleteContentTranslation,
 	getContentTranslations,
+	getExistingTranslations,
 	getFieldTranslations,
 	listContentTranslations,
 	translateRecord,
 	translateRecords,
 	upsertContentTranslation,
+	upsertContentTranslations,
 } from "./i18n.content.server";
 export type { ContentTranslationExportData } from "./i18n.content-io";
 export {
