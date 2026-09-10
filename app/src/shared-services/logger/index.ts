@@ -1,7 +1,7 @@
 /**
  * 日志模块（shared-services）：pino 工厂 + 应用级单例
  * createLogger 工厂参数由宿主应用显式传入（不读环境变量，不设默认值）；
- * logger 单例从环境变量读取配置，mixin 自动注入 requestId 实现链路追踪
+ * logger 单例从环境变量读取配置，mixin 自动注入 requestId 与操作者身份实现链路追踪
  * 不使用 pino transport（pino-roll），避免 ESM 打包后 __dirname 未定义问题
  * 开发环境使用 pino-pretty 作为 Transform Stream 美化控制台输出
  */
@@ -10,7 +10,7 @@ import { join } from "node:path";
 import { toDateString } from "@fsdx/lib/date-format";
 import pino from "pino";
 import pinoPretty from "pino-pretty";
-import { getRequestId } from "#/shared-services/request-context";
+import { getRequestContext } from "#/shared-services/request-context";
 
 /** 日志实例创建选项 */
 export interface LoggerOptions {
@@ -71,13 +71,22 @@ export function createLogger(opts: LoggerOptions): Logger {
 	);
 }
 
-/** 应用级默认日志实例：配置从环境变量读取，mixin 自动注入 requestId 实现链路追踪 */
+/** 应用级默认日志实例：配置从环境变量读取，mixin 注入 requestId 与操作者身份实现链路追踪 */
 export const logger = createLogger({
 	level: process.env.LOG_LEVEL || "info",
 	storageDir: process.env.STORAGE_DIR || ".tmp",
 	isProd: process.env.NODE_ENV === "production",
 	mixin: () => {
-		const requestId = getRequestId();
-		return requestId ? { requestId } : {};
+		const ctx = getRequestContext();
+		if (!ctx) return {};
+		const fields: Record<string, unknown> = {};
+		if (ctx.requestId) fields.requestId = ctx.requestId;
+		// 操作者身份随请求上下文注入，使每条日志可归属到具体用户
+		if (ctx.operator) {
+			if (ctx.operator.id) fields.operatorId = ctx.operator.id;
+			if (ctx.operator.username) fields.operatorName = ctx.operator.username;
+			fields.operatorType = ctx.operator.type;
+		}
+		return fields;
 	},
 });

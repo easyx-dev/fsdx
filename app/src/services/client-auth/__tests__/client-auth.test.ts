@@ -22,6 +22,17 @@ vi.mock("#/services/captcha/captcha.server", () => ({
 	verifyCaptcha: mockVerifyCaptcha,
 }));
 
+const { mockTrackServerEvent, mockLogOperation } = vi.hoisted(() => ({
+	mockTrackServerEvent: vi.fn(),
+	mockLogOperation: vi.fn(),
+}));
+vi.mock("#/services/track/track.server", () => ({
+	trackServerEvent: mockTrackServerEvent,
+}));
+vi.mock("#/shared-services/operation-log/operation-log.server", () => ({
+	logOperation: mockLogOperation,
+}));
+
 const { mockDb, mockRows } = vi.hoisted(() => {
 	const rows = vi.fn().mockResolvedValue([]);
 	const chain: any = {
@@ -41,7 +52,13 @@ const { mockDb, mockRows } = vi.hoisted(() => {
 		mockDb: {
 			select: vi.fn(() => chain),
 			$count: vi.fn(),
-			insert: vi.fn(() => ({ values: vi.fn(() => ({ returning: vi.fn() })) })),
+			insert: vi.fn(() => ({
+				values: vi.fn(() => ({
+					returning: vi
+						.fn()
+						.mockResolvedValue([{ id: "client-new", username: "newuser" }]),
+				})),
+			})),
 			update: vi.fn(() => ({ set: vi.fn(() => ({ where: vi.fn() })) })),
 			delete: vi.fn(() => ({ where: vi.fn() })),
 		},
@@ -120,6 +137,13 @@ describe("clientRegister", () => {
 		expect(result.success).toBe(true);
 		expect(result.message).toBe("注册成功");
 		expect(mockDb.insert).toHaveBeenCalled();
+		// 注册成功补服务端埋点与审计
+		expect(mockTrackServerEvent).toHaveBeenCalledWith(
+			expect.objectContaining({ name: "Register", userId: "client-new" }),
+		);
+		expect(mockLogOperation).toHaveBeenCalledWith(
+			expect.objectContaining({ action: "register", module: "client-auth" }),
+		);
 	});
 
 	it("验证码错误返回失败", async () => {
@@ -147,7 +171,9 @@ describe("clientRegister", () => {
 		mockRows.mockReset().mockResolvedValue([]);
 		vi.mocked(bcrypt.hash).mockResolvedValue("hashed-pw" as never);
 
-		const valuesMock = vi.fn();
+		const valuesMock = vi.fn(() => ({
+			returning: vi.fn().mockResolvedValue([{ id: "u-new", username: "u" }]),
+		}));
 		mockDb.insert.mockReturnValue({ values: valuesMock });
 
 		const result = await clientRegister("u", "e@t.com", "pw", "123456");

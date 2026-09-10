@@ -33,25 +33,24 @@ description: >
 - `#/shared-services/request-context`：`runWithRequestContext` / `getRequestContext` / `getRequestOperator`
 - 鉴权中间件（admin/client）验证身份后用 `runWithRequestContext({ operator })` 包裹 `next()`；`requestIdMiddleware`（requestMiddleware 首位）用 `runWithRequestContext({ requestId })` 注入请求 ID
 - 下游所有异步调用通过 `getRequestOperator()` 读取当前操作者；无上下文（cron/后台任务）兜底返回 system
-- 消费方：`logExternalRequest()` 记录外部系统调用时从 ALS 读操作者；`operation_log.request_id` 从 ALS 捕获实现全链路追踪
+- 消费方：`logOperation()` 落库 requestId、`logExternalRequest()`（`#/shared-services/external-observability`）记录外部系统调用时从 ALS 读操作者；实现全链路追踪
 
 ### 可观测性（请求 ID + Prometheus）
 
-- **请求 ID**：`src/middleware/request-id.ts` 透传/生成 `x-request-id`（超长截断至 100），写 ALS + 回写响应头；logger mixin 自动注入 requestId
-- **Prometheus 指标**：`src/shared-services/metrics` 进程内注册表（`Counter` + `Histogram`），预置 `http_requests_total` / `server_function_requests_total` / `server_function_duration_seconds`；`/api/metrics` 端点（Server Route，无鉴权）；新增指标须在该模块注册并同步 docs/architecture-overview.md 与 docs/deployment-ops.md
+- **请求 ID**：`src/middleware/request-id.ts` 透传/生成 `x-request-id`（超长截断至 100），写 ALS + 回写响应头；logger mixin 自动注入 requestId 与操作者身份（operatorId/Name/Type）
+- **Prometheus 指标**：`src/shared-services/metrics` 进程内注册表（`Counter` + `Histogram`），预置 `http_requests_total` / `server_function_requests_total` / `server_function_duration_seconds` / `external_calls_total` / `external_call_duration_seconds`；`/api/metrics` 端点（Server Route，无鉴权）；新增指标须在该模块注册并同步 docs/architecture-overview.md 与 docs/deployment-ops.md
 
 ### 批量缓冲写入（BatchWriter）
 
 - `@fsdx/lib/batch-writer`：通用缓冲写入器（定时/定量批量 INSERT + 容量上限 + shutdown 强制刷新）
-- track 埋点与 operation-log 复用；CRUD 审计与外部调用日志使用独立 writer（互不挤压）
+- track 埋点与 operation-log 复用；operation-log 仅承载用户操作审计（CRUD/登录/注册），外部系统调用改走 pino + Prometheus 指标（不落审计表）
 - **禁止**在模块内重复实现缓冲逻辑；新增高频写入场景优先复用 BatchWriter
 
 ### 操作日志审计
 
 - `src/shared-services/operation-log/operation-log.server.ts`：`logOperation()` fire-and-forget；SFn 写 CRUD 审计**必须**用 `logCrud()` 一行式封装（自动装配操作人 + targetType 默认值）
-- CRUD 审计与外部调用日志独立 writer：CRUD 缓冲上限 1000，外部调用上限 5000
+- 审计表只留用户操作：`logOperation` 经 BatchWriter（上限 1000）落 `operation_log`；外部系统调用**不落审计表**，改由 `#/shared-services/external-observability` 的 `logExternalRequest()` 记 pino 结构化日志（成功 debug / 失败 warn）+ Prometheus 指标（`external_calls_total` / `external_call_duration_seconds`）
 - 操作者身份经 request-context（AsyncLocalStorage）由鉴权中间件注入，无上下文兜底 system；requestId 自动从 ALS 捕获落库（`operation_log.request_id`），实现日志与审计全链路追踪
-- `logExternalRequest()` 落库字段语义：`module` = 外部系统标识（调用方传入自身系统代号），`action` = `login` / `request`（按请求类型），`targetType` = 接口来源类型（默认 `openapi`），`targetName` = 接口路径，`detail` 含系统/路径/方法/耗时/成功与否等元数据（不含请求响应体）
 - 进程退出时自动刷新缓冲（SIGTERM / SIGINT）
 
 ### 内存缓存

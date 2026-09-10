@@ -2,8 +2,8 @@
  * 埋点事件 Schema 验证测试
  */
 import { describe, expect, it } from "vitest";
-import { analyticsQuerySchema } from "#/routes/admin/_admin/track/-mods/analytics.functions";
 import { trackEventQuerySchema } from "#/routes/admin/_admin/track/-mods/query.functions";
+import { analyticsQuerySchema } from "#/routes/admin/_admin/track/analytics/-mods/analytics.functions";
 import { trackEventSchema } from "#/services/track/track.functions";
 
 describe("trackEventSchema", () => {
@@ -150,13 +150,51 @@ describe("analyticsQuerySchema", () => {
 		expect(result.success).toBe(false);
 	});
 
-	it("granularity 传入非法值（week）应校验失败", () => {
+	it("granularity 传入 week 应通过校验", () => {
 		const result = analyticsQuerySchema.safeParse({
 			startDate: "2024-01-01",
 			endDate: "2024-12-31",
 			granularity: "week",
 		});
+		expect(result.success).toBe(true);
+	});
+
+	it("granularity 传入非法值应校验失败", () => {
+		const result = analyticsQuerySchema.safeParse({
+			startDate: "2024-01-01",
+			endDate: "2024-12-31",
+			granularity: "month",
+		});
 		expect(result.success).toBe(false);
+	});
+
+	it("分析扩展参数（事件/指标/维度/周期对比）应通过校验", () => {
+		const result = analyticsQuerySchema.safeParse({
+			startDate: "2024-01-01",
+			endDate: "2024-12-31",
+			eventNames: ["PageView", "Login"],
+			metric: "users",
+			breakdown: "$device_type",
+			compare: "previous",
+		});
+		expect(result.success).toBe(true);
+	});
+
+	it("metric / compare 传入非法值应校验失败", () => {
+		expect(
+			analyticsQuerySchema.safeParse({
+				startDate: "2024-01-01",
+				endDate: "2024-12-31",
+				metric: "sessions",
+			}).success,
+		).toBe(false);
+		expect(
+			analyticsQuerySchema.safeParse({
+				startDate: "2024-01-01",
+				endDate: "2024-12-31",
+				compare: "yoy",
+			}).success,
+		).toBe(false);
 	});
 
 	it("日期格式非 YYYY-MM-DD 应校验失败", () => {

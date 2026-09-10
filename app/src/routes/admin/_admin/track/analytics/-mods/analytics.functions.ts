@@ -12,8 +12,15 @@ import { getTrackAnalytics } from "#/services/track/track.server";
 export const analyticsQuerySchema = z.object({
 	startDate: z.string().regex(DATE_ONLY_REGEX).refine(isValidDateStr),
 	endDate: z.string().regex(DATE_ONLY_REGEX).refine(isValidDateStr),
-	granularity: z.enum(["hour", "day"]).optional(),
+	granularity: z.enum(["hour", "day", "week"]).optional(),
+	eventNames: z.array(z.string()).optional(),
+	metric: z.enum(["count", "users"]).optional(),
+	breakdown: z.string().optional(),
+	compare: z.enum(["none", "previous", "year"]).optional(),
 });
+
+/** 事件分析查询参数（由 schema 派生，客户端与 SFn 共用） */
+export type AnalyticsQueryParams = z.infer<typeof analyticsQuerySchema>;
 
 /** 获取事件分析数据 */
 export const getTrackAnalyticsSFn = createServerFn({ method: "GET" })

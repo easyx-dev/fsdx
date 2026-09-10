@@ -42,7 +42,7 @@
 | `track_event` | UUID | — | 埋点原始事件，`name` 为事件名，`properties` 为 JSONB |
 | `track_event_meta` | name (varchar) | — | 元事件定义，`is_preset` 标记是否系统预置 |
 | `track_property_meta` | key (varchar) | — | 元属性定义，`data_type` 声明值类型 |
-| `operation_log` | UUID | — | 操作审计日志（含外部调用），`operatorType`（camelCase 列）区分 admin/client/system，`request_id` 贯通请求链路，`detail` 为 JSONB |
+| `operation_log` | UUID | — | 操作审计日志（仅用户操作），`operatorType`（camelCase 列）区分 admin/client/system，`request_id` 贯通请求链路，`detail` 为 JSONB |
 
 ---
 

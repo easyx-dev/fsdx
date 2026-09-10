@@ -148,9 +148,12 @@ __root.tsx                    # HTML shell，按 pathname 前缀分发 AdminRoot
 | `http_requests_total` | Counter | `method` |
 | `server_function_requests_total` | Counter | `result`（success/error） |
 | `server_function_duration_seconds` | Histogram | — |
+| `external_calls_total` | Counter | `system` / `outcome`（success/error） |
+| `external_call_duration_seconds` | Histogram | `system` |
 
 - `/api/metrics` 端点（Server Route handler）输出 Prometheus text 格式，无鉴权，对外暴露需在反代层加访问控制
-- 埋点位置：`app/server.ts`（HTTP 入口）、`src/middleware/sf-error-logger.ts`（SF 耗时/结果）
+- 埋点位置：`app/server.ts`（HTTP 入口）、`src/middleware/sf-error-logger.ts`（SF 耗时/结果）、`src/shared-services/external-observability`（外部系统调用耗时/结果）
+- 外部系统调用（`logExternalRequest`）不落审计表：成功调用仅入指标（日志为 `debug`，默认 `LOG_LEVEL=info` 下被过滤），失败日志为 `warn`；排障成功调用需临时 `LOG_LEVEL=debug`
 - 进程内计数，多实例部署需实例层聚合 → [部署运维](deployment-ops.md)
 
 ## 数据流全景

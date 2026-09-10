@@ -289,7 +289,7 @@ MySQL 的 `LIKE` 默认大小写不敏感（依赖排序规则，utf8mb4 默认 
 + rows         // mysql2: 元组解构取行数组
 ```
 
-`track.server.ts` 的 `getTrackAnalytics` 时间序列段改为元组解构后直接消费 `rows`（去掉 `.rows` 访问与 cast）。
+`track.analytics.ts` 的 `getTrackAnalytics` 全部聚合段（KPI / 事件趋势 / 事件排行 / 维度分布 / Top 页面，均为 `db.execute`）改为元组解构后直接消费 `rows`（去掉 `.rows` 访问与 cast）。
 
 ### 6.3 时间序列聚合查询
 
@@ -306,6 +306,8 @@ MySQL 的 `LIKE` 默认大小写不敏感（依赖排序规则，utf8mb4 默认 
 ```
 
 `timestamp` 列在 MySQL 按会话时区存储/读取；建议会话时区统一为 UTC（`SET time_zone = '+00:00'`），分析查询用 `CONVERT_TZ` 显式转上海时区。
+
+粒度切换见 `timeBucketExpr`：小时 / 日 / 周（周需对齐 `DATE_TRUNC('week')` 的周一，MySQL 可用 `DATE_FORMAT(DATE_SUB(ts, INTERVAL WEEKDAY(ts) DAY), '%Y-%m-%d')`）；趋势查询按 `date` 与 `series`（事件名或拆解维度值）两列分组。
 
 ### 6.4 JSON 字段访问
 

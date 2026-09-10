@@ -65,12 +65,28 @@ const eventWriter = new BatchWriter<TrackEventBufferItem>({
 });
 
 /**
- * 追加埋点事件到缓冲队列
+ * 埋点事件入口（浏览器匿名路径）：经 per-session 频控
  * 依次校验：频控 → 事件名 → 属性键 → 属性值类型 → 安全限制，不合法则记录日志后丢弃
  */
 export function trackEvent(input: TrackEventInput): void {
-	// 频控：单会话超限直接丢弃
-	if (isTrackSessionRateLimited(input.sessionId)) {
+	trackEventInternal(input, false);
+}
+
+/**
+ * 服务端可信事件入口：面向低频可信的服务端调用，跳过匿名 per-session 频控
+ * （服务端事件不依赖浏览器会话），其余校验与 trackEvent 一致
+ */
+export function trackServerEvent(input: TrackEventInput): void {
+	trackEventInternal(input, true);
+}
+
+/** 埋点事件入队内部实现：skipRateLimit 为 true 时跳过 per-session 频控 */
+function trackEventInternal(
+	input: TrackEventInput,
+	skipRateLimit: boolean,
+): void {
+	// 频控：单会话超限直接丢弃（服务端可信事件跳过）
+	if (!skipRateLimit && isTrackSessionRateLimited(input.sessionId)) {
 		logger.warn(
 			{ sessionId: input.sessionId, ip: input.ip },
 			"埋点事件被丢弃：会话上报频率超限",
@@ -172,11 +188,8 @@ export async function flushTrackEvents(): Promise<void> {
 // 统一导出（barrel）
 // ═══════════════════════════════════════════════════
 
-export {
-	getTrackAnalytics,
-	getTrackEventNames,
-	searchTrackEvents,
-} from "./track.analytics";
+export { getTrackAnalytics } from "./track.analytics";
+export { getTrackEventNames, searchTrackEvents } from "./track.events";
 export {
 	createTrackEventMeta,
 	createTrackPropertyMeta,
@@ -194,13 +207,15 @@ export {
 	updateTrackPropertyMeta,
 } from "./track.meta";
 export type {
+	AnalyticsDelta,
+	DimensionDistributionItem,
+	EventRankingItem,
 	JsonProperties,
 	JsonValue,
-	TimeSeriesItem,
+	TimeSeriesPoint,
 	TopPageItem,
 	TrackAnalyticsQuery,
 	TrackAnalyticsResult,
-	TrackEventDistributionItem,
 	TrackEventInput,
 	TrackEventMetaInput,
 	TrackEventMetaRecord,
@@ -210,6 +225,7 @@ export type {
 	TrackPropertyMetaInput,
 	TrackPropertyMetaRecord,
 } from "./track.types";
+export { ANALYTICS_DIMENSION_KEYS } from "./track.types";
 export {
 	clearTrackRateLimit,
 	TRACK_RATE_LIMIT,

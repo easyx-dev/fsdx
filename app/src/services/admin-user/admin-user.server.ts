@@ -9,6 +9,7 @@ import { adminRole, adminUser } from "#/db/schema";
 import { clearAdminUserCache } from "#/services/admin-auth/admin-auth.server";
 import { verifyCaptcha } from "#/services/captcha/captcha.server";
 import { logger } from "#/shared-services/logger";
+import { logOperation } from "#/shared-services/operation-log/operation-log.server";
 import {
 	buildSortClause,
 	executePaginatedQuery,
@@ -267,6 +268,18 @@ export async function resetAdminPasswordByEmail(
 	}
 
 	clearAdminUserCache(user.id);
+
+	// 密码重置属关键状态变更，补审计（operator 为被重置的管理员自身）
+	logOperation({
+		operatorId: user.id,
+		operatorName: user.username,
+		operatorType: "admin",
+		module: "admin-auth",
+		action: "reset_password",
+		targetType: "adminUser",
+		targetId: user.id,
+		targetName: user.username,
+	});
 
 	logger.info({ userId: user.id }, "管理员密码已重置");
 	return { success: true, message: "密码重置成功，请使用新密码登录" };

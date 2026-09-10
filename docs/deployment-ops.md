@@ -159,6 +159,8 @@ logger.error/warn/info/debug
 | `http_requests_total` | Counter | `method` | `app/server.ts` 入口 |
 | `server_function_requests_total` | Counter | `result`（success/error） | `sf-error-logger` |
 | `server_function_duration_seconds` | Histogram | — | `sf-error-logger` |
+| `external_calls_total` | Counter | `system` / `outcome`（success/error） | `external-observability` |
+| `external_call_duration_seconds` | Histogram | `system` | `external-observability` |
 
 拉取端点 `/api/metrics`（Server Route handler，无鉴权）输出 Prometheus text 格式。接入 Prometheus 即可采集，**注意**：
 - 无鉴权端点，如对外暴露需在反向代理层加访问控制

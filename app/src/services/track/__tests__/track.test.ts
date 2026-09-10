@@ -98,6 +98,7 @@ import {
 	searchTrackEvents,
 	TRACK_RATE_LIMIT,
 	trackEvent,
+	trackServerEvent,
 	updateTrackEventMeta,
 	updateTrackPropertyMeta,
 } from "../track.server";
@@ -341,6 +342,47 @@ describe("trackEvent（缓存就绪校验链路）", () => {
 	});
 });
 
+describe("trackServerEvent（服务端可信入口）", () => {
+	beforeEach(async () => {
+		mockDb.select.mockReturnValue({
+			from: vi.fn(() => Promise.resolve([])),
+		});
+		await loadTrackMetaCache();
+		mockTrackEventMetaCache.set("Register", true);
+		mockTrackPropertyMetaCache.set("form_name", "string");
+	});
+
+	it("跳过 per-session 频控：超过匿名上限仍写入缓冲", async () => {
+		const valuesMock = vi.fn((_data: unknown) => Promise.resolve());
+		mockDb.insert.mockReturnValue({ values: valuesMock } as any);
+
+		for (let i = 0; i < TRACK_LIMIT + 1; i++) {
+			trackServerEvent({
+				time: Date.now(),
+				userId: "u-1",
+				sessionId: "srv-u-1",
+				name: "Register",
+				properties: { form_name: "clientRegister" },
+			});
+		}
+		await flushTrackEvents();
+
+		expect(valuesMock).toHaveBeenCalledTimes(1);
+		expect(valuesMock.mock.calls[0][0]).toHaveLength(TRACK_LIMIT + 1);
+	});
+
+	it("仍执行事件名校验：未注册事件丢弃", async () => {
+		trackServerEvent({
+			time: Date.now(),
+			sessionId: "srv-ghost",
+			name: "Ghost",
+			properties: {},
+		});
+		await flushTrackEvents();
+		expect(mockDb.insert).not.toHaveBeenCalled();
+	});
+});
+
 describe("searchTrackEvents", () => {
 	it("返回分页结果", async () => {
 		const record = {
@@ -430,94 +472,90 @@ describe("searchTrackEvents", () => {
 describe("getTrackAnalytics", () => {
 	const baseQuery = { startDate: "2024-01-01", endDate: "2024-01-31" };
 
-	it("返回趋势、分布、Top 页面、独立用户与总事件数", async () => {
+	it("聚合返回趋势、排行、维度与 KPI", async () => {
+		// 所有聚合查询统一返回同一行，覆盖各子查询所需字段
 		mockDb.execute.mockResolvedValue({
-			rows: [{ date: "2024-01-01", count: 2 }],
-		} as any);
-
-		mockDb.select.mockReturnValueOnce({
-			from: vi.fn(() => ({
-				where: vi.fn(() => ({
-					groupBy: vi.fn(() => ({
-						orderBy: vi.fn(() =>
-							Promise.resolve([{ name: "PageView", count: 2 }]),
-						),
-					})),
-				})),
-			})),
-		} as any);
-		mockDb.select.mockReturnValueOnce({
-			from: vi.fn(() => ({
-				where: vi.fn(() => ({
-					groupBy: vi.fn(() => ({
-						orderBy: vi.fn(() => ({
-							limit: vi.fn(() =>
-								Promise.resolve([{ pageName: "/home", count: 2 }]),
-							),
-						})),
-					})),
-				})),
-			})),
-		} as any);
-		mockDb.select.mockReturnValueOnce({
-			from: vi.fn(() => ({
-				where: vi.fn(() => Promise.resolve([{ count: 1 }])),
-			})),
-		} as any);
-		mockDb.select.mockReturnValueOnce({
-			from: vi.fn(() => ({
-				where: vi.fn(() => Promise.resolve([{ count: 5 }])),
-			})),
+			rows: [
+				{
+					date: "2024-01-01",
+					series: null,
+					value: 3,
+					name: "PageView",
+					count: 3,
+					users: 1,
+					total: 5,
+					dim_value: "Desktop",
+					page_name: "/home",
+				},
+			],
 		} as any);
 
 		const result = await getTrackAnalytics(baseQuery);
 
-		expect(result.timeSeries).toEqual([{ date: "2024-01-01", count: 2 }]);
-		expect(result.eventDistribution).toEqual([{ name: "PageView", count: 2 }]);
-		expect(result.topPages).toEqual([{ pageName: "/home", count: 2 }]);
-		expect(result.uniqueUsers).toBe(1);
 		expect(result.totalEvents).toBe(5);
+		expect(result.uniqueUsers).toBe(1);
+		expect(result.timeSeries).toEqual([
+			{ date: "2024-01-01", value: 3, series: undefined, compare: "current" },
+		]);
+		expect(result.eventRanking).toEqual([
+			{ name: "PageView", count: 3, users: 1, ratio: 3 / 5 },
+		]);
+		expect(result.topPages).toEqual([{ pageName: "/home", count: 3 }]);
+		// 四个固定维度均返回同一分布
+		expect(result.dimensionDistributions.$device_type).toEqual([
+			{ name: "Desktop", count: 3, ratio: 3 / 5 },
+		]);
 	});
 
 	it("无数据时返回空结构", async () => {
 		mockDb.execute.mockResolvedValue({ rows: [] } as any);
-		// 分布（where→groupBy→orderBy）
-		mockDb.select.mockReturnValueOnce({
-			from: vi.fn(() => ({
-				where: vi.fn(() => ({
-					groupBy: vi.fn(() => ({
-						orderBy: vi.fn(() => Promise.resolve([])),
-					})),
-				})),
-			})),
-		} as any);
-		// Top 页面（where→groupBy→orderBy→limit）
-		mockDb.select.mockReturnValueOnce({
-			from: vi.fn(() => ({
-				where: vi.fn(() => ({
-					groupBy: vi.fn(() => ({
-						orderBy: vi.fn(() => ({
-							limit: vi.fn(() => Promise.resolve([])),
-						})),
-					})),
-				})),
-			})),
-		} as any);
-		// 独立用户数 / 总事件数（where 直接返回数组）
-		mockDb.select.mockReturnValueOnce({
-			from: vi.fn(() => ({ where: vi.fn(() => Promise.resolve([])) })),
-		} as any);
-		mockDb.select.mockReturnValueOnce({
-			from: vi.fn(() => ({ where: vi.fn(() => Promise.resolve([])) })),
-		} as any);
 
 		const result = await getTrackAnalytics(baseQuery);
 
 		expect(result.timeSeries).toEqual([]);
-		expect(result.eventDistribution).toEqual([]);
+		expect(result.eventRanking).toEqual([]);
 		expect(result.topPages).toEqual([]);
 		expect(result.uniqueUsers).toBe(0);
 		expect(result.totalEvents).toBe(0);
+	});
+
+	it("带拆解维度时先经元属性白名单校验", async () => {
+		mockDb.execute.mockResolvedValue({ rows: [] } as any);
+		const limit = vi.fn(() => Promise.resolve([{ key: "$device_type" }]));
+		mockDb.select.mockReturnValueOnce({
+			from: vi.fn(() => ({ where: vi.fn(() => ({ limit })) })),
+		} as any);
+
+		await getTrackAnalytics({ ...baseQuery, breakdown: "$device_type" });
+
+		expect(mockDb.select).toHaveBeenCalled();
+		expect(limit).toHaveBeenCalled();
+	});
+
+	it("compare=year 合并同比窗口并给出 deltas（闰日不报错）", async () => {
+		mockDb.execute.mockResolvedValue({
+			rows: [
+				{
+					date: "2024-02-29",
+					value: 4,
+					total: 4,
+					users: 2,
+					name: "PageView",
+					count: 4,
+					dim_value: "Desktop",
+					page_name: "/home",
+				},
+			],
+		} as any);
+
+		const result = await getTrackAnalytics({
+			startDate: "2024-02-29",
+			endDate: "2024-02-29",
+			compare: "year",
+		});
+
+		expect(result.deltas).toBeDefined();
+		expect(result.totalEvents).toBe(4);
 	});
 });
 

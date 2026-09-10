@@ -8,6 +8,8 @@
 
 - **通知多渠道下发 + 每用户渠道配置（[infra]）**：站内信（`message` 表）为恒定义必达的主渠道，外发渠道 email / 飞书 / 企微 / 钉钉 / 通用 webhook 作为可插拔切面，由**单个全局总闸** `notify_enabled`（系统配置，默认关闭）与**每用户配置** `user_config.notify_channels`（启用 + 目标地址）双重驱动；短信渠道仅预留适配器接口（`sendChannelSms` 占位）。新增 `shared-services/notify`（webhook 按 variant 生成 payload/签名、邮件复用 mail）、`services/user-config`（通用 jsonb 配置存取）与 `user_config` 表；通知域多态引用统一命名 `user_type/user_id`，消息类型收敛至 `constants/message-types.ts`（清理死类型 `ppt`）。管理端与客户端各提供「通知渠道设置」UI。
 
+- **事件分析升级为交互式分析工作台（[infra]）**：管理端 `/admin/track/analytics` 由静态趋势/饼图升级为交互式分析工作台——筛选区支持事件多选对比、指标切换（次数/用户数）、维度拆解（元属性白名单）、周期对比（环比/同比）、周粒度；新增事件明细排行表（次数/用户数/占比，点击下钻趋势）、用户属性与来源分布（设备类型/来源/操作系统/浏览器）、KPI 卡带周期涨跌。服务端 `getTrackAnalytics` 收敛趋势/排行/维度/KPI 聚合（空桶补零对齐、维度白名单防注入、按业务时区口径对齐），事件查询拆至 `track.events.ts`；图表经 `analytics-chart` 懒加载拆分 chunk；新增 `buildTrendConfig` 纯函数与单测。可被衍生项目吸收
+
 ### Infrastructure
 
 - **i18n AI 翻译重构 + 批量流式翻译（[infra]）**：AI 翻译三层分离落地，并新增单实体/全量批量翻译 + SSE 流式。
@@ -35,6 +37,12 @@
   - 读取路径优化：`getUITranslations` 对默认语言（zh）短路返回空资源免查库；`refreshUITranslationCache` 改为仅失效缓存 key、由下一次读取懒加载重建。
   - 插值前缀由自定义单大括号 `{` 恢复为 i18next 默认 `{{}}`（种子与调用点同步更新），避免含 `{ }` 的文案被误判为插值。可被衍生项目吸收
 
+- **外部调用可观测与审计解耦（[infra]）**：外部系统调用移出 `operation_log`（审计表只留用户操作，只追加），改走「pino 结构化日志 + Prometheus 指标」，并补齐埋点/审计缺口。
+  - 新增 `shared-services/external-observability` 的 `logExternalRequest()`（成功 `debug` / 失败 `warn`，携带 requestId 与操作者），`operation-log` 删除外部调用专用 `BatchWriter`；metrics 新增 `external_calls_total`（system/outcome）与 `external_call_duration_seconds`（system）。可被衍生项目吸收
+  - `logger.mixin` 由仅注入 `requestId` 扩展为 `requestId` + 操作者身份（`operatorId` / `operatorName` / `operatorType`），每条日志可归属到具体用户。可被衍生项目吸收
+  - `track.server` 新增 `trackServerEvent` 服务端可信埋点入口（跳过匿名 per-session 频控，其余校验一致）。可被衍生项目吸收
+  - 补齐缺口：`clientRegister` 注册成功补 Register 服务端埋点 + 注册审计；管理员忘记密码重置补审计（`reset_password`）。
+
 ### Refactor
 
 - **全量代码审查整改：命名一致性收敛（[infra]）**：
@@ -46,6 +54,8 @@
 - **i18n 实体翻译去业务耦合：统一通用入口（[infra]）**：`shared-services/i18n` 新增通用 `translateRecord` / `translateRecords`（按 entityType + locale 查询 `content_translation` 并合并，默认语言/空数组短路，批量一次查询避免 N+1），业务侧无需声明可翻译字段且不再自写包装器——`news.server.ts` 删除 `translateNewsRecord` / `translateNewsRecords`，前台 `news` / 首页路由改调用 `translateRecords(records, "news", locale)`。`valueType` 确认仅为 UI 层选编辑器的字符串（透传给 `FieldTranslationDrawer`），不进入服务端契约。实体翻译扩展收敛为「组件定义字段 + 调 `translateRecords`」两个动作。可被衍生项目吸收
 
 - **i18n 模块语义化命名规整（[infra]）**：`shared-services/i18n` 文件名由 `i18n-<role>` 破折号与按表命名的 `ui-translation.*`/`content-translation.*` 混用，统一为点号约定 `<module>.<子域>.<role>.ts`——`i18n-types`→`i18n.types`、`i18n-config`→`i18n.config`、`i18n-seed`→`i18n.seed`、`i18n-ui.server`→`i18n.ui.server`、`i18n-content.server`→`i18n.content.server`、`i18n-content-io`→`i18n.content-io`、`ui-translation.cache/schemas`→`i18n.ui.cache/schemas`、`content-translation.schemas`→`i18n.content.schemas`，与 `config.*`/`dict.*` 命名一致；服务层 barrel `i18n.server.ts` 保留 `.server` 分界标记（`importProtection` 依赖该后缀区分服务端）。同步更新全部引用、`docs/i18n.md`（按「基础件 / UI 翻译 / 内容翻译」重组并补充 `.server` 约束与 barrel 说明）、i18n / cache / db-sqlite skill 与 `cache-system` 文档。纯命名规整、无行为变更。可被衍生项目吸收
+
+- **统一剪贴板工具（[infra]）**：新增 `@fsdx/lib/clipboard` 的 `copyToClipboard`（Clipboard API 优先，非安全上下文/被拒时退回 `execCommand` 兜底，修复 HTTP 下复制按钮失效）与 `@fsdx/ui-spa/clipboard` 的 `copyText`（集成 antd message 提示，success/warning 通道可定制）；`ui-spa` ProTable 与 `ai-rich-editor` 两处复制改走统一实现，`ai-rich-editor` 新增 `@fsdx/lib` 依赖，`lib` / `ui-spa` README 补 subpath 导出清单。可被衍生项目吸收
 
 ### Fix
 

@@ -44,11 +44,9 @@ import {
 	flushOperationLogs,
 	getOperationLogModules,
 	logCrud,
-	logExternalRequest,
 	logOperation,
 	searchOperationLogs,
 } from "#/shared-services/operation-log/operation-log.server";
-import { runWithRequestContext } from "#/shared-services/request-context";
 
 describe("logOperation", () => {
 	beforeEach(() => {
@@ -238,124 +236,5 @@ describe("logCrud", () => {
 			module: "client",
 			action: "create_api_key",
 		});
-	});
-});
-
-describe("logExternalRequest", () => {
-	beforeEach(async () => {
-		vi.clearAllMocks();
-		// 清空缓冲：opLogWriter/apiLogWriter 为模块级单例，避免跨 describe 残留行污染断言
-		await flushOperationLogs();
-	});
-
-	/** 触发缓冲刷入并返回 insert values 收到的行 */
-	async function flushAndGetRows() {
-		await flushOperationLogs();
-		return mockInsertValues.mock.calls.at(-1)?.[0] as
-			| Record<string, unknown>[]
-			| undefined;
-	}
-
-	it("无 ALS 上下文时记为 system", async () => {
-		logExternalRequest({
-			system: "external",
-			requestType: "login",
-			path: "/api/token/",
-			duration: 50,
-			success: true,
-		});
-		const rows = await flushAndGetRows();
-		expect(rows).toBeDefined();
-		expect(rows![0]).toMatchObject({
-			operatorId: null,
-			operatorName: "system",
-			operatorType: "system",
-			module: "external",
-			action: "login",
-			targetType: "openapi",
-			targetName: "/api/token/",
-		});
-	});
-
-	it("ALS 上下文内自动读取操作者，targetType 可指定", async () => {
-		runWithRequestContext(
-			{
-				operator: {
-					id: "admin-1",
-					username: "张三",
-					email: null,
-					type: "admin",
-				},
-			},
-			() => {
-				logExternalRequest({
-					system: "integration",
-					requestType: "business",
-					path: "/rest/data/query",
-					method: "GET",
-					duration: 200,
-					success: false,
-					error: "timeout",
-					targetType: "rest_api",
-					extra: { apiCode: "scm" },
-				});
-			},
-		);
-		const rows = await flushAndGetRows();
-		expect(rows).toBeDefined();
-		expect(rows![0]).toMatchObject({
-			operatorId: "admin-1",
-			operatorName: "张三",
-			operatorType: "admin",
-			module: "integration",
-			action: "request",
-			targetType: "rest_api",
-		});
-		expect(rows![0].detail).toMatchObject({
-			system: "integration",
-			requestType: "business",
-			path: "/rest/data/query",
-			method: "GET",
-			success: false,
-			error: "timeout",
-			apiCode: "scm",
-		});
-	});
-
-	it("ALS 上下文内自动捕获 requestId 落库", async () => {
-		runWithRequestContext({ requestId: "req-trace-1" }, () => {
-			logExternalRequest({
-				system: "external",
-				requestType: "business",
-				path: "/api/test",
-				duration: 10,
-				success: true,
-			});
-		});
-		const rows = await flushAndGetRows();
-		expect(rows![0]).toMatchObject({ requestId: "req-trace-1" });
-	});
-
-	it("login 请求 action 为 login，business 请求 action 为 request", async () => {
-		logExternalRequest({
-			system: "external",
-			requestType: "login",
-			path: "login",
-			duration: 10,
-			success: true,
-		});
-		logExternalRequest({
-			system: "external",
-			requestType: "business",
-			path: "/api/test",
-			duration: 10,
-			success: true,
-		});
-		const rows = await flushAndGetRows();
-		expect(rows).toBeDefined();
-		expect(rows).toHaveLength(2);
-		expect(rows![0].action).toBe("login");
-		expect(rows![1].action).toBe("request");
-		expect(rows![0].targetType).toBe("openapi");
 	});
 });

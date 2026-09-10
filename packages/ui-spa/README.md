@@ -18,6 +18,7 @@ antd 管理端组件库，面向数据密集型后台场景（表单、表格、
 |---------|------|----------|
 | `@fsdx/ui-spa/antd-static` | antd 静态方法桥接 | `AntdStaticBridge`（挂载于宿主 `<App>` 内，从 `App.useApp()` 捕获实例）、`message` / `modal` / `notification`（未挂载即调用会抛错） |
 | `@fsdx/ui-spa/table` | 表格 | `ProTable`（`ProColumnType` / `ProTableProps`，增强 antd Table）、`TableOperate`（操作列容器：`Edit` / `Delete` / `Link` / `Custom`，按钮统一「图标 + 文字」风格） |
+| `@fsdx/ui-spa/clipboard` | 剪贴板 | `copyText(text, options?)`（基于 `@fsdx/lib/clipboard`，集成 antd message 提示，`successMsg` / `failMsg` / `successType` 可定制） |
 | `@fsdx/ui-spa/upload` | 上传 | `FileUpload`（`UploadFileFn` / `UploadResult`，上传/文件库/下载回调注入）、`ImageUpload`、`PhotoWall`（`ImageItem`）、`SelectFileModal`（`FetchFiles` / `SelectableFile` / `acceptToMimePrefix` / `formatSize`）、`renderUploadItem` |
 | `@fsdx/ui-spa/editor` | 编辑器 | `CodeEditor`（Monaco）、`RichEditor`（`@easyx/editor` Tiptap 内核，经 `RichEditorMedia` 注入图片/视频/音频/附件上传 + 媒体库列表，`valueType` 对接 `EditorType`） |
 | `@fsdx/ui-spa/permission-tags` | 权限展示 | `PermissionTags`（通配符优先排序、绿色标识、超 `maxVisible` 折叠，元信息由宿主传入 `PermissionMetaMap`） |

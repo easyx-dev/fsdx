@@ -101,14 +101,14 @@ packages/
 
 ### 其他基础设施
 
-- **请求 ID 贯通**：`requestIdMiddleware` 注册于 requestMiddleware 首位，透传上游 `x-request-id`（超长截断至 100）或生成 UUID，写入 ALS 上下文并回写响应头；logger mixin 自动注入 requestId，操作审计落库 `operation_log.request_id`，实现日志与审计全链路追踪
-- **Prometheus 指标**：`src/shared-services/metrics` 注册表挂载于 globalThis（Nitro 入口与 SSR 各 bundle 共享同一实例，`Counter` + `Histogram`，无第三方依赖），预置 `http_requests_total` / `server_function_requests_total` / `server_function_duration_seconds`；`/api/metrics` 端点（Server Route，无鉴权）输出 Prometheus text 格式，多实例部署需实例层聚合
+- **请求 ID 贯通**：`requestIdMiddleware` 注册于 requestMiddleware 首位，透传上游 `x-request-id`（超长截断至 100）或生成 UUID，写入 ALS 上下文并回写响应头；logger mixin 自动注入 requestId 与操作者身份，操作审计落库 `operation_log.request_id`，实现日志与审计全链路追踪
+- **Prometheus 指标**：`src/shared-services/metrics` 注册表挂载于 globalThis（Nitro 入口与 SSR 各 bundle 共享同一实例，`Counter` + `Histogram`，无第三方依赖），预置 `http_requests_total` / `server_function_requests_total` / `server_function_duration_seconds` / `external_calls_total` / `external_call_duration_seconds`；`/api/metrics` 端点（Server Route，无鉴权）输出 Prometheus text 格式，多实例部署需实例层聚合
 - **Nitro server entry**：`app/server.ts` 只承担 bootstrap + HTTP 入口埋点，`fetch` 一律返回 `undefined` 交还请求流转至 TanStack Start SSR；**禁止直接 import `./src/server`**（会绕过 Vite SSR runner 惰性路由机制，导致全部路由 eager 加载，dev 下服务端不兼容的浏览器库（如富文本编辑器）在启动即崩溃）
 - **CSRF**：`src/start.ts` 注册 `createCsrfMiddleware`，仅对 ServerFn 生效，校验 Origin / Referer / Sec-Fetch-Site
 - **SF 错误日志**：`sfErrorLogger` 注册于 `functionMiddleware` 自动覆盖所有 SF；鉴权失败（`AdminAuthError`/`ClientAuthError`）记 warn、系统异常记 error（`sanitizeError()` 脱敏），并埋入耗时/结果指标；错误经 `toClientError()` 归一化后重新抛出
 - **Import Protection**：客户端构建禁止导入 `*.server.*` 与 `bcryptjs` / `drizzle-orm` / `openai`；服务端禁止 `*.client.*`；type-only import 不触发
 - **事件埋点**：`track_event` + 元事件/元属性三表；客户端 SDK `src/services/track/track.ts` 自动采集 PageView；服务端校验链：per-session 频控（60 条/分）→ 时间钳制 → 事件/属性名校验 → 值类型校验；BatchWriter 5 秒/100 条/上限 1000；预置 5 元事件（PageView、FormSubmit、Login、Register、Logout）+ 11 元属性（含 7 个 `$` 系统属性，以 `src/services/track/` 为准）→ 详见 [event-tracking](docs/event-tracking.md)
-- **操作日志审计**：`logOperation()` fire-and-forget；SFn 写 CRUD 审计**必须**用同模块 `logCrud()` 一行式封装（自动装配操作人 + targetType 默认值）；CRUD 审计与外部调用日志使用独立 BatchWriter（上限 1000 / 5000）；操作者身份经 request-context（AsyncLocalStorage）注入，requestId 自动从 ALS 捕获落库，进程退出自动刷新
+- **操作日志审计**：`logOperation()` fire-and-forget；SFn 写 CRUD 审计**必须**用同模块 `logCrud()` 一行式封装（自动装配操作人 + targetType 默认值）；审计表只留用户操作，`logOperation` 经独立 BatchWriter（上限 1000）落库；外部系统调用不落审计表，改由 `#/shared-services/external-observability` 的 `logExternalRequest()` 记 pino 日志 + Prometheus 指标（成功日志为 debug，默认 info 下成功仅入指标，排障需 `LOG_LEVEL=debug`）；操作者身份经 request-context（AsyncLocalStorage）注入，requestId 自动从 ALS 捕获落库，进程退出自动刷新
 - **系统初始化**：首次部署自动跳转 `/admin/init`，以 `admin_user.is_root`（数据库部分唯一索引）判断是否已初始化；事务内完成角色 → root 用户 → 系统配置，已初始化后禁止重复操作
 - **环境变量**：位于 `app/.env` / `app/.env.example`，Vite 以 app 为 root 加载并注入 `process.env`；SMTP 邮件配置已迁系统配置表，不再通过环境变量管理
 

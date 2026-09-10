@@ -9,7 +9,7 @@ import { Button, Table, Tooltip } from "antd";
 import type { ColumnsType, ColumnType } from "antd/es/table";
 import dayjs from "dayjs";
 import { useMemo } from "react";
-import { message } from "../antd-static";
+import { copyText } from "../clipboard";
 
 /** 扩展的 ellipsis 类型：支持 boolean 和自定义 Tooltip */
 type ProEllipsis = boolean | { showTitle?: boolean; tooltip?: TooltipProps };
@@ -135,7 +135,7 @@ function processColumns<T extends Record<string, any>>(
 						? String(value)
 						: "";
 
-				const copyText = renderCopyableText
+				const copyableValue = renderCopyableText
 					? renderCopyableText(value, record, index)
 					: rawValue;
 
@@ -161,7 +161,7 @@ function processColumns<T extends Record<string, any>>(
 
 				let child: React.ReactNode;
 
-				if (hasCopyable && copyText) {
+				if (hasCopyable && copyableValue) {
 					child = (
 						<span
 							style={{
@@ -190,14 +190,7 @@ function processColumns<T extends Record<string, any>>(
 								style={{ flexShrink: 0 }}
 								onClick={(e: React.MouseEvent<HTMLElement>) => {
 									e.stopPropagation();
-									navigator.clipboard
-										.writeText(copyText)
-										.then(() => {
-											message.success("已复制");
-										})
-										.catch(() => {
-											// 复制失败静默处理
-										});
+									void copyText(copyableValue);
 								}}
 							/>
 						</span>

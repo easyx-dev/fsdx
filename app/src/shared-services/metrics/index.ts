@@ -138,11 +138,15 @@ export class Histogram {
 /** 全局注册表键：跨 bundle（Nitro 入口 / SSR 渲染器）共享同一注册表 */
 const REGISTRY_KEY = "__APP_METRICS_REGISTRY__";
 
-/** 指标注册表：预置三个指标实例 */
+/** 指标注册表：预置指标实例 */
 interface MetricsRegistry {
 	httpRequestsTotal: Counter;
 	serverFunctionRequestsTotal: Counter;
 	serverFunctionDurationSeconds: Histogram;
+	/** 外部系统调用计数（system + outcome） */
+	externalCallsTotal: Counter;
+	/** 外部系统调用耗时（秒）直方图（system） */
+	externalCallDurationSeconds: Histogram;
 }
 
 /** 惰性获取全局指标注册表（首次加载时创建，之后跨 bundle 复用） */
@@ -164,6 +168,17 @@ function getRegistry(): MetricsRegistry {
 			"Server Function 执行耗时分布",
 			[0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5],
 		),
+		externalCallsTotal: new Counter(
+			"external_calls_total",
+			"外部系统调用总数",
+			["system", "outcome"],
+		),
+		externalCallDurationSeconds: new Histogram(
+			"external_call_duration_seconds",
+			"外部系统调用耗时分布",
+			[0.1, 0.25, 0.5, 1, 2.5, 5, 10, 30, 60, 120, 300],
+			["system"],
+		),
 	};
 	return global[REGISTRY_KEY]!;
 }
@@ -179,11 +194,20 @@ export const serverFunctionRequestsTotal =
 export const serverFunctionDurationSeconds =
 	getRegistry().serverFunctionDurationSeconds;
 
+/** 外部系统调用总数（system + outcome） */
+export const externalCallsTotal = getRegistry().externalCallsTotal;
+
+/** 外部系统调用耗时（秒）直方图（system） */
+export const externalCallDurationSeconds =
+	getRegistry().externalCallDurationSeconds;
+
 /** 汇总所有指标为 Prometheus text 格式 */
 export function renderMetrics(): string {
 	return [
 		httpRequestsTotal.render(),
 		serverFunctionRequestsTotal.render(),
 		serverFunctionDurationSeconds.render(),
+		externalCallsTotal.render(),
+		externalCallDurationSeconds.render(),
 	].join("\n");
 }

@@ -11,6 +11,7 @@ const {
 	mockVerifyCaptcha,
 	mockClearAdminUserCache,
 	mockLogger,
+	mockLogOperation,
 } = vi.hoisted(() => {
 	const rows = vi.fn().mockResolvedValue([]);
 	const updateRows = vi.fn().mockResolvedValue([{ id: "a-1" }]);
@@ -46,6 +47,7 @@ const {
 			warn: vi.fn(),
 			error: vi.fn(),
 		},
+		mockLogOperation: vi.fn(),
 	};
 });
 
@@ -58,6 +60,9 @@ vi.mock("#/services/admin-auth/admin-auth.server", () => ({
 	clearAdminUserCache: mockClearAdminUserCache,
 }));
 vi.mock("#/shared-services/logger", () => ({ logger: mockLogger }));
+vi.mock("#/shared-services/operation-log/operation-log.server", () => ({
+	logOperation: mockLogOperation,
+}));
 
 import { resetAdminPasswordByEmail } from "../admin-user.server";
 
@@ -156,6 +161,14 @@ describe("resetAdminPasswordByEmail", () => {
 		expect(result.success).toBe(true);
 		expect(result.message).toBe("密码重置成功，请使用新密码登录");
 		expect(mockDb.update).toHaveBeenCalled();
+		// 密码重置补审计
+		expect(mockLogOperation).toHaveBeenCalledWith(
+			expect.objectContaining({
+				action: "reset_password",
+				module: "admin-auth",
+				targetId: "a-1",
+			}),
+		);
 	});
 
 	it("bcrypt.hash 使用正确 rounds=12", async () => {

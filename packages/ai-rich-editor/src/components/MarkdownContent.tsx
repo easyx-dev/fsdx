@@ -7,6 +7,7 @@
 import { CodeOutlined, CopyOutlined } from "@ant-design/icons";
 import type { ComponentProps } from "@ant-design/x-markdown";
 import { XMarkdown } from "@ant-design/x-markdown";
+import { copyToClipboard } from "@fsdx/lib/clipboard";
 import { Button, Tooltip, Typography } from "antd";
 import { type ReactNode, useEffect, useRef } from "react";
 import type { AiRichNotify } from "../types";
@@ -38,12 +39,8 @@ function HtmlCodeCard({
 	}, [html]);
 
 	const handleCopy = async () => {
-		try {
-			await navigator.clipboard.writeText(html);
-			notify?.("success", "已复制代码");
-		} catch {
-			notify?.("error", "复制失败");
-		}
+		const ok = await copyToClipboard(html);
+		notify?.(ok ? "success" : "error", ok ? "已复制代码" : "复制失败");
 	};
 
 	return (

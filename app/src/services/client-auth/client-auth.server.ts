@@ -16,8 +16,10 @@ import {
 	type CachedClientUser,
 	clientUserCache,
 } from "#/services/client-auth/client-user.cache";
+import { trackServerEvent } from "#/services/track/track.server";
 import { type JwtPayload, jwt } from "#/shared-services/jwt";
 import { logger } from "#/shared-services/logger";
+import { logOperation } from "#/shared-services/operation-log/operation-log.server";
 
 /** 合并多个客户端角色的权限并去重（未分配角色时返回空数组） */
 async function getClientRolePermissions(
@@ -107,13 +109,40 @@ export async function clientRegister(
 		.from(clientRole)
 		.where(eq(clientRole.slug, "normal-user"))
 		.limit(1);
-	await db.insert(clientUser).values({
-		username,
-		email,
-		passwordHash,
-		emailVerified: true,
-		clientRoleIds: normalRole ? [normalRole.id] : [],
-	});
+	const [newUser] = await db
+		.insert(clientUser)
+		.values({
+			username,
+			email,
+			passwordHash,
+			emailVerified: true,
+			clientRoleIds: normalRole ? [normalRole.id] : [],
+		})
+		.returning();
+
+	// 服务端可信埋点：注册成功（Register 为预置元事件，此前无触发点）
+	if (newUser) {
+		trackServerEvent({
+			time: Date.now(),
+			userId: newUser.id,
+			// 服务端无浏览器会话，以用户标识作为会话聚合维度
+			sessionId: `srv-client-${newUser.id}`,
+			name: "Register",
+			properties: { form_name: "clientRegister" },
+		});
+
+		// 注册审计：新用户创建属业务数据新增，operator 即新用户自身（自助操作）
+		logOperation({
+			operatorId: newUser.id,
+			operatorName: newUser.username,
+			operatorType: "client",
+			module: "client-auth",
+			action: "register",
+			targetType: "clientUser",
+			targetId: newUser.id,
+			targetName: newUser.username,
+		});
+	}
 
 	logger.info({ username }, "客户端用户注册成功");
 	return { success: true, message: "注册成功" };

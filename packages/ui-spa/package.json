@@ -5,6 +5,7 @@
   "type": "module",
   "exports": {
     "./antd-static": "./src/antd-static/index.tsx",
+    "./clipboard": "./src/clipboard.ts",
     "./table": "./src/table/index.ts",
     "./upload": "./src/upload/index.ts",
     "./editor": "./src/editor/index.ts",

@@ -37,7 +37,7 @@
 │  track_event 表 (PostgreSQL)                                       │
 │       │                                                      │
 │       ├── searchTrackEvents()      分页查询                        │
-│       ├── getTrackAnalytics() 趋势/分布/Top页面                │
+│       ├── getTrackAnalytics() 趋势/排行/维度/KPI              │
 │       └── getTrackEventNames()     事件名列表                       │
 └──────────────────────────────────────────────────────────────┘
 ```
@@ -194,15 +194,19 @@ flowchart TD
 
 ### 事件分析
 
-`getTrackAnalytics(query)` — 返回 `AnalyticsResult`：
+`getTrackAnalytics(query)` — 交互式分析工作台的服务端聚合，返回 `AnalyticsResult`：
+
+查询参数：`startDate` / `endDate`（YYYY-MM-DD，按业务时区解析当天边界）、`granularity`（hour / day / week）、`eventNames`（多选事件对比）、`metric`（count 次数 / users 独立用户数）、`breakdown`（维度拆解属性 key，经元属性白名单校验防注入）、`compare`（none / previous 环比 / year 同比）。
 
 | 字段 | 说明 |
 |------|------|
-| `timeSeries` | 按小时/天聚合的时间序列趋势 |
-| `eventDistribution` | 各事件类型数量分布 |
+| `timeSeries` | 按小时/天/周聚合的趋势序列（多事件或维度拆解时按 `series` 分组；周期对比时含 `compare` 标记并与当前窗口按桶对齐） |
+| `eventRanking` | 事件明细排行（次数 / 用户数 / 占比） |
+| `dimensionDistributions` | 用户属性与来源分布（设备类型 / 来源 / 操作系统 / 浏览器） |
 | `topPages` | PageView 事件中 Top 20 页面 |
 | `uniqueUsers` | 独立用户数（userId 优先，fallback sessionId） |
 | `totalEvents` | 总事件数 |
+| `deltas` | 周期对比变化率（环比/同比时存在） |
 
 ---
 
@@ -224,10 +228,11 @@ flowchart TD
 | `src/services/track/track.server.ts` | 服务层入口（barrel）：事件上报缓冲写入 + 统一导出 |
 | `src/services/track/track.validate.ts` | 属性值类型校验、per-session 频控、服务端时间钳制（纯逻辑） |
 | `src/services/track/track.meta.ts` | 元事件/元属性管理（预设、CRUD、`loadTrackMetaCache()`） |
-| `src/services/track/track.analytics.ts` | 查询与分析（`searchTrackEvents` / `getTrackAnalytics` / `getTrackEventNames`） |
+| `src/services/track/track.analytics.ts` | 事件分析（`getTrackAnalytics`：趋势 / 排行 / 维度分布 / KPI 聚合） |
+| `src/services/track/track.events.ts` | 事件查询（`searchTrackEvents` / `getTrackEventNames`） |
 | `src/services/track/track.functions.ts` | Server Function 包装器 |
 | `src/services/track/track.types.ts` | 类型定义 |
 | `src/services/track/track.cache.ts` | trackEventMetaCache / trackPropertyMetaCache 缓存实例 |
 | `src/db/schema/track.ts` | track_event / track_event_meta / track_property_meta 表 Schema |
 | `src/routes/admin/_admin/track/query.tsx` | 事件查询页面 |
-| `src/routes/admin/_admin/track/analytics.tsx` | 事件分析页面 |
+| `src/routes/admin/_admin/track/analytics/index.tsx` | 事件分析页面（交互式分析工作台） |

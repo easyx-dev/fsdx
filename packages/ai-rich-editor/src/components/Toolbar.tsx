@@ -9,6 +9,7 @@ import {
 	ReloadOutlined,
 	SettingOutlined,
 } from "@ant-design/icons";
+import { copyToClipboard } from "@fsdx/lib/clipboard";
 import type { MenuProps } from "antd";
 import {
 	Button,
@@ -59,12 +60,8 @@ export function Toolbar({
 			notify?.("warning", "暂无内容可复制");
 			return;
 		}
-		try {
-			await navigator.clipboard.writeText(html);
-			notify?.("success", "已复制到剪贴板");
-		} catch {
-			notify?.("error", "复制失败");
-		}
+		const ok = await copyToClipboard(html);
+		notify?.(ok ? "success" : "error", ok ? "已复制到剪贴板" : "复制失败");
 	};
 
 	// 「设置」下拉：更多配置

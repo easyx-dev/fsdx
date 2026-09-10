@@ -28,6 +28,7 @@
 | `@fsdx/lib/export` | `src/export/index.ts` | `toCsv(rows, columns)`（带 UTF-8 BOM，Excel 兼容）、`toJson(data)`、`downloadFile(content, filename, mimeType)` |
 | `@fsdx/lib/match-permission` | `src/match-permission/index.ts` | `matchPermission(rolePermissions, requiredCode)` 权限码匹配（`**` → 精确 → `group:*` 三级优先级） |
 | `@fsdx/lib/cn` | `src/cn/index.ts` | `cn(...inputs)` className 合并（clsx + tailwind-merge） |
+| `@fsdx/lib/clipboard` | `src/clipboard/index.ts` | `copyToClipboard(text)` 复制到剪贴板（Clipboard API 优先，非安全上下文退回 `execCommand` 兜底，返回是否成功） |
 | `@fsdx/lib/error-utils` | `src/error-utils/index.ts` | `sanitizeError(error)` 错误脱敏（日志/外部输出前使用） |
 | `@fsdx/lib/date-format` | `src/date-format/index.ts` | `DEFAULT_TASK_TIME_ZONE`（`Asia/Shanghai`，业务统一时区）、`DATE_ONLY_REGEX`、`toDateString(date)`、`parseDateOnly(dateStr)`、`toDayRange(dateStr)`（按业务时区解析天边界，不依赖服务器时区） |
 

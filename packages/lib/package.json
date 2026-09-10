@@ -11,6 +11,7 @@
     "./match-permission": "./src/match-permission/index.ts",
     "./error-utils": "./src/error-utils/index.ts",
     "./cn": "./src/cn/index.ts",
+    "./clipboard": "./src/clipboard/index.ts",
     "./storage": "./src/storage/index.ts",
     "./captcha": "./src/captcha/index.ts",
     "./batch-writer": "./src/batch-writer/index.ts",

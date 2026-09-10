@@ -1,7 +1,7 @@
 /**
  * 操作日志服务层：内存缓冲批量写入 + 分页查询
  * logOperation 为 fire-and-forget 调用，5 秒或满 100 条时批量 INSERT
- * CRUD 审计与外部系统调用日志使用独立缓冲，避免高频 API 日志挤压审计记录
+ * 仅承载用户操作审计（CRUD / 登录 / 注册等）；外部系统调用可观测见 shared-services/external-observability
  */
 
 import { BatchWriter, type BatchWriterEvent } from "@fsdx/lib/batch-writer";
@@ -15,10 +15,7 @@ import {
 	executePaginatedQuery,
 	paginationOffset,
 } from "#/shared-services/query/query-utils.server";
-import {
-	getRequestContext,
-	getRequestOperator,
-} from "#/shared-services/request-context";
+import { getRequestContext } from "#/shared-services/request-context";
 import type { PaginatedSortParams } from "#/types/query";
 
 /** 操作日志输入参数 */
@@ -91,7 +88,7 @@ const logBatchEvent = (event: BatchWriterEvent): void => {
 	}
 };
 
-/** CRUD 审计日志缓冲（上限 1000，与外部调用日志隔离，互不挤压） */
+/** 审计日志缓冲（仅承载用户操作审计，外部系统调用改走 pino + 指标） */
 const opLogWriter = new BatchWriter<OperationLogInput>({
 	logLabel: "操作日志",
 	onEvent: logBatchEvent,
@@ -153,85 +150,10 @@ export function logCrud(
 /** 强制刷新缓冲（用于服务关闭前兜底；失败仅记日志，不阻断优雅关闭） */
 export async function flushOperationLogs(): Promise<void> {
 	try {
-		await Promise.all([opLogWriter.shutdown(), apiLogWriter.shutdown()]);
+		await opLogWriter.shutdown();
 	} catch (err) {
 		logger.error({ err }, "操作日志缓冲刷入失败（优雅关闭继续）");
 	}
-}
-
-// ═══════════════════════════════════════════════════
-// 外部系统调用日志
-// ═══════════════════════════════════════════════════
-
-/** 外部系统调用日志输入参数 */
-export interface ExternalRequestLogInput {
-	/** 外部系统标识（调用方自行传入自身系统代号） */
-	system: string;
-	/** 请求类型：登录或业务请求 */
-	requestType: "login" | "business";
-	/** 接口路径 */
-	path: string;
-	/** 目标类型（接口来源类型），默认 openapi（通用外部接口），调用方可指定 */
-	targetType?: string;
-	/** HTTP 方法 */
-	method?: string;
-	/** 请求耗时（毫秒） */
-	duration: number;
-	/** 是否成功 */
-	success: boolean;
-	/** 响应状态码 */
-	status?: number;
-	/** 响应体大小（字节） */
-	responseSize?: number;
-	/** 失败时的错误信息 */
-	error?: string;
-	/** 额外元数据（接口代号/业务标识等），不含请求/响应体 */
-	extra?: Record<string, unknown>;
-}
-
-/**
- * 外部系统调用日志缓冲（独立于 CRUD 审计，上限 5000，避免高频 API 日志挤压审计记录）
- */
-const apiLogWriter = new BatchWriter<OperationLogInput>({
-	logLabel: "外部调用日志",
-	onEvent: logBatchEvent,
-	maxBufferSize: 5000,
-	insertFn: async (batch) => {
-		await db.insert(operationLog).values(batch.map(toRow));
-	},
-});
-
-/**
- * 记录外部系统调用到操作日志
- * 操作者从 ALS 读取（鉴权中间件注入），无上下文记 system
- * 响应体内容不入库，仅记录 responseSize
- */
-export function logExternalRequest(input: ExternalRequestLogInput): void {
-	const op = getRequestOperator();
-	const isLogin = input.requestType === "login";
-	apiLogWriter.push({
-		requestId: getRequestContext()?.requestId,
-		operatorId: op.id,
-		operatorName: op.username ?? op.id ?? "system",
-		operatorType: op.type,
-		module: input.system,
-		action: isLogin ? "login" : "request",
-		targetType: input.targetType ?? "openapi",
-		targetName: input.path,
-		detail: {
-			// 先展开 extra，再写显式字段，避免 extra 中同名键覆盖路径/耗时/结果等元数据
-			...input.extra,
-			system: input.system,
-			requestType: input.requestType,
-			path: input.path,
-			method: input.method,
-			duration: input.duration,
-			success: input.success,
-			status: input.status,
-			responseSize: input.responseSize,
-			error: input.error,
-		},
-	});
 }
 
 // ═══════════════════════════════════════════════════

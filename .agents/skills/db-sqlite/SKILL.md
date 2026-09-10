@@ -399,7 +399,7 @@ PostgreSQL 的 `ILIKE` 在 SQLite 不存在；SQLite 的 `LIKE` 对 ASCII 默认
 + like(event.event, `%${keyword}%`)
 ```
 
-影响文件（8 个，各 1~4 处）：`admin-user`、`admin-role`、`client-user`、`client-role`、`file`、`message`、`operation-log`、`track.analytics`。
+影响文件（8 个，各 1~4 处）：`admin-user`、`admin-role`、`client-user`、`client-role`、`file`、`message`、`operation-log`、`track.events`。
 
 ### 6.2 `db.execute()` → `db.all()`
 
@@ -412,7 +412,7 @@ PostgreSQL 的 `ILIKE` 在 SQLite 不存在；SQLite 的 `LIKE` 对 ASCII 默认
 + timeSeriesResult
 ```
 
-影响：`track.analytics.ts` 的 `getTrackAnalytics`（约 4 段聚合 SQL 中的时间序列趋势段）。
+影响：`track.analytics.ts` 的 `getTrackAnalytics` 全部聚合段（KPI / 事件趋势 / 事件排行 / 维度分布 / Top 页面，均为 `db.execute`）。
 
 ### 6.3 时间序列聚合查询
 
@@ -432,7 +432,7 @@ PostgreSQL 的 `ILIKE` 在 SQLite 不存在；SQLite 的 `LIKE` 对 ASCII 默认
 +  GROUP BY date ORDER BY date
 ```
 
-小时/日粒度分别用 `'%Y-%m-%d %H:00'` / `'%Y-%m-%d'`（替换原 `timeFormat` 变量）。
+小时/日/周粒度分别用 `'%Y-%m-%d %H:00'` / `'%Y-%m-%d'` / 周一起算的日期（对齐 `DATE_TRUNC('week')`；SQLite 可用 `date(<ms>/1000, 'unixepoch', '+8 hours', 'weekday 1', '-7 days')` 取所在周周一，注意周日需回退）。趋势查询按 `date` 与 `series`（事件名或拆解维度值）两列分组。
 
 ### 6.4 JSON 字段访问
 
@@ -458,7 +458,7 @@ SQLite 是动态类型，无需显式转换：
 + CASE WHEN ... THEN ${trackEventTable.userId} ELSE ... END
 ```
 
-`count(*)::int` 在本项目 `track.analytics.ts` 的事件分布 / Top 页面 / 独立用户数 / 总事件数段出现，全部去除 `::int`。
+`count(*)::int` 在本项目 `track.analytics.ts` 的 KPI（总事件数 / 独立用户数）、事件排行、维度分布、Top 页面、时间趋势等段出现，全部去除 `::int`。
 
 > `properties` 模糊搜索（`properties::text ILIKE`）在 SQLite 下 `json_extract` 语义不等价，建议改为对 `name`/已知标量字段 `like` 匹配；如需对 JSON 全文模糊，可对整列 `like(trackEventTable.properties, `%${keyword}%`)`（text 存储直接匹配子串）。
 
@@ -683,7 +683,7 @@ try {
 
 **第三类：结果字段 / API 改名**（`rowCount` → `changes`、`db.execute` → `db.all`）
 
-涉及文件：`message.test.ts`（`{ rowCount: N }` → `{ changes: N }`，`sendMessages` 兜底用例改名）、`health.test.ts`（`mockDb.execute` → `mockDb.all`）、`track.test.ts`（`mockDb.execute` → `mockDb.all` + 时间序列结果形状 + `batch[].time` 改 number）。
+涉及文件：`message.test.ts`（`{ rowCount: N }` → `{ changes: N }`，`sendMessages` 兜底用例改名）、`health.test.ts`（`mockDb.execute` → `mockDb.all`）、`track.test.ts`（`mockDb.execute` → `mockDb.all` + 聚合结果形状（无 `.rows` 包装） + `batch[].time` 改 number）。
 
 > 事务内终结符走 `.all()`，mock 链需在 `limit()` 之后挂 `.all()` 返回 `txRows()` 的值（同步）。若被测代码同时保留 `await` 风格（如手动事务内的顶层 `db`），对应 `select` 链继续用 `then` 拦截即可。
 
