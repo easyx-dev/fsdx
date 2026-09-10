@@ -45,13 +45,4 @@ export const PRESET_DICTS: {
 			{ label: "禁用", value: "disabled", sortOrder: 1, color: "red" },
 		],
 	},
-	{
-		slug: "news_status",
-		name: "新闻状态",
-		items: [
-			{ label: "草稿", value: "draft", sortOrder: 0, color: "gold" },
-			{ label: "已发布", value: "published", sortOrder: 1, color: "green" },
-			{ label: "已归档", value: "archived", sortOrder: 2, color: "default" },
-		],
-	},
 ];

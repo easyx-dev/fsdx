@@ -14,8 +14,8 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { Button, Drawer, Segmented, Space } from "antd";
 import type { SegmentedValue } from "antd/es/segmented";
 import dayjs from "dayjs";
-import { useMemo, useState } from "react";
-import { AdminPageContent, useAdminDictStore } from "#/components/admin";
+import { useState } from "react";
+import { AdminPageContent } from "#/components/admin";
 import type { NewsRecord } from "#/services/news/news.server";
 import { NewsForm } from "./-mods/NewsForm";
 import {
@@ -43,24 +43,28 @@ function NewsListPage() {
 	const [drawerOpen, setDrawerOpen] = useState(false);
 	const [editingRecordId, setEditingRecordId] = useState<string | null>(null);
 
-	const newsStatusOptions = useAdminDictStore((s) => s.dicts.news_status ?? []);
+	/** 发布状态筛选选项（空串为全部） */
+	const segmentedOptions = [
+		{ label: "全部", value: "" },
+		{ label: "已发布", value: "published" },
+		{ label: "未发布", value: "unpublished" },
+	];
 
-	const segmentedOptions = useMemo(
-		() => [
-			{ label: "全部", value: "" },
-			...newsStatusOptions.map((o) => ({ label: o.label, value: o.value })),
-		],
-		[newsStatusOptions],
-	);
+	/** 将筛选值转为 isPublished 查询参数 */
+	function toIsPublished(value: string): boolean | undefined {
+		if (value === "published") return true;
+		if (value === "unpublished") return false;
+		return undefined;
+	}
 
 	async function refresh(s?: string, sf?: string, so?: string) {
 		try {
-			const status = s !== undefined ? s : filter;
+			const filterValue = s !== undefined ? s : filter;
 			const field = sf !== undefined ? sf : sortField;
 			const order = so !== undefined ? so : sortOrder;
 			const result = await getNewsListSFn({
 				data: {
-					status: status || undefined,
+					isPublished: toIsPublished(filterValue),
 					sortField: field,
 					sortOrder: order as "ascend" | "descend" | undefined,
 				},
@@ -176,7 +180,7 @@ function NewsListPage() {
 						try {
 							const result = await getNewsListSFn({
 								data: {
-									status: filter || undefined,
+									isPublished: toIsPublished(filter),
 									page,
 									sortField,
 									sortOrder,

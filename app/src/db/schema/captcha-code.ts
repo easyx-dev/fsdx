@@ -6,22 +6,21 @@ import {
 	index,
 	pgTable,
 	timestamp,
-	uuid,
 	varchar,
 } from "drizzle-orm/pg-core";
+import { createdAt, pk } from "./columns";
 
 export const captchaCode = pgTable(
 	"captcha_code",
 	{
-		id: uuid().defaultRandom().primaryKey(),
+		...pk(),
 		type: varchar({ length: 20 }).notNull(), // email | sms
 		target: varchar({ length: 255 }).notNull(), // 邮箱或手机号
 		code: varchar({ length: 10 }).notNull(),
 		used: boolean().default(false).notNull(),
 		expiredAt: timestamp("expired_at", { withTimezone: true }).notNull(),
-		createdAt: timestamp("created_at", { withTimezone: true })
-			.defaultNow()
-			.notNull(),
+		// 验证码仅需创建时间，不套用 timestamps()
+		...createdAt(),
 	},
 	(table) => [index("idx_captcha_target_type").on(table.target, table.type)],
 );

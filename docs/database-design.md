@@ -124,11 +124,11 @@ erDiagram
         text content "TipTap JSON"
         text external_url
         uuid cover_image_id FK
-        varchar status "draft/published/archived"
+        boolean is_published
+        timestamp published_at
         boolean is_pinned
         boolean is_recommended
         int sort_order
-        timestamp published_at
         uuid created_by_id FK
         uuid updated_by_id FK
         timestamp created_at

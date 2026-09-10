@@ -36,7 +36,6 @@ const { mockDb, mockRows } = vi.hoisted(() => {
 vi.mock("#/db", () => ({ db: mockDb }));
 
 import {
-	changeNewsStatus,
 	createNews,
 	deleteNews,
 	ensureUniqueSlug,
@@ -44,13 +43,14 @@ import {
 	getNewsById,
 	getNewsBySlug,
 	getNewsList,
+	setNewsPublished,
 } from "#/services/news/news.server";
 
 const newsRecord = {
 	id: "n-1",
 	title: "测试新闻",
 	slug: "test-news",
-	status: "draft",
+	isPublished: false,
 	content: "{}",
 	description: "",
 	isPinned: false,
@@ -81,7 +81,7 @@ describe("getNewsList", () => {
 		mockRows.mockResolvedValue([]);
 		mockDb.$count.mockResolvedValue(0);
 		const result = await getNewsList({
-			status: "published",
+			isPublished: true,
 			page: 2,
 			pageSize: 10,
 		});
@@ -103,13 +103,13 @@ describe("getNewsBySlug", () => {
 		mockRows.mockResolvedValue([
 			{
 				...newsRecord,
-				status: "published",
+				isPublished: true,
 				content: "<p>Hello</p>",
 			},
 		]);
 		const result = await getNewsBySlug("test-news");
 		expect(result).not.toBeNull();
-		expect(result!.status).toBe("published");
+		expect(result!.isPublished).toBe(true);
 		expect(result!.html).toBeDefined();
 	});
 	it("不存在的 slug 返回 null", async () => {
@@ -134,14 +134,14 @@ describe("createNews", () => {
 				returning: vi.fn().mockResolvedValue([{ ...newsRecord, id: "new-1" }]),
 			})),
 		});
-		const result = await createNews({ title: "新新闻", status: "draft" });
+		const result = await createNews({ title: "新新闻", isPublished: false });
 		expect(result.id).toBe("new-1");
 	});
 });
-describe("changeNewsStatus", () => {
-	it("变更新闻状态", async () => {
+describe("setNewsPublished", () => {
+	it("变更新闻发布状态", async () => {
 		mockRows.mockResolvedValue([newsRecord]);
-		const result = await changeNewsStatus("n-1", "published");
+		const result = await setNewsPublished("n-1", true);
 		expect(result.success).toBe(true);
 	});
 });
@@ -162,7 +162,7 @@ describe("renderContent", () => {
 		mockRows.mockResolvedValue([
 			{
 				...newsRecord,
-				status: "published",
+				isPublished: true,
 				content: "<p>Hello</p>",
 			},
 		]);
@@ -229,12 +229,12 @@ describe("createNews 分支", () => {
 		const valuesMock = vi.fn((_data: unknown) => ({
 			returning: vi
 				.fn()
-				.mockResolvedValue([{ ...newsRecord, status: "published" }]),
+				.mockResolvedValue([{ ...newsRecord, isPublished: true }]),
 		}));
 		mockDb.insert.mockReturnValue({ values: valuesMock } as any);
 		const before = Date.now();
 
-		await createNews({ title: "新新闻", status: "published" });
+		await createNews({ title: "新新闻", isPublished: true });
 
 		const values = valuesMock.mock.calls[0][0] as { publishedAt: Date | null };
 		expect(values.publishedAt).toBeInstanceOf(Date);
@@ -244,7 +244,7 @@ describe("createNews 分支", () => {
 	});
 });
 
-describe("changeNewsStatus", () => {
+describe("setNewsPublished", () => {
 	beforeEach(() => vi.clearAllMocks());
 
 	it("首次发布时自动填充 publishedAt", async () => {
@@ -252,7 +252,7 @@ describe("changeNewsStatus", () => {
 		const setMock = vi.fn((_data: unknown) => ({ where: vi.fn() }));
 		mockDb.update.mockReturnValue({ set: setMock } as any);
 
-		await changeNewsStatus("n-1", "published");
+		await setNewsPublished("n-1", true);
 
 		const updateData = setMock.mock.calls[0][0] as { publishedAt?: Date };
 		expect(updateData.publishedAt).toBeInstanceOf(Date);
@@ -263,21 +263,21 @@ describe("changeNewsStatus", () => {
 		const setMock = vi.fn((_data: unknown) => ({ where: vi.fn() }));
 		mockDb.update.mockReturnValue({ set: setMock } as any);
 
-		await changeNewsStatus("n-1", "published");
+		await setNewsPublished("n-1", true);
 
 		const updateData = setMock.mock.calls[0][0] as { publishedAt?: Date };
 		expect(updateData.publishedAt).toBeUndefined();
 	});
 
-	it("非发布状态不查询现有记录", async () => {
+	it("下线时不查询现有记录", async () => {
 		const setMock = vi.fn((_data: unknown) => ({ where: vi.fn() }));
 		mockDb.update.mockReturnValue({ set: setMock } as any);
 
-		await changeNewsStatus("n-1", "archived");
+		await setNewsPublished("n-1", false);
 
 		expect(mockDb.select).not.toHaveBeenCalled();
-		const updateData = setMock.mock.calls[0][0] as { status: string };
-		expect(updateData.status).toBe("archived");
+		const updateData = setMock.mock.calls[0][0] as { isPublished: boolean };
+		expect(updateData.isPublished).toBe(false);
 	});
 });
 

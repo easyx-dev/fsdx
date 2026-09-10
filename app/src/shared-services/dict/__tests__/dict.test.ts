@@ -120,13 +120,13 @@ describe("getAllDictOptions", () => {
 	});
 
 	it("按 slug 分组返回字典选项", async () => {
-		// 预置缓存：user_status 两个选项 + news_status 一个选项
+		// 预置缓存：user_status 两个选项 + order_status 一个选项
 		mockDictCache.set("user_status", {
 			active: { label: "启用", color: "green" },
 			disabled: { label: "禁用", color: "red" },
 		} as any);
-		mockDictCache.set("news_status", {
-			published: { label: "已发布", color: "blue" },
+		mockDictCache.set("order_status", {
+			paid: { label: "已支付", color: "blue" },
 		} as any);
 		mockRows.mockResolvedValue([]);
 
@@ -137,7 +137,7 @@ describe("getAllDictOptions", () => {
 				{ label: "启用", value: "active", color: "green" },
 				{ label: "禁用", value: "disabled", color: "red" },
 			],
-			news_status: [{ label: "已发布", value: "published", color: "blue" }],
+			order_status: [{ label: "已支付", value: "paid", color: "blue" }],
 		});
 	});
 
@@ -167,7 +167,7 @@ describe("ensurePresetDicts", () => {
 
 		await ensurePresetDicts();
 
-		expect(mockDb.select).toHaveBeenCalledTimes(2);
+		expect(mockDb.select).toHaveBeenCalledTimes(1);
 		expect(mockDb.insert).toHaveBeenCalled();
 	});
 

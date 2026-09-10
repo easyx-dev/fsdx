@@ -2,15 +2,9 @@
  * 通用消息表：管理端与客户端用户消息（站内信，通知模块主渠道）
  * 通过 userType + userId 定位用户（无外键，仿 operation_log 的 operatorId 模式）
  */
-import {
-	index,
-	pgTable,
-	text,
-	timestamp,
-	uuid,
-	varchar,
-} from "drizzle-orm/pg-core";
+import { index, pgTable, text, uuid, varchar } from "drizzle-orm/pg-core";
 import type { UserType } from "#/types/user";
+import { pk, softDelete, timestamps } from "./columns";
 
 /** 消息状态 */
 export type MessageStatus = "unread" | "read";
@@ -18,7 +12,7 @@ export type MessageStatus = "unread" | "read";
 export const message = pgTable(
 	"message",
 	{
-		id: uuid().defaultRandom().primaryKey(),
+		...pk(),
 		userId: uuid("user_id").notNull(),
 		userType: varchar("user_type", { length: 20 }).$type<UserType>().notNull(),
 		title: varchar({ length: 200 }).notNull(),
@@ -29,13 +23,8 @@ export const message = pgTable(
 			.default("unread")
 			.notNull(),
 		relatedLink: varchar("related_link", { length: 500 }),
-		createdAt: timestamp("created_at", { withTimezone: true })
-			.defaultNow()
-			.notNull(),
-		updatedAt: timestamp("updated_at", { withTimezone: true })
-			.defaultNow()
-			.notNull(),
-		deletedAt: timestamp("deleted_at", { withTimezone: true }),
+		...timestamps(),
+		...softDelete(),
 	},
 	(table) => [index("idx_message_user").on(table.userType, table.userId)],
 );

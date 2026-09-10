@@ -9,16 +9,16 @@ export const getNewsSchema = z.object({ id: z.string().min(1) });
 
 /** 新闻列表查询（管理端） */
 export const listSchema = z.object({
-	status: z.string().optional(),
+	isPublished: z.boolean().optional(),
 	page: z.number().optional(),
 	sortField: z.string().optional(),
 	sortOrder: z.enum(["ascend", "descend"]).optional(),
 });
 
-/** 变更新闻状态 */
-export const statusSchema = z.object({
+/** 变更新闻发布状态（上架 / 下架） */
+export const publishNewsSchema = z.object({
 	id: z.string().min(1),
-	status: z.enum(["draft", "published", "archived"]),
+	isPublished: z.boolean(),
 });
 
 /** 新闻导入 */
@@ -30,7 +30,7 @@ export const newsImportSchema = z.object({
 			content: z.string().optional(),
 			externalUrl: z.string().optional(),
 			coverImageId: z.string().optional(),
-			status: z.enum(["draft", "published"]).default("draft"),
+			isPublished: z.boolean().default(false),
 			isPinned: z.boolean().default(false),
 			isRecommended: z.boolean().default(false),
 			sortOrder: z.number().int().default(0),
@@ -51,7 +51,7 @@ export const createNewsSchema = z.object({
 	content: z.string().optional(),
 	externalUrl: z.string().url("请输入合法的 URL").optional().or(z.literal("")),
 	coverImageId: z.string().optional(),
-	status: z.enum(["draft", "published"]).default("draft"),
+	isPublished: z.boolean().default(false),
 	isPinned: z.boolean().default(false),
 	isRecommended: z.boolean().default(false),
 	publishedAt: z.string().optional(),
@@ -67,7 +67,7 @@ export const updateNewsSchema = z.object({
 	content: z.string().optional(),
 	externalUrl: z.string().url("请输入合法的 URL").optional().or(z.literal("")),
 	coverImageId: z.string().optional().nullable(),
-	status: z.enum(["draft", "published", "archived"]),
+	isPublished: z.boolean(),
 	isPinned: z.boolean(),
 	isRecommended: z.boolean(),
 	publishedAt: z.string().optional().nullable(),

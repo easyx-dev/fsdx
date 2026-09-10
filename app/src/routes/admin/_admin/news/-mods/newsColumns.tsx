@@ -5,9 +5,9 @@ import { message } from "@fsdx/ui-spa/antd-static";
 import { TableOperate } from "@fsdx/ui-spa/table";
 import { Button, Image, Space, Tag } from "antd";
 import dayjs from "dayjs";
-import { DictTag, FieldTranslationDrawer } from "#/components/admin";
+import { FieldTranslationDrawer } from "#/components/admin";
 import type { NewsRecord } from "#/services/news/news.server";
-import { changeStatusSFn, deleteNewsSFn } from "./news.functions";
+import { deleteNewsSFn, setNewsPublishedSFn } from "./news.functions";
 
 /** 新闻可翻译字段定义 */
 const NEWS_TRANSLATABLE_FIELDS = [
@@ -56,13 +56,15 @@ export function newsColumns(options: NewsColumnsOptions) {
 		},
 		{
 			title: "状态",
-			dataIndex: "status",
-			key: "status",
+			dataIndex: "isPublished",
+			key: "isPublished",
 			width: 140,
-			render: (_: string, record: NewsRecord) => {
+			render: (_: boolean, record: NewsRecord) => {
 				return (
 					<Space size={4}>
-						<DictTag dictSlug="news_status" value={record.status ?? ""} />
+						<Tag color={record.isPublished ? "green" : "gold"}>
+							{record.isPublished ? "已发布" : "未发布"}
+						</Tag>
 						{record.isPinned && <Tag color="blue">置顶</Tag>}
 						{record.isRecommended && <Tag color="gold">推荐</Tag>}
 					</Space>
@@ -118,15 +120,15 @@ export function newsColumns(options: NewsColumnsOptions) {
 			fixed: "right" as const,
 			render: (_: unknown, record: NewsRecord) => (
 				<TableOperate>
-					{record.status === "draft" && (
+					{!record.isPublished && (
 						<TableOperate.Custom>
 							<Button
 								type="link"
 								size="small"
 								onClick={async () => {
 									try {
-										await changeStatusSFn({
-											data: { id: record.id, status: "published" },
+										await setNewsPublishedSFn({
+											data: { id: record.id, isPublished: true },
 										});
 										await options.onRefresh();
 									} catch (err) {
@@ -140,25 +142,25 @@ export function newsColumns(options: NewsColumnsOptions) {
 							</Button>
 						</TableOperate.Custom>
 					)}
-					{record.status === "published" && (
+					{record.isPublished && (
 						<TableOperate.Custom>
 							<Button
 								type="link"
 								size="small"
 								onClick={async () => {
 									try {
-										await changeStatusSFn({
-											data: { id: record.id, status: "archived" },
+										await setNewsPublishedSFn({
+											data: { id: record.id, isPublished: false },
 										});
 										await options.onRefresh();
 									} catch (err) {
 										message.error(
-											err instanceof Error ? err.message : "归档失败",
+											err instanceof Error ? err.message : "下线失败",
 										);
 									}
 								}}
 							>
-								归档
+								下线
 							</Button>
 						</TableOperate.Custom>
 					)}

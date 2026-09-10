@@ -12,20 +12,20 @@ import {
 	uuid,
 	varchar,
 } from "drizzle-orm/pg-core";
+import { createdAt, pk, timestamps } from "./columns";
 
 /** 埋点事件表：存储客户端上报的原始事件数据 */
 export const trackEvent = pgTable(
 	"track_event",
 	{
-		id: uuid().defaultRandom().primaryKey(),
+		...pk(),
 		time: timestamp({ withTimezone: true }).notNull(),
 		userId: uuid("user_id"),
 		sessionId: varchar("session_id", { length: 64 }).notNull(),
 		name: varchar({ length: 100 }).notNull(),
 		properties: jsonb().$type<Record<string, unknown>>().default({}).notNull(),
-		createdAt: timestamp("created_at", { withTimezone: true })
-			.notNull()
-			.defaultNow(),
+		// 事件仅需创建时间，不套用 timestamps()
+		...createdAt(),
 	},
 	(table) => [
 		index("idx_track_event_time").on(table.time.desc()),
@@ -43,12 +43,7 @@ export const trackEventMeta = pgTable("track_event_meta", {
 	category: varchar({ length: 50 }).notNull(),
 	description: text("description"),
 	isPreset: boolean("is_preset").default(false).notNull(),
-	createdAt: timestamp("created_at", { withTimezone: true })
-		.notNull()
-		.defaultNow(),
-	updatedAt: timestamp("updated_at", { withTimezone: true })
-		.notNull()
-		.defaultNow(),
+	...timestamps(),
 });
 
 /** 元属性表：管理端可配置的事件属性字段，isPreset 标记系统预置 */
@@ -58,10 +53,5 @@ export const trackPropertyMeta = pgTable("track_property_meta", {
 	dataType: varchar("data_type", { length: 20 }).default("string").notNull(),
 	description: text("description"),
 	isPreset: boolean("is_preset").default(false).notNull(),
-	createdAt: timestamp("created_at", { withTimezone: true })
-		.notNull()
-		.defaultNow(),
-	updatedAt: timestamp("updated_at", { withTimezone: true })
-		.notNull()
-		.defaultNow(),
+	...timestamps(),
 });

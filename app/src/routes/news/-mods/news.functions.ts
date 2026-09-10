@@ -22,7 +22,7 @@ export const getPublishedNewsSFn = createServerFn({ method: "GET" })
 	.validator(publishedNewsSchema)
 	.handler(async ({ data, context }) => {
 		const { records, ...rest } = await getNewsList({
-			status: "published",
+			isPublished: true,
 			...data,
 		});
 		return {

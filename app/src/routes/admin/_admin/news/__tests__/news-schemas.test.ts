@@ -8,13 +8,17 @@ import {
 	getNewsSchema,
 	listSchema,
 	newsImportSchema,
-	statusSchema,
+	publishNewsSchema,
 	updateNewsSchema,
 } from "#/services/news/news.schemas";
 
 describe("listSchema", () => {
 	it("空参数通过", () => {
 		expect(listSchema.safeParse({}).success).toBe(true);
+	});
+
+	it("isPublished 布尔筛选通过", () => {
+		expect(listSchema.safeParse({ isPublished: false }).success).toBe(true);
 	});
 });
 
@@ -28,26 +32,24 @@ describe("getNewsSchema", () => {
 	});
 });
 
-describe("statusSchema", () => {
-	it("合法状态变更通过（draft→published）", () => {
+describe("publishNewsSchema", () => {
+	it("合法发布状态变更通过", () => {
 		expect(
-			statusSchema.safeParse({ id: "n-1", status: "published" }).success,
+			publishNewsSchema.safeParse({ id: "n-1", isPublished: true }).success,
 		).toBe(true);
 	});
 
-	it("非法状态失败", () => {
-		expect(
-			statusSchema.safeParse({ id: "n-1", status: "unknown" }).success,
-		).toBe(false);
+	it("缺少 isPublished 失败", () => {
+		expect(publishNewsSchema.safeParse({ id: "n-1" }).success).toBe(false);
 	});
 });
 
 describe("createNewsSchema", () => {
-	it("仅标题创建通过，status 默认为 draft，isPinned 默认为 false", () => {
+	it("仅标题创建通过，isPublished 默认为 false，isPinned 默认为 false", () => {
 		const result = createNewsSchema.safeParse({ title: "新闻标题" });
 		expect(result.success).toBe(true);
 		if (result.success) {
-			expect(result.data.status).toBe("draft");
+			expect(result.data.isPublished).toBe(false);
 			expect(result.data.isPinned).toBe(false);
 		}
 	});
@@ -56,9 +58,10 @@ describe("createNewsSchema", () => {
 		expect(createNewsSchema.safeParse({ title: "" }).success).toBe(false);
 	});
 
-	it("非法 status 失败", () => {
+	it("isPublished 非布尔失败", () => {
 		expect(
-			createNewsSchema.safeParse({ title: "x", status: "archived" }).success,
+			createNewsSchema.safeParse({ title: "x", isPublished: "published" })
+				.success,
 		).toBe(false);
 	});
 
@@ -78,7 +81,7 @@ describe("updateNewsSchema", () => {
 			updateNewsSchema.safeParse({
 				id: "n-1",
 				title: "更新标题",
-				status: "published",
+				isPublished: true,
 				isPinned: true,
 				isRecommended: false,
 			}).success,
@@ -94,7 +97,7 @@ describe("updateNewsSchema", () => {
 			updateNewsSchema.safeParse({
 				id: "n-1",
 				title: "更新标题",
-				status: "published",
+				isPublished: true,
 				isPinned: true,
 				isRecommended: false,
 				publishedAt: null,
@@ -107,7 +110,7 @@ describe("updateNewsSchema", () => {
 			updateNewsSchema.safeParse({
 				id: "n-1",
 				title: "更新标题",
-				status: "published",
+				isPublished: true,
 				isPinned: true,
 				isRecommended: false,
 				publishedAt: "2026-01-01T00:00:00.000Z",

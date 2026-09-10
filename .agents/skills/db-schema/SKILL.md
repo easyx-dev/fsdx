@@ -19,40 +19,56 @@ description: >
 
 ## 通用列模板
 
-每个表**必须**包含以下列：
+主键、创建/更新时间、软删除、排序、发布状态统一由 `src/db/schema/columns.ts` 的工厂函数提供，**禁止在各表重复手写**（也禁止把工厂返回值提取成共享常量对象——Drizzle 列构造器带状态，跨表复用同一实例会共享 config）：
 
 ```ts
+import {
+  createdAt,
+  pk,
+  publishable,
+  softDelete,
+  sortable,
+  timestamps,
+  updatedAt,
+} from "./columns";
+
 // 主键 —— 所有表统一
-id: uuid().defaultRandom().primaryKey(),
+...pk(),
 
-// 创建时间 —— defaultNow + notNull
-createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+// 创建时间 / 更新时间 —— 可单独展开，也可用 timestamps() 组合（更新时业务侧仍需手动写入 updatedAt）
+...createdAt(),
+...updatedAt(),
+...timestamps(), // 等价于 createdAt() + updatedAt()
 
-// 更新时间 —— defaultNow + notNull，每次更新需手动设为 new Date()
-updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
-```
-
-> **主键例外**：埋点元数据表 `track_event_meta`（`name`）与 `track_property_meta`（`key`）以业务标识符为 varchar 主键，不适用 uuid 统一规则；其余表一律 uuid 主键。
-
-**可选通用列**（按需添加）：
-
-```ts
 // 软删除 —— 需要可恢复删除的表
-deletedAt: timestamp("deleted_at", { withTimezone: true }),
+...softDelete(),
 
 // 排序 —— 需要手动拖拽排序的表
-sortOrder: integer("sort_order").default(0).notNull(),
+...sortable(),
 
+// 发布状态（上架 / 下架）—— 通用语义，仅提供 isPublished，与具体发布时间字段无关
+...publishable(),
+```
+
+> `publishable()` 只提供 `isPublished`；发布时间（如 `publishedAt`）是业务字段，按需在该表内联声明（如 `news`），首次发布时由业务侧写入。
+
+> **主键例外**：埋点元数据表 `track_event_meta`（`name`）与 `track_property_meta`（`key`）以业务标识符为 varchar 主键，只套用 `timestamps()`，不用 `pk()`。
+
+**仍需按表手写的通用列**（形态 / 语义随业务变化，不纳入工厂）：
+
+```ts
 // 描述 —— 任何描述性文本，统一用 description，禁用 summary
 description: text("description"),
 
-// 状态 —— 状态机字段，通常配合 DictSelect
+// 状态 —— 状态机字段，默认值与取值随领域变化，通常配合 DictSelect
 status: varchar({ length: 20 }).default("active").notNull(),
 
 // 创建者 / 更新者 —— 审计追踪
 createdById: uuid("created_by_id").references(() => adminUser.id),
 updatedById: uuid("updated_by_id").references(() => adminUser.id),
 ```
+
+> 只有 `createdAt`（无 `updatedAt`）的表（如 `captcha_code`、`track_event`）用 `...createdAt()`；`operation_log` 因列为 camelCase 例外且无 `updatedAt`/`deletedAt`，仍内联手写。
 
 ## 列命名决策表
 
@@ -135,44 +151,31 @@ detail: jsonb(),
 /**
  * 产品表
  */
-import {
-  boolean,
-  index,
-  integer,
-  pgTable,
-  text,
-  timestamp,
-  uuid,
-  varchar,
-} from "drizzle-orm/pg-core";
+import { index, pgTable, text, uuid, varchar } from "drizzle-orm/pg-core";
 import { adminUser } from "./admin-user";
+import { file } from "./file";
+import { pk, softDelete, sortable, timestamps } from "./columns";
 
 export const product = pgTable(
   "product",  // 表名：单数
   {
-    // ═══ 主键 ═══
-    id: uuid().defaultRandom().primaryKey(),
+    // ═══ 通用列（工厂展开，位置与列顺序保持一致） ═══
+    ...pk(),
 
     // ═══ 业务列 ═══
     name: varchar({ length: 200 }).notNull(),
     description: text("description"),
     status: varchar({ length: 20 }).default("active").notNull(),
-    isPublished: boolean("is_published").default(false).notNull(),
-    sortOrder: integer("sort_order").default(0).notNull(),
+    ...sortable(),
     coverImageId: uuid("cover_image_id").references(() => file.id),
 
     // ═══ 审计列 ═══
     createdById: uuid("created_by_id").references(() => adminUser.id),
     updatedById: uuid("updated_by_id").references(() => adminUser.id),
-    createdAt: timestamp("created_at", { withTimezone: true })
-      .defaultNow()
-      .notNull(),
-    updatedAt: timestamp("updated_at", { withTimezone: true })
-      .defaultNow()
-      .notNull(),
+    ...timestamps(),
 
     // ═══ 软删除（按需） ═══
-    deletedAt: timestamp("deleted_at", { withTimezone: true }),
+    ...softDelete(),
   },
   (table) => [
     // 按需添加索引
@@ -180,6 +183,8 @@ export const product = pgTable(
   ],
 );
 ```
+
+> 若不需要排序 / 软删除 / 发布，去掉对应片段即可。列顺序（业务列 → 审计 → 软删除）应与既有表保持一致，避免无谓的迁移 diff。
 
 ## 占位符替换说明
 

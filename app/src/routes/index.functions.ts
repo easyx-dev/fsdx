@@ -9,7 +9,7 @@ import { translateRecords } from "#/shared-services/i18n/i18n.server";
 export const getLatestNewsSFn = createServerFn({ method: "GET" }).handler(
 	async ({ context }) => {
 		const { records, ...rest } = await getNewsList({
-			status: "published",
+			isPublished: true,
 			pageSize: 6,
 		});
 		return {

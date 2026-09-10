@@ -49,7 +49,7 @@ class MemoryCache<T> {
 
 | 属性 | 值 |
 |------|-----|
-| Key | `dictSlug`（如 `"news_status"`） |
+| Key | `dictSlug`（如 `"user_status"`） |
 | Value | `Record<string, { label: string; color?: string \| null }>` |
 | TTL | 无（永不过期） |
 | 加载 | `loadDictCache()` → `dictCache.set(dictSlug, {...})` |

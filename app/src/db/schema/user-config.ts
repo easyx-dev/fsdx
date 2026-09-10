@@ -5,12 +5,12 @@
 import {
 	jsonb,
 	pgTable,
-	timestamp,
 	uniqueIndex,
 	uuid,
 	varchar,
 } from "drizzle-orm/pg-core";
 import type { UserType } from "#/types/user";
+import { pk, softDelete, timestamps } from "./columns";
 
 /** 单渠道配置：启用与否 + 目标（value）+ 可选签名（secret）。enabled 缺省视为停用 */
 export interface NotifyChannelConfig {
@@ -39,17 +39,12 @@ export interface UserConfig {
 export const userConfig = pgTable(
 	"user_config",
 	{
-		id: uuid().defaultRandom().primaryKey(),
+		...pk(),
 		userId: uuid("user_id").notNull(),
 		userType: varchar("user_type", { length: 20 }).$type<UserType>().notNull(),
 		config: jsonb("config").$type<UserConfig>().notNull().default({}),
-		createdAt: timestamp("created_at", { withTimezone: true })
-			.defaultNow()
-			.notNull(),
-		updatedAt: timestamp("updated_at", { withTimezone: true })
-			.defaultNow()
-			.notNull(),
-		deletedAt: timestamp("deleted_at", { withTimezone: true }),
+		...timestamps(),
+		...softDelete(),
 	},
 	(table) => [
 		uniqueIndex("idx_user_config_user").on(table.userType, table.userId),

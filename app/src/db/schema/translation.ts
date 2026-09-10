@@ -10,28 +10,23 @@ import {
 	index,
 	pgTable,
 	text,
-	timestamp,
 	unique,
 	uuid,
 	varchar,
 } from "drizzle-orm/pg-core";
+import { pk, timestamps } from "./columns";
 
 /** UI 固定文案翻译表：key 直接使用中文原文（如 "首页"），en 语言用于映射目标语言值 */
 export const uiTranslation = pgTable(
 	"ui_translation",
 	{
-		id: uuid().defaultRandom().primaryKey(),
+		...pk(),
 		locale: varchar({ length: 10 }).notNull(),
 		key: varchar({ length: 300 }).notNull(),
 		value: text().notNull(),
 		/** 复用 EditorType: input | text | number | json | rich | code */
 		valueType: varchar("value_type", { length: 20 }).default("input").notNull(),
-		createdAt: timestamp("created_at", { withTimezone: true })
-			.defaultNow()
-			.notNull(),
-		updatedAt: timestamp("updated_at", { withTimezone: true })
-			.defaultNow()
-			.notNull(),
+		...timestamps(),
 	},
 	(table) => [unique("uq_ui_trans_locale_key").on(table.locale, table.key)],
 );
@@ -40,7 +35,7 @@ export const uiTranslation = pgTable(
 export const contentTranslation = pgTable(
 	"content_translation",
 	{
-		id: uuid().defaultRandom().primaryKey(),
+		...pk(),
 		entityType: varchar("entity_type", { length: 50 }).notNull(),
 		entityId: uuid("entity_id").notNull(),
 		fieldName: varchar("field_name", { length: 100 }).notNull(),
@@ -48,12 +43,7 @@ export const contentTranslation = pgTable(
 		value: text().notNull(),
 		/** 复用 EditorType: input | text | rich 等 */
 		valueType: varchar("value_type", { length: 20 }).default("text").notNull(),
-		createdAt: timestamp("created_at", { withTimezone: true })
-			.defaultNow()
-			.notNull(),
-		updatedAt: timestamp("updated_at", { withTimezone: true })
-			.defaultNow()
-			.notNull(),
+		...timestamps(),
 	},
 	(table) => [
 		unique("uq_ct_entity_field_locale").on(

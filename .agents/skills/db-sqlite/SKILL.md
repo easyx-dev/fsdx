@@ -16,10 +16,11 @@ description: >
 | 选型依据与前置条件 | → [基态与选型](#0-基态与选型) |
 | 依赖与配置改动 | → [依赖变更](#1-依赖变更) / [配置文件变更](#2-配置文件变更) |
 | Schema 类型映射 | → [Schema 迁移](#3-schema-迁移) |
+| 通用列工厂 `columns.ts`（一次性替换） | → [3.1.1](#3-schema-迁移) |
 | db 客户端与迁移器 | → [DB 客户端](#4-db-客户端) |
 | 为什么普通查询不用改 | → [查询层](#5-查询层异步保持) |
 | ILIKE / db.execute / 时间序列 | → [服务端 SQL 适配](#6-服务端-sql-适配) |
-| 时间戳从 Date 改 number | → [日期时间处理](#7-日期时间处理) |
+| 时间戳保持 Date（`timestamp_ms`） | → [日期时间处理](#7-日期时间处理) |
 | **事务必须同步化（关键陷阱）** | → [事务改造](#8-事务改造关键陷阱) |
 | 测试 mock 适配 | → [测试迁移](#9-测试迁移) |
 | e2e helpers 由 pg 改 node:sqlite 直连 | → [9.5 e2e 改造](#95-e2e-改造3-个文件pg--node-sqlite-文件路径直连) |
@@ -124,12 +125,73 @@ data/
 
 ### 3.1 import 源变更
 
-所有 `src/db/schema/*.ts` 文件（数量以实际为准）：
+所有 `src/db/schema/*.ts` 文件（数量以实际为准），**含通用列工厂 `columns.ts`**（`pk` → `text(...).primaryKey().$defaultFn(() => crypto.randomUUID())`；`createdAt`/`updatedAt`/`timestamps`/`softDelete` 的时间列 → `integer(..., { mode: "timestamp_ms" })`；`publishable` 的 `isPublished` → `integer("is_published", { mode: "boolean" })`；`sortable` → `integer("sort_order")`）：
 
 ```diff
 - import { pgTable, uuid, varchar, timestamp, boolean, jsonb, integer, bigint, index, uniqueIndex, unique, sql } from "drizzle-orm/pg-core";
 + import { sqliteTable, text, integer, index, uniqueIndex, unique, sql } from "drizzle-orm/sqlite-core";
 ```
+
+### 3.1.1 通用列工厂（`columns.ts`）SQLite 版
+
+表文件里 `...pk()` / `...timestamps()` / `...softDelete()` / `...sortable()` / `...publishable()` 的展开行**原样不动**，只把 `src/db/schema/columns.ts` 整个替换为下面的 SQLite 版（通用列是单一改写点，无需逐表改）：
+
+```ts
+/**
+ * 表结构通用列片段（SQLite 版）
+ *
+ * 一律用工厂函数返回全新列构造器，禁止导出共享的常量对象——Drizzle 的列构造器带状态
+ * （setName/build 会写入其 config），跨表复用同一实例会导致多表共享 config。
+ * 工厂内显式传数据库列名，避免依赖 JS 属性名推断。
+ */
+import { integer, text } from "drizzle-orm/sqlite-core";
+
+/** uuid 主键：text 存储，默认值由 drizzle 写入时用 $defaultFn 生成 */
+export const pk = () => ({
+	id: text("id")
+		.primaryKey()
+		.$defaultFn(() => crypto.randomUUID()),
+});
+
+/** 创建时间 */
+export const createdAt = () => ({
+	createdAt: integer("created_at", { mode: "timestamp_ms" })
+		.defaultNow()
+		.notNull(),
+});
+
+/** 更新时间（更新时业务侧仍需手动写入） */
+export const updatedAt = () => ({
+	updatedAt: integer("updated_at", { mode: "timestamp_ms" })
+		.defaultNow()
+		.notNull(),
+});
+
+/** 创建 + 更新时间（两者组合的常用形态） */
+export const timestamps = () => ({
+	...createdAt(),
+	...updatedAt(),
+});
+
+/** 软删除标记（有恢复需求、需过滤未删除的表启用） */
+export const softDelete = () => ({
+	deletedAt: integer("deleted_at", { mode: "timestamp_ms" }),
+});
+
+/** 手动排序（需拖拽 / 指定排序的表启用） */
+export const sortable = () => ({
+	sortOrder: integer("sort_order").default(0).notNull(),
+});
+
+/** 发布状态（上架 / 下架）：通用语义，与具体发布时间字段无关 */
+export const publishable = () => ({
+	isPublished: integer("is_published", { mode: "boolean" })
+		.default(false)
+		.notNull(),
+});
+```
+
+> 表文件仍需按 §3.2 逐表改 `pgTable`→`sqliteTable` 与**业务列**类型；`columns.ts` 只承载通用列，故它是唯一一次性替换的 schema 文件。
 
 ### 3.2 列类型映射表
 
@@ -138,18 +200,20 @@ data/
 | `pgTable("table_name")` | `sqliteTable("table_name")` | 表定义 |
 | `uuid().defaultRandom().primaryKey()` | `text("id").primaryKey().$defaultFn(() => crypto.randomUUID())` | UUID 主键，text 存储，`$defaultFn` 在 drizzle v1.0 保留 |
 | `uuid("column_name")` | `text("column_name")` | UUID 外键/普通列 |
-| `timestamp("col", { withTimezone: true }).defaultNow().notNull()` | `integer("col", { mode: "number" }).$defaultFn(() => Date.now()).notNull()` | Unix 毫秒时间戳，JS 类型为 `number` |
-| `timestamp("col", { withTimezone: true }).notNull().defaultNow()` | `integer("col", { mode: "number" }).notNull().$defaultFn(() => Date.now())` | `.defaultNow()` / `.notNull()` 顺序无关 |
-| `timestamp({ withTimezone: true })` | `integer({ mode: "number" })` | 无列名版本（如 `operation_log.createdAt`） |
+| `timestamp("col", { withTimezone: true }).defaultNow().notNull()` | `integer("col", { mode: "timestamp_ms" }).defaultNow().notNull()` | Unix 毫秒时间戳，JS 类型仍为 `Date`，业务代码无需改 |
+| `timestamp("col", { withTimezone: true }).notNull().defaultNow()` | `integer("col", { mode: "timestamp_ms" }).notNull().defaultNow()` | `.defaultNow()` / `.notNull()` 顺序无关 |
+| `timestamp({ withTimezone: true })` | `integer({ mode: "timestamp_ms" })` | 无列名版本（如 `operation_log.createdAt`） |
 | `jsonb("col").$type<T>()` | `text("col", { mode: "json" }).$type<T>()` | JSON 数据，`$type` 必须保留（drizzle v1 `forbidJsonb`，SQLite 无 jsonb） |
 | `boolean("col")` | `integer("col", { mode: "boolean" })` | 布尔值（存 0/1），JS 类型仍为 `boolean` |
 | `bigint({ mode: "number" })` | `integer({ mode: "number" })` | 大整数（`file.size`） |
 | `varchar({ length: N })` | `text()` | SQLite 忽略长度约束，列名照常写：`varchar("name")` → `text("name")` |
 | `text()` / `integer()` | `text()` / `integer()` | 不变 |
 
-> ⚠️ **`$defaultFn` 是客户端侧默认，不生成 DB 级 DEFAULT**：pg 的 `.defaultNow()` 会落库为 `DEFAULT now()`，sqlite 的 `$defaultFn` 仅由 drizzle 在写入时 JS 计算填值，迁移 SQL 中**没有** `DEFAULT` 子句（且 `.notNull()` 仍在）。因此**绕过 drizzle 的原始 SQL `INSERT`**（e2e 种子数据、数据灌入脚本、SQLite CLI）若不显式填写 `id` / `created_at` / `updated_at` 会直接违反主键/`NOT NULL` 约束。处理方式：原始 SQL 须显式填值（`id` 用 `random()`、时间戳用 `unixepoch()` 毫秒），或改用 drizzle query builder（自动触发 `$defaultFn`）——e2e 种子即因此采用后者。
+> ⚠️ **`timestamp_ms` 必须配 `.defaultNow()`**：SQLite 的 `integer(..., { mode: "timestamp_ms" }).defaultNow()` 生成真正的 **DB 级毫秒默认** `DEFAULT (cast((julianday('now') - 2440587.5)*86400000 as integer))`，与 pg 的 `.defaultNow()` 对齐，绕过 drizzle 的原始 SQL `INSERT`（e2e 种子、灌数脚本、SQLite CLI）也能取到默认值（`id` 仍需显式填 `random()`，因为 uuid 主键的默认是 `$defaultFn` 客户端生成）。该方法在 builder 上标了 `@deprecated`（官方建议 `default()` 自定义表达式），但仍是当前可用的毫秒默认写法。
 >
-> ⚠️ **无列名 `integer({ mode: "number" })` → 列名即 JS 属性名**：`timestamp({ withTimezone: true })`（无列名，如 `operation_log.createdAt`）迁移后列名保持 camelCase `createdAt`，生成 SQL 为 `` `createdAt` integer NOT NULL ``、索引落在 `createdAt` 上——与 AGENTS.md「operation_log 历史表为 camelCase 列名例外」对齐，**勿改成 `created_at`**。
+> ⚠️ **只能用 `timestamp_ms`，不要用 `timestamp`**：`timestamp` 是秒级（`mapFromDriverValue` 做 `value * 1e3`），会丢毫秒精度；而 `.defaultNow()` 硬编码毫秒，两者混用相差 1000 倍。
+>
+> ⚠️ **无列名 `integer({ mode: "timestamp_ms" })` → 列名即 JS 属性名**：`timestamp({ withTimezone: true })`（无列名，如 `operation_log.createdAt`）迁移后列名保持 camelCase `createdAt`，生成 SQL 为 `` `createdAt` integer NOT NULL ``、索引落在 `createdAt` 上——与 AGENTS.md「operation_log 历史表为 camelCase 列名例外」对齐，**勿改成 `created_at`**。
 
 ### 3.3 约束差异处理
 
@@ -246,10 +310,10 @@ export const adminUser = sqliteTable(
 		adminRoleIds: text("admin_role_ids", { mode: "json" }).$type<string[]>().default([]).notNull(),
 		isRoot: integer("is_root", { mode: "boolean" }).default(false).notNull(),
 		status: text("status").default("active").notNull(),
-		lastLoginAt: integer("last_login_at", { mode: "number" }),
-		createdAt: integer("created_at", { mode: "number" }).$defaultFn(() => Date.now()).notNull(),
-		updatedAt: integer("updated_at", { mode: "number" }).$defaultFn(() => Date.now()).notNull(),
-		deletedAt: integer("deleted_at", { mode: "number" }),
+		lastLoginAt: integer("last_login_at", { mode: "timestamp_ms" }),
+		createdAt: integer("created_at", { mode: "timestamp_ms" }).defaultNow().notNull(),
+		updatedAt: integer("updated_at", { mode: "timestamp_ms" }).defaultNow().notNull(),
+		deletedAt: integer("deleted_at", { mode: "timestamp_ms" }),
 	},
 	(table) => [
 		uniqueIndex("idx_admin_user_single_root")
@@ -479,81 +543,29 @@ node-postgres 的 `update()/insert()` 返回 `{ rowCount }`；node-sqlite 返回
 
 影响：`message.server.ts` 的 `markAsRead` / `markAllRead` / `deleteMessage` / `sendMessages` / `deleteMessageById`（5 处）；对应 `message.test.ts` 的 mock 由 `{ rowCount: N }` 改 `{ changes: N }`。
 
-## 7. 日期时间处理
+## 7. 日期时间处理（保持 Date）
 
-Schema 时间戳列从 `timestamp`（JS `Date`）变为 `integer({ mode: "number" })`（JS `number`，Unix 毫秒），所有写操作与比较必须传 `Date.now()` / 毫秒值。
+时间戳列统一用 `integer("col", { mode: "timestamp_ms" })`（见 §3.2）：JS 侧仍是 `Date`，底层存 Unix 毫秒。Drizzle 在 query builder 层完成双向转换，绝大多数业务代码**无需改动**：
 
-### 7.1 写入操作
+- 写入：`mapUpdateSet` / 插入映射对每个值走列的 `mapToDriverValue`，`.set({ updatedAt: new Date() })`、`.values({ createdAt: new Date() })` 自动转毫秒；
+- 比较：`eq` / `gt` / `lt` / `gte` 经 `bindIfParam` 包装为带列的 `Param`，`gt(col, new Date())` 自动转毫秒；
+- 读取：返回 `Date`，`.toISOString()` / `.toLocaleString()` 不变；
+- 显式类型接口里的 `Date`、测试里的 `expect.any(Date)` / `toBeInstanceOf(Date)` 均不用改。
 
-```diff
-- .set({ updatedAt: new Date(), deletedAt: new Date() })
-+ .set({ updatedAt: Date.now(), deletedAt: Date.now() })
+**仍需人工处理的三类**：
 
-- .values({ ...data, createdAt: new Date(), updatedAt: new Date() })
-+ .values({ ...data, createdAt: Date.now(), updatedAt: Date.now() })
-```
+1. **裸 `sql` 模板的日期参数**：`sql`...${someDate}`` 不经过列的编码器，node:sqlite 无法绑定 `Date` 对象会直接抛错，需显式转毫秒：
 
-### 7.2 查询条件
+   ```diff
+   - WHERE ${trackEventTable.time} >= ${start.toISOString()}
+   + WHERE ${trackEventTable.time} >= ${start.getTime()}
+   ```
 
-```diff
-- gte(trackEventTable.time, new Date(startDate))
-+ gte(trackEventTable.time, new Date(startDate).getTime())
+   （这类查询恰好也在 §6.3 的时间序列改写范围内。）
+2. **`db.all(sql)` 的原始结果**：绕过列映射，时间字段是驱动原值 `number`，消费点需按 number 处理（或手动 `new Date()`）。
+3. **字符串日期入参**：`mapToDriverValue` 对 string 会调 `value.getTime()` 抛错（pg 的 `timestamptz` 能吞字符串）。凡把日期字符串直接写进时间列 / 比较的地方，须先 `new Date(str)`。
 
-- lt(file.expiredAt, new Date())
-+ lt(file.expiredAt, Date.now())
-
-- gt(captchaCode.expiredAt, new Date())
-+ gt(captchaCode.expiredAt, Date.now())
-```
-
-### 7.3 字符串日期解析
-
-```diff
-- const publishedAtValue = params.publishedAt ? new Date(params.publishedAt) : null;
-+ const publishedAtValue = params.publishedAt ? new Date(params.publishedAt).getTime() : null;
-```
-
-### 7.4 读取时格式化
-
-读取结果为 `number`，需包一层 `new Date()` 再调用日期方法：
-
-```diff
-- (r.publishedAt ?? r.createdAt).toISOString()
-+ new Date(r.publishedAt ?? r.createdAt).toISOString()
-```
-
-### 7.5 类型定义更新
-
-显式声明的类型中 timestamp 字段从 `Date` 改为 `number`：
-
-```diff
-export interface EventRecord {
-  id: string;
-- time: Date;
-+ time: number;
-- createdAt: Date;
-+ createdAt: number;
-}
-```
-
-**替换范围与豁免**：全局搜索 `new Date(`（注意不是只有 `new Date()`，还包括 `new Date(expr)`），分类处理：
-
-- `new Date()` 在 Drizzle `.set()` / `.values()` / `gt()` / `lt()` / `gte()` 中 → `Date.now()`
-- `new Date(Date.now() ± X)`（如 captcha `expiredAt`、file 临时文件过期时间）→ `Date.now() ± X`
-- `new Date(params.xxx)`（字符串转时间戳，如 news `publishedAt`）→ `new Date(params.xxx).getTime()`
-- 纯 JS 日期计算（`logs-cleanup.server.ts` 的 `toDateString(new Date())`、`track.validate.ts` 的 `new Date(value)` 校验）**保留不动**
-- 搜索范围覆盖**所有 `.ts`**（含非 `.server.ts` 的 `track.meta.ts`、`i18n.seed.ts`），本项目约 30 处写操作点
-
-> 可先用迁移脚本的 `audit` 子命令一次性列出全部 `new Date(` 位置再逐一甄别（见 [§10.2](#102-迁移辅助脚本scriptsdb-migrationts)）。
-
-### 7.6 路由层 SFn 与前端日期消费点
-
-时间戳变 `number` 后，`.server.ts` 之外还有两类消费点需甄别（audit 会列出，但要人工判断）：
-
-- **需改（入参转换）**：
-  - SFn 序列化层：如 `operation-logs.functions.ts` 的 `mapDateField`——`createdAt` 已是 `number`，须补 `typeof value === "number" ? new Date(value).toISOString() : String(value)` 分支（见 §11.8）
-  - SFn 把字符串/Date 转成 DB 写入值：如 `news.functions.ts` 的 `new Date(data.publishedAt)` → `.getTime()`、发版补写 `updateData.publishedAt = new Date()` → `Date.now()`
-- **无需改（number 可直接 `new Date(num)`）**：前端渲染点 `new Date(item.createdAt).toLocaleString(...)` / `new Date(e.time).toISOString()`（`routes/messages.tsx`、`admin/_admin/messages/index.tsx`、`admin/_admin/track/query.tsx`、`admin/_admin/operation-logs/index.tsx` `new Date(entry.createdAt)`）——`new Date()` 接受 number，`toISOString`/`toLocaleString` 行为一致，勿画蛇添足
+> 用迁移脚本的 `audit` 子命令列出全部日期表达式命中再逐一甄别（见 [§10.2](#102-迁移辅助脚本scriptsdb-migrationts)）。
   
 ## 8. 事务改造（关键陷阱）
 
@@ -580,7 +592,7 @@ return result;
 - });
 
 // 迁移后（node-sqlite，同步回调）
-+ const now = Date.now();
++ const now = new Date();
 + db.transaction((tx) => {
 +     tx.update(dictItem).set({ deletedAt: now }).where(eq(dictItem.dictSlug, existing.slug)).run();
 +     tx.update(dict).set({ deletedAt: now }).where(eq(dict.id, id)).run();
@@ -654,7 +666,7 @@ try {
 
 ## 9. 测试迁移
 
-测试改动**不止事务相关**，共三类，覆盖约 10 个测试文件。建议先用脚本 `audit` 列出全部 `new Date(`/`rowCount`/`withTransaction` 命中，再逐类处理。
+测试改动**不止事务相关**，共两类，覆盖约 8 个测试文件。建议先用脚本 `audit` 列出全部 `rowCount`/`withTransaction`/裸 sql 日期入参命中，再逐类处理。
 
 **第一类：事务 mock 同步化**（3 个文件，改动最大）
 
@@ -677,9 +689,9 @@ try {
 - `dict.test.ts`：`importDicts` 事务内 select 走 `.all()/.get()`，需独立 `txRows`（`mockReturnValueOnce`）+ tx 链加 `.all()/.get()`、update/insert 加 `.run()`
 - `i18n.test.ts`：`importContentTranslations` 同上，tx select 链加 `.get()`、insert 加 `.run()`
 
-**第二类：时间戳类型断言**（`new Date()` 夹具 + `toBeInstanceOf(Date)` → `toBeTypeOf("number")`）
+**第二类：时间戳断言（`timestamp_ms` 下无需改）**
 
-涉及文件：`news.test.ts`（`publishedAt`/`createdAt` 断言）、`captcha.test.ts`（`expiredAt` 类型）、`config.test.ts`（`updatedAt: expect.any(Date)` → `expect.any(Number)`）、`file.test.ts`（`expiredAt.getTime()` → 直接比数字）、`operation-logs.test.ts`（`mapDateField` 数字入参）。mock 夹具里的 `createdAt: new Date()` 在 `any` 语境下不报错，可不动，但显式类型化的夹具（如 news 的 `newsRecord`）必须改 `Date.now()`。
+`timestamp_ms` 保持 JS `Date`，`expect.any(Date)` / `toBeInstanceOf(Date)` 与 `new Date()` 夹具均无需改动——仅当测试直接断言 `db.all(sql)` 的原始结果（驱动原值 `number`）时才涉及 number。
 
 **第三类：结果字段 / API 改名**（`rowCount` → `changes`、`db.execute` → `db.all`）
 
@@ -699,7 +711,7 @@ export function getE2eDbUrl(): string {
 }
 ```
 
-- **`e2e/helpers/db.ts`**：pg `Pool` → `DatabaseSync` + `drizzle({ client })`（懒加载单例）；`seedBaseData` / `seedCaptcha` / `seedClientUser` 改用 **drizzle query builder**（**不要手写原始 SQL**——`created_at`/`updated_at` 已无 DB 默认，见 §3.2 `$defaultFn` 警告），事务含 `bcrypt.hash` 异步操作走手动 `BEGIN/COMMIT`（§8.3）；`is_root`/`email_verified` 布尔列存 `true`/`false`（drizzle `integer({ mode: "boolean" })` 转换）
+- **`e2e/helpers/db.ts`**：pg `Pool` → `DatabaseSync` + `drizzle({ client })`（懒加载单例）；`seedBaseData` / `seedCaptcha` / `seedClientUser` 改用 **drizzle query builder**（**不要手写原始 SQL**——`id` 的 uuid 默认是 `$defaultFn` 客户端生成，原始 SQL 须显式填 `random()`；时间列已有 DB 级毫秒默认），事务含 `bcrypt.hash` 异步操作走手动 `BEGIN/COMMIT`（§8.3）；`is_root`/`email_verified` 布尔列存 `true`/`false`（drizzle `integer({ mode: "boolean" })` 转换）
 - **`e2e/scripts/prepare.ts`**：删除 `ensureE2eDb()`（`CREATE DATABASE`）与 `getMaintenanceDbUrl` 使用；`resetE2eSchema()` 改为删除隔离库文件（含 `-wal`/`-shm` 伴生文件）整体重置；`migrateE2eDb()` 改用 `drizzle-orm/node-sqlite/migrator` 的 `migrate()`（替代手工遍历 SQL + sha256 哈希回填 `drizzle.__drizzle_migrations`，与 bootstrap `runMigrations()` 同路径）：
 
 ```ts
@@ -766,7 +778,7 @@ pnpm --filter @fsdx/web exec tsx ../.agents/skills/db-sqlite/scripts/db-migratio
 
 **「必改」模式**（迁移必须处理，供 audit/verify 门禁）：`ilike`、`db.execute`、`rowCount`、`pg`/`node-postgres`/`pg-core` 导入、`pgTable(`（正则 `/pgTable\\?\(/` 同时命中源码调用 `pgTable("...` 与正则字面量形态 `pgTable\(`）、`postgresql://`、`TO_CHAR`、`AT TIME ZONE`、`->>`、`::int`/`::text`/`::bigint`。
 
-**「甄别」模式**（仅列出位置，需人工判断）：`new Date(`、`withTransaction`、`db.transaction`、`timestamp(`/`jsonb(`/`uuid(`/`boolean(`。
+**「甄别」模式**（仅列出位置，需人工判断）：`new Date(`（多数无需改，仅裸 sql / 字符串入参需处理）、`withTransaction`、`db.transaction`、`timestamp(`/`jsonb(`/`uuid(`/`boolean(`、**裸 sql 模板中的日期表达式插值**（`sql`...${new Date(...)}`` / `...${x.toISOString()}``，不经过列编码，需转毫秒）。
 
 **`fix` 的边界**：只做三件无歧义替换——`--ilike`（`ilike`→`like`，app/src 全量）、`--execute`（仅 health 的 `db.execute(sql\`SELECT 1\`)` → `db.all(...)`）、`--rowcount`（仅 message 模块的 `result.rowCount ?? X` → `Number(result.changes)`）。**不做**事务同步化、schema 类型映射、时间序列 SQL、jsonb 运算符、测试 mock 改造——这些仍需按本 skill 各节人工完成，脚本只负责「发现 + 兜底校验」。
 
@@ -827,15 +839,15 @@ pnpm --filter @fsdx/web exec tsx ../.agents/skills/db-sqlite/scripts/db-migratio
 **原因**：`insert().values(...).all()` 未声明 `returning()`。
 **处理**：需要返回值用 `returning().all()`；不需要返回值用 `.run()`。
 
-### 11.7 迁移后时间字段全是 1970 年
+### 11.7 时间字段全是 1970 年 / 相差 1000 倍
 
-**原因**：时间戳列仍是 `Date` 值写入（`new Date()` 传入 `integer mode:number` 列，被当作数字 0 处理）。
-**处理**：按第 7 节全部改 `Date.now()` / `.getTime()`。
+**原因**：`timestamp`（秒）与 `timestamp_ms`（毫秒）混用；或写入时绕过列编码（裸 sql 传了 `Date`）。
+**处理**：全库统一 `timestamp_ms`；裸 sql 的日期入参显式 `.getTime()`（第 7 节）。
 
-### 11.8 `instanceof Date` 在 SFn 中失效
+### 11.8 裸 sql 绑定 Date 报错
 
-**原因**：时间戳字段已是 `number`，不再是 `Date` 实例。
-**处理**：`typeof x === "number" ? new Date(x).toISOString() : String(x)`。
+**原因**：`sql`...${someDate}`` 不经过列编码器，node:sqlite 不支持绑定 `Date` 对象。
+**处理**：显式传毫秒 `someDate.getTime()`；`db.all` 结果里的时间字段为 `number`，按需 `new Date(value)`。
 
 ## 12. 变更文件总览
 
@@ -845,9 +857,9 @@ pnpm --filter @fsdx/web exec tsx ../.agents/skills/db-sqlite/scripts/db-migratio
 | Schema 文件 | 以实际为准 | 全部 `src/db/schema/*.ts`，pg-core → sqlite-core |
 | DB 客户端 | 2 | src/db/index.ts、src/db/migrate.ts（migrate-cli.ts 不动） |
 | 服务端 SQL | 9 | `ilike→like`（8 个文件）、`db.execute→db.all` + 时间序列改写（track）、`rowCount→changes`（message） |
-| 日期时间 | ~30 处 | `new Date()`/`new Date(expr)` → `Date.now()`/`.getTime()`，类型 `Date` → `number` |
+| 日期时间 | 少量 | `timestamp_ms` 保持 `Date`，仅裸 sql 日期入参 / `db.all` 原始结果需处理 |
 | 事务 | 4 | dict/dicts/i18n 同步回调；init 手动 BEGIN/COMMIT |
-| 测试 | ~10 | 三类：事务 mock 终结符（init/dict/i18n）、时间戳断言（news/captcha/config/file/operation-logs）、`rowCount`/`db.execute` 改名（message/health/track） |
+| 测试 | ~8 | 两类：事务 mock 终结符（init/dict/i18n）、`rowCount`/`db.execute` 改名（message/health/track）；`timestamp_ms` 下时间戳断言无需改 |
 | e2e | 3 | e2e/helpers/{db,env}.ts + e2e/scripts/prepare.ts 由 pg 改 node:sqlite 文件路径直连 |
 | 辅助脚本 | 1 | `.agents/skills/db-sqlite/scripts/db-migration.ts`（audit/verify/fix） |
 | 迁移文件 | 1 | 删除旧 drizzle/，生成 SQLite 新基线 |

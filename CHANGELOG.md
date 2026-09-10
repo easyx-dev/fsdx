@@ -57,6 +57,10 @@
 
 - **统一剪贴板工具（[infra]）**：新增 `@fsdx/lib/clipboard` 的 `copyToClipboard`（Clipboard API 优先，非安全上下文/被拒时退回 `execCommand` 兜底，修复 HTTP 下复制按钮失效）与 `@fsdx/ui-spa/clipboard` 的 `copyText`（集成 antd message 提示，success/warning 通道可定制）；`ui-spa` ProTable 与 `ai-rich-editor` 两处复制改走统一实现，`ai-rich-editor` 新增 `@fsdx/lib` 依赖，`lib` / `ui-spa` README 补 subpath 导出清单。可被衍生项目吸收
 
+- **Schema 通用列片段提取（[infra]）**：新增 `src/db/schema/columns.ts`，以工厂函数提供 `pk` / `createdAt` / `updatedAt` / `timestamps`（两者组合）/ `softDelete` / `sortable` / `publishable` 通用列片段，全部 schema 表改为展开复用（工厂每次返回全新列构造器，规避 Drizzle 列构造器跨表共享 config 的隐患）；纯 TS 重构，`db:generate` 零 diff。`db-schema` skill 的通用列模板与完整表模板同步改为工厂写法。可被衍生项目吸收
+
+- **news 演示模块统一发布建模（[infra]）**：`news.status`（draft/published/archived）替换为 `publishable()` 片段的 `is_published`（上架/下架）——`publishable` 只承载通用发布状态，发布时间 `published_at` 作为业务字段留在 `news`；`changeNewsStatus` → `setNewsPublished`（首次发布补写 `publishedAt`，下线保留），管理端列表筛选/状态列/表单、前台与首页查询、仪表盘统计、导出列与相关测试全部对齐；`PRESET_DICTS` 删除 `news_status`，列表/创建/更新/导入 schema 改用 `isPublished`。附迁移（新增 `is_published`、删除 `status`）。可被衍生项目吸收
+
 ### Fix
 
 - **富文本编辑器占位符修复（[infra]）**：`@easyx/editor@1.1.1` 的 Placeholder 扩展生成的空段落属性名为 `data-data-placeholder`（双 `data-` 前缀），但其自带 CSS 用 `attr(data-placeholder)` 读取导致取空、占位文本不显示。该缺陷由升级 `@easyx/editor` 至 `1.1.2` 在包内修复（空段落改为单前缀 `data-placeholder`），占位符正常显示（浏览器实测）；此前在 `admin.global.css` 添加的本地覆盖 workaround 已随包升级移除。
@@ -70,6 +74,8 @@
 - **补全前台英文种子翻译并新增完整性守卫（[infra]）**：前台大量 `t("中文")` 文案缺失英文种子（消息中心/退出登录/忘记密码/各类失败提示/分页/已读未读/重置相关等），致使英文站静默回退中文；已补齐 `i18n.seed.ts` 缺失条目，并新增 `i18n.seed.test.ts` 静态扫描守卫，自动校验前台所有 `t()` 字面量均存在于 `SEED_DATA`（en），防止后续新增文案遗漏种子。另修正 `translation.ts` / 缓存注释 / 翻译管理页占位符与「中文作为 key」约定不符的过时表述。
 
 ### Docs
+
+- **SQLite 迁移指南时间戳方案改 `timestamp_ms`（[infra]）**：`db-sqlite` skill 原用 `integer({ mode: "number" })` + `$defaultFn` 承载时间戳，迫使业务层做 `Date` → `number` 全量改写；改为 `integer({ mode: "timestamp_ms" }).defaultNow()`——JS 侧保持 `Date`、DB 侧存毫秒且带 DB 级默认，写入/比较/读取/类型声明/测试断言均无需改；§7 由「Date → number 全量替换」收敛为「裸 sql 日期入参 / `db.all` 原始结果 / 字符串入参」三类人工处理，§3.2 / 3.4 / 9 / 11 / 12 同步更新。新增 §3.1.1：提供现成的 SQLite 版通用列工厂 `columns.ts`（含 `pk`/`createdAt`/`updatedAt`/`timestamps`/`softDelete`/`sortable`/`publishable`），通用列为单一改写点、无需逐表改，表文件仅需改 `pgTable`→`sqliteTable` 与业务列。迁移辅助脚本 `db-migration.ts` 的「甄别」规则新增「裸 sql 模板日期表达式插值」检查、`new Date(` 降级为「多无需改」。可被衍生项目吸收
 
 - **项目定位重定向为「全栈开发工程基座」**：移除「内置 CMS 示例」的产品绑定叙事，改为强调全栈开发工程基座定位，CMS 降为支撑能力；业务示例收敛为单一 news（新闻），其余模块（dict / file / file-explorer / messages / config / translations / track / operation-logs / ai-providers / ai-rich-editor / demo）统一归入基建能力。同步更新 `AGENTS.md`、`README.md`、`docs/architecture-overview.md`、`docs/project-ecosystem.md`、`docs/ai-rich-editor.md`、上游同步/国际化 skill 与客户端可见产品文案（首页/关于页、i18n.seed、e2e 断言、i18n 单测、管理端导航分组标签），文案统一改为「全栈开发工程基座」口径。
 

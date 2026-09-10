@@ -159,8 +159,14 @@ const MUST_RULES: Rule[] = [
 const REVIEW_RULES: Rule[] = [
 	{
 		id: "new-Date",
-		label: "new Date( → 甄别 Date.now()/.getTime()",
+		label: "new Date( → 多无需改（timestamp_ms 列保持 Date）；仅裸 sql / 字符串入参需甄别",
 		regex: /\bnew Date\(/,
+		severity: "review",
+	},
+	{
+		id: "sql-date-param",
+		label: "日期表达式入参 → 裸 sql 模板不走列编码，需手动 .getTime()",
+		regex: /\$\{[^}]*(?:new Date\(|\.toISOString\(\))[^}]*\}/,
 		severity: "review",
 	},
 	{
@@ -177,7 +183,7 @@ const REVIEW_RULES: Rule[] = [
 	},
 	{
 		id: "schema-types",
-		label: "pg schema 类型（timestamp/jsonb/uuid/boolean）",
+		label: "pg schema 类型（timestamp→timestamp_ms / jsonb / uuid / boolean）",
 		regex: /\b(?:timestamp|jsonb|uuid|boolean)\(/,
 		severity: "review",
 	},

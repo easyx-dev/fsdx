@@ -14,7 +14,7 @@ import {
 } from "antd";
 import dayjs from "dayjs";
 import { useEffect, useState } from "react";
-import { DictSelect, ImageUpload, RichEditor } from "#/components/admin";
+import { ImageUpload, RichEditor } from "#/components/admin";
 import { createNewsSFn, getNewsByIdSFn, updateNewsSFn } from "./news.functions";
 
 export interface NewsFormValues {
@@ -24,7 +24,7 @@ export interface NewsFormValues {
 	content?: string;
 	externalUrl?: string;
 	coverImageId?: string;
-	status: "draft" | "published" | "archived";
+	isPublished: boolean;
 	isPinned: boolean;
 	isRecommended: boolean;
 	publishedAt?: dayjs.Dayjs;
@@ -65,7 +65,7 @@ export function NewsForm({ id, onSuccess, onError, onCancel }: NewsFormProps) {
 						content: record.content || "",
 						externalUrl: record.externalUrl || "",
 						coverImageId: record.coverImageId || "",
-						status: record.status,
+						isPublished: record.isPublished,
 						isPinned: record.isPinned,
 						isRecommended: record.isRecommended,
 						publishedAt: record.publishedAt
@@ -102,7 +102,7 @@ export function NewsForm({ id, onSuccess, onError, onCancel }: NewsFormProps) {
 						content: values.content || undefined,
 						externalUrl: values.externalUrl || undefined,
 						coverImageId: coverImageId || null,
-						status: values.status as "draft" | "published" | "archived",
+						isPublished: values.isPublished,
 						isPinned: values.isPinned || false,
 						isRecommended: values.isRecommended || false,
 						sortOrder: values.sortOrder ?? 0,
@@ -122,7 +122,7 @@ export function NewsForm({ id, onSuccess, onError, onCancel }: NewsFormProps) {
 						content: values.content || undefined,
 						externalUrl: values.externalUrl || undefined,
 						coverImageId: coverImageId || undefined,
-						status: values.status as "draft" | "published",
+						isPublished: values.isPublished,
 						isPinned: values.isPinned || false,
 						isRecommended: values.isRecommended || false,
 						sortOrder: values.sortOrder ?? 0,
@@ -156,7 +156,7 @@ export function NewsForm({ id, onSuccess, onError, onCancel }: NewsFormProps) {
 			initialValues={
 				!isEdit
 					? {
-							status: "draft",
+							isPublished: false,
 							isPinned: false,
 							isRecommended: false,
 							content: "",
@@ -205,11 +205,13 @@ export function NewsForm({ id, onSuccess, onError, onCancel }: NewsFormProps) {
 			</Form.Item>
 
 			<div className="flex gap-8">
-				<Form.Item name="status" label="状态" className="min-w-28">
-					<DictSelect
-						dictSlug="news_status"
-						excludeValues={!isEdit ? ["archived"] : undefined}
-					/>
+				<Form.Item
+					name="isPublished"
+					label="发布"
+					valuePropName="checked"
+					className="min-w-28"
+				>
+					<Switch />
 				</Form.Item>
 
 				<Form.Item name="isPinned" label="置顶" valuePropName="checked">

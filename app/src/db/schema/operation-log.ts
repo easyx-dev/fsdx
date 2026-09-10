@@ -11,6 +11,7 @@ import {
 	uuid,
 	varchar,
 } from "drizzle-orm/pg-core";
+import { pk } from "./columns";
 
 /** 操作者类型：admin / client / system（领域唯一来源，供请求上下文与审计共用） */
 export type OperatorType = "admin" | "client" | "system";
@@ -18,7 +19,7 @@ export type OperatorType = "admin" | "client" | "system";
 export const operationLog = pgTable(
 	"operation_log",
 	{
-		id: uuid().defaultRandom().primaryKey(),
+		...pk(),
 		/** 请求关联 ID（requestId），贯穿日志与审计表，实现全链路追踪 */
 		requestId: varchar("request_id", { length: 100 }),
 		/** 操作者 ID（system 类型时为 null；客户端用户 ID 不属于 admin_user 表，故无外键） */
@@ -35,6 +36,7 @@ export const operationLog = pgTable(
 		targetId: varchar({ length: 500 }),
 		targetName: varchar({ length: 500 }),
 		detail: jsonb().$type<Record<string, unknown> | null>(),
+		// 历史表例外：列名为 camelCase，且无 updatedAt / deletedAt，故不套用通用片段
 		createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
 	},
 	(table) => [

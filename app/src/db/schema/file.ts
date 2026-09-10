@@ -9,11 +9,12 @@ import {
 	uuid,
 	varchar,
 } from "drizzle-orm/pg-core";
+import { pk, softDelete, timestamps } from "./columns";
 
 export const file = pgTable(
 	"file",
 	{
-		id: uuid().defaultRandom().primaryKey(),
+		...pk(),
 		sha256: varchar({ length: 64 }).notNull(),
 		originalName: varchar("original_name", { length: 500 }).notNull(),
 		storedName: varchar("stored_name", { length: 500 }).notNull(),
@@ -24,13 +25,8 @@ export const file = pgTable(
 		expiredAt: timestamp("expired_at", { withTimezone: true }),
 		createdByType: varchar("created_by_type", { length: 20 }),
 		createdById: uuid("created_by_id"),
-		createdAt: timestamp("created_at", { withTimezone: true })
-			.defaultNow()
-			.notNull(),
-		updatedAt: timestamp("updated_at", { withTimezone: true })
-			.defaultNow()
-			.notNull(),
-		deletedAt: timestamp("deleted_at", { withTimezone: true }),
+		...timestamps(),
+		...softDelete(),
 	},
 	(table) => [index("idx_file_sha256").on(table.sha256)],
 );

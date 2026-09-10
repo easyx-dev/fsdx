@@ -6,7 +6,6 @@
 
 import { toCsv, toJson } from "@fsdx/lib/export";
 import { and, desc, eq, inArray, ne } from "drizzle-orm";
-import type { z } from "zod";
 import { db } from "#/db/index";
 import { news } from "#/db/schema";
 import {
@@ -16,16 +15,12 @@ import {
 	paginationOffset,
 } from "#/shared-services/query/query-utils.server";
 import type { PaginatedSortParams } from "#/types/query";
-import type { statusSchema } from "./news.schemas";
 import { ensureUniqueSlug, generateSlug } from "./news.slug";
 
 export type NewsRecord = typeof news.$inferSelect;
 
 // 转发共享的 slug 工具（路由层经 news.server 统一引用，避免改多处导入路径）
 export { ensureUniqueSlug, generateSlug } from "./news.slug";
-
-/** 新闻状态（单一来源：statusSchema） */
-export type NewsStatus = z.infer<typeof statusSchema>["status"];
 
 /** 新闻更新数据 */
 export type NewsUpdateData = Partial<typeof news.$inferInsert>;
@@ -39,7 +34,7 @@ export const NEWS_EXPORT_COLUMNS: { key: string; title: string }[] = [
 	{ key: "slug", title: "Slug" },
 	{ key: "description", title: "摘要" },
 	{ key: "content", title: "正文" },
-	{ key: "status", title: "状态" },
+	{ key: "isPublished", title: "是否发布" },
 	{ key: "isPinned", title: "是否置顶" },
 	{ key: "publishedAt", title: "发布时间" },
 	{ key: "createdAt", title: "创建时间" },
@@ -72,11 +67,11 @@ export async function checkRecommendedLimit(
 /** 获取新闻列表（支持排序） */
 export async function getNewsList(
 	params?: PaginatedSortParams & {
-		status?: string;
+		isPublished?: boolean;
 	},
 ) {
 	const {
-		status,
+		isPublished,
 		page = 1,
 		pageSize = 20,
 		sortField,
@@ -85,7 +80,8 @@ export async function getNewsList(
 	const offset = paginationOffset(page, pageSize);
 
 	const conditions = [notDeleted(news.deletedAt)];
-	if (status) conditions.push(eq(news.status, status));
+	if (isPublished !== undefined)
+		conditions.push(eq(news.isPublished, isPublished));
 
 	const whereCondition = and(...conditions);
 
@@ -133,7 +129,7 @@ export async function getNewsBySlug(slug: string): Promise<NewsDetail | null> {
 		.where(
 			and(
 				eq(news.slug, slug),
-				eq(news.status, "published"),
+				eq(news.isPublished, true),
 				notDeleted(news.deletedAt),
 			),
 		)
@@ -161,7 +157,7 @@ export async function createNews(params: {
 	content?: string;
 	coverImageId?: string;
 	externalUrl?: string;
-	status?: string;
+	isPublished?: boolean;
 	isPinned?: boolean;
 	isRecommended?: boolean;
 	sortOrder?: number;
@@ -190,12 +186,12 @@ export async function createNews(params: {
 			content: params.content,
 			coverImageId: params.coverImageId,
 			externalUrl: params.externalUrl,
-			status: params.status || "draft",
+			isPublished: params.isPublished ?? false,
 			isPinned: params.isPinned ?? false,
 			isRecommended: params.isRecommended ?? false,
 			sortOrder: params.sortOrder ?? 0,
-			publishedAt:
-				params.status === "published" ? publishedAtValue || new Date() : null,
+			// 首次发布时才写入发布时间
+			publishedAt: params.isPublished ? publishedAtValue || new Date() : null,
 			createdById: params.createdById,
 		})
 		.returning();
@@ -203,16 +199,16 @@ export async function createNews(params: {
 	return record;
 }
 
-/** 变更新闻状态（发布/归档） */
-export async function changeNewsStatus(
+/** 变更新闻发布状态（上架 / 下架）；首次发布时补写 publishedAt */
+export async function setNewsPublished(
 	id: string,
-	status: NewsStatus,
+	isPublished: boolean,
 ): Promise<{ success: boolean }> {
 	const updateData: Partial<typeof news.$inferInsert> = {
-		status,
+		isPublished,
 		updatedAt: new Date(),
 	};
-	if (status === "published") {
+	if (isPublished) {
 		const [existing] = await db
 			.select()
 			.from(news)
@@ -257,7 +253,7 @@ export async function importNewsItems(
 		content?: string | null;
 		externalUrl?: string | null;
 		coverImageId?: string | null;
-		status?: string;
+		isPublished?: boolean;
 		isPinned?: boolean;
 		isRecommended?: boolean;
 		sortOrder?: number;
@@ -294,11 +290,11 @@ export async function importNewsItems(
 			content: row.content ?? null,
 			externalUrl: row.externalUrl ?? null,
 			coverImageId: row.coverImageId ?? null,
-			status: row.status ?? "draft",
+			isPublished: row.isPublished ?? false,
 			isPinned: row.isPinned ?? false,
 			isRecommended: row.isRecommended ?? false,
 			sortOrder: row.sortOrder ?? 0,
-			publishedAt: row.status === "published" ? new Date() : null,
+			publishedAt: row.isPublished ? new Date() : null,
 			createdById: userId,
 		});
 		created++;

@@ -15,7 +15,7 @@ export async function getStats(): Promise<DashboardStats> {
 				db
 					.select()
 					.from(news)
-					.where(and(eq(news.status, "published"), isNull(news.deletedAt))),
+					.where(and(eq(news.isPublished, true), isNull(news.deletedAt))),
 			),
 			db.$count(db.select().from(adminUser).where(isNull(adminUser.deletedAt))),
 			db.$count(

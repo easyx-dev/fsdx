@@ -41,10 +41,9 @@ describe("LEVEL_OPTIONS", () => {
 });
 
 describe("PRESET_DICTS", () => {
-	it("包含 user_status 和 news_status 两个预置字典", () => {
+	it("包含 user_status 预置字典", () => {
 		const slugs = PRESET_DICTS.map((d) => d.slug);
 		expect(slugs).toContain("user_status");
-		expect(slugs).toContain("news_status");
 	});
 
 	it("user_status 字典包含正常和禁用条目", () => {
@@ -55,15 +54,6 @@ describe("PRESET_DICTS", () => {
 		const values = dict!.items.map((i) => i.value);
 		expect(values).toContain("active");
 		expect(values).toContain("disabled");
-	});
-
-	it("news_status 字典包含草稿、已发布、已归档三个条目", () => {
-		const dict = PRESET_DICTS.find((d) => d.slug === "news_status");
-		expect(dict).toBeDefined();
-		expect(dict!.name).toBe("新闻状态");
-		expect(dict!.items).toHaveLength(3);
-		const values = dict!.items.map((i) => i.value);
-		expect(values).toEqual(["draft", "published", "archived"]);
 	});
 
 	it("每个字典条目包含必要字段", () => {

@@ -10,11 +10,10 @@ import {
 	getNewsSchema,
 	listSchema,
 	newsImportSchema,
-	statusSchema,
+	publishNewsSchema,
 	updateNewsSchema,
 } from "#/services/news/news.schemas";
 import {
-	changeNewsStatus,
 	checkRecommendedLimit,
 	createNews,
 	deleteNews,
@@ -25,6 +24,7 @@ import {
 	getNewsList,
 	importNewsItems,
 	type NewsUpdateData,
+	setNewsPublished,
 	updateNewsRecord,
 } from "#/services/news/news.server";
 import { logCrud } from "#/shared-services/operation-log/operation-log.server";
@@ -33,9 +33,17 @@ import { logCrud } from "#/shared-services/operation-log/operation-log.server";
 export const getNewsListSFn = createServerFn({ method: "GET" })
 	.middleware([adminPermGuard(ADMIN_PERMISSIONS.NEWS_VIEW)])
 	.validator(listSchema)
-	.handler(async ({ data: { status, page = 1, sortField, sortOrder } }) => {
-		return getNewsList({ status, page, pageSize: 20, sortField, sortOrder });
-	});
+	.handler(
+		async ({ data: { isPublished, page = 1, sortField, sortOrder } }) => {
+			return getNewsList({
+				isPublished,
+				page,
+				pageSize: 20,
+				sortField,
+				sortOrder,
+			});
+		},
+	);
 
 /** 根据 id 获取单条新闻 */
 export const getNewsByIdSFn = createServerFn({ method: "GET" })
@@ -94,7 +102,7 @@ export const updateNewsSFn = createServerFn({ method: "POST" })
 			content: data.content,
 			coverImageId: data.coverImageId,
 			externalUrl: data.externalUrl,
-			status: data.status,
+			isPublished: data.isPublished,
 			isPinned: data.isPinned,
 			isRecommended: data.isRecommended,
 			sortOrder: data.sortOrder,
@@ -108,7 +116,7 @@ export const updateNewsSFn = createServerFn({ method: "POST" })
 
 		if (publishedAtValue !== undefined) {
 			updateData.publishedAt = publishedAtValue;
-		} else if (data.status === "published" && !existing.publishedAt) {
+		} else if (data.isPublished && !existing.publishedAt) {
 			updateData.publishedAt = new Date();
 		}
 
@@ -132,14 +140,14 @@ export const deleteNewsSFn = createServerFn({ method: "POST" })
 		return { success: true };
 	});
 
-/** 变更新闻状态（发布/归档） */
-export const changeStatusSFn = createServerFn({ method: "POST" })
+/** 变更新闻发布状态（上架 / 下架） */
+export const setNewsPublishedSFn = createServerFn({ method: "POST" })
 	.middleware([adminPermGuard(ADMIN_PERMISSIONS.NEWS_PUBLISH)])
-	.validator(statusSchema)
-	.handler(async ({ data: { id, status }, context }) => {
+	.validator(publishNewsSchema)
+	.handler(async ({ data: { id, isPublished }, context }) => {
 		const newsRecord = await getNewsById(id);
-		const result = await changeNewsStatus(id, status);
-		logCrud(context.user, "news", "change_status", {
+		const result = await setNewsPublished(id, isPublished);
+		logCrud(context.user, "news", "set_published", {
 			id: id,
 			name: newsRecord?.title || id,
 		});
