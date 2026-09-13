@@ -9,6 +9,10 @@ import dayjs from "dayjs";
 import { useCallback, useEffect, useState } from "react";
 import { AdminPageContent } from "#/components/admin";
 import {
+	AnalyticsKpiCards,
+	type AnalyticsKpiItem,
+} from "#/components/admin/analytics";
+import {
 	getTrackEventMetaSFn,
 	getTrackPropertyMetaSFn,
 } from "#/services/track/track.functions";
@@ -28,7 +32,6 @@ import {
 	AnalyticsFilterBar,
 	type AnalyticsFilterState,
 } from "./-mods/analytics-filter-bar";
-import { AnalyticsKpiCards } from "./-mods/analytics-kpi-cards";
 import { AnalyticsTopPages } from "./-mods/analytics-top-pages";
 import { AnalyticsTrendChart } from "./-mods/analytics-trend-chart";
 
@@ -70,6 +73,29 @@ function toQueryParams(filter: AnalyticsFilterState): AnalyticsQueryParams {
 		breakdown: filter.breakdown || undefined,
 		compare: filter.compare,
 	};
+}
+
+/** 由分析结果派生 KPI 卡数据（无数据时返回空数组） */
+function buildKpiItems(data: TrackAnalyticsResult | null): AnalyticsKpiItem[] {
+	if (!data) return [];
+	return [
+		{
+			title: "总事件数",
+			value: data.totalEvents,
+			delta: data.deltas?.totalEvents.value ?? null,
+		},
+		{
+			title: "独立用户数",
+			value: data.uniqueUsers,
+			delta: data.deltas?.uniqueUsers.value ?? null,
+		},
+		{
+			title: "人均事件数",
+			value: data.uniqueUsers > 0 ? data.totalEvents / data.uniqueUsers : 0,
+			precision: 2,
+		},
+		{ title: "事件种类数", value: data.eventRanking.length },
+	];
 }
 
 function TrackAnalyticsPage() {
@@ -141,12 +167,7 @@ function TrackAnalyticsPage() {
 					<>
 						{/* 概览 KPI */}
 						<div className="mb-4">
-							<AnalyticsKpiCards
-								totalEvents={data.totalEvents}
-								uniqueUsers={data.uniqueUsers}
-								eventKinds={data.eventRanking.length}
-								deltas={data.deltas}
-							/>
+							<AnalyticsKpiCards items={buildKpiItems(data)} />
 						</div>
 
 						{/* 事件趋势（分组依据取已提交参数） */}

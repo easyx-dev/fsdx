@@ -5,17 +5,8 @@
 
 import { ANALYTICS_DIMENSION_KEYS } from "#/services/track/track.types";
 
-/** 系列配色：多事件/维度/周期对比统一取色 */
-export const ANALYTICS_SERIES_COLORS = [
-	"#00b96b",
-	"#4d9fff",
-	"#f5a623",
-	"#8b6cf0",
-	"#ef5aa8",
-	"#2ec4b6",
-	"#f97316",
-	"#7c8cf8",
-];
+/** 系列配色：多事件/维度/周期对比统一取色（复用管理端共享调色板） */
+export { ANALYTICS_SERIES_COLORS } from "#/components/admin/analytics/palette";
 
 /** 用户属性/来源分布卡片定义（key 与顺序由后端 ANALYTICS_DIMENSION_KEYS 单一维护） */
 export interface AnalyticsDimensionCard {

@@ -2,8 +2,8 @@
  * Top 页面面板：PageView 事件页面排行，柱状图 + 表格双视图切换
  */
 import { Card, Empty, Table, Tabs, Tag } from "antd";
+import { AnalyticsChart } from "#/components/admin/analytics";
 import type { TopPageItem } from "#/services/track/track.types";
-import { AnalyticsChart } from "./analytics-chart";
 import { ANALYTICS_SERIES_COLORS } from "./analytics-shared";
 
 interface AnalyticsTopPagesProps {

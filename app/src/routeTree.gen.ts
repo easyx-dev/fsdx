@@ -42,11 +42,13 @@ import { Route as AdminAdminDictsIndexRouteImport } from './routes/admin/_admin/
 import { Route as AdminAdminFileExplorerIndexRouteImport } from './routes/admin/_admin/file-explorer/index'
 import { Route as AdminAdminFilesIndexRouteImport } from './routes/admin/_admin/files/index'
 import { Route as AdminAdminLogsIndexRouteImport } from './routes/admin/_admin/logs/index'
+import { Route as AdminAdminLogsAnalyticsRouteImport } from './routes/admin/_admin/logs/analytics'
 import { Route as AdminAdminMessagesIndexRouteImport } from './routes/admin/_admin/messages/index'
 import { Route as AdminAdminMessagesManageRouteImport } from './routes/admin/_admin/messages/manage'
 import { Route as AdminAdminNewsIndexRouteImport } from './routes/admin/_admin/news/index'
 import { Route as AdminAdminNewsCreateRouteImport } from './routes/admin/_admin/news/create'
 import { Route as AdminAdminOperationLogsIndexRouteImport } from './routes/admin/_admin/operation-logs/index'
+import { Route as AdminAdminOperationLogsAnalyticsRouteImport } from './routes/admin/_admin/operation-logs/analytics'
 import { Route as AdminAdminTrackQueryRouteImport } from './routes/admin/_admin/track/query'
 import { Route as AdminAdminTranslationsContentRouteImport } from './routes/admin/_admin/translations/content'
 import { Route as AdminAdminTranslationsUiRouteImport } from './routes/admin/_admin/translations/ui'
@@ -230,6 +232,11 @@ const AdminAdminLogsIndexRoute = AdminAdminLogsIndexRouteImport.update({
   path: '/logs/',
   getParentRoute: () => AdminAdminRoute,
 } as any)
+const AdminAdminLogsAnalyticsRoute = AdminAdminLogsAnalyticsRouteImport.update({
+  id: '/logs/analytics',
+  path: '/logs/analytics',
+  getParentRoute: () => AdminAdminRoute,
+} as any)
 const AdminAdminMessagesIndexRoute = AdminAdminMessagesIndexRouteImport.update({
   id: '/messages/',
   path: '/messages/',
@@ -255,6 +262,12 @@ const AdminAdminOperationLogsIndexRoute =
   AdminAdminOperationLogsIndexRouteImport.update({
     id: '/operation-logs/',
     path: '/operation-logs/',
+    getParentRoute: () => AdminAdminRoute,
+  } as any)
+const AdminAdminOperationLogsAnalyticsRoute =
+  AdminAdminOperationLogsAnalyticsRouteImport.update({
+    id: '/operation-logs/analytics',
+    path: '/operation-logs/analytics',
     getParentRoute: () => AdminAdminRoute,
   } as any)
 const AdminAdminTrackQueryRoute = AdminAdminTrackQueryRouteImport.update({
@@ -347,8 +360,10 @@ export interface FileRoutesByFullPath {
   '/admin/demo/error-handling': typeof AdminAdminDemoErrorHandlingRoute
   '/admin/demo/pro-table': typeof AdminAdminDemoProTableRoute
   '/admin/demo/upload': typeof AdminAdminDemoUploadRoute
+  '/admin/logs/analytics': typeof AdminAdminLogsAnalyticsRoute
   '/admin/messages/manage': typeof AdminAdminMessagesManageRoute
   '/admin/news/create': typeof AdminAdminNewsCreateRoute
+  '/admin/operation-logs/analytics': typeof AdminAdminOperationLogsAnalyticsRoute
   '/admin/track/query': typeof AdminAdminTrackQueryRoute
   '/admin/translations/content': typeof AdminAdminTranslationsContentRoute
   '/admin/translations/ui': typeof AdminAdminTranslationsUiRoute
@@ -396,8 +411,10 @@ export interface FileRoutesByTo {
   '/admin/demo/error-handling': typeof AdminAdminDemoErrorHandlingRoute
   '/admin/demo/pro-table': typeof AdminAdminDemoProTableRoute
   '/admin/demo/upload': typeof AdminAdminDemoUploadRoute
+  '/admin/logs/analytics': typeof AdminAdminLogsAnalyticsRoute
   '/admin/messages/manage': typeof AdminAdminMessagesManageRoute
   '/admin/news/create': typeof AdminAdminNewsCreateRoute
+  '/admin/operation-logs/analytics': typeof AdminAdminOperationLogsAnalyticsRoute
   '/admin/track/query': typeof AdminAdminTrackQueryRoute
   '/admin/translations/content': typeof AdminAdminTranslationsContentRoute
   '/admin/translations/ui': typeof AdminAdminTranslationsUiRoute
@@ -448,8 +465,10 @@ export interface FileRoutesById {
   '/admin/_admin/demo/error-handling': typeof AdminAdminDemoErrorHandlingRoute
   '/admin/_admin/demo/pro-table': typeof AdminAdminDemoProTableRoute
   '/admin/_admin/demo/upload': typeof AdminAdminDemoUploadRoute
+  '/admin/_admin/logs/analytics': typeof AdminAdminLogsAnalyticsRoute
   '/admin/_admin/messages/manage': typeof AdminAdminMessagesManageRoute
   '/admin/_admin/news/create': typeof AdminAdminNewsCreateRoute
+  '/admin/_admin/operation-logs/analytics': typeof AdminAdminOperationLogsAnalyticsRoute
   '/admin/_admin/track/query': typeof AdminAdminTrackQueryRoute
   '/admin/_admin/translations/content': typeof AdminAdminTranslationsContentRoute
   '/admin/_admin/translations/ui': typeof AdminAdminTranslationsUiRoute
@@ -500,8 +519,10 @@ export interface FileRouteTypes {
     | '/admin/demo/error-handling'
     | '/admin/demo/pro-table'
     | '/admin/demo/upload'
+    | '/admin/logs/analytics'
     | '/admin/messages/manage'
     | '/admin/news/create'
+    | '/admin/operation-logs/analytics'
     | '/admin/track/query'
     | '/admin/translations/content'
     | '/admin/translations/ui'
@@ -549,8 +570,10 @@ export interface FileRouteTypes {
     | '/admin/demo/error-handling'
     | '/admin/demo/pro-table'
     | '/admin/demo/upload'
+    | '/admin/logs/analytics'
     | '/admin/messages/manage'
     | '/admin/news/create'
+    | '/admin/operation-logs/analytics'
     | '/admin/track/query'
     | '/admin/translations/content'
     | '/admin/translations/ui'
@@ -600,8 +623,10 @@ export interface FileRouteTypes {
     | '/admin/_admin/demo/error-handling'
     | '/admin/_admin/demo/pro-table'
     | '/admin/_admin/demo/upload'
+    | '/admin/_admin/logs/analytics'
     | '/admin/_admin/messages/manage'
     | '/admin/_admin/news/create'
+    | '/admin/_admin/operation-logs/analytics'
     | '/admin/_admin/track/query'
     | '/admin/_admin/translations/content'
     | '/admin/_admin/translations/ui'
@@ -876,6 +901,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminAdminLogsIndexRouteImport
       parentRoute: typeof AdminAdminRoute
     }
+    '/admin/_admin/logs/analytics': {
+      id: '/admin/_admin/logs/analytics'
+      path: '/logs/analytics'
+      fullPath: '/admin/logs/analytics'
+      preLoaderRoute: typeof AdminAdminLogsAnalyticsRouteImport
+      parentRoute: typeof AdminAdminRoute
+    }
     '/admin/_admin/messages/': {
       id: '/admin/_admin/messages/'
       path: '/messages'
@@ -909,6 +941,13 @@ declare module '@tanstack/react-router' {
       path: '/operation-logs'
       fullPath: '/admin/operation-logs/'
       preLoaderRoute: typeof AdminAdminOperationLogsIndexRouteImport
+      parentRoute: typeof AdminAdminRoute
+    }
+    '/admin/_admin/operation-logs/analytics': {
+      id: '/admin/_admin/operation-logs/analytics'
+      path: '/operation-logs/analytics'
+      fullPath: '/admin/operation-logs/analytics'
+      preLoaderRoute: typeof AdminAdminOperationLogsAnalyticsRouteImport
       parentRoute: typeof AdminAdminRoute
     }
     '/admin/_admin/track/query': {
@@ -999,8 +1038,10 @@ interface AdminAdminRouteChildren {
   AdminAdminDemoErrorHandlingRoute: typeof AdminAdminDemoErrorHandlingRoute
   AdminAdminDemoProTableRoute: typeof AdminAdminDemoProTableRoute
   AdminAdminDemoUploadRoute: typeof AdminAdminDemoUploadRoute
+  AdminAdminLogsAnalyticsRoute: typeof AdminAdminLogsAnalyticsRoute
   AdminAdminMessagesManageRoute: typeof AdminAdminMessagesManageRoute
   AdminAdminNewsCreateRoute: typeof AdminAdminNewsCreateRoute
+  AdminAdminOperationLogsAnalyticsRoute: typeof AdminAdminOperationLogsAnalyticsRoute
   AdminAdminTrackQueryRoute: typeof AdminAdminTrackQueryRoute
   AdminAdminTranslationsContentRoute: typeof AdminAdminTranslationsContentRoute
   AdminAdminTranslationsUiRoute: typeof AdminAdminTranslationsUiRoute
@@ -1033,8 +1074,10 @@ const AdminAdminRouteChildren: AdminAdminRouteChildren = {
   AdminAdminDemoErrorHandlingRoute: AdminAdminDemoErrorHandlingRoute,
   AdminAdminDemoProTableRoute: AdminAdminDemoProTableRoute,
   AdminAdminDemoUploadRoute: AdminAdminDemoUploadRoute,
+  AdminAdminLogsAnalyticsRoute: AdminAdminLogsAnalyticsRoute,
   AdminAdminMessagesManageRoute: AdminAdminMessagesManageRoute,
   AdminAdminNewsCreateRoute: AdminAdminNewsCreateRoute,
+  AdminAdminOperationLogsAnalyticsRoute: AdminAdminOperationLogsAnalyticsRoute,
   AdminAdminTrackQueryRoute: AdminAdminTrackQueryRoute,
   AdminAdminTranslationsContentRoute: AdminAdminTranslationsContentRoute,
   AdminAdminTranslationsUiRoute: AdminAdminTranslationsUiRoute,

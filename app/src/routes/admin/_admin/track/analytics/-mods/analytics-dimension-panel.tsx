@@ -2,11 +2,11 @@
  * 用户属性/来源分布面板：设备类型 / 来源 / 操作系统 / 浏览器 横向条形排行
  */
 import { Card, Col, Empty, Row } from "antd";
+import { AnalyticsChart } from "#/components/admin/analytics";
 import type {
 	DimensionDistributionItem,
 	TrackPropertyMetaRecord,
 } from "#/services/track/track.types";
-import { AnalyticsChart } from "./analytics-chart";
 import {
 	ANALYTICS_DIMENSION_CARDS,
 	ANALYTICS_SERIES_COLORS,

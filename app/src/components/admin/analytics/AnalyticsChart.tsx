@@ -1,5 +1,6 @@
 /**
- * 事件分析图表懒加载渲染器：按需加载 @ant-design/charts 组件，拆分图表库 chunk
+ * 分析图表懒加载渲染器：按需加载 @ant-design/charts 组件，拆分图表库 chunk
+ * 供各分析页复用（日志分析、埋点分析等）
  */
 
 import type { BarConfig, ColumnConfig, LineConfig } from "@ant-design/charts";

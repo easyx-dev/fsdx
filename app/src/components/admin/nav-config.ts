@@ -118,7 +118,17 @@ export const NAV_GROUPS: NavGroup[] = [
 				label: "操作日志",
 				icon: HistoryOutlined,
 			},
+			{
+				key: "/admin/operation-logs/analytics",
+				label: "操作日志分析",
+				icon: LineChartOutlined,
+			},
 			{ key: "/admin/logs", label: "运行日志", icon: FileTextOutlined },
+			{
+				key: "/admin/logs/analytics",
+				label: "运行日志分析",
+				icon: LineChartOutlined,
+			},
 		],
 	},
 	{

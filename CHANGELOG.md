@@ -6,6 +6,11 @@
 
 ### Features
 
+- **日志分析能力：操作日志与运行日志新增分析页（[infra]）**：管理端「日志审计」分组新增 `/admin/operation-logs/analytics` 与 `/admin/logs/analytics` 两个分析页，权限复用 `log:view`，不新增表与依赖。
+  - **操作日志分析**：新增 `shared-services/operation-log/operation-log.analytics.ts` 聚合 KPI（操作总数 / 活跃操作人 / 高风险操作数 / 覆盖模块数，支持环比）、操作趋势（时间桶 × 动作或模块）、动作/模块/操作人分布 TopN；时间桶按业务时区口径，高风险动作白名单收敛于服务层，时间跨度上限 92 天，不新增 DB 字段。
+  - **运行日志分析**：新增 `services/logs/log-analytics.server.ts` 流式扫描日志文件聚合级别分布、错误率趋势与错误消息聚类 TopN；受扫描行数上限（20 万行）与时间跨度（31 天）双重约束，超限截断并提示；pino 级别与消息归一化抽至 `services/logs/log-parse.ts` 纯函数（`normalizeLogLevel` / `normalizeMessage` / `iterateLogLines`），供日志查询与分析共用。
+  - **管理端共享分析组件**：抽 `components/admin/analytics`（懒加载图表 `AnalyticsChart`、KPI 卡 `AnalyticsKpiCards`、排行表 `AnalyticsRanking`、系列调色板），埋点分析页同步复用并删除其局部重复实现。可被衍生项目吸收
+
 - **通知多渠道下发 + 每用户渠道配置（[infra]）**：站内信（`message` 表）为恒定义必达的主渠道，外发渠道 email / 飞书 / 企微 / 钉钉 / 通用 webhook 作为可插拔切面，由**单个全局总闸** `notify_enabled`（系统配置，默认关闭）与**每用户配置** `user_config.notify_channels`（启用 + 目标地址）双重驱动；短信渠道仅预留适配器接口（`sendChannelSms` 占位）。新增 `shared-services/notify`（webhook 按 variant 生成 payload/签名、邮件复用 mail）、`services/user-config`（通用 jsonb 配置存取）与 `user_config` 表；通知域多态引用统一命名 `user_type/user_id`，消息类型收敛至 `constants/message-types.ts`（清理死类型 `ppt`）。管理端与客户端各提供「通知渠道设置」UI。
 
 - **事件分析升级为交互式分析工作台（[infra]）**：管理端 `/admin/track/analytics` 由静态趋势/饼图升级为交互式分析工作台——筛选区支持事件多选对比、指标切换（次数/用户数）、维度拆解（元属性白名单）、周期对比（环比/同比）、周粒度；新增事件明细排行表（次数/用户数/占比，点击下钻趋势）、用户属性与来源分布（设备类型/来源/操作系统/浏览器）、KPI 卡带周期涨跌。服务端 `getTrackAnalytics` 收敛趋势/排行/维度/KPI 聚合（空桶补零对齐、维度白名单防注入、按业务时区口径对齐），事件查询拆至 `track.events.ts`；图表经 `analytics-chart` 懒加载拆分 chunk；新增 `buildTrendConfig` 纯函数与单测。可被衍生项目吸收

@@ -2,8 +2,8 @@
  * 事件趋势图容器：读取分析数据与筛选条件，组装折线配置并懒加载渲染
  */
 import { Empty } from "antd";
+import { AnalyticsChart } from "#/components/admin/analytics";
 import type { TimeSeriesPoint } from "#/services/track/track.types";
-import { AnalyticsChart } from "./analytics-chart";
 import {
 	buildTrendConfig,
 	type TrendChartFilter,

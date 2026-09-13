@@ -3,6 +3,7 @@
  * 提供 SF 安全的可序列化类型包装
  */
 
+import { normalizeLogLevel } from "./log-parse";
 import {
 	type LogQuery,
 	queryLogs,
@@ -28,23 +29,6 @@ export interface LogQueryResult {
 	pageSize: number;
 }
 
-/** pino 日志级别数字映射 */
-const PINO_LEVEL_MAP: Record<number, string> = {
-	10: "trace",
-	20: "debug",
-	30: "info",
-	40: "warn",
-	50: "error",
-	60: "fatal",
-};
-
-/** 将 pino 数字级别转为字符串 */
-function pinoLevelToString(level: unknown): string {
-	if (typeof level === "number") return PINO_LEVEL_MAP[level] ?? String(level);
-	if (typeof level === "string") return level;
-	return "";
-}
-
 /**
  * 将原始日志条目转换为 SF 安全类型
  */
@@ -59,7 +43,7 @@ function toSerializable(entry: RawLogEntry): LogEntry {
 	);
 	return {
 		time: raw.time as string | number | undefined,
-		level: pinoLevelToString(raw.level),
+		level: normalizeLogLevel(raw.level),
 		msg: raw.msg as string | undefined,
 		timestamp: raw.timestamp as string | undefined,
 		message: raw.message as string | undefined,

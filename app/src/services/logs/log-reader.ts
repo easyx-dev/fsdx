@@ -1,13 +1,13 @@
 /**
  * 日志读取模块：管理端查询和搜索日志文件
  */
-import { createReadStream, existsSync, readdirSync } from "node:fs";
+import { existsSync, readdirSync } from "node:fs";
 import { resolve } from "node:path";
-import { createInterface } from "node:readline";
 import { logger } from "#/shared-services/logger";
+import { iterateLogLines } from "./log-parse";
 
 /** 日志目录路径 */
-function getLogDir(): string {
+export function getLogDir(): string {
 	return resolve(process.env.STORAGE_DIR || ".tmp", "logs");
 }
 
@@ -44,12 +44,15 @@ export interface LogQueryResult {
 }
 
 /**
- * 获取日志文件列表，按日期倒序
+ * 列出日期范围内的日志文件，按日期倒序
+ * 供日志查询与日志分析共用，避免各自重复实现文件枚举
  */
-function getLogFiles(): string[] {
+export function listLogFiles(startDate?: string, endDate?: string): string[] {
 	if (!existsSync(getLogDir())) return [];
 	return readdirSync(getLogDir())
-		.filter((f) => f.endsWith(".log"))
+		.filter(
+			(f) => f.endsWith(".log") && isFileInDateRange(f, startDate, endDate),
+		)
 		.sort()
 		.reverse();
 }
@@ -69,17 +72,12 @@ function isFileInDateRange(
 }
 
 /**
- * 逐行读取日志文件内容
+ * 读取日志文件全部有效行（基于流式迭代物化，供查询/下载使用）
  */
 async function readLogLines(filePath: string): Promise<string[]> {
 	const lines: string[] = [];
-	const stream = createReadStream(filePath, { encoding: "utf-8" });
-	const rl = createInterface({
-		input: stream,
-		crlfDelay: Number.POSITIVE_INFINITY,
-	});
-	for await (const line of rl) {
-		if (line.trim()) lines.push(line);
+	for await (const line of iterateLogLines(filePath)) {
+		lines.push(line);
 	}
 	return lines;
 }
@@ -102,9 +100,7 @@ function parseLogLine(line: string): LogEntry | null {
 export async function queryLogs(query: LogQuery = {}): Promise<LogQueryResult> {
 	const { startDate, endDate, keyword, level, page = 1, pageSize = 20 } = query;
 
-	const logFiles = getLogFiles().filter((f) =>
-		isFileInDateRange(f, startDate, endDate),
-	);
+	const logFiles = listLogFiles(startDate, endDate);
 
 	const allEntries: LogEntry[] = [];
 
@@ -163,5 +159,5 @@ export async function readLogFileContent(date: string): Promise<string | null> {
  * 获取可用的日志日期列表
  */
 export function getLogDates(): string[] {
-	return getLogFiles().map((f) => f.replace(".log", ""));
+	return listLogFiles().map((f) => f.replace(".log", ""));
 }

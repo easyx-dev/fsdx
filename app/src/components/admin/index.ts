@@ -9,6 +9,7 @@ export { AdminNav } from "./AdminNav";
 export { AdminPageContent } from "./AdminPageContent";
 export { AdminProvider } from "./AdminProvider";
 export { AdminThemeContext, useAdminTheme } from "./admin-theme";
+export * from "./analytics";
 export * from "./forms";
 export { NAV_GROUPS } from "./nav-config";
 export * from "./stores";
