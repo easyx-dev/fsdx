@@ -242,6 +242,35 @@ async function getTopOperators(
 	}));
 }
 
+/**
+ * 按指定动作集合聚合次数（不受分布 TopN 截断）
+ * 供高风险动作等「小而关键」的集合排行使用，时间窗口按业务时区解析；
+ * 仅返回计数、不返回占比，占比由调用方按总操作数（如 KPI 的 totalOperations）自行计算
+ */
+export async function getOperationActionCounts(
+	startDate: string,
+	endDate: string,
+	actions: string[],
+): Promise<{ name: string; count: number }[]> {
+	if (!actions.length) return [];
+
+	const start = toDayRange(startDate).start;
+	const end = toDayRange(endDate).end;
+	const result = await db.execute(sql`
+		SELECT ${operationLog.action} AS name, COUNT(*)::int AS count
+		  FROM ${operationLog}
+		 WHERE ${operationLog.createdAt} >= ${start}
+		   AND ${operationLog.createdAt} < ${end}
+		   AND ${inArray(operationLog.action, actions)}
+		 GROUP BY ${operationLog.action}
+		 ORDER BY count DESC
+	`);
+	return extractRows<{ name: string; count: number }>(result).map((row) => ({
+		name: row.name,
+		count: Number(row.count ?? 0),
+	}));
+}
+
 // ─── 主入口 ───
 
 /** 执行操作日志分析：KPI / 趋势 / 分布 / 操作人排行，可选环比 */

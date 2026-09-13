@@ -14,6 +14,7 @@ import {
 	AnalyticsRanking,
 	type AnalyticsRankingItem,
 } from "#/components/admin/analytics";
+import { ACTION_LABELS, MODULE_LABELS } from "#/constants/operation-log-meta";
 import type { OperationLogAnalyticsResult } from "#/shared-services/operation-log/operation-log.analytics";
 import { callSfn } from "#/utils/sfn-error";
 import {
@@ -24,7 +25,6 @@ import {
 	buildOperationDistributionConfig,
 	buildOperationTrendConfig,
 } from "./-mods/operation-log-analytics-config";
-import { ACTION_LABELS, MODULE_LABELS } from "./-mods/operation-log-meta";
 import { getOperationLogModulesSFn } from "./-mods/operation-logs.functions";
 import {
 	getOperationLogAnalyticsSFn,

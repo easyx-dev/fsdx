@@ -5,7 +5,7 @@
 import { RedoOutlined, ReloadOutlined } from "@ant-design/icons";
 import { Button, DatePicker, Input, Segmented, Select, Space } from "antd";
 import dayjs, { type Dayjs } from "dayjs";
-import { ACTION_LABELS, MODULE_LABELS } from "./operation-log-meta";
+import { ACTION_LABELS, MODULE_LABELS } from "#/constants/operation-log-meta";
 
 /** 未提交的筛选状态 */
 export interface OperationLogAnalyticsFilterState {

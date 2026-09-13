@@ -10,7 +10,10 @@ const { mockDb } = vi.hoisted(() => ({
 
 vi.mock("#/db", () => ({ db: mockDb }));
 
-import { getOperationLogAnalytics } from "../operation-log.analytics";
+import {
+	getOperationActionCounts,
+	getOperationLogAnalytics,
+} from "../operation-log.analytics";
 
 /** 依次为 5 个子查询排队返回结果（KPI / 趋势 / 动作 / 模块 / 操作人） */
 function queueAggregates(rows: {
@@ -124,5 +127,41 @@ describe("getOperationLogAnalytics", () => {
 		});
 
 		expect(mockDb.execute).toHaveBeenCalledTimes(5);
+	});
+});
+
+describe("getOperationActionCounts", () => {
+	beforeEach(() => {
+		mockDb.execute.mockReset();
+	});
+
+	it("按指定动作集合聚合次数", async () => {
+		mockDb.execute.mockResolvedValue({
+			rows: [
+				{ name: "delete", count: 5 },
+				{ name: "reset_pwd", count: 2 },
+			],
+		});
+
+		const result = await getOperationActionCounts("2024-01-01", "2024-01-31", [
+			"delete",
+			"reset_pwd",
+		]);
+
+		expect(result).toEqual([
+			{ name: "delete", count: 5 },
+			{ name: "reset_pwd", count: 2 },
+		]);
+	});
+
+	it("动作集合为空时不查询数据库", async () => {
+		const result = await getOperationActionCounts(
+			"2024-01-01",
+			"2024-01-31",
+			[],
+		);
+
+		expect(result).toEqual([]);
+		expect(mockDb.execute).not.toHaveBeenCalled();
 	});
 });

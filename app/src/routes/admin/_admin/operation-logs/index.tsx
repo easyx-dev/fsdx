@@ -13,14 +13,14 @@ import type { Dayjs } from "dayjs";
 import dayjs from "dayjs";
 import { useState } from "react";
 import { AdminPageContent } from "#/components/admin";
-import type { SortOrder } from "#/types/query";
-import { callSfn } from "#/utils/sfn-error";
 import {
 	ACTION_COLORS,
 	ACTION_LABELS,
 	MODULE_COLORS,
 	MODULE_LABELS,
-} from "./-mods/operation-log-meta";
+} from "#/constants/operation-log-meta";
+import type { SortOrder } from "#/types/query";
+import { callSfn } from "#/utils/sfn-error";
 import {
 	getOperationLogModulesSFn,
 	type JsonValue,

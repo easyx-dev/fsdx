@@ -6,6 +6,14 @@
 
 ### Features
 
+- **管理端仪表盘重构：四域信号整合为系统态势总览（[infra]）**：`/admin` 由 4 个静态标量卡升级为「系统健康 + 访问流量 + 用户规模 + 存储占用 + 风险与资源趋势」一屏概览，数据源自既有埋点 / 系统监控 / 统计 / 操作审计服务，不新增表与依赖。
+  - **聚合入口**：新增 `services/dashboard/dashboard.overview.server.ts` 按域编排 `getClientUserTotal`（未删除客户端用户数） / `getTrackAnalytics`（PageView 口径，含环比与 Top 页面） / `getSystemOverview` / `getStorageUsage` / `getSystemMetricHistory`（资源趋势，按可选指标集合裁剪采样点） / `getOperationLogAnalytics` + 新增 `operation-log.analytics` 的 `getOperationActionCounts`（高风险动作独立聚合，不受分布 TopN 截断），并新增 `getDashboardOverviewSFn`（复用 `dashboard:view` 权限）；指标口径复用既有服务，仪表盘与各分析页数字一致。存储占用取 STORAGE_DIR 实际占用（`StorageUsage.totalBytes`，含临时文件与日志），修正此前误用 `SUM(file.size)` 且 `SUM(bigint)` 经 node-postgres 返回字符串导致显示为 0 的问题。
+  - **日志摘要独立懒加载**：新增 `services/dashboard/dashboard.logs.server.ts` 与 `getDashboardErrorSummarySFn`，仅在概览返回 `sections.logs` 时按需加载；窗口收敛为今日 / 近 7 日（近 30 日自动收敛），缓存 5 分钟，避免日志文件扫描阻塞首屏；`total=0`（窗口内无匹配日志文件）与「零错误」区分展示为空态，避免误报健康；SFn 支持 `force` 供手动刷新绕过缓存重扫。
+  - **权限分块**：流量域 / 系统域 / 日志与审计域分别按 `track:query` / `system:monitor:view` / `log:view` 门控——未授权区块不发起查询、返回 `null` 并由前端隐藏，避免仅持 `dashboard:view` 的角色越权取数（Root 自动全通）；快捷入口按区块可用性过滤。
+  - **成本控制**：各域摘要按时间范围缓存 60 秒（新增 `services/dashboard/dashboard.cache.ts`）；30 秒轮询改为只调用轻量系统快照 SFn（`getDashboardSystemSnapshotSFn`），不再重复触发埋点 / 审计 / 文件扫描等重量级聚合；时间范围收敛为 今日 / 近 7 日 / 近 30 日（单日按小时、多日按天），系统指标映射 24h / 7d（采样仅保留 7 天，卡片标注实际口径）。
+  - **前端**：复用 `components/admin/analytics` 三件套（KPI 卡 / 懒加载图表 / 排行），新增健康条、系统实时面板、趋势面板、Top 页面、高频错误、高风险操作与快捷入口面板；趋势卡为单张「指标可切换」折线（PV + 请求数 / CPU / 内存 / 延迟，按权限过滤选项）；KPI 卡由 24 栅格改为 CSS Grid（支持 5 列精确均分，窄屏 1 列 → 小屏 2 列 → 大屏目标列数；3 / 4 / 6 列断点与改造前保持一致），同排等高、补充信息贴底对齐；`AnalyticsChart` 接入 `useAdminTheme`，暗色模式自动切换 G2 `dark` 主题（坐标轴 / 图例 / 网格 / 提示文字跟随主题），全部分析页生效；系统实时面板指标区垂直居中、磁盘容量行文本截断（修复长文本溢出）；趋势图例预留顶部空间避免与数据点重叠；`AnalyticsKpiItem.value` 扩展支持已格式化文本并新增 `hint` 补充说明、`formatBytes` 统一使用 `@fsdx/lib/format-bytes`；操作日志展示元数据上移 `constants/operation-log-meta.ts` 供明细页 / 分析页 / 仪表盘共用。
+  - 单测覆盖时间窗口解析、权限分块、高风险动作独立聚合与占比、资源趋势指标裁剪、系统范围映射、日志窗口收敛与强制重扫、各域缓存命中。可被衍生项目吸收
+
 - **应用内系统监控：进程资源 + 存储 / 数据库占用可视化（[infra]）**：管理端「系统管理」新增 `/admin/system/monitor`（权限码 `system:monitor:view`），无需外部监控系统即可查看程序自身运行状态与历史趋势。
   - **采样落盘（无建表）**：`services/system-metric` 每分钟采集进程 CPU / 内存 / 事件循环延迟 / 活跃资源 / 请求增量 / 依赖健康 / 数据库总量，按天写入 `{STORAGE_DIR}/metrics/YYYY-MM-DD.ndjson`（保留 7 天，每日定时任务清理），零迁移、零新依赖，采样行约 350 B/分钟。
   - **实时快照**：现读进程指标（微秒级、零 IO、零 DB 探测），前端每 5 秒轮询；依赖健康与库总量取最近一次采样，避免轮询打库；历史趋势按范围（1h / 24h / 7d）流式分桶聚合。跨 Nitro 入口 / SSR bundle 的共享状态（最新采样、事件循环延迟直方图、按需缓存）统一挂载 `globalThis`，避免模块级单例在打包后被拆分为多份。
