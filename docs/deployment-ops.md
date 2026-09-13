@@ -166,6 +166,18 @@ logger.error/warn/info/debug
 - 无鉴权端点，如对外暴露需在反向代理层加访问控制
 - 指标为进程内计数，多实例部署需在实例层聚合（Prometheus 直接抓取多实例再聚合即可）
 
+### 应用内系统监控
+
+`/admin/system/monitor`（权限码 `system:monitor:view`）在后台内展示程序自身运行状态，无需外部监控系统：
+
+- **采样落盘**：`src/services/system-metric` 每分钟采集进程 CPU / 内存 / 事件循环延迟 / 活跃资源 / 请求增量 / 依赖健康 / 数据库总量，写入 `{STORAGE_DIR}/metrics/YYYY-MM-DD.ndjson`（NDJSON，按业务时区按天切割），保留 7 天并由每日定时任务清理
+- **实时快照**：现读进程指标（微秒级、零 IO、零数据库探测），前端每 5 秒轮询；依赖健康取最近一次采样，避免轮询打数据库
+- **历史趋势**：切换范围（1h / 24h / 7d）时按时间桶聚合采样文件，流式读取、内存 `O(桶数)`
+- **存储 / 数据库占用**：STORAGE_DIR 体积（含顶层目录分解与文件系统容量）与数据库各表占用（`pg_relation_size` 等）按需查询 + 内存缓存，页面「刷新」强制重算
+- 常驻开销：每分钟一次毫秒级采样 + 一行追加写，约 350 B/分钟；无建表、无迁移
+
+> 该功能与 Prometheus 指标并存：应用内监控面向管理端可视化，Prometheus 面向外部监控系统与告警。
+
 ---
 
 ## 文件存储
@@ -325,6 +337,8 @@ GET /health → 200
 | `src/middleware/request-id.ts` | 请求 ID 中间件 |
 | `src/shared-services/metrics` | Prometheus 进程内指标注册表 |
 | `src/routes/api/metrics.tsx` | `/api/metrics` 指标端点（无鉴权） |
+| `src/services/system-metric/` | 应用内系统监控（采样落盘 / 实时快照 / 历史聚合 / 存储与数据库占用） |
+| `src/routes/admin/_admin/system/monitor.tsx` | `/admin/system/monitor` 系统监控页 |
 | `src/services/tasks/tasks.server.ts` | 定时任务注册 |
 | `src/shared-services/scheduler` | 定时任务调度器（`registerTask`） |
 | `src/shared-services/logger` | Pino 日志单例壳（`createLogger` + `logger` 单例） |

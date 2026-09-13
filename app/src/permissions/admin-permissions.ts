@@ -252,6 +252,12 @@ export const ADMIN_PERMISSIONS = {
 		"下载日志",
 		"允许下载系统日志文件",
 	),
+	// 系统监控
+	SYSTEM_MONITOR_VIEW: definePermission(
+		"system:monitor:view",
+		"查看系统监控",
+		"允许查看进程资源占用、存储占用与数据库表占用",
+	),
 	// 仪表盘
 	DASHBOARD_VIEW: definePermission(
 		"dashboard:view",

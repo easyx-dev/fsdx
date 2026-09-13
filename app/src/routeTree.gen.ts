@@ -49,6 +49,7 @@ import { Route as AdminAdminNewsIndexRouteImport } from './routes/admin/_admin/n
 import { Route as AdminAdminNewsCreateRouteImport } from './routes/admin/_admin/news/create'
 import { Route as AdminAdminOperationLogsIndexRouteImport } from './routes/admin/_admin/operation-logs/index'
 import { Route as AdminAdminOperationLogsAnalyticsRouteImport } from './routes/admin/_admin/operation-logs/analytics'
+import { Route as AdminAdminSystemMonitorRouteImport } from './routes/admin/_admin/system/monitor'
 import { Route as AdminAdminTrackQueryRouteImport } from './routes/admin/_admin/track/query'
 import { Route as AdminAdminTranslationsContentRouteImport } from './routes/admin/_admin/translations/content'
 import { Route as AdminAdminTranslationsUiRouteImport } from './routes/admin/_admin/translations/ui'
@@ -270,6 +271,11 @@ const AdminAdminOperationLogsAnalyticsRoute =
     path: '/operation-logs/analytics',
     getParentRoute: () => AdminAdminRoute,
   } as any)
+const AdminAdminSystemMonitorRoute = AdminAdminSystemMonitorRouteImport.update({
+  id: '/system/monitor',
+  path: '/system/monitor',
+  getParentRoute: () => AdminAdminRoute,
+} as any)
 const AdminAdminTrackQueryRoute = AdminAdminTrackQueryRouteImport.update({
   id: '/track/query',
   path: '/track/query',
@@ -364,6 +370,7 @@ export interface FileRoutesByFullPath {
   '/admin/messages/manage': typeof AdminAdminMessagesManageRoute
   '/admin/news/create': typeof AdminAdminNewsCreateRoute
   '/admin/operation-logs/analytics': typeof AdminAdminOperationLogsAnalyticsRoute
+  '/admin/system/monitor': typeof AdminAdminSystemMonitorRoute
   '/admin/track/query': typeof AdminAdminTrackQueryRoute
   '/admin/translations/content': typeof AdminAdminTranslationsContentRoute
   '/admin/translations/ui': typeof AdminAdminTranslationsUiRoute
@@ -415,6 +422,7 @@ export interface FileRoutesByTo {
   '/admin/messages/manage': typeof AdminAdminMessagesManageRoute
   '/admin/news/create': typeof AdminAdminNewsCreateRoute
   '/admin/operation-logs/analytics': typeof AdminAdminOperationLogsAnalyticsRoute
+  '/admin/system/monitor': typeof AdminAdminSystemMonitorRoute
   '/admin/track/query': typeof AdminAdminTrackQueryRoute
   '/admin/translations/content': typeof AdminAdminTranslationsContentRoute
   '/admin/translations/ui': typeof AdminAdminTranslationsUiRoute
@@ -469,6 +477,7 @@ export interface FileRoutesById {
   '/admin/_admin/messages/manage': typeof AdminAdminMessagesManageRoute
   '/admin/_admin/news/create': typeof AdminAdminNewsCreateRoute
   '/admin/_admin/operation-logs/analytics': typeof AdminAdminOperationLogsAnalyticsRoute
+  '/admin/_admin/system/monitor': typeof AdminAdminSystemMonitorRoute
   '/admin/_admin/track/query': typeof AdminAdminTrackQueryRoute
   '/admin/_admin/translations/content': typeof AdminAdminTranslationsContentRoute
   '/admin/_admin/translations/ui': typeof AdminAdminTranslationsUiRoute
@@ -523,6 +532,7 @@ export interface FileRouteTypes {
     | '/admin/messages/manage'
     | '/admin/news/create'
     | '/admin/operation-logs/analytics'
+    | '/admin/system/monitor'
     | '/admin/track/query'
     | '/admin/translations/content'
     | '/admin/translations/ui'
@@ -574,6 +584,7 @@ export interface FileRouteTypes {
     | '/admin/messages/manage'
     | '/admin/news/create'
     | '/admin/operation-logs/analytics'
+    | '/admin/system/monitor'
     | '/admin/track/query'
     | '/admin/translations/content'
     | '/admin/translations/ui'
@@ -627,6 +638,7 @@ export interface FileRouteTypes {
     | '/admin/_admin/messages/manage'
     | '/admin/_admin/news/create'
     | '/admin/_admin/operation-logs/analytics'
+    | '/admin/_admin/system/monitor'
     | '/admin/_admin/track/query'
     | '/admin/_admin/translations/content'
     | '/admin/_admin/translations/ui'
@@ -950,6 +962,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminAdminOperationLogsAnalyticsRouteImport
       parentRoute: typeof AdminAdminRoute
     }
+    '/admin/_admin/system/monitor': {
+      id: '/admin/_admin/system/monitor'
+      path: '/system/monitor'
+      fullPath: '/admin/system/monitor'
+      preLoaderRoute: typeof AdminAdminSystemMonitorRouteImport
+      parentRoute: typeof AdminAdminRoute
+    }
     '/admin/_admin/track/query': {
       id: '/admin/_admin/track/query'
       path: '/track/query'
@@ -1042,6 +1061,7 @@ interface AdminAdminRouteChildren {
   AdminAdminMessagesManageRoute: typeof AdminAdminMessagesManageRoute
   AdminAdminNewsCreateRoute: typeof AdminAdminNewsCreateRoute
   AdminAdminOperationLogsAnalyticsRoute: typeof AdminAdminOperationLogsAnalyticsRoute
+  AdminAdminSystemMonitorRoute: typeof AdminAdminSystemMonitorRoute
   AdminAdminTrackQueryRoute: typeof AdminAdminTrackQueryRoute
   AdminAdminTranslationsContentRoute: typeof AdminAdminTranslationsContentRoute
   AdminAdminTranslationsUiRoute: typeof AdminAdminTranslationsUiRoute
@@ -1078,6 +1098,7 @@ const AdminAdminRouteChildren: AdminAdminRouteChildren = {
   AdminAdminMessagesManageRoute: AdminAdminMessagesManageRoute,
   AdminAdminNewsCreateRoute: AdminAdminNewsCreateRoute,
   AdminAdminOperationLogsAnalyticsRoute: AdminAdminOperationLogsAnalyticsRoute,
+  AdminAdminSystemMonitorRoute: AdminAdminSystemMonitorRoute,
   AdminAdminTrackQueryRoute: AdminAdminTrackQueryRoute,
   AdminAdminTranslationsContentRoute: AdminAdminTranslationsContentRoute,
   AdminAdminTranslationsUiRoute: AdminAdminTranslationsUiRoute,

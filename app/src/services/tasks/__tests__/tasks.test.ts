@@ -22,6 +22,15 @@ vi.mock("#/services/logs/logs-cleanup.server", () => ({
 	cleanExpiredLogs: mockCleanExpiredLogs,
 }));
 
+const { mockSampleSystemMetric, mockCleanupSystemMetrics } = vi.hoisted(() => ({
+	mockSampleSystemMetric: vi.fn(),
+	mockCleanupSystemMetrics: vi.fn(),
+}));
+vi.mock("#/services/system-metric/system-metric.server", () => ({
+	sampleSystemMetric: mockSampleSystemMetric,
+	cleanupSystemMetrics: mockCleanupSystemMetrics,
+}));
+
 const { mockLoggerInfo } = vi.hoisted(() => ({ mockLoggerInfo: vi.fn() }));
 vi.mock("#/shared-services/logger", () => ({
 	logger: { error: vi.fn(), info: mockLoggerInfo, warn: vi.fn() },
@@ -34,21 +43,32 @@ describe("registerAllTasks", () => {
 		vi.clearAllMocks();
 	});
 
-	it("注册两个清理定时任务且配置正确", () => {
+	it("注册全部定时任务且配置正确", () => {
 		registerAllTasks();
-		expect(mockRegisterTask).toHaveBeenCalledTimes(2);
+		expect(mockRegisterTask).toHaveBeenCalledTimes(4);
 		const calls = mockRegisterTask.mock.calls;
-		expect(calls[0][0].name).toBe("清理过期临时文件");
-		expect(calls[0][0].cronExpression).toBe("0 * * * *");
-		expect(calls[1][0].name).toBe("清理过期日志文件");
-		expect(calls[1][0].cronExpression).toBe("0 3 * * *");
+		expect(calls[0][0].name).toBe("系统监控指标采样");
+		expect(calls[0][0].cronExpression).toBe("* * * * *");
+		expect(calls[0][0].runOnInit).toBe(true);
+		expect(calls[1][0].name).toBe("清理过期临时文件");
+		expect(calls[1][0].cronExpression).toBe("0 * * * *");
+		expect(calls[2][0].name).toBe("清理过期日志文件");
+		expect(calls[2][0].cronExpression).toBe("0 3 * * *");
+		expect(calls[3][0].name).toBe("清理过期系统监控数据");
+		expect(calls[3][0].cronExpression).toBe("0 4 * * *");
+	});
+
+	it("系统监控采样任务 handler 调用采样函数", async () => {
+		registerAllTasks();
+		await mockRegisterTask.mock.calls[0][0].handler();
+		expect(mockSampleSystemMetric).toHaveBeenCalledTimes(1);
 	});
 
 	it("清理到过期文件时记录清理日志", async () => {
 		mockCleanExpiredFiles.mockResolvedValue(3);
 		mockCleanExpiredLogs.mockResolvedValue(0);
 		registerAllTasks();
-		await mockRegisterTask.mock.calls[0][0].handler();
+		await mockRegisterTask.mock.calls[1][0].handler();
 		expect(mockCleanExpiredFiles).toHaveBeenCalledTimes(1);
 		expect(mockLoggerInfo).toHaveBeenCalledWith(
 			{ count: 3 },
@@ -59,7 +79,7 @@ describe("registerAllTasks", () => {
 	it("没有过期文件时不记录清理日志", async () => {
 		mockCleanExpiredFiles.mockResolvedValue(0);
 		registerAllTasks();
-		await mockRegisterTask.mock.calls[0][0].handler();
+		await mockRegisterTask.mock.calls[1][0].handler();
 		expect(mockCleanExpiredFiles).toHaveBeenCalledTimes(1);
 		expect(mockLoggerInfo).not.toHaveBeenCalled();
 	});
@@ -68,11 +88,22 @@ describe("registerAllTasks", () => {
 		mockCleanExpiredFiles.mockResolvedValue(0);
 		mockCleanExpiredLogs.mockResolvedValue(2);
 		registerAllTasks();
-		await mockRegisterTask.mock.calls[1][0].handler();
+		await mockRegisterTask.mock.calls[2][0].handler();
 		expect(mockCleanExpiredLogs).toHaveBeenCalledTimes(1);
 		expect(mockLoggerInfo).toHaveBeenCalledWith(
 			{ count: 2 },
 			"已清理过期日志文件",
+		);
+	});
+
+	it("过期系统监控数据清理任务 handler 正常执行", async () => {
+		mockCleanupSystemMetrics.mockReturnValue(5);
+		registerAllTasks();
+		await mockRegisterTask.mock.calls[3][0].handler();
+		expect(mockCleanupSystemMetrics).toHaveBeenCalledWith(7);
+		expect(mockLoggerInfo).toHaveBeenCalledWith(
+			{ count: 5 },
+			"已清理过期系统监控数据",
 		);
 	});
 });

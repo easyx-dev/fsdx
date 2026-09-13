@@ -36,6 +36,18 @@ export class Counter {
 		this.values.set(key, (this.values.get(key) ?? 0) + by);
 	}
 
+	/** 读取指定标签维度的当前值（从未记录时返回 0），供进程内采样计算区间增量 */
+	value(labels: Labels = {}): number {
+		return this.values.get(this.serialize(labels)) ?? 0;
+	}
+
+	/** 所有标签维度当前值之和 */
+	total(): number {
+		let sum = 0;
+		for (const value of this.values.values()) sum += value;
+		return sum;
+	}
+
 	private serialize(labels: Labels): string {
 		const ordered = this.labelNames.map((n) => labels[n] ?? "").join("\u0000");
 		return ordered;

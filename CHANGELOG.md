@@ -6,6 +6,13 @@
 
 ### Features
 
+- **应用内系统监控：进程资源 + 存储 / 数据库占用可视化（[infra]）**：管理端「系统管理」新增 `/admin/system/monitor`（权限码 `system:monitor:view`），无需外部监控系统即可查看程序自身运行状态与历史趋势。
+  - **采样落盘（无建表）**：`services/system-metric` 每分钟采集进程 CPU / 内存 / 事件循环延迟 / 活跃资源 / 请求增量 / 依赖健康 / 数据库总量，按天写入 `{STORAGE_DIR}/metrics/YYYY-MM-DD.ndjson`（保留 7 天，每日定时任务清理），零迁移、零新依赖，采样行约 350 B/分钟。
+  - **实时快照**：现读进程指标（微秒级、零 IO、零 DB 探测），前端每 5 秒轮询；依赖健康与库总量取最近一次采样，避免轮询打库；历史趋势按范围（1h / 24h / 7d）流式分桶聚合。跨 Nitro 入口 / SSR bundle 的共享状态（最新采样、事件循环延迟直方图、按需缓存）统一挂载 `globalThis`，避免模块级单例在打包后被拆分为多份。
+  - **按需巡检**：STORAGE_DIR 体积（含顶层目录分解与 `fs.statfs` 文件系统容量）与数据库各表占用（`pg_relation_size` / `pg_indexes_size` / `pg_database_size`，方言隔离于 `system-metric.db-size.server.ts`）按需查询 + 内存缓存，页面手动刷新强制重算。
+  - **指标模块扩展**：`shared-services/metrics` 的 `Counter` 新增只读访问器 `value()` / `total()`（`render()` 不变，向后兼容），供采样任务计算区间请求增量。
+  - 复用既有 `components/admin/analytics`（懒加载图表 / KPI 卡）与管理端约定。可被衍生项目吸收
+
 - **日志分析能力：操作日志与运行日志新增分析页（[infra]）**：管理端「日志审计」分组新增 `/admin/operation-logs/analytics` 与 `/admin/logs/analytics` 两个分析页，权限复用 `log:view`，不新增表与依赖。
   - **操作日志分析**：新增 `shared-services/operation-log/operation-log.analytics.ts` 聚合 KPI（操作总数 / 活跃操作人 / 高风险操作数 / 覆盖模块数，支持环比）、操作趋势（时间桶 × 动作或模块）、动作/模块/操作人分布 TopN；时间桶按业务时区口径，高风险动作白名单收敛于服务层，时间跨度上限 92 天，不新增 DB 字段。
   - **运行日志分析**：新增 `services/logs/log-analytics.server.ts` 流式扫描日志文件聚合级别分布、错误率趋势与错误消息聚类 TopN；受扫描行数上限（20 万行）与时间跨度（31 天）双重约束，超限截断并提示；pino 级别与消息归一化抽至 `services/logs/log-parse.ts` 纯函数（`normalizeLogLevel` / `normalizeMessage` / `iterateLogLines`），供日志查询与分析共用。

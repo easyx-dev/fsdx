@@ -29,6 +29,20 @@ describe("Counter", () => {
 		c.inc({ k: 'a"b' });
 		expect(c.render()).toContain('x{k="a\\"b"} 1');
 	});
+
+	it("value 读取指定标签维度当前值，缺省返回 0", () => {
+		const c = new Counter("req_total", "请求数", ["method"]);
+		c.inc({ method: "GET" }, 2);
+		expect(c.value({ method: "GET" })).toBe(2);
+		expect(c.value({ method: "POST" })).toBe(0);
+	});
+
+	it("total 汇总所有标签维度", () => {
+		const c = new Counter("req_total", "请求数", ["method"]);
+		c.inc({ method: "GET" }, 2);
+		c.inc({ method: "POST" }, 3);
+		expect(c.total()).toBe(5);
+	});
 });
 
 describe("Histogram", () => {

@@ -114,7 +114,7 @@ __root.tsx                    # HTML shell，按 pathname 前缀分发 AdminRoot
     └── admin/_admin.tsx      # 管理端鉴权布局（beforeLoad + SSR=false）
         ├── 仪表盘 / 用户（admins · clients）/ 角色（admin-roles · client-roles）
         ├── news（业务示例）/ dicts · config · files · file-explorer · logs · operation-logs
-        └── ai-providers · translations · track · messages · demo（基建能力）
+        └── ai-providers · translations · track · messages · system（系统监控）· demo（基建能力）
 ```
 
 路由目录组织约定（`-mods/` companion 收纳、单页 vs 子路由决策矩阵、页面本体必须是路由文件、首页不目录化等）详见 [AGENTS.md](../AGENTS.md)；完整路由树以 `src/routes/` 目录（`src/routeTree.gen.ts`）为准。
@@ -155,6 +155,13 @@ __root.tsx                    # HTML shell，按 pathname 前缀分发 AdminRoot
 - 埋点位置：`app/server.ts`（HTTP 入口）、`src/middleware/sf-error-logger.ts`（SF 耗时/结果）、`src/shared-services/external-observability`（外部系统调用耗时/结果）
 - 外部系统调用（`logExternalRequest`）不落审计表：成功调用仅入指标（日志为 `debug`，默认 `LOG_LEVEL=info` 下被过滤），失败日志为 `warn`；排障成功调用需临时 `LOG_LEVEL=debug`
 - 进程内计数，多实例部署需实例层聚合 → [部署运维](deployment-ops.md)
+
+**应用内系统监控**：`src/services/system-metric` 提供进程与存储的自监控，落点 `/admin/system/monitor`：
+
+- 每分钟采样进程 CPU / 内存 / 事件循环延迟 / 活跃资源 / 请求增量 / 依赖健康 / 数据库总量，按天写入 `{STORAGE_DIR}/metrics/YYYY-MM-DD.ndjson`（保留 7 天，每日清理）
+- 实时快照现读进程指标（不读文件、不探测数据库），供前端 5 秒轮询；历史趋势按范围分桶聚合采样文件
+- STORAGE_DIR 占用与数据库各表占用按需查询 + 内存缓存（手动刷新强制重算）
+- 与 Prometheus 指标是两套并存范式：前者面向管理端可视化，后者供外部监控系统拉取
 
 ## 数据流全景
 
