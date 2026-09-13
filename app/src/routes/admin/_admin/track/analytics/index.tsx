@@ -3,7 +3,6 @@
  * 筛选区（时间/事件/指标/维度/周期/粒度）+ KPI + 趋势 + 事件排行 + 属性分布 + Top 页面
  */
 
-import { message } from "@fsdx/ui-spa/antd-static";
 import { createFileRoute } from "@tanstack/react-router";
 import { Card, Col, Empty, Row, Spin } from "antd";
 import dayjs from "dayjs";
@@ -18,6 +17,7 @@ import type {
 	TrackEventMetaRecord,
 	TrackPropertyMetaRecord,
 } from "#/services/track/track.types";
+import { callSfn } from "#/utils/sfn-error";
 import {
 	type AnalyticsQueryParams,
 	getTrackAnalyticsSFn,
@@ -86,11 +86,11 @@ function TrackAnalyticsPage() {
 		setLoading(true);
 		setFailed(false);
 		try {
-			const result = await getTrackAnalyticsSFn({ data: params });
+			const result = await callSfn(getTrackAnalyticsSFn({ data: params }));
 			setData(result);
-		} catch (err) {
+		} catch {
+			// callSfn 已提示
 			setFailed(true);
-			message.error(err instanceof Error ? err.message : "加载分析数据失败");
 		} finally {
 			setLoading(false);
 		}

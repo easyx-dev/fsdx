@@ -21,6 +21,7 @@ import {
 import { useEffect, useMemo, useState } from "react";
 import type { AiProviderView } from "#/shared-services/ai/ai.schemas";
 import { fetchProviderModelsSFn } from "#/shared-services/ai/ai-providers.functions";
+import { callSfn } from "#/utils/sfn-error";
 import {
 	type FormInitialValues,
 	type FormValues,
@@ -89,12 +90,14 @@ function AiProviderFormContent({
 		}
 		setFetching(true);
 		try {
-			const { models } = await fetchProviderModelsSFn({
-				data: {
-					baseUrl: values.baseUrl.trim(),
-					apiKey: values.apiKey.trim(),
-				},
-			});
+			const { models } = await callSfn(
+				fetchProviderModelsSFn({
+					data: {
+						baseUrl: values.baseUrl.trim(),
+						apiKey: values.apiKey.trim(),
+					},
+				}),
+			);
 			setAvailableModels(models);
 			const existing =
 				(form.getFieldValue("models") as ModelFormValues[]) ?? [];
@@ -119,8 +122,8 @@ function AiProviderFormContent({
 			message.success(
 				`已拉取 ${models.length} 个模型，新增 ${toAdd.length} 个`,
 			);
-		} catch (err) {
-			message.error(err instanceof Error ? err.message : "拉取模型列表失败");
+		} catch {
+			// callSfn 已提示
 		} finally {
 			setFetching(false);
 		}

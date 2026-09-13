@@ -17,6 +17,7 @@ import dayjs from "dayjs";
 import { useState } from "react";
 import { AdminPageContent } from "#/components/admin";
 import type { NewsRecord } from "#/services/news/news.server";
+import { callSfn, sfnUnwrap } from "#/utils/sfn-error";
 import { NewsForm } from "./-mods/NewsForm";
 import {
 	exportNewsSFn,
@@ -58,21 +59,19 @@ function NewsListPage() {
 	}
 
 	async function refresh(s?: string, sf?: string, so?: string) {
-		try {
-			const filterValue = s !== undefined ? s : filter;
-			const field = sf !== undefined ? sf : sortField;
-			const order = so !== undefined ? so : sortOrder;
-			const result = await getNewsListSFn({
+		const filterValue = s !== undefined ? s : filter;
+		const field = sf !== undefined ? sf : sortField;
+		const order = so !== undefined ? so : sortOrder;
+		const [result] = await sfnUnwrap(
+			getNewsListSFn({
 				data: {
 					isPublished: toIsPublished(filterValue),
 					sortField: field,
 					sortOrder: order as "ascend" | "descend" | undefined,
 				},
-			});
-			setData(result);
-		} catch (err) {
-			message.error(err instanceof Error ? err.message : "加载新闻列表失败");
-		}
+			}),
+		);
+		if (result) setData(result);
 	}
 
 	/** 表格排序变更 */
@@ -95,17 +94,16 @@ function NewsListPage() {
 
 	/** 导出新闻数据 */
 	async function handleExport(format: "csv" | "json") {
-		try {
-			const result = await exportNewsSFn({ data: { format } });
-			const timestamp = dayjs().format("YYYY-MM-DD");
-			const ext = format === "csv" ? "csv" : "json";
-			const mime =
-				format === "csv" ? "text/csv;charset=utf-8" : "application/json";
-			downloadFile(result.content, `news_export_${timestamp}.${ext}`, mime);
-			message.success("导出完成");
-		} catch (err) {
-			message.error(err instanceof Error ? err.message : "导出失败");
-		}
+		const [result] = await sfnUnwrap(exportNewsSFn({ data: { format } }), {
+			error: "导出失败",
+		});
+		if (!result) return;
+		const timestamp = dayjs().format("YYYY-MM-DD");
+		const ext = format === "csv" ? "csv" : "json";
+		const mime =
+			format === "csv" ? "text/csv;charset=utf-8" : "application/json";
+		downloadFile(result.content, `news_export_${timestamp}.${ext}`, mime);
+		message.success("导出完成");
 	}
 
 	const columns = newsColumns({
@@ -121,7 +119,7 @@ function NewsListPage() {
 					<JsonImportButton
 						onImport={async (jsonString) => {
 							const data = JSON.parse(jsonString);
-							const result = await importNewsSFn({ data });
+							const result = await callSfn(importNewsSFn({ data }));
 							const msg = `新增 ${result.created} 条`;
 							if (result.skipped > 0) {
 								message.success(
@@ -177,21 +175,17 @@ function NewsListPage() {
 					pageSize: data.pageSize,
 					current: data.page,
 					onChange: async (page) => {
-						try {
-							const result = await getNewsListSFn({
+						const [result] = await sfnUnwrap(
+							getNewsListSFn({
 								data: {
 									isPublished: toIsPublished(filter),
 									page,
 									sortField,
 									sortOrder,
 								},
-							});
-							setData(result);
-						} catch (err) {
-							message.error(
-								err instanceof Error ? err.message : "加载新闻列表失败",
-							);
-						}
+							}),
+						);
+						if (result) setData(result);
 					},
 				}}
 			/>

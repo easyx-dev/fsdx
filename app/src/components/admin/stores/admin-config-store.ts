@@ -4,6 +4,7 @@
  */
 import { create } from "zustand";
 import { getVisibleConfigsSFn } from "#/shared-services/config/config.functions";
+import { sfnUnwrap } from "#/utils/sfn-error";
 
 interface AdminConfigState {
 	config: Record<string, string>;
@@ -16,7 +17,8 @@ export const useAdminConfigStore = create<AdminConfigState>((set, get) => ({
 	loaded: false,
 	loadAll: async () => {
 		if (get().loaded) return;
-		const config = await getVisibleConfigsSFn();
-		set({ config, loaded: true });
+		// 配置预加载：失败静默，未加载成功则不置 loaded，下次进入可重试
+		const [config] = await sfnUnwrap(getVisibleConfigsSFn(), { silent: true });
+		if (config !== null) set({ config, loaded: true });
 	},
 }));

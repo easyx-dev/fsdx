@@ -134,7 +134,7 @@ export function ImageUpload({
 			} catch (err) {
 				console.error("[ImageUpload] 上传失败", err);
 				setFileList((prev) => prev.filter((item) => item.uid !== tempUid));
-				message.error("上传失败：网络错误");
+				// 错误提示由宿主注入的 uploadFile 统一处理（项目内经 sfn-error helper），此处不重复提示
 			}
 		},
 		[permanent, maxCount, onChange, uploadFile, readUrl],

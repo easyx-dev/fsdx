@@ -203,6 +203,74 @@ const SEED_EN: SeedRow[] = [
 	{ locale: "en", key: "操作失败", value: "Operation failed" },
 	{ locale: "en", key: "删除失败", value: "Delete failed" },
 	{ locale: "en", key: "已全部标记为已读", value: "All marked as read" },
+
+	// demo（SFn 错误处理示例）
+	{ locale: "en", key: "示例", value: "Demo" },
+	{ locale: "en", key: "SFn 错误处理示例", value: "SFn Error Handling Demo" },
+	{ locale: "en", key: "触发", value: "Trigger" },
+	{ locale: "en", key: "调用成功", value: "Call succeeded" },
+	{
+		locale: "en",
+		key: "点击「触发」观察 sonner toast 的统一提示；系统错误显示为可读标题，点击「详情」查看请求号 / SFn 方法名。控制台可见诊断日志 [SFn] 方法名 message。",
+		value:
+			'Click "Trigger" to see the unified sonner toast; system errors show a readable title, expand "Details" for the request ID / SFn name. Console shows diagnostics [SFn] <name> message.',
+	},
+	{ locale: "en", key: "业务错误", value: "Business Error" },
+	{
+		locale: "en",
+		key: "服务端抛中文业务文案，客户端按 business 分类提示原文",
+		value:
+			"Server throws a Chinese business message; the client shows it verbatim as business",
+	},
+	{ locale: "en", key: "参数校验失败", value: "Validation Failed" },
+	{
+		locale: "en",
+		key: "传入 count=0，服务端 validator 拒绝，提示「参数校验失败：数量至少为 1」",
+		value:
+			'Send count=0; the server validator rejects with "Validation failed: count must be at least 1"',
+	},
+	{ locale: "en", key: "系统错误", value: "System Error" },
+	{
+		locale: "en",
+		key: "服务端技术错误，客户端显示统一「系统错误」标题，点击「详情」查看请求号 / SFn",
+		value:
+			'Server technical error; the client shows a unified "System Error" title, expand "Details" for the request ID / SFn',
+	},
+	{
+		locale: "en",
+		key: "权限不足 / 未登录",
+		value: "Permission Denied / Not Logged In",
+	},
+	{
+		locale: "en",
+		key: "服务端抛 ClientAuthError，按 auth 分类提示（不追加请求号）",
+		value:
+			"Server throws ClientAuthError; shown as auth without the request ID",
+	},
+	{ locale: "en", key: "静默失败", value: "Silent Failure" },
+	{
+		locale: "en",
+		key: "silent: true，不弹提示，仅控制台 warn（含 sfnId / requestId）",
+		value:
+			"silent: true — no toast, only a console warning (with sfnId / requestId)",
+	},
+	{ locale: "en", key: "成功对照", value: "Success (Control)" },
+	{
+		locale: "en",
+		key: "正常返回，成功提示由调用方自行处理",
+		value: "Returns normally; the caller handles the success message",
+	},
+	{
+		locale: "en",
+		key: "未捕获 → 全局兜底",
+		value: "Uncaught → Global Fallback",
+	},
+	{
+		locale: "en",
+		key: "裸调 SFn 不做处理，由全局 unhandledrejection 兜底提示（演示「不漏」）",
+		value:
+			"Call the SFn raw without handling; the global unhandledrejection fallback shows it (demonstrates nothing is missed)",
+	},
 ];
 
 export const SEED_DATA: SeedRow[] = [...SEED_EN];

@@ -4,6 +4,7 @@
  */
 import { create } from "zustand";
 import { getAllDictOptionsSFn } from "#/shared-services/dict/dict.functions";
+import { sfnUnwrap } from "#/utils/sfn-error";
 
 /** 字典选项 */
 export interface DictOption {
@@ -31,12 +32,14 @@ export const useAdminDictStore = create<AdminDictState>((set, get) => ({
 	loading: false,
 	loadAll: async () => {
 		if (get().loaded) return;
-		const dicts = await getAllDictOptionsSFn();
-		set({ dicts, loaded: true });
+		// 字典预加载：失败静默，未加载成功则不置 loaded，下次进入可重试
+		const [dicts] = await sfnUnwrap(getAllDictOptionsSFn(), { silent: true });
+		if (dicts !== null) set({ dicts, loaded: true });
 	},
 	refresh: async () => {
 		set({ loading: true });
-		const dicts = await getAllDictOptionsSFn();
-		set({ dicts, loading: false });
+		const [dicts] = await sfnUnwrap(getAllDictOptionsSFn(), { silent: true });
+		if (dicts !== null) set({ dicts });
+		set({ loading: false });
 	},
 }));

@@ -21,6 +21,7 @@ import type {
 	MessageWithUser,
 	RecipientOption,
 } from "#/services/message/message.server";
+import { callSfn, sfnUnwrap } from "#/utils/sfn-error";
 import { messageManageColumns } from "./-mods/messageManageColumns";
 import { SendMessageModal } from "./-mods/SendMessageModal";
 
@@ -68,9 +69,9 @@ function MessageManagePage() {
 	const doSearch = useCallback(
 		async (targetPage = 1) => {
 			setLoading(true);
-			try {
-				const values = searchForm.getFieldsValue();
-				const data = await listAllMessagesSFn({
+			const values = searchForm.getFieldsValue();
+			const [data] = await sfnUnwrap(
+				listAllMessagesSFn({
 					data: {
 						userType: values.userType || undefined,
 						status: values.status || undefined,
@@ -78,14 +79,13 @@ function MessageManagePage() {
 						page: targetPage,
 						pageSize: PAGE_SIZE,
 					},
-				});
-				setResult(data);
-				setPage(targetPage);
-			} catch {
-				message.error("查询失败，请稍后重试");
-			} finally {
-				setLoading(false);
-			}
+				}),
+				{ error: "查询失败，请稍后重试" },
+			);
+			setLoading(false);
+			if (!data) return;
+			setResult(data);
+			setPage(targetPage);
 		},
 		[searchForm],
 	);
@@ -105,16 +105,15 @@ function MessageManagePage() {
 		async (keyword?: string) => {
 			const userType = sendForm.getFieldValue("userType") ?? "client";
 			setRecipientSearching(true);
-			try {
-				const options = await searchRecipientsSFn({
+			// 候选加载失败无需打扰用户，仅清空列表
+			const [options] = await sfnUnwrap(
+				searchRecipientsSFn({
 					data: { userType, keyword: keyword || undefined },
-				});
-				setRecipientOptions(options);
-			} catch {
-				setRecipientOptions([]);
-			} finally {
-				setRecipientSearching(false);
-			}
+				}),
+				{ silent: true },
+			);
+			setRecipientOptions(options ?? []);
+			setRecipientSearching(false);
 		},
 		[sendForm],
 	);
@@ -139,12 +138,14 @@ function MessageManagePage() {
 		const values = await sendForm.validateFields();
 		setSending(true);
 		try {
-			const { count } = await sendMessageSFn({ data: { ...values } });
+			const { count } = await callSfn(sendMessageSFn({ data: { ...values } }), {
+				error: "发送失败，请稍后重试",
+			});
 			message.success(`已向 ${count} 位用户发送消息`);
 			setSendOpen(false);
 			doSearch();
 		} catch {
-			message.error("发送失败，请稍后重试");
+			// callSfn 已提示
 		} finally {
 			setSending(false);
 		}
@@ -153,11 +154,13 @@ function MessageManagePage() {
 	/** 删除任意消息 */
 	const handleDelete = async (id: string) => {
 		try {
-			await deleteAnyMessageSFn({ data: { id } });
+			await callSfn(deleteAnyMessageSFn({ data: { id } }), {
+				error: "删除失败，请稍后重试",
+			});
 			message.success("已删除");
 			doSearch();
 		} catch {
-			message.error("删除失败，请稍后重试");
+			// callSfn 已提示
 		}
 	};
 

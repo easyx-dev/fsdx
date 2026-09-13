@@ -19,6 +19,7 @@ import {
 	type Locale,
 	SUPPORTED_LOCALES,
 } from "#/shared-services/i18n/i18n.types";
+import { callSfn, sfnUnwrap } from "#/utils/sfn-error";
 import { readSSEStream } from "#/utils/sse-client";
 import { EditorTypes } from "./editor-type";
 
@@ -74,20 +75,18 @@ export function FieldTranslationDrawer({
 
 	const loadTranslations = useCallback(
 		async (fieldName: string) => {
-			try {
-				const result = await getFieldTranslationsSFn({
+			const [result] = await sfnUnwrap(
+				getFieldTranslationsSFn({
 					data: { entityType, entityId, fieldName },
-				});
-				const vals: Record<string, string> = {};
-				for (const l of Object.keys(result)) {
-					vals[l] = result[l].value;
-				}
-				setTranslations((prev) => ({ ...prev, [fieldName]: vals }));
-			} catch (err: unknown) {
-				message.error(
-					`加载翻译失败: ${err instanceof Error ? err.message : "未知错误"}`,
-				);
+				}),
+				{ error: "加载翻译失败" },
+			);
+			if (result === null) return;
+			const vals: Record<string, string> = {};
+			for (const l of Object.keys(result)) {
+				vals[l] = result[l].value;
 			}
+			setTranslations((prev) => ({ ...prev, [fieldName]: vals }));
 		},
 		[entityType, entityId],
 	);
@@ -106,23 +105,24 @@ export function FieldTranslationDrawer({
 		const key = `${fieldName}:${locale}`;
 		setSaving(key);
 		try {
-			await saveContentTranslationSFn({
-				data: {
-					entityType,
-					entityId,
-					fieldName,
-					locale,
-					value,
-					valueType: field?.valueType ?? "text",
-				},
-			});
+			await callSfn(
+				saveContentTranslationSFn({
+					data: {
+						entityType,
+						entityId,
+						fieldName,
+						locale,
+						value,
+						valueType: field?.valueType ?? "text",
+					},
+				}),
+				{ error: "保存失败" },
+			);
 			message.success(
 				`${field?.label ?? fieldName} ${locale.toUpperCase()} 翻译已保存`,
 			);
-		} catch (err: unknown) {
-			message.error(
-				`保存失败: ${err instanceof Error ? err.message : "未知错误"}`,
-			);
+		} catch {
+			// callSfn 已提示
 		} finally {
 			setSaving(null);
 		}
@@ -138,16 +138,17 @@ export function FieldTranslationDrawer({
 		const key = `${fieldName}:${targetLocale}`;
 		setAiTranslating(key);
 		try {
-			const translated = await aiTranslateFieldSFn({
-				data: { sourceText, sourceLocale: DEFAULT_LOCALE, targetLocale },
-			});
+			const translated = await callSfn(
+				aiTranslateFieldSFn({
+					data: { sourceText, sourceLocale: DEFAULT_LOCALE, targetLocale },
+				}),
+				{ error: "AI 翻译失败" },
+			);
 			if (translated) {
 				updateValue(fieldName, targetLocale, translated);
 			}
-		} catch (err: unknown) {
-			message.error(
-				`AI 翻译失败: ${err instanceof Error ? err.message : "未知错误"}`,
-			);
+		} catch {
+			// callSfn 已提示
 		} finally {
 			setAiTranslating(null);
 		}
@@ -167,19 +168,23 @@ export function FieldTranslationDrawer({
 		setStreamText("");
 		setBatchProgress(null);
 		try {
-			const response = await aiBatchTranslateSFn({
-				data: {
-					entityType,
-					mode: batchMode,
-					fields: fields.map((f) => ({
-						name: f.name,
-						valueType: f.valueType,
-					})),
-					records: [{ id: entityId, values: originalValues ?? {} }],
-					targetLocales: MANAGED_LOCALES,
-					writeBack: false,
-				},
-			});
+			const [response] = await sfnUnwrap(
+				aiBatchTranslateSFn({
+					data: {
+						entityType,
+						mode: batchMode,
+						fields: fields.map((f) => ({
+							name: f.name,
+							valueType: f.valueType,
+						})),
+						records: [{ id: entityId, values: originalValues ?? {} }],
+						targetLocales: MANAGED_LOCALES,
+						writeBack: false,
+					},
+				}),
+				{ error: "批量翻译失败" },
+			);
+			if (response === null) return;
 			await readSSEStream(response, (event) => {
 				if (event.type === "text-delta") {
 					setStreamText((prev) => prev + event.delta);
@@ -235,21 +240,24 @@ export function FieldTranslationDrawer({
 				for (const locale of MANAGED_LOCALES) {
 					const value = translations[field.name]?.[locale];
 					if (!value) continue;
-					await saveContentTranslationSFn({
-						data: {
-							entityType,
-							entityId,
-							fieldName: field.name,
-							locale,
-							value,
-							valueType: field.valueType,
-						},
-					});
+					await callSfn(
+						saveContentTranslationSFn({
+							data: {
+								entityType,
+								entityId,
+								fieldName: field.name,
+								locale,
+								value,
+								valueType: field.valueType,
+							},
+						}),
+						{ error: "保存失败" },
+					);
 				}
 			}
 			message.success("全部翻译已保存");
-		} catch (err: unknown) {
-			message.error(err instanceof Error ? err.message : "保存失败");
+		} catch {
+			// callSfn 已提示
 		} finally {
 			setSaving(null);
 		}

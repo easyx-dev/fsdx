@@ -193,47 +193,84 @@ const deleteProductSFn = createServerFn({ method: "POST" })
 
 ## SFn 调用方模式
 
-### 管理端（`/admin/*`）
+客户端（浏览器）调用 SFn **必须**经 `#/utils/sfn-error` 的 `sfnUnwrap` / `callSfn` 包裹，错误提示由统一出口负责，调用点不再本地 `message.error` / `toast.error`。
+
+| helper | 语义 |
+|--------|------|
+| `sfnUnwrap(promise, options?)` | 失败统一提示后返回 `[data, null] \| [null, error]`，调用方无需 try/catch（主用） |
+| `callSfn(promise, options?)` | 失败统一提示后继续抛出，供需要中断流程的调用方使用 |
+
+`options`：
+- `error?: string`：覆盖服务端归一化文案的固定失败文案
+- `silent?: boolean`：不提示（仍标记已处理），保留 `console.warn` 诊断
+
+### 用户交互（管理端 / 前台写法一致）
 
 ```tsx
-// 使用 antd message 反馈
-async function handleDelete(id: string) {
-  try {
-    await deleteProductSFn({ data: { id } });
-    message.success("删除成功");
-    refresh();
-  } catch (err) {
-    message.error(err instanceof Error ? err.message : "删除失败");
-  }
+import { sfnUnwrap } from "#/utils/sfn-error";
+
+// 成功提示仍用各端 API（管理端 message.success / 前台 toast.success）
+const [, err] = await sfnUnwrap(deleteProductSFn({ data: { id } }), {
+  error: "删除失败",
+});
+if (err) return;
+message.success("删除成功");
+refresh();
+```
+
+需要中断流程时：
+
+```tsx
+try {
+  await callSfn(deleteProductSFn({ data: { id } }));
+  message.success("删除成功");
+  refresh();
+} catch {
+  // callSfn 已提示
 }
 ```
 
-### 前台 SSR（非 `/admin/*`）
+### 静默失败
 
-`<Toaster>` 挂载在 `SSRRootDocument` 中，配置 `position="top-center" richColors`。`richColors` 自动为 error 类型着红色。
+后台轮询、未读数、字典/配置预加载、认证引导加载等「失败无需打扰用户」的调用用 `{ silent: true }`：不弹提示，但保留 `console.warn` 诊断并标记已处理，避免全局兜底重复提示。
 
 ```tsx
-// loader：静默返回降级值 + errorComponent
-loader: async () => {
-  try {
-    return await getNewsListSFn({ data: {} });
-  } catch (err) {
-    console.error(err);
-    return { records: [], total: 0, page: 1, pageSize: 20 };
-  }
-},
-errorComponent: ({ error }) => <ErrorDisplay error={error} />,
-
-// 表单提交：sonner toast 反馈
-async function handleSubmit() {
-  try {
-    await loginSFn({ data: values });
-    toast.success("登录成功");
-  } catch (err) {
-    toast.error(err instanceof Error ? err.message : "操作失败");
-  }
-}
+const [count] = await sfnUnwrap(getAdminUnreadCountSFn(), { silent: true });
+if (count !== null) setUnreadCount(count);
 ```
+
+### 例外（不得包装）
+
+- 路由 `loader` / `beforeLoad` 内的 SFn 调用：错误交由 `errorComponent` / 路由错误边界处理，保持裸调，不弹 toast
+- 登录 / 注册 / 初始化等返回 `{ success, message }` 的业务分支：属预期业务结果，不走异常提示
+- 需就地展示（如表单字段级）的场景：本地处理即已标记，不再重复提示
+
+### 全局兜底
+
+- 客户端 function 中间件 `src/middleware/sfn-client-error.ts`（注册于 `start.ts` 的 `functionMiddleware`）给所有客户端 SFn 错误打标，不在此处提示
+- `src/routes/__root.tsx` 安装 `unhandledrejection` 兜底：仅对「已打标且未被任何调用点处理」的 SFn 错误统一友好提示
+- 提示器由两端入口经 `registerSfnNotifier` 注入：管理端 `AdminProvider`（antd `message.error`）、前台 `SSRRootDocument`（sonner `toast.error`）；`sfn-error` 模块自身 UI 无关
+
+### 错误分级与诊断
+
+服务端 `sf-error-logger` 按分类归一化文案，并在消息末尾追加人类可读元信息后缀（`（类型：…；请求号：…；SFn：方法名）`，三者均人类可读；类型供客户端识别系统错误）。框架 `ShallowErrorPlugin` 仅序列化 Error 的 `message`，自定义属性无法过界，故元信息随消息传输，由客户端解析为「可读标题 + 可展开详情」：
+
+| kind | 判定（服务端） | 客户端展示 |
+|------|------|-----------|
+| `auth` | `AdminAuthError` / `ClientAuthError` | 原文（如「登录已过期」） |
+| `validation` | 校验错误 | 「参数校验失败：…」 |
+| `business` | 含中文的 Error message | 原文 |
+| `internal` | 其余技术错误 | 统一标题「系统错误，请稍后重试」，详情展开可见请求号 / SFn 方法名；原始技术信息仅开发环境进详情 |
+| `network` | 客户端 fetch 失败（`TypeError`，未到达服务端） | 「网络异常，请检查网络后重试」 |
+
+- 客户端由 `#/utils/sfn-error` 组装 `SfnErrorInfo { title, details }`：标题为可读消息，`details` 含请求号与 **SFn 可读方法名**（`serverFnMeta.name`，非框架不透明 id）；`SfnErrorNotice` 以单行「标题 + 详情按钮」展示，点击经根级 `SfnErrorDialogHost` 弹窗查看（请求号可一键复制，弹窗独立于 toast 生命周期）
+- **环境区分**：`SFn 方法名`与`原始信息`仅非生产环境携带与展示；**生产环境仅保留请求号**，排查路径为「用请求号查服务端日志」（服务端日志已含 `sfn` 方法名与文件名）；所有服务端错误均携带请求号
+- 元信息后缀以 `@fsdx/lib/error-utils` 的 `appendSfnErrorMeta` / `parseSfnErrorMeta` / `stripSfnErrorMeta` 统一读写；路由错误边界（`ErrorFallback` / `RootError`）展示前先剥离后缀
+- **安全**：生产环境不向客户端传输原始技术信息（`toClientError` 已兜底），详情仅含请求号与 SFn 方法名等非敏感字段
+- 诊断日志：客户端对 SFn 错误打 `console.warn`（网络错误 `console.error`），带 SFn 方法名 + 消息；静默失败打 `console.warn`
+- 分类函数 `classifyError` 在 `@fsdx/lib/error-utils`（纯函数；auth 由 app 层依据鉴权错误类叠加判定）
+
+> 可运行示例见两端示例页：管理端 `/admin/demo/error-handling`、前台 `/demo/error-handling`。
 
 ## Import 边界完整规则
 
@@ -257,6 +294,8 @@ async function handleSubmit() {
 - 系统异常 → `logger.error`（脱敏后记录）
 - 错误经 `toClientError()` 归一化后重新抛出，保证客户端能 `catch` 到业务/校验文案；中间件同时埋 SF 耗时与结果指标
 
+客户端侧对应链路：`src/middleware/sfn-client-error.ts`（客户端 SFn 错误打标）→ `#/utils/sfn-error` 的 helper / 全局兜底。详见上文「SFn 调用方模式」。
+
 ## 常见违规自查
 
 | 问题 | 检查方式 |
@@ -271,6 +310,9 @@ async function handleSubmit() {
 | 有页面消费的 SFn 堆在 services（未就近放路由） | SFn 应就近放消费页面的 `-mods/`，仅跨端共享无页面消费的留 services |
 | services 反向 import 路由（`routes/**` 或路由 `-mods/`） | 服务层禁止依赖表现层，保持 `routes → services → (lib 基础库) → db` 单向调用 |
 | `.server.ts` 反向 import `.functions.ts` | RPC 边界只能被调用方引用，服务逻辑禁止反向引用 |
+| 裸调 SFn（未经 `sfnUnwrap` / `callSfn`） | 检查 `routes/**`、`components/**` 中事件回调/副作用里的 `SFn(` 调用是否被 helper 包裹（`loader` / `beforeLoad` 除外） |
+| 本地 `message.error` / `toast.error` 展示 SFn 错误 | 搜索这两类提示调用，确认对应错误非 SFn 异常（业务 `{ success, message }` 分支与表单校验除外） |
+| 静默失败用裸 `catch {}` | 有意静默应改为 `{ silent: true }`，以便留下 `console.warn` 诊断并标记已处理 |
 
 ## 相关 Skill
 

@@ -26,6 +26,7 @@ import {
 	markMyMessageAsReadSFn,
 } from "#/services/message/message.functions";
 import type { MessageRecord } from "#/services/message/message.server";
+import { sfnUnwrap } from "#/utils/sfn-error";
 
 export const Route = createFileRoute("/messages")({
 	beforeLoad: async () => {
@@ -62,75 +63,62 @@ function MessagesPage() {
 	const [loading, setLoading] = useState(false);
 
 	/** 拉取消息列表 */
-	const load = useCallback(
-		async (p: number, s: typeof status) => {
-			setLoading(true);
-			try {
-				const result = await getMyMessagesSFn({
-					data: {
-						page: p,
-						pageSize: PAGE_SIZE,
-						status: s === "all" ? undefined : s,
-					},
-				});
-				setRecords(result.records);
-				setPage(result.page);
-				setTotal(result.total);
-			} catch (err) {
-				toast.error(err instanceof Error ? err.message : t("加载消息失败"));
-			} finally {
-				setLoading(false);
-			}
-		},
-		[t],
-	);
+	const load = useCallback(async (p: number, s: typeof status) => {
+		setLoading(true);
+		const [result] = await sfnUnwrap(
+			getMyMessagesSFn({
+				data: {
+					page: p,
+					pageSize: PAGE_SIZE,
+					status: s === "all" ? undefined : s,
+				},
+			}),
+		);
+		setLoading(false);
+		if (!result) return;
+		setRecords(result.records);
+		setPage(result.page);
+		setTotal(result.total);
+	}, []);
 
 	/** 刷新未读数 */
 	const refreshUnread = useCallback(async () => {
-		try {
-			setUnread(await getMyUnreadCountSFn());
-		} catch {
-			// 未读数获取失败不阻塞操作
-		}
+		// 未读数获取失败不阻塞操作，静默处理
+		const [count] = await sfnUnwrap(getMyUnreadCountSFn(), {
+			silent: true,
+		});
+		if (count === null) return;
+		setUnread(count);
 	}, []);
 
 	/** 标记单条已读 */
 	const handleMarkRead = async (id: string) => {
-		try {
-			await markMyMessageAsReadSFn({ data: { id } });
-			setRecords((prev) =>
-				prev.map((r) => (r.id === id ? { ...r, status: "read" } : r)),
-			);
-			await refreshUnread();
-		} catch (err) {
-			toast.error(err instanceof Error ? err.message : t("操作失败"));
-		}
+		const [, err] = await sfnUnwrap(markMyMessageAsReadSFn({ data: { id } }));
+		if (err) return;
+		setRecords((prev) =>
+			prev.map((r) => (r.id === id ? { ...r, status: "read" } : r)),
+		);
+		await refreshUnread();
 	};
 
 	/** 全部标记已读 */
 	const handleMarkAllRead = async () => {
-		try {
-			await markAllMyMessagesAsReadSFn();
-			setRecords((prev) => prev.map((r) => ({ ...r, status: "read" })));
-			await refreshUnread();
-			toast.success(t("已全部标记为已读"));
-		} catch (err) {
-			toast.error(err instanceof Error ? err.message : t("操作失败"));
-		}
+		const [, err] = await sfnUnwrap(markAllMyMessagesAsReadSFn());
+		if (err) return;
+		setRecords((prev) => prev.map((r) => ({ ...r, status: "read" })));
+		await refreshUnread();
+		toast.success(t("已全部标记为已读"));
 	};
 
 	/** 删除消息 */
 	const handleDelete = async (id: string) => {
-		try {
-			const { success } = await deleteMyMessageSFn({ data: { id } });
-			if (success) {
-				setRecords((prev) => prev.filter((r) => r.id !== id));
-				setTotal((v: number) => Math.max(0, v - 1));
-				await refreshUnread();
-				toast.success(t("已删除"));
-			}
-		} catch (err) {
-			toast.error(err instanceof Error ? err.message : t("删除失败"));
+		const [result] = await sfnUnwrap(deleteMyMessageSFn({ data: { id } }));
+		if (!result) return;
+		if (result.success) {
+			setRecords((prev) => prev.filter((r) => r.id !== id));
+			setTotal((v: number) => Math.max(0, v - 1));
+			await refreshUnread();
+			toast.success(t("已删除"));
 		}
 	};
 

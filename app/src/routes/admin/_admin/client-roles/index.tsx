@@ -15,6 +15,7 @@ import {
 	CLIENT_PERMISSIONS_BY_GROUP,
 } from "#/permissions/client-permissions";
 import type { ClientRoleRecord } from "#/services/client-role/client-role.server";
+import { callSfn, sfnUnwrap } from "#/utils/sfn-error";
 import {
 	createClientRoleSFn,
 	deleteClientRoleSFn,
@@ -40,10 +41,10 @@ function ClientRolesPage() {
 
 	/** 刷新列表 */
 	const refresh = async () => {
-		const data = await getClientRolesSFn({
-			data: { keyword: keyword || undefined },
-		});
-		setRoles(data);
+		const [data] = await sfnUnwrap(
+			getClientRolesSFn({ data: { keyword: keyword || undefined } }),
+		);
+		if (data) setRoles(data);
 	};
 
 	/** 搜索 */
@@ -77,22 +78,18 @@ function ClientRolesPage() {
 			const values = await form.validateFields();
 			setSaving(true);
 			if (editingRole) {
-				await updateClientRoleSFn({
-					data: { id: editingRole.id, ...values },
-				});
+				await callSfn(
+					updateClientRoleSFn({ data: { id: editingRole.id, ...values } }),
+				);
 				message.success("角色已更新");
 			} else {
-				await createClientRoleSFn({ data: values });
+				await callSfn(createClientRoleSFn({ data: values }));
 				message.success("角色已创建");
 			}
 			setModalOpen(false);
 			await refresh();
-		} catch (err) {
-			if (err instanceof Error && err.message) {
-				message.error(err.message);
-			} else {
-				message.error("操作失败");
-			}
+		} catch {
+			// 表单校验由 antd 提示，SFn 失败由 callSfn 统一提示
 		} finally {
 			setSaving(false);
 		}
@@ -101,11 +98,11 @@ function ClientRolesPage() {
 	/** 删除角色 */
 	const handleDelete = async (id: string) => {
 		try {
-			await deleteClientRoleSFn({ data: { id } });
+			await callSfn(deleteClientRoleSFn({ data: { id } }));
 			message.success("角色已删除");
 			await refresh();
-		} catch (err) {
-			message.error(err instanceof Error ? err.message : "删除失败");
+		} catch {
+			// callSfn 已提示
 		}
 	};
 

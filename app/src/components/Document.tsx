@@ -5,12 +5,13 @@
 import type { ThemePreset } from "@fsdx/ui-ssr/theme";
 import { ClientOnly, HeadContent, Scripts } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef } from "react";
-import { Toaster } from "sonner";
+import { Toaster, toast } from "sonner";
 import faviconUrl from "#/assets/favicon.svg?url";
 import adminFaviconUrl from "#/assets/favicon-admin.svg?url";
 import faviconDarkUrl from "#/assets/favicon-dark.svg?url";
 import { Footer, Header, useClientAuth } from "#/components/client";
 import { useGlobalStore } from "#/components/providers";
+import { SfnErrorNotice } from "#/components/SfnErrorNotice";
 import {
 	setUserId,
 	startRouteTracking,
@@ -21,6 +22,7 @@ import adminGlobalCss from "#/styles/admin.global.css?url";
 import ssrGlobalCss from "#/styles/ssr.global.css?inline";
 import { ADMIN_THEME, CLIENT_THEME } from "#/theme/themes";
 import { parseCustomHeadConfig } from "#/utils/custom-head";
+import { registerSfnNotifier } from "#/utils/sfn-error";
 import { AdminProvider } from "./admin/AdminProvider";
 
 // 内联层声明锁定级联层顺序：若全局 CSS <link> 加载失败（混合/陈旧部署 404），antd 运行时注入的
@@ -49,6 +51,15 @@ export function SSRRootDocument({ children }: SSRRootDocumentProps) {
 	const siteName = systemConfig?.site_name || "FSDX";
 	const { user, isLoading } = useClientAuth();
 	const trackInitialized = useRef(false);
+
+	// 注册前台错误提示器（sonner toast）：正面可读消息 + 可展开诊断详情
+	useEffect(
+		() =>
+			registerSfnNotifier((info) =>
+				toast.error(<SfnErrorNotice info={info} />, { duration: 8000 }),
+			),
+		[],
+	);
 
 	// 自定义 head 配置：解析系统配置 JSON，按结构注入 meta/links/scripts/styles
 	const customHead = useMemo(

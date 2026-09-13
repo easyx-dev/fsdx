@@ -1,9 +1,115 @@
 /**
- * 错误处理工具：日志脱敏 + 客户端错误归一化
+ * 错误处理工具：日志脱敏 + 客户端错误归一化 + 错误分类
  */
 
-/** 生产环境未知错误兜底文案 */
-const CLIENT_FALLBACK_MESSAGE = "服务器内部错误，请稍后重试";
+/** 生产环境未知错误兜底文案（客户端据此识别系统错误） */
+export const CLIENT_ERROR_FALLBACK_MESSAGE = "服务器内部错误，请稍后重试";
+
+/** 客户端可见错误的分类：鉴权 / 校验 / 业务 / 系统 */
+export type ClientErrorKind = "auth" | "validation" | "business" | "internal";
+
+/**
+ * 归类错误（不含 auth：鉴权类需依据各端 AdminAuthError / ClientAuthError 判定，由 app 层覆盖）
+ * - validation：校验错误
+ * - business：含中文文案（本项目约定 UI 文案均为简体中文）
+ * - internal：其余技术错误（SQL/堆栈/英文/未知）
+ */
+export function classifyError(
+	error: unknown,
+): Extract<ClientErrorKind, "validation" | "business" | "internal"> {
+	if (extractValidationMessage(error) !== null) return "validation";
+	if (error instanceof Error && isUserFacingMessage(error.message)) {
+		return "business";
+	}
+	return "internal";
+}
+
+/** 随错误消息传输的元信息（类型 / 请求号 / SFn 可读方法名） */
+export interface SfnErrorMetaInfo {
+	/** 错误分类（供客户端识别系统错误） */
+	kind?: ClientErrorKind;
+	/** 请求关联 ID */
+	requestId?: string;
+	/** SFn 可读方法名（服务端 serverFnMeta.name） */
+	sfnName?: string;
+}
+
+/** 错误类型的中文标签：随消息传输并解析回分类 */
+const KIND_LABELS: Record<ClientErrorKind, string> = {
+	auth: "鉴权",
+	validation: "校验",
+	business: "业务",
+	internal: "系统",
+};
+const KIND_LABEL_TO_KIND: Record<string, ClientErrorKind> = Object.fromEntries(
+	Object.entries(KIND_LABELS).map(([kind, label]) => [label, kind]),
+) as Record<string, ClientErrorKind>;
+
+/** 元信息后缀：末尾成对中文括号，内容须含「类型：/请求号：/SFn：」标记，避免误伤业务文案括号 */
+const META_SUFFIX_RE = /（([^（）]*)）\s*$/;
+const KIND_PREFIX = "类型：";
+const REQUEST_ID_PREFIX = "请求号：";
+const SFN_NAME_PREFIX = "SFn：";
+const META_PART_SEP = "；";
+
+/**
+ * 将错误类型 / 请求号 / SFn 方法名以人类可读后缀追加到消息末尾
+ * （框架 ShallowErrorPlugin 仅序列化 Error 的 message，自定义属性无法过界）
+ * 无有效字段时原样返回
+ */
+export function appendSfnErrorMeta(
+	message: string,
+	meta: SfnErrorMetaInfo,
+): string {
+	const parts: string[] = [];
+	if (meta.kind) parts.push(`${KIND_PREFIX}${KIND_LABELS[meta.kind]}`);
+	if (meta.requestId) parts.push(`${REQUEST_ID_PREFIX}${meta.requestId}`);
+	if (meta.sfnName) parts.push(`${SFN_NAME_PREFIX}${meta.sfnName}`);
+	if (parts.length === 0) return message;
+	return `${message}（${parts.join(META_PART_SEP)}）`;
+}
+
+/** 解析消息末尾的元信息后缀，返回剥离后的消息与解析出的字段；无该后缀时原样返回 */
+export function parseSfnErrorMeta(message: string): {
+	message: string;
+	kind?: ClientErrorKind;
+	requestId?: string;
+	sfnName?: string;
+} {
+	const match = META_SUFFIX_RE.exec(message);
+	if (!match) return { message };
+
+	const content = match[1];
+	if (
+		!content.includes(KIND_PREFIX) &&
+		!content.includes(REQUEST_ID_PREFIX) &&
+		!content.includes(SFN_NAME_PREFIX)
+	) {
+		return { message };
+	}
+
+	const parsed: {
+		message: string;
+		kind?: ClientErrorKind;
+		requestId?: string;
+		sfnName?: string;
+	} = { message: message.slice(0, match.index).trim() };
+	for (const part of content.split(META_PART_SEP)) {
+		if (part.startsWith(KIND_PREFIX)) {
+			parsed.kind = KIND_LABEL_TO_KIND[part.slice(KIND_PREFIX.length)];
+		} else if (part.startsWith(REQUEST_ID_PREFIX)) {
+			parsed.requestId = part.slice(REQUEST_ID_PREFIX.length);
+		} else if (part.startsWith(SFN_NAME_PREFIX)) {
+			parsed.sfnName = part.slice(SFN_NAME_PREFIX.length);
+		}
+	}
+	return parsed;
+}
+
+/** 仅剥离元信息后缀，返回面向用户的消息 */
+export function stripSfnErrorMeta(message: string): string {
+	return parseSfnErrorMeta(message).message;
+}
 
 /**
  * 归一化抛给客户端的错误，保证 err.message 始终为「业务文案 / 校验文案 / 兜底文案」之一
@@ -24,10 +130,38 @@ export function toClientError(error: unknown, isProd: boolean): unknown {
 		// 开发环境保留原始错误（含堆栈细节），生产环境仅透传业务文案
 		if (!isProd) return error;
 		if (isUserFacingMessage(error.message)) return error;
-		return new Error(CLIENT_FALLBACK_MESSAGE);
+		return new Error(CLIENT_ERROR_FALLBACK_MESSAGE);
 	}
 
 	return error;
+}
+
+/**
+ * 从任意抛出值提取错误消息，缺失时返回兜底文案
+ * 兼容 Error 实例、带 message 的对象与字符串；纯函数，不读取环境
+ * @param error 任意抛出值
+ * @param fallback 无法提取时的兜底文案
+ */
+export function getErrorMessage(error: unknown, fallback = "未知错误"): string {
+	if (error instanceof Error) {
+		return error.message || fallback;
+	}
+
+	if (
+		error &&
+		typeof error === "object" &&
+		"message" in error &&
+		typeof (error as { message?: unknown }).message === "string"
+	) {
+		const message = (error as { message: string }).message;
+		return message || fallback;
+	}
+
+	if (typeof error === "string" && error) {
+		return error;
+	}
+
+	return fallback;
 }
 
 /**

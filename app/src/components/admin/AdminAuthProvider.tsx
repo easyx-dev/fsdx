@@ -12,6 +12,7 @@ import {
 } from "react";
 import { getCurrentAdminSFn } from "#/services/admin-auth/admin-auth.functions";
 import type { AdminUser } from "#/services/admin-auth/admin-auth.types";
+import { sfnUnwrap } from "#/utils/sfn-error";
 
 interface AdminAuthContextType {
 	/** 当前登录管理员，null 表示未登录 */
@@ -31,8 +32,9 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
 	const [isLoading, setIsLoading] = useState(true);
 
 	const loadUser = useCallback(async () => {
-		const u = await getCurrentAdminSFn();
-		setUser(u);
+		// 认证引导加载：失败无需打扰用户（未登录/网络异常均回落为未登录态）
+		const [u, err] = await sfnUnwrap(getCurrentAdminSFn(), { silent: true });
+		if (!err) setUser(u);
 	}, []);
 
 	useEffect(() => {

@@ -54,10 +54,9 @@ export function JsonImportButton({
 				message.success(successMessage);
 			}
 			handleCancel();
-		} catch (err) {
-			message.error(
-				err instanceof Error ? err.message : "导入失败，请检查 JSON 格式",
-			);
+		} catch {
+			// 导入失败的错误提示由宿主注入的 onImport 统一处理（项目内经 sfn-error helper），
+			// 此处不重复提示；保持弹窗打开以便用户修正 JSON
 		} finally {
 			setLoading(false);
 		}

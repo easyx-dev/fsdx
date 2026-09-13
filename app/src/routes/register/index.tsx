@@ -24,6 +24,7 @@ import { CaptchaInput } from "#/components/client";
 import { useTranslation } from "#/components/providers";
 import { getCurrentClientSFn } from "#/services/client-auth/client-auth.functions";
 import { track } from "#/services/track/track";
+import { sfnUnwrap } from "#/utils/sfn-error";
 import { clientRegisterSFn } from "./-mods/register.functions";
 
 function RegisterError({ error }: { error: unknown }) {
@@ -59,14 +60,17 @@ function ClientRegisterPage() {
 			captcha: "",
 		},
 		onSubmit: async ({ value }) => {
-			const result = await clientRegisterSFn({
-				data: {
-					username: value.username,
-					email: value.email,
-					password: value.password,
-					captcha: value.captcha,
-				},
-			});
+			const [result] = await sfnUnwrap(
+				clientRegisterSFn({
+					data: {
+						username: value.username,
+						email: value.email,
+						password: value.password,
+						captcha: value.captcha,
+					},
+				}),
+			);
+			if (!result) return;
 			if (!result.success) {
 				toast.error(result.message || t("注册失败"));
 				return;

@@ -32,6 +32,7 @@ import type {
 	TrackPropertyMetaRecord,
 } from "#/services/track/track.types";
 import type { SortOrder } from "#/types/query";
+import { callSfn } from "#/utils/sfn-error";
 import {
 	getTrackEventNamesSFn,
 	searchTrackEventsSFn,
@@ -107,21 +108,23 @@ function EventListPage() {
 		try {
 			const field = sf !== undefined ? sf : sortField;
 			const order = so !== undefined ? so : sortOrder;
-			const result = await searchTrackEventsSFn({
-				data: {
-					name: filterEvent,
-					keyword: filterKeyword || undefined,
-					startDate: filterDateRange?.[0]?.format("YYYY-MM-DD"),
-					endDate: filterDateRange?.[1]?.format("YYYY-MM-DD"),
-					page: p,
-					pageSize: ps,
-					sortField: field,
-					sortOrder: order,
-				},
-			});
+			const result = await callSfn(
+				searchTrackEventsSFn({
+					data: {
+						name: filterEvent,
+						keyword: filterKeyword || undefined,
+						startDate: filterDateRange?.[0]?.format("YYYY-MM-DD"),
+						endDate: filterDateRange?.[1]?.format("YYYY-MM-DD"),
+						page: p,
+						pageSize: ps,
+						sortField: field,
+						sortOrder: order,
+					},
+				}),
+			);
 			setData(result);
-		} catch (err) {
-			message.error(err instanceof Error ? err.message : "查询失败");
+		} catch {
+			// callSfn 已提示
 		} finally {
 			setLoading(false);
 		}

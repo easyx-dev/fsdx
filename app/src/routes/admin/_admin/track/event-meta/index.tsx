@@ -10,6 +10,7 @@ import { useState } from "react";
 import { AdminPageContent } from "#/components/admin";
 import { getTrackEventMetaSFn } from "#/services/track/track.functions";
 import type { TrackEventMetaRecord as PresetEventRecord } from "#/services/track/track.types";
+import { callSfn, sfnUnwrap } from "#/utils/sfn-error";
 import {
 	createEventMetaSFn,
 	deleteEventMetaSFn,
@@ -32,8 +33,8 @@ function PresetEventsPage() {
 	const [form] = Form.useForm();
 
 	const refresh = async () => {
-		const data = await getTrackEventMetaSFn();
-		setEvents(data);
+		const [data] = await sfnUnwrap(getTrackEventMetaSFn());
+		if (data !== null) setEvents(data);
 	};
 
 	const handleCreate = () => {
@@ -57,17 +58,22 @@ function PresetEventsPage() {
 			const values = await form.validateFields();
 			setSaving(true);
 			if (editingEvent) {
-				await updateEventMetaSFn({
-					data: { name: editingEvent.name, ...values },
-				});
+				const [, err] = await sfnUnwrap(
+					updateEventMetaSFn({
+						data: { name: editingEvent.name, ...values },
+					}),
+				);
+				if (err) return; // SFn 失败已提示
 				message.success("元事件已更新");
 			} else {
-				await createEventMetaSFn({ data: values });
+				const [, err] = await sfnUnwrap(createEventMetaSFn({ data: values }));
+				if (err) return; // SFn 失败已提示
 				message.success("元事件已创建");
 			}
 			setModalOpen(false);
 			await refresh();
 		} catch (err) {
+			// 非 SFn 错误（表单校验等）沿用原提示
 			if (err instanceof Error && err.message) {
 				message.error(err.message);
 			} else {
@@ -80,15 +86,15 @@ function PresetEventsPage() {
 
 	const handleDelete = async (name: string) => {
 		try {
-			const result = await deleteEventMetaSFn({ data: { name } });
+			const result = await callSfn(deleteEventMetaSFn({ data: { name } }));
 			if (result) {
 				message.success("元事件已删除");
 				await refresh();
 			} else {
 				message.error("预置事件不可删除");
 			}
-		} catch (err) {
-			message.error(err instanceof Error ? err.message : "删除失败");
+		} catch {
+			// callSfn 已提示
 		}
 	};
 

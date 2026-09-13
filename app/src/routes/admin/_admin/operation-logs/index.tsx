@@ -6,7 +6,6 @@ import {
 	ReloadOutlined,
 	SearchOutlined,
 } from "@ant-design/icons";
-import { message } from "@fsdx/ui-spa/antd-static";
 import { ProTable } from "@fsdx/ui-spa/table";
 import { createFileRoute } from "@tanstack/react-router";
 import { Button, DatePicker, Form, Input, Select, Tag } from "antd";
@@ -15,6 +14,7 @@ import dayjs from "dayjs";
 import { useState } from "react";
 import { AdminPageContent } from "#/components/admin";
 import type { SortOrder } from "#/types/query";
+import { callSfn } from "#/utils/sfn-error";
 import {
 	getOperationLogModulesSFn,
 	type JsonValue,
@@ -133,23 +133,26 @@ function OperationLogsPage() {
 			: undefined;
 
 		try {
-			const data = await searchOperationLogsSFn({
-				data: {
-					module: values.module || undefined,
-					action: values.action || undefined,
-					keyword: values.keyword || undefined,
-					startDate,
-					endDate,
-					page: targetPage,
-					pageSize,
-					sortField: field,
-					sortOrder: order,
-				},
-			});
+			const data = await callSfn(
+				searchOperationLogsSFn({
+					data: {
+						module: values.module || undefined,
+						action: values.action || undefined,
+						keyword: values.keyword || undefined,
+						startDate,
+						endDate,
+						page: targetPage,
+						pageSize,
+						sortField: field,
+						sortOrder: order,
+					},
+				}),
+				{ error: "查询失败，请稍后重试" },
+			);
 			setResult(data);
 			setPage(targetPage);
 		} catch {
-			message.error("查询失败，请稍后重试");
+			// callSfn 已提示
 		}
 	};
 

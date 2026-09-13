@@ -17,6 +17,7 @@ import {
 	getMyNotifyChannelsSFn,
 	saveMyNotifyChannelsSFn,
 } from "#/services/message/message.functions";
+import { callSfn, sfnUnwrap } from "#/utils/sfn-error";
 
 /** 渠道展示配置：是否支持 secret 输入框 */
 const CHANNELS: {
@@ -62,13 +63,11 @@ export function NotifyChannelSettings() {
 		setOpen(true);
 		if (Object.keys(channels).length === 0) {
 			setLoading(true);
-			try {
-				setChannels(await getMyNotifyChannelsSFn());
-			} catch {
-				toast.error("加载通知设置失败");
-			} finally {
-				setLoading(false);
-			}
+			const [data] = await sfnUnwrap(getMyNotifyChannelsSFn(), {
+				error: "加载通知设置失败",
+			});
+			if (data !== null) setChannels(data);
+			setLoading(false);
 		}
 	};
 
@@ -85,10 +84,12 @@ export function NotifyChannelSettings() {
 	const handleSave = async () => {
 		setSaving(true);
 		try {
-			await saveMyNotifyChannelsSFn({ data: channels });
+			await callSfn(saveMyNotifyChannelsSFn({ data: channels }), {
+				error: "保存失败，请稍后重试",
+			});
 			toast.success("已保存通知设置");
 		} catch {
-			toast.error("保存失败，请稍后重试");
+			// callSfn 已提示
 		} finally {
 			setSaving(false);
 		}

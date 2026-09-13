@@ -9,6 +9,7 @@ import {
 	type UploadFileFn,
 } from "@fsdx/ui-spa/upload";
 import { getFileListSFn, uploadFileSFn } from "#/services/file/file.functions";
+import { callSfn, sfnUnwrap } from "#/utils/sfn-error";
 
 interface FileUploadProps {
 	/** 文件 ID（单文件）或文件 ID 数组（多文件），兼容 Form.Item 注入 */
@@ -34,7 +35,9 @@ const uploadFile: UploadFileFn = async (file, permanent) => {
 	const fd = new FormData();
 	fd.append("file", file);
 	if (permanent) fd.append("permanent", "true");
-	const result = await uploadFileSFn({ data: fd });
+	const result = await callSfn(uploadFileSFn({ data: fd }), {
+		error: "上传失败",
+	});
 	if (!result.success || !result.data) {
 		throw new Error("上传失败");
 	}
@@ -48,9 +51,11 @@ const fetchFiles: FetchFiles = async ({
 	page,
 	pageSize,
 }) => {
-	const result = await getFileListSFn({
-		data: { keyword, mimePrefix, page, pageSize },
-	});
+	const [result] = await sfnUnwrap(
+		getFileListSFn({ data: { keyword, mimePrefix, page, pageSize } }),
+		{ error: "加载文件列表失败" },
+	);
+	if (result === null) return { records: [], total: 0 };
 	return { records: result.records ?? [], total: result.total };
 };
 

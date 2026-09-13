@@ -23,6 +23,7 @@ import { toast } from "sonner";
 import { CaptchaInput } from "#/components/client";
 import { useTranslation } from "#/components/providers";
 import { getCurrentClientSFn } from "#/services/client-auth/client-auth.functions";
+import { sfnUnwrap } from "#/utils/sfn-error";
 import { resetPwdSFn } from "./-mods/forgot-password.functions";
 
 function ForgotPasswordError({ error }: { error: unknown }) {
@@ -58,14 +59,17 @@ function ForgotPasswordPage() {
 			confirmPassword: "",
 		},
 		onSubmit: async ({ value }) => {
-			const result = await resetPwdSFn({
-				data: {
-					email: value.email,
-					captcha: value.captcha,
-					password: value.password,
-					confirmPassword: value.confirmPassword,
-				},
-			});
+			const [result] = await sfnUnwrap(
+				resetPwdSFn({
+					data: {
+						email: value.email,
+						captcha: value.captcha,
+						password: value.password,
+						confirmPassword: value.confirmPassword,
+					},
+				}),
+			);
+			if (!result) return;
 			if (!result.success) {
 				toast.error(result.message || t("重置失败"));
 				return;

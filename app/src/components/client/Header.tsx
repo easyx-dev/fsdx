@@ -30,6 +30,7 @@ export function Header() {
 		{ to: "/", label: t("首页") },
 		{ to: "/news", label: t("新闻") },
 		{ to: "/about", label: t("关于") },
+		{ to: "/demo/error-handling", label: t("示例") },
 	] as const;
 
 	const handleLogout = async () => {

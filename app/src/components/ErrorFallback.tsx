@@ -3,6 +3,7 @@
  * 不依赖 AuthProvider 等全局 Context，确保错误边界自身渲染稳定
  */
 
+import { stripSfnErrorMeta } from "@fsdx/lib/error-utils";
 import type { ErrorComponentProps } from "@tanstack/react-router";
 import { Link } from "@tanstack/react-router";
 import { AlertTriangle, ArrowLeft, Home, RefreshCw } from "lucide-react";
@@ -35,7 +36,8 @@ export function DefaultErrorFallback({
 }: ErrorComponentProps) {
 	logError(error, { componentStack: info?.componentStack });
 
-	const message = error instanceof Error ? error.message : "未知错误";
+	const message =
+		error instanceof Error ? stripSfnErrorMeta(error.message) : "未知错误";
 
 	return (
 		<main className="flex min-h-screen items-center justify-center bg-background px-4">

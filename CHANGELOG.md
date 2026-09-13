@@ -12,6 +12,15 @@
 
 ### Infrastructure
 
+- **客户端 SFn 错误处理统一：helper + 分级 + 全局兜底（[infra]）**：客户端对 Server Function 的调用统一经 `#/utils/sfn-error`，消除碎片化错误提示，并保证未捕获的 SFn 错误不漏提示。
+  - 新增前端工具 `utils/sfn-error`（归 `src/utils/`，非 shared-service）：UI 无关的提示器注册中心（DI，两端入口分别注入 antd `message.error` / sonner `toast.error`）+ 错误标记 + `callSfn` / `sfnUnwrap`（失败统一提示后抛出 / 返回 `[data, err]` 元组）+ `installSfnErrorFallback`（全局 `unhandledrejection` 兜底，仅提示被打标且未处理的 SFn 错误，含同文案 2 秒去重）。
+  - **错误分级 + 可展开详情**：新增 `@fsdx/lib/error-utils` 纯函数 `classifyError`（auth / validation / business / internal）与 `getErrorMessage`，以及元信息读写 `appendSfnErrorMeta` / `parseSfnErrorMeta` / `stripSfnErrorMeta`。服务端 `sf-error-logger` 按分类归一化文案，并在消息末尾追加人类可读后缀 `（类型：…；请求号：…；SFn：方法名）`（三者均人类可读、**所有服务端错误都带请求号**；框架 `ShallowErrorPlugin` 仅序列化 Error 的 `message`，自定义属性无法过界）。客户端 `#/utils/sfn-error` 将错误组装为 `SfnErrorInfo { title, details }`：按类型识别系统错误并统一显示「系统错误，请稍后重试」，业务/校验/鉴权展示归一化原文，传输失败（`TypeError`）提示「网络异常」；`SfnErrorNotice` 单行展示「标题 + 详情按钮」，点击经根级 `SfnErrorDialogHost` 弹窗展示 `requestId` / `sfnName`（请求号可复制，弹窗独立于 toast 生命周期，生产环境不携带原始技术信息）；**SFn 方法名与原始信息仅非生产环境携带与展示，生产环境仅保留请求号，排查按请求号查服务端日志**；路由错误边界展示前剥离后缀。
+  - 新增客户端 function 中间件 `middleware/sfn-client-error.ts`（`.client()`，注册于 `start.ts` 的 `functionMiddleware`）；服务端 `sfErrorLogger` 归一化 + 客户端中间件打标 + 全局兜底三层链路，服务端错误日志补齐 `serverFnMeta.name` / `filename`。
+  - 全量迁移客户端调用点（routes / components）：事件回调、提交、删除、上传、副作用统一经 helper，删除本地 `message.error` / `toast.error`；有意静默（轮询 / 未读数 / 预取 / 引导加载）统一 `{ silent: true }`（保留 `console.warn` 诊断）；路由 `loader` / `beforeLoad` 保持裸调（错误交 `errorComponent`）。
+  - `@fsdx/ui-spa` 移除 `sfn-helpers`；上传基础组件与 `JsonImportButton` 不再重复弹错误提示（错误交由宿主统一 helper）。
+  - **两端可运行示例页**：管理端 `/admin/demo/error-handling`（新增 `demo:view` 权限码）、前台 `/demo/error-handling`，演示业务 / 校验 / 系统 / 鉴权 / 静默 / 成功 / 未捕获兜底七类场景。
+  - 文档：`AGENTS.md`、`architecture` skill、`server-function` skill、`sfn-checklist` 明确「归属决策阶梯」（前端工具归 `src/utils/`，shared-services 只放 app 级服务单例 / 系统级共享域）+「客户端调用 SFn 必须经统一 helper」硬规则 + 错误分级与诊断说明。可被衍生项目吸收
+
 - **i18n AI 翻译重构 + 批量流式翻译（[infra]）**：AI 翻译三层分离落地，并新增单实体/全量批量翻译 + SSE 流式。
   - **三层分离**：AI 翻译服务逻辑下沉 `shared-services/i18n/i18n.ai.server.ts`（prompt 构建、错误分类、组批、流式执行），入参 schema 收敛 `i18n.ai.schemas.ts`（`aiTranslateFieldSchema` / `aiBatchTranslateReqSchema`），共享类型收敛客户端安全的 `i18n.ai.types.ts`（服务端与客户端 SSE 消费共用，避免服务端类型进客户端 bundle）；`i18n.functions.ts` 的 `aiTranslateFieldSFn` 精简为校验 + 调 `translateWithAi`，入参由中文语言标签改为 locale 码。可被衍生项目吸收
   - **修复 `$` 替换注入 Bug**：`buildTranslationPrompt` / `buildBatchPrompt` 改用函数 replacer，规避源文本含 `$&` / `$'` / `` $` `` 时污染 prompt（`String.replace` 字符串替换会把 `$` 当特殊模式）。
@@ -98,6 +107,8 @@
 ### 依赖升级
 
 ### Breaking Changes
+
+- ⚠️ **移除 `@fsdx/ui-spa/sfn-helpers`（[infra]）**：`safeSfnCall` / `unwrapSfn` 由 `#/utils/sfn-error` 的 `callSfn` / `sfnUnwrap` 取代（客户端调用统一经该模块）。
 
 - ⚠️ **消息模块字段统一命名（[infra]）**：`message` 表列 `recipient_type/recipient_id` 重命名为 `user_type/user_id`；对应 SFn 入参 `recipientType/recipientIds` 改为 `userType/userIds`，管理列表返回字段 `recipientName` 改为 `userName`。
 

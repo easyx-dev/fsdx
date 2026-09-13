@@ -17,6 +17,7 @@ import { Avatar, Badge, Button, Divider, Flex, Popover, Tooltip } from "antd";
 import { type ReactNode, useCallback, useEffect, useState } from "react";
 import { logoutSFn } from "#/services/admin-auth/admin-auth.functions";
 import { getAdminUnreadCountSFn } from "#/services/message/message.functions";
+import { sfnUnwrap } from "#/utils/sfn-error";
 import { useAdminAuth } from "./AdminAuthProvider";
 import { AdminLogo } from "./AdminLogo";
 import { AdminNav } from "./AdminNav";
@@ -35,14 +36,11 @@ export function AdminLayout({ children }: { children: ReactNode }) {
 	/** 未读消息数（30 秒轮询） */
 	const [unreadCount, setUnreadCount] = useState(0);
 
-	/** 拉取未读消息数 */
+	/** 拉取未读消息数（轮询辅助信息，失败静默） */
 	const fetchUnreadCount = useCallback(async () => {
 		if (!user) return;
-		try {
-			setUnreadCount(await getAdminUnreadCountSFn());
-		} catch {
-			// 未读数为辅助信息，失败不打扰用户
-		}
+		const [count] = await sfnUnwrap(getAdminUnreadCountSFn(), { silent: true });
+		if (count !== null) setUnreadCount(count);
 	}, [user]);
 
 	useEffect(() => {
@@ -56,7 +54,8 @@ export function AdminLayout({ children }: { children: ReactNode }) {
 	}, [user, fetchUnreadCount]);
 
 	const handleLogout = async () => {
-		await logoutSFn();
+		const [, err] = await sfnUnwrap(logoutSFn());
+		if (err) return;
 		window.location.href = "/admin/login";
 	};
 

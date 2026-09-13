@@ -14,15 +14,28 @@ description: >
 | `packages/lib/` | 纯逻辑库（同构工具 + 服务端基础设施） | `@fsdx/lib/cache`、`@fsdx/lib/ms`、`#/shared-services/logger` |
 | `packages/ui-ssr/` | shadcn 基础组件（前台 SSR） | `@fsdx/ui-ssr/ui`、`@fsdx/ui-ssr/theme` |
 | `packages/ui-spa/` | antd 管理端组件（antd 单实例） | `@fsdx/ui-spa/table`、`@fsdx/ui-spa/upload` |
-| `src/shared-services/` | 应用级基础设施单例壳 + 客户端 SDK | `src/shared-services/logger`、`src/shared-services/jwt`、`src/shared-services/metrics`、`src/services/track/track.ts` |
+| `src/shared-services/` | 应用级基础设施单例壳 + 系统级共享域（读 env / 引 logger / 需全局态；**非通用共享桶**） | `src/shared-services/logger`、`src/shared-services/jwt`、`src/shared-services/metrics` |
 | `src/services/` | 领域服务层（`server` 业务逻辑 + `schemas` zod + `cache` + `types`）+ 跨端共享 SFn | `src/services/news/`、`src/shared-services/query/`、`src/services/admin-auth/` |
 | `src/constants/` | 项目级常量 | `src/constants/editor-types.ts` |
 | `src/validators/` | 跨模块共享的 zod schema | `src/validators/common.schemas.ts` |
 | `src/types/` | 跨模块共享类型 | `src/types/query.ts` |
+| `src/utils/` | app 前端工具（无状态或仅轻量模块内状态，非服务单例） | `src/utils/sfn-error.ts`、`src/utils/custom-head.ts` |
 | `src/middleware/` | 请求级中间件（鉴权/权限/locale/错误日志） | `src/middleware/admin-auth.ts` |
 | `src/routes/` | 路由层（页面 + UI 组件 + 就近 SFn + beforeLoad 守卫） | `src/routes/admin/_admin/news/` |
 
 **依赖方向**：`routes → services → (lib 基础库) → db`，服务层不得反向依赖表现层——`services/**` **禁止** import `routes/**`（含路由 `-mods/`、路由组件与路由局部 schema）；services 的上游仅限表现层入口（routes / middleware / bootstrap / lib SDK）与服务间协作（如 `logCrud`、`query-utils`）。`src/shared-services/` 禁止引入业务逻辑。`services/<module>/` 是领域服务层的归属：`server`（业务逻辑/DB）+ `schemas`（zod 单一来源，server 用 `z.infer` 派生）+ `cache` + `types`；跨端共享的 SFn（auth/captcha/track/message/...）也可留在 services。`routes/**/-mods/` 放 UI 组件与**就近的 SFn**（SFn + 路由局部 schema 随页面），页面通过 SFn 调服务层，禁止直接 import `*.server.ts`。
+
+**归属判定（按性质，不默认 shared-services）**：
+
+| 性质 | 归属 |
+|------|------|
+| 纯函数/类（非单例、不读 env、不碰 DB/框架） | `@fsdx/lib` |
+| app 前端工具（无状态或仅轻量模块内状态、不读服务端 env） | `src/utils/` |
+| shadcn 组件 / antd 组件 / AI 富文本工作台 | `@fsdx/ui-ssr` / `@fsdx/ui-spa` / `@fsdx/ai-rich-editor` |
+| app 级服务单例 / 系统级共享域（读 env、引 logger、需全局态） | `src/shared-services/` |
+| 业务逻辑 / 领域服务 | `src/services` 或路由层 |
+
+`shared-services` **不是「凡多处引用即入」的通用共享桶**：前端工具、无状态 helper 一律归 `src/utils/`（如客户端 SFn 错误处理 `#/utils/sfn-error`）。
 
 > 每个子包的导出清单与边界见 [core](../../../packages/lib/README.md) / [ui-ssr](../../../packages/ui-ssr/README.md) / [ui-spa](../../../packages/ui-spa/README.md)。
 
@@ -92,4 +105,5 @@ const result = createNews(data as CreateNewsInput);
 - 实体的 SFn 应就近放在消费页面的路由 `-mods/`，未在页面消费的跨端共享 SFn 才留在 services
 - `.functions.ts` handler 中出现 DB 查询/业务逻辑 → 提取到 `.server.ts`
 - `lib/` 中出现业务常量/业务类型 → 移到 `constants/` 或 `services/`
+- 把前端工具 / 无状态 helper 塞进 `shared-services/` → 归 `src/utils/`（`shared-services` 只放 app 级服务单例 / 系统级共享域）
 - 跨模块直接 `import` 缓存实例 → 改为所属模块导出函数

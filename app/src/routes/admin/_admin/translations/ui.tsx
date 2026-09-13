@@ -21,6 +21,7 @@ import {
 } from "#/shared-services/i18n/i18n.types";
 import { formSchema } from "#/shared-services/i18n/i18n.ui.schemas";
 import type { SortOrder } from "#/types/query";
+import { callSfn, sfnUnwrap } from "#/utils/sfn-error";
 import {
 	deleteSFn,
 	exportUITranslationsSFn,
@@ -63,10 +64,12 @@ function UITranslationPage() {
 
 	const refresh = useCallback(
 		async (locale?: Locale, keyword?: string) => {
-			const result = await getListSFn({
-				data: { locale, keyword, page: data.page, sortField, sortOrder },
-			});
-			setData(result);
+			const [result] = await sfnUnwrap(
+				getListSFn({
+					data: { locale, keyword, page: data.page, sortField, sortOrder },
+				}),
+			);
+			if (result) setData(result);
 		},
 		[data.page, sortField, sortOrder],
 	);
@@ -83,29 +86,35 @@ function UITranslationPage() {
 			s?.order === "ascend" || s?.order === "descend" ? s.order : undefined;
 		setSortField(field);
 		setSortOrder(order);
-		const result = await getListSFn({
-			data: {
-				locale: filterLocale,
-				keyword: debouncedKeyword,
-				sortField: field,
-				sortOrder: order,
-			},
-		});
-		setData(result);
+		const [result] = await sfnUnwrap(
+			getListSFn({
+				data: {
+					locale: filterLocale,
+					keyword: debouncedKeyword,
+					sortField: field,
+					sortOrder: order,
+				},
+			}),
+		);
+		if (result) setData(result);
 	};
 
 	async function handleSubmit(values: Record<string, unknown>) {
+		let parsed: ReturnType<typeof formSchema.parse>;
 		try {
-			const parsed = formSchema.parse({ ...values, id: editing?.id });
-			await saveSFn({ data: parsed });
-			message.success(editing ? "翻译已更新" : "翻译已创建");
-			setModalOpen(false);
-			setEditing(null);
-			form.resetFields();
-			await refresh(filterLocale, debouncedKeyword);
+			parsed = formSchema.parse({ ...values, id: editing?.id });
 		} catch (err: unknown) {
+			// 非 SFn 的表单 schema 校验失败，保留本地提示
 			message.error(err instanceof Error ? err.message : "操作失败");
+			return;
 		}
+		const [, err] = await sfnUnwrap(saveSFn({ data: parsed }));
+		if (err) return;
+		message.success(editing ? "翻译已更新" : "翻译已创建");
+		setModalOpen(false);
+		setEditing(null);
+		form.resetFields();
+		await refresh(filterLocale, debouncedKeyword);
 	}
 
 	function openCreate() {
@@ -122,29 +131,25 @@ function UITranslationPage() {
 	}
 
 	async function handleDelete(id: string) {
-		try {
-			await deleteSFn({ data: { id } });
-			message.success("翻译已删除");
-			await refresh(filterLocale, debouncedKeyword);
-		} catch (err: unknown) {
-			message.error(err instanceof Error ? err.message : "删除失败");
-		}
+		const [, err] = await sfnUnwrap(deleteSFn({ data: { id } }));
+		if (err) return;
+		message.success("翻译已删除");
+		await refresh(filterLocale, debouncedKeyword);
 	}
 
 	/** 导出 UI 翻译数据（JSON） */
 	async function handleExport() {
-		try {
-			const json = await exportUITranslationsSFn();
-			const timestamp = dayjs().format("YYYY-MM-DD");
-			downloadFile(
-				json,
-				`ui_translations_export_${timestamp}.json`,
-				"application/json",
-			);
-			message.success("导出完成");
-		} catch (err: unknown) {
-			message.error(err instanceof Error ? err.message : "导出失败");
-		}
+		const [json] = await sfnUnwrap(exportUITranslationsSFn(), {
+			error: "导出失败",
+		});
+		if (!json) return;
+		const timestamp = dayjs().format("YYYY-MM-DD");
+		downloadFile(
+			json,
+			`ui_translations_export_${timestamp}.json`,
+			"application/json",
+		);
+		message.success("导出完成");
 	}
 	useEffect(() => {
 		refresh(filterLocale, debouncedKeyword);
@@ -225,7 +230,9 @@ function UITranslationPage() {
 					<JsonImportButton
 						onImport={async (jsonString) => {
 							const data = JSON.parse(jsonString);
-							const result = await importUITranslationsSFn({ data: { data } });
+							const result = await callSfn(
+								importUITranslationsSFn({ data: { data } }),
+							);
 							message.success(
 								`导入完成：新增 ${result.created} / 更新 ${result.updated}`,
 							);
@@ -281,16 +288,18 @@ function UITranslationPage() {
 					pageSize: data.pageSize,
 					current: data.page,
 					onChange: async (page) => {
-						const r = await getListSFn({
-							data: {
-								locale: filterLocale,
-								keyword: debouncedKeyword,
-								page,
-								sortField,
-								sortOrder,
-							},
-						});
-						setData(r);
+						const [r] = await sfnUnwrap(
+							getListSFn({
+								data: {
+									locale: filterLocale,
+									keyword: debouncedKeyword,
+									page,
+									sortField,
+									sortOrder,
+								},
+							}),
+						);
+						if (r) setData(r);
 					},
 				}}
 			/>

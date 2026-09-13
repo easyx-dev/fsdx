@@ -21,6 +21,7 @@ import {
 	SUPPORTED_LOCALES,
 } from "#/shared-services/i18n/i18n.types";
 import type { SortOrder } from "#/types/query";
+import { callSfn, sfnUnwrap } from "#/utils/sfn-error";
 import {
 	deleteSFn,
 	exportContentTranslationsSFn,
@@ -67,33 +68,38 @@ function ContentTranslationPage() {
 	// 筛选条件变更时重置到第一页并刷新
 	useEffect(() => {
 		async function doRefresh() {
-			const result = await getListSFn({
-				data: {
-					entityType: filterEntityType,
-					locale: filterLocale,
-					keyword: debouncedKeyword,
-					page: 1,
-					sortField,
-					sortOrder,
-				},
-			});
-			setData(result);
+			const [result] = await sfnUnwrap(
+				getListSFn({
+					data: {
+						entityType: filterEntityType,
+						locale: filterLocale,
+						keyword: debouncedKeyword,
+						page: 1,
+						sortField,
+						sortOrder,
+					},
+				}),
+				{ error: "加载翻译列表失败" },
+			);
+			if (result) setData(result);
 		}
 		doRefresh();
 	}, [filterEntityType, filterLocale, debouncedKeyword, sortField, sortOrder]);
 
 	async function refresh() {
-		const result = await getListSFn({
-			data: {
-				entityType: filterEntityType,
-				locale: filterLocale,
-				keyword: debouncedKeyword,
-				page: data.page,
-				sortField,
-				sortOrder,
-			},
-		});
-		setData(result);
+		const [result] = await sfnUnwrap(
+			getListSFn({
+				data: {
+					entityType: filterEntityType,
+					locale: filterLocale,
+					keyword: debouncedKeyword,
+					page: data.page,
+					sortField,
+					sortOrder,
+				},
+			}),
+		);
+		if (result) setData(result);
 	}
 
 	/** 表格排序变更 */
@@ -105,30 +111,36 @@ function ContentTranslationPage() {
 				s?.order === "ascend" || s?.order === "descend" ? s.order : undefined;
 			setSortField(field);
 			setSortOrder(order);
-			const result = await getListSFn({
-				data: {
-					entityType: filterEntityType,
-					locale: filterLocale,
-					keyword: debouncedKeyword,
-					sortField: field,
-					sortOrder: order,
-				},
-			});
-			setData(result);
+			const [result] = await sfnUnwrap(
+				getListSFn({
+					data: {
+						entityType: filterEntityType,
+						locale: filterLocale,
+						keyword: debouncedKeyword,
+						sortField: field,
+						sortOrder: order,
+					},
+				}),
+			);
+			if (result) setData(result);
 		};
 
 	async function handleSubmit(values: Record<string, unknown>) {
+		let parsed: ReturnType<typeof formSchema.parse>;
 		try {
-			const parsed = formSchema.parse({ ...values, id: editing?.id });
-			await saveSFn({ data: parsed });
-			message.success(editing ? "翻译已更新" : "翻译已创建");
-			setModalOpen(false);
-			setEditing(null);
-			form.resetFields();
-			await refresh();
+			parsed = formSchema.parse({ ...values, id: editing?.id });
 		} catch (err: unknown) {
+			// 非 SFn 的表单 schema 校验失败，保留本地提示
 			message.error(err instanceof Error ? err.message : "操作失败");
+			return;
 		}
+		const [, err] = await sfnUnwrap(saveSFn({ data: parsed }));
+		if (err) return;
+		message.success(editing ? "翻译已更新" : "翻译已创建");
+		setModalOpen(false);
+		setEditing(null);
+		form.resetFields();
+		await refresh();
 	}
 
 	function openCreate() {
@@ -149,29 +161,25 @@ function ContentTranslationPage() {
 	}
 
 	async function handleDelete(id: string) {
-		try {
-			await deleteSFn({ data: { id } });
-			message.success("翻译已删除");
-			await refresh();
-		} catch (err: unknown) {
-			message.error(err instanceof Error ? err.message : "删除失败");
-		}
+		const [, err] = await sfnUnwrap(deleteSFn({ data: { id } }));
+		if (err) return;
+		message.success("翻译已删除");
+		await refresh();
 	}
 
 	/** 导出实体翻译数据（JSON） */
 	async function handleExport() {
-		try {
-			const json = await exportContentTranslationsSFn();
-			const timestamp = dayjs().format("YYYY-MM-DD");
-			downloadFile(
-				json,
-				`content_translations_export_${timestamp}.json`,
-				"application/json",
-			);
-			message.success("导出完成");
-		} catch (err: unknown) {
-			message.error(err instanceof Error ? err.message : "导出失败");
-		}
+		const [json] = await sfnUnwrap(exportContentTranslationsSFn(), {
+			error: "导出失败",
+		});
+		if (!json) return;
+		const timestamp = dayjs().format("YYYY-MM-DD");
+		downloadFile(
+			json,
+			`content_translations_export_${timestamp}.json`,
+			"application/json",
+		);
+		message.success("导出完成");
 	}
 	const columns = [
 		{
@@ -256,9 +264,11 @@ function ContentTranslationPage() {
 					<JsonImportButton
 						onImport={async (jsonString) => {
 							const data = JSON.parse(jsonString);
-							const result = await importContentTranslationsSFn({
-								data: { data },
-							});
+							const result = await callSfn(
+								importContentTranslationsSFn({
+									data: { data },
+								}),
+							);
 							message.success(
 								`导入完成：新增 ${result.created} / 更新 ${result.updated}`,
 							);
@@ -326,17 +336,19 @@ function ContentTranslationPage() {
 					pageSize: data.pageSize,
 					current: data.page,
 					onChange: async (page) => {
-						const r = await getListSFn({
-							data: {
-								entityType: filterEntityType,
-								locale: filterLocale,
-								keyword: debouncedKeyword,
-								page,
-								sortField,
-								sortOrder,
-							},
-						});
-						setData(r);
+						const [r] = await sfnUnwrap(
+							getListSFn({
+								data: {
+									entityType: filterEntityType,
+									locale: filterLocale,
+									keyword: debouncedKeyword,
+									page,
+									sortField,
+									sortOrder,
+								},
+							}),
+						);
+						if (r) setData(r);
 					},
 				}}
 			/>

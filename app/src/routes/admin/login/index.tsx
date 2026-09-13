@@ -8,6 +8,7 @@ import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
 import { Button, Form, Input } from "antd";
 import { useState } from "react";
 import { checkInitStatusSFn } from "#/services/init/init.functions";
+import { callSfn } from "#/utils/sfn-error";
 import { adminLoginSFn } from "./-mods/login.functions";
 
 export const Route = createFileRoute("/admin/login/")({
@@ -31,16 +32,14 @@ function AdminLoginPage() {
 	}) => {
 		setLoading(true);
 		try {
-			const result = await adminLoginSFn({ data: values });
+			const result = await callSfn(adminLoginSFn({ data: values }));
 			if (!result.success) {
 				message.error(result.message || "登录失败");
 				return;
 			}
 			navigate({ to: "/admin" });
-		} catch (err) {
-			message.error(
-				err instanceof Error ? err.message : "网络错误，请稍后重试",
-			);
+		} catch {
+			// callSfn 已统一提示
 		} finally {
 			setLoading(false);
 		}

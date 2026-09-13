@@ -32,6 +32,7 @@ import {
 	markAllAdminMessagesAsReadSFn,
 } from "#/services/message/message.functions";
 import type { MessageRecord } from "#/services/message/message.server";
+import { sfnUnwrap } from "#/utils/sfn-error";
 import { NotifyChannelSettingsModal } from "./-mods/NotifyChannelSettingsModal";
 
 const { Text, Paragraph } = Typography;
@@ -64,33 +65,31 @@ function AdminInboxPage() {
 
 	const fetchMessages = useCallback(async () => {
 		setLoading(true);
-		try {
-			const result = await getAdminMessagesSFn({
+		// 列表加载失败不打扰用户（silent），仍保留诊断日志
+		const [result] = await sfnUnwrap(
+			getAdminMessagesSFn({
 				data: {
 					status: tab === "all" ? undefined : tab,
 					page,
 					pageSize: PAGE_SIZE,
 				},
-			});
-			setMessages(result.records);
-			setTotal(result.total);
-		} catch (err) {
-			// 列表加载失败不打扰用户，但保留排查痕迹
-			console.warn("[admin-messages] 加载消息列表失败", err);
+			}),
+			{ silent: true },
+		);
+		setLoading(false);
+		if (!result) {
 			setMessages([]);
 			setTotal(0);
-		} finally {
-			setLoading(false);
+			return;
 		}
+		setMessages(result.records);
+		setTotal(result.total);
 	}, [tab, page]);
 
 	const fetchUnreadCount = useCallback(async () => {
-		try {
-			setUnreadCount(await getAdminUnreadCountSFn());
-		} catch (err) {
-			// 未读数为辅助信息，失败不打扰用户，但保留排查痕迹
-			console.warn("[admin-messages] 获取未读数失败", err);
-		}
+		// 未读数为辅助信息，失败无需打扰用户
+		const [count] = await sfnUnwrap(getAdminUnreadCountSFn(), { silent: true });
+		if (count !== null) setUnreadCount(count);
 	}, []);
 
 	useEffect(() => {
@@ -102,20 +101,25 @@ function AdminInboxPage() {
 	}, [fetchUnreadCount]);
 
 	const handleMarkRead = async (id: string) => {
-		await markAdminMessageAsReadSFn({ data: { id } });
+		const [, err] = await sfnUnwrap(
+			markAdminMessageAsReadSFn({ data: { id } }),
+		);
+		if (err) return;
 		fetchMessages();
 		fetchUnreadCount();
 	};
 
 	const handleMarkAllRead = async () => {
-		await markAllAdminMessagesAsReadSFn();
+		const [, err] = await sfnUnwrap(markAllAdminMessagesAsReadSFn());
+		if (err) return;
 		message.success("已全部标记为已读");
 		fetchMessages();
 		fetchUnreadCount();
 	};
 
 	const handleDelete = async (id: string) => {
-		await deleteAdminMessageSFn({ data: { id } });
+		const [, err] = await sfnUnwrap(deleteAdminMessageSFn({ data: { id } }));
+		if (err) return;
 		message.success("已删除");
 		fetchMessages();
 		fetchUnreadCount();

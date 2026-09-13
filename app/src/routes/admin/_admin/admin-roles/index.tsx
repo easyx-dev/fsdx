@@ -12,6 +12,7 @@ import { useState } from "react";
 import { AdminPageContent, PermissionSelector } from "#/components/admin";
 import { ADMIN_PERMISSION_META } from "#/permissions/admin-permissions";
 import type { AdminRoleRecord } from "#/services/admin-role/admin-role.server";
+import { callSfn, sfnUnwrap } from "#/utils/sfn-error";
 import {
 	createAdminRoleSFn,
 	deleteAdminRoleSFn,
@@ -37,10 +38,10 @@ function AdminRolesPage() {
 
 	/** 刷新列表 */
 	const refresh = async () => {
-		const data = await getAdminRolesSFn({
-			data: { keyword: keyword || undefined },
-		});
-		setRoles(data);
+		const [data] = await sfnUnwrap(
+			getAdminRolesSFn({ data: { keyword: keyword || undefined } }),
+		);
+		if (data) setRoles(data);
 	};
 
 	/** 搜索 */
@@ -74,22 +75,18 @@ function AdminRolesPage() {
 			const values = await form.validateFields();
 			setSaving(true);
 			if (editingRole) {
-				await updateAdminRoleSFn({
-					data: { id: editingRole.id, ...values },
-				});
+				await callSfn(
+					updateAdminRoleSFn({ data: { id: editingRole.id, ...values } }),
+				);
 				message.success("角色已更新");
 			} else {
-				await createAdminRoleSFn({ data: values });
+				await callSfn(createAdminRoleSFn({ data: values }));
 				message.success("角色已创建");
 			}
 			setModalOpen(false);
 			await refresh();
-		} catch (err) {
-			if (err instanceof Error && err.message) {
-				message.error(err.message);
-			} else {
-				message.error("操作失败");
-			}
+		} catch {
+			// 表单校验由 antd 提示，SFn 失败由 callSfn 统一提示
 		} finally {
 			setSaving(false);
 		}
@@ -98,11 +95,11 @@ function AdminRolesPage() {
 	/** 删除角色 */
 	const handleDelete = async (id: string) => {
 		try {
-			await deleteAdminRoleSFn({ data: { id } });
+			await callSfn(deleteAdminRoleSFn({ data: { id } }));
 			message.success("角色已删除");
 			await refresh();
-		} catch (err) {
-			message.error(err instanceof Error ? err.message : "删除失败");
+		} catch {
+			// callSfn 已提示
 		}
 	};
 

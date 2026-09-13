@@ -15,6 +15,7 @@ import {
 import dayjs from "dayjs";
 import { useEffect, useState } from "react";
 import { ImageUpload, RichEditor } from "#/components/admin";
+import { callSfn } from "#/utils/sfn-error";
 import { createNewsSFn, getNewsByIdSFn, updateNewsSFn } from "./news.functions";
 
 export interface NewsFormValues {
@@ -55,7 +56,7 @@ export function NewsForm({ id, onSuccess, onError, onCancel }: NewsFormProps) {
 		(async () => {
 			setLoading(true);
 			try {
-				const record = await getNewsByIdSFn({ data: { id } });
+				const record = await callSfn(getNewsByIdSFn({ data: { id } }));
 				if (cancelled) return;
 				if (record) {
 					form.setFieldsValue({
@@ -76,9 +77,8 @@ export function NewsForm({ id, onSuccess, onError, onCancel }: NewsFormProps) {
 				} else {
 					onError?.(new Error("新闻不存在"));
 				}
-			} catch (err) {
-				if (!cancelled)
-					onError?.(err instanceof Error ? err : new Error("加载失败"));
+			} catch {
+				// callSfn 已提示
 			} finally {
 				if (!cancelled) setLoading(false);
 			}
@@ -93,48 +93,52 @@ export function NewsForm({ id, onSuccess, onError, onCancel }: NewsFormProps) {
 		try {
 			if (id) {
 				const coverImageId = values.coverImageId || undefined;
-				await updateNewsSFn({
-					data: {
-						id,
-						title: values.title,
-						slug: values.slug || undefined,
-						description: values.description || undefined,
-						content: values.content || undefined,
-						externalUrl: values.externalUrl || undefined,
-						coverImageId: coverImageId || null,
-						isPublished: values.isPublished,
-						isPinned: values.isPinned || false,
-						isRecommended: values.isRecommended || false,
-						sortOrder: values.sortOrder ?? 0,
-						publishedAt: values.publishedAt
-							? values.publishedAt.toISOString()
-							: undefined,
-					},
-				});
+				await callSfn(
+					updateNewsSFn({
+						data: {
+							id,
+							title: values.title,
+							slug: values.slug || undefined,
+							description: values.description || undefined,
+							content: values.content || undefined,
+							externalUrl: values.externalUrl || undefined,
+							coverImageId: coverImageId || null,
+							isPublished: values.isPublished,
+							isPinned: values.isPinned || false,
+							isRecommended: values.isRecommended || false,
+							sortOrder: values.sortOrder ?? 0,
+							publishedAt: values.publishedAt
+								? values.publishedAt.toISOString()
+								: undefined,
+						},
+					}),
+				);
 				onSuccess?.(id);
 			} else {
 				const coverImageId = values.coverImageId || undefined;
-				const record = await createNewsSFn({
-					data: {
-						title: values.title,
-						slug: values.slug || undefined,
-						description: values.description || undefined,
-						content: values.content || undefined,
-						externalUrl: values.externalUrl || undefined,
-						coverImageId: coverImageId || undefined,
-						isPublished: values.isPublished,
-						isPinned: values.isPinned || false,
-						isRecommended: values.isRecommended || false,
-						sortOrder: values.sortOrder ?? 0,
-						publishedAt: values.publishedAt
-							? values.publishedAt.toISOString()
-							: undefined,
-					},
-				});
+				const record = await callSfn(
+					createNewsSFn({
+						data: {
+							title: values.title,
+							slug: values.slug || undefined,
+							description: values.description || undefined,
+							content: values.content || undefined,
+							externalUrl: values.externalUrl || undefined,
+							coverImageId: coverImageId || undefined,
+							isPublished: values.isPublished,
+							isPinned: values.isPinned || false,
+							isRecommended: values.isRecommended || false,
+							sortOrder: values.sortOrder ?? 0,
+							publishedAt: values.publishedAt
+								? values.publishedAt.toISOString()
+								: undefined,
+						},
+					}),
+				);
 				onSuccess?.(record.id);
 			}
-		} catch (err) {
-			onError?.(err instanceof Error ? err : new Error("保存失败"));
+		} catch {
+			// callSfn 已提示
 		} finally {
 			setSubmitting(false);
 		}

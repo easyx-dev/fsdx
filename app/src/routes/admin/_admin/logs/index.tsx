@@ -8,7 +8,6 @@ import {
 	ReloadOutlined,
 	SearchOutlined,
 } from "@ant-design/icons";
-import { message } from "@fsdx/ui-spa/antd-static";
 import { ProTable } from "@fsdx/ui-spa/table";
 import { createFileRoute } from "@tanstack/react-router";
 import {
@@ -27,6 +26,7 @@ import { useState } from "react";
 import { AdminPageContent } from "#/components/admin";
 import { LEVEL_COLORS, LEVEL_OPTIONS } from "#/constants";
 import type { LogEntry, LogQueryResult } from "#/services/logs/logs.server";
+import { callSfn, sfnUnwrap } from "#/utils/sfn-error";
 import { getDatesSFn, searchLogsSFn } from "./-mods/logs.functions";
 
 /** 将日志时间戳转为本地化时间字符串 */
@@ -67,20 +67,23 @@ function LogsPage() {
 		const endDate = dateRange?.[1] ? dateRange[1].format("YYYY-MM-DD") : "";
 
 		try {
-			const data = await searchLogsSFn({
-				data: {
-					keyword: values.keyword || undefined,
-					level: values.level || undefined,
-					startDate: startDate || undefined,
-					endDate: endDate || undefined,
-					page: p,
-					pageSize,
-				},
-			});
+			const data = await callSfn(
+				searchLogsSFn({
+					data: {
+						keyword: values.keyword || undefined,
+						level: values.level || undefined,
+						startDate: startDate || undefined,
+						endDate: endDate || undefined,
+						page: p,
+						pageSize,
+					},
+				}),
+				{ error: "日志查询失败，请稍后重试" },
+			);
 			setResult(data);
 			setPage(p);
 		} catch {
-			message.error("日志查询失败，请稍后重试");
+			// callSfn 已提示
 		}
 	};
 
@@ -92,16 +95,16 @@ function LogsPage() {
 
 	/** 点击日期标签快速搜索 */
 	const handleDateClick = (date: string) => {
-		searchLogsSFn({
-			data: { startDate: date, endDate: date, page: 1, pageSize },
-		})
-			.then((data) => {
-				setResult(data);
-				setPage(1);
-			})
-			.catch(() => {
-				message.error("日志查询失败，请稍后重试");
-			});
+		void sfnUnwrap(
+			searchLogsSFn({
+				data: { startDate: date, endDate: date, page: 1, pageSize },
+			}),
+			{ error: "日志查询失败，请稍后重试" },
+		).then(([data]) => {
+			if (data === null) return;
+			setResult(data);
+			setPage(1);
+		});
 	};
 
 	/** 将 entry 转为 Table dataSource 可用的记录，追加唯一 key */

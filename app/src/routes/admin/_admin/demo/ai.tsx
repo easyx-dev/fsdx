@@ -2,7 +2,6 @@
  * AI 模型测试页面（单模型非流式）
  */
 import { RobotOutlined, SendOutlined } from "@ant-design/icons";
-import { message } from "@fsdx/ui-spa/antd-static";
 import { createFileRoute } from "@tanstack/react-router";
 import {
 	Button,
@@ -20,6 +19,7 @@ import type { z } from "zod";
 import { AdminPageContent } from "#/components/admin";
 import type { AiProviderView } from "#/shared-services/ai/ai.schemas";
 import { getAiProvidersSFn } from "#/shared-services/ai/ai-providers.functions";
+import { callSfn } from "#/utils/sfn-error";
 import { type aiTestSchema, aiTestSFn } from "./-mods/ai.functions";
 
 const { Text, Paragraph } = Typography;
@@ -47,10 +47,10 @@ function AiDemoPage() {
 		setLoading(true);
 		setResult(null);
 		try {
-			const res = await aiTestSFn({ data: values });
+			const res = await callSfn(aiTestSFn({ data: values }));
 			setResult(res);
-		} catch (err) {
-			message.error(err instanceof Error ? err.message : "AI 调用失败");
+		} catch {
+			// callSfn 已提示
 		} finally {
 			setLoading(false);
 		}

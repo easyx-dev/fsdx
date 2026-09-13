@@ -16,6 +16,7 @@ import type {
 	DictItemRecord,
 	DictRecord,
 } from "#/shared-services/dict/dict.server";
+import { callSfn, sfnUnwrap } from "#/utils/sfn-error";
 import { DictFormModal } from "./-mods/DictFormModal";
 import { DictItemFormModal } from "./-mods/DictItemFormModal";
 import { DictListPanel } from "./-mods/DictListPanel";
@@ -54,8 +55,8 @@ function DictsPage() {
 	const [itemForm] = Form.useForm();
 
 	const refreshItems = async (dictSlug: string) => {
-		const data = await getDictItemsSFn({ data: { dictSlug } });
-		setItems(data);
+		const [data] = await sfnUnwrap(getDictItemsSFn({ data: { dictSlug } }));
+		if (data) setItems(data);
 	};
 
 	const handleSelectDict = (dictSlug: string) => {
@@ -88,29 +89,33 @@ function DictsPage() {
 	const handleDictSubmit = async (values: Record<string, unknown>) => {
 		try {
 			if (editingDict) {
-				await updateDictSFn({
-					data: {
-						id: editingDict.id,
-						slug: (values.slug as string) || undefined,
-						name: values.name as string,
-						description: (values.description as string) || undefined,
-					},
-				});
+				await callSfn(
+					updateDictSFn({
+						data: {
+							id: editingDict.id,
+							slug: (values.slug as string) || undefined,
+							name: values.name as string,
+							description: (values.description as string) || undefined,
+						},
+					}),
+				);
 				message.success("字典更新成功");
 			} else {
-				await createDictSFn({
-					data: {
-						name: values.name as string,
-						slug: values.slug as string,
-						description: (values.description as string) || undefined,
-					},
-				});
+				await callSfn(
+					createDictSFn({
+						data: {
+							name: values.name as string,
+							slug: values.slug as string,
+							description: (values.description as string) || undefined,
+						},
+					}),
+				);
 				message.success("字典创建成功");
 			}
 			closeDictModal();
 			router.invalidate();
-		} catch (err) {
-			message.error(err instanceof Error ? err.message : "操作失败");
+		} catch {
+			// callSfn 已提示
 		}
 	};
 
@@ -148,41 +153,46 @@ function DictsPage() {
 		if (!selectedDictSlug) return;
 		try {
 			if (editingItem) {
-				await updateDictItemSFn({
-					data: {
-						id: editingItem.id,
-						label: values.label as string,
-						value: values.value as string,
-						sortOrder: (values.sortOrder as number) ?? 0,
-						extraType: (values.extraType as string) || undefined,
-						extra: (values.extra as string) || undefined,
-						color: (values.color as string) || undefined,
-					},
-				});
+				await callSfn(
+					updateDictItemSFn({
+						data: {
+							id: editingItem.id,
+							label: values.label as string,
+							value: values.value as string,
+							sortOrder: (values.sortOrder as number) ?? 0,
+							extraType: (values.extraType as string) || undefined,
+							extra: (values.extra as string) || undefined,
+							color: (values.color as string) || undefined,
+						},
+					}),
+				);
 				message.success("条目更新成功");
 			} else {
-				await createDictItemSFn({
-					data: {
-						dictSlug: selectedDictSlug,
-						label: values.label as string,
-						value: values.value as string,
-						sortOrder: (values.sortOrder as number) ?? 0,
-						extraType: (values.extraType as string) || undefined,
-						extra: (values.extra as string) || undefined,
-						color: (values.color as string) || undefined,
-					},
-				});
+				await callSfn(
+					createDictItemSFn({
+						data: {
+							dictSlug: selectedDictSlug,
+							label: values.label as string,
+							value: values.value as string,
+							sortOrder: (values.sortOrder as number) ?? 0,
+							extraType: (values.extraType as string) || undefined,
+							extra: (values.extra as string) || undefined,
+							color: (values.color as string) || undefined,
+						},
+					}),
+				);
 				message.success("条目创建成功");
 			}
 			closeItemModal();
 			refreshItems(selectedDictSlug);
-		} catch (err) {
-			message.error(err instanceof Error ? err.message : "操作失败");
+		} catch {
+			// callSfn 已提示
 		}
 	};
 
 	const handleDeleteDict = async (id: string) => {
-		await deleteDictSFn({ data: { id } });
+		const [, err] = await sfnUnwrap(deleteDictSFn({ data: { id } }));
+		if (err) return;
 		message.success("字典已删除");
 		if (selectedDict?.id === id) {
 			setSelectedDictSlug(null);
@@ -192,7 +202,8 @@ function DictsPage() {
 	};
 
 	const handleDeleteItem = async (id: string) => {
-		await deleteDictItemSFn({ data: { id } });
+		const [, err] = await sfnUnwrap(deleteDictItemSFn({ data: { id } }));
+		if (err) return;
 		message.success("条目已删除");
 		if (selectedDictSlug) refreshItems(selectedDictSlug);
 	};
@@ -203,16 +214,17 @@ function DictsPage() {
 		params: { sortOrder?: number; status?: string },
 	) => {
 		try {
-			await updateDictItemSFn({ data: { id, ...params } });
+			await callSfn(updateDictItemSFn({ data: { id, ...params } }));
 			if (selectedDictSlug) refreshItems(selectedDictSlug);
-		} catch (err) {
-			message.error(err instanceof Error ? err.message : "操作失败");
+		} catch {
+			// callSfn 已提示
 		}
 	};
 
 	/** 导出字典数据（JSON） */
 	const handleExportDicts = async () => {
-		const json = await exportDictsSFn();
+		const [json] = await sfnUnwrap(exportDictsSFn(), { error: "导出失败" });
+		if (!json) return;
 		const timestamp = dayjs().format("YYYY-MM-DD");
 		downloadFile(json, `dicts_export_${timestamp}.json`, "application/json");
 		message.success("导出完成");
@@ -239,7 +251,7 @@ function DictsPage() {
 					<JsonImportButton
 						onImport={async (jsonString) => {
 							const data = JSON.parse(jsonString);
-							const result = await importDictsSFn({ data });
+							const result = await callSfn(importDictsSFn({ data }));
 							message.success(
 								`导入完成：字典类型 新增 ${result.dictsCreated} / 更新 ${result.dictsUpdated}，` +
 									`条目 新增 ${result.itemsCreated} / 更新 ${result.itemsUpdated}` +

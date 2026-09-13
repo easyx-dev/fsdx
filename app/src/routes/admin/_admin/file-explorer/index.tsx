@@ -10,7 +10,6 @@ import {
 	ReloadOutlined,
 } from "@ant-design/icons";
 import { message } from "@fsdx/ui-spa/antd-static";
-import { safeSfnCall } from "@fsdx/ui-spa/sfn-helpers";
 import { ProTable } from "@fsdx/ui-spa/table";
 import { createFileRoute } from "@tanstack/react-router";
 import type { UploadProps } from "antd";
@@ -26,6 +25,7 @@ import {
 	uploadFileSFn,
 } from "#/services/file-explorer/file-explorer.functions";
 import type { FsEntry } from "#/services/file-explorer/file-explorer.server";
+import { callSfn, sfnUnwrap } from "#/utils/sfn-error";
 import { MkdirModal, PreviewModal, RenameModal } from "./-mods/FileModals";
 import {
 	type DirData,
@@ -74,14 +74,14 @@ function FileExplorerPage() {
 			const path = subPath ?? currentPath;
 			setLoading(true);
 			try {
-				const result = await safeSfnCall(
+				const result = await callSfn(
 					listDirectorySFn({ data: { subPath: path } }),
 				);
 				setData(result);
 				setCurrentPath(path);
 				setPathDraft(formatDisplayPath(path));
 			} catch {
-				// safeSfnCall 已处理
+				// callSfn 已提示
 			} finally {
 				setLoading(false);
 			}
@@ -108,18 +108,18 @@ function FileExplorerPage() {
 		if (!mkdirName.trim()) return;
 		setMkdirLoading(true);
 		try {
-			await safeSfnCall(
+			await callSfn(
 				createDirectorySFn({
 					data: { subPath: currentPath, name: mkdirName.trim() },
 				}),
-				"创建目录失败",
+				{ error: "创建目录失败" },
 			);
 			message.success("目录创建成功");
 			setMkdirOpen(false);
 			setMkdirName("");
 			await refreshDir();
 		} catch {
-			// safeSfnCall 已处理
+			// callSfn 已提示
 		} finally {
 			setMkdirLoading(false);
 		}
@@ -130,14 +130,13 @@ function FileExplorerPage() {
 		async (entry: FsEntry) => {
 			const targetPath = entryPath(currentPath, entry.name);
 			try {
-				await safeSfnCall(
-					deleteEntrySFn({ data: { subPath: targetPath } }),
-					"删除失败",
-				);
+				await callSfn(deleteEntrySFn({ data: { subPath: targetPath } }), {
+					error: "删除失败",
+				});
 				message.success(`已删除：${entry.name}`);
 				await refreshDir();
 			} catch {
-				// safeSfnCall 已处理
+				// callSfn 已提示
 			}
 		},
 		[currentPath, refreshDir],
@@ -149,11 +148,11 @@ function FileExplorerPage() {
 		setRenameLoading(true);
 		try {
 			const targetPath = entryPath(currentPath, renameTarget.name);
-			await safeSfnCall(
+			await callSfn(
 				renameEntrySFn({
 					data: { subPath: targetPath, newName: renameNewName.trim() },
 				}),
-				"重命名失败",
+				{ error: "重命名失败" },
 			);
 			message.success(`已重命名为：${renameNewName.trim()}`);
 			setRenameOpen(false);
@@ -161,7 +160,7 @@ function FileExplorerPage() {
 			setRenameNewName("");
 			await refreshDir();
 		} catch {
-			// safeSfnCall 已处理
+			// callSfn 已提示
 		} finally {
 			setRenameLoading(false);
 		}
@@ -176,9 +175,9 @@ function FileExplorerPage() {
 			setPreviewContent("");
 			try {
 				const targetPath = entryPath(currentPath, entry.name);
-				const content = await safeSfnCall(
+				const content = await callSfn(
 					getTextContentSFn({ data: { subPath: targetPath } }),
-					"读取文件内容失败",
+					{ error: "读取文件内容失败" },
 				);
 				setPreviewContent(content);
 			} catch {
@@ -199,14 +198,16 @@ function FileExplorerPage() {
 				const fd = new FormData();
 				fd.append("file", file as File);
 				fd.append("subPath", currentPath);
-				await uploadFileSFn({ data: fd });
+				const [, err] = await sfnUnwrap(uploadFileSFn({ data: fd }), {
+					error: "上传失败",
+				});
+				if (err) {
+					onError?.(err as Error);
+					return;
+				}
 				message.success(`上传成功：${(file as File).name}`);
 				onSuccess?.("ok");
 				await refreshDir();
-			} catch (err) {
-				const msg = err instanceof Error ? err.message : "上传失败";
-				message.error(msg);
-				onError?.(err as Error);
 			} finally {
 				setUploading(false);
 			}

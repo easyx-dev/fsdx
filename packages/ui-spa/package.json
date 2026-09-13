@@ -11,8 +11,7 @@
     "./editor": "./src/editor/index.ts",
     "./permission-tags": "./src/permission-tags.tsx",
     "./json-import-button": "./src/json-import-button.tsx",
-    "./ms-input": "./src/ms-input.tsx",
-    "./sfn-helpers": "./src/sfn-helpers.ts"
+    "./ms-input": "./src/ms-input.tsx"
   },
   "scripts": {
     "check": "tsc --noEmit && biome check",

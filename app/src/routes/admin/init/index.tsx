@@ -27,6 +27,7 @@ import {
 import { useState } from "react";
 import type { z } from "zod";
 import { checkInitStatusSFn } from "#/services/init/init.functions";
+import { callSfn } from "#/utils/sfn-error";
 import { type initSchema, initSFn } from "./-mods/init.functions";
 
 export const Route = createFileRoute("/admin/init/")({
@@ -49,17 +50,15 @@ function AdminInitPage() {
 	const handleSubmit = async (values: z.infer<typeof initSchema>) => {
 		setLoading(true);
 		try {
-			const result = await initSFn({ data: values });
+			const result = await callSfn(initSFn({ data: values }));
 			if (!result.success) {
 				message.error(result.message || "初始化失败");
 				return;
 			}
 			message.success(result.message);
 			navigate({ to: "/admin/login" });
-		} catch (err) {
-			message.error(
-				err instanceof Error ? err.message : "网络错误，请稍后重试",
-			);
+		} catch {
+			// callSfn 已统一提示
 		} finally {
 			setLoading(false);
 		}

@@ -2,13 +2,15 @@
  * 管理端提供器
  */
 import { StyleProvider } from "@ant-design/cssinjs";
-import { AntdStaticBridge } from "@fsdx/ui-spa/antd-static";
+import { AntdStaticBridge, message } from "@fsdx/ui-spa/antd-static";
 import { useThemeMode } from "@fsdx/ui-ssr/theme";
 import { useLocation } from "@tanstack/react-router";
 import { App, theme as antdTheme, ConfigProvider } from "antd";
 import zhCN from "antd/locale/zh_CN";
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
+import { SfnErrorNotice } from "#/components/SfnErrorNotice";
 import { ADMIN_THEME } from "#/theme/themes";
+import { registerSfnNotifier } from "#/utils/sfn-error";
 import { AdminAuthProvider } from "./AdminAuthProvider";
 import { AdminLayout } from "./AdminLayout";
 import { AdminThemeContext } from "./admin-theme";
@@ -23,6 +25,18 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
 	const isAdmin = pathname.startsWith("/admin");
 
 	const { mode, setMode, isDark, scheme } = useThemeMode(ADMIN_THEME);
+
+	// 注册管理端错误提示器（antd message）：正面可读消息 + 可展开诊断详情
+	useEffect(
+		() =>
+			registerSfnNotifier((info) =>
+				message.error({
+					content: <SfnErrorNotice info={info} />,
+					duration: 8,
+				}),
+			),
+		[],
+	);
 
 	const ctxValue = useMemo(
 		() => ({ mode, setMode, isDark }),

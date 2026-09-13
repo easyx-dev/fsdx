@@ -36,6 +36,15 @@
 - [ ] 无空 catch 块
 - [ ] 无重复错误日志（sfErrorLogger 已自动覆盖）
 
+## 客户端调用（统一 helper）
+
+- [ ] 事件回调 / 提交 / 删除 / 副作用中的 SFn 调用经 `#/utils/sfn-error` 的 `sfnUnwrap` / `callSfn` 包裹
+- [ ] 未在本地 `message.error` / `toast.error` 重复展示 SFn 错误
+- [ ] 有意静默用 `{ silent: true }`，而非裸 `catch {}`
+- [ ] `loader` / `beforeLoad` 例外：保持裸调，错误交 `errorComponent`
+- [ ] 登录 / 注册 / 初始化等 `{ success, message }` 业务分支保持原样
+- [ ] 服务端在错误消息末尾追加 `（类型：…；请求号：…；SFn：方法名）` 元信息后缀（类型经 `classifyError` + 鉴权错误类判定；请求号始终携带，SFn 方法名仅非生产环境携带）；客户端组装为「可读标题 + 详情弹窗」，错误边界展示前剥离后缀；生产环境仅保留请求号，SFn 方法名与原始信息不可见（按请求号查服务端日志）
+
 ## 操作日志
 
 - [ ] 写操作（create/update/delete）用一行式 `logCrud(context.user, module, action, target)`

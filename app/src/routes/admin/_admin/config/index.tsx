@@ -13,6 +13,7 @@ import type { ChangeEvent } from "react";
 import { useMemo, useState } from "react";
 import { AdminPageContent } from "#/components/admin";
 import type { ConfigRecord } from "#/shared-services/config/config.server";
+import { callSfn } from "#/utils/sfn-error";
 import { ConfigFormModal } from "./-mods/ConfigFormModal";
 import {
 	createConfigSFn,
@@ -123,34 +124,44 @@ function ConfigPage() {
 		try {
 			const values = await form.validateFields();
 			if (editing) {
-				await updateConfigSFn({ data: { id: editing.id, ...values } });
+				await callSfn(updateConfigSFn({ data: { id: editing.id, ...values } }));
 				message.success("配置更新成功");
 			} else {
-				await createConfigSFn({ data: values });
+				await callSfn(createConfigSFn({ data: values }));
 				message.success("配置创建成功");
 			}
 			closeModal();
 			router.invalidate();
-		} catch (err) {
-			if (err instanceof Error && err.message !== "VALIDATE_ERROR") {
-				message.error(err.message || "操作失败");
-			}
+		} catch {
+			// 表单校验由 antd 提示，SFn 失败由 callSfn 统一提示
 		}
 	};
 
 	/** 删除配置 */
 	const handleDelete = async (id: string) => {
-		await deleteConfigSFn({ data: { id } });
-		message.success("已删除");
-		router.invalidate();
+		try {
+			await callSfn(deleteConfigSFn({ data: { id } }));
+			message.success("已删除");
+			router.invalidate();
+		} catch {
+			// callSfn 已提示
+		}
 	};
 
 	/** 导出系统配置数据（JSON） */
 	const handleExportConfigs = async () => {
-		const json = await exportConfigsSFn();
-		const timestamp = dayjs().format("YYYY-MM-DD");
-		downloadFile(json, `configs_export_${timestamp}.json`, "application/json");
-		message.success("导出完成");
+		try {
+			const json = await callSfn(exportConfigsSFn());
+			const timestamp = dayjs().format("YYYY-MM-DD");
+			downloadFile(
+				json,
+				`configs_export_${timestamp}.json`,
+				"application/json",
+			);
+			message.success("导出完成");
+		} catch {
+			// callSfn 已提示
+		}
 	};
 
 	const configColumnsDef = configColumns({
@@ -178,7 +189,7 @@ function ConfigPage() {
 						successMessage="导入完成"
 						onImport={async (jsonString) => {
 							const data = JSON.parse(jsonString);
-							const result = await importConfigsSFn({ data });
+							const result = await callSfn(importConfigsSFn({ data }));
 							message.success(
 								`导入完成：新增 ${result.created} / 更新 ${result.updated}`,
 							);

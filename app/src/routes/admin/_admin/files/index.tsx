@@ -28,6 +28,7 @@ import { useRef, useState } from "react";
 import { AdminPageContent } from "#/components/admin";
 import { getFileListSFn, uploadFileSFn } from "#/services/file/file.functions";
 import type { FileRecord } from "#/services/file/file.server";
+import { callSfn } from "#/utils/sfn-error";
 import { deleteFileSFn, makePermanentSFn } from "./-mods/files.functions";
 
 /** 格式化文件大小 */
@@ -65,18 +66,20 @@ function FilesPage() {
 		page?: number;
 	}) => {
 		try {
-			const result = await getFileListSFn({
-				data: {
-					status: (params?.status ?? filter) || undefined,
-					keyword: (params?.keyword ?? keyword) || undefined,
-					sortField: params?.sortField ?? sortField,
-					sortOrder: params?.sortOrder ?? sortOrder,
-					page: params?.page,
-				},
-			});
+			const result = await callSfn(
+				getFileListSFn({
+					data: {
+						status: (params?.status ?? filter) || undefined,
+						keyword: (params?.keyword ?? keyword) || undefined,
+						sortField: params?.sortField ?? sortField,
+						sortOrder: params?.sortOrder ?? sortOrder,
+						page: params?.page,
+					},
+				}),
+			);
 			setData(result);
-		} catch (err) {
-			message.error(err instanceof Error ? err.message : "加载文件列表失败");
+		} catch {
+			// callSfn 已提示
 		}
 	};
 
@@ -120,13 +123,14 @@ function FilesPage() {
 			const fd = new FormData();
 			fd.append("file", file);
 			fd.append("permanent", permanent ? "true" : "false");
-			const result = await uploadFileSFn({ data: fd });
+			const result = await callSfn(uploadFileSFn({ data: fd }));
 			if (result.success) {
 				onSuccess?.(result.data);
 			} else {
 				onError?.(new Error("上传失败"));
 			}
 		} catch (err) {
+			// callSfn 已统一提示；保留排查日志，并通知 antd Upload 标记失败项
 			console.error("[文件上传失败]", err);
 			onError?.(err as Error);
 		} finally {
@@ -191,13 +195,13 @@ function FilesPage() {
 									style={{ paddingInline: 4, color: "var(--s-success)" }}
 									onClick={async () => {
 										try {
-											await makePermanentSFn({ data: { id: record.id } });
+											await callSfn(
+												makePermanentSFn({ data: { id: record.id } }),
+											);
 											message.success("已转为永久");
 											await refreshFiles();
-										} catch (err) {
-											message.error(
-												err instanceof Error ? err.message : "操作失败",
-											);
+										} catch {
+											// callSfn 已提示
 										}
 									}}
 								/>
@@ -250,11 +254,11 @@ function FilesPage() {
 					<TableOperate.Delete
 						onConfirm={async () => {
 							try {
-								await deleteFileSFn({ data: { id: record.id } });
+								await callSfn(deleteFileSFn({ data: { id: record.id } }));
 								message.success("已删除");
 								await refreshFiles();
-							} catch (err) {
-								message.error(err instanceof Error ? err.message : "删除失败");
+							} catch {
+								// callSfn 已提示
 							}
 						}}
 					/>

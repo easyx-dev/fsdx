@@ -133,8 +133,8 @@ export function FileUpload({
 				message.success("秒传成功（文件已存在）");
 			}
 		} catch (err) {
+			// 错误提示由宿主注入的 uploadFile 统一处理（项目内经 sfn-error helper），此处不重复提示
 			onError?.(err as Error);
-			message.error("上传失败：网络错误");
 		}
 	};
 

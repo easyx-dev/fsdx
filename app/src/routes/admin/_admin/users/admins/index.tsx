@@ -13,6 +13,7 @@ import { AdminPageContent, DictSelect, DictTag } from "#/components/admin";
 import type { AdminRoleRecord } from "#/services/admin-role/admin-role.server";
 import type { AdminUserListItem } from "#/services/admin-user/admin-user.server";
 import type { SortOrder } from "#/types/query";
+import { callSfn, sfnUnwrap } from "#/utils/sfn-error";
 import {
 	createSFn,
 	deleteSFn,
@@ -53,15 +54,18 @@ function AdminsPage() {
 	const [pwdForm] = Form.useForm();
 
 	const refresh = async (p = page) => {
-		const result = await getListSFn({
-			data: {
-				page: p,
-				pageSize: 20,
-				keyword: keyword || undefined,
-				sortField,
-				sortOrder,
-			},
-		});
+		const [result] = await sfnUnwrap(
+			getListSFn({
+				data: {
+					page: p,
+					pageSize: 20,
+					keyword: keyword || undefined,
+					sortField,
+					sortOrder,
+				},
+			}),
+		);
+		if (!result) return;
 		setData(result);
 		setPage(p);
 	};
@@ -101,20 +105,16 @@ function AdminsPage() {
 			const values = await form.validateFields();
 			setSaving(true);
 			if (editingUser) {
-				await updateSFn({ data: { id: editingUser.id, ...values } });
+				await callSfn(updateSFn({ data: { id: editingUser.id, ...values } }));
 				message.success("管理员信息已更新");
 			} else {
-				await createSFn({ data: values });
+				await callSfn(createSFn({ data: values }));
 				message.success("管理员已创建");
 			}
 			setModalOpen(false);
 			await refresh();
-		} catch (err) {
-			if (err instanceof Error && err.message) {
-				message.error(err.message);
-			} else {
-				message.error("操作失败");
-			}
+		} catch {
+			// 表单校验由 antd 提示，SFn 失败由 callSfn 统一提示
 		} finally {
 			setSaving(false);
 		}
@@ -122,11 +122,11 @@ function AdminsPage() {
 
 	const handleDelete = async (id: string) => {
 		try {
-			await deleteSFn({ data: { id } });
+			await callSfn(deleteSFn({ data: { id } }));
 			message.success("管理员已删除");
 			await refresh();
-		} catch (err) {
-			message.error(err instanceof Error ? err.message : "删除失败");
+		} catch {
+			// callSfn 已提示
 		}
 	};
 
@@ -143,15 +143,15 @@ function AdminsPage() {
 		}
 		try {
 			const values = await pwdForm.validateFields();
-			await resetPwdSFn({
-				data: { id: editingUser.id, password: values.password },
-			});
+			await callSfn(
+				resetPwdSFn({
+					data: { id: editingUser.id, password: values.password },
+				}),
+			);
 			message.success("密码已重置");
 			setPwdModalOpen(false);
-		} catch (err) {
-			if (err instanceof Error && err.message) {
-				message.error(err.message);
-			}
+		} catch {
+			// 表单校验由 antd 提示，SFn 失败由 callSfn 统一提示
 		}
 	};
 

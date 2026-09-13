@@ -24,7 +24,6 @@ antd 管理端组件库，面向数据密集型后台场景（表单、表格、
 | `@fsdx/ui-spa/permission-tags` | 权限展示 | `PermissionTags`（通配符优先排序、绿色标识、超 `maxVisible` 折叠，元信息由宿主传入 `PermissionMetaMap`） |
 | `@fsdx/ui-spa/json-import-button` | JSON 导入 | `JsonImportButton`（弹窗 + 拖拽 + JSON 编辑器预览，`onImport` 回调） |
 | `@fsdx/ui-spa/ms-input` | 时长输入 | `MSInput`（以 `"30s"` / `"10min"` / `"1d"` 展示、以毫秒值提交，`min` / `max` / `allowZero` 约束，复用 `@fsdx/lib/ms`） |
-| `@fsdx/ui-spa/sfn-helpers` | SFn 调用辅助 | `safeSfnCall(promise, fallbackMsg?)`（自动 `message.error` 并继续抛出）、`unwrapSfn(...)`（返回 `[data, null] | [null, error]`） |
 
 ## 使用约束
 

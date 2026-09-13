@@ -8,6 +8,7 @@ import { message } from "@fsdx/ui-spa/antd-static";
 import type { RichEditorMedia } from "@fsdx/ui-spa/editor";
 import { RichEditor as RichEditorBase } from "@fsdx/ui-spa/editor";
 import { getFileListSFn, uploadFileSFn } from "#/services/file/file.functions";
+import { sfnUnwrap } from "#/utils/sfn-error";
 
 interface RichEditorProps {
 	value?: string;
@@ -19,17 +20,15 @@ const uploadMedia = async (file: File): Promise<string> => {
 	const fd = new FormData();
 	fd.append("file", file);
 	fd.append("permanent", "true");
-	try {
-		const result = await uploadFileSFn({ data: fd });
-		if (!result?.data?.id) {
-			throw new Error("上传未返回文件标识");
-		}
-		return `/file/r/${result.data.id}`;
-	} catch (err) {
-		const reason = err instanceof Error ? err.message : "未知原因";
-		message.error(`上传失败：${reason}`);
-		throw err;
+	const [result, err] = await sfnUnwrap(uploadFileSFn({ data: fd }), {
+		error: "上传失败",
+	});
+	if (err) throw err;
+	if (!result?.data?.id) {
+		message.error("上传失败：上传未返回文件标识");
+		throw new Error("上传未返回文件标识");
 	}
+	return `/file/r/${result.data.id}`;
 };
 
 /** 媒体库列表：按媒体类型前缀分页拉取永久文件，映射为编辑器媒体项 */
@@ -40,16 +39,20 @@ const getMediaList: RichEditorMedia["getList"] = async ({
 	page,
 	pageSize,
 }) => {
-	const result = await getFileListSFn({
-		data: {
-			keyword,
-			mimePrefix,
-			excludeMimePrefixes,
-			status: "permanent",
-			page,
-			pageSize,
-		},
-	});
+	const [result] = await sfnUnwrap(
+		getFileListSFn({
+			data: {
+				keyword,
+				mimePrefix,
+				excludeMimePrefixes,
+				status: "permanent",
+				page,
+				pageSize,
+			},
+		}),
+		{ error: "媒体库加载失败" },
+	);
+	if (result === null) return { items: [], total: 0 };
 	const items = (result.records ?? []).map((r) => ({
 		id: r.id,
 		url: `/file/r/${r.id}`,

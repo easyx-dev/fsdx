@@ -16,6 +16,7 @@ import {
 	sendCaptchaWithImageVerificationSFn,
 } from "#/services/captcha/captcha.functions";
 import { checkInitStatusSFn } from "#/services/init/init.functions";
+import { callSfn, sfnUnwrap } from "#/utils/sfn-error";
 import {
 	type resetPwdSchema,
 	resetPwdSFn,
@@ -60,15 +61,16 @@ function AdminForgotPasswordPage() {
 	/** 刷新图片验证码 */
 	const refreshCaptcha = useCallback(() => {
 		setCaptchaError("");
-		getImageCaptchaSFn()
-			.then((r) => {
-				setSvg(r.svg);
-				setImageToken(r.token);
-				setImageCode("");
-			})
-			.catch(() => {
+		// 加载失败以内联提示为主，静默处理避免与统一提示重复
+		void sfnUnwrap(getImageCaptchaSFn(), { silent: true }).then(([r]) => {
+			if (!r) {
 				setCaptchaError("加载验证码失败");
-			});
+				return;
+			}
+			setSvg(r.svg);
+			setImageToken(r.token);
+			setImageCode("");
+		});
 	}, []);
 
 	/** 打开弹窗 */
@@ -92,9 +94,18 @@ function AdminForgotPasswordPage() {
 		setSendingCode(true);
 		try {
 			const email = form.getFieldValue("email");
-			const result = await sendCaptchaWithImageVerificationSFn({
-				data: { email, imageToken, imageCode },
-			});
+			const [result] = await sfnUnwrap(
+				sendCaptchaWithImageVerificationSFn({
+					data: { email, imageToken, imageCode },
+				}),
+				// 失败以内联提示为主，静默处理避免与统一提示重复
+				{ silent: true },
+			);
+			if (!result) {
+				setCaptchaError("请求失败，请重试");
+				refreshCaptcha();
+				return;
+			}
 			if (result.success) {
 				message.success("验证码已发送，请查收邮箱");
 				setCountdown(60);
@@ -103,9 +114,6 @@ function AdminForgotPasswordPage() {
 				setCaptchaError(result.message);
 				refreshCaptcha();
 			}
-		} catch {
-			setCaptchaError("请求失败，请重试");
-			refreshCaptcha();
 		} finally {
 			setSendingCode(false);
 		}
@@ -121,17 +129,15 @@ function AdminForgotPasswordPage() {
 	const handleSubmit = async (values: z.infer<typeof resetPwdSchema>) => {
 		setLoading(true);
 		try {
-			const result = await resetPwdSFn({ data: values });
+			const result = await callSfn(resetPwdSFn({ data: values }));
 			if (!result.success) {
 				message.error(result.message || "重置失败");
 				return;
 			}
 			message.success(result.message);
 			navigate({ to: "/admin/login" });
-		} catch (err) {
-			message.error(
-				err instanceof Error ? err.message : "网络错误，请稍后重试",
-			);
+		} catch {
+			// callSfn 已统一提示
 		} finally {
 			setLoading(false);
 		}

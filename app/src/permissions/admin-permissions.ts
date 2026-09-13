@@ -327,6 +327,12 @@ export const ADMIN_PERMISSIONS = {
 		"AI 厂商管理",
 		"允许新增、编辑、删除 AI 厂商配置（ai_providers）",
 	),
+	// 示例 / 测试
+	DEMO_VIEW: definePermission(
+		"demo:view",
+		"示例页访问",
+		"允许访问管理端示例 / 测试页面",
+	),
 } as const;
 
 // ─── 对外类型 ───

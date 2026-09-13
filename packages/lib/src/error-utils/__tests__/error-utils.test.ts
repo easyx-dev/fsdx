@@ -3,7 +3,15 @@
  */
 
 import { describe, expect, it } from "vitest";
-import { sanitizeError, toClientError } from "../index";
+import {
+	appendSfnErrorMeta,
+	classifyError,
+	getErrorMessage,
+	parseSfnErrorMeta,
+	sanitizeError,
+	stripSfnErrorMeta,
+	toClientError,
+} from "../index";
 
 describe("sanitizeError", () => {
 	it("对 Error 对象进行脱敏并返回 name 和 message", () => {
@@ -187,5 +195,100 @@ describe("toClientError", () => {
 		expect((toClientError(empty, true) as Error).message).toBe(
 			"服务器内部错误，请稍后重试",
 		);
+	});
+});
+
+describe("getErrorMessage", () => {
+	it("Error 实例返回其 message", () => {
+		expect(getErrorMessage(new Error("保存失败"))).toBe("保存失败");
+	});
+
+	it("带 message 的对象返回其 message", () => {
+		expect(getErrorMessage({ message: "对象错误" })).toBe("对象错误");
+	});
+
+	it("字符串直接返回", () => {
+		expect(getErrorMessage("字符串错误")).toBe("字符串错误");
+	});
+
+	it("无法提取时返回兜底文案", () => {
+		expect(getErrorMessage(null, "操作失败，请稍后重试")).toBe(
+			"操作失败，请稍后重试",
+		);
+		expect(getErrorMessage(new Error(""), "兜底")).toBe("兜底");
+		expect(getErrorMessage(undefined)).toBe("未知错误");
+	});
+});
+
+describe("classifyError", () => {
+	it("校验错误归类 validation", () => {
+		expect(classifyError({ issues: [{ message: "标题不能为空" }] })).toBe(
+			"validation",
+		);
+	});
+
+	it("含中文文案归类 business", () => {
+		expect(classifyError(new Error("库存不足"))).toBe("business");
+	});
+
+	it("技术错误（英文/未知）归类 internal", () => {
+		expect(classifyError(new Error("duplicate key"))).toBe("internal");
+		expect(classifyError(undefined)).toBe("internal");
+	});
+});
+
+describe("appendSfnErrorMeta / parseSfnErrorMeta / stripSfnErrorMeta", () => {
+	it("追加请求号与方法名后可解析还原", () => {
+		const message = appendSfnErrorMeta("服务器内部错误，请稍后重试", {
+			requestId: "req-1",
+			sfnName: "getFooSFn",
+		});
+		expect(message).toBe(
+			"服务器内部错误，请稍后重试（请求号：req-1；SFn：getFooSFn）",
+		);
+		expect(parseSfnErrorMeta(message)).toEqual({
+			message: "服务器内部错误，请稍后重试",
+			requestId: "req-1",
+			sfnName: "getFooSFn",
+		});
+		expect(stripSfnErrorMeta(message)).toBe("服务器内部错误，请稍后重试");
+	});
+
+	it("仅方法名时正常解析", () => {
+		const message = appendSfnErrorMeta("库存不足", {
+			sfnName: "createOrderSFn",
+		});
+		expect(message).toBe("库存不足（SFn：createOrderSFn）");
+		expect(parseSfnErrorMeta(message)).toEqual({
+			message: "库存不足",
+			sfnName: "createOrderSFn",
+		});
+	});
+
+	it("携带类型时解析回分类", () => {
+		const message = appendSfnErrorMeta("服务器内部错误，请稍后重试", {
+			kind: "internal",
+			requestId: "req-1",
+			sfnName: "getFooSFn",
+		});
+		expect(message).toBe(
+			"服务器内部错误，请稍后重试（类型：系统；请求号：req-1；SFn：getFooSFn）",
+		);
+		expect(parseSfnErrorMeta(message)).toEqual({
+			message: "服务器内部错误，请稍后重试",
+			kind: "internal",
+			requestId: "req-1",
+			sfnName: "getFooSFn",
+		});
+	});
+
+	it("无字段时原样返回", () => {
+		expect(appendSfnErrorMeta("库存不足", {})).toBe("库存不足");
+	});
+
+	it("业务文案自带的括号不被误解析", () => {
+		const raw = "库存不足（当前 3 件）";
+		expect(parseSfnErrorMeta(raw)).toEqual({ message: raw });
+		expect(stripSfnErrorMeta(raw)).toBe(raw);
 	});
 });

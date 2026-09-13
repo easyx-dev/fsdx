@@ -17,6 +17,7 @@ import { Route as MessagesRouteImport } from './routes/messages'
 import { Route as AdminAdminRouteImport } from './routes/admin/_admin'
 import { Route as ApiAiChatRouteImport } from './routes/api/ai-chat'
 import { Route as ApiMetricsRouteImport } from './routes/api/metrics'
+import { Route as DemoErrorHandlingRouteImport } from './routes/demo/error-handling'
 import { Route as ForgotPasswordIndexRouteImport } from './routes/forgot-password/index'
 import { Route as LoginIndexRouteImport } from './routes/login/index'
 import { Route as NewsIndexRouteImport } from './routes/news/index'
@@ -34,6 +35,7 @@ import { Route as AdminAdminConfigIndexRouteImport } from './routes/admin/_admin
 import { Route as AdminAdminDemoAiRouteImport } from './routes/admin/_admin/demo/ai'
 import { Route as AdminAdminDemoAiRichEditorRouteImport } from './routes/admin/_admin/demo/ai-rich-editor'
 import { Route as AdminAdminDemoEditorRouteImport } from './routes/admin/_admin/demo/editor'
+import { Route as AdminAdminDemoErrorHandlingRouteImport } from './routes/admin/_admin/demo/error-handling'
 import { Route as AdminAdminDemoProTableRouteImport } from './routes/admin/_admin/demo/pro-table'
 import { Route as AdminAdminDemoUploadRouteImport } from './routes/admin/_admin/demo/upload'
 import { Route as AdminAdminDictsIndexRouteImport } from './routes/admin/_admin/dicts/index'
@@ -94,6 +96,11 @@ const ApiAiChatRoute = ApiAiChatRouteImport.update({
 const ApiMetricsRoute = ApiMetricsRouteImport.update({
   id: '/api/metrics',
   path: '/api/metrics',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DemoErrorHandlingRoute = DemoErrorHandlingRouteImport.update({
+  id: '/demo/error-handling',
+  path: '/demo/error-handling',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ForgotPasswordIndexRoute = ForgotPasswordIndexRouteImport.update({
@@ -186,6 +193,12 @@ const AdminAdminDemoEditorRoute = AdminAdminDemoEditorRouteImport.update({
   path: '/demo/editor',
   getParentRoute: () => AdminAdminRoute,
 } as any)
+const AdminAdminDemoErrorHandlingRoute =
+  AdminAdminDemoErrorHandlingRouteImport.update({
+    id: '/demo/error-handling',
+    path: '/demo/error-handling',
+    getParentRoute: () => AdminAdminRoute,
+  } as any)
 const AdminAdminDemoProTableRoute = AdminAdminDemoProTableRouteImport.update({
   id: '/demo/pro-table',
   path: '/demo/pro-table',
@@ -317,6 +330,7 @@ export interface FileRoutesByFullPath {
   '/messages': typeof MessagesRoute
   '/api/ai-chat': typeof ApiAiChatRoute
   '/api/metrics': typeof ApiMetricsRoute
+  '/demo/error-handling': typeof DemoErrorHandlingRoute
   '/news/$slug': typeof NewsSlugRoute
   '/forgot-password/': typeof ForgotPasswordIndexRoute
   '/login/': typeof LoginIndexRoute
@@ -330,6 +344,7 @@ export interface FileRoutesByFullPath {
   '/admin/demo/ai': typeof AdminAdminDemoAiRoute
   '/admin/demo/ai-rich-editor': typeof AdminAdminDemoAiRichEditorRoute
   '/admin/demo/editor': typeof AdminAdminDemoEditorRoute
+  '/admin/demo/error-handling': typeof AdminAdminDemoErrorHandlingRoute
   '/admin/demo/pro-table': typeof AdminAdminDemoProTableRoute
   '/admin/demo/upload': typeof AdminAdminDemoUploadRoute
   '/admin/messages/manage': typeof AdminAdminMessagesManageRoute
@@ -365,6 +380,7 @@ export interface FileRoutesByTo {
   '/messages': typeof MessagesRoute
   '/api/ai-chat': typeof ApiAiChatRoute
   '/api/metrics': typeof ApiMetricsRoute
+  '/demo/error-handling': typeof DemoErrorHandlingRoute
   '/news/$slug': typeof NewsSlugRoute
   '/forgot-password': typeof ForgotPasswordIndexRoute
   '/login': typeof LoginIndexRoute
@@ -377,6 +393,7 @@ export interface FileRoutesByTo {
   '/admin/demo/ai': typeof AdminAdminDemoAiRoute
   '/admin/demo/ai-rich-editor': typeof AdminAdminDemoAiRichEditorRoute
   '/admin/demo/editor': typeof AdminAdminDemoEditorRoute
+  '/admin/demo/error-handling': typeof AdminAdminDemoErrorHandlingRoute
   '/admin/demo/pro-table': typeof AdminAdminDemoProTableRoute
   '/admin/demo/upload': typeof AdminAdminDemoUploadRoute
   '/admin/messages/manage': typeof AdminAdminMessagesManageRoute
@@ -414,6 +431,7 @@ export interface FileRoutesById {
   '/admin/_admin': typeof AdminAdminRouteWithChildren
   '/api/ai-chat': typeof ApiAiChatRoute
   '/api/metrics': typeof ApiMetricsRoute
+  '/demo/error-handling': typeof DemoErrorHandlingRoute
   '/news/$slug': typeof NewsSlugRoute
   '/forgot-password/': typeof ForgotPasswordIndexRoute
   '/login/': typeof LoginIndexRoute
@@ -427,6 +445,7 @@ export interface FileRoutesById {
   '/admin/_admin/demo/ai': typeof AdminAdminDemoAiRoute
   '/admin/_admin/demo/ai-rich-editor': typeof AdminAdminDemoAiRichEditorRoute
   '/admin/_admin/demo/editor': typeof AdminAdminDemoEditorRoute
+  '/admin/_admin/demo/error-handling': typeof AdminAdminDemoErrorHandlingRoute
   '/admin/_admin/demo/pro-table': typeof AdminAdminDemoProTableRoute
   '/admin/_admin/demo/upload': typeof AdminAdminDemoUploadRoute
   '/admin/_admin/messages/manage': typeof AdminAdminMessagesManageRoute
@@ -464,6 +483,7 @@ export interface FileRouteTypes {
     | '/messages'
     | '/api/ai-chat'
     | '/api/metrics'
+    | '/demo/error-handling'
     | '/news/$slug'
     | '/forgot-password/'
     | '/login/'
@@ -477,6 +497,7 @@ export interface FileRouteTypes {
     | '/admin/demo/ai'
     | '/admin/demo/ai-rich-editor'
     | '/admin/demo/editor'
+    | '/admin/demo/error-handling'
     | '/admin/demo/pro-table'
     | '/admin/demo/upload'
     | '/admin/messages/manage'
@@ -512,6 +533,7 @@ export interface FileRouteTypes {
     | '/messages'
     | '/api/ai-chat'
     | '/api/metrics'
+    | '/demo/error-handling'
     | '/news/$slug'
     | '/forgot-password'
     | '/login'
@@ -524,6 +546,7 @@ export interface FileRouteTypes {
     | '/admin/demo/ai'
     | '/admin/demo/ai-rich-editor'
     | '/admin/demo/editor'
+    | '/admin/demo/error-handling'
     | '/admin/demo/pro-table'
     | '/admin/demo/upload'
     | '/admin/messages/manage'
@@ -560,6 +583,7 @@ export interface FileRouteTypes {
     | '/admin/_admin'
     | '/api/ai-chat'
     | '/api/metrics'
+    | '/demo/error-handling'
     | '/news/$slug'
     | '/forgot-password/'
     | '/login/'
@@ -573,6 +597,7 @@ export interface FileRouteTypes {
     | '/admin/_admin/demo/ai'
     | '/admin/_admin/demo/ai-rich-editor'
     | '/admin/_admin/demo/editor'
+    | '/admin/_admin/demo/error-handling'
     | '/admin/_admin/demo/pro-table'
     | '/admin/_admin/demo/upload'
     | '/admin/_admin/messages/manage'
@@ -609,6 +634,7 @@ export interface RootRouteChildren {
   MessagesRoute: typeof MessagesRoute
   ApiAiChatRoute: typeof ApiAiChatRoute
   ApiMetricsRoute: typeof ApiMetricsRoute
+  DemoErrorHandlingRoute: typeof DemoErrorHandlingRoute
   NewsSlugRoute: typeof NewsSlugRoute
   ForgotPasswordIndexRoute: typeof ForgotPasswordIndexRoute
   LoginIndexRoute: typeof LoginIndexRoute
@@ -673,6 +699,13 @@ declare module '@tanstack/react-router' {
       path: '/api/metrics'
       fullPath: '/api/metrics'
       preLoaderRoute: typeof ApiMetricsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/demo/error-handling': {
+      id: '/demo/error-handling'
+      path: '/demo/error-handling'
+      fullPath: '/demo/error-handling'
+      preLoaderRoute: typeof DemoErrorHandlingRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/forgot-password/': {
@@ -792,6 +825,13 @@ declare module '@tanstack/react-router' {
       path: '/demo/editor'
       fullPath: '/admin/demo/editor'
       preLoaderRoute: typeof AdminAdminDemoEditorRouteImport
+      parentRoute: typeof AdminAdminRoute
+    }
+    '/admin/_admin/demo/error-handling': {
+      id: '/admin/_admin/demo/error-handling'
+      path: '/demo/error-handling'
+      fullPath: '/admin/demo/error-handling'
+      preLoaderRoute: typeof AdminAdminDemoErrorHandlingRouteImport
       parentRoute: typeof AdminAdminRoute
     }
     '/admin/_admin/demo/pro-table': {
@@ -956,6 +996,7 @@ interface AdminAdminRouteChildren {
   AdminAdminDemoAiRoute: typeof AdminAdminDemoAiRoute
   AdminAdminDemoAiRichEditorRoute: typeof AdminAdminDemoAiRichEditorRoute
   AdminAdminDemoEditorRoute: typeof AdminAdminDemoEditorRoute
+  AdminAdminDemoErrorHandlingRoute: typeof AdminAdminDemoErrorHandlingRoute
   AdminAdminDemoProTableRoute: typeof AdminAdminDemoProTableRoute
   AdminAdminDemoUploadRoute: typeof AdminAdminDemoUploadRoute
   AdminAdminMessagesManageRoute: typeof AdminAdminMessagesManageRoute
@@ -989,6 +1030,7 @@ const AdminAdminRouteChildren: AdminAdminRouteChildren = {
   AdminAdminDemoAiRoute: AdminAdminDemoAiRoute,
   AdminAdminDemoAiRichEditorRoute: AdminAdminDemoAiRichEditorRoute,
   AdminAdminDemoEditorRoute: AdminAdminDemoEditorRoute,
+  AdminAdminDemoErrorHandlingRoute: AdminAdminDemoErrorHandlingRoute,
   AdminAdminDemoProTableRoute: AdminAdminDemoProTableRoute,
   AdminAdminDemoUploadRoute: AdminAdminDemoUploadRoute,
   AdminAdminMessagesManageRoute: AdminAdminMessagesManageRoute,
@@ -1046,6 +1088,7 @@ const rootRouteChildren: RootRouteChildren = {
   MessagesRoute: MessagesRoute,
   ApiAiChatRoute: ApiAiChatRoute,
   ApiMetricsRoute: ApiMetricsRoute,
+  DemoErrorHandlingRoute: DemoErrorHandlingRoute,
   NewsSlugRoute: NewsSlugRoute,
   ForgotPasswordIndexRoute: ForgotPasswordIndexRoute,
   LoginIndexRoute: LoginIndexRoute,

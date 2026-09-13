@@ -17,6 +17,7 @@ import {
 	getAiProvidersSFn,
 	saveAiProvidersSFn,
 } from "#/shared-services/ai/ai-providers.functions";
+import { callSfn } from "#/utils/sfn-error";
 import { AiProviderFormModal } from "./-mods/AiProviderFormModal";
 
 const { Text } = Typography;
@@ -63,11 +64,11 @@ function AiProvidersPage() {
 			const providersObj = Object.fromEntries(
 				next.map((p) => [p.id, toProviderConfig(p)]),
 			);
-			await saveAiProvidersSFn({ data: { providers: providersObj } });
+			await callSfn(saveAiProvidersSFn({ data: { providers: providersObj } }));
 			setProviders(next);
 			message.success("AI 厂商配置已保存");
-		} catch (err) {
-			message.error(err instanceof Error ? err.message : "保存失败");
+		} catch {
+			// callSfn 已提示
 		}
 	};
 

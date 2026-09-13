@@ -50,10 +50,10 @@ packages/
 
 - **lib 按职责分层**：`@fsdx/lib/*` subpath 由 `package.json` exports 扁平映射到 `utils/`、`cache/`（同构）或 `infra/`（通用非单例）。lib 的服务端保护依赖 `vite.config.ts` 的 import-protection（按 npm 包名拦截 bcryptjs/drizzle-orm/openai）+ 目录约定，而非 `.server.*` 文件后缀；客户端组件禁止引用 `infra/` 对应模块；lib 内不得出现 `#/services`、`#/shared-services`、`#/db`、`#/routes` 反向引用
 - **lib 零全局单例 + 零日志耦合**：lib 内禁止读取 `process.env` / DB、禁止创建模块级或 globalThis 单例、禁止 import 任何 logger。错误一律向上抛出（throw/reject），警告用 `console` 直接输出或经可选 `onEvent` 钩子推事件（供宿主接管，如 `batch-writer`）。凡需单例/读环境/引日志的模块一律下沉到 `src/shared-services/`
-- **shared-services = 高共享的 service**：位于 `src/shared-services/`，被 routes / middleware / bootstrap / client / 其它 service **直接引用**，承载 app 绑定单例（logger/jwt/metrics/storage/scheduler/mail·sms/request-context）+ 系统级共享域（config/dict/i18n/ai/query-utils/operation-log）。**只依赖 `lib`/`db`/本层，绝不引用 services**（避免循环依赖）；`mail`/`sms`/`scheduler` 直接 `import { logger }`、`mail`/`sms` 直接 `import { getConfig }`，无 `init*`/`setSchedulerLogger` 透传；跨 bundle 一致性靠 globalThis（metrics 注册表、config / AI provider 缓存）。判断标准：**一个 `services` 模块被大范围引用共享 → 具备成为 shared-services 的条件**
+- **shared-services = 高共享的 service**：位于 `src/shared-services/`，被 routes / middleware / bootstrap / client / 其它 service **直接引用**，承载 app 绑定单例（logger/jwt/metrics/storage/scheduler/mail·sms/request-context）+ 系统级共享域（config/dict/i18n/ai/query-utils/operation-log）。**只依赖 `lib`/`db`/本层，绝不引用 services**（避免循环依赖）；`mail`/`sms`/`scheduler` 直接 `import { logger }`、`mail`/`sms` 直接 `import { getConfig }`，无 `init*`/`setSchedulerLogger` 透传；跨 bundle 一致性靠 globalThis（metrics 注册表、config / AI provider 缓存）。判断标准：**一个 `services` 模块被大范围引用共享 → 具备成为 shared-services 的条件**（仅指服务端 / 系统级模块的升级路径）。**边界**：shared-services 只放 app 级服务单例 / 系统级共享域（读 env、引 logger、需全局态），**不是「凡多处引用即入」的通用共享桶**；前端工具、无状态或仅轻量模块内状态的 helper 归 `src/utils/`
 - **antd 单实例**：`@fsdx/ui-spa` 将 antd 声明为 peerDependency，app 提供唯一实例；`antd-static` 桥接在 app `<App>` 上下文内工作
 - **UI token 宿主注入**：ui 包组件只写 tailwind 类名，颜色 token 由 app 的 `global.css` 定义；Tailwind 通过 `@source` 扫描包源码类名
-- **新增共享逻辑**：纯函数/类（非单例、不读 env）入 `@fsdx/lib`，shadcn 组件入 `@fsdx/ui-ssr`，antd 组件入 `@fsdx/ui-spa`，AI 富文本工作台入 `@fsdx/ai-rich-editor`，app 绑定单例/DI 入 `src/shared-services/`，业务逻辑留在 `app/src`
+- **新增共享逻辑的归属决策（按性质判定，不默认 shared-services）**：① 纯函数/类（非单例、不读 env、不碰 DB/框架）→ `@fsdx/lib`；② app 前端工具（无状态或仅轻量模块内状态、不读服务端 env）→ `src/utils/`；③ shadcn 组件 → `@fsdx/ui-ssr`，antd 组件 → `@fsdx/ui-spa`，AI 富文本 → `@fsdx/ai-rich-editor`；④ app 级服务单例 / 系统级共享域（读 env、引 logger、需全局态）→ `src/shared-services/`；⑤ 业务逻辑 → `app/src/services` 或路由层
 
 ## 技术栈
 
@@ -86,6 +86,7 @@ packages/
 - **三层分离**：`.server.ts`（服务逻辑）/ `.functions.ts`（SFn 包装）/ `.schemas.ts`（zod schema 单一来源，服务层用 `z.infer` 派生类型）；路由文件与组件**禁止**直接 import `.server.ts`
 - **依赖方向（硬规则）**：单向分层 `routes → services → (core 基础库) → db`，服务层不得反向依赖表现层——`services/**` **禁止** import `routes/**`（含路由 `-mods/`、路由组件与路由局部 schema）；services 的上游仅限表现层入口（routes / middleware / bootstrap / lib SDK）与服务间协作（如 `logCrud`、`query-utils`）
 - **禁止业务逻辑反向引用 RPC**：`.server.ts` **禁止** import 任何 `.functions.ts`（RPC 边界只允许被调用方引用，不允许被服务逻辑反向引用）
+- **客户端 SFn 调用必须经统一 helper（硬规则）**：客户端（浏览器）调用 SFn 必须用 `#/utils/sfn-error` 的 `sfnUnwrap` / `callSfn` 包裹，禁止裸调后在本地 `try/catch` 用 `message.error` / `toast.error` 展示 SFn 错误；有意静默用 `{ silent: true }`（保留 console.warn 诊断）；路由 `loader` / `beforeLoad` 例外（错误交 `errorComponent`）。服务端归一化 + 客户端中间件打标 + 全局 `unhandledrejection` 兜底保证未处理的 SFn 错误不漏提示
 - **Server Route 例外**：文件读取/下载/流式响应与指标端点路由（`routes/file/r.$id.tsx`、`routes/admin/_admin/logs/download.$id.tsx`、`routes/admin/_admin/file-explorer/download.$.tsx`、`routes/api/metrics.tsx`）允许在 `.tsx` 内通过 `server.handlers` 写服务端 handler 并引用 `.server.ts`，与 SFn 是两套并存范式；下载响应统一由 `services/download/download.server.ts` 的 `createFileDownloadResponse` 构造
 
 > 详细规范、SFn 放置规则、`src/services/` 准入门槛、就近原则、调用方模式、违规自查 → [server-function](.agents/skills/server-function/SKILL.md)
@@ -317,7 +318,7 @@ packages/
 
 ### 错误通知分层
 
-管理端（`/admin/*`）使用 antd `message.error/success`，前台 SSR 使用 sonner `toast.error/success`。loader/beforeLoad 失败走 `errorComponent`，不调用 DOM API。
+管理端（`/admin/*`）使用 antd `message.error/success`，前台 SSR 使用 sonner `toast.error/success`。loader/beforeLoad 失败走 `errorComponent`，不调用 DOM API。客户端对 SFn 的调用统一经 `#/utils/sfn-error` 的 `sfnUnwrap` / `callSfn`（错误出口由两端入口经注册中心注入），未处理的 SFn 错误由全局兜底提示，详见 [server-function](.agents/skills/server-function/SKILL.md)。
 
 管理端 `message` / `modal` / `notification` 统一从 `@fsdx/ui-spa/antd-static` 导入（`packages/ui-spa/src/antd-static/`），**禁止**静态导入 antd。原因：antd 静态函数会创建独立 React root，脱离 `<StyleProvider layer>` 与 ConfigProvider 上下文，导致其注入的 reset/link 样式未分层、压制所有 `@layer`（把全站 `a` 标签冲成 antd 蓝），且无法继承动态主题。桥接组件 `AntdStaticBridge` 已挂载在管理端 `<App>` 内。
 

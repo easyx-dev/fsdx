@@ -15,6 +15,7 @@ import {
 	getCurrentClientSFn,
 } from "#/services/client-auth/client-auth.functions";
 import type { ClientUser } from "#/services/client-auth/client-auth.types";
+import { sfnUnwrap } from "#/utils/sfn-error";
 
 interface ClientAuthContextType {
 	/** 当前登录用户，null 表示未登录 */
@@ -36,8 +37,9 @@ export function ClientAuthProvider({ children }: { children: ReactNode }) {
 	const [isLoading, setIsLoading] = useState(true);
 
 	const loadUser = useCallback(async () => {
-		const u = await getCurrentClientSFn();
-		setUser(u);
+		// 认证引导加载：失败无需打扰用户（未登录/网络异常均回落为未登录态）
+		const [u, err] = await sfnUnwrap(getCurrentClientSFn(), { silent: true });
+		if (!err) setUser(u);
 	}, []);
 
 	useEffect(() => {
@@ -57,7 +59,8 @@ export function ClientAuthProvider({ children }: { children: ReactNode }) {
 	}, [loadUser]);
 
 	const logout = useCallback(async () => {
-		await clientLogoutSFn();
+		const [, err] = await sfnUnwrap(clientLogoutSFn());
+		if (err) return;
 		setUser(null);
 	}, []);
 

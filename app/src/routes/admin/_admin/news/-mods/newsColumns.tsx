@@ -7,6 +7,7 @@ import { Button, Image, Space, Tag } from "antd";
 import dayjs from "dayjs";
 import { FieldTranslationDrawer } from "#/components/admin";
 import type { NewsRecord } from "#/services/news/news.server";
+import { callSfn } from "#/utils/sfn-error";
 import { deleteNewsSFn, setNewsPublishedSFn } from "./news.functions";
 
 /** 新闻可翻译字段定义 */
@@ -127,14 +128,14 @@ export function newsColumns(options: NewsColumnsOptions) {
 								size="small"
 								onClick={async () => {
 									try {
-										await setNewsPublishedSFn({
-											data: { id: record.id, isPublished: true },
-										});
-										await options.onRefresh();
-									} catch (err) {
-										message.error(
-											err instanceof Error ? err.message : "发布失败",
+										await callSfn(
+											setNewsPublishedSFn({
+												data: { id: record.id, isPublished: true },
+											}),
 										);
+										await options.onRefresh();
+									} catch {
+										// callSfn 已提示
 									}
 								}}
 							>
@@ -149,14 +150,14 @@ export function newsColumns(options: NewsColumnsOptions) {
 								size="small"
 								onClick={async () => {
 									try {
-										await setNewsPublishedSFn({
-											data: { id: record.id, isPublished: false },
-										});
-										await options.onRefresh();
-									} catch (err) {
-										message.error(
-											err instanceof Error ? err.message : "下线失败",
+										await callSfn(
+											setNewsPublishedSFn({
+												data: { id: record.id, isPublished: false },
+											}),
 										);
+										await options.onRefresh();
+									} catch {
+										// callSfn 已提示
 									}
 								}}
 							>
@@ -181,11 +182,11 @@ export function newsColumns(options: NewsColumnsOptions) {
 						recordName="这条新闻"
 						onConfirm={async () => {
 							try {
-								await deleteNewsSFn({ data: { id: record.id } });
+								await callSfn(deleteNewsSFn({ data: { id: record.id } }));
 								message.success("已删除");
 								await options.onRefresh();
-							} catch (err) {
-								message.error(err instanceof Error ? err.message : "删除失败");
+							} catch {
+								// callSfn 已提示
 							}
 						}}
 					/>

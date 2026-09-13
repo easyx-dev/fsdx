@@ -9,6 +9,7 @@ import {
 	getAdminNotifyChannelsSFn,
 	saveAdminNotifyChannelsSFn,
 } from "#/services/message/message.functions";
+import { callSfn, sfnUnwrap } from "#/utils/sfn-error";
 
 /** 渠道配置项 */
 const CHANNELS: {
@@ -55,31 +56,34 @@ export function NotifyChannelSettingsModal({ open, onClose }: Props) {
 
 	useEffect(() => {
 		if (!open) return;
-		getAdminNotifyChannelsSFn()
-			.then((data) => {
-				// 规整每个渠道：enabled 缺省为 false，保留已配置的 value/secret，避免未配置渠道以 undefined 提交
-				const normalized = {} as UserNotifyChannels;
-				for (const c of CHANNELS) {
-					normalized[c.key] = {
-						enabled: data[c.key]?.enabled ?? false,
-						value: data[c.key]?.value ?? "",
-						secret: data[c.key]?.secret ?? "",
-					};
-				}
-				form.setFieldsValue(normalized);
-			})
-			.catch(() => message.error("加载通知设置失败"));
+		void sfnUnwrap(getAdminNotifyChannelsSFn(), {
+			error: "加载通知设置失败",
+		}).then(([data]) => {
+			if (data === null) return;
+			// 规整每个渠道：enabled 缺省为 false，保留已配置的 value/secret，避免未配置渠道以 undefined 提交
+			const normalized = {} as UserNotifyChannels;
+			for (const c of CHANNELS) {
+				normalized[c.key] = {
+					enabled: data[c.key]?.enabled ?? false,
+					value: data[c.key]?.value ?? "",
+					secret: data[c.key]?.secret ?? "",
+				};
+			}
+			form.setFieldsValue(normalized);
+		});
 	}, [open, form]);
 
 	const handleSave = async () => {
 		const values = await form.validateFields();
 		setSaving(true);
 		try {
-			await saveAdminNotifyChannelsSFn({ data: values });
+			await callSfn(saveAdminNotifyChannelsSFn({ data: values }), {
+				error: "保存失败，请稍后重试",
+			});
 			message.success("已保存通知设置");
 			onClose();
 		} catch {
-			message.error("保存失败，请稍后重试");
+			// callSfn 已提示
 		} finally {
 			setSaving(false);
 		}

@@ -3,16 +3,19 @@
  * locale 由 localeMiddleware 注入 request context，通过 getLocaleBundleSFn 读取
  */
 
+import { stripSfnErrorMeta } from "@fsdx/lib/error-utils";
 import { TanStackDevtools } from "@tanstack/react-devtools";
 import { createRootRoute, useLocation } from "@tanstack/react-router";
 import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
-import { Fragment } from "react";
+import { Fragment, useEffect } from "react";
 import { ClientAuthProvider } from "#/components/client";
 import { AdminRootDocument, SSRRootDocument } from "#/components/Document";
 import { GlobalStoreProvider } from "#/components/providers";
+import { SfnErrorDialogHost } from "#/components/SfnErrorDialog";
 import { getVisibleConfigsSFn } from "#/shared-services/config/config.functions";
 import { getLocaleBundleSFn } from "#/shared-services/i18n/i18n.functions";
 import { DEFAULT_LOCALE } from "#/shared-services/i18n/i18n.types";
+import { installSfnErrorFallback } from "#/utils/sfn-error";
 
 export const Route = createRootRoute({
 	head: () => {
@@ -44,7 +47,9 @@ export const Route = createRootRoute({
 
 function RootError({ error }: { error: unknown }) {
 	const msg =
-		error instanceof Error ? error.message : "页面加载失败，请刷新重试";
+		error instanceof Error
+			? stripSfnErrorMeta(error.message)
+			: "页面加载失败，请刷新重试";
 	return (
 		<html lang="zh-CN">
 			<body className="font-sans antialiased flex min-h-screen flex-col items-center justify-center bg-background">
@@ -60,6 +65,9 @@ function RootError({ error }: { error: unknown }) {
 function RootDocument({ children }: { children: React.ReactNode }) {
 	const pathname = useLocation().pathname;
 	const data = Route.useLoaderData();
+
+	// 全局兜底：未被任何调用点处理的 SFn 错误统一友好提示（仅客户端生效）
+	useEffect(installSfnErrorFallback, []);
 
 	const isAdmin = pathname.startsWith("/admin");
 	return (
@@ -90,6 +98,8 @@ function RootDocument({ children }: { children: React.ReactNode }) {
 					},
 				]}
 			/>
+			{/* SFn 错误详情弹窗宿主（覆盖管理端与前台，独立于 toast 生命周期） */}
+			<SfnErrorDialogHost />
 		</Fragment>
 	);
 }

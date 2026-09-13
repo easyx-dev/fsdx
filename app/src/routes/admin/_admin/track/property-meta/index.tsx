@@ -10,6 +10,7 @@ import { useState } from "react";
 import { AdminPageContent } from "#/components/admin";
 import { getTrackPropertyMetaSFn } from "#/services/track/track.functions";
 import type { TrackPropertyMetaRecord as PresetPropertyRecord } from "#/services/track/track.types";
+import { callSfn, sfnUnwrap } from "#/utils/sfn-error";
 import {
 	createPropertyMetaSFn,
 	deletePropertyMetaSFn,
@@ -34,8 +35,8 @@ function PresetPropertiesPage() {
 	const [form] = Form.useForm();
 
 	const refresh = async () => {
-		const data = await getTrackPropertyMetaSFn();
-		setProperties(data);
+		const [data] = await sfnUnwrap(getTrackPropertyMetaSFn());
+		if (data !== null) setProperties(data);
 	};
 
 	const handleCreate = () => {
@@ -60,17 +61,24 @@ function PresetPropertiesPage() {
 			const values = await form.validateFields();
 			setSaving(true);
 			if (editingProp) {
-				await updatePropertyMetaSFn({
-					data: { key: editingProp.key, ...values },
-				});
+				const [, err] = await sfnUnwrap(
+					updatePropertyMetaSFn({
+						data: { key: editingProp.key, ...values },
+					}),
+				);
+				if (err) return; // SFn 失败已提示
 				message.success("元属性已更新");
 			} else {
-				await createPropertyMetaSFn({ data: values });
+				const [, err] = await sfnUnwrap(
+					createPropertyMetaSFn({ data: values }),
+				);
+				if (err) return; // SFn 失败已提示
 				message.success("元属性已创建");
 			}
 			setModalOpen(false);
 			await refresh();
 		} catch (err) {
+			// 非 SFn 错误（表单校验等）沿用原提示
 			if (err instanceof Error && err.message) {
 				message.error(err.message);
 			} else {
@@ -83,15 +91,15 @@ function PresetPropertiesPage() {
 
 	const handleDelete = async (key: string) => {
 		try {
-			const result = await deletePropertyMetaSFn({ data: { key } });
+			const result = await callSfn(deletePropertyMetaSFn({ data: { key } }));
 			if (result) {
 				message.success("元属性已删除");
 				await refresh();
 			} else {
 				message.error("预置属性不可删除");
 			}
-		} catch (err) {
-			message.error(err instanceof Error ? err.message : "删除失败");
+		} catch {
+			// callSfn 已提示
 		}
 	};
 

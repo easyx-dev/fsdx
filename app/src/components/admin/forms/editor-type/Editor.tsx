@@ -4,12 +4,12 @@
  * value / onChange 兼容 antd Form.Item 注入
  */
 
-import { message } from "@fsdx/ui-spa/antd-static";
 import { Input, InputNumber, Switch } from "antd";
 import type { ChangeEvent } from "react";
 import { lazy, Suspense, useEffect, useState } from "react";
 import { getFileInfoSFn } from "#/services/file/file.functions";
 import { toBool } from "#/utils/bool";
+import { sfnUnwrap } from "#/utils/sfn-error";
 import { RichEditor } from "../RichEditor";
 
 const CodeEditor = lazy(() =>
@@ -88,19 +88,17 @@ function FilePreview({ fileId }: { fileId: string }) {
 			setLoading(false);
 			return;
 		}
-		getFileInfoSFn({ data: { id: fileId } })
-			.then((name) => {
-				if (!cancelled) {
-					setFileName(name);
-					setLoading(false);
-				}
-			})
-			.catch(() => {
-				if (!cancelled) {
-					setLoading(false);
-					message.error("文件信息加载失败");
-				}
-			});
+		// 文件名仅用于预览展示，失败静默并回落展示文件 ID
+		const loadFileName = async () => {
+			const [name, err] = await sfnUnwrap(
+				getFileInfoSFn({ data: { id: fileId } }),
+				{ silent: true },
+			);
+			if (cancelled) return;
+			if (!err) setFileName(name);
+			setLoading(false);
+		};
+		loadFileName();
 		return () => {
 			cancelled = true;
 		};

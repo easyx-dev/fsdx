@@ -6,11 +6,11 @@
 import { ImageCaptchaModal } from "@fsdx/ui-ssr/form";
 import { Button, Input } from "@fsdx/ui-ssr/ui";
 import { useCallback, useState } from "react";
-import { toast } from "sonner";
 import {
 	getImageCaptchaSFn,
 	sendCaptchaWithImageVerificationSFn,
 } from "#/services/captcha/captcha.functions";
+import { callSfn } from "#/utils/sfn-error";
 
 interface CaptchaInputProps {
 	/** 邮箱地址 */
@@ -31,9 +31,9 @@ export function CaptchaInput({
 }: CaptchaInputProps) {
 	const [modalOpen, setModalOpen] = useState(false);
 
-	/** 获取图片验证码（svg + token） */
+	/** 获取图片验证码（svg + token）：失败由 callSfn 统一提示 */
 	const getCaptcha = useCallback(async () => {
-		return getImageCaptchaSFn();
+		return callSfn(getImageCaptchaSFn());
 	}, []);
 
 	/** 校验图片验证码并发送邮箱验证码 */
@@ -42,9 +42,11 @@ export function CaptchaInput({
 			if (!email) {
 				return { success: false, message: "请先输入邮箱" };
 			}
-			return sendCaptchaWithImageVerificationSFn({
-				data: { email, imageToken: token, imageCode: code },
-			});
+			return callSfn(
+				sendCaptchaWithImageVerificationSFn({
+					data: { email, imageToken: token, imageCode: code },
+				}),
+			);
 		},
 		[email],
 	);
@@ -79,7 +81,6 @@ export function CaptchaInput({
 				onClose={() => setModalOpen(false)}
 				getCaptcha={getCaptcha}
 				verify={verify}
-				onError={(msg) => toast.error(msg)}
 				onMessage={onMessage}
 			/>
 		</>

@@ -23,6 +23,7 @@ import { useClientAuth } from "#/components/client";
 import { useTranslation } from "#/components/providers";
 import { getCurrentClientSFn } from "#/services/client-auth/client-auth.functions";
 import { track } from "#/services/track/track";
+import { sfnUnwrap } from "#/utils/sfn-error";
 import { clientLoginSFn } from "./-mods/login.functions";
 
 function LoginError({ error }: { error: unknown }) {
@@ -57,7 +58,8 @@ function ClientLoginPage() {
 			password: "",
 		},
 		onSubmit: async ({ value }) => {
-			const result = await clientLoginSFn({ data: value });
+			const [result] = await sfnUnwrap(clientLoginSFn({ data: value }));
+			if (!result) return;
 			if (!result.success) {
 				toast.error(result.message || t("登录失败"));
 				return;
