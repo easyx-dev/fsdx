@@ -5,7 +5,6 @@ import { describe, expect, it } from "vitest";
 import {
 	entryPath,
 	formatDisplayPath,
-	formatSize,
 	isTextFile,
 	normalizePath,
 } from "../file-explorer.utils";
@@ -65,24 +64,6 @@ describe("entryPath", () => {
 
 	it("子路径下拼接条目名", () => {
 		expect(entryPath("uploads", "a.txt")).toBe("uploads/a.txt");
-	});
-});
-
-describe("formatSize", () => {
-	it("字节单位", () => {
-		expect(formatSize(512)).toBe("512 B");
-	});
-
-	it("KB 单位", () => {
-		expect(formatSize(2048)).toBe("2.0 KB");
-	});
-
-	it("MB 单位", () => {
-		expect(formatSize(3 * 1024 * 1024)).toBe("3.0 MB");
-	});
-
-	it("GB 单位", () => {
-		expect(formatSize(2 * 1024 * 1024 * 1024)).toBe("2.00 GB");
 	});
 });
 

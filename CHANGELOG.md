@@ -66,6 +66,8 @@
 
 ### Refactor
 
+- **字节格式化统一到 `@fsdx/lib/format-bytes`（[infra]）**：原先散落 3 处各自实现的 `formatSize`（管理端文件管理、资源管理器、`ui-spa` 文件库选择弹窗）能力与精度不一致（仅到 MB、GB 精度各自为政），统一收敛为 `@fsdx/lib/format-bytes` 的 `formatBytes`（B → TB 全阶梯，B 级不带小数，非法入参返回 `0 B`）并补齐单测；`ui-spa/upload` 的 `formatSize` 保留为 `formatBytes` 别名并标注 `@deprecated`，兼容既有引用与文档化 API。可被衍生项目吸收
+
 - **全量代码审查整改：命名一致性收敛（[infra]）**：
   - `-mods/` 逻辑文件 camelCase → kebab：`dictUtils.ts → dict.utils.ts`、`fileExplorerUtils.ts → file-explorer.utils.ts`（含对应测试与引用更新）
   - 裸 `interface Props` → `XxxProps`：`FieldTranslationDrawerProps` / `RichEditorProps` / `AiProviderFormProps`（后两者共用）

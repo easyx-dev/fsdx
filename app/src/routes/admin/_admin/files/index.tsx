@@ -8,6 +8,7 @@ import {
 	EyeOutlined,
 	SwapOutlined,
 } from "@ant-design/icons";
+import { formatBytes } from "@fsdx/lib/format-bytes";
 import { message } from "@fsdx/ui-spa/antd-static";
 import { ProTable, TableOperate } from "@fsdx/ui-spa/table";
 import { createFileRoute, useRouter } from "@tanstack/react-router";
@@ -30,13 +31,6 @@ import { getFileListSFn, uploadFileSFn } from "#/services/file/file.functions";
 import type { FileRecord } from "#/services/file/file.server";
 import { callSfn } from "#/utils/sfn-error";
 import { deleteFileSFn, makePermanentSFn } from "./-mods/files.functions";
-
-/** 格式化文件大小 */
-function formatSize(bytes: number): string {
-	if (bytes < 1024) return `${bytes} B`;
-	if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-	return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-}
 
 export const Route = createFileRoute("/admin/_admin/files/")({
 	component: FilesPage,
@@ -173,7 +167,7 @@ function FilesPage() {
 			key: "size",
 			width: 120,
 			sorter: true,
-			render: (_: unknown, record: FileRecord) => formatSize(record.size),
+			render: (_: unknown, record: FileRecord) => formatBytes(record.size),
 		},
 		{
 			title: "状态",

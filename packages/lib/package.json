@@ -6,6 +6,7 @@
   "exports": {
     "./ms": "./src/ms/index.ts",
     "./date-format": "./src/date-format/index.ts",
+    "./format-bytes": "./src/format-bytes/index.ts",
     "./export": "./src/export/index.ts",
     "./cache": "./src/cache/index.ts",
     "./match-permission": "./src/match-permission/index.ts",

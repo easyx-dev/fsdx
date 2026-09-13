@@ -2,13 +2,13 @@
  * 数据库表面板：库总量与各表（数据 / 索引 / 合计 / 占比）占用明细
  */
 import { ReloadOutlined } from "@ant-design/icons";
+import { formatBytes } from "@fsdx/lib/format-bytes";
 import type { TableProps } from "antd";
 import { Button, Card, Progress, Space, Table, Tooltip } from "antd";
 import type {
 	DatabaseSizes,
 	TableSizeEntry,
 } from "#/services/system-metric/system-metric.types";
-import { formatBytes } from "./system-monitor-config";
 
 interface DatabaseSizePanelProps {
 	data: DatabaseSizes | null;

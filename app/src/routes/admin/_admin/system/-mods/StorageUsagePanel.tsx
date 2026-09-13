@@ -2,6 +2,7 @@
  * 存储占用面板：STORAGE_DIR 总量、顶层条目分解与所在文件系统容量
  */
 import { ReloadOutlined } from "@ant-design/icons";
+import { formatBytes } from "@fsdx/lib/format-bytes";
 import {
 	Alert,
 	Button,
@@ -13,7 +14,6 @@ import {
 	Tooltip,
 } from "antd";
 import type { StorageUsage } from "#/services/system-metric/system-metric.types";
-import { formatBytes } from "./system-monitor-config";
 
 interface StorageUsagePanelProps {
 	data: StorageUsage | null;

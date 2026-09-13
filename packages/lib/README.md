@@ -31,6 +31,7 @@
 | `@fsdx/lib/clipboard` | `src/clipboard/index.ts` | `copyToClipboard(text)` 复制到剪贴板（Clipboard API 优先，非安全上下文退回 `execCommand` 兜底，返回是否成功） |
 | `@fsdx/lib/error-utils` | `src/error-utils/index.ts` | `sanitizeError(error)` 错误脱敏、`toClientError(error, isProd)` 客户端错误归一化、`getErrorMessage(error, fallback?)` 提取消息、`classifyError(error)` 错误分类、`appendSfnErrorMeta` / `parseSfnErrorMeta` / `stripSfnErrorMeta` 请求号与 SFn 方法名元信息的读写 |
 | `@fsdx/lib/date-format` | `src/date-format/index.ts` | `DEFAULT_TASK_TIME_ZONE`（`Asia/Shanghai`，业务统一时区）、`DATE_ONLY_REGEX`、`toDateString(date)`、`parseDateOnly(dateStr)`、`toDayRange(dateStr)`（按业务时区解析天边界，不依赖服务器时区） |
+| `@fsdx/lib/format-bytes` | `src/format-bytes/index.ts` | `formatBytes(bytes, precision?)` 字节数 → `B / KB / MB / GB / TB` 可读字符串（B 级不带小数，非正数与非法数值返回 `0 B`） |
 
 ### cache/
 

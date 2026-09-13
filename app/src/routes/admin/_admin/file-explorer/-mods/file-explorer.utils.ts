@@ -59,15 +59,6 @@ export const TEXT_EXTENSIONS = new Set([
 	"sass",
 ]);
 
-/** 格式化文件大小 */
-export function formatSize(bytes: number): string {
-	if (bytes < 1024) return `${bytes} B`;
-	if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-	if (bytes < 1024 * 1024 * 1024)
-		return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-	return `${(bytes / (1024 * 1024 * 1024)).toFixed(2)} GB`;
-}
-
 /** 判断是否为文本文件 */
 export function isTextFile(name: string): boolean {
 	const ext = name.split(".").pop()?.toLowerCase() ?? "";

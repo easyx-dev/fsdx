@@ -2,10 +2,11 @@
  * 资源管理器表格列定义
  */
 import { FileOutlined, FolderOutlined } from "@ant-design/icons";
+import { formatBytes } from "@fsdx/lib/format-bytes";
 import { TableOperate } from "@fsdx/ui-spa/table";
 import { Button, Typography } from "antd";
 import type { FsEntry } from "#/services/file-explorer/file-explorer.server";
-import { entryPath, formatSize, isTextFile } from "./file-explorer.utils";
+import { entryPath, isTextFile } from "./file-explorer.utils";
 
 interface FileExplorerColumnsOptions {
 	currentPath: string;
@@ -79,7 +80,7 @@ export function fileExplorerColumns(options: FileExplorerColumnsOptions) {
 			sorter: (a: FsEntry, b: FsEntry) => a.size - b.size,
 			render: (_: unknown, record: FsEntry) => (
 				<span style={{ color: "var(--ant-color-text-tertiary)", fontSize: 13 }}>
-					{record.type === "directory" ? "-" : formatSize(record.size)}
+					{record.type === "directory" ? "-" : formatBytes(record.size)}
 				</span>
 			),
 		},

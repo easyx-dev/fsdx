@@ -1,6 +1,6 @@
 /**
- * 系统监控图表配置与格式化：纯函数（可单测）
- * 负责历史趋势折线组装与字节 / 时长可读化
+ * 系统监控图表配置：纯函数（可单测）
+ * 负责历史趋势折线组装与历史指标元数据
  */
 import type { LineConfig } from "@ant-design/charts";
 import type {
@@ -45,18 +45,6 @@ export const HISTORY_METRIC_META: Record<
 export const HISTORY_METRIC_OPTIONS = (
 	Object.keys(HISTORY_METRIC_META) as SystemMetricHistoryMetric[]
 ).map((key) => ({ label: HISTORY_METRIC_META[key].label, value: key }));
-
-/** 字节可读化（B / KB / MB / GB / TB） */
-export function formatBytes(bytes: number, precision = 1): string {
-	if (!Number.isFinite(bytes) || bytes <= 0) return "0 B";
-	const units = ["B", "KB", "MB", "GB", "TB"];
-	const index = Math.min(
-		Math.floor(Math.log(bytes) / Math.log(1024)),
-		units.length - 1,
-	);
-	const value = bytes / 1024 ** index;
-	return `${value.toFixed(index === 0 ? 0 : precision)} ${units[index]}`;
-}
 
 /** 组装单指标历史折线配置：无数据返回 null */
 export function buildHistoryConfig(

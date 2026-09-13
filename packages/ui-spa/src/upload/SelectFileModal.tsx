@@ -3,6 +3,7 @@
  * 文件列表查询经 fetchFiles 回调注入，由宿主决定数据来源；读取地址经 readUrl 回调注入
  */
 import { EyeOutlined } from "@ant-design/icons";
+import { formatBytes } from "@fsdx/lib/format-bytes";
 import { Button, Image, Input, Modal, Space, Tag } from "antd";
 import type { ColumnsType } from "antd/es/table";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -59,12 +60,12 @@ export function acceptToMimePrefix(accept?: string): string | undefined {
 	return accept;
 }
 
-/** 格式化文件大小 */
-export function formatSize(bytes: number): string {
-	if (bytes < 1024) return `${bytes} B`;
-	if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-	return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-}
+/**
+ * 文件大小格式化
+ * @deprecated 实现已统一到 `@fsdx/lib/format-bytes` 的 `formatBytes`，新代码请直接引用该函数；
+ *   此处仅为兼容既有引用保留
+ */
+export const formatSize = formatBytes;
 
 export function SelectFileModal({
 	open,
@@ -135,7 +136,7 @@ export function SelectFileModal({
 			dataIndex: "size",
 			key: "size",
 			width: 100,
-			render: (_: unknown, r: SelectableFile) => formatSize(r.size),
+			render: (_: unknown, r: SelectableFile) => formatBytes(r.size),
 		},
 		{
 			title: "状态",
