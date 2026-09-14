@@ -109,6 +109,8 @@ const productRecord = {
 
 `mockDb.select` 返回一个**可 await 的查询链**（from/where/orderBy/limit/offset/innerJoin 均返回自身），`await` 链时 resolve 到 `mockRows` 控制的行数组。这样 `db.select().from(T).where(...).limit(1)`（findFirst）与 `db.select().from(T).where(...)`（findMany/列表）共用同一套 mock，无需为每张表单独声明 query 方法。`.server.ts` 模块之间的交叉引用可能在测试时意外触发其他表查询，统一走 select 链即可覆盖。
 
+> 查询链可直接复用 `#/test-utils/db-mock` 的 `mockSelect(rows)` 工厂（可在 `vi.hoisted` 内调用），返回支持 from/where/innerJoin/leftJoin/groupBy/having/orderBy/limit/offset/$dynamic 且可被 await 的链对象，省去逐处手写链式 mock；适合返回值固定的查询。需要按用例切换返回值（如 findFirst 后再查列表）时，仍按上文用可变 `mockRows` 自建链。
+
 > ⚠️ 由于 `vi.clearAllMocks()` 只清调用记录不清 mock 实现，`mockRows` 的返回值会跨测试残留。默认 `mockResolvedValue([])`；每个用例如需特定返回值，显式设置 `mockRows.mockResolvedValue(...)`；当 findFirst 与后续查询（如 loadDictCache 的列表查询）需要不同返回值时，用 `mockRows.mockReset().mockResolvedValueOnce(...).mockResolvedValue(...)` 按调用顺序编排。
 
 ## Mock 链式调用 Setup 速查
