@@ -40,6 +40,14 @@ export function configColumns(options: ConfigColumnsOptions) {
 			width: 180,
 			ellipsis: true,
 			render: (val: string, record: ConfigRecord) => {
+				// 敏感配置不回显值，仅展示是否已配置
+				if (record.isSecret) {
+					return (
+						<Tag color={val ? "success" : "default"}>
+							{val ? "已配置" : "未配置"}
+						</Tag>
+					);
+				}
 				// 布尔类型用彩色标签展示：是（绿）/ 否（灰）
 				if (record.valueType === "boolean") {
 					const enabled = toBool(val);
@@ -102,7 +110,9 @@ export function configColumns(options: ConfigColumnsOptions) {
 			key: "actions",
 			fixed: "right" as const,
 			render: (_: unknown, record: ConfigRecord) => {
-				const showTranslation = record.clientVisible === true;
+				// 敏感配置不参与客户端下发，翻译入口无意义
+				const showTranslation =
+					record.clientVisible === true && !record.isSecret;
 				return (
 					<TableOperate>
 						<TableOperate.Edit onClick={() => options.onEdit(record)} />

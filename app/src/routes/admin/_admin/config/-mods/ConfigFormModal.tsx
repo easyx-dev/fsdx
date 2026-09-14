@@ -27,6 +27,11 @@ export function ConfigFormModal({
 	const watchedValueType = Form.useWatch("valueType", form) as
 		| EditorType
 		| undefined;
+	/** 编辑敏感配置时值可留空表示保留原密文，不强制填写 */
+	const isSecretEditing = editing?.isSecret === true;
+	const valueRules = isSecretEditing
+		? []
+		: [{ required: true, message: "请输入配置值" }];
 
 	return (
 		<Modal
@@ -55,20 +60,18 @@ export function ConfigFormModal({
 					<EditorTypes.Select allowClear placeholder="默认文本" />
 				</Form.Item>
 				{watchedValueType ? (
-					<Form.Item
-						name="value"
-						label="配置值"
-						rules={[{ required: true, message: "请输入配置值" }]}
-					>
-						<EditorTypes.Editor type={watchedValueType} placeholder="配置值" />
+					<Form.Item name="value" label="配置值" rules={valueRules}>
+						<EditorTypes.Editor
+							type={watchedValueType}
+							placeholder={isSecretEditing ? "留空则保留原值" : "配置值"}
+						/>
 					</Form.Item>
 				) : (
-					<Form.Item
-						name="value"
-						label="配置值"
-						rules={[{ required: true, message: "请输入配置值" }]}
-					>
-						<Input.TextArea rows={4} placeholder="配置值" />
+					<Form.Item name="value" label="配置值" rules={valueRules}>
+						<Input.TextArea
+							rows={4}
+							placeholder={isSecretEditing ? "留空则保留原值" : "配置值"}
+						/>
 					</Form.Item>
 				)}
 				<Form.Item name="groupName" label="配置分组">
@@ -80,6 +83,14 @@ export function ConfigFormModal({
 					valuePropName="checked"
 				>
 					<Switch />
+				</Form.Item>
+				<Form.Item
+					name="isSecret"
+					label="敏感配置"
+					valuePropName="checked"
+					tooltip="敏感值加密入库、管理端脱敏展示，且不参与客户端可见配置下发；创建后不可修改"
+				>
+					<Switch disabled={!!editing} />
 				</Form.Item>
 				<Form.Item name="description" label="描述">
 					<Input.TextArea rows={2} placeholder="描述（可选）" />

@@ -13,6 +13,8 @@ export interface CachedConfig {
 	key: string;
 	value: string;
 	clientVisible: boolean;
+	/** 敏感配置标记：缓存内存密文，读取时解密 */
+	isSecret: boolean;
 }
 
 /** 跨 bundle 共享缓存实例的 globalThis 存储键 */

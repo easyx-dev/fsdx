@@ -23,6 +23,7 @@ describe("configCache / configTranslationCache", () => {
 				key: "ai_base_url",
 				value: "https://api.example.com",
 				clientVisible: false,
+				isSecret: false,
 			},
 		]);
 		expect(first.configCache.get("all")).toHaveLength(1);
@@ -35,7 +36,7 @@ describe("configCache / configTranslationCache", () => {
 		);
 		configCache.clear();
 		configCache.set("all", [
-			{ id: "1", key: "k", value: "v", clientVisible: true },
+			{ id: "1", key: "k", value: "v", clientVisible: true, isSecret: false },
 		]);
 		expect(configCache.get("all")).toHaveLength(1);
 	});

@@ -15,6 +15,7 @@ const { mockConfigCache } = vi.hoisted(() => {
 		key: string;
 		value: string;
 		clientVisible: boolean;
+		isSecret?: boolean;
 	}
 	const store = new Map<string, CachedConfig[]>();
 	return {
@@ -90,6 +91,7 @@ import {
 	updateConfig,
 	upsertConfig,
 } from "#/shared-services/config/config.server";
+import { encryptConfigValue } from "#/shared-services/config/config-secret.server";
 
 describe("loadConfigCache", () => {
 	it("从 DB 加载配置到缓存", async () => {
@@ -245,6 +247,166 @@ describe("getConfigList", () => {
 		mockRows.mockResolvedValue([]);
 		const result = await getConfigList();
 		expect(result).toEqual([]);
+	});
+});
+
+describe("敏感配置", () => {
+	beforeEach(() => {
+		vi.clearAllMocks();
+		process.env.CONFIG_ENCRYPTION_KEY = Buffer.alloc(32, 3).toString("base64");
+	});
+
+	it("创建敏感配置时加密入库", async () => {
+		const inserted: Array<{ value: string }> = [];
+		const valuesMock = vi.fn((values: { value: string }) => {
+			inserted.push(values);
+			return { returning: vi.fn().mockResolvedValue([{ id: "c-1" }]) };
+		});
+		mockDb.insert.mockReturnValue({ values: valuesMock } as any);
+		mockRows.mockResolvedValue([]);
+
+		await createConfig({ key: "smtp_pass", value: "p@ss", isSecret: true });
+
+		expect(inserted[0].value).not.toBe("p@ss");
+		expect(inserted[0].value.startsWith("enc:v1:")).toBe(true);
+	});
+
+	it("读取敏感配置时解密返回明文", async () => {
+		mockConfigCache.set("all", [
+			{
+				id: "c-1",
+				key: "smtp_pass",
+				value: encryptConfigValue("p@ss"),
+				clientVisible: false,
+				isSecret: true,
+			},
+		]);
+		expect(await getConfig("smtp_pass")).toBe("p@ss");
+	});
+
+	it("管理端列表中敏感值脱敏", async () => {
+		mockRows.mockResolvedValue([
+			{ id: "c-1", key: "smtp_pass", value: "enc:v1:x", isSecret: true },
+			{ id: "c-2", key: "site_name", value: "FSDX", isSecret: false },
+		]);
+		const rows = await getConfigList();
+		expect(rows[0].value).toBe("******");
+		expect(rows[1].value).toBe("FSDX");
+	});
+
+	it("客户端可见配置排除敏感项", async () => {
+		mockConfigCache.set("all", [
+			{
+				id: "c-1",
+				key: "smtp_pass",
+				value: "enc",
+				clientVisible: true,
+				isSecret: true,
+			},
+		]);
+		expect(await getVisibleConfigRows()).toHaveLength(0);
+	});
+
+	it("导入已存在敏感配置时保留原值", async () => {
+		mockRows
+			.mockReset()
+			.mockResolvedValueOnce([{ id: "c-1", isSecret: true }])
+			.mockResolvedValue([]);
+		const result = await importConfigs({
+			configs: [{ key: "smtp_pass", value: "" }],
+		});
+		expect(result.updated).toBe(1);
+		expect(mockDb.update).not.toHaveBeenCalled();
+	});
+
+	it("已存在且值为空的敏感预置项补上 isSecret 标记", async () => {
+		const setMock = vi.fn((_data: Record<string, unknown>) => ({
+			where: vi.fn(),
+		}));
+		mockDb.update.mockReturnValue({ set: setMock } as any);
+		mockRows.mockReset().mockResolvedValue([
+			{
+				id: "c-1",
+				key: "smtp_pass",
+				value: "",
+				deletedAt: null,
+				clientVisible: false,
+				isSecret: false,
+				valueType: "input",
+				groupName: "邮件设置",
+				description: "SMTP 密码",
+			},
+		]);
+
+		await ensurePresetConfigs();
+
+		expect(
+			setMock.mock.calls.some(
+				([payload]) => (payload as { isSecret?: boolean }).isSecret === true,
+			),
+		).toBe(true);
+	});
+
+	it("已存在且值为明文的预置项不自动转敏感", async () => {
+		const setMock = vi.fn((_data: Record<string, unknown>) => ({
+			where: vi.fn(),
+		}));
+		mockDb.update.mockReturnValue({ set: setMock } as any);
+		mockRows.mockReset().mockResolvedValue([
+			{
+				id: "c-1",
+				key: "smtp_pass",
+				value: "plain-password",
+				deletedAt: null,
+				clientVisible: false,
+				isSecret: false,
+				valueType: "input",
+				groupName: "邮件设置",
+				description: "SMTP 密码",
+			},
+		]);
+
+		await ensurePresetConfigs();
+
+		expect(
+			setMock.mock.calls.some(
+				([payload]) => (payload as { isSecret?: boolean }).isSecret === true,
+			),
+		).toBe(false);
+	});
+
+	it("导入新敏感配置时写入敏感标记", async () => {
+		const inserted: Array<Record<string, unknown>> = [];
+		const valuesMock = vi.fn((values: Record<string, unknown>) => {
+			inserted.push(values);
+			return { returning: vi.fn() };
+		});
+		mockDb.insert.mockReturnValue({ values: valuesMock } as any);
+		mockRows.mockReset().mockResolvedValue([]);
+
+		await importConfigs({
+			configs: [{ key: "smtp_pass", value: "", isSecret: true }],
+		});
+
+		expect(inserted[0].isSecret).toBe(true);
+	});
+
+	it("导入敏感备份时为空值的目标行补上敏感标记", async () => {
+		mockRows
+			.mockReset()
+			.mockResolvedValueOnce([{ id: "c-1", isSecret: false, value: "" }])
+			.mockResolvedValue([]);
+		const setMock = vi.fn((_data: Record<string, unknown>) => ({
+			where: vi.fn(),
+		}));
+		mockDb.update.mockReturnValue({ set: setMock } as any);
+
+		await importConfigs({
+			configs: [{ key: "smtp_pass", value: "", isSecret: true }],
+		});
+
+		const payload = setMock.mock.calls[0][0] as { isSecret?: boolean };
+		expect(payload.isSecret).toBe(true);
 	});
 });
 
@@ -407,6 +569,7 @@ describe("updateConfig", () => {
 	});
 
 	it("不存在的配置返回 null 且不刷新缓存", async () => {
+		mockRows.mockReset().mockResolvedValue([]);
 		mockDb.update.mockReturnValue({
 			set: vi.fn(() => ({
 				where: vi.fn(() => ({
@@ -418,7 +581,25 @@ describe("updateConfig", () => {
 		const result = await updateConfig("ghost", { value: "x" });
 
 		expect(result).toBeNull();
-		expect(mockDb.select).not.toHaveBeenCalled();
+		expect(mockConfigCache.set).not.toHaveBeenCalled();
+	});
+
+	it("value 为 undefined 时不写入 value（敏感配置留空保留原密文）", async () => {
+		mockRows
+			.mockReset()
+			.mockResolvedValueOnce([{ isSecret: true }])
+			.mockResolvedValue([]);
+		const setMock = vi.fn((_data: Record<string, unknown>) => ({
+			where: vi.fn(() => ({
+				returning: vi.fn().mockResolvedValue([{ id: "c-1" }]),
+			})),
+		}));
+		mockDb.update.mockReturnValue({ set: setMock } as any);
+
+		await updateConfig("c-1", { description: "改描述" });
+
+		const payload = setMock.mock.calls[0][0];
+		expect("value" in payload).toBe(false);
 	});
 });
 

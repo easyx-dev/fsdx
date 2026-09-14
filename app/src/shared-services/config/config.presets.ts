@@ -12,6 +12,8 @@ export interface PresetConfig {
 	clientVisible: boolean;
 	valueType: EditorType;
 	groupName: string;
+	/** 敏感配置：值以密文入库、管理端脱敏展示；仅用于真正的字符串密钥类配置 */
+	isSecret?: boolean;
 }
 
 /** 预置系统配置常量（仅服务端启动时自动插入的配置项） */
@@ -103,6 +105,7 @@ export const PRESET_CONFIGS: PresetConfig[] = [
 		clientVisible: false,
 		valueType: "input",
 		groupName: "邮件设置",
+		isSecret: true,
 	},
 	{
 		key: "smtp_from",
@@ -164,6 +167,7 @@ export const PRESET_CONFIGS: PresetConfig[] = [
 		clientVisible: false,
 		valueType: "input",
 		groupName: "短信设置",
+		isSecret: true,
 	},
 	{
 		key: "sms_aliyun_sign_name",

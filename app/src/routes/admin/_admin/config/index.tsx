@@ -70,7 +70,8 @@ function ConfigPage() {
 			result = result.filter(
 				(c) =>
 					c.key.toLowerCase().includes(lower) ||
-					c.value.toLowerCase().includes(lower) ||
+					// 敏感配置值已脱敏，不参与值匹配
+					(!c.isSecret && c.value.toLowerCase().includes(lower)) ||
 					(c.description ?? "").toLowerCase().includes(lower),
 			);
 		}
@@ -99,7 +100,9 @@ function ConfigPage() {
 			setEditing(record);
 			form.setFieldsValue({
 				key: record.key,
-				value: record.value,
+				// 敏感配置不回显密文，留空表示保留原值
+				value: record.isSecret ? "" : record.value,
+				isSecret: record.isSecret,
 				clientVisible: record.clientVisible,
 				valueType: record.valueType ?? undefined,
 				groupName: record.groupName ?? undefined,
@@ -124,7 +127,20 @@ function ConfigPage() {
 		try {
 			const values = await form.validateFields();
 			if (editing) {
-				await callSfn(updateConfigSFn({ data: { id: editing.id, ...values } }));
+				await callSfn(
+					updateConfigSFn({
+						data: {
+							id: editing.id,
+							valueType: values.valueType,
+							groupName: values.groupName,
+							description: values.description,
+							clientVisible: values.clientVisible,
+							// 敏感配置留空表示保留原密文（undefined 不覆盖 value）
+							value:
+								editing.isSecret && !values.value ? undefined : values.value,
+						},
+					}),
+				);
 				message.success("配置更新成功");
 			} else {
 				await callSfn(createConfigSFn({ data: values }));

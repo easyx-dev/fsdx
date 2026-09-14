@@ -79,6 +79,7 @@ TanStack Start SSR / Server Functions
 | `LOG_LEVEL` | 日志级别 | `info` |
 | `STORAGE_DIR` | 文件存储目录（上传文件 + 日志） | `.tmp` |
 | `COOKIE_SECURE` | 认证 Cookie 是否启用 Secure 标志（`true`/`false`），未设置时生产默认开启 | 生产为 `true` |
+| `CONFIG_ENCRYPTION_KEY` | 系统配置敏感值加密主密钥（32 字节 Base64 或 64 位十六进制）；启用敏感配置后必填，缺失时读取敏感配置报错 | —（可选） |
 | `NODE_ENV` | 运行环境 | — |
 | `DB_POOL_MAX` | pg 连接池最大连接数 | `10` |
 | `DB_POOL_IDLE_TIMEOUT_MS` | 连接空闲回收时间（毫秒） | `30000` |
@@ -87,6 +88,8 @@ TanStack Start SSR / Server Functions
 > 连接池参数在 `src/db/index.ts` 中读取，postgres 驱动默认值见 [node-postgres 文档](https://node-postgres.com/features/pool)。
 
 SMTP 邮件配置存储于系统配置表，通过 `/admin/config` 页面管理。
+
+> **敏感系统配置加密**：`system_config` 的敏感项（`is_secret`）以 AES-256-GCM 密文入库，读取时解密、管理端列表脱敏、不参与客户端可见配置下发，导出备份也不携带原文。主密钥由 `CONFIG_ENCRYPTION_KEY` 提供，**密钥丢失后已加密的敏感配置无法解密恢复，须妥善备份**；未配置主密钥时读取敏感项会报错（不影响进程启动）。生产 compose 透传需在部署子仓库（fsdx-deploy）同步。
 
 > **HTTPS 与 Cookie**：生产环境认证 Cookie 默认携带 `Secure` 标志（浏览器仅在 HTTPS 下保存）。线上若尚未启用 HTTPS（http:// 访问），必须在 `.env` 设置 `COOKIE_SECURE=false`，否则登录成功后 token 立即丢失、反复跳回登录页。启用 HTTPS 后应移除该配置或设回 `true`。生产 compose 透传需在部署子仓库（fsdx-deploy）同步。
 

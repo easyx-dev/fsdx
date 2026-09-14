@@ -62,11 +62,15 @@ export const deleteConfigSFn = createServerFn({ method: "POST" })
 		return { success: true };
 	});
 
-/** 导出配置数据（JSON） */
+/** 导出配置数据（JSON）：敏感配置不携带原文，仅标记是否已配置 */
 export const exportConfigsSFn = createServerFn({ method: "GET" })
 	.middleware([adminPermGuard(ADMIN_PERMISSIONS.CONFIG_EXPORT)])
 	.handler(async () => {
-		const configs = await getConfigList();
+		const configs = (await getConfigList()).map((config) =>
+			config.isSecret
+				? { ...config, value: "", secretConfigured: Boolean(config.value) }
+				: config,
+		);
 		return toJson({ configs });
 	});
 

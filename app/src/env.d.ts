@@ -10,6 +10,8 @@ declare global {
 			DATABASE_URL: string;
 			/** JWT access token 密钥（至少 32 字符） */
 			JWT_SECRET: string;
+			/** 系统配置敏感值加密主密钥（32 字节 Base64 或 64 位十六进制；缺失时读取敏感配置将报错） */
+			CONFIG_ENCRYPTION_KEY?: string;
 			/** 日志级别 */
 			LOG_LEVEL?: "fatal" | "error" | "warn" | "info" | "debug" | "trace";
 			/** 运行环境 */

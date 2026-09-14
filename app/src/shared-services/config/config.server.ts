@@ -14,6 +14,7 @@ import { DEFAULT_LOCALE, type Locale } from "#/shared-services/i18n/i18n.types";
 import { logger } from "#/shared-services/logger";
 import { PRESET_CONFIGS } from "./config.presets";
 import type { configImportSchema } from "./config.schemas";
+import { decryptConfigValue, encryptConfigValue } from "./config-secret.server";
 
 export type ConfigRecord = typeof systemConfig.$inferSelect;
 
@@ -24,11 +25,20 @@ export async function loadConfigCache(): Promise<void> {
 			key: systemConfig.key,
 			value: systemConfig.value,
 			clientVisible: systemConfig.clientVisible,
+			isSecret: systemConfig.isSecret,
 		})
 		.from(systemConfig)
 		.where(isNull(systemConfig.deletedAt));
 	configCache.set("all", configs);
 	logger.info({ count: configs.length }, "系统配置缓存加载完成");
+}
+
+/** 读取配置值：敏感项解密后返回，非敏感项原样返回 */
+function readConfigValue(
+	row: { value: string; isSecret: boolean } | undefined,
+): string {
+	if (!row) return "";
+	return row.isSecret && row.value ? decryptConfigValue(row.value) : row.value;
 }
 
 export async function getConfig(key: string): Promise<string> {
@@ -37,26 +47,40 @@ export async function getConfig(key: string): Promise<string> {
 		await loadConfigCache();
 		list = configCache.get("all") ?? [];
 	}
-	return list.find((c) => c.key === key)?.value ?? "";
+	return readConfigValue(list.find((c) => c.key === key));
 }
 
+/** 管理端配置列表：敏感项值脱敏为 ******（无值时空串），避免明文外发 */
 export async function getConfigList() {
-	return db
+	const rows = await db
 		.select()
 		.from(systemConfig)
 		.where(isNull(systemConfig.deletedAt))
 		.orderBy(asc(systemConfig.groupName), asc(systemConfig.key));
+	return rows.map((row) =>
+		row.isSecret ? { ...row, value: row.value ? "******" : "" } : row,
+	);
 }
 
 export async function createConfig(params: {
 	key: string;
 	value: string;
+	isSecret?: boolean;
 	clientVisible?: boolean;
 	valueType?: string;
 	groupName?: string;
 	description?: string;
 }) {
-	const [record] = await db.insert(systemConfig).values(params).returning();
+	const [record] = await db
+		.insert(systemConfig)
+		.values({
+			...params,
+			value:
+				params.isSecret && params.value
+					? encryptConfigValue(params.value)
+					: params.value,
+		})
+		.returning();
 	await loadConfigCache();
 	return record;
 }
@@ -72,6 +96,7 @@ export async function upsertConfig(
 	valueType?: string,
 	groupName?: string,
 	clientVisible?: boolean,
+	isSecret?: boolean,
 ): Promise<void> {
 	const [existing] = await db
 		.select()
@@ -80,10 +105,13 @@ export async function upsertConfig(
 		.limit(1);
 
 	if (existing) {
+		// 敏感标记沿用已有行（除非显式传入），据此决定写入前是否加密
+		const secret = isSecret ?? existing.isSecret;
 		await db
 			.update(systemConfig)
 			.set({
-				value,
+				value: secret && value ? encryptConfigValue(value) : value,
+				...(isSecret !== undefined ? { isSecret } : {}),
 				clientVisible: clientVisible ?? existing.clientVisible,
 				valueType: valueType ?? existing.valueType,
 				groupName: groupName ?? existing.groupName,
@@ -94,7 +122,8 @@ export async function upsertConfig(
 	} else {
 		await db.insert(systemConfig).values({
 			key,
-			value,
+			value: isSecret && value ? encryptConfigValue(value) : value,
+			isSecret: isSecret ?? false,
 			description,
 			valueType,
 			groupName,
@@ -116,9 +145,24 @@ export async function updateConfig(
 		description?: string;
 	},
 ) {
+	// 先取敏感标记：敏感行的新值须加密后入库；isSecret 一经创建不可改
+	const [existing] = await db
+		.select({ isSecret: systemConfig.isSecret })
+		.from(systemConfig)
+		.where(eq(systemConfig.id, id))
+		.limit(1);
+	const { value, ...rest } = params;
 	const [updated] = await db
 		.update(systemConfig)
-		.set({ ...params, updatedAt: new Date() })
+		.set({
+			...rest,
+			...(value !== undefined
+				? {
+						value: existing?.isSecret ? encryptConfigValue(value) : value,
+					}
+				: {}),
+			updatedAt: new Date(),
+		})
 		.where(eq(systemConfig.id, id))
 		.returning();
 	if (updated) {
@@ -157,7 +201,11 @@ export async function ensurePresetConfigs(): Promise<void> {
 			await db
 				.update(systemConfig)
 				.set({
-					value: preset.value,
+					value:
+						preset.isSecret && preset.value
+							? encryptConfigValue(preset.value)
+							: preset.value,
+					isSecret: preset.isSecret ?? false,
 					clientVisible: preset.clientVisible,
 					valueType: preset.valueType,
 					groupName: preset.groupName,
@@ -170,20 +218,36 @@ export async function ensurePresetConfigs(): Promise<void> {
 			continue;
 		}
 		if (!existing) {
-			await db.insert(systemConfig).values(preset);
+			await db.insert(systemConfig).values({
+				...preset,
+				value:
+					preset.isSecret && preset.value
+						? encryptConfigValue(preset.value)
+						: preset.value,
+				isSecret: preset.isSecret ?? false,
+			});
 			logger.info({ key: preset.key }, "预置系统配置已创建");
 			continue;
 		}
-		// 已存在：仅同步 valueType 变更（value / description / groupName / clientVisible 属用户可编辑项，不被覆盖）
-		if (existing.valueType !== preset.valueType) {
+		// 已存在：仅同步 valueType 变更（value / description / groupName / clientVisible 属用户可编辑项，不被覆盖）。
+		// 预置项标记为敏感且当前值仍为空时同步 isSecret——空值无需加密，避免启动期强制依赖主密钥；
+		// 已有明文值不自动转密文（保持 isSecret=false），否则读取时会走错解密切径。
+		const valueTypeChanged = existing.valueType !== preset.valueType;
+		const syncSecret =
+			(preset.isSecret ?? false) && !existing.isSecret && !existing.value;
+		if (valueTypeChanged || syncSecret) {
 			await db
 				.update(systemConfig)
 				.set({
-					valueType: preset.valueType,
+					...(valueTypeChanged ? { valueType: preset.valueType } : {}),
+					...(syncSecret ? { isSecret: true } : {}),
 					updatedAt: new Date(),
 				})
 				.where(eq(systemConfig.id, existing.id));
-			logger.info({ key: preset.key }, "预置系统配置 valueType 已同步");
+			logger.info(
+				{ key: preset.key, valueTypeChanged, syncSecret },
+				"预置系统配置已同步",
+			);
 		}
 	}
 	await loadConfigCache();
@@ -204,7 +268,8 @@ export async function getVisibleConfigRows(): Promise<
 		await loadConfigCache();
 		list = configCache.get("all") ?? [];
 	}
-	return list.filter((c) => c.clientVisible);
+	// 敏感配置永不外发客户端
+	return list.filter((c) => c.clientVisible && !c.isSecret);
 }
 
 /** 获取系统配置的 content_translation 翻译（按 locale 缓存） */
@@ -274,10 +339,19 @@ export async function importConfigs(
 			.limit(1);
 
 		if (existing) {
+			if (existing.isSecret) {
+				// 配置备份不携带敏感原文，导入时保留原密文，仅计数
+				result.updated++;
+				continue;
+			}
 			await db
 				.update(systemConfig)
 				.set({
 					value: cfg.value,
+					// 备份标记为敏感且目标行仍为空值时补上敏感标记（空值无需加密；已有明文值不自动转密文）
+					...(cfg.isSecret && !existing.isSecret && !existing.value
+						? { isSecret: true }
+						: {}),
 					clientVisible: cfg.clientVisible ?? existing.clientVisible,
 					valueType: cfg.valueType ?? existing.valueType,
 					groupName: cfg.groupName ?? existing.groupName,
@@ -289,7 +363,10 @@ export async function importConfigs(
 		} else {
 			await db.insert(systemConfig).values({
 				key: cfg.key,
-				value: cfg.value,
+				// 敏感行按标记加密（备份通常为空值；若携带明文则加密入库）
+				value:
+					cfg.isSecret && cfg.value ? encryptConfigValue(cfg.value) : cfg.value,
+				isSecret: cfg.isSecret ?? false,
 				clientVisible: cfg.clientVisible ?? false,
 				valueType: cfg.valueType ?? "input",
 				groupName: cfg.groupName ?? null,
