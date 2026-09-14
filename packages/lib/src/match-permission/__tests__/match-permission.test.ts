@@ -66,6 +66,34 @@ describe("matchPermission", () => {
 		});
 	});
 
+	describe("逐级分组通配符（多级权限码）", () => {
+		it("一级通配匹配多级权限码", () => {
+			expect(matchPermission(["open_api:*"], "open_api:material:query")).toBe(
+				true,
+			);
+		});
+
+		it("中间级通配匹配其下多级权限码", () => {
+			expect(
+				matchPermission(["open_api:material:*"], "open_api:material:query"),
+			).toBe(true);
+			expect(
+				matchPermission(["open_api:material:*"], "open_api:material:export"),
+			).toBe(true);
+		});
+
+		it("中间级通配不匹配同级其他子域", () => {
+			expect(
+				matchPermission(["open_api:material:*"], "open_api:order:query"),
+			).toBe(false);
+		});
+
+		it("单级权限码行为不变（news:* 不匹配 dict:view）", () => {
+			expect(matchPermission(["news:*"], "news:view")).toBe(true);
+			expect(matchPermission(["news:*"], "dict:view")).toBe(false);
+		});
+	});
+
 	describe("精确匹配", () => {
 		it("精确命中", () => {
 			expect(matchPermission(["news:view"], "news:view")).toBe(true);
