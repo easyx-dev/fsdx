@@ -6,6 +6,12 @@
 
 ### Features
 
+- **系统敏感配置加密（[infra]）**：`system_config` 新增 `is_secret` 标记，敏感值以 AES-256-GCM（`node:crypto`，零新依赖，密文格式 `enc:v1:{iv}:{ct}:{tag}`）入库、读取时解密，管理端与备份全链路不泄漏原文。
+  - 服务层（`shared-services/config`）：新增 `config-secret.server.ts` 加解密工具；`config.server` 写入前按 `isSecret` 加密、`getConfig` 读时解密、`getConfigList` 列表值脱敏为 `******`、`getVisibleConfigRows` 过滤敏感项、`importConfigs` 命中敏感行保留原密文；`config.presets` 支持 `isSecret`（预置 `smtp_pass` / `sms_aliyun_access_key_secret`）；导入 schema 的 value 放宽为任意字符串，允许脱敏备份回灌。
+  - 管理端 `/admin/config`：敏感行展示「已配置 / 未配置」，编辑留空保留原值，`isSecret` 创建后不可改，敏感值不参与搜索；导出 JSON 不含原文（附 `secretConfigured`）。
+  - **升级与恢复路径**：导入备份携带 `isSecret` 时按标记建行；预置项/导入目标行当前值为空时补上敏感标记（空值无需加密，避免启动期强制依赖主密钥）；已有明文值不自动转密文（保持非敏感，避免读取时走错解密切径）。
+  - 新增环境变量 `CONFIG_ENCRYPTION_KEY`（32 字节 Base64 或 64 位十六进制，缺失时读取敏感配置报错）；迁移新增 `is_secret` 列，历史行默认明文。可被衍生项目吸收
+
 - **管理端仪表盘重构：四域信号整合为系统态势总览（[infra]）**：`/admin` 由 4 个静态标量卡升级为「系统健康 + 访问流量 + 用户规模 + 存储占用 + 风险与资源趋势」一屏概览，数据源自既有埋点 / 系统监控 / 统计 / 操作审计服务，不新增表与依赖。
   - **聚合入口**：新增 `services/dashboard/dashboard.overview.server.ts` 按域编排 `getClientUserTotal`（未删除客户端用户数） / `getTrackAnalytics`（PageView 口径，含环比与 Top 页面） / `getSystemOverview` / `getStorageUsage` / `getSystemMetricHistory`（资源趋势，按可选指标集合裁剪采样点） / `getOperationLogAnalytics` + 新增 `operation-log.analytics` 的 `getOperationActionCounts`（高风险动作独立聚合，不受分布 TopN 截断），并新增 `getDashboardOverviewSFn`（复用 `dashboard:view` 权限）；指标口径复用既有服务，仪表盘与各分析页数字一致。存储占用取 STORAGE_DIR 实际占用（`StorageUsage.totalBytes`，含临时文件与日志），修正此前误用 `SUM(file.size)` 且 `SUM(bigint)` 经 node-postgres 返回字符串导致显示为 0 的问题。
   - **日志摘要独立懒加载**：新增 `services/dashboard/dashboard.logs.server.ts` 与 `getDashboardErrorSummarySFn`，仅在概览返回 `sections.logs` 时按需加载；窗口收敛为今日 / 近 7 日（近 30 日自动收敛），缓存 5 分钟，避免日志文件扫描阻塞首屏；`total=0`（窗口内无匹配日志文件）与「零错误」区分展示为空态，避免误报健康；SFn 支持 `force` 供手动刷新绕过缓存重扫。
@@ -31,6 +37,15 @@
 - **事件分析升级为交互式分析工作台（[infra]）**：管理端 `/admin/track/analytics` 由静态趋势/饼图升级为交互式分析工作台——筛选区支持事件多选对比、指标切换（次数/用户数）、维度拆解（元属性白名单）、周期对比（环比/同比）、周粒度；新增事件明细排行表（次数/用户数/占比，点击下钻趋势）、用户属性与来源分布（设备类型/来源/操作系统/浏览器）、KPI 卡带周期涨跌。服务端 `getTrackAnalytics` 收敛趋势/排行/维度/KPI 聚合（空桶补零对齐、维度白名单防注入、按业务时区口径对齐），事件查询拆至 `track.events.ts`；图表经 `analytics-chart` 懒加载拆分 chunk；新增 `buildTrendConfig` 纯函数与单测。可被衍生项目吸收
 
 ### Infrastructure
+
+- **部署与构建优化（[infra]）**：
+  - `deploy/deploy.sh` 改为零停机：先拉新镜像（旧版继续服务）→ `up -d` 仅重建变更容器（失败回退 `down + up`）→ 按部署前镜像 ID 精确清理旧镜像（不用 `docker image prune -f`，避免误清同宿主机其他项目）→ 输出 `/health` 状态面板。
+  - `Dockerfile`：pnpm 改为全局安装 v12（与根 `package.json` 的 `packageManager` 大版本一致，`NPM_REGISTRY` 默认对齐 `.npmrc` 镜像源）；依赖安装走 BuildKit `--mount=type=cache` 复用 pnpm store（不进镜像层）；运行阶段安装 `tini` 作 PID 1（信号转发 + 回收僵尸进程）并设 `TZ=Asia/Shanghai` 对齐业务时区。
+  - `.gitlab-ci.yml`：`docker:latest` → `docker:27`，构建复用 registry 内嵌缓存（`--cache-from ...:latest --cache-to type=inline`）并单次构建多 tag。可被衍生项目吸收
+
+- **测试共享 select mock 工厂（[infra]）**：新增 `app/src/test-utils/db-mock.ts` 的 `mockSelect(rows)`，返回支持 from/where/innerJoin/leftJoin/groupBy/having/orderBy/limit/offset/$dynamic 且可 await 的查询链，供各 `__tests__` 复用，消除逐处手写链式 mock；`test-writing` skill 补充用法说明。可被衍生项目吸收
+
+- **权限匹配支持逐级分组通配（[infra]）**：`@fsdx/lib/match-permission` 的 `matchPermission` 由仅支持单级 `module:*` 扩展为按冒号逐级前缀通配（`open_api:material:query` 可被 `open_api:*` 或 `open_api:material:*` 命中），单级权限码行为不变；补多级用例。可被衍生项目吸收
 
 - **客户端 SFn 错误处理统一：helper + 分级 + 全局兜底（[infra]）**：客户端对 Server Function 的调用统一经 `#/utils/sfn-error`，消除碎片化错误提示，并保证未捕获的 SFn 错误不漏提示。
   - 新增前端工具 `utils/sfn-error`（归 `src/utils/`，非 shared-service）：UI 无关的提示器注册中心（DI，两端入口分别注入 antd `message.error` / sonner `toast.error`）+ 错误标记 + `callSfn` / `sfnUnwrap`（失败统一提示后抛出 / 返回 `[data, err]` 元组）+ `installSfnErrorFallback`（全局 `unhandledrejection` 兜底，仅提示被打标且未处理的 SFn 错误，含同文案 2 秒去重）。
@@ -94,6 +109,8 @@
 
 ### Fix
 
+- **日志文件流级别跟随 `LOG_LEVEL`（[infra]）**：`shared-services/logger` 的文件流原硬编码 `level: "info"`，导致 `LOG_LEVEL=debug` 时 debug 日志只进开发控制台、永不落盘，与 `external-observability`「成功外部调用记 debug」及 `/admin/logs` 排障链路自相矛盾；改为文件流跟随配置级别（控制台生产仍仅 `warn` 以上），补 debug 落盘用例。可被衍生项目吸收
+
 - **富文本编辑器占位符修复（[infra]）**：`@easyx/editor@1.1.1` 的 Placeholder 扩展生成的空段落属性名为 `data-data-placeholder`（双 `data-` 前缀），但其自带 CSS 用 `attr(data-placeholder)` 读取导致取空、占位文本不显示。该缺陷由升级 `@easyx/editor` 至 `1.1.2` 在包内修复（空段落改为单前缀 `data-placeholder`），占位符正常显示（浏览器实测）；此前在 `admin.global.css` 添加的本地覆盖 workaround 已随包升级移除。
 
 - **错误兜底组件语义令牌化（[infra]）**：`ErrorFallback` 的 `DefaultErrorFallback`/`NotFoundFallback` 硬编码 zinc 色值换为语义令牌（`bg-background`/`text-foreground-secondary`/`bg-danger` 等）并删除注释掉的死代码，修复暗色主题下 404/错误页失控与直角风格不一致。
@@ -105,6 +122,8 @@
 - **补全前台英文种子翻译并新增完整性守卫（[infra]）**：前台大量 `t("中文")` 文案缺失英文种子（消息中心/退出登录/忘记密码/各类失败提示/分页/已读未读/重置相关等），致使英文站静默回退中文；已补齐 `i18n.seed.ts` 缺失条目，并新增 `i18n.seed.test.ts` 静态扫描守卫，自动校验前台所有 `t()` 字面量均存在于 `SEED_DATA`（en），防止后续新增文案遗漏种子。另修正 `translation.ts` / 缓存注释 / 翻译管理页占位符与「中文作为 key」约定不符的过时表述。
 
 ### Docs
+
+- **日志级别语义与敏感配置加密文档（[infra]）**：`AGENTS.md`「日志约定」补充级别语义 + 一票否决判据 + 外部调用统一出口（`logExternalRequest`），并说明文件流跟随 `LOG_LEVEL`；`docs/deployment-ops.md` 补充 `CONFIG_ENCRYPTION_KEY` 与敏感配置加密说明。可被衍生项目吸收
 
 - **SQLite 迁移指南时间戳方案改 `timestamp_ms`（[infra]）**：`db-sqlite` skill 原用 `integer({ mode: "number" })` + `$defaultFn` 承载时间戳，迫使业务层做 `Date` → `number` 全量改写；改为 `integer({ mode: "timestamp_ms" }).defaultNow()`——JS 侧保持 `Date`、DB 侧存毫秒且带 DB 级默认，写入/比较/读取/类型声明/测试断言均无需改；§7 由「Date → number 全量替换」收敛为「裸 sql 日期入参 / `db.all` 原始结果 / 字符串入参」三类人工处理，§3.2 / 3.4 / 9 / 11 / 12 同步更新。新增 §3.1.1：提供现成的 SQLite 版通用列工厂 `columns.ts`（含 `pk`/`createdAt`/`updatedAt`/`timestamps`/`softDelete`/`sortable`/`publishable`），通用列为单一改写点、无需逐表改，表文件仅需改 `pgTable`→`sqliteTable` 与业务列。迁移辅助脚本 `db-migration.ts` 的「甄别」规则新增「裸 sql 模板日期表达式插值」检查、`new Date(` 降级为「多无需改」。可被衍生项目吸收
 
