@@ -38,6 +38,29 @@ describe("createLogger", () => {
 		expect(content).toContain("hello 日志测试");
 	});
 
+	it("文件流跟随 LOG_LEVEL：debug 级别日志可落盘", async () => {
+		const debugDir = join(tmpdir(), `logger-test-debug-${Date.now()}`);
+		const logger = createLogger({
+			level: "debug",
+			storageDir: debugDir,
+			isProd: true,
+		});
+
+		logger.debug("调试日志落盘测试");
+		logger.flush();
+
+		const debugLogDir = join(debugDir, "logs");
+		await vi.waitFor(() => {
+			const files = readdirSync(debugLogDir).filter((f) => f.endsWith(".log"));
+			expect(files).toHaveLength(1);
+		});
+		const files = readdirSync(debugLogDir).filter((f) => f.endsWith(".log"));
+		const content = await readFile(join(debugLogDir, files[0]), "utf-8");
+		expect(content).toContain("调试日志落盘测试");
+
+		await rm(debugDir, { recursive: true, force: true });
+	});
+
 	it("开发模式使用 pino-pretty 输出且不抛错", () => {
 		const logger = createLogger({ level: "info", storageDir, isProd: false });
 

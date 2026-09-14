@@ -191,8 +191,15 @@ packages/
 ## 日志约定
 
 - 使用 pino multistream，日志文件存储在 `{STORAGE_DIR}/logs/` 下，文件名 `YYYY-MM-DD.log` 按天切割
+- 文件流级别跟随 `LOG_LEVEL`；控制台流生产环境仅输出 `warn` 以上，避免高频日志刷屏
 - 管理端可在 `/admin/logs` 页面按关键词、级别、日期范围查询
 - 日志模块不导入 `getEnv()`，直接读取 `process.env`（pino transport worker 在 ESM 环境存在 __dirname 兼容问题）
+- **级别语义（生产默认 `info`，靠代码收窄使用面，不靠降级压制体积）**：
+  - `info`：**低频、里程碑式**的运维/业务结果——进程启动与优雅关闭、数据库迁移、定时任务生命周期、系统初始化、缓存加载/刷新/预置、外部系统登录成功、业务单据落库成功、同步任务完成
+  - `debug`：**过程性/遍历性**细节，仅排障需要——每次外部系统调用成功、每次查询、每次翻页、每次批量写、中间计算结果
+  - `warn`：异常/降级，需关注但未失败；`error`：失败/阻断，需人工介入
+- **判据（一票否决）**：写入前先问「这条日志是否每次请求/调用/翻页都会出现？」——是 → 必用 `debug`；否则再看是否属低频里程碑 → 才用 `info`。高频路径（per-request / per-call / per-page / 循环内）一律禁 `info`
+- **外部系统调用统一**：成功与失败统一走 `shared-services/external-observability` 的 `logExternalRequest()`（成功 `debug`、失败 `warn`，含 Prometheus 指标与 requestId / 操作者身份），调用方**不得**再额外打 `info` / `error`（重复且级别虚高）
 
 ## 命令
 

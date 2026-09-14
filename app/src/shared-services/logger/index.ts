@@ -62,7 +62,9 @@ export function createLogger(opts: LoggerOptions): Logger {
 	return pino(
 		{ level, mixin },
 		pino.multistream([
-			{ stream: fileStream, level: "info" },
+			// 文件流跟随配置级别：LOG_LEVEL=debug 时 debug 需落盘，否则排障链路（如外部调用成功记 debug）在文件中不可见
+			{ stream: fileStream, level },
+			// 控制台仍按环境收窄：生产仅输出 warn 以上，避免高频日志刷屏
 			{
 				stream: stdoutStream,
 				level: isProd ? "warn" : "info",
