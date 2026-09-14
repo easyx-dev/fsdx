@@ -1,6 +1,7 @@
 # 构建阶段
 FROM node:24-slim AS builder
-ARG NPM_REGISTRY
+# 默认与 .npmrc 一致，未显式传参时也走镜像源
+ARG NPM_REGISTRY=https://registry.npmmirror.com
 
 WORKDIR /app
 
@@ -9,7 +10,8 @@ ENV PNPM_HOME=/tmp/pnpm-home
 # CI 环境：pnpm 在无 TTY 时自动确认模块目录清理，避免 ERR_PNPM_ABORTED_REMOVE_MODULES_DIR_NO_TTY
 ENV CI=true
 
-RUN npm install -g pnpm@11
+# 全局安装 pnpm 12（与根 package.json 的 packageManager 大版本一致）；走 npm 安装，registry 由 NPM_REGISTRY 控制
+RUN npm install -g pnpm@12
 
 COPY pnpm-lock.yaml package.json pnpm-workspace.yaml .npmrc ./
 COPY app/package.json ./app/package.json
@@ -18,7 +20,9 @@ COPY packages/ui-ssr/package.json ./packages/ui-ssr/package.json
 COPY packages/ui-spa/package.json ./packages/ui-spa/package.json
 COPY packages/ai-rich-editor/package.json ./packages/ai-rich-editor/package.json
 
-RUN pnpm install --frozen-lockfile --store-dir /tmp/pnpm-store --config.package-import-method=copy
+# pnpm store 走 BuildKit 缓存挂载：不进镜像层，重建时依赖可复用
+RUN --mount=type=cache,target=/tmp/pnpm-store \
+    pnpm install --frozen-lockfile --store-dir /tmp/pnpm-store --config.package-import-method=copy
 
 COPY . .
 
@@ -26,6 +30,13 @@ RUN pnpm --filter @fsdx/web build
 
 # 运行阶段
 FROM node:24-alpine AS runner
+
+# 统一容器时区为业务时区（Asia/Shanghai）：定时任务、日志切割、业务日期口径一致
+ENV NODE_ENV=production
+ENV TZ=Asia/Shanghai
+
+# tini 作为 PID 1：正确转发信号（SIGTERM 优雅关闭）并回收僵尸进程
+RUN apk add --no-cache tini tzdata
 
 WORKDIR /app
 
@@ -46,4 +57,5 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
 
 VOLUME ["/app/data"]
 
+ENTRYPOINT ["/sbin/tini", "--"]
 CMD ["node", ".output/server/index.mjs"]
