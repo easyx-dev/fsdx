@@ -50,14 +50,22 @@ export function registerTask(task: ScheduledTask): void {
 		cronTime: task.cronExpression,
 		timeZone: task.timeZone ?? DEFAULT_TASK_TIME_ZONE,
 		onTick: () => {
-			logger.info({ name: task.name }, "定时任务开始执行");
+			// 高频路径（每分钟任务即每分钟一次），起止日志统一用 debug，正常执行不刷 info
+			logger.debug({ name: task.name }, "定时任务开始执行");
+			const startedAt = Date.now();
 			task
 				.handler()
 				.then(() => {
-					logger.info({ name: task.name }, "定时任务执行完成");
+					logger.debug(
+						{ name: task.name, durationMs: Date.now() - startedAt },
+						"定时任务执行完成",
+					);
 				})
 				.catch((err) => {
-					logger.error({ name: task.name, err }, "定时任务执行失败");
+					logger.error(
+						{ name: task.name, err, durationMs: Date.now() - startedAt },
+						"定时任务执行失败",
+					);
 				});
 		},
 		start: true,

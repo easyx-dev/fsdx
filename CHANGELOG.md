@@ -109,6 +109,8 @@
 
 ### Fix
 
+- **定时任务 per-tick 日志降级为 debug（[infra]）**：`shared-services/scheduler` 原在每次 `onTick` 以 `info` 记录「开始执行」与「执行完成」，每分钟任务每天写入约 2880 行心跳日志、淹没业务日志；改为 `debug` 并补充 `durationMs`（失败仍为 `error`），注册期日志保持 `info`。生产默认 `info` 下正常执行静默，`LOG_LEVEL=debug` 仍可拿到完整起止与耗时。可被衍生项目吸收
+
 - **日志文件流级别跟随 `LOG_LEVEL`（[infra]）**：`shared-services/logger` 的文件流原硬编码 `level: "info"`，导致 `LOG_LEVEL=debug` 时 debug 日志只进开发控制台、永不落盘，与 `external-observability`「成功外部调用记 debug」及 `/admin/logs` 排障链路自相矛盾；改为文件流跟随配置级别（控制台生产仍仅 `warn` 以上），补 debug 落盘用例。可被衍生项目吸收
 
 - **富文本编辑器占位符修复（[infra]）**：`@easyx/editor@1.1.1` 的 Placeholder 扩展生成的空段落属性名为 `data-data-placeholder`（双 `data-` 前缀），但其自带 CSS 用 `attr(data-placeholder)` 读取导致取空、占位文本不显示。该缺陷由升级 `@easyx/editor` 至 `1.1.2` 在包内修复（空段落改为单前缀 `data-placeholder`），占位符正常显示（浏览器实测）；此前在 `admin.global.css` 添加的本地覆盖 workaround 已随包升级移除。

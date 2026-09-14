@@ -124,10 +124,15 @@ describe("registerTask", () => {
 		capturedOnTicks[0]();
 		await vi.waitFor(() => expect(handler).toHaveBeenCalledTimes(1));
 		await vi.waitFor(() =>
-			expect(mockLogger.info).toHaveBeenCalledWith(
+			expect(mockLogger.debug).toHaveBeenCalledWith(
 				expect.anything(),
 				"定时任务执行完成",
 			),
+		);
+		// 正常 tick 不写 info，避免高频任务刷屏
+		expect(mockLogger.info).not.toHaveBeenCalledWith(
+			expect.anything(),
+			"定时任务执行完成",
 		);
 	});
 
