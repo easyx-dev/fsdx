@@ -6,6 +6,24 @@
 
 ### Features
 
+- **管理端图片编辑：浏览器端裁切 / 缩放 / 压缩 / 无损优化（[infra]）**：文件管理页新增「编辑图片」入口，图片处理全部在浏览器完成，服务端零图片库、零原生依赖，规避原生二进制与 Docker 镜像 libc 一致性、Nitro 外部化等一串部署约束。
+  - **图片处理能力来自独立 npm 包 `@easyx/image-toolkit`（单包内聚）**：根入口为同构纯逻辑（`sniff` 魔数嗅探与尺寸解析、`limits` 格式能力矩阵、`lossless` 无损策略表、`operation` 操作归一化），`./ui` 为浏览器侧（wasm 引擎 + 加载状态机 + 自研组件，除 React 外不依赖 UI 库）。引擎基于 `@imagemagick/magick-wasm@0.0.43`（版本固定：glue 与 wasm 必须严格同版），运行在自建 Worker 中，wasm 与 glue 均为惰性资源、不进主 bundle。
+  - **格式能力矩阵经实测确定**（引擎 `ImageMagick 7.1.2-30 Q8 wasm32`）：可编辑 JPEG / PNG / WebP / GIF / TIFF；可输出 JPEG / PNG / WebP；AVIF 在本构建下编码产物非法且无解码 delegate，BMP / ICO / TGA 需显式指定格式才能解码，HEIC 缺解码器，SVG 为规避 XML 解析器历史外部引用风险，均不纳入。
+  - **加载进度是一等公民**：自行 fetch 后以 `wasmBinary` 形式传入（把 URL 交给库会失去进度）；状态机 `idle → downloading → instantiating → ready`，`instantiating` 阶段必须暴露否则用户以为卡死；响应带 `Content-Encoding` 时 `total` 置空、UI 降级为「已下载 x MB」而非百分比（`Content-Length` 是压缩后长度，与解压后字节基准不同，直接算会让进度冲过 100%）；并发调用共享同一次加载，`useImageEngine` + `<ImageEngineGate>` 统一提供进度 / 错误 / 重试。
+  - **wasm 地址可配**：新增客户端可见配置项 `image_engine_wasm_url`（分组「图片设置」），留空使用包内自带资源（开箱与内网可用，产物增加约 14 MB）；包构建期 `EASYX_IMAGE_TOOLKIT_REMOTE=1` 可剥离本地副本并强制注入地址（未注入时明确报错而非静默失败）。实测 wasm 14.14 MiB / gzip 5.34 MiB，初始化约 28 ms，瓶颈纯在下载。
+  - **服务端只多一个接口**：新增 `replaceFileContent`（`services/file/file.server.ts`）与 `replaceFileContentSFn`（权限码 `file:process`，审计动作 `overwrite_image`）用于覆盖原图，另存为新文件复用既有上传链路。覆盖以**魔数嗅探**结果为准判定类型与尺寸（不信任客户端声明的 MIME），换新存储名后删除旧物理文件（`deleteFile` 只做软删除，不会清理磁盘）；**格式变化时同步原始文件名后缀**（如 `照片.png` → `照片.webp`），避免列表与下载文件名与实际内容不符。
+  - **`file` 表新增 `width` / `height`**：上传时由嗅探结果顺带写入（零依赖解析 PNG / JPEG / WebP / GIF / BMP 容器头），非图片或无法解析时为 null。
+  - **安全与健壮性补齐**：`createFileDownloadResponse` 统一补 `X-Content-Type-Options: nosniff`（文件内容可由管理端替换，避免伪造类型被内联渲染）；上传链路改为以嗅探结果覆盖客户端声明的 MIME；`sniff` 单测覆盖「HTML 伪装成 image/png 被拒绝」路径；物理文件缺失（存储目录被清理造成的孤儿记录）按 404 处理并记 warn 日志，不再把带绝对路径的 ENOENT 当 500 抛给客户端。
+  - **编辑器界面为单视图左右分栏**：左侧大预览（**拖动对比**原图与处理结果）、右侧缩放 / 裁切 / 编码三组参数同屏可见、底部常驻体积增减与保存动作（默认**另存为新文件**，修正此前误用「覆盖原图」为默认值，风险提示收进 Tooltip）；参数变化后**自动防抖预览**（500ms、序号丢弃过期响应、保留上次结果不闪白），无需手动「生成」；裁切时预览区切换为占满画布的裁切台。提示语义分层：**Alert 只用于错误与需重试的失败态**，常规说明一律降级为面板内的一行小字，处理中 / 无变更等状态集中在底部状态栏，避免一屏堆叠多块提示色块。
+  - **拖动对比的「同区域对齐」**：处理结果可能来自裁切与缩放，若把两张图都按 contain 铺开，左右显示的会是不同区域、对比失去意义。实现上让两张图处于同一像素密度（原图按 `处理后比例 × 处理后宽 / 裁切区宽` 渲染并按裁切偏移平移），分隔线两侧永远是同一块像素；裁剪必须套在「容器尺寸的 wrapper」上（`clip-path` 百分比按元素自身解析、分隔线按容器定位，直接在 img 上裁剪会让裁切边界与手柄分离）；支持拖动、点击定位与键盘（←/→/Home/End）调整。
+  - **等比缩放**：新增 `resize` 子路径与 `resolveScaledSize` 纯函数（锁定原始宽高比、默认不放大、钳制上下限），UI 提供 100/75/50/25% 预设与自定义宽高联动并实时显示目标尺寸。编辑器对超过 `IMAGE_LIMITS.maxInputBytes`（50 MB）或 `maxInputPixels`（5000 万像素）的图直接提示不在浏览器内处理，避免 wasm 解码/编码吃爆内存。
+  - **无损优化升级**：`optimizeLosslessly` 支持可选目标格式与可选裁切（裁切只取像素子集，保留区像素不变，仍属无损）；`isOptimizableLosslessly` 同时要求「保真等级可用 + 该格式可被编码输出」，避免 TIFF 这类「引擎具备能力但不作为输出格式」的格式在界面上被标为可优化却静默返回 null；无损路径返回 null 时给出明确提示而非无反应。同一张真实 PNG 实测：同格式无损重压缩仅 −1.9%，而**无损转 WebP 达 −40.7% 且逐像素一致**（原始 RGBA 字节比对验证）—— PNG 的 DEFLATE 对连续色调效率天生很低，换格式才是这类图的无损最优解。
+  - **有损降色（TinyPNG 等价能力）**：新增 `ImageOperation.colors`，输出 PNG 时先做调色板量化（Riemersma 抖动）再编码 —— 即 TinyPNG 的主力手段（其官网明确说明用量化把 24-bit PNG 转成更小的 8-bit 索引图）。同一张图实测 256 色 −68.9%、128 色 −80.0%（TinyPNG 官网自称平均 75%）；界面明确提示「连续色调会出现色带，扁平插画几乎无感」。
+  - **无变更即不处理**：设置未产生实际变更时不调用引擎、不产出「结果」，界面提示「尚未做任何修改」且保存不可用 —— 避免产出比原图更大的文件；PNG 输出一律使用最高压缩级别（只影响耗时不影响画质）。
+  - **无损优化收益实测**（以 `compression-level=1` 写出的劣质源为基准，收益高度依赖源文件编码质量）：PNG −41.5%、WebP lossless −43.2%、TIFF LZW −25.7%，均经原始 RGBA 字节比对确认为逐像素无损；JPEG 无系数透传能力，质量 100 重编码仍有约 24% 像素字节差异，如实标注为「近无损」。
+  - **已知取舍**：不提供手动旋转（EXIF 方向已由引擎 `autoOrient()` 处理，手动旋转会破坏「裁切矩形基于定向后原图像素坐标」的约定）；无损优化与缩放互斥（重采样会改变像素），但允许叠加裁切。
+  - 单测覆盖魔数嗅探与尺寸解析、格式能力矩阵、操作归一化、裁切求交、等比缩放换算、无损策略、设置模型转换，以及引擎加载状态机 / 并发去重 / 进度映射 / `Content-Encoding` 降级 / Worker 异常与拖动对比交互；引擎侧另有**跑真实 wasm 的操作实测**（裁切 / 缩放 / 转格式 / 降色 / 无损转 WebP，断言产出能被 `sniffImage` 识别且无损路径逐像素一致）。**根入口零重量依赖**：服务端 import 根入口做嗅探，`.output/server` 中不得出现 `.wasm`（已作为回归检查点写入 AGENTS）。可被衍生项目吸收
+
 - **管理端仪表盘重构：四域信号整合为系统态势总览（[infra]）**：`/admin` 由 4 个静态标量卡升级为「系统健康 + 访问流量 + 用户规模 + 存储占用 + 风险与资源趋势」一屏概览，数据源自既有埋点 / 系统监控 / 统计 / 操作审计服务，不新增表与依赖。
   - **聚合入口**：新增 `services/dashboard/dashboard.overview.server.ts` 按域编排 `getClientUserTotal`（未删除客户端用户数） / `getTrackAnalytics`（PageView 口径，含环比与 Top 页面） / `getSystemOverview` / `getStorageUsage` / `getSystemMetricHistory`（资源趋势，按可选指标集合裁剪采样点） / `getOperationLogAnalytics` + 新增 `operation-log.analytics` 的 `getOperationActionCounts`（高风险动作独立聚合，不受分布 TopN 截断），并新增 `getDashboardOverviewSFn`（复用 `dashboard:view` 权限）；指标口径复用既有服务，仪表盘与各分析页数字一致。存储占用取 STORAGE_DIR 实际占用（`StorageUsage.totalBytes`，含临时文件与日志），修正此前误用 `SUM(file.size)` 且 `SUM(bigint)` 经 node-postgres 返回字符串导致显示为 0 的问题。
   - **日志摘要独立懒加载**：新增 `services/dashboard/dashboard.logs.server.ts` 与 `getDashboardErrorSummarySFn`，仅在概览返回 `sections.logs` 时按需加载；窗口收敛为今日 / 近 7 日（近 30 日自动收敛），缓存 5 分钟，避免日志文件扫描阻塞首屏；`total=0`（窗口内无匹配日志文件）与「零错误」区分展示为空态，避免误报健康；SFn 支持 `force` 供手动刷新绕过缓存重扫。
@@ -29,6 +47,8 @@
 - **通知多渠道下发 + 每用户渠道配置（[infra]）**：站内信（`message` 表）为恒定义必达的主渠道，外发渠道 email / 飞书 / 企微 / 钉钉 / 通用 webhook 作为可插拔切面，由**单个全局总闸** `notify_enabled`（系统配置，默认关闭）与**每用户配置** `user_config.notify_channels`（启用 + 目标地址）双重驱动；短信渠道仅预留适配器接口（`sendChannelSms` 占位）。新增 `shared-services/notify`（webhook 按 variant 生成 payload/签名、邮件复用 mail）、`services/user-config`（通用 jsonb 配置存取）与 `user_config` 表；通知域多态引用统一命名 `user_type/user_id`，消息类型收敛至 `constants/message-types.ts`（清理死类型 `ppt`）。管理端与客户端各提供「通知渠道设置」UI。
 
 - **事件分析升级为交互式分析工作台（[infra]）**：管理端 `/admin/track/analytics` 由静态趋势/饼图升级为交互式分析工作台——筛选区支持事件多选对比、指标切换（次数/用户数）、维度拆解（元属性白名单）、周期对比（环比/同比）、周粒度；新增事件明细排行表（次数/用户数/占比，点击下钻趋势）、用户属性与来源分布（设备类型/来源/操作系统/浏览器）、KPI 卡带周期涨跌。服务端 `getTrackAnalytics` 收敛趋势/排行/维度/KPI 聚合（空桶补零对齐、维度白名单防注入、按业务时区口径对齐），事件查询拆至 `track.events.ts`；图表经 `analytics-chart` 懒加载拆分 chunk；新增 `buildTrendConfig` 纯函数与单测。可被衍生项目吸收
+
+- **图片编辑支持「覆盖前备份原图」（[infra]）**：`replaceFileContentSFn` 新增 `backup` 入参，覆盖原图前经 `duplicateFile` 把当前原图复制为新的永久文件（文件名在主干后追加 `-backup`，保留 MIME / 尺寸，置 permanent 避免被临时清理并复用原物理文件字节，不二次上传）；备份失败即中断覆盖，避免「原图被覆盖却无备份」。覆盖失败（含并发删除 / 写盘异常）时经新增的 `removeFile`（物理删除，区别于用户侧软删除）回滚刚创建的备份，审计也仅在整体成功后写入，不留「已回滚备份」的脏记录；备份名超长时按 `original_name` 的 `varchar(500)` 上限兜底截断。备份与覆盖分别写 `backup_image` / `overwrite_image` 审计。管理端图片编辑器底部 footer 新增「覆盖前备份原图」勾选项，并优化布局（左侧选项 + 处理体积提示、右侧带图标按钮，间距对齐）。可被衍生项目吸收
 
 ### Infrastructure
 

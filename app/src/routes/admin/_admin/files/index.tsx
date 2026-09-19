@@ -4,33 +4,22 @@
 import {
 	ClockCircleOutlined,
 	CloudUploadOutlined,
-	DownloadOutlined,
-	EyeOutlined,
-	SwapOutlined,
+	EditOutlined,
 } from "@ant-design/icons";
-import { formatBytes } from "@fsdx/lib/format-bytes";
+import { isImageMimeType, isProcessableMimeType } from "@easyx/image-toolkit";
 import { message } from "@fsdx/ui-spa/antd-static";
-import { ProTable, TableOperate } from "@fsdx/ui-spa/table";
+import { ProTable } from "@fsdx/ui-spa/table";
 import { createFileRoute, useRouter } from "@tanstack/react-router";
 import type { TableProps, UploadProps } from "antd";
-import {
-	Button,
-	Col,
-	Input,
-	Modal,
-	Row,
-	Segmented,
-	Space,
-	Tag,
-	Tooltip,
-	Upload,
-} from "antd";
+import { Button, Col, Input, Modal, Row, Segmented, Upload } from "antd";
 import { useRef, useState } from "react";
 import { AdminPageContent } from "#/components/admin";
 import { getFileListSFn, uploadFileSFn } from "#/services/file/file.functions";
 import type { FileRecord } from "#/services/file/file.server";
 import { callSfn } from "#/utils/sfn-error";
+import { FileImageEditor } from "./-mods/FileImageEditor";
 import { deleteFileSFn, makePermanentSFn } from "./-mods/files.functions";
+import { createFilesColumns } from "./-mods/filesColumns";
 
 export const Route = createFileRoute("/admin/_admin/files/")({
 	component: FilesPage,
@@ -50,6 +39,8 @@ function FilesPage() {
 		"ascend" | "descend" | undefined
 	>();
 	const [previewFile, setPreviewFile] = useState<FileRecord | null>(null);
+	/** 待编辑图片（非 null 时打开图片编辑器） */
+	const [editingFile, setEditingFile] = useState<FileRecord | null>(null);
 
 	/** 按当前条件刷新文件列表 */
 	const refreshFiles = async (params?: {
@@ -150,116 +141,34 @@ function FilesPage() {
 		await doUpload(file as File, true, onSuccess, onError);
 	};
 
-	/** 判断是否为图片类型 */
-	const isImage = (mimeType: string) => mimeType.startsWith("image/");
+	/** 临时文件转永久 */
+	const handleMakePermanent = async (record: FileRecord) => {
+		try {
+			await callSfn(makePermanentSFn({ data: { id: record.id } }));
+			message.success("已转为永久");
+			await refreshFiles();
+		} catch {
+			// callSfn 已提示
+		}
+	};
 
-	const columns = [
-		{
-			title: "文件名",
-			dataIndex: "originalName",
-			key: "originalName",
-			ellipsis: true,
-			width: 200,
-		},
-		{
-			title: "大小",
-			dataIndex: "size",
-			key: "size",
-			width: 120,
-			sorter: true,
-			render: (_: unknown, record: FileRecord) => formatBytes(record.size),
-		},
-		{
-			title: "状态",
-			dataIndex: "status",
-			key: "status",
-			width: 100,
-			render: (_: unknown, record: FileRecord) => (
-				<Space size={4}>
-					{record.status === "permanent" ? (
-						<Tag color="green">永久</Tag>
-					) : (
-						<>
-							<Tag color="gold">临时</Tag>
-							<Tooltip title="转为永久">
-								<Button
-									type="text"
-									size="small"
-									icon={<SwapOutlined style={{ color: "var(--s-success)" }} />}
-									style={{ paddingInline: 4, color: "var(--s-success)" }}
-									onClick={async () => {
-										try {
-											await callSfn(
-												makePermanentSFn({ data: { id: record.id } }),
-											);
-											message.success("已转为永久");
-											await refreshFiles();
-										} catch {
-											// callSfn 已提示
-										}
-									}}
-								/>
-							</Tooltip>
-						</>
-					)}
-				</Space>
-			),
-		},
-		{
-			title: "上传时间",
-			dataIndex: "createdAt",
-			key: "createdAt",
-			width: 185,
-			sorter: true,
-			valueType: "dateTime",
-		},
-		{
-			title: "更新时间",
-			dataIndex: "updatedAt",
-			key: "updatedAt",
-			width: 185,
-			valueType: "dateTime",
-		},
-		{
-			title: "操作",
-			key: "actions",
-			fixed: "right" as const,
-			render: (_: unknown, record: FileRecord) => (
-				<TableOperate>
-					{isImage(record.mimeType) && (
-						<TableOperate.Custom>
-							<Button
-								type="link"
-								size="small"
-								icon={<EyeOutlined />}
-								onClick={() => setPreviewFile(record)}
-							>
-								预览
-							</Button>
-						</TableOperate.Custom>
-					)}
-					<TableOperate.Custom>
-						<a href={`/file/r/${record.id}`} target="_blank" rel="noreferrer">
-							<Button type="link" size="small" icon={<DownloadOutlined />}>
-								下载
-							</Button>
-						</a>
-					</TableOperate.Custom>
-					<TableOperate.Delete
-						onConfirm={async () => {
-							try {
-								await callSfn(deleteFileSFn({ data: { id: record.id } }));
-								message.success("已删除");
-								await refreshFiles();
-							} catch {
-								// callSfn 已提示
-							}
-						}}
-					/>
-				</TableOperate>
-			),
-		},
-	];
+	/** 删除文件 */
+	const handleDelete = async (record: FileRecord) => {
+		try {
+			await callSfn(deleteFileSFn({ data: { id: record.id } }));
+			message.success("已删除");
+			await refreshFiles();
+		} catch {
+			// callSfn 已提示
+		}
+	};
+
+	const columns = createFilesColumns({
+		onPreview: setPreviewFile,
+		onEdit: setEditingFile,
+		onMakePermanent: handleMakePermanent,
+		onDelete: handleDelete,
+	});
 
 	return (
 		<AdminPageContent title="文件管理">
@@ -345,12 +254,25 @@ function FilesPage() {
 			<Modal
 				open={!!previewFile}
 				title={previewFile?.originalName}
-				footer={null}
 				onCancel={() => setPreviewFile(null)}
 				width="auto"
 				centered
+				footer={
+					previewFile && isProcessableMimeType(previewFile.mimeType) ? (
+						<Button
+							type="primary"
+							icon={<EditOutlined />}
+							onClick={() => {
+								setEditingFile(previewFile);
+								setPreviewFile(null);
+							}}
+						>
+							编辑图片
+						</Button>
+					) : null
+				}
 			>
-				{previewFile && isImage(previewFile.mimeType) && (
+				{previewFile && isImageMimeType(previewFile.mimeType) && (
 					<img
 						src={`/file/r/${previewFile.id}`}
 						alt={previewFile.originalName}
@@ -358,6 +280,15 @@ function FilesPage() {
 					/>
 				)}
 			</Modal>
+
+			{/* 图片编辑器：裁切与压缩在浏览器完成，保存时写回服务端 */}
+			<FileImageEditor
+				file={editingFile}
+				onClose={() => setEditingFile(null)}
+				onSaved={() => {
+					void refreshFiles();
+				}}
+			/>
 		</AdminPageContent>
 	);
 }

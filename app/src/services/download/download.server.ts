@@ -71,6 +71,8 @@ export function createFileDownloadResponse(
 		headers: {
 			"Content-Type": opts.mimeType ?? "application/octet-stream",
 			"Content-Disposition": dispositionParts.join("; "),
+			// 禁止 MIME 嗅探：文件内容可被管理端替换，避免伪造类型被当作 HTML 渲染
+			"X-Content-Type-Options": "nosniff",
 		},
 	});
 }

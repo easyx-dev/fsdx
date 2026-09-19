@@ -50,14 +50,18 @@ vi.mock("#/db", () => ({ db: mockDb }));
 import {
 	cleanExpiredFiles,
 	deleteFile,
+	duplicateFile,
 	getFileInfo,
 	getFileList,
 	makePermanent,
 	readFileContent,
+	removeFile,
+	replaceFileContent,
 	sha256,
 	TEMP_EXPIRE_HOURS,
 	uploadFile,
 } from "#/services/file/file.server";
+import { logger } from "#/shared-services/logger";
 
 const fileRecord = {
 	id: "f-1",
@@ -110,6 +114,26 @@ describe("readFileContent", () => {
 
 		const result = await readFileContent("不存在");
 		expect(result).toBeNull();
+	});
+
+	it("物理文件缺失（孤儿记录）时返回 null 而非抛出", async () => {
+		mockRows.mockResolvedValue([fileRecord]);
+		const enoent = Object.assign(new Error("ENOENT"), { code: "ENOENT" });
+		mockStorage.read.mockRejectedValue(enoent);
+
+		const result = await readFileContent("f-1");
+
+		expect(result).toBeNull();
+		expect(vi.mocked(logger.warn)).toHaveBeenCalled();
+	});
+
+	it("其他 IO 异常仍然向上抛出，避免掩盖真实故障", async () => {
+		mockRows.mockResolvedValue([fileRecord]);
+		mockStorage.read.mockRejectedValue(
+			Object.assign(new Error("EACCES"), { code: "EACCES" }),
+		);
+
+		await expect(readFileContent("f-1")).rejects.toThrow("EACCES");
 	});
 });
 
@@ -354,5 +378,238 @@ describe("getFileInfo", () => {
 
 		const name = await getFileInfo("不存在");
 		expect(name).toBeNull();
+	});
+});
+
+describe("replaceFileContent", () => {
+	const buffer = Buffer.from("新的图片内容");
+
+	beforeEach(() => vi.clearAllMocks());
+
+	/** 配置 update 链，返回可断言的 set mock */
+	function prepareUpdate() {
+		const whereMock = vi.fn(() => Promise.resolve());
+		const setMock = vi.fn((_data: unknown) => ({ where: whereMock }));
+		mockDb.update.mockReturnValue({ set: setMock } as never);
+		return setMock;
+	}
+
+	it("记录不存在时返回 null 且不落盘", async () => {
+		mockRows.mockResolvedValue([]);
+
+		const result = await replaceFileContent("f-1", {
+			buffer,
+			mimeType: "image/png",
+			extension: ".png",
+		});
+
+		expect(result).toBeNull();
+		expect(mockStorage.save).not.toHaveBeenCalled();
+	});
+
+	it("覆盖成功：落盘新文件、更新记录并删除旧物理文件", async () => {
+		mockRows.mockResolvedValue([fileRecord]);
+		mockStorage.save.mockResolvedValue(undefined);
+		mockStorage.delete.mockResolvedValue(undefined);
+		const setMock = prepareUpdate();
+
+		const result = await replaceFileContent("f-1", {
+			buffer,
+			mimeType: "image/png",
+			extension: ".png",
+			width: 800,
+			height: 600,
+		});
+
+		expect(result).toEqual({
+			sizeBefore: fileRecord.size,
+			sizeAfter: buffer.length,
+		});
+		expect(mockStorage.save).toHaveBeenCalledTimes(1);
+		expect(setMock.mock.calls[0][0]).toMatchObject({
+			mimeType: "image/png",
+			size: buffer.length,
+			width: 800,
+			height: 600,
+		});
+		// 旧物理文件必须被清理（deleteFile 只做软删除）
+		expect(mockStorage.delete).toHaveBeenCalledWith(fileRecord.path);
+	});
+
+	it("格式未变化时保持原始文件名不变", async () => {
+		mockRows.mockResolvedValue([
+			{ ...fileRecord, mimeType: "image/png", originalName: "照片.png" },
+		]);
+		mockStorage.save.mockResolvedValue(undefined);
+		mockStorage.delete.mockResolvedValue(undefined);
+		const setMock = prepareUpdate();
+
+		await replaceFileContent("f-1", {
+			buffer,
+			mimeType: "image/png",
+			extension: ".png",
+		});
+
+		expect(setMock.mock.calls[0][0]).toMatchObject({
+			originalName: "照片.png",
+		});
+	});
+
+	it("格式变化时同步原始文件名后缀，避免与实际内容不符", async () => {
+		mockRows.mockResolvedValue([
+			{ ...fileRecord, mimeType: "image/png", originalName: "照片.png" },
+		]);
+		mockStorage.save.mockResolvedValue(undefined);
+		mockStorage.delete.mockResolvedValue(undefined);
+		const setMock = prepareUpdate();
+
+		await replaceFileContent("f-1", {
+			buffer,
+			mimeType: "image/webp",
+			extension: ".webp",
+		});
+
+		expect(setMock.mock.calls[0][0]).toMatchObject({
+			originalName: "照片.webp",
+			mimeType: "image/webp",
+		});
+	});
+
+	it("旧物理文件删除失败时仅告警，不影响覆盖结果", async () => {
+		mockRows.mockResolvedValue([fileRecord]);
+		mockStorage.save.mockResolvedValue(undefined);
+		mockStorage.delete.mockRejectedValue(new Error("EACCES"));
+		prepareUpdate();
+
+		const result = await replaceFileContent("f-1", {
+			buffer,
+			mimeType: "image/png",
+			extension: ".png",
+		});
+
+		expect(result).not.toBeNull();
+		expect(vi.mocked(logger.warn)).toHaveBeenCalled();
+	});
+});
+
+describe("duplicateFile", () => {
+	const buffer = Buffer.from("原图字节");
+
+	beforeEach(() => vi.clearAllMocks());
+
+	/** 配置 insert 链，返回可断言的 values mock */
+	function prepareInsert(returned: unknown) {
+		const valuesMock = vi.fn((_data: unknown) => ({
+			returning: vi.fn(() => Promise.resolve([returned])),
+		}));
+		mockDb.insert.mockReturnValue({ values: valuesMock } as never);
+		return valuesMock;
+	}
+
+	it("记录或物理文件不存在时返回 null 且不落盘", async () => {
+		mockRows.mockResolvedValue([]);
+
+		expect(await duplicateFile("f-1")).toBeNull();
+		expect(mockStorage.save).not.toHaveBeenCalled();
+		expect(mockDb.insert).not.toHaveBeenCalled();
+	});
+
+	it("复制为新的永久文件：落盘、文件名追加 -backup 且保留元数据", async () => {
+		mockRows.mockResolvedValue([
+			{
+				...fileRecord,
+				originalName: "照片.png",
+				mimeType: "image/png",
+				path: "2024-01-01/uuid.png",
+				width: 1016,
+				height: 1016,
+			},
+		]);
+		mockStorage.read.mockResolvedValue(buffer);
+		mockStorage.save.mockResolvedValue(undefined);
+		const copyRecord = {
+			...fileRecord,
+			id: "f-copy",
+			originalName: "照片-backup.png",
+			status: "permanent" as const,
+			expiredAt: null,
+		};
+		const valuesMock = prepareInsert(copyRecord);
+
+		const copy = await duplicateFile("f-1");
+
+		expect(copy?.id).toBe("f-copy");
+		expect(mockStorage.save).toHaveBeenCalledTimes(1);
+		const values = valuesMock.mock.calls[0][0] as Record<string, unknown>;
+		expect(values).toMatchObject({
+			originalName: "照片-backup.png",
+			mimeType: "image/png",
+			status: "permanent",
+			expiredAt: null,
+			width: 1016,
+			height: 1016,
+		});
+		expect(values.path).toMatch(/^\d{4}-\d{2}-\d{2}\/[0-9a-f-]{36}\.png$/);
+	});
+
+	it("无扩展名文件备份名不追加后缀", async () => {
+		mockRows.mockResolvedValue([{ ...fileRecord, originalName: "README" }]);
+		mockStorage.read.mockResolvedValue(buffer);
+		mockStorage.save.mockResolvedValue(undefined);
+		const valuesMock = prepareInsert({ ...fileRecord, id: "f-copy" });
+
+		await duplicateFile("f-1");
+
+		const values = valuesMock.mock.calls[0][0] as Record<string, unknown>;
+		expect(values.originalName).toBe("README-backup");
+	});
+
+	it("扩展名部分超过列上限时最终名称仍不超过 500", async () => {
+		// 最后一个点在开头，扩展名部分长达 496 字符，仅裁剪主干无法兜住
+		const originalName = `.${"x".repeat(495)}`;
+		mockRows.mockResolvedValue([{ ...fileRecord, originalName }]);
+		mockStorage.read.mockResolvedValue(buffer);
+		mockStorage.save.mockResolvedValue(undefined);
+		const valuesMock = prepareInsert({ ...fileRecord, id: "f-copy" });
+
+		await duplicateFile("f-1");
+
+		const values = valuesMock.mock.calls[0][0] as Record<string, unknown>;
+		const name = values.originalName as string;
+		expect(name.length).toBeLessThanOrEqual(500);
+		expect(name.startsWith("-backup")).toBe(true);
+	});
+});
+
+describe("removeFile", () => {
+	beforeEach(() => vi.clearAllMocks());
+
+	it("记录不存在时不删除任何内容", async () => {
+		mockRows.mockResolvedValue([]);
+
+		await removeFile("不存在");
+
+		expect(mockDb.delete).not.toHaveBeenCalled();
+		expect(mockStorage.delete).not.toHaveBeenCalled();
+	});
+
+	it("存在时物理删除记录并清理磁盘文件", async () => {
+		mockRows.mockResolvedValue([
+			{ ...fileRecord, path: "2024-01-01/uuid.txt" },
+		]);
+		mockStorage.delete.mockResolvedValue(undefined);
+
+		await removeFile("f-1");
+
+		expect(mockDb.delete).toHaveBeenCalled();
+		expect(mockStorage.delete).toHaveBeenCalledWith("2024-01-01/uuid.txt");
+	});
+
+	it("磁盘文件删除失败仅告警，不抛错", async () => {
+		mockRows.mockResolvedValue([fileRecord]);
+		mockStorage.delete.mockRejectedValue(new Error("EACCES"));
+
+		await expect(removeFile("f-1")).resolves.toBeUndefined();
+		expect(vi.mocked(logger.warn)).toHaveBeenCalled();
 	});
 });
