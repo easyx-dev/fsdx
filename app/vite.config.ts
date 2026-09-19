@@ -16,6 +16,10 @@ const appVersion = (
 
 const config = defineConfig({
 	resolve: { tsconfigPaths: true },
+	// @easyx/image-toolkit 以 `new Worker(new URL('./engine/worker.js', import.meta.url))`
+	// 与 `new URL('./engine/magick.wasm', import.meta.url)` 静态引用引擎资源，
+	// 需由 Vite 处理其 dist 产物；npm 依赖默认会被预打包导致资源丢失，故排除
+	optimizeDeps: { exclude: ["@easyx/image-toolkit"] },
 	define: {
 		__APP_VERSION__: JSON.stringify(appVersion),
 	},

@@ -31,7 +31,8 @@ description: >
 |------|------|
 | 纯函数/类（非单例、不读 env、不碰 DB/框架） | `@fsdx/lib` |
 | app 前端工具（无状态或仅轻量模块内状态、不读服务端 env） | `src/utils/` |
-| shadcn 组件 / antd 组件 / AI 富文本工作台 | `@fsdx/ui-ssr` / `@fsdx/ui-spa` / `@fsdx/ai-rich-editor` |
+| shadcn 组件 / antd 组件 | `@fsdx/ui-ssr` / `@fsdx/ui-spa` |
+| AI 富文本工作台 / 图片处理 | 外部 npm 包 `@easyx/ai-rich-editor` / `@easyx/image-toolkit`（不在本仓库维护） |
 | app 级服务单例 / 系统级共享域（读 env、引 logger、需全局态） | `src/shared-services/` |
 | 业务逻辑 / 领域服务 | `src/services` 或路由层 |
 

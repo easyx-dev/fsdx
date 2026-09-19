@@ -187,7 +187,7 @@ __root.tsx                    # HTML shell，按 pathname 前缀分发 AdminRoot
 
 ## 目录职责
 
-目录层级与各目录职责见 [AGENTS.md「工程结构」](../AGENTS.md)（唯一目录树）与「包边界约定」章节；跨目录依赖遵循 [AGENTS.md「Server Function 依赖方向」](../AGENTS.md) 硬规则（`routes → services → (lib 基础库) → db`），缓存实例归属与可导入方约束见「内存缓存约定」。包级导出清单与集成约束见各子包 README（[lib](../packages/lib/README.md) / [ui-ssr](../packages/ui-ssr/README.md) / [ui-spa](../packages/ui-spa/README.md) / [ai-rich-editor](../packages/ai-rich-editor/README.md)）。
+目录层级与各目录职责见 [AGENTS.md「工程结构」](../AGENTS.md)（唯一目录树）与「包边界约定」章节；跨目录依赖遵循 [AGENTS.md「Server Function 依赖方向」](../AGENTS.md) 硬规则（`routes → services → (lib 基础库) → db`），缓存实例归属与可导入方约束见「内存缓存约定」。包级导出清单与集成约束见各子包 README（[lib](../packages/lib/README.md) / [ui-ssr](../packages/ui-ssr/README.md) / [ui-spa](../packages/ui-spa/README.md)）；AI 富文本（`@easyx/ai-rich-editor`）与图片处理（`@easyx/image-toolkit`）为外部 npm 包，约束见各自 npm 包 README。
 
 ## 相关文档
 
@@ -196,7 +196,6 @@ __root.tsx                    # HTML shell，按 pathname 前缀分发 AdminRoot
 | [@fsdx/lib README](../packages/lib/README.md) | @fsdx/lib 导出清单与边界 |
 | [@fsdx/ui-ssr README](../packages/ui-ssr/README.md) | @fsdx/ui-ssr 组件清单与集成约定 |
 | [@fsdx/ui-spa README](../packages/ui-spa/README.md) | @fsdx/ui-spa 组件清单与集成约定 |
-| [@fsdx/ai-rich-editor README](../packages/ai-rich-editor/README.md) | @fsdx/ai-rich-editor 定位、布局、对话契约、样式作用域化 |
 | [认证与权限](auth-permission-model.md) | 双用户体系、RBAC、JWT、中间件链路 |
 | [数据库设计](database-design.md) | 表清单、ER 图、列命名约定、约束汇总 |
 | [缓存体系](cache-system.md) | MemoryCache 与缓存实例 |

@@ -74,6 +74,18 @@
 
 ### Refactor
 
+- **依赖包破坏性升级适配：AI 富文本工作台与图片处理套件（[infra]）**：`@easyx/ai-rich-editor` 0.1 → 2.0、`@easyx/image-toolkit` 0.1 → 1.0，两处接入面按新版 API 同步改造。
+  - **`/api/ai-chat` 由 AG-UI 协议改为 OpenAI 兼容端点**：新版编辑器把宿主接入面收敛为「已鉴权的 OpenAI Chat Completions 端点 URL 或自定义适配器函数」，旧版 `endpointUrl` + `requestMeta`（TanStack AI `useChat` / AG-UI SSE）不再适用。端点改为 `{ messages, stream }` 入参、原样透传厂商 SSE（逐块 `data:` + `data: [DONE]` 终止哨兵），推理内容 / `finish_reason` / `usage` 保持厂商原始形态；厂商选择经 `?providerId=` 查询串透传（OpenAI 协议体不携带该信息）。新增 `shared-services/ai/ai.proxy.server.ts`（请求体 zod 校验 + SSE 编码 + 错误体归一化），`ai.provider.ts` 抽出 `buildOpenAiClient` 并将原始 client 纳入 provider 缓存，新增 `getAiRawClient` 复用同一份缓存；鉴权（`AI_CHAT` 权限）与操作审计链路不变。
+  - **演示页接入面替换**：`endpointUrl`/`requestMeta` → `chat`（厂商经查询串拼入 URL），`config.notify` → 顶层 `onNotify` 并补 `onError` 诊断回调；`ClientOnly` + 动态 `import()` 隔离约定不变。
+  - **图片编辑器改为「宿主弹窗 + 包内内容区」**：1.0 收窄公开导出（`ImageEditorModal`、对比滑块、裁切台等内部组件不再导出），`FileImageEditor` 改用 antd `Modal` 承载 `<ImageEditor onResultChange>`，宿主持有处理状态并实现「另存为新文件（默认主按钮）/ 覆盖原图（带不可恢复风险提示）」，底部展示处理前后体积；`ImageProcessResult` 类型与根入口纯逻辑 API 未变，服务端嗅探 / 列定义 / 上传覆盖链路零改动。可被衍生项目吸收
+
+- **AI 富文本工作台与图片处理套件抽离为独立 npm 包（[infra]）**：原仓库内 `packages/ai-rich-editor`、`packages/image` 改由独立仓库维护并发布为 `@easyx/ai-rich-editor` / `@easyx/image-toolkit`，本仓库删除这两个包、改为 npm 依赖（`^0.1.0`），后续包内演进经版本升级即可获得，基座不再背负两个重客户端包的构建与测试成本。
+  - **接入面变化**：`@fsdx/image` → `@easyx/image-toolkit`（子路径 `./admin` → `./ui`）、`@fsdx/ai-rich-editor` → `@easyx/ai-rich-editor`；根入口纯逻辑导出、`ImageEditorModal` / `AiRichEditor` props 与既有调用方代码保持一致，仅需替换包名与子路径。
+  - **样式与依赖自包含**：两个包均以包内 SCSS + CSS 变量内联样式、UI 自研（除 React 外不依赖 UI 库），宿主 `admin.global.css` / `ssr.global.css` 移除对应 `@source`，`antd` / `@ant-design/icons` / `@ant-design/x` / `@ant-design/x-markdown` / `react-easy-crop` 等包内依赖随之从 lockfile 消失（-91 个包）。
+  - **打包约束写入 AGENTS**：`@easyx/image-toolkit` 的 Worker / wasm 以 `new Worker(new URL(...))` 静态引用，宿主需 `optimizeDeps.exclude` 否则预打包丢失资源；`@easyx/ai-rich-editor` 内含 monaco（模块顶层访问 `window`），宿主页面必须 `ClientOnly` + 动态 `import()` 引入，否则服务端加载即崩（demo 页已按此改造）。
+  - **回归检查点**：`pnpm build` 后 `.output/server` 内不得出现 `.wasm`、客户端 `assets/` 需产出 worker 与 `magick.wasm`（本次已实测生产构建 + 真实浏览器：图片编辑走通引擎、Monaco 懒加载可用）。
+  - 删除本地包后 `packages/*` 仅保留 `lib` / `ui-ssr` / `ui-spa`，`Dockerfile` 对应 `COPY packages/*/package.json` 行同步移除；pnpm 供应链策略自动把两个新包写入 `pnpm-workspace.yaml` 的 `minimumReleaseAgeExclude`。可被衍生项目吸收
+
 - **字节格式化统一到 `@fsdx/lib/format-bytes`（[infra]）**：原先散落 3 处各自实现的 `formatSize`（管理端文件管理、资源管理器、`ui-spa` 文件库选择弹窗）能力与精度不一致（仅到 MB、GB 精度各自为政），统一收敛为 `@fsdx/lib/format-bytes` 的 `formatBytes`（B → TB 全阶梯，B 级不带小数，非法入参返回 `0 B`）并补齐单测；`ui-spa/upload` 的 `formatSize` 保留为 `formatBytes` 别名并标注 `@deprecated`，兼容既有引用与文档化 API。可被衍生项目吸收
 
 - **全量代码审查整改：命名一致性收敛（[infra]）**：
@@ -128,7 +140,17 @@
 
 ### 依赖升级
 
+- `@easyx/ai-rich-editor@0.1.0`、`@easyx/image-toolkit@0.1.0`：新增依赖，替代仓库内 `@fsdx/ai-rich-editor` / `@fsdx/image` workspace 包（发布自独立仓库）。
+
+- `@easyx/ai-rich-editor` `^0.1.0` → `^2.0.0`、`@easyx/image-toolkit` `^0.1.0` → `^1.0.0`：均为破坏性变更，接入改造见 Refactor。
+
+- `@easyx/editor` `^1.1.2` → `^2.0.0`：破坏性变更仅为公开类型命名收敛（`EasyxEditorOptions` → `EditorOptions`，其余 `ThemeType` / `ContentType` / `EventHandler` 等同理），`createEditor` API、选项字段、CSS 变量与 DOM 类名均不变；`@fsdx/ui-spa` 的 `RichEditor` 包装层同步改名，peer / dev 依赖一并升级。
+
 ### Breaking Changes
+
+- ⚠️ **`/api/ai-chat` 协议变更与两个外部包大版本升级（[infra]）**：`/api/ai-chat` 由 TanStack AI AG-UI SSE 改为 OpenAI Chat Completions 兼容（入参 `{ messages, stream }`，出参厂商原始 SSE + `[DONE]`；厂商经 `?providerId=` 透传），下游若有自定义消费方需同步改造；`@easyx/ai-rich-editor` 升至 2.x（`endpointUrl` / `requestMeta` / `config.notify` → `chat` / 顶层 `onNotify`）、`@easyx/image-toolkit` 升至 1.x（`ImageEditorModal` 移除，改为宿主弹窗 + `ImageEditor`）。
+
+- ⚠️ **仓库内 `@fsdx/ai-rich-editor` / `@fsdx/image` 包移除（[infra]）**：改由独立发布的 `@easyx/ai-rich-editor` / `@easyx/image-toolkit` 提供，下游同步需替换依赖与 import（`@fsdx/image` → `@easyx/image-toolkit`、`@fsdx/image/admin` → `@easyx/image-toolkit/ui`、`@fsdx/ai-rich-editor` → `@easyx/ai-rich-editor`），删除本地包目录与 `Dockerfile` 中的对应 `COPY packages/*/package.json` 行；AI 富编辑器宿主页面需改为 `ClientOnly` + 动态 `import()` 引入。
 
 - ⚠️ **移除 `@fsdx/ui-spa/sfn-helpers`（[infra]）**：`safeSfnCall` / `unwrapSfn` 由 `#/utils/sfn-error` 的 `callSfn` / `sfnUnwrap` 取代（客户端调用统一经该模块）。
 

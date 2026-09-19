@@ -26,7 +26,7 @@ L5  docs/               背景与设计（人类向），按性质分三子类�
     └─ archive/     历史档案（被推翻的设计、已完成计划）
 ```
 
-> 组件/包级 API 与方案详解归各包 README（subpath README 为包边界权威文档，如 `@fsdx/ai-rich-editor/README.md`），`docs/` 仅作索引指引，不重复维护。
+> 组件/包级 API 与方案详解归各包 README（subpath README 为包边界权威文档，如 `@fsdx/ui-spa/README.md`），`docs/` 仅作索引指引，不重复维护；已抽离为独立 npm 包的组件（`@easyx/ai-rich-editor` / `@easyx/image-toolkit`）以其 npm 包 README 为单一事实来源。
 
 > fsdx-web 无 `.agents/templates` 层（代码骨架由 skills 内嵌示例承载）。skills / commands / checklists 实体均在 `.agents/` 下；`.opencode/` 内为指向 `.agents/` 的软链视图（`.opencode/skills` / `.opencode/commands`），供 opencode 工具识别与加载（opencode 约定仅识别这两类）；checklists 为 AI 自查参考，无 opencode 软链视图，内容修改一律以 `.agents/` 为准。
 

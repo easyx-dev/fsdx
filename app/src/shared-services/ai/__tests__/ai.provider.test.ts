@@ -33,6 +33,7 @@ import {
 	AI_TIMEOUT_MS,
 	getAiAdapter,
 	getAiProvider,
+	getAiRawClient,
 	readProviderConfig,
 	readProviders,
 	resolveModel,
@@ -290,5 +291,36 @@ describe("getAiAdapter", () => {
 	it("未配置时返回 null", async () => {
 		mockGetConfig.mockResolvedValue("{}");
 		expect(await getAiAdapter()).toBeNull();
+	});
+});
+
+describe("getAiRawClient", () => {
+	it("返回目标厂商的原始 OpenAI 客户端与默认模型，且与 provider 共用同一份缓存", async () => {
+		setConfig(PROVIDERS);
+		const ready = await getAiRawClient("moonshot");
+		expect(ready?.model).toBe("kimi-k2-0711-preview");
+		expect(ready?.client).toBeDefined();
+		expect(MockOpenAI).toHaveBeenCalledTimes(1);
+
+		// provider 路径命中同一缓存槽，不再重建 client
+		await getAiProvider("moonshot");
+		expect(MockOpenAI).toHaveBeenCalledTimes(1);
+	});
+
+	it("显式模型 id 时用对应模型", async () => {
+		setConfig(PROVIDERS);
+		const ready = await getAiRawClient("deepseek", "deepseek-reasoner");
+		expect(ready?.model).toBe("deepseek-reasoner");
+	});
+
+	it("厂商未命中或模型未命中返回 null", async () => {
+		setConfig(PROVIDERS);
+		expect(await getAiRawClient("nope")).toBeNull();
+		expect(await getAiRawClient("deepseek", "nope")).toBeNull();
+	});
+
+	it("未配置时返回 null", async () => {
+		mockGetConfig.mockResolvedValue("{}");
+		expect(await getAiRawClient()).toBeNull();
 	});
 });

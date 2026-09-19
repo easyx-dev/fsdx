@@ -62,7 +62,8 @@ pnpm dev
 | [@fsdx/lib](packages/lib/README.md) | 纯逻辑库：同构纯工具（ms/export/cn/match-permission/date-format/error-utils）+ 通用非单例基础设施（cache/captcha/semaphore/task-manager/batch-writer/storage 契约），无 React |
 | [@fsdx/ui-ssr](packages/ui-ssr/README.md) | shadcn 基础组件（前台 SSR），颜色 token 由宿主注入 |
 | [@fsdx/ui-spa](packages/ui-spa/README.md) | antd 管理端组件（表格/上传/编辑器/静态方法桥接），antd 单实例 |
-| [@fsdx/ai-rich-editor](packages/ai-rich-editor/README.md) | AI 驱动「代码编辑 + 实时预览」富文本工作台（重客户端组件，antd 单实例） |
+
+> AI 富文本工作台（`@easyx/ai-rich-editor`）与图片处理套件（`@easyx/image-toolkit`）已抽离为独立发布的 npm 包，不在本仓库内维护，接入方式见各自 npm 包 README。
 
 ## 文档
 
