@@ -126,6 +126,8 @@
 
 ### Fix
 
+- **e2e 隔离库名解析修复（[infra]）**：`e2e/helpers/env.ts` 的 `E2E_DB_NAME` 在 `APP_DIR` 初始化之前求值，`loadAppEnv()` 读取 `APP_DIR/.env` 触发 TDZ 抛错并被 `try/catch` 静默吞掉，导致 `DATABASE_URL` 为空、Playwright 配置加载即 `Invalid URL`，`pnpm e2e` 完全不可用；调整声明顺序后恢复（现状全量 e2e 可跑）。可被衍生项目吸收
+
 - **富文本编辑器占位符修复（[infra]）**：`@easyx/editor@1.1.1` 的 Placeholder 扩展生成的空段落属性名为 `data-data-placeholder`（双 `data-` 前缀），但其自带 CSS 用 `attr(data-placeholder)` 读取导致取空、占位文本不显示。该缺陷由升级 `@easyx/editor` 至 `1.1.2` 在包内修复（空段落改为单前缀 `data-placeholder`），占位符正常显示（浏览器实测）；此前在 `admin.global.css` 添加的本地覆盖 workaround 已随包升级移除。
 
 - **错误兜底组件语义令牌化（[infra]）**：`ErrorFallback` 的 `DefaultErrorFallback`/`NotFoundFallback` 硬编码 zinc 色值换为语义令牌（`bg-background`/`text-foreground-secondary`/`bg-danger` 等）并删除注释掉的死代码，修复暗色主题下 404/错误页失控与直角风格不一致。

@@ -7,18 +7,19 @@ import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import dotenv from "dotenv";
 
-/**
- * e2e 专用隔离数据库名：可经 E2E_DB_NAME 覆盖，默认取开发库名 + _e2e 后缀（避免硬编码品牌库名）
- */
-export const E2E_DB_NAME =
-	process.env.E2E_DB_NAME ??
-	`${new URL(loadAppEnv().DATABASE_URL).pathname.slice(1) || "app"}_e2e`;
-
 /** app 包目录（由本文件位置向上两级） */
 export const APP_DIR = resolve(
 	dirname(fileURLToPath(import.meta.url)),
 	"../..",
 );
+
+/**
+ * e2e 专用隔离数据库名：可经 E2E_DB_NAME 覆盖，默认取开发库名 + _e2e 后缀（避免硬编码品牌库名）
+ * 注意：必须在 APP_DIR 初始化之后求值（loadAppEnv 依赖 APP_DIR）
+ */
+export const E2E_DB_NAME =
+	process.env.E2E_DB_NAME ??
+	`${new URL(loadAppEnv().DATABASE_URL).pathname.slice(1) || "app"}_e2e`;
 
 /** 加载 app/.env 与 app/.env.local（.env.local 优先级更高，与 dev 行为一致） */
 function loadAppEnv(): Record<string, string> {
