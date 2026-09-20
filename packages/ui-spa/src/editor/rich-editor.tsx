@@ -6,7 +6,7 @@
  * @easyx/editor 为命令式 API（createEditor(container, options)），此处以 React 组件包装：
  * 生命周期管理、受控 value 同步、暗色主题跟随、媒体能力装配，均由本组件承担
  */
-import type { EasyxEditorOptions, MediaUploadConfig } from "@easyx/editor";
+import type { EditorOptions, MediaUploadConfig } from "@easyx/editor";
 import { createEditor } from "@easyx/editor";
 import { useEffect, useRef } from "react";
 
@@ -113,7 +113,7 @@ export function RichEditor({
 		const isDark = () =>
 			document.documentElement.dataset.theme?.endsWith("-dark") === true;
 
-		const options: EasyxEditorOptions = {
+		const options: EditorOptions = {
 			placeholder: "开始写作...",
 			defaultContent: latestValueRef.current,
 			defaultTheme: isDark() ? "dark" : "light",

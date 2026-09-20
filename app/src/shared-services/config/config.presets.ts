@@ -67,6 +67,15 @@ export const PRESET_CONFIGS: PresetConfig[] = [
 		groupName: "站点设置",
 	},
 	{
+		key: "image_engine_wasm_url",
+		value: "",
+		description:
+			"图片引擎 wasm 地址（留空使用本地打包资源，可指向 CDN 或自有静态资源）",
+		clientVisible: true,
+		valueType: "input",
+		groupName: "图片设置",
+	},
+	{
 		key: "smtp_host",
 		value: "",
 		description: "SMTP 服务器地址",

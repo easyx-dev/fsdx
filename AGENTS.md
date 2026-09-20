@@ -38,13 +38,14 @@ packages/
 │       ├── cache/            # 缓存抽象（cache/ MemoryCache）
 │       └── infra/            # 通用非单例基础设施（captcha/semaphore/task-manager/batch-writer/storage 契约）
 ├── ui-ssr/                   # @fsdx/ui-ssr —— shadcn 基础组件（ui/ theme/ form 三桶）
-├── ui-spa/                   # @fsdx/ui-spa —— antd 管理端组件（antd 为 peerDependency）
-└── ai-rich-editor/           # @fsdx/ai-rich-editor —— AI 驱动「代码编辑+实时预览」富文本工作台（重客户端组件，antd 单实例）
+└── ui-spa/                   # @fsdx/ui-spa —— antd 管理端组件（antd 为 peerDependency）
 ```
 
 `#/*` 别名仅在 app 内生效（`#/*` → `./src/*`）。跨包引用一律使用 `@fsdx/*` subpath import。
 
-> 每个子包的导出清单、API 与宿主集成约束见各自 README：[lib](packages/lib/README.md) / [ui-ssr](packages/ui-ssr/README.md) / [ui-spa](packages/ui-spa/README.md) / [ai-rich-editor](packages/ai-rich-editor/README.md)，是包边界的权威文档。
+> 每个子包的导出清单、API 与宿主集成约束见各自 README：[lib](packages/lib/README.md) / [ui-ssr](packages/ui-ssr/README.md) / [ui-spa](packages/ui-spa/README.md)，是包边界的权威文档。
+>
+> AI 富文本工作台（`@easyx/ai-rich-editor`）与图片处理套件（`@easyx/image-toolkit`）已抽离为独立发布的 npm 包，不在本仓库内维护，接入约束见各自包 README（npm 页）。
 
 ### 包边界约定
 
@@ -52,8 +53,12 @@ packages/
 - **lib 零全局单例 + 零日志耦合**：lib 内禁止读取 `process.env` / DB、禁止创建模块级或 globalThis 单例、禁止 import 任何 logger。错误一律向上抛出（throw/reject），警告用 `console` 直接输出或经可选 `onEvent` 钩子推事件（供宿主接管，如 `batch-writer`）。凡需单例/读环境/引日志的模块一律下沉到 `src/shared-services/`
 - **shared-services = 高共享的 service**：位于 `src/shared-services/`，被 routes / middleware / bootstrap / client / 其它 service **直接引用**，承载 app 绑定单例（logger/jwt/metrics/storage/scheduler/mail·sms/request-context）+ 系统级共享域（config/dict/i18n/ai/query-utils/operation-log）。**只依赖 `lib`/`db`/本层，绝不引用 services**（避免循环依赖）；`mail`/`sms`/`scheduler` 直接 `import { logger }`、`mail`/`sms` 直接 `import { getConfig }`，无 `init*`/`setSchedulerLogger` 透传；跨 bundle 一致性靠 globalThis（metrics 注册表、config / AI provider 缓存）。判断标准：**一个 `services` 模块被大范围引用共享 → 具备成为 shared-services 的条件**（仅指服务端 / 系统级模块的升级路径）。**边界**：shared-services 只放 app 级服务单例 / 系统级共享域（读 env、引 logger、需全局态），**不是「凡多处引用即入」的通用共享桶**；前端工具、无状态或仅轻量模块内状态的 helper 归 `src/utils/`
 - **antd 单实例**：`@fsdx/ui-spa` 将 antd 声明为 peerDependency，app 提供唯一实例；`antd-static` 桥接在 app `<App>` 上下文内工作
-- **UI token 宿主注入**：ui 包组件只写 tailwind 类名，颜色 token 由 app 的 `global.css` 定义；Tailwind 通过 `@source` 扫描包源码类名
-- **新增共享逻辑的归属决策（按性质判定，不默认 shared-services）**：① 纯函数/类（非单例、不读 env、不碰 DB/框架）→ `@fsdx/lib`；② app 前端工具（无状态或仅轻量模块内状态、不读服务端 env）→ `src/utils/`；③ shadcn 组件 → `@fsdx/ui-ssr`，antd 组件 → `@fsdx/ui-spa`，AI 富文本 → `@fsdx/ai-rich-editor`；④ app 级服务单例 / 系统级共享域（读 env、引 logger、需全局态）→ `src/shared-services/`；⑤ 业务逻辑 → `app/src/services` 或路由层
+- **外部 npm 包边界**：`@easyx/ai-rich-editor`（AI 富文本工作台）与 `@easyx/image-toolkit`（浏览器端图片处理）为独立发布包，样式/UI 自包含
+  - **image-toolkit 根入口零重量依赖**：根入口只导出纯逻辑（服务端用它做魔数嗅探），wasm 引擎与图片编辑内容区一律经 `./ui` 进入；`.output/server` 中不得出现 `.wasm`，可作为回归检查点
+  - **wasm 资源交给宿主打包器**：包内 Worker / wasm 以 `new Worker(new URL(...))` / `new URL(..., import.meta.url)` 静态引用，`vite.config.ts` 需将其加入 `optimizeDeps.exclude`（否则预打包丢失资源）
+  - **纯客户端组件不得进入 SSR 图**：`@easyx/ai-rich-editor` 内含 monaco（模块顶层访问 `window`），宿主页面必须经 `ClientOnly` + 动态 `import()` 引入（参考 `/admin/demo/ai-rich-editor`），否则服务端引入即崩
+- **UI token 宿主注入**：ui 包组件只写 tailwind 类名，颜色 token 由 app 的 `global.css` 定义；Tailwind 通过 `@source` 扫描包源码类名（外部 npm 包样式自包含，无需 `@source`）
+- **新增共享逻辑的归属决策（按性质判定，不默认 shared-services）**：① 纯函数/类（非单例、不读 env、不碰 DB/框架）→ `@fsdx/lib`；② app 前端工具（无状态或仅轻量模块内状态、不读服务端 env）→ `src/utils/`；③ shadcn 组件 → `@fsdx/ui-ssr`，antd 组件 → `@fsdx/ui-spa`，AI 富文本 → `@easyx/ai-rich-editor`（外部包），图片处理 → `@easyx/image-toolkit`（外部包）；④ app 级服务单例 / 系统级共享域（读 env、引 logger、需全局态）→ `src/shared-services/`；⑤ 业务逻辑 → `app/src/services` 或路由层
 
 ## 技术栈
 
@@ -73,7 +78,7 @@ packages/
 | 包管理 | pnpm | - |
 | 日志 | pino（multistream，按天写入文件） | - |
 | 认证 | JWT（jose）+ bcryptjs | - |
-| 编辑器 | @easyx/editor（Tiptap 内核） | 1.x |
+| 编辑器 | @easyx/editor（Tiptap 内核） | 2.x |
 | 定时任务 | cron | - |
 | 邮件 | nodemailer（SMTP 配置由初始化流程写入系统配置表） | - |
 
@@ -250,7 +255,7 @@ packages/
 
 - **双重定位**：本项目既是可独立运行的全栈开发工程基座（内置基础设施 + 业务示例），也是**基座模板（upstream）**；衍生项目（downstream，当前为 bom-easy）可持续吸收本项目的基建变更，本项目也可回灌衍生项目的优秀实践，互相整合进化。背景模型 → [project-ecosystem](docs/project-ecosystem.md)
 - **命名面收敛（硬规则）**：运行期标识**禁止硬编码** `fsdx_*`——Cookie 名收敛为集中常量（`src/constants/cookie-names.ts`，中性默认 `admin_token`/`client_token`，项目更名集中修改点）；e2e 库名/账号邮箱配置注入（env，库名随 `DATABASE_URL`、邮箱默认 example.com 域）；包名/部署/品牌等无法配置化的面保留清单替换（见 [derive-project](.agents/skills/derive-project/SKILL.md)）
-- **基建/业务分层**：基建层（core 库、认证/RBAC、缓存、埋点、审计、i18n、文件存储、日志、错误处理、部署/CI、UI 基础组件、测试基础设施、文档体系、命名收敛）可跨项目流通；业务层（业务示例模块 news、具体业务表/路由）留在项目内，其余模块（dict / files · file-explorer / messages / config / translations / track / operation-logs / ai-providers / ai-rich-editor / demo 等）均为基建能力。判定准则（脱离业务示例是否成立 / 是否依赖业务表 / 是否对所有衍生系统有价值 / 是否纯缺陷修复）见 [upstream-sync](.agents/skills/upstream-sync/SKILL.md)
+- **基建/业务分层**：基建层（core 库、认证/RBAC、缓存、埋点、审计、i18n、文件存储、图片处理、日志、错误处理、部署/CI、UI 基础组件、测试基础设施、文档体系、命名收敛）可跨项目流通；业务层（业务示例模块 news、具体业务表/路由）留在项目内，其余模块（dict / files · file-explorer / messages / config / translations / track / operation-logs / ai-providers / ai-rich-editor / image / demo 等）均为基建能力。判定准则（脱离业务示例是否成立 / 是否依赖业务表 / 是否对所有衍生系统有价值 / 是否纯缺陷修复）见 [upstream-sync](.agents/skills/upstream-sync/SKILL.md)
 - **CHANGELOG `[infra]` 标记**：基建层变更条目加 `[infra]` 前缀（`Infrastructure` / `Fix` 分类），描述注明「可被衍生项目吸收」的影响面；commit 约定 `feat(infra)` / `fix(infra)` scope。衍生项目以此作为吸收候选主渠道（git 历史可能被重写，不作为唯一事实）
 - **回灌净化**：上游吸收下游实践时执行「去业务化 → 去命名化（翻译回模板中性命名）→ 通用化（对齐模板分层与约定）」三步
 - **同步命令**：`/derive`（派生新项目）、`/import-upstream`（下游吸收上游）、`/backport`（上游吸收下游）；每个衍生项目根目录维护 `UPSTREAM.md`（基线 + 配置映射 + 同步历史）

@@ -25,13 +25,13 @@
   },
   "peerDependencies": {
     "@ant-design/icons": "^6.3.2",
-    "@easyx/editor": "^1.1.2",
+    "@easyx/editor": "^2.0.0",
     "@tanstack/react-router": "^1.170.21",
     "antd": "^6.5.3",
     "dayjs": "^1",
     "monaco-editor": "^0.56"
   },
   "devDependencies": {
-    "@easyx/editor": "^1.1.2"
+    "@easyx/editor": "^2.0.0"
   }
 }

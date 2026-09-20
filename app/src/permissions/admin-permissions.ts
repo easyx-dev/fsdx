@@ -219,6 +219,11 @@ export const ADMIN_PERMISSIONS = {
 		"允许修改文件属性（如转为永久存储）",
 	),
 	FILE_DELETE: definePermission("file:delete", "删除文件", "允许删除文件"),
+	FILE_PROCESS: definePermission(
+		"file:process",
+		"图片处理",
+		"允许对文件库中的图片进行压缩、裁切并覆盖原图",
+	),
 	// 文件资源管理器
 	FILE_EXPLORER_VIEW: definePermission(
 		"file-explorer:view",

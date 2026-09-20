@@ -36,6 +36,8 @@ interface AiProviderSlot {
 	/** 构建该 provider 时的配置指纹 */
 	fingerprint: string;
 	provider: AiProvider;
+	/** 原始 OpenAI 兼容客户端：供需要直通厂商 SSE 的场景复用（如 OpenAI 兼容代理端点） */
+	client: OpenAI;
 }
 
 /**
@@ -176,28 +178,34 @@ export async function readProviderConfig(
 	return resolveProvider(providers, providerId);
 }
 
-/** 构建（或命中缓存）某厂商的 provider 函数；配置指纹变更时重建 */
-async function getOrBuildProvider(config: AiProviderView): Promise<AiProvider> {
-	const fingerprint = `${config.baseUrl}||${config.apiKey}||${JSON.stringify(config.models)}`;
-	const cache = getProviderCache();
-	const slot = cache.get(config.id);
-	if (slot && slot.fingerprint === fingerprint) {
-		return slot.provider;
-	}
-
-	// 适配器底层为 Chat Completions 协议（DeepSeek/Moonshot/Qwen/本地 vLLM 等 OpenAI 兼容端点）。
-	// 统一使用「推理兼容子类」：其 extractReasoning 会读取 delta.reasoning_content/reasoning，
-	// 对非推理模型无该字段自然返回 undefined，行为与基类一致，故无需按能力位分叉。
-	const client = new OpenAI({
+/** 构建厂商对应的原始 OpenAI 兼容客户端（统一超时与重试策略） */
+function buildOpenAiClient(config: AiProviderView): OpenAI {
+	return new OpenAI({
 		baseURL: config.baseUrl,
 		apiKey: config.apiKey,
 		// 客户端超时与重试：超时避免无限挂起，5xx/429 由 SDK 指数退避重试
 		timeout: AI_TIMEOUT_MS,
 		maxRetries: AI_MAX_RETRIES,
 	});
-	const built: AiProvider = (modelId) =>
+}
+
+/** 构建（或命中缓存）某厂商的缓存槽；配置指纹变更时重建 */
+async function getOrBuildSlot(config: AiProviderView): Promise<AiProviderSlot> {
+	const fingerprint = `${config.baseUrl}||${config.apiKey}||${JSON.stringify(config.models)}`;
+	const cache = getProviderCache();
+	const slot = cache.get(config.id);
+	if (slot && slot.fingerprint === fingerprint) {
+		return slot;
+	}
+
+	// 适配器底层为 Chat Completions 协议（DeepSeek/Moonshot/Qwen/本地 vLLM 等 OpenAI 兼容端点）。
+	// 统一使用「推理兼容子类」：其 extractReasoning 会读取 delta.reasoning_content/reasoning，
+	// 对非推理模型无该字段自然返回 undefined，行为与基类一致，故无需按能力位分叉。
+	const client = buildOpenAiClient(config);
+	const provider: AiProvider = (modelId) =>
 		new ReasoningCompatibleChatAdapter(client, modelId, config.name);
-	cache.set(config.id, { fingerprint, provider: built });
+	const next: AiProviderSlot = { fingerprint, provider, client };
+	cache.set(config.id, next);
 	logger.info(
 		{
 			providerId: config.id,
@@ -206,7 +214,7 @@ async function getOrBuildProvider(config: AiProviderView): Promise<AiProvider> {
 		},
 		"AI provider 已初始化",
 	);
-	return built;
+	return next;
 }
 
 /**
@@ -218,7 +226,23 @@ export async function getAiProvider(
 ): Promise<AiProvider | null> {
 	const config = await readProviderConfig(providerId);
 	if (!config) return null;
-	return getOrBuildProvider(config);
+	return (await getOrBuildSlot(config)).provider;
+}
+
+/**
+ * 获取目标厂商的原始 OpenAI 客户端与目标模型（供需要直通厂商 SSE 的端点复用同一份缓存）。
+ * 返回 null 表示无可命中的已配置厂商或目标模型。
+ */
+export async function getAiRawClient(
+	providerId?: string,
+	modelId?: string,
+): Promise<{ client: OpenAI; model: string } | null> {
+	const config = await readProviderConfig(providerId);
+	if (!config) return null;
+	const model = resolveModel(config, modelId);
+	if (!model) return null;
+	const { client } = await getOrBuildSlot(config);
+	return { client, model };
 }
 
 /**
@@ -233,6 +257,6 @@ export async function getAiAdapter(
 	if (!config) return null;
 	const model = resolveModel(config, modelId);
 	if (!model) return null;
-	const provider = await getOrBuildProvider(config);
+	const { provider } = await getOrBuildSlot(config);
 	return provider(model);
 }

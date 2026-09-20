@@ -1,18 +1,18 @@
 /**
  * AI 对话流式端点（Server Route）
- * URL: /api/ai-chat
- * 供 @fsdx/ai-rich-editor（useChat + fetchServerSentEvents）消费；返回 TanStack AI 标准 SSE。
- * 鉴权：管理端 AI_CHAT 权限；审计：每次生成写入操作日志。
+ * URL: /api/ai-chat[?providerId=xxx]
+ * OpenAI Chat Completions 兼容：入参 `{ messages, stream }`，出参厂商原始 SSE（含 `data: [DONE]`）。
+ * 供 @easyx/ai-rich-editor（chat 字符串模式）消费；鉴权：管理端 AI_CHAT 权限；审计：每次生成写入操作日志。
  */
 
-import {
-	chatParamsFromRequest,
-	toServerSentEventsResponse,
-} from "@tanstack/ai";
 import { createFileRoute } from "@tanstack/react-router";
 import { adminPermRouteGuard } from "#/middleware/admin-auth";
 import { ADMIN_PERMISSIONS } from "#/permissions/admin-permissions";
-import { streamAiChat } from "#/shared-services/ai/ai.server";
+import {
+	openAiChatRequestSchema,
+	openAiErrorResponse,
+	proxyOpenAiChat,
+} from "#/shared-services/ai/ai.proxy.server";
 import { logOperation } from "#/shared-services/operation-log/operation-log.server";
 import { getRequestOperator } from "#/shared-services/request-context";
 
@@ -21,15 +21,18 @@ export const Route = createFileRoute("/api/ai-chat")({
 		middleware: [adminPermRouteGuard(ADMIN_PERMISSIONS.AI_CHAT)],
 		handlers: {
 			POST: async ({ request }) => {
-				// 解析 AG-UI 请求体（useChat 发出），失败由框架转 400
-				const params = await chatParamsFromRequest(request);
-				// system 提示词 / 厂商选择由客户端经 sendMessage(text, { body }) 透传进 forwardedProps
-				const systemPrompt = params.forwardedProps?.systemPrompt as
-					| string
-					| undefined;
-				const providerId = params.forwardedProps?.providerId as
-					| string
-					| undefined;
+				const body: unknown = await request.json().catch(() => undefined);
+				const parsed = openAiChatRequestSchema.safeParse(body);
+				if (!parsed.success) {
+					return openAiErrorResponse(
+						400,
+						"请求体不是合法的 OpenAI Chat Completions 格式",
+					);
+				}
+
+				// 厂商选择经查询串透传（OpenAI 协议体不携带该信息），缺省用默认厂商
+				const providerId =
+					new URL(request.url).searchParams.get("providerId") || undefined;
 
 				// 审计：发起一次 AI 生成（fire-and-forget，操作人由鉴权中间件注入 ALS）
 				const operator = getRequestOperator();
@@ -39,18 +42,14 @@ export const Route = createFileRoute("/api/ai-chat")({
 					module: "ai-chat",
 					action: "chat",
 					targetType: "ai-chat",
-					detail: { messageCount: params.messages.length },
+					detail: { messageCount: parsed.data.messages.length, providerId },
 				});
 
-				const stream = await streamAiChat({
-					messages: params.messages,
-					systemPrompts: systemPrompt ? [systemPrompt] : undefined,
+				return proxyOpenAiChat({
+					messages: parsed.data.messages,
 					providerId,
-					threadId: params.threadId,
-					runId: params.runId,
+					signal: request.signal,
 				});
-
-				return toServerSentEventsResponse(stream);
 			},
 		},
 	},

@@ -18,7 +18,6 @@ COPY app/package.json ./app/package.json
 COPY packages/lib/package.json ./packages/lib/package.json
 COPY packages/ui-ssr/package.json ./packages/ui-ssr/package.json
 COPY packages/ui-spa/package.json ./packages/ui-spa/package.json
-COPY packages/ai-rich-editor/package.json ./packages/ai-rich-editor/package.json
 
 # pnpm store 走 BuildKit 缓存挂载：不进镜像层，重建时依赖可复用
 RUN --mount=type=cache,target=/tmp/pnpm-store \

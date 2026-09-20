@@ -4,6 +4,7 @@
 import {
 	bigint,
 	index,
+	integer,
 	pgTable,
 	timestamp,
 	uuid,
@@ -21,6 +22,10 @@ export const file = pgTable(
 		mimeType: varchar("mime_type", { length: 100 }).notNull(),
 		size: bigint({ mode: "number" }).notNull(),
 		path: varchar({ length: 1000 }).notNull(),
+		/** 图片宽度（非图片或未解析时为 null） */
+		width: integer("width"),
+		/** 图片高度（非图片或未解析时为 null） */
+		height: integer("height"),
 		status: varchar({ length: 20 }).default("temp").notNull(),
 		expiredAt: timestamp("expired_at", { withTimezone: true }),
 		createdByType: varchar("created_by_type", { length: 20 }),
