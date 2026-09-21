@@ -74,6 +74,10 @@ export function ImageUpload({
 	const inputRef = useRef<HTMLInputElement>(null);
 	const isHoveredRef = useRef(false);
 	const internalChangeRef = useRef(false);
+	/** fileList 的镜像：异步上传回调中需读取最新列表，避免把副作用塞进 setState updater */
+	const fileListRef = useRef(fileList);
+	/** 已创建的临时预览地址：回收以列表为基准，避免在状态提交前回收导致预览闪断 */
+	const blobUrlsRef = useRef(new Set<string>());
 
 	// 外部 value 变更时同步 fileList（如表单重置）
 	useEffect(() => {
@@ -81,15 +85,44 @@ export function ImageUpload({
 			internalChangeRef.current = false;
 			return;
 		}
-		setFileList(valueToItems(value, readUrl));
+		const next = valueToItems(value, readUrl);
+		fileListRef.current = next;
+		setFileList(next);
 	}, [value, readUrl]);
 
-	/** 通知外部值变更 */
-	const emitChange = useCallback(
-		(list: ImageItem[]) => {
-			const ids = extractIds(list);
+	// 回收已不被列表引用的临时预览地址（上传成功替换、上传失败移除、手动删除均经此路径；
+	// 放在 effect 中是因为此处 DOM 已提交为服务端地址，不会出现「图片还在显示就被回收」）
+	useEffect(() => {
+		const inUse = new Set(fileList.map((item) => item.url));
+		for (const url of blobUrlsRef.current) {
+			if (inUse.has(url)) continue;
+			URL.revokeObjectURL(url);
+			blobUrlsRef.current.delete(url);
+		}
+	}, [fileList]);
+
+	// 卸载时回收全部残留（上传中未替换、未删除的条目）
+	useEffect(() => {
+		const blobUrls = blobUrlsRef.current;
+		return () => {
+			for (const url of blobUrls) URL.revokeObjectURL(url);
+			blobUrls.clear();
+		};
+	}, []);
+
+	/** 仅更新本地列表，不通知外部（临时条目的增删不影响对外文件 ID） */
+	const updateLocalList = useCallback((next: ImageItem[]) => {
+		fileListRef.current = next;
+		setFileList(next);
+	}, []);
+
+	/** 提交新的文件列表：同步状态与镜像并通知外部值变更 */
+	const commitList = useCallback(
+		(next: ImageItem[]) => {
+			fileListRef.current = next;
+			setFileList(next);
 			internalChangeRef.current = true;
-			setFileList(list);
+			const ids = extractIds(next);
 			if (maxCount === 1) {
 				onChange?.(ids[0] || "");
 			} else {
@@ -99,13 +132,13 @@ export function ImageUpload({
 		[onChange, maxCount],
 	);
 
-	/** 上传单个文件 */
+	/** 上传单个文件：成功后以服务端地址替换临时预览，失败则移除临时条目（预览地址回收见 blobUrlsRef 的列表回收 effect） */
 	const uploadItem = useCallback(
 		async (file: File, tempUid: string) => {
 			try {
 				const result = await uploadFile(file, permanent);
-				setFileList((prev) =>
-					prev.map((item) =>
+				commitList(
+					fileListRef.current.map((item) =>
 						item.uid === tempUid
 							? {
 									...item,
@@ -117,27 +150,18 @@ export function ImageUpload({
 							: item,
 					),
 				);
-				// 触发 onChange，但需要等 setFileList 完成后的最新值
-				setFileList((prev) => {
-					const ids = extractIds(prev);
-					internalChangeRef.current = true;
-					if (maxCount === 1) {
-						onChange?.(ids[0] || "");
-					} else {
-						onChange?.(ids);
-					}
-					return prev;
-				});
 				if (result.isDuplicated) {
 					message.success("秒传成功（图片已存在）");
 				}
 			} catch (err) {
 				console.error("[ImageUpload] 上传失败", err);
-				setFileList((prev) => prev.filter((item) => item.uid !== tempUid));
 				// 错误提示由宿主注入的 uploadFile 统一处理（项目内经 sfn-error helper），此处不重复提示
+				updateLocalList(
+					fileListRef.current.filter((item) => item.uid !== tempUid),
+				);
 			}
 		},
-		[permanent, maxCount, onChange, uploadFile, readUrl],
+		[permanent, uploadFile, readUrl, commitList, updateLocalList],
 	);
 
 	/** 处理待上传文件（校验 + 创建临时条目 + 开始上传） */
@@ -154,8 +178,9 @@ export function ImageUpload({
 					return;
 				}
 			}
+			const current = fileListRef.current;
 			const available =
-				maxCount <= 1 ? 1 - fileList.length : maxCount - fileList.length;
+				maxCount <= 1 ? 1 - current.length : maxCount - current.length;
 			const toUpload = files.slice(0, Math.max(0, available));
 			if (files.length > available) {
 				message.warning(`最多还能上传 ${available} 张图片，已自动截取`);
@@ -167,12 +192,13 @@ export function ImageUpload({
 				url: URL.createObjectURL(f),
 				status: "uploading" as const,
 			}));
-			setFileList((prev) => [...prev, ...tempItems]);
+			for (const item of tempItems) blobUrlsRef.current.add(item.url);
+			updateLocalList([...current, ...tempItems]);
 			for (let i = 0; i < toUpload.length; i++) {
 				uploadItem(toUpload[i], tempItems[i].uid);
 			}
 		},
-		[fileList.length, maxCount, uploadItem],
+		[maxCount, uploadItem, updateLocalList],
 	);
 
 	/** 文件选择变更 */
@@ -229,9 +255,9 @@ export function ImageUpload({
 				return;
 			}
 			const newItems = newIds.map((id) => idToImageItem(id, readUrl));
-			emitChange([...fileList, ...newItems]);
+			commitList([...fileList, ...newItems]);
 		},
-		[fileList, maxCount, emitChange, readUrl],
+		[fileList, maxCount, commitList, readUrl],
 	);
 
 	/** 拖拽排序 */
@@ -240,24 +266,20 @@ export function ImageUpload({
 			const newList = [...fileList];
 			const [dragged] = newList.splice(dragIndex, 1);
 			newList.splice(hoverIndex, 0, dragged);
-			emitChange(newList);
+			commitList(newList);
 			setSortKey((k) => k + 1);
 		},
-		[fileList, emitChange],
+		[fileList, commitList],
 	);
 
 	/** 删除文件 */
 	const handleRemove = useCallback(
 		(index: number) => {
-			const item = fileList[index];
-			if (item?.url?.startsWith("blob:")) {
-				URL.revokeObjectURL(item.url);
-			}
 			const newList = fileList.filter((_, i) => i !== index);
-			emitChange(newList);
+			commitList(newList);
 			setSortKey((k) => k + 1);
 		},
-		[fileList, emitChange],
+		[fileList, commitList],
 	);
 
 	const canAdd =

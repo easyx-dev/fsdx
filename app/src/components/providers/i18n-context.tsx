@@ -4,13 +4,7 @@
  */
 
 import type { TFunction } from "i18next";
-import {
-	createContext,
-	type ReactNode,
-	useContext,
-	useMemo,
-	useRef,
-} from "react";
+import { createContext, type ReactNode, useContext, useMemo } from "react";
 import {
 	I18nextProvider,
 	useTranslation as useI18nTranslation,
@@ -35,26 +29,22 @@ interface I18nProviderProps {
 
 /**
  * 国际化 Provider：创建 i18next 实例并注入
- * 使用 ref 避免每次渲染重建——仅在 locale 变化时创建新实例
+ * 实例经 useMemo 缓存，仅在 locale 或翻译资源变化时重建，避免每帧创建后丢弃
  */
 export function I18nProvider({
 	locale,
 	translations,
 	children,
 }: I18nProviderProps) {
-	const instanceRef = useRef(createI18nInstance(locale, translations));
-	const prevLocale = useRef(locale);
-
-	if (prevLocale.current !== locale) {
-		instanceRef.current = createI18nInstance(locale, translations);
-		prevLocale.current = locale;
-	}
-
+	const instance = useMemo(
+		() => createI18nInstance(locale, translations),
+		[locale, translations],
+	);
 	const contextValue = useMemo(() => ({ locale }), [locale]);
 
 	return (
 		<I18nContext value={contextValue}>
-			<I18nextProvider i18n={instanceRef.current}>{children}</I18nextProvider>
+			<I18nextProvider i18n={instance}>{children}</I18nextProvider>
 		</I18nContext>
 	);
 }

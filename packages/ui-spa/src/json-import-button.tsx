@@ -27,6 +27,7 @@ export function JsonImportButton({
 	onImport,
 	successMessage,
 	children,
+	onClick,
 	...buttonProps
 }: JsonImportButtonProps) {
 	const [modalOpen, setModalOpen] = useState(false);
@@ -64,7 +65,14 @@ export function JsonImportButton({
 
 	return (
 		<>
-			<Button {...buttonProps} onClick={() => setModalOpen(true)}>
+			{/* 宿主传入的 onClick 必须先派发，避免被内部展开的处理器静默覆盖 */}
+			<Button
+				{...buttonProps}
+				onClick={(event) => {
+					onClick?.(event);
+					setModalOpen(true);
+				}}
+			>
 				{children}
 			</Button>
 			<Modal

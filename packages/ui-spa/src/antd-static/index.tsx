@@ -10,14 +10,16 @@
  *   2. 主题 token（暗色算法、品牌色）不随切换生效。
  * 因此所有组件与工具模块统一从本模块导入，禁止再静态导入 antd 的 message/modal/notification。
  *
- * 使用约束：实例在 <App> 挂载后才捕获，调用必须发生在组件渲染完成后的交互/副作用中
- * （事件处理、useEffect 等）；禁止在路由 loader/beforeLoad 等早于 App 挂载的阶段调用，
- * 否则 createProxy 会抛出明确错误（宁抛错不静默失败）。
+ * 使用约束：实例在 <App> 挂载后才捕获（写入发生在被动副作用中），调用必须发生在
+ * 事件处理或 useEffect 等被动副作用里；禁止在渲染期、useLayoutEffect（早于被动副作用）
+ * 以及路由 loader/beforeLoad 等早于 App 挂载的阶段调用，否则 createProxy 会抛出明确错误
+ * （宁抛错不静默失败）。
  */
 import { App } from "antd";
 import type { MessageInstance } from "antd/es/message/interface";
 import type { ModalStaticFunctions } from "antd/es/modal/confirm";
 import type { NotificationInstance } from "antd/es/notification/interface";
+import { useEffect } from "react";
 
 let messageApi: MessageInstance | null = null;
 let modalApi: Omit<ModalStaticFunctions, "warn"> | null = null;
@@ -25,12 +27,23 @@ let notificationApi: NotificationInstance | null = null;
 
 /**
  * 捕获 App 上下文实例的桥接组件，须挂在两端 Provider 的 <App> 内部。
+ * 写入模块级引用属于副作用，统一放在 useEffect 中并在卸载时清空
+ * （渲染期写会在并发渲染与 StrictMode 下重复执行、留下脏引用）。
  */
 export function AntdStaticBridge() {
 	const { message, modal, notification } = App.useApp();
-	messageApi = message;
-	modalApi = modal;
-	notificationApi = notification;
+
+	useEffect(() => {
+		messageApi = message;
+		modalApi = modal;
+		notificationApi = notification;
+		return () => {
+			messageApi = null;
+			modalApi = null;
+			notificationApi = null;
+		};
+	}, [message, modal, notification]);
+
 	return null;
 }
 

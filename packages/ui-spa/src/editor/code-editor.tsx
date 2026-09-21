@@ -4,6 +4,7 @@
  * value / onChange 兼容 antd Form.Item 注入
  */
 import Editor from "@monaco-editor/react";
+import { useEffect, useState } from "react";
 
 export interface CodeEditorProps {
 	/** 自定义类名 */
@@ -20,6 +21,14 @@ export interface CodeEditorProps {
 	height?: number | string;
 }
 
+/** 当前是否暗色主题：data-theme 承载完整主题名（如 admin-theme-dark） */
+function isDarkTheme(): boolean {
+	return (
+		typeof document !== "undefined" &&
+		document.documentElement.dataset.theme?.endsWith("-dark") === true
+	);
+}
+
 export function CodeEditor({
 	className,
 	value,
@@ -28,9 +37,18 @@ export function CodeEditor({
 	readOnly = false,
 	height = 300,
 }: CodeEditorProps) {
-	const isDark =
-		typeof document !== "undefined" &&
-		document.documentElement.dataset.theme?.endsWith("-dark") === true;
+	const [isDark, setIsDark] = useState(isDarkTheme);
+
+	// 订阅 data-theme 变化：主题切换后同步编辑器亮/暗（与 rich-editor 的实现对齐）
+	useEffect(() => {
+		setIsDark(isDarkTheme());
+		const observer = new MutationObserver(() => setIsDark(isDarkTheme()));
+		observer.observe(document.documentElement, {
+			attributes: true,
+			attributeFilter: ["data-theme"],
+		});
+		return () => observer.disconnect();
+	}, []);
 
 	return (
 		<div
