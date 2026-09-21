@@ -140,6 +140,10 @@
 
 - **客户端 import-protection 拒收 `node:crypto`（[infra]）**：`src/middleware/request-id.ts` 经 `start.ts` 同时进入客户端模块图，该模块中任何对 node 内置模块的**可见引用**都会被 Vite 在浏览器侧替换为「一访问即抛错」的空壳——实测表现为管理端整站白屏（dev 与生产构建同样受影响，`pnpm build` 也不会失败，仅 e2e 才能发现）。将 `node:crypto` 加入 `importProtection.client.specifiers` 后该类误引在构建期即失败（已做失效性验证：`randomUUID` 改回 `node:crypto` → `pnpm build` 报 `Denied by specifier pattern: node:crypto`）。可被衍生项目吸收
 
+- **依赖声明归位与 lint 覆盖补齐（[infra]）**：应用运行期依赖此前只声明在根 `package.json`，`@fsdx/web` 靠 Node 向上查找偶然生效——隔离安装、改 node-linker 或拆包时 app 直接不可构建。现按包归属声明：`@fsdx/web` 补 `react` / `react-dom` / `i18next` / `dayjs`，`@fsdx/lib` 补 `dayjs`（`date-format` 实际依赖），`@fsdx/ui-spa` / `@fsdx/ui-ssr` 补 `react` / `react-dom` peerDependency（宿主提供单实例），根 `package.json` 不再持有运行期依赖。
+  - **跨包依赖版本收敛到 pnpm catalog**：`react` / `react-dom` / `antd` / `dayjs` / `i18next` / `@ant-design/icons` / `@tanstack/react-router` / `monaco-editor` / `@easyx/editor` 的版本统一声明在 `pnpm-workspace.yaml` 的 `catalog`，各包（含 `peerDependencies`）改以 `"catalog:"` 引用，消除同一依赖多处声明后版本漂移的空间；版本值与解析结果均未变化，store 中仍只有单一副本（realpath 相同，构建期不产生重复实例）。**Biome 的框架检测解析不了 `catalog:` 版本号**，`react` 改由 catalog 声明后 React 规则域会静默关闭（表现为 React 规则不再触发、既有 `biome-ignore` 反报未使用），故在 `biome.json` 的 `linter.domains.react` 显式声明 `recommended` 把覆盖补回；规则写入 `AGENTS.md`「包边界约定」。可被衍生项目吸收
+  - `biome.json` 的 `includes` 补 `**/server.ts` / `**/vitest.config.ts` / `**/drizzle.config.ts` / `**/playwright.config.ts`（此前这些文件不在 lint/format 范围），并修正由此暴露的问题：两个配置文件格式化、`FileImageEditor` 的「切换文件即重置」effect 补真实依赖（`[file]`，关闭态短路）、`useThemeMode` 的主题重放 effect 补豁免说明（快照值仅作触发源）。可被衍生项目吸收
+
 ### Refactor
 
 - **依赖包破坏性升级适配：AI 富文本工作台与图片处理套件（[infra]）**：`@easyx/ai-rich-editor` 0.1 → 2.0、`@easyx/image-toolkit` 0.1 → 1.0，两处接入面按新版 API 同步改造。
@@ -176,6 +180,16 @@
   - `error-utils`（错误分类 / 归一化 / 脱敏 / SFn 元信息读写）整体迁至 `#/utils/error-utils`：它耦合本项目私有的中文括号元信息后缀协议与「含中文即业务文案」约定，不具备库的通用性；顺带修正 `sanitizeError` 读取 `process.env`（违反 lib 零 env），改为 `sanitizeError(error, isDev)` 由调用方注入环境判断（`isDev` 为必填，避免漏传导致开发环境的 stack trace 静默丢失），并补两条覆盖 `isDev` 分支的用例。
   - SVG 验证码生成（`captcha.ts` / `ch-to-path.ts` / `random.ts` / `option-manager.ts` / `font-data.ts` + 字体文件）并入 `app/src/services/captcha`（唯一消费方），属「服务端专属运行时能力」；`option-manager` 的默认选项由可变全局对象改为只读视图，`packages/lib/src/env.d.ts`（仅为 captcha 的 `import.meta.env.DEV` 而存在）删除。`opentype.js` / `@types/opentype.js` 依赖从 `@fsdx/lib` 转入 `@fsdx/web`。
   - `packages/lib` exports 移除 `./error-utils` 与 `./captcha`；`README.md`、`packages/lib/README.md` 与 `server-function` skill 的引用和包清单同步。
+
+- **导出落盘流程收敛（[infra]）**：配置 / 字典 / 新闻 / UI 翻译 / 实体翻译五处逐字重复的「调导出 SFn → 时间戳文件名 → 下载 → 提示」收敛为 `#/utils/export-file` 的 `downloadExport(request, options)`——失败统一经 `sfnUnwrap` 提示，文件名统一 `{name}_{YYYY-MM-DD}.{ext}`，CSV / JSON 与自定义取数经 `pick` / `ext` / `mime` 声明；埋点查询页手写的 Blob + anchor 下载改用 `@fsdx/lib/export` 的 `downloadFile`（补齐挂载 / 卸载与 URL 回收）。该模块不引 UI 包，成功提示仍留在调用方。可被衍生项目吸收
+
+- **文件库适配器单点收敛（[infra]）**：文件上传 / 图片上传 / 富文本编辑器三处逐字重复的 `uploadFile` / `fetchFiles` / `readUrl` 与媒体库查询（`getFileListSFn` 适配）抽至 `forms/upload/file-adapter.ts`，业务壳组件只做属性透传；富文本的「上传并取读取地址」经 `uploadFileAndGetUrl` 复用同一上传实现。可被衍生项目吸收
+
+- **`db.execute` 结果断言收敛（[infra]）**：`query-utils.server.ts` 新增 `extractRows<T>()`（drizzle v1 的 node-postgres 驱动返回 `{ rows }` 而非数组，单点收敛断言），`track.analytics.ts` 的 5 处 `as unknown as { rows?: … }` 与 `system-metric.db-size.server.ts` 的私有实现统一复用。可被衍生项目吸收
+
+- **schema 单一来源补齐与命名对齐**：`getFieldTranslationsSFn` 的内联 schema 与实体翻译页共用 `i18n.content.schemas`（消除两处已漂移的等价定义，`locale` 默认值不再分叉）；文件 ID 校验收敛为 `file.schemas.ts` 的 `fileIdSchema`，删除路由 `-mods` 内的同义实现（原 `getFileInfoSFn` 为 `z.string()`、删除 / 转永久为 `min(1)`，口径统一为后者）；`admin-user` / `client-user` 的 `createSchema` / `updateSchema` 更名 `adminUserCreateSchema` / `adminUserUpdateSchema`（客户端同理），与角色模块 `adminRoleCreateSchema` 风格一致。
+
+- **埋点元数据缓存所有权回归单一模块（[infra]）**：`trackEventMetaCache` / `trackPropertyMetaCache` 原被 `track.meta.ts`（加载 / 失效）与 `track.server.ts`（校验读取）同时直接操作，与「缓存实例只能在唯一模块直接操作」规则不符。现 `track.meta.ts` 独占实例并导出 `isTrackEventNameRegistered` / `isTrackPropertyKeyRegistered` / `getTrackPropertyDataType`，`track.server.ts` 只读经这些函数；`cache` skill 的所有权表同步更正。可被衍生项目吸收
 
 ### Fix
 
@@ -222,6 +236,22 @@
 - **locale 默认值收敛至 `localeMiddleware` 单一权威来源（[infra]）**：`router.tsx` 的 `createRouter({ context: { locale: DEFAULT_LOCALE } })` 是静态占位值（SSR 时不被改写，路由 loader 的 `context.locale` 恒为 `"zh"`），且 `__root.tsx` 的 `createRootRouteWithContext<{ locale: Locale }>` 与 `void context.locale` 均属休眠死配置；予以移除（`createRouter` 不再传 `context`，根路由改 `createRootRoute()`，loader 不再引用路由 `context.locale`）。同时 `localeMiddleware` 由盲目 `getCookie(...) as Locale` 改为 `SUPPORTED_LOCALES` 运行时校验，非法 Cookie 值回退 `DEFAULT_LOCALE`（成为 locale 默认值的唯一权威来源），并更新过时注释。`Header` 语言切换按钮改用 `LOCALE_COOKIE` / `SUPPORTED_LOCALES` / `DEFAULT_LOCALE` 常量（替换硬编码 `"lang"` / `"zh"` / `"en"`），消除魔法字符串并提升语言扩展健壮性。
 
 - **补全前台英文种子翻译并新增完整性守卫（[infra]）**：前台大量 `t("中文")` 文案缺失英文种子（消息中心/退出登录/忘记密码/各类失败提示/分页/已读未读/重置相关等），致使英文站静默回退中文；已补齐 `i18n.seed.ts` 缺失条目，并新增 `i18n.seed.test.ts` 静态扫描守卫，自动校验前台所有 `t()` 字面量均存在于 `SEED_DATA`（en），防止后续新增文案遗漏种子。另修正 `translation.ts` / 缓存注释 / 翻译管理页占位符与「中文作为 key」约定不符的过时表述。
+
+- **类型收窄：断言与宽泛类型收紧为可校验类型（[infra]）**：
+  - JWT 载荷（`shared-services/jwt`）由 `as unknown as JwtPayload` 改为 zod schema `safeParse`，签名有效但结构非法（如 `userType` 被篡改）按无效 token 返回 `null` 并记 debug，载荷类型由 schema 派生保证单一来源。
+  - `global-store` 的 context 默认值由 `{} as GlobalStoreValue` 改为 `undefined` + Provider 缺失时明确抛错（对齐 `AdminAuthProvider` / `ClientAuthProvider`，不再静默返回 undefined 字段）。
+  - `admin_user` / `client_user` 更新 schema 的 `status` 由 `z.string()` 收为 `z.enum(["active", "disabled"])`——鉴权链以 `status !== "active"` 判定停用，原写法下写入任意值即静默停用账号。
+  - `client-permissions` 的 `ClientPermissionDef` 由 `ReturnType<typeof definePermission>`（泛型退化为 `string`）改为从 `CLIENT_PERMISSIONS` 字面量派生：空集合时退化为通用定义以免守卫不可调用，填入权限码后 `clientPermGuard` / `hasClientPermission` 恢复字面量校验。
+  - `@fsdx/ui-spa` 的 `ProTable` / `ProColumnType` / `processColumns` 去除 `any` 逃逸（默认泛型 `unknown`，行记录类型不再约束为 `Record<string, any>`），字段假设完全交回调用方列定义。可被衍生项目吸收
+
+- **React 正确性修复（[infra]）**：
+  - `ImageUpload`：临时预览的 `blob:` 地址原只在删除路径回收（上传成功后已被服务端地址取代、上传失败移除、组件卸载三条路径均泄漏）——现统一以「列表是否仍引用」为回收基准，在列表变化的 effect 中回收（此时 DOM 已提交为新地址，不会出现预览闪断），卸载时清空剩余；`onChange` 从 `setFileList` 的 updater 内移出（非纯副作用在 StrictMode / 并发渲染下会重复触发），改经 `fileListRef` 镜像计算最新列表后直接调用。
+  - `I18nProvider`：`useRef(createI18nInstance(...))` 的初始化表达式每次渲染都求值并丢弃一个 i18next 实例，且 `translations` 变更而 `locale` 未变时实例不重建；改 `useMemo(..., [locale, translations])`。
+  - `CodeEditor`：只在渲染时读一次 `data-theme`，主题切换后 Monaco 主题不再同步；改为 `useState` + `MutationObserver` 订阅（与 `rich-editor` 的实现对齐）。
+  - `AntdStaticBridge`：渲染期写模块级 `message` / `modal` / `notification` 引用改为 `useEffect` 内写入并在卸载时清空。
+  - `JsonImportButton`：`{...buttonProps}` 展开后又覆写 `onClick`，宿主传入的 `onClick` 被静默丢弃；改为内部 handler 先派发宿主的 `onClick`。可被衍生项目吸收
+
+- **补齐守卫与工具层测试缺口**：新增 `client-auth` 中间件测试（无 token / 无效 token / 管理端 token 冒用 → 401，用户不存在 → 401，被禁用 → 403，`hasClientPermission` 命中与未命中）；`utils` 的 `bool` / `sse-client` / `use-list-query` / `use-sfn-section` 补测试（含过期响应丢弃、SSE 分片重组与错误路径）；`fieldTranslationQuerySchema`、`fileIdSchema` 补 validator 拒绝路径用例。
 
 ### Docs
 
