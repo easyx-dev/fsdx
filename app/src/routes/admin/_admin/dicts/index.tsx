@@ -4,13 +4,11 @@
  */
 
 import { DownloadOutlined, PlusOutlined } from "@ant-design/icons";
-import { downloadFile } from "@fsdx/lib/export";
 import { message } from "@fsdx/ui-spa/antd-static";
 import { JsonImportButton } from "@fsdx/ui-spa/json-import-button";
 import { ProTable, withDisabledReason } from "@fsdx/ui-spa/table";
 import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { Button, Card, Flex, Form } from "antd";
-import dayjs from "dayjs";
 import { useCallback, useState } from "react";
 import {
 	AdminListPage,
@@ -23,6 +21,7 @@ import type {
 	DictRecord,
 } from "#/shared-services/dict/dict.server";
 import type { PaginatedResult } from "#/types/query";
+import { downloadExport } from "#/utils/export-file";
 import { callSfn, sfnUnwrap } from "#/utils/sfn-error";
 import { useListQuery } from "#/utils/use-list-query";
 import { DictFormModal } from "./-mods/DictFormModal";
@@ -291,11 +290,9 @@ function DictsPage() {
 
 	/** 导出字典数据（JSON） */
 	const handleExportDicts = async () => {
-		const [json] = await sfnUnwrap(exportDictsSFn(), { error: "导出失败" });
-		if (!json) return;
-		const timestamp = dayjs().format("YYYY-MM-DD");
-		downloadFile(json, `dicts_export_${timestamp}.json`, "application/json");
-		message.success("导出完成");
+		if (await downloadExport(exportDictsSFn(), { name: "dicts_export" })) {
+			message.success("导出完成");
+		}
 	};
 
 	/** 字典条目表格列定义 */

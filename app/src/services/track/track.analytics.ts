@@ -7,6 +7,7 @@ import dayjs from "dayjs";
 import { eq, inArray, type SQL, sql } from "drizzle-orm";
 import { db } from "#/db/index";
 import { trackEvent as trackEventTable, trackPropertyMeta } from "#/db/schema";
+import { extractRows } from "#/shared-services/query/query-utils.server";
 import type {
 	AnalyticsDelta,
 	DimensionDistributionItem,
@@ -164,8 +165,7 @@ async function getAnalyticsKpis(
 		   AND ${trackEventTable.time} < ${end.toISOString()}
 		   ${eventNameFilter(eventNames)}
 	`);
-	const row = (rows as unknown as { rows?: { total: number; users: number }[] })
-		.rows?.[0];
+	const row = extractRows<{ total: number; users: number }>(rows)[0];
 	return {
 		totalEvents: row?.total ?? 0,
 		uniqueUsers: row?.users ?? 0,
@@ -195,11 +195,11 @@ async function getAnalyticsTrend(
 		 GROUP BY date, series
 		 ORDER BY date, series
 	`);
-	const list = (
-		rows as unknown as {
-			rows?: { date: string; series: string | null; value: number }[];
-		}
-	).rows;
+	const list = extractRows<{
+		date: string;
+		series: string | null;
+		value: number;
+	}>(rows);
 	// 单系列（无拆解维度且未多选事件）且开启周期对比时补齐空桶为 0，
 	// 保证 current 与对比窗口桶数一致，前端按索引对齐不致错位
 	const singleSeries = !breakdown && !(eventNames && eventNames.length > 1);
@@ -238,11 +238,9 @@ async function getEventRanking(
 		 ORDER BY count DESC
 		 LIMIT 30
 	`);
-	const list = (
-		rows as unknown as {
-			rows?: { name: string; count: number; users: number }[];
-		}
-	).rows;
+	const list = extractRows<{ name: string; count: number; users: number }>(
+		rows,
+	);
 	return (list ?? []).map((r) => ({
 		name: r.name,
 		count: r.count,
@@ -271,9 +269,7 @@ async function getDimensionDistributions(
 				 ORDER BY count DESC
 				 LIMIT 10
 			`);
-			const list = (
-				rows as unknown as { rows?: { dim_value: string; count: number }[] }
-			).rows;
+			const list = extractRows<{ dim_value: string; count: number }>(rows);
 			return [
 				key,
 				(list ?? []).map((r) => ({
@@ -299,9 +295,7 @@ async function getTopPages(start: Date, end: Date): Promise<TopPageItem[]> {
 		 ORDER BY count DESC
 		 LIMIT 20
 	`);
-	const list = (
-		rows as unknown as { rows?: { page_name: string; count: number }[] }
-	).rows;
+	const list = extractRows<{ page_name: string; count: number }>(rows);
 	return (list ?? []).map((r) => ({ pageName: r.page_name, count: r.count }));
 }
 

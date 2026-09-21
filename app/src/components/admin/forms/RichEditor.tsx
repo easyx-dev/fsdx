@@ -4,71 +4,21 @@
  * value / onChange 兼容 antd Form.Item 直接注入
  */
 
-import { message } from "@fsdx/ui-spa/antd-static";
 import type { RichEditorMedia } from "@fsdx/ui-spa/editor";
 import { RichEditor as RichEditorBase } from "@fsdx/ui-spa/editor";
-import { getFileListSFn, uploadFileSFn } from "#/services/file/file.functions";
-import { sfnUnwrap } from "#/utils/sfn-error";
+import { getMediaList, uploadFileAndGetUrl } from "./upload/file-adapter";
 
 interface RichEditorProps {
 	value?: string;
 	onChange?: (html: string) => void;
 }
 
-/** 上传单个文件到文件库（永久），返回可插入编辑器的读取地址；失败时提示并向上抛出 */
-const uploadMedia = async (file: File): Promise<string> => {
-	const fd = new FormData();
-	fd.append("file", file);
-	fd.append("permanent", "true");
-	const [result, err] = await sfnUnwrap(uploadFileSFn({ data: fd }), {
-		error: "上传失败",
-	});
-	if (err) throw err;
-	if (!result?.data?.id) {
-		message.error("上传失败：上传未返回文件标识");
-		throw new Error("上传未返回文件标识");
-	}
-	return `/file/r/${result.data.id}`;
-};
-
-/** 媒体库列表：按媒体类型前缀分页拉取永久文件，映射为编辑器媒体项 */
-const getMediaList: RichEditorMedia["getList"] = async ({
-	mimePrefix,
-	excludeMimePrefixes,
-	keyword,
-	page,
-	pageSize,
-}) => {
-	const [result] = await sfnUnwrap(
-		getFileListSFn({
-			data: {
-				keyword,
-				mimePrefix,
-				excludeMimePrefixes,
-				status: "permanent",
-				page,
-				pageSize,
-			},
-		}),
-		{ error: "媒体库加载失败" },
-	);
-	if (result === null) return { items: [], total: 0 };
-	const items = (result.records ?? []).map((r) => ({
-		id: r.id,
-		url: `/file/r/${r.id}`,
-		name: r.originalName,
-		size: r.size,
-		fileType: r.mimeType,
-	}));
-	return { items, total: result.total };
-};
-
 /** 编辑器媒体能力：图片/视频/音频/附件统一走后台上传，媒体库取自文件库 */
 const MEDIA: RichEditorMedia = {
-	uploadImage: uploadMedia,
-	uploadVideo: uploadMedia,
-	uploadAudio: uploadMedia,
-	uploadAttachment: uploadMedia,
+	uploadImage: uploadFileAndGetUrl,
+	uploadVideo: uploadFileAndGetUrl,
+	uploadAudio: uploadFileAndGetUrl,
+	uploadAttachment: uploadFileAndGetUrl,
 	getList: getMediaList,
 };
 

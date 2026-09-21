@@ -2,7 +2,6 @@
  * 实体翻译管理页：维护 content_translation 表
  */
 import { DownloadOutlined, PlusOutlined } from "@ant-design/icons";
-import { downloadFile } from "@fsdx/lib/export";
 import { message } from "@fsdx/ui-spa/antd-static";
 import { JsonImportButton } from "@fsdx/ui-spa/json-import-button";
 import {
@@ -14,7 +13,6 @@ import {
 } from "@fsdx/ui-spa/table";
 import { createFileRoute } from "@tanstack/react-router";
 import { Button, Form, Input, Modal, Select } from "antd";
-import dayjs from "dayjs";
 import type { ChangeEvent } from "react";
 import { useCallback, useState } from "react";
 import {
@@ -31,6 +29,7 @@ import {
 	type Locale,
 	SUPPORTED_LOCALES,
 } from "#/shared-services/i18n/i18n.types";
+import { downloadExport } from "#/utils/export-file";
 import { callSfn, sfnUnwrap } from "#/utils/sfn-error";
 import { useListQuery } from "#/utils/use-list-query";
 import {
@@ -167,17 +166,13 @@ function ContentTranslationPage() {
 
 	/** 导出实体翻译数据（JSON） */
 	async function handleExport() {
-		const [json] = await sfnUnwrap(exportContentTranslationsSFn(), {
-			error: "导出失败",
-		});
-		if (!json) return;
-		const timestamp = dayjs().format("YYYY-MM-DD");
-		downloadFile(
-			json,
-			`content_translations_export_${timestamp}.json`,
-			"application/json",
-		);
-		message.success("导出完成");
+		if (
+			await downloadExport(exportContentTranslationsSFn(), {
+				name: "content_translations_export",
+			})
+		) {
+			message.success("导出完成");
+		}
 	}
 
 	const columns = [

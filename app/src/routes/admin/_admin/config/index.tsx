@@ -3,13 +3,11 @@
  * 表格数据为全量配置的前端过滤（分组统计需要全量），故保持本地筛选与分页
  */
 import { DownloadOutlined, PlusOutlined } from "@ant-design/icons";
-import { downloadFile } from "@fsdx/lib/export";
 import { message } from "@fsdx/ui-spa/antd-static";
 import { JsonImportButton } from "@fsdx/ui-spa/json-import-button";
 import { ProTable, withDisabledReason } from "@fsdx/ui-spa/table";
 import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { Button, Card, Flex, Form, Input } from "antd";
-import dayjs from "dayjs";
 import type { ChangeEvent } from "react";
 import { useMemo, useState } from "react";
 import {
@@ -19,6 +17,7 @@ import {
 } from "#/components/admin";
 import { ADMIN_PERMISSIONS } from "#/permissions/admin-permissions";
 import type { ConfigRecord } from "#/shared-services/config/config.server";
+import { downloadExport } from "#/utils/export-file";
 import { callSfn, sfnUnwrap } from "#/utils/sfn-error";
 import { ConfigFormModal } from "./-mods/ConfigFormModal";
 import {
@@ -183,11 +182,9 @@ function ConfigPage() {
 
 	/** 导出系统配置数据（JSON） */
 	const handleExportConfigs = async () => {
-		const [json] = await sfnUnwrap(exportConfigsSFn(), { error: "导出失败" });
-		if (!json) return;
-		const timestamp = dayjs().format("YYYY-MM-DD");
-		downloadFile(json, `configs_export_${timestamp}.json`, "application/json");
-		message.success("导出完成");
+		if (await downloadExport(exportConfigsSFn(), { name: "configs_export" })) {
+			message.success("导出完成");
+		}
 	};
 
 	const configColumnsDef = configColumns({

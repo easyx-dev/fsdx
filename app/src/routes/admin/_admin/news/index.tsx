@@ -7,13 +7,11 @@ import {
 	FileTextOutlined,
 	PlusOutlined,
 } from "@ant-design/icons";
-import { downloadFile } from "@fsdx/lib/export";
 import { message } from "@fsdx/ui-spa/antd-static";
 import { JsonImportButton } from "@fsdx/ui-spa/json-import-button";
 import { ProTable, withDisabledReason } from "@fsdx/ui-spa/table";
 import { createFileRoute } from "@tanstack/react-router";
 import { Button } from "antd";
-import dayjs from "dayjs";
 import { useCallback, useState } from "react";
 import {
 	AdminFormDrawer,
@@ -27,6 +25,7 @@ import {
 } from "#/components/admin";
 import { ADMIN_PERMISSIONS } from "#/permissions/admin-permissions";
 import type { NewsRecord } from "#/services/news/news.server";
+import { downloadExport } from "#/utils/export-file";
 import { callSfn, sfnUnwrap } from "#/utils/sfn-error";
 import { useListQuery } from "#/utils/use-list-query";
 import { NewsForm } from "./-mods/NewsForm";
@@ -120,16 +119,14 @@ function NewsListPage() {
 
 	/** 导出新闻数据 */
 	const handleExport = async (format: "csv" | "json") => {
-		const [result] = await sfnUnwrap(exportNewsSFn({ data: { format } }), {
-			error: "导出失败",
-		});
-		if (!result) return;
-		const timestamp = dayjs().format("YYYY-MM-DD");
 		const ext = format === "csv" ? "csv" : "json";
-		const mime =
-			format === "csv" ? "text/csv;charset=utf-8" : "application/json";
-		downloadFile(result.content, `news_export_${timestamp}.${ext}`, mime);
-		message.success("导出完成");
+		const ok = await downloadExport(exportNewsSFn({ data: { format } }), {
+			name: "news_export",
+			ext,
+			mime: ext === "csv" ? "text/csv;charset=utf-8" : "application/json",
+			pick: (result) => result.content,
+		});
+		if (ok) message.success("导出完成");
 	};
 
 	const openCreate = () => {

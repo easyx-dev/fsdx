@@ -4,12 +4,8 @@
  */
 import { sql } from "drizzle-orm";
 import { db } from "#/db";
+import { extractRows } from "#/shared-services/query/query-utils.server";
 import type { TableSizeEntry } from "./system-metric.types";
-
-/** 从 db.execute 结果中提取行数组（drizzle v1 返回 { rows } 结构） */
-function extractRows<T>(result: unknown): T[] {
-	return (result as { rows?: T[] }).rows ?? [];
-}
 
 /** 查询当前数据库总大小（字节，bigint 由驱动返回字符串） */
 export async function getDatabaseTotalBytes(): Promise<number> {

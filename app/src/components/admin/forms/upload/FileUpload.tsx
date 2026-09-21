@@ -3,13 +3,8 @@
  * 基础组件在 @fsdx/ui-spa/upload，此处注入项目统一的上传与文件库查询实现
  * value / onChange 兼容 antd Form.Item 直接注入
  */
-import {
-	type FetchFiles,
-	FileUpload as FileUploadBase,
-	type UploadFileFn,
-} from "@fsdx/ui-spa/upload";
-import { getFileListSFn, uploadFileSFn } from "#/services/file/file.functions";
-import { callSfn, sfnUnwrap } from "#/utils/sfn-error";
+import { FileUpload as FileUploadBase } from "@fsdx/ui-spa/upload";
+import { fetchFiles, readUrl, uploadFile } from "./file-adapter";
 
 interface FileUploadProps {
 	/** 文件 ID（单文件）或文件 ID 数组（多文件），兼容 Form.Item 注入 */
@@ -30,38 +25,7 @@ interface FileUploadProps {
 	permanent?: boolean;
 }
 
-/** 上传文件到文件库，返回入库文件信息 */
-const uploadFile: UploadFileFn = async (file, permanent) => {
-	const fd = new FormData();
-	fd.append("file", file);
-	if (permanent) fd.append("permanent", "true");
-	const result = await callSfn(uploadFileSFn({ data: fd }), {
-		error: "上传失败",
-	});
-	if (!result.success || !result.data) {
-		throw new Error("上传失败");
-	}
-	return result.data;
-};
-
-/** 查询文件库列表（服务端分页） */
-const fetchFiles: FetchFiles = async ({
-	keyword,
-	mimePrefix,
-	page,
-	pageSize,
-}) => {
-	const [result] = await sfnUnwrap(
-		getFileListSFn({ data: { keyword, mimePrefix, page, pageSize } }),
-		{ error: "加载文件列表失败" },
-	);
-	if (result === null) return { records: [], total: 0 };
-	return { records: result.records ?? [], total: result.total };
-};
-
-/** 生成文件读取地址（内联预览/打开） */
-const readUrl = (id: string) => `/file/r/${id}`;
-
+/** 文件上传（业务壳）：注入项目统一的上传/查询实现，其余属性透传基础组件 */
 export function FileUpload(props: FileUploadProps) {
 	return (
 		<FileUploadBase

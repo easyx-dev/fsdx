@@ -7,6 +7,7 @@ import {
 	ReloadOutlined,
 	SearchOutlined,
 } from "@ant-design/icons";
+import { downloadFile } from "@fsdx/lib/export";
 import { message } from "@fsdx/ui-spa/antd-static";
 import { ProTable } from "@fsdx/ui-spa/table";
 import { createFileRoute } from "@tanstack/react-router";
@@ -166,15 +167,11 @@ function EventListPage() {
 				row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(","),
 			),
 		].join("\n");
-		const blob = new Blob([`\uFEFF${csv}`], {
-			type: "text/csv;charset=utf-8;",
-		});
-		const url = URL.createObjectURL(blob);
-		const a = document.createElement("a");
-		a.href = url;
-		a.download = `埋点事件_${dayjs().format("YYYYMMDD_HHmmss")}.csv`;
-		a.click();
-		URL.revokeObjectURL(url);
+		downloadFile(
+			`\uFEFF${csv}`,
+			`埋点事件_${dayjs().format("YYYYMMDD_HHmmss")}.csv`,
+			"text/csv;charset=utf-8;",
+		);
 		message.success("导出成功");
 	};
 
