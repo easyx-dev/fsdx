@@ -10,6 +10,10 @@ import {
 	type ModelMessage,
 	type UIMessage,
 } from "@tanstack/ai";
+import {
+	logExternalRequest,
+	observeExternalStream,
+} from "#/shared-services/external-observability";
 import { getAiAdapter } from "./ai.provider";
 
 /** 供 chat() 的对话消息（UIMessage 或 ModelMessage 均被 chat() 接受并内部归一化） */
@@ -51,38 +55,81 @@ async function getReadyAdapter(providerId?: string) {
 	return adapter;
 }
 
+/** 外部调用观测的公共字段：path 取 OpenAI 兼容 Chat Completions 路径，厂商与流式与否入 extra */
+function aiChatLogBase(providerId: string | undefined, stream: boolean) {
+	return {
+		system: "ai",
+		requestType: "business" as const,
+		path: "chat/completions",
+		method: "POST",
+		extra: { providerId, stream },
+	};
+}
+
 /**
  * 发起通用 AI 流式对话，返回 TanStack AI 流（含 text/thinking/tool 事件，由 Server Route 透传为 SSE）
+ * 外发调用经流观测器收口：流内失败与整段耗时都计入外部调用指标
  * @returns ChatStream：AsyncIterable<StreamChunk>
  */
 export async function streamAiChat(
 	params: AiChatStreamParams,
 ): Promise<ChatStream> {
 	const adapter = await getReadyAdapter(params.providerId);
-	return chat({
-		adapter,
-		messages: params.messages,
-		systemPrompts: params.systemPrompts,
-		modelOptions: params.modelOptions,
-		threadId: params.threadId,
-		runId: params.runId,
-		abortController: params.abortController,
-	});
+	const startedAt = Date.now();
+	let stream: ChatStream;
+	try {
+		stream = await chat({
+			adapter,
+			messages: params.messages,
+			systemPrompts: params.systemPrompts,
+			modelOptions: params.modelOptions,
+			threadId: params.threadId,
+			runId: params.runId,
+			abortController: params.abortController,
+		});
+	} catch (err) {
+		logExternalRequest({
+			...aiChatLogBase(params.providerId, true),
+			duration: Date.now() - startedAt,
+			success: false,
+			error: err instanceof Error ? err.message : String(err),
+		});
+		throw err;
+	}
+	return observeExternalStream(stream, aiChatLogBase(params.providerId, true));
 }
 
 /**
  * 非流式一次性文本生成（供 AI 翻译等「点一次出一次结果」的业务复用）
  * 借助 chat({ stream: false }) 直接返回完整文本，无需手动消费流。
+ * 外发调用经 logExternalRequest 收口（成功 debug / 失败 warn + 指标），调用方不再另打日志
  * @returns 模型回复的完整文本
  */
 export async function completeText(params: AiCompleteParams): Promise<string> {
 	const adapter = await getReadyAdapter(params.providerId);
-	return chat({
-		adapter,
-		messages: params.messages,
-		systemPrompts: params.systemPrompts,
-		modelOptions: params.modelOptions,
-		abortController: params.abortController,
-		stream: false,
-	});
+	const startedAt = Date.now();
+	try {
+		const text = await chat({
+			adapter,
+			messages: params.messages,
+			systemPrompts: params.systemPrompts,
+			modelOptions: params.modelOptions,
+			abortController: params.abortController,
+			stream: false,
+		});
+		logExternalRequest({
+			...aiChatLogBase(params.providerId, false),
+			duration: Date.now() - startedAt,
+			success: true,
+		});
+		return text;
+	} catch (err) {
+		logExternalRequest({
+			...aiChatLogBase(params.providerId, false),
+			duration: Date.now() - startedAt,
+			success: false,
+			error: err instanceof Error ? err.message : String(err),
+		});
+		throw err;
+	}
 }

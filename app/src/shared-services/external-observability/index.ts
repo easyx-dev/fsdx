@@ -74,3 +74,48 @@ export function logExternalRequest(input: ExternalRequestLogInput): void {
 		logger.warn(logFields, `外部系统调用失败 ${input.system}`);
 	}
 }
+
+/**
+ * 是否为消费方主动取消（AbortSignal / SDK 取消），此类中断不属上游故障
+ * 建流阶段与流内阶段的计数口径共用本判定，避免两处漂移
+ */
+export function isAbortError(err: unknown): boolean {
+	return err instanceof Error && err.name === "AbortError";
+}
+
+/**
+ * 观测流式外部调用：包装异步流后返回。
+ * 单次 logExternalRequest 只能覆盖「请求已发出」这一时点，对流式响应而言既测不到真实耗时、
+ * 也漏掉流内失败，故按流生命周期收口：
+ * - 迭代自然结束 → 记成功，duration 为整段流耗时
+ * - 流内抛错 → 记失败并原样抛出
+ * - 消费方中途放弃（客户端断开）→ 不记结果，避免把取消计入失败率
+ * @param stream 上游返回的异步流
+ * @param input 除 duration / success / error 外的日志字段（由本函数补齐）
+ */
+export async function* observeExternalStream<T>(
+	stream: AsyncIterable<T>,
+	input: Omit<ExternalRequestLogInput, "duration" | "success" | "error">,
+): AsyncGenerator<T> {
+	const startedAt = Date.now();
+	try {
+		for await (const chunk of stream) {
+			yield chunk;
+		}
+	} catch (err) {
+		if (!isAbortError(err)) {
+			logExternalRequest({
+				...input,
+				duration: Date.now() - startedAt,
+				success: false,
+				error: err instanceof Error ? err.message : String(err),
+			});
+		}
+		throw err;
+	}
+	logExternalRequest({
+		...input,
+		duration: Date.now() - startedAt,
+		success: true,
+	});
+}

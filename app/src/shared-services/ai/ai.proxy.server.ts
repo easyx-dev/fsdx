@@ -7,6 +7,11 @@
  */
 import type OpenAI from "openai";
 import { z } from "zod";
+import {
+	isAbortError,
+	logExternalRequest,
+	observeExternalStream,
+} from "#/shared-services/external-observability";
 import { getAiRawClient } from "./ai.provider";
 
 /** 传入的对话消息内容块：文本或厂商原生的多模态块，按原样转发故只校验容器形态 */
@@ -107,6 +112,8 @@ export async function proxyOpenAiChat(
 	}
 
 	let stream: AsyncIterable<unknown>;
+	// 建立流失败的耗时为「发起 → 抛错」；流建立成功后的整段耗时由流观测器在流结束处记录
+	const startedAt = Date.now();
 	try {
 		stream = await ready.client.chat.completions.create(
 			{
@@ -119,15 +126,39 @@ export async function proxyOpenAiChat(
 		);
 	} catch (err) {
 		const message = err instanceof Error ? err.message : "上游 AI 请求失败";
+		// 建立流失败：客户端主动中止不算上游故障（口径与流内失败一致）
+		if (!isAbortError(err)) {
+			logExternalRequest({
+				system: "ai",
+				requestType: "business",
+				path: "chat/completions",
+				method: "POST",
+				duration: Date.now() - startedAt,
+				success: false,
+				error: message,
+				extra: { providerId: params.providerId, model: ready.model },
+			});
+		}
 		return openAiErrorResponse(502, message);
 	}
 
-	return new Response(encodeOpenAiSseStream(stream), {
-		headers: {
-			"content-type": "text/event-stream; charset=utf-8",
-			"cache-control": "no-cache, no-transform",
-			// 关闭 nginx 等反向代理的响应缓冲，保证增量实时到达
-			"x-accel-buffering": "no",
+	return new Response(
+		encodeOpenAiSseStream(
+			observeExternalStream(stream, {
+				system: "ai",
+				requestType: "business",
+				path: "chat/completions",
+				method: "POST",
+				extra: { providerId: params.providerId, model: ready.model },
+			}),
+		),
+		{
+			headers: {
+				"content-type": "text/event-stream; charset=utf-8",
+				"cache-control": "no-cache, no-transform",
+				// 关闭 nginx 等反向代理的响应缓冲，保证增量实时到达
+				"x-accel-buffering": "no",
+			},
 		},
-	});
+	);
 }

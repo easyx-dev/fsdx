@@ -4,7 +4,7 @@
  * 零外部依赖：HTTP 用 Node fetch，签名用内置 crypto。
  */
 import { createHmac } from "node:crypto";
-import { logger } from "#/shared-services/logger";
+import { logExternalRequest } from "#/shared-services/external-observability";
 
 /** webhook 变体 */
 export type WebhookVariant = "generic" | "feishu" | "wecom" | "dingtalk";
@@ -80,6 +80,15 @@ export async function sendWebhook(
 		buildPayload(variant, payload.title, payload.content, time),
 	);
 
+	const startedAt = Date.now();
+	// 观测字段：不回传 webhook URL（含 access_token 等凭据），只记变体
+	const logBase = {
+		system: "webhook",
+		requestType: "business" as const,
+		path: "webhook",
+		method: "POST",
+		extra: { variant },
+	};
 	try {
 		const res = await fetch(finalUrl, {
 			method: "POST",
@@ -92,17 +101,31 @@ export async function sendWebhook(
 		});
 		if (!res.ok) {
 			const bodyText = await res.text().catch(() => "");
-			logger.warn(
-				{ variant, status: res.status, body: bodyText.slice(0, 500) },
-				"webhook 通知发送失败",
-			);
+			logExternalRequest({
+				...logBase,
+				duration: Date.now() - startedAt,
+				success: false,
+				status: res.status,
+				error: `HTTP ${res.status}`,
+				extra: { variant, body: bodyText.slice(0, 500) },
+			});
 			return { ok: false, error: `HTTP ${res.status}` };
 		}
-		logger.info({ variant }, "webhook 通知发送成功");
+		logExternalRequest({
+			...logBase,
+			duration: Date.now() - startedAt,
+			success: true,
+			status: res.status,
+		});
 		return { ok: true };
 	} catch (err) {
 		const message = err instanceof Error ? err.message : "webhook 请求异常";
-		logger.warn({ variant, error: message }, "webhook 通知发送失败");
+		logExternalRequest({
+			...logBase,
+			duration: Date.now() - startedAt,
+			success: false,
+			error: message,
+		});
 		return { ok: false, error: message };
 	}
 }

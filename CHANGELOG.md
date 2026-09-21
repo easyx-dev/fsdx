@@ -177,6 +177,8 @@
 
 ### Fix
 
+- **外部系统调用未统一观测、日志级别虚高（[infra]）**：`logExternalRequest` 自引入后在生产代码中零调用，`external_calls_total` / `external_call_duration_seconds` 恒为 0；邮件 / 短信 / webhook 各在自己的成功路径打 `info`，违反「per-call 一律禁 info」判据。四类外发（`mail`、`sms`、`notify/webhook`、`ai` 的 `/models` 拉取，以及 `chat/completions` 代理与 `completeText` / `streamAiChat`）统一改走 `logExternalRequest`（成功 debug、失败 warn + 指标），删除调用方重复日志；`i18n.ai.server` 的 AI 翻译失败日志随之移除（失败已由 `completeText` 收口）。指标口径按「调用是否真正可用」统计——`/models` 拉取在 HTTP 成功但响应体不可用（非 JSON / 结构异常 / 无模型 id）时同样计为失败，并把非法 JSON 的原始 `SyntaxError` 就地归一化为可读文案。新增 `observeExternalStream` 观测**流式**外部调用——单次记日志只能覆盖「请求已发出」，既测不到整段耗时也漏掉流内失败；现按流生命周期收口：自然结束记成功（duration 为整段流耗时）、流内抛错记失败并原样抛出、消费方中途放弃与客户端主动取消（AbortError）不计结果（避免取消抬高失败率）。已实测：一次真实 webhook 外发后 `external_calls_total{system="webhook",outcome="success"} 1`、失败路径 `outcome="error"} 1`。可被衍生项目吸收
+
 - **用户记录内部列泄漏（[infra]）**：管理端与服务端用户接口把整行记录回传客户端，`passwordHash` 随之进入响应 JSON——列表查询此前显式 `select` 了该列，新建 / 更新 / 详情则用无参 `.returning()` / `.select()` 取回全部列，同仓客户端用户列表（`clientUserSafeCols`）已刻意排除该列，属遗漏。现收敛为单一「可出服务端字段投影」（管理端新增 `adminUserSafeCols`，客户端复用既有 `clientUserSafeCols`），列表 / 详情 / 新建 / 更新四条路径统一经投影取数，`AdminUserRecord` 与客户端侧对齐为 `Omit<…, "passwordHash" | "deletedAt">`；补七条投影回归用例（管理端 4、客户端 3；已验证：投影改回全列即失败）。可被衍生项目吸收
 
 - **文件管理器路径穿越（[infra]）**：`isPathSafe` 只校验传入的子路径，叶子名称（上传文件名 / 重命名新名称 / 新目录名）此前未校验即参与拼接——上传可传 `../../x` 把文件写到 `STORAGE_DIR` 之外，重命名可借 `../` 把条目移到其它目录。新增叶子名校验（拒绝空、`.` / `..` 与任何含路径分隔符的输入，显式拒绝而非静默收敛为 `basename`；反斜杠在 POSIX 下本属合法字符，一并拒绝以拦截 Windows 风格穿越，属有意为之的行为收紧），拼接后再过 `isPathSafe` 作二次校验；重命名的目标父目录仍取条目自身的真实父目录，保持「原地改名」语义。补六条穿越拒绝用例。可被衍生项目吸收

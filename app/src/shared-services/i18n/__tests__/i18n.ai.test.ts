@@ -3,10 +3,6 @@
  */
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-vi.mock("#/shared-services/logger", () => ({
-	logger: { error: vi.fn(), info: vi.fn(), warn: vi.fn() },
-}));
-
 const {
 	mockGetConfig,
 	mockCompleteText,
@@ -242,7 +238,7 @@ describe("translateWithAi", () => {
 		).rejects.toThrow("请先在系统配置中配置 AI 厂商");
 	});
 
-	it("其他失败记录日志并转友好提示", async () => {
+	it("其他失败转友好提示（失败已由 completeText 记外部调用，本层不重复记日志）", async () => {
 		mockGetConfig.mockResolvedValue("t");
 		mockCompleteText.mockRejectedValue(new Error("boom"));
 		await expect(

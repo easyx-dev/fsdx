@@ -1,21 +1,23 @@
 /**
- * 邮件发送模块测试：发送成功/失败、验证码邮件模板（getConfig / logger 直接 mock）
+ * 邮件发送模块测试：发送成功/失败、验证码邮件模板（getConfig / 外部调用观测直接 mock）
  */
 
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const { mockSendMail, mockGetConfig, mockLogger } = vi.hoisted(() => ({
-	mockSendMail: vi.fn(),
-	mockGetConfig: vi.fn(),
-	mockLogger: {
-		error: vi.fn(),
-		info: vi.fn(),
-		warn: vi.fn(),
-		debug: vi.fn(),
-		trace: vi.fn(),
-		fatal: vi.fn(),
-	},
-}));
+const { mockSendMail, mockGetConfig, mockLogger, mockLogExternalRequest } =
+	vi.hoisted(() => ({
+		mockSendMail: vi.fn(),
+		mockGetConfig: vi.fn(),
+		mockLogger: {
+			error: vi.fn(),
+			info: vi.fn(),
+			warn: vi.fn(),
+			debug: vi.fn(),
+			trace: vi.fn(),
+			fatal: vi.fn(),
+		},
+		mockLogExternalRequest: vi.fn(),
+	}));
 
 vi.mock("nodemailer", () => ({
 	createTransport: vi.fn(() => ({
@@ -26,6 +28,9 @@ vi.mock("#/shared-services/config/config.server", () => ({
 	getConfig: mockGetConfig,
 }));
 vi.mock("#/shared-services/logger", () => ({ logger: mockLogger }));
+vi.mock("#/shared-services/external-observability", () => ({
+	logExternalRequest: mockLogExternalRequest,
+}));
 
 import { sendCaptchaMail, sendMail } from "../index";
 
@@ -45,7 +50,7 @@ function mockFullConfig(): void {
 
 describe("sendMail", () => {
 	beforeEach(() => {
-		mockSendMail.mockClear();
+		vi.clearAllMocks();
 		mockGetConfig.mockReset();
 		mockFullConfig();
 	});
@@ -87,11 +92,46 @@ describe("sendMail", () => {
 		expect(result).toBe(false);
 		expect(mockSendMail).not.toHaveBeenCalled();
 	});
+
+	it("成功与失败都经 logExternalRequest 记外部调用（不在本层另打日志）", async () => {
+		mockSendMail.mockResolvedValueOnce({ messageId: "msg-9" });
+		await sendMail({
+			to: "user@test.com",
+			subject: "测试",
+			html: "<p>Test</p>",
+		});
+		expect(mockLogExternalRequest).toHaveBeenLastCalledWith(
+			expect.objectContaining({ system: "mail", success: true }),
+		);
+
+		mockSendMail.mockRejectedValueOnce(new Error("连接失败"));
+		await sendMail({
+			to: "user@test.com",
+			subject: "测试",
+			html: "<p>Test</p>",
+		});
+		expect(mockLogExternalRequest).toHaveBeenLastCalledWith(
+			expect.objectContaining({ system: "mail", success: false }),
+		);
+		// 调用结果已由 logExternalRequest 统一承载（成功 debug / 失败 warn），本层不再重复上报
+		expect(mockLogger.info).not.toHaveBeenCalled();
+		expect(mockLogger.warn).not.toHaveBeenCalled();
+	});
+
+	it("SMTP 未配置跳过时不计入外部调用", async () => {
+		mockGetConfig.mockResolvedValue("");
+		await sendMail({
+			to: "user@test.com",
+			subject: "测试",
+			html: "<p>Test</p>",
+		});
+		expect(mockLogExternalRequest).not.toHaveBeenCalled();
+	});
 });
 
 describe("sendCaptchaMail", () => {
 	beforeEach(() => {
-		mockSendMail.mockClear();
+		vi.clearAllMocks();
 		mockGetConfig.mockReset();
 		mockFullConfig();
 	});

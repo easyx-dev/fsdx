@@ -3,12 +3,11 @@
  * - 单字段翻译（translateWithAi，非流式，供抽屉单字段「AI 翻译」按钮）
  * - 批量翻译（buildBatchTasks 组批 + runBatchTasks 逐批流式）：按 mode(fill/correct) 计算任务集，
  *   按 batchSize 把多实体打包成一个 JSON 一次调用，流式过程中转发 text-delta 并累积，批末落库/回填
- * 依赖：lib / 本层（i18n.content 批量写回）/ shared-services 的 config、ai、logger；不依赖 services/**
+ * 依赖：lib / 本层（i18n.content 批量写回）/ shared-services 的 config、ai；不依赖 services/**
  */
 
 import { completeText, streamAiChat } from "#/shared-services/ai/ai.server";
 import { getConfig } from "#/shared-services/config/config.server";
-import { logger } from "#/shared-services/logger";
 import type { AiBatchTranslateMode } from "./i18n.ai.schemas";
 import type {
 	AiBatchEntity,
@@ -171,7 +170,7 @@ export async function translateWithAi(opts: {
 		if (msg.includes("未配置")) {
 			throw new Error("AI 客户端未配置，请先在系统配置中配置 AI 厂商");
 		}
-		logger.error({ err: msg }, "AI 翻译调用失败");
+		// 调用失败已由 completeText 的 logExternalRequest 记录（warn + 指标），此处只转译为用户可读文案
 		throw new Error("AI 翻译服务调用失败，请稍后重试");
 	}
 }

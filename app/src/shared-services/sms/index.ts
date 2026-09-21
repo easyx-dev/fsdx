@@ -5,6 +5,7 @@
 import Dysmsapi20170525, { SendSmsRequest } from "@alicloud/dysmsapi20170525";
 import * as $OpenApi from "@alicloud/openapi-client";
 import { getConfig } from "#/shared-services/config/config.server";
+import { logExternalRequest } from "#/shared-services/external-observability";
 import { logger } from "#/shared-services/logger";
 
 /** 短信服务商标识 */
@@ -68,7 +69,7 @@ function maskPhone(phone: string): string {
 	return phone.replace(/(\d{3})\d{4}(\d{4})/, "$1****$2");
 }
 
-/** 发送阿里云短信验证码 */
+/** 发送阿里云短信验证码（外发结果经 logExternalRequest 收口） */
 async function sendAliyunSms(phone: string, code: string): Promise<void> {
 	const client = await getAliyunClient();
 	if (!client) {
@@ -90,12 +91,40 @@ async function sendAliyunSms(phone: string, code: string): Promise<void> {
 		templateParam: JSON.stringify({ code }),
 	});
 
-	const response = await client.sendSms(request);
-	if (response.body?.code !== "OK") {
-		const errMsg = response.body?.message || "短信发送失败";
-		throw new Error(`阿里云短信: ${errMsg}`);
+	const startedAt = Date.now();
+	// 观测字段：手机号脱敏后入日志，模板码标识本次业务类型
+	const logBase = {
+		system: "sms",
+		requestType: "business" as const,
+		path: "dysmsapi/SendSms",
+		method: "POST",
+		extra: {
+			provider: "aliyun",
+			phone: maskPhone(phone),
+			templateCode: config.templateCode,
+		},
+	};
+	try {
+		const response = await client.sendSms(request);
+		if (response.body?.code !== "OK") {
+			throw new Error(
+				`阿里云短信: ${response.body?.message || "短信发送失败"}`,
+			);
+		}
+		logExternalRequest({
+			...logBase,
+			duration: Date.now() - startedAt,
+			success: true,
+		});
+	} catch (err) {
+		logExternalRequest({
+			...logBase,
+			duration: Date.now() - startedAt,
+			success: false,
+			error: err instanceof Error ? err.message : String(err),
+		});
+		throw err;
 	}
-	logger.info({ phone: maskPhone(phone) }, "短信发送成功");
 }
 
 // ========== 导出函数 ==========

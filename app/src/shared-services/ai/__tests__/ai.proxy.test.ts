@@ -3,12 +3,29 @@
  */
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const { mockGetAiRawClient } = vi.hoisted(() => ({
+const { mockGetAiRawClient, mockInc, mockObserve } = vi.hoisted(() => ({
 	mockGetAiRawClient: vi.fn(),
+	mockInc: vi.fn(),
+	mockObserve: vi.fn(),
 }));
 
 vi.mock("../ai.provider", () => ({
 	getAiRawClient: mockGetAiRawClient,
+}));
+
+// 外部调用观测按其真实实现运行（含真实 observeExternalStream），只拦截日志与指标出口，
+// 以验证「AI 调用确实计入 external_calls_total」
+vi.mock("#/shared-services/logger", () => ({
+	logger: {
+		debug: vi.fn(),
+		info: vi.fn(),
+		warn: vi.fn(),
+		error: vi.fn(),
+	},
+}));
+vi.mock("#/shared-services/metrics", () => ({
+	externalCallsTotal: { inc: mockInc },
+	externalCallDurationSeconds: { observe: mockObserve },
 }));
 
 import {
@@ -129,5 +146,41 @@ describe("proxyOpenAiChat", () => {
 		expect(await res.json()).toEqual({
 			error: { message: "401 Unauthorized" },
 		});
+		expect(mockInc).toHaveBeenCalledWith({ system: "ai", outcome: "error" });
+	});
+
+	it("流结束后记一次成功的外部调用（duration 覆盖整段流）", async () => {
+		const create = vi.fn().mockResolvedValue(fromArray([{ a: 1 }]));
+		mockGetAiRawClient.mockResolvedValue({
+			client: { chat: { completions: { create } } },
+			model: "deepseek-chat",
+		});
+
+		const res = await proxyOpenAiChat({
+			messages: [{ role: "user", content: "hi" }],
+			providerId: "deepseek",
+		});
+		// 消费完整流后观测器才计入结果
+		await res.text();
+
+		expect(mockInc).toHaveBeenCalledWith({ system: "ai", outcome: "success" });
+		expect(mockObserve).toHaveBeenCalled();
+	});
+
+	it("客户端主动取消建立流时不记失败", async () => {
+		const abortErr = new Error("This operation was aborted");
+		abortErr.name = "AbortError";
+		const create = vi.fn().mockRejectedValue(abortErr);
+		mockGetAiRawClient.mockResolvedValue({
+			client: { chat: { completions: { create } } },
+			model: "deepseek-chat",
+		});
+
+		const res = await proxyOpenAiChat({
+			messages: [{ role: "user", content: "hi" }],
+			signal: AbortSignal.abort(),
+		});
+		expect(res.status).toBe(502);
+		expect(mockInc).not.toHaveBeenCalled();
 	});
 });

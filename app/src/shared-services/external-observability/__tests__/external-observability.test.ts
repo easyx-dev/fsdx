@@ -20,7 +20,11 @@ vi.mock("#/shared-services/metrics", () => ({
 	externalCallDurationSeconds: { observe: mockObserve },
 }));
 
-import { logExternalRequest } from "#/shared-services/external-observability";
+import {
+	isAbortError,
+	logExternalRequest,
+	observeExternalStream,
+} from "#/shared-services/external-observability";
 import { runWithRequestContext } from "#/shared-services/request-context";
 
 describe("logExternalRequest", () => {
@@ -124,5 +128,99 @@ describe("logExternalRequest", () => {
 			apiCode: "scm",
 			path: "/api/test",
 		});
+	});
+});
+
+/** 逐块产出的异步流 */
+async function* fromArray<T>(items: T[]): AsyncGenerator<T> {
+	for (const item of items) yield item;
+}
+
+/** 迭代中途抛错的异步流 */
+async function* failing(): AsyncGenerator<number> {
+	yield 1;
+	throw new Error("上游断流");
+}
+
+describe("isAbortError", () => {
+	it("识别 AbortError 与普通异常/非 Error 值", () => {
+		const abortErr = new Error("The operation was aborted");
+		abortErr.name = "AbortError";
+		expect(isAbortError(abortErr)).toBe(true);
+		expect(isAbortError(new Error("boom"))).toBe(false);
+		expect(isAbortError("AbortError")).toBe(false);
+		expect(isAbortError(undefined)).toBe(false);
+	});
+});
+
+describe("observeExternalStream", () => {
+	beforeEach(() => {
+		vi.clearAllMocks();
+	});
+
+	it("透传全部块，并在流自然结束时记成功", async () => {
+		const chunks: number[] = [];
+		for await (const chunk of observeExternalStream(fromArray([1, 2, 3]), {
+			system: "ai",
+			requestType: "business",
+			path: "chat/completions",
+		})) {
+			chunks.push(chunk);
+		}
+
+		expect(chunks).toEqual([1, 2, 3]);
+		expect(mockInc).toHaveBeenCalledWith({ system: "ai", outcome: "success" });
+		expect(mockLogger.debug).toHaveBeenCalled();
+	});
+
+	it("流内抛错时记失败并原样抛出", async () => {
+		const consume = async () => {
+			for await (const _ of observeExternalStream(failing(), {
+				system: "ai",
+				requestType: "business",
+				path: "chat/completions",
+			})) {
+				// 仅消费
+			}
+		};
+
+		await expect(consume()).rejects.toThrow("上游断流");
+		expect(mockInc).toHaveBeenCalledWith({ system: "ai", outcome: "error" });
+		expect(mockLogger.warn.mock.calls.at(-1)?.[0]).toMatchObject({
+			error: "上游断流",
+		});
+	});
+
+	it("消费方中途放弃时不计任何结果", async () => {
+		for await (const _ of observeExternalStream(fromArray([1, 2, 3]), {
+			system: "ai",
+			requestType: "business",
+			path: "chat/completions",
+		})) {
+			break;
+		}
+
+		expect(mockInc).not.toHaveBeenCalled();
+	});
+
+	it("客户端主动取消（AbortError）不计失败", async () => {
+		async function* aborted(): AsyncGenerator<number> {
+			yield 1;
+			const err = new Error("aborted");
+			err.name = "AbortError";
+			throw err;
+		}
+		const consume = async () => {
+			for await (const _ of observeExternalStream(aborted(), {
+				system: "ai",
+				requestType: "business",
+				path: "chat/completions",
+			})) {
+				// 仅消费
+			}
+		};
+
+		await expect(consume()).rejects.toThrow("aborted");
+		expect(mockInc).not.toHaveBeenCalled();
 	});
 });

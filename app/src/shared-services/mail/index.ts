@@ -4,6 +4,7 @@
  */
 import { createTransport, type Transporter } from "nodemailer";
 import { getConfig } from "#/shared-services/config/config.server";
+import { logExternalRequest } from "#/shared-services/external-observability";
 import { logger } from "#/shared-services/logger";
 
 /** 邮件发送参数 */
@@ -49,8 +50,11 @@ async function getTransporter(): Promise<Transporter | null> {
 
 /**
  * 发送邮件
+ * 外发结果统一经 logExternalRequest 收口（成功 debug / 失败 warn + Prometheus 指标），
+ * 调用方不再另打 info/error，避免同一调用双份日志与级别虚高
  */
 export async function sendMail(options: SendMailOptions): Promise<boolean> {
+	const startedAt = Date.now();
 	try {
 		const transporter = await getTransporter();
 		if (!transporter) {
@@ -65,13 +69,25 @@ export async function sendMail(options: SendMailOptions): Promise<boolean> {
 			subject: options.subject,
 			html: options.html,
 		});
-		logger.info({ to: options.to, subject: options.subject }, "邮件发送成功");
+		logExternalRequest({
+			system: "mail",
+			requestType: "business",
+			path: "smtp/sendMail",
+			duration: Date.now() - startedAt,
+			success: true,
+			extra: { to: options.to, subject: options.subject },
+		});
 		return true;
 	} catch (err) {
-		logger.warn(
-			{ to: options.to, error: (err as Error).message },
-			"邮件发送失败",
-		);
+		logExternalRequest({
+			system: "mail",
+			requestType: "business",
+			path: "smtp/sendMail",
+			duration: Date.now() - startedAt,
+			success: false,
+			error: err instanceof Error ? err.message : String(err),
+			extra: { to: options.to },
+		});
 		return false;
 	}
 }

@@ -3,8 +3,15 @@
  */
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+const { mockLogExternalRequest } = vi.hoisted(() => ({
+	mockLogExternalRequest: vi.fn(),
+}));
+
 vi.mock("#/shared-services/logger", () => ({
 	logger: { error: vi.fn(), info: vi.fn(), warn: vi.fn() },
+}));
+vi.mock("#/shared-services/external-observability", () => ({
+	logExternalRequest: mockLogExternalRequest,
 }));
 vi.mock("#/shared-services/mail", () => ({
 	sendMail: vi.fn().mockResolvedValue(true),
@@ -78,6 +85,42 @@ describe("sendWebhook", () => {
 		);
 		expect(result.ok).toBe(false);
 		expect(result.error).toContain("500");
+	});
+
+	it("成功与失败都经 logExternalRequest 记外部调用（不回传 webhook URL）", async () => {
+		(globalThis.fetch as unknown as ReturnType<typeof vi.fn>).mockResolvedValue(
+			new Response(null, { status: 200 }),
+		);
+		await sendWebhook(
+			"https://example.com/hook?access_token=secret",
+			undefined,
+			"generic",
+			payload,
+		);
+		expect(mockLogExternalRequest).toHaveBeenLastCalledWith(
+			expect.objectContaining({
+				system: "webhook",
+				success: true,
+				extra: { variant: "generic" },
+			}),
+		);
+
+		(globalThis.fetch as unknown as ReturnType<typeof vi.fn>).mockRejectedValue(
+			new Error("network"),
+		);
+		await sendWebhook(
+			"https://example.com/hook?access_token=secret",
+			undefined,
+			"generic",
+			payload,
+		);
+		expect(mockLogExternalRequest).toHaveBeenLastCalledWith(
+			expect.objectContaining({
+				system: "webhook",
+				success: false,
+				error: "network",
+			}),
+		);
 	});
 });
 
