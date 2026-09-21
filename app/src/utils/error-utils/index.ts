@@ -227,10 +227,15 @@ function redactSensitive(text: string): string {
 
 /**
  * 对错误对象进行脱敏处理
- * 移除 password / token / secret 等敏感信息，仅 dev 环境输出 stack trace
+ * 移除 password / token / secret 等敏感信息；仅开发环境输出 stack trace
+ * @param error 任意抛出值
+ * @param isDev 是否开发环境（必填：由宿主注入，本模块不读取运行环境，避免漏传导致排查信息静默丢失）
  */
-export function sanitizeError(error: unknown): Record<string, unknown> {
-	return sanitizeErrorInternal(error, new WeakSet<object>(), 0);
+export function sanitizeError(
+	error: unknown,
+	isDev: boolean,
+): Record<string, unknown> {
+	return sanitizeErrorInternal(error, new WeakSet<object>(), 0, isDev);
 }
 
 /** 内部递归实现：seen 记录已访问的对象，避免 cause 成环 */
@@ -238,6 +243,7 @@ function sanitizeErrorInternal(
 	error: unknown,
 	seen: WeakSet<object>,
 	depth: number,
+	isDev: boolean,
 ): Record<string, unknown> {
 	if (!(error instanceof Error)) {
 		return { message: String(error) };
@@ -259,12 +265,12 @@ function sanitizeErrorInternal(
 		message,
 	};
 
-	if (process.env.NODE_ENV === "development") {
+	if (isDev) {
 		result.stack = stack;
 	}
 
 	if (error.cause !== undefined) {
-		result.cause = sanitizeCause(error.cause, seen, depth + 1);
+		result.cause = sanitizeCause(error.cause, seen, depth + 1, isDev);
 	}
 
 	return result;
@@ -278,9 +284,10 @@ function sanitizeCause(
 	value: unknown,
 	seen: WeakSet<object>,
 	depth: number,
+	isDev: boolean,
 ): unknown {
 	if (value instanceof Error) {
-		return sanitizeErrorInternal(value, seen, depth);
+		return sanitizeErrorInternal(value, seen, depth, isDev);
 	}
 	if (value === null || value === undefined) {
 		return value;
@@ -309,11 +316,11 @@ function sanitizeCause(
 			return value;
 		}
 		if (Array.isArray(value)) {
-			return value.map((item) => sanitizeCause(item, seen, depth + 1));
+			return value.map((item) => sanitizeCause(item, seen, depth + 1, isDev));
 		}
 		const out: Record<string, unknown> = {};
 		for (const [key, item] of Object.entries(value)) {
-			out[key] = sanitizeCause(item, seen, depth + 1);
+			out[key] = sanitizeCause(item, seen, depth + 1, isDev);
 		}
 		return out;
 	}

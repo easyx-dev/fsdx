@@ -5,12 +5,6 @@
  * 同时把分类 / 请求号元信息附加到抛给客户端的错误上，供客户端统一错误提示使用
  */
 
-import {
-	appendSfnErrorMeta,
-	classifyError,
-	sanitizeError,
-	toClientError,
-} from "@fsdx/lib/error-utils";
 import { createMiddleware } from "@tanstack/react-start";
 import { AdminAuthError } from "#/middleware/admin-auth";
 import { ClientAuthError } from "#/middleware/client-auth";
@@ -20,6 +14,12 @@ import {
 	serverFunctionRequestsTotal,
 } from "#/shared-services/metrics";
 import { getRequestId } from "#/shared-services/request-context";
+import {
+	appendSfnErrorMeta,
+	classifyError,
+	sanitizeError,
+	toClientError,
+} from "#/utils/error-utils";
 
 export const sfErrorLogger = createMiddleware({ type: "function" }).server(
 	async ({ next, serverFnMeta }) => {
@@ -74,7 +74,7 @@ export const sfErrorLogger = createMiddleware({ type: "function" }).server(
 					{
 						duration: `${duration}ms`,
 						...sfnMeta,
-						...sanitizeError(error),
+						...sanitizeError(error, process.env.NODE_ENV === "development"),
 					},
 					"Server Function 执行异常",
 				);

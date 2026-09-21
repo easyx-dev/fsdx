@@ -44,8 +44,6 @@ export interface MathExprOptions extends CaptchaOptions {
 	mathOperator?: "+" | "-" | "+-";
 }
 
-export { options };
-
 // ---- 内部工具 ----
 
 /** 生成贝塞尔曲线干扰路径 */

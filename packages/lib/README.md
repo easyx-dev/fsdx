@@ -1,6 +1,6 @@
 # @fsdx/lib
 
-纯可复用逻辑库，无 React 依赖、零全局态、不读 env/db、不做日志耦合。`src/` 下每个 subpath 对应一个模块子文件夹（含 `index.ts` 入口与内部文件，如 `ms/`、`cache/`、`captcha/`），是 ui-ssr / ui-spa / app / shared-services 四者的公共底座。
+纯可复用逻辑库，无 React 依赖、零全局态、不读 env/db、不做日志耦合。`src/` 下每个 subpath 对应一个模块子文件夹（含 `index.ts` 入口与内部文件，如 `ms/`、`cache/`、`semaphore/`），是 ui-ssr / ui-spa / app / shared-services 四者的公共底座。
 
 ## 定位与边界
 
@@ -11,7 +11,7 @@
 | 环境/DB 读取 | 禁止读取 `process.env` / DB |
 | 日志耦合 | **禁止** import 任何 logger / 日志单例；错误向上抛出（throw/reject），警告用 `console` 直接输出或经可选 `onEvent` 钩子推事件（供宿主接管，如 `batch-writer`） |
 | 客户端引用安全 | `utils/`、`cache/` 为同构纯逻辑，客户端可安全引用 |
-| 服务端保护 | `infra/` 仅服务端；`vite.config.ts` 的 import-protection 拦截 `bcryptjs` / `drizzle-orm` / `openai` 进入客户端 bundle，客户端组件禁止引用 `infra/` 对应模块 |
+| 服务端保护 | `infra/` 仅服务端；客户端组件禁止引用 `infra/` 对应模块，宿主 `vite.config.ts` 的 import-protection 会把服务端专属依赖（清单见其 `importProtection.client.specifiers`）拒于客户端 bundle 之外 |
 | 反向依赖 | lib 内不得出现 `#/services`、`#/shared-services`、`#/db`、`#/routes` 反向引用 |
 
 > app 绑定单例（logger / jwt / metrics / storage / scheduler / mail / sms / request-context）已迁至宿主 `src/shared-services/`；i18n 类型与配置已并入 `src/shared-services/i18n/`，均不在 lib 内。
@@ -29,7 +29,6 @@
 | `@fsdx/lib/match-permission` | `src/match-permission/index.ts` | `matchPermission(rolePermissions, requiredCode)` 权限码匹配（`**` → 精确 → `group:*` 三级优先级） |
 | `@fsdx/lib/cn` | `src/cn/index.ts` | `cn(...inputs)` className 合并（clsx + tailwind-merge） |
 | `@fsdx/lib/clipboard` | `src/clipboard/index.ts` | `copyToClipboard(text)` 复制到剪贴板（Clipboard API 优先，非安全上下文退回 `execCommand` 兜底，返回是否成功） |
-| `@fsdx/lib/error-utils` | `src/error-utils/index.ts` | `sanitizeError(error)` 错误脱敏、`toClientError(error, isProd)` 客户端错误归一化、`getErrorMessage(error, fallback?)` 提取消息、`classifyError(error)` 错误分类、`appendSfnErrorMeta` / `parseSfnErrorMeta` / `stripSfnErrorMeta` 请求号与 SFn 方法名元信息的读写 |
 | `@fsdx/lib/date-format` | `src/date-format/index.ts` | `DEFAULT_TASK_TIME_ZONE`（`Asia/Shanghai`，业务统一时区）、`DATE_ONLY_REGEX`、`toDateString(date)`、`parseDateOnly(dateStr)`、`toDayRange(dateStr)`（按业务时区解析天边界，不依赖服务器时区） |
 | `@fsdx/lib/format-bytes` | `src/format-bytes/index.ts` | `formatBytes(bytes, precision?)` 字节数 → `B / KB / MB / GB / TB` 可读字符串（B 级不带小数，非正数与非法数值返回 `0 B`） |
 
@@ -44,7 +43,6 @@
 | subpath | 源文件 | 关键导出 | 说明 |
 |---------|--------|----------|------|
 | `@fsdx/lib/storage` | `src/storage/index.ts` | `StorageAdapter` 接口（save / read / delete / getUrl / exists） | 纯契约；实现与单例在宿主 `shared-services/storage` |
-| `@fsdx/lib/captcha` | `src/captcha/index.ts` | `create(userOptions?)` 生成 SVG 图片验证码、`createMathExpr(userOptions?)` 算式验证码、`captchaText(options?)` 生成验证码文本 | 纯函数 |
 | `@fsdx/lib/batch-writer` | `src/batch-writer/index.ts` | `BatchWriter<T>` 通用批量缓冲写入器（满 `batchSize` 立即刷 / 定时 `flushInterval` 刷 / 超 `maxBufferSize` 丢弃最旧 / `shutdown()` 强制刷；`flush()` 失败向上抛、警告经 `onEvent` 钩子） | 日志解耦，`onEvent` 供宿主接管 |
 | `@fsdx/lib/semaphore` | `src/semaphore/index.ts` | `Semaphore` 并发限流（`acquire` / `release` / `activeCount` / `queueLength`）、`SemaphoreTimeoutError`；许可打满时有界排队，队列满 / 等待超时拒绝 | 纯逻辑类 |
 | `@fsdx/lib/task-manager` | `src/task-manager/index.ts` | `createTaskManager<TState, TEvent>()` 内存任务管理器（状态机 + TTL 惰性清理 + 事件缓冲 / SSE 订阅与断线回放） | 纯逻辑工厂 |
@@ -53,7 +51,7 @@
 
 ## 主要外部依赖
 
-`clsx` / `tailwind-merge`（cn）、`opentype.js`（captcha 字体）。
+`clsx` / `tailwind-merge`（cn）。
 
 ## 测试
 

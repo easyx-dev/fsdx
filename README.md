@@ -59,7 +59,7 @@ pnpm dev
 
 | 包 | 说明 |
 |----|------|
-| [@fsdx/lib](packages/lib/README.md) | 纯逻辑库：同构纯工具（ms/export/cn/match-permission/date-format/error-utils）+ 通用非单例基础设施（cache/captcha/semaphore/task-manager/batch-writer/storage 契约），无 React |
+| [@fsdx/lib](packages/lib/README.md) | 纯逻辑库：同构纯工具（ms/export/cn/match-permission/date-format）+ 通用非单例基础设施（cache/semaphore/task-manager/batch-writer/storage 契约），无 React |
 | [@fsdx/ui-ssr](packages/ui-ssr/README.md) | shadcn 基础组件（前台 SSR），颜色 token 由宿主注入 |
 | [@fsdx/ui-spa](packages/ui-spa/README.md) | antd 管理端组件（表格/上传/编辑器/静态方法桥接），antd 单实例 |
 

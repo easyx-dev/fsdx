@@ -32,7 +32,8 @@ const config = defineConfig({
 			},
 			importProtection: {
 				client: {
-					specifiers: ["bcryptjs", "drizzle-orm", "openai"],
+					// 服务端专属依赖：客户端误引即构建失败（captcha 引擎等服务端文件依赖 opentype.js + Buffer）
+					specifiers: ["bcryptjs", "drizzle-orm", "openai", "opentype.js"],
 				},
 			},
 		}),

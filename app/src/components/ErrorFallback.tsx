@@ -3,10 +3,10 @@
  * 不依赖 AuthProvider 等全局 Context，确保错误边界自身渲染稳定
  */
 
-import { stripSfnErrorMeta } from "@fsdx/lib/error-utils";
 import type { ErrorComponentProps } from "@tanstack/react-router";
 import { Link } from "@tanstack/react-router";
 import { AlertTriangle, ArrowLeft, Home, RefreshCw } from "lucide-react";
+import { stripSfnErrorMeta } from "#/utils/error-utils";
 
 /** 输出错误日志，服务端和客户端均不影响异常展示 */
 function logError(error: unknown, context?: Record<string, unknown>) {

@@ -16,7 +16,7 @@ import {
 describe("sanitizeError", () => {
 	it("对 Error 对象进行脱敏并返回 name 和 message", () => {
 		const err = new Error("操作失败: password 错误");
-		const result = sanitizeError(err);
+		const result = sanitizeError(err, false);
 		expect(result.name).toBe("Error");
 		expect(result.message).toBeDefined();
 	});
@@ -25,7 +25,7 @@ describe("sanitizeError", () => {
 		const err = new Error(
 			'请求参数: {"password":"secret123","username":"admin"}',
 		);
-		const result = sanitizeError(err);
+		const result = sanitizeError(err, false);
 		expect(result.message).toContain("***REDACTED***");
 		expect(result.message).not.toContain("secret123");
 	});
@@ -34,52 +34,52 @@ describe("sanitizeError", () => {
 		const err = new Error(
 			'认证失败: {"token":"eyJhbGciOiJIUzI1NiJ9.xxx","user":"admin"}',
 		);
-		const result = sanitizeError(err);
+		const result = sanitizeError(err, false);
 		expect(result.message).toContain("***REDACTED***");
 		expect(result.message).not.toContain("eyJhbGci");
 	});
 
 	it("脱敏单引号 token 字段", () => {
 		const err = new Error("参数: 'token':'abc123','user':'admin'");
-		const result = sanitizeError(err);
+		const result = sanitizeError(err, false);
 		expect(result.message).toContain("***REDACTED***");
 		expect(result.message).not.toContain("abc123");
 	});
 
 	it("脱敏 Bearer Token", () => {
 		const err = new Error("Unauthorized: Bearer sk-1234567890abcdef");
-		const result = sanitizeError(err);
+		const result = sanitizeError(err, false);
 		expect(result.message).toContain("***REDACTED***");
 		expect(result.message).not.toContain("sk-1234567890abcdef");
 	});
 
 	it("脱敏 secret 参数", () => {
 		const err = new Error("配置错误: secret=my-api-key-123");
-		const result = sanitizeError(err);
+		const result = sanitizeError(err, false);
 		expect(result.message).toContain("***REDACTED***");
 		expect(result.message).not.toContain("my-api-key-123");
 	});
 
 	it("非 Error 类型返回 message 字符串", () => {
-		const result = sanitizeError("plain string error");
+		const result = sanitizeError("plain string error", false);
 		expect(result.message).toBe("plain string error");
 	});
 
 	it("非 Error 对象返回转换后的字符串", () => {
-		const result = sanitizeError({ code: 500 });
+		const result = sanitizeError({ code: 500 }, false);
 		expect(result.message).toBe("[object Object]");
 	});
 
 	it("不含敏感信息的错误原样保留", () => {
 		const err = new Error("数据库连接失败");
-		const result = sanitizeError(err);
+		const result = sanitizeError(err, false);
 		expect(result.message).toBe("数据库连接失败");
 	});
 
 	it("递归脱敏 error.cause 中的敏感信息", () => {
 		const cause = new Error('底层原因: {"password":"nested-secret"}');
 		const err = new Error("外层错误", { cause });
-		const result = sanitizeError(err);
+		const result = sanitizeError(err, false);
 		expect(result.cause).toBeDefined();
 		const causeResult = result.cause as Record<string, unknown>;
 		expect(causeResult.message).toContain("***REDACTED***");
@@ -90,7 +90,7 @@ describe("sanitizeError", () => {
 		const err = new Error("外层错误", {
 			cause: { code: 503, headers: { Authorization: "Bearer sk-secret" } },
 		});
-		const result = sanitizeError(err);
+		const result = sanitizeError(err, false);
 		expect(result.cause).toEqual({
 			code: 503,
 			headers: { Authorization: "Bearer ***REDACTED***" },
@@ -101,7 +101,7 @@ describe("sanitizeError", () => {
 		const err = new Error("外层错误", {
 			cause: { body: '{"password":"p@ss","token":"t-1"}' },
 		});
-		const result = sanitizeError(err);
+		const result = sanitizeError(err, false);
 		const causeResult = result.cause as Record<string, unknown>;
 		expect(causeResult.body).toContain("***REDACTED***");
 		expect(causeResult.body).not.toContain("p@ss");
@@ -112,16 +112,19 @@ describe("sanitizeError", () => {
 		const obj: Record<string, unknown> = { name: "self-ref" };
 		obj.self = obj;
 		const err = new Error("循环 cause", { cause: obj });
-		expect(() => sanitizeError(err)).not.toThrow();
-		const causeResult = sanitizeError(err).cause as Record<string, unknown>;
+		expect(() => sanitizeError(err, false)).not.toThrow();
+		const causeResult = sanitizeError(err, false).cause as Record<
+			string,
+			unknown
+		>;
 		expect(causeResult.self).toBe("[cause 循环或过深，已截断]");
 	});
 
 	it("cause 循环引用时截断而非无限递归", () => {
 		const err = new Error("自引用错误");
 		(err as { cause?: unknown }).cause = err;
-		expect(() => sanitizeError(err)).not.toThrow();
-		const result = sanitizeError(err);
+		expect(() => sanitizeError(err, false)).not.toThrow();
+		const result = sanitizeError(err, false);
 		const causeResult = result.cause as Record<string, unknown>;
 		expect(causeResult.message).toContain("截断");
 	});
@@ -131,7 +134,7 @@ describe("sanitizeError", () => {
 		for (let i = 0; i < 15; i++) {
 			err = new Error(`第 ${i} 层`, { cause: err });
 		}
-		const result = sanitizeError(err);
+		const result = sanitizeError(err, false);
 		// 深度达到上限后不再递归，直接返回截断标记
 		let depth = 0;
 		let current: unknown = result;
@@ -143,8 +146,23 @@ describe("sanitizeError", () => {
 	});
 
 	it("无 cause 时不输出 cause 字段", () => {
-		const result = sanitizeError(new Error("无原因错误"));
+		const result = sanitizeError(new Error("无原因错误"), false);
 		expect("cause" in result).toBe(false);
+	});
+
+	it("isDev 为 false 时不输出 stack trace（生产路径）", () => {
+		const err = new Error("系统错误");
+		err.stack = "Error: 系统错误\n    at foo";
+		const result = sanitizeError(err, false);
+		expect("stack" in result).toBe(false);
+	});
+
+	it("isDev 为 true 时输出脱敏后的 stack trace", () => {
+		const err = new Error("系统错误");
+		err.stack = "Error: system\n    at foo (Bearer abc123)";
+		const result = sanitizeError(err, true);
+		expect(result.stack).toContain("at foo");
+		expect(result.stack).not.toContain("abc123");
 	});
 });
 

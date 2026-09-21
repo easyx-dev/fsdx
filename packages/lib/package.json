@@ -10,11 +10,9 @@
     "./export": "./src/export/index.ts",
     "./cache": "./src/cache/index.ts",
     "./match-permission": "./src/match-permission/index.ts",
-    "./error-utils": "./src/error-utils/index.ts",
     "./cn": "./src/cn/index.ts",
     "./clipboard": "./src/clipboard/index.ts",
     "./storage": "./src/storage/index.ts",
-    "./captcha": "./src/captcha/index.ts",
     "./batch-writer": "./src/batch-writer/index.ts",
     "./semaphore": "./src/semaphore/index.ts",
     "./task-manager": "./src/task-manager/index.ts"
@@ -28,10 +26,6 @@
   },
   "dependencies": {
     "clsx": "^2.1.1",
-    "opentype.js": "^2.0.0",
     "tailwind-merge": "^3.6.0"
-  },
-  "devDependencies": {
-    "@types/opentype.js": "^1.3.10"
   }
 }

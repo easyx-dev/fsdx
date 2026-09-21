@@ -3,7 +3,6 @@
  * locale 由 localeMiddleware 注入 request context，通过 getLocaleBundleSFn 读取
  */
 
-import { stripSfnErrorMeta } from "@fsdx/lib/error-utils";
 import { TanStackDevtools } from "@tanstack/react-devtools";
 import { createRootRoute, useLocation } from "@tanstack/react-router";
 import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
@@ -15,6 +14,7 @@ import { SfnErrorDialogHost } from "#/components/SfnErrorDialog";
 import { getVisibleConfigsSFn } from "#/shared-services/config/config.functions";
 import { getLocaleBundleSFn } from "#/shared-services/i18n/i18n.functions";
 import { DEFAULT_LOCALE } from "#/shared-services/i18n/i18n.types";
+import { stripSfnErrorMeta } from "#/utils/error-utils";
 import { installSfnErrorFallback } from "#/utils/sfn-error";
 
 export const Route = createRootRoute({

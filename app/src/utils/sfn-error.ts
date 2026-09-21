@@ -8,7 +8,7 @@ import {
 	CLIENT_ERROR_FALLBACK_MESSAGE,
 	getErrorMessage,
 	parseSfnErrorMeta,
-} from "@fsdx/lib/error-utils";
+} from "#/utils/error-utils";
 
 /** 系统错误对用户的统一可读标题（具体技术细节收进可展开详情） */
 const SYSTEM_ERROR_TITLE = "系统错误，请稍后重试";

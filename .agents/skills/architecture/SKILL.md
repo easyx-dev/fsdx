@@ -11,7 +11,7 @@ description: >
 
 | 目录 | 定位 | 示例 |
 |------|------|------|
-| `packages/lib/` | 纯逻辑库（同构工具 + 服务端基础设施） | `@fsdx/lib/cache`、`@fsdx/lib/ms`、`#/shared-services/logger` |
+| `packages/lib/` | 纯逻辑库（同构工具 + 通用非单例基础设施，**可原样移植到其他项目**） | `@fsdx/lib/cache`、`@fsdx/lib/ms`、`@fsdx/lib/semaphore` |
 | `packages/ui-ssr/` | shadcn 基础组件（前台 SSR） | `@fsdx/ui-ssr/ui`、`@fsdx/ui-ssr/theme` |
 | `packages/ui-spa/` | antd 管理端组件（antd 单实例） | `@fsdx/ui-spa/table`、`@fsdx/ui-spa/upload` |
 | `src/shared-services/` | 应用级基础设施单例壳 + 系统级共享域（读 env / 引 logger / 需全局态；**非通用共享桶**） | `src/shared-services/logger`、`src/shared-services/jwt`、`src/shared-services/metrics` |
@@ -19,7 +19,7 @@ description: >
 | `src/constants/` | 项目级常量 | `src/constants/editor-types.ts` |
 | `src/validators/` | 跨模块共享的 zod schema | `src/validators/common.schemas.ts` |
 | `src/types/` | 跨模块共享类型 | `src/types/query.ts` |
-| `src/utils/` | app 前端工具（无状态或仅轻量模块内状态，非服务单例） | `src/utils/sfn-error.ts`、`src/utils/custom-head.ts` |
+| `src/utils/` | app 同构工具（无状态或仅轻量模块内状态，client / server 皆可引用） | `src/utils/sfn-error.ts`、`src/utils/error-utils/`、`src/utils/custom-head.ts` |
 | `src/middleware/` | 请求级中间件（鉴权/权限/locale/错误日志） | `src/middleware/admin-auth.ts` |
 | `src/routes/` | 路由层（页面 + UI 组件 + 就近 SFn + beforeLoad 守卫） | `src/routes/admin/_admin/news/` |
 
@@ -29,14 +29,17 @@ description: >
 
 | 性质 | 归属 |
 |------|------|
-| 纯函数/类（非单例、不读 env、不碰 DB/框架） | `@fsdx/lib` |
-| app 前端工具（无状态或仅轻量模块内状态、不读服务端 env） | `src/utils/` |
+| 纯逻辑且**可原样移植**（脱离本仓库的框架 / 协议 / 环境仍成立） | `@fsdx/lib` |
+| 耦合 app 内部约定的同构工具（无状态或仅轻量模块内状态，client / server 皆可引用） | `src/utils/` |
 | shadcn 组件 / antd 组件 | `@fsdx/ui-ssr` / `@fsdx/ui-spa` |
 | AI 富文本工作台 / 图片处理 | 外部 npm 包 `@easyx/ai-rich-editor` / `@easyx/image-toolkit`（不在本仓库维护） |
 | app 级服务单例 / 系统级共享域（读 env、引 logger、需全局态） | `src/shared-services/` |
+| **服务端专属能力**（Node 专有 API / 原生依赖 / 大体积二进制资源） | 仅单一业务消费 → `services/<module>/` 内部文件；跨业务共享 → `src/shared-services/` |
 | 业务逻辑 / 领域服务 | `src/services` 或路由层 |
 
-`shared-services` **不是「凡多处引用即入」的通用共享桶**：前端工具、无状态 helper 一律归 `src/utils/`（如客户端 SFn 错误处理 `#/utils/sfn-error`）。
+**lib 拒收清单**（命中即不得进 lib，由 `packages/lib/src/__tests__/lib-boundary.test.ts` 机械守门）：读取 `process.env` / `import.meta.env`、耦合 logger、模块级或 `globalThis` 单例、依赖框架（React / TanStack Start）或 UI 包（`@fsdx/ui-*`）、耦合 app 私有协议或权限码（`SfnError*` / `AdminAuthError` / `ADMIN_PERMISSIONS`）、反向引用 `#/*`、服务端专属运行时能力。
+
+`shared-services` **不是「凡多处引用即入」的通用共享桶**：app 同构工具、无状态 helper 一律归 `src/utils/`（如客户端 SFn 错误处理 `#/utils/sfn-error`）。
 
 > 每个子包的导出清单与边界见 [core](../../../packages/lib/README.md) / [ui-ssr](../../../packages/ui-ssr/README.md) / [ui-spa](../../../packages/ui-spa/README.md)。
 
@@ -106,5 +109,7 @@ const result = createNews(data as CreateNewsInput);
 - 实体的 SFn 应就近放在消费页面的路由 `-mods/`，未在页面消费的跨端共享 SFn 才留在 services
 - `.functions.ts` handler 中出现 DB 查询/业务逻辑 → 提取到 `.server.ts`
 - `lib/` 中出现业务常量/业务类型 → 移到 `constants/` 或 `services/`
-- 把前端工具 / 无状态 helper 塞进 `shared-services/` → 归 `src/utils/`（`shared-services` 只放 app 级服务单例 / 系统级共享域）
+- `lib/` 中出现服务端专属能力（Node 专有 API / 原生依赖 / 大体积二进制资源）→ 按共享面下移：仅单一业务消费 → `services/<module>/`，跨业务共享 → `src/shared-services/`
+- `lib/` 中出现项目私有协议耦合（如 `SfnError*` 消息后缀、中文 UI 文案约定）或 app 权限码 / 类型 / 表结构耦合 → 归 `src/utils/` 或 `services/`
+- 把 app 同构工具 / 无状态 helper 塞进 `shared-services/` → 归 `src/utils/`（`shared-services` 只放 app 级服务单例 / 系统级共享域）
 - 跨模块直接 `import` 缓存实例 → 改为所属模块导出函数

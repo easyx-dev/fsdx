@@ -40,7 +40,7 @@ description: 全量代码审查命令：扫描全项目，按 10 维度审查并
 - **主题/样式（以渲染结果为准）**：颜色仅语义令牌（`var(--s-*)`），禁止硬编码状态色；**圆角由 `--radius-*` 令牌归零**——`rounded-*` 类名本身允许，只要最终渲染为 0，仅 `rounded-full` 保留圆形；主题三态 `useAdminTheme()`/`useThemeMode()`。
 - **机制感知准入（先判机制再判类名）**：审样式/命名前，先确认该实现是否已由「主题令牌 / 组件机制 / 构建工具（import-protection / tsc / Biome）」兜底。凡「规则意图已达成、只是实现方式不同」的，**一律不算偏离、不报**——典型如 `rounded-md` 类名 + `--radius-*` 归零、语义令牌映射、`import type` 引 `.server.ts`、shadcn/antd 自带类名、装饰性品牌渐变、邮件模板内联色。
 - **命名面收敛**：禁止硬编码 `fsdx_*`；Cookie 名走 `src/constants/cookie-names.ts` 集中常量。
-- **代码体积**：函数 >60 行、文件 >400 行即需拆分（按职责拆，禁止压缩排版）。
+- **代码体积**：函数 >60 行、文件 >600 行即需拆分（按职责拆，禁止压缩排版）。
 
 ## 已知豁免 / 例外（只列已认可项，不报违规）
 
@@ -60,7 +60,8 @@ description: 全量代码审查命令：扫描全项目，按 10 维度审查并
 #### ① 分层合规 → [architecture](../skills/architecture/SKILL.md)
 - 组件/路由是否直接 import `.server.ts`；`.server.ts` 是否出现在客户端 bundle
 - `services/**` 是否反向 import `routes/**`；`.server.ts` 是否反向 import `.functions.ts`
-- 跨包引用是否走 `@fsdx/*` subpath（禁止 `#/*` 跨包）；共享逻辑归属（core/ui-ssr/ui-spa/services）是否正确
+- 跨包引用是否走 `@fsdx/*` subpath（禁止 `#/*` 跨包）；共享逻辑归属（lib/ui-ssr/ui-spa/services/shared-services/utils）是否正确
+- **lib 准入复核**：`packages/lib/src` 是否出现读 env（`process.env` / `import.meta.env`）、logger 耦合、模块级或 globalThis 单例、框架（React / TanStack Start）或 UI 包依赖、app 私有协议或权限码耦合（`SfnError*` / `AdminAuthError` / `ADMIN_PERMISSIONS`）、反向引用 `#/*`、服务端专属运行时能力；判据是「能否原样移植到另一个 TanStack Start 项目」——`pnpm test` 的 `lib-boundary.test.ts` 已机械覆盖上述模式，人工只复核未被其覆盖的形态（如可变全局对象、以工厂替代单例的写法）
 
 #### ② 路由合规 → [AGENTS.md「路由」章节](../../AGENTS.md)
 - 页面本体是否建成路由文件（禁止塞进 `-mods/`）；`-mods/` 是否只收纳非视图 companion

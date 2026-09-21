@@ -265,10 +265,10 @@ if (count !== null) setUnreadCount(count);
 
 - 客户端由 `#/utils/sfn-error` 组装 `SfnErrorInfo { title, details }`：标题为可读消息，`details` 含请求号与 **SFn 可读方法名**（`serverFnMeta.name`，非框架不透明 id）；`SfnErrorNotice` 以单行「标题 + 详情按钮」展示，点击经根级 `SfnErrorDialogHost` 弹窗查看（请求号可一键复制，弹窗独立于 toast 生命周期）
 - **环境区分**：`SFn 方法名`与`原始信息`仅非生产环境携带与展示；**生产环境仅保留请求号**，排查路径为「用请求号查服务端日志」（服务端日志已含 `sfn` 方法名与文件名）；所有服务端错误均携带请求号
-- 元信息后缀以 `@fsdx/lib/error-utils` 的 `appendSfnErrorMeta` / `parseSfnErrorMeta` / `stripSfnErrorMeta` 统一读写；路由错误边界（`ErrorFallback` / `RootError`）展示前先剥离后缀
+- 元信息后缀以 `#/utils/error-utils` 的 `appendSfnErrorMeta` / `parseSfnErrorMeta` / `stripSfnErrorMeta` 统一读写；路由错误边界（`ErrorFallback` / `RootError`）展示前先剥离后缀
 - **安全**：生产环境不向客户端传输原始技术信息（`toClientError` 已兜底），详情仅含请求号与 SFn 方法名等非敏感字段
 - 诊断日志：客户端对 SFn 错误打 `console.warn`（网络错误 `console.error`），带 SFn 方法名 + 消息；静默失败打 `console.warn`
-- 分类函数 `classifyError` 在 `@fsdx/lib/error-utils`（纯函数；auth 由 app 层依据鉴权错误类叠加判定）
+- 分类函数 `classifyError` 在 `#/utils/error-utils`（纯函数；auth 由 app 层依据鉴权错误类叠加判定）
 
 > 可运行示例见两端示例页：管理端 `/admin/demo/error-handling`、前台 `/demo/error-handling`。
 

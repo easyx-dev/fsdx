@@ -36,7 +36,7 @@ packages/
 │   └── src/
 │       ├── utils/            # 同构纯工具
 │       ├── cache/            # 缓存抽象（cache/ MemoryCache）
-│       └── infra/            # 通用非单例基础设施（captcha/semaphore/task-manager/batch-writer/storage 契约）
+│       └── infra/            # 通用非单例基础设施（semaphore/task-manager/batch-writer/storage 契约）
 ├── ui-ssr/                   # @fsdx/ui-ssr —— shadcn 基础组件（ui/ theme/ form 三桶）
 └── ui-spa/                   # @fsdx/ui-spa —— antd 管理端组件（antd 为 peerDependency）
 ```
@@ -49,16 +49,17 @@ packages/
 
 ### 包边界约定
 
-- **lib 按职责分层**：`@fsdx/lib/*` subpath 由 `package.json` exports 扁平映射到 `utils/`、`cache/`（同构）或 `infra/`（通用非单例）。lib 的服务端保护依赖 `vite.config.ts` 的 import-protection（按 npm 包名拦截 bcryptjs/drizzle-orm/openai）+ 目录约定，而非 `.server.*` 文件后缀；客户端组件禁止引用 `infra/` 对应模块；lib 内不得出现 `#/services`、`#/shared-services`、`#/db`、`#/routes` 反向引用
-- **lib 零全局单例 + 零日志耦合**：lib 内禁止读取 `process.env` / DB、禁止创建模块级或 globalThis 单例、禁止 import 任何 logger。错误一律向上抛出（throw/reject），警告用 `console` 直接输出或经可选 `onEvent` 钩子推事件（供宿主接管，如 `batch-writer`）。凡需单例/读环境/引日志的模块一律下沉到 `src/shared-services/`
-- **shared-services = 高共享的 service**：位于 `src/shared-services/`，被 routes / middleware / bootstrap / client / 其它 service **直接引用**，承载 app 绑定单例（logger/jwt/metrics/storage/scheduler/mail·sms/request-context）+ 系统级共享域（config/dict/i18n/ai/query-utils/operation-log）。**只依赖 `lib`/`db`/本层，绝不引用 services**（避免循环依赖）；`mail`/`sms`/`scheduler` 直接 `import { logger }`、`mail`/`sms` 直接 `import { getConfig }`，无 `init*`/`setSchedulerLogger` 透传；跨 bundle 一致性靠 globalThis（metrics 注册表、config / AI provider 缓存）。判断标准：**一个 `services` 模块被大范围引用共享 → 具备成为 shared-services 的条件**（仅指服务端 / 系统级模块的升级路径）。**边界**：shared-services 只放 app 级服务单例 / 系统级共享域（读 env、引 logger、需全局态），**不是「凡多处引用即入」的通用共享桶**；前端工具、无状态或仅轻量模块内状态的 helper 归 `src/utils/`
+- **lib 准入判据（唯一标准：可原样移植）**：`@fsdx/lib` 只收**脱离本仓库仍成立**的纯逻辑——判定方式就是「能否原样搬进另一个 TanStack Start 项目而不改一行代码」。以下一律不得进 lib：读取运行环境（`process.env` / `import.meta.env`）、耦合 logger、模块级或 `globalThis` 单例、依赖框架（React / TanStack Start）或 UI 包（`@fsdx/ui-*`，lib 是依赖图底层）、耦合 app 私有协议或权限码（如 `SfnError*` / `AdminAuthError` / `ADMIN_PERMISSIONS`）、反向引用 `#/*`；**服务端专属运行时能力（Node 专有 API / 原生依赖 / 大体积二进制资源，如 SVG 验证码生成）同样不下放**
+- **lib 按职责分层**：`@fsdx/lib/*` subpath 由 `package.json` exports 扁平映射到 `utils/`、`cache/`（同构）或 `infra/`（通用非单例）。lib 的服务端保护依赖 `vite.config.ts` 的 import-protection（按 npm 包名拦截服务端依赖，清单见 `app/vite.config.ts` 的 `importProtection.client.specifiers`）+ 目录约定，而非 `.server.*` 文件后缀；客户端组件禁止引用 `infra/` 对应模块；lib 内不得出现 `#/services`、`#/shared-services`、`#/db`、`#/routes` 反向引用
+- **lib 零全局单例 + 零日志耦合**：lib 内禁止读取 `process.env` / DB、禁止创建模块级或 globalThis 单例、禁止 import 任何 logger。错误一律向上抛出（throw/reject），警告用 `console` 直接输出或经可选 `onEvent` 钩子推事件（供宿主接管，如 `batch-writer`）。凡需单例/读环境/引日志的模块一律下沉到 `src/shared-services/`。以上准入判据与前述限制由 `packages/lib/src/__tests__/lib-boundary.test.ts` **机械守门**（随 `pnpm test` 执行，新增违规即失败）
+- **shared-services = 高共享的 service**：位于 `src/shared-services/`，被 routes / middleware / bootstrap / client / 其它 service **直接引用**，承载 app 绑定单例（logger/jwt/metrics/storage/scheduler/mail·sms/request-context）+ 系统级共享域（config/dict/i18n/ai/query-utils/operation-log）。**只依赖 `lib`/`db`/本层，绝不引用 services**（避免循环依赖）；`mail`/`sms`/`scheduler` 直接 `import { logger }`、`mail`/`sms` 直接 `import { getConfig }`，无 `init*`/`setSchedulerLogger` 透传；跨 bundle 一致性靠 globalThis（metrics 注册表、config / AI provider 缓存）。判断标准：**一个 `services` 模块被大范围引用共享 → 具备成为 shared-services 的条件**（仅指服务端 / 系统级模块的升级路径）。**边界**：shared-services 只放 app 级服务单例 / 系统级共享域（读 env、引 logger、需全局态），**不是「凡多处引用即入」的通用共享桶**；app 同构工具、无状态或仅轻量模块内状态的 helper 归 `src/utils/`
 - **antd 单实例**：`@fsdx/ui-spa` 将 antd 声明为 peerDependency，app 提供唯一实例；`antd-static` 桥接在 app `<App>` 上下文内工作
 - **外部 npm 包边界**：`@easyx/ai-rich-editor`（AI 富文本工作台）与 `@easyx/image-toolkit`（浏览器端图片处理）为独立发布包，样式/UI 自包含
   - **image-toolkit 根入口零重量依赖**：根入口只导出纯逻辑（服务端用它做魔数嗅探），wasm 引擎与图片编辑内容区一律经 `./ui` 进入；`.output/server` 中不得出现 `.wasm`，可作为回归检查点
   - **wasm 资源交给宿主打包器**：包内 Worker / wasm 以 `new Worker(new URL(...))` / `new URL(..., import.meta.url)` 静态引用，`vite.config.ts` 需将其加入 `optimizeDeps.exclude`（否则预打包丢失资源）
   - **纯客户端组件不得进入 SSR 图**：`@easyx/ai-rich-editor` 内含 monaco（模块顶层访问 `window`），宿主页面必须经 `ClientOnly` + 动态 `import()` 引入（参考 `/admin/demo/ai-rich-editor`），否则服务端引入即崩
 - **UI token 宿主注入**：ui 包组件只写 tailwind 类名，颜色 token 由 app 的 `global.css` 定义；Tailwind 通过 `@source` 扫描包源码类名（外部 npm 包样式自包含，无需 `@source`）
-- **新增共享逻辑的归属决策（按性质判定，不默认 shared-services）**：① 纯函数/类（非单例、不读 env、不碰 DB/框架）→ `@fsdx/lib`；② app 前端工具（无状态或仅轻量模块内状态、不读服务端 env）→ `src/utils/`；③ shadcn 组件 → `@fsdx/ui-ssr`，antd 组件 → `@fsdx/ui-spa`，AI 富文本 → `@easyx/ai-rich-editor`（外部包），图片处理 → `@easyx/image-toolkit`（外部包）；④ app 级服务单例 / 系统级共享域（读 env、引 logger、需全局态）→ `src/shared-services/`；⑤ 业务逻辑 → `app/src/services` 或路由层
+- **新增共享逻辑的归属决策（按性质判定，不默认 shared-services）**：① 纯逻辑且**可原样移植**（脱离本仓库的框架 / 协议 / 环境仍成立）→ `@fsdx/lib`；② 耦合 app 内部约定的同构工具（无状态或仅轻量模块内状态，client / server 皆可引用）→ `src/utils/`；③ shadcn 组件 → `@fsdx/ui-ssr`，antd 组件 → `@fsdx/ui-spa`，AI 富文本 → `@easyx/ai-rich-editor`（外部包），图片处理 → `@easyx/image-toolkit`（外部包）；④ app 级服务单例 / 系统级共享域（读 env、引 logger、需全局态）→ `src/shared-services/`；⑤ **服务端专属能力**（Node 专有 API / 原生依赖 / 大体积二进制资源）：仅单一业务消费 → `services/<module>/` 内部文件，跨业务共享 → `src/shared-services/`；⑥ 业务逻辑 → `app/src/services` 或路由层
 
 ## 技术栈
 
@@ -112,7 +113,7 @@ packages/
 - **Nitro server entry**：`app/server.ts` 只承担 bootstrap + HTTP 入口埋点，`fetch` 一律返回 `undefined` 交还请求流转至 TanStack Start SSR；**禁止直接 import `./src/server`**（会绕过 Vite SSR runner 惰性路由机制，导致全部路由 eager 加载，dev 下服务端不兼容的浏览器库（如富文本编辑器）在启动即崩溃）
 - **CSRF**：`src/start.ts` 注册 `createCsrfMiddleware`，仅对 ServerFn 生效，校验 Origin / Referer / Sec-Fetch-Site
 - **SF 错误日志**：`sfErrorLogger` 注册于 `functionMiddleware` 自动覆盖所有 SF；鉴权失败（`AdminAuthError`/`ClientAuthError`）记 warn、系统异常记 error（`sanitizeError()` 脱敏），并埋入耗时/结果指标；错误经 `toClientError()` 归一化后重新抛出
-- **Import Protection**：客户端构建禁止导入 `*.server.*` 与 `bcryptjs` / `drizzle-orm` / `openai`；服务端禁止 `*.client.*`；type-only import 不触发
+- **Import Protection**：客户端构建禁止导入 `*.server.*` 与服务端专属依赖（清单见 `app/vite.config.ts` 的 `importProtection.client.specifiers`）；服务端禁止 `*.client.*`；type-only import 不触发
 - **事件埋点**：`track_event` + 元事件/元属性三表；客户端 SDK `src/services/track/track.ts` 自动采集 PageView；服务端校验链：per-session 频控（60 条/分）→ 时间钳制 → 事件/属性名校验 → 值类型校验；BatchWriter 5 秒/100 条/上限 1000；预置 5 元事件（PageView、FormSubmit、Login、Register、Logout）+ 11 元属性（含 7 个 `$` 系统属性，以 `src/services/track/` 为准）→ 详见 [event-tracking](docs/event-tracking.md)
 - **操作日志审计**：`logOperation()` fire-and-forget；SFn 写 CRUD 审计**必须**用同模块 `logCrud()` 一行式封装（自动装配操作人 + targetType 默认值）；审计表只留用户操作，`logOperation` 经独立 BatchWriter（上限 1000）落库；外部系统调用不落审计表，改由 `#/shared-services/external-observability` 的 `logExternalRequest()` 记 pino 日志 + Prometheus 指标（成功日志为 debug，默认 info 下成功仅入指标，排障需 `LOG_LEVEL=debug`）；操作者身份经 request-context（AsyncLocalStorage）注入，requestId 自动从 ALS 捕获落库，进程退出自动刷新
 - **系统初始化**：首次部署自动跳转 `/admin/init`，以 `admin_user.is_root`（数据库部分唯一索引）判断是否已初始化；事务内完成角色 → root 用户 → 系统配置，已初始化后禁止重复操作
@@ -307,8 +308,8 @@ packages/
 - 代码是唯一判断依据，文档与代码不一致时以代码为准
 - 不添加不必要的抽象层
 - 代码体积控制：
-  - 预警阈值（超过后必须评估是否拆分）：文件/类 300 行，函数/方法 40 行
-  - 强制拆分阈值（超过后必须在完成功能后按职责拆分）：文件/类 400 行，函数/方法 60 行
+  - 预警阈值（超过后必须评估是否拆分）：函数/方法 40 行
+  - 强制拆分阈值（超过后必须在完成功能后按职责拆分）：文件/类 600 行，函数/方法 60 行
   - 例外类型：生成代码、大型测试夹具、迁移脚本、协议常量表
   - 禁止做法：压缩代码排版、删除必要空行、合并本应独立的函数、缩短命名规避行数
   - 允许做法：按职责拆模块、抽子组件、抽 hooks/services/adapters/mappers、抽类型定义与常量文件

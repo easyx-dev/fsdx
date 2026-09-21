@@ -1,5 +1,5 @@
 /**
- * 选项管理 + 字体加载
+ * 验证码默认选项与字体加载
  */
 import type { Font } from "opentype.js";
 import * as opentypeNs from "opentype.js";
@@ -11,12 +11,14 @@ const opentype = import.meta.env.DEV
 	? (opentypeNs as typeof opentypeNs & { default: typeof opentypeNs }).default
 	: opentypeNs;
 
+// 字体解析是纯 CPU 开销，模块级单例复用解析结果，避免每次生成验证码重复解析
 const fontBuffer = Buffer.from(FONT_BASE64, "base64").buffer as ArrayBuffer;
 const font = opentype.parse(fontBuffer) as Font;
 
+/** 默认字符集：排除易混淆字符（0/O、1/I/l） */
 const charPreset = "ABCDEFGHJKMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789";
 
-const options = {
+const defaultOptions = {
 	width: 150,
 	height: 50,
 	noise: 1,
@@ -34,5 +36,11 @@ const options = {
 	truncateCurvePositionMin: 0.4,
 	truncateCurvePositionMax: 0.6,
 };
+
+/**
+ * 验证码默认选项，只读：禁止调用方改写全局默认值
+ * （生成时由 createCaptcha 与本对象做浅拷贝合并，合法定制走 userOptions 入参）
+ */
+const options: Readonly<typeof defaultOptions> = defaultOptions;
 
 export { font, options };

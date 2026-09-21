@@ -133,6 +133,11 @@
   - `track.server` 新增 `trackServerEvent` 服务端可信埋点入口（跳过匿名 per-session 频控，其余校验一致）。可被衍生项目吸收
   - 补齐缺口：`clientRegister` 注册成功补 Register 服务端埋点 + 注册审计；管理员忘记密码重置补审计（`reset_password`）。
 
+- **lib 边界守门与归属判据收敛（[infra]）**：`@fsdx/lib` 的准入判据由「纯函数/类」收敛为「**可原样移植到另一个 TanStack Start 项目而无需改动**」，并新增机械守门测试 `packages/lib/src/__tests__/lib-boundary.test.ts`——扫描 lib 源码，命中读 env（`process.env` / `import.meta.env`）、logger 耦合、框架（React / TanStack Start）或 UI 包依赖、`#/*` 反向引用、app 私有协议或权限码耦合（`SfnError*` / `AdminAuthError` / `ADMIN_PERMISSIONS`）即失败（随 `pnpm test` 执行，注释中的同名词不误报）。
+  - `src/utils/` 由「app 前端工具」重定位为「**app 同构工具层**（client / server 皆可引用，判据=是否耦合 app 内部约定）」；`AGENTS.md`「包边界约定 / 归属决策」、`architecture` skill 的归属表与违规自查、`code-review` 命令的 ① 分层合规（新增「lib 准入复核」）同步该判据与「服务端专属能力不下放 lib」规则；文档中的「客户端拒收清单」改为指向 `vite.config.ts` 的 `importProtection.client.specifiers`，不再复制包名清单。
+  - 守门覆盖 `.tsx` 与动态 `import()` 两种引入形式；注释剥离按引号感知扫描，不误删字符串/模板字面量中的 `//`、`/*`。客户端 import-protection 拒收清单加入 `opentype.js`——captcha 引擎依赖 `opentype.js` + 顶层 `Buffer`，仅服务端可用，误引入客户端即构建失败而非运行时崩页。
+  - 代码体积强制阈值 文件/类 400 → **600** 行，取消原 300 行预警档（函数级 40/60 不变）。可被衍生项目吸收
+
 ### Refactor
 
 - **依赖包破坏性升级适配：AI 富文本工作台与图片处理套件（[infra]）**：`@easyx/ai-rich-editor` 0.1 → 2.0、`@easyx/image-toolkit` 0.1 → 1.0，两处接入面按新版 API 同步改造。
@@ -164,6 +169,11 @@
 - **Schema 通用列片段提取（[infra]）**：新增 `src/db/schema/columns.ts`，以工厂函数提供 `pk` / `createdAt` / `updatedAt` / `timestamps`（两者组合）/ `softDelete` / `sortable` / `publishable` 通用列片段，全部 schema 表改为展开复用（工厂每次返回全新列构造器，规避 Drizzle 列构造器跨表共享 config 的隐患）；纯 TS 重构，`db:generate` 零 diff。`db-schema` skill 的通用列模板与完整表模板同步改为工厂写法。可被衍生项目吸收
 
 - **news 演示模块统一发布建模（[infra]）**：`news.status`（draft/published/archived）替换为 `publishable()` 片段的 `is_published`（上架/下架）——`publishable` 只承载通用发布状态，发布时间 `published_at` 作为业务字段留在 `news`；`changeNewsStatus` → `setNewsPublished`（首次发布补写 `publishedAt`，下线保留），管理端列表筛选/状态列/表单、前台与首页查询、仪表盘统计、导出列与相关测试全部对齐；`PRESET_DICTS` 删除 `news_status`，列表/创建/更新/导入 schema 改用 `isPublished`。附迁移（新增 `is_published`、删除 `status`）。可被衍生项目吸收
+
+- **模块归属迁移：`error-utils` 与 `captcha` 移出 `@fsdx/lib`（[infra]）**：两者均不满足 lib 的「可原样移植」准入判据，按新判据重新归属；下游若已吸收这两个模块需同步调整 import 路径。
+  - `error-utils`（错误分类 / 归一化 / 脱敏 / SFn 元信息读写）整体迁至 `#/utils/error-utils`：它耦合本项目私有的中文括号元信息后缀协议与「含中文即业务文案」约定，不具备库的通用性；顺带修正 `sanitizeError` 读取 `process.env`（违反 lib 零 env），改为 `sanitizeError(error, isDev)` 由调用方注入环境判断（`isDev` 为必填，避免漏传导致开发环境的 stack trace 静默丢失），并补两条覆盖 `isDev` 分支的用例。
+  - SVG 验证码生成（`captcha.ts` / `ch-to-path.ts` / `random.ts` / `option-manager.ts` / `font-data.ts` + 字体文件）并入 `app/src/services/captcha`（唯一消费方），属「服务端专属运行时能力」；`option-manager` 的默认选项由可变全局对象改为只读视图，`packages/lib/src/env.d.ts`（仅为 captcha 的 `import.meta.env.DEV` 而存在）删除。`opentype.js` / `@types/opentype.js` 依赖从 `@fsdx/lib` 转入 `@fsdx/web`。
+  - `packages/lib` exports 移除 `./error-utils` 与 `./captcha`；`README.md`、`packages/lib/README.md` 与 `server-function` skill 的引用和包清单同步。
 
 ### Fix
 
@@ -246,6 +256,8 @@
 - ⚠️ **`@fsdx/ui-spa/table` 导出与语义变更（[infra]）**：`ProTable` 在页面骨架内会继承注入的表体高度（显式 `scroll.y` 仍优先）；`TableOperate.Delete` 不再捕获并提示错误（改由调用方 `callSfn` / `sfnUnwrap` 统一出口，调用方需保证 `onConfirm` 不抛出未处理的 rejected promise）；新增 `SortOrderCell` / `PublishSwitchCell` / `StatusTag` / `ImageCell` / `TableHeightProvider` / `useTableBodyHeight` / `useTableHeight` / `withDisabledReason`。
 
 - ⚠️ **列表查询参数统一设界（[infra]）**：`listSchema` 基座的 `page` 要求 ≥ 1、`pageSize` 限制在 1–100；原先自行传入越界分页参数的调用方需按上限收敛。
+
+- ⚠️ **`@fsdx/lib` 移除 `./error-utils` 与 `./captcha` 两个 subpath（[infra]）**：两者均不满足 lib 的「可原样移植」准入判据。`error-utils` 迁至 `#/utils/error-utils`（下游改 import 路径即可，注意 `sanitizeError(error, isDev)` 的 `isDev` 为必填）；`captcha` 并入 `app/src/services/captcha`（属服务端专属能力，下游需把验证码生成并入自身 `services/captcha`，并把 `opentype.js` / `@types/opentype.js` 依赖从 lib 转入应用包，同时把 `opentype.js` 加入客户端 import-protection 拒收清单）。
 
 ## [v2.0.0] - 2026-09-04
 
