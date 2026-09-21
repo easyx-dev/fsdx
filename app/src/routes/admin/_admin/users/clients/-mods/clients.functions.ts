@@ -6,11 +6,11 @@ import { adminPermGuard } from "#/middleware/admin-auth";
 import { ADMIN_PERMISSIONS } from "#/permissions/admin-permissions";
 import { getAllClientRoles } from "#/services/client-role/client-role.server";
 import {
+	clientUserCreateSchema,
 	clientUserListSchema,
-	createSchema,
+	clientUserUpdateSchema,
 	idSchema,
 	resetPwdSchema,
-	updateSchema,
 } from "#/services/client-user/client-user.schemas";
 import {
 	createClientUser,
@@ -36,7 +36,7 @@ export const getListSFn = createServerFn({ method: "GET" })
 /** 新建客户端用户 */
 export const createSFn = createServerFn({ method: "POST" })
 	.middleware([adminPermGuard(ADMIN_PERMISSIONS.CLIENT_CREATE)])
-	.validator(createSchema)
+	.validator(clientUserCreateSchema)
 	.handler(async ({ data, context }) => {
 		const record = await createClientUser(data);
 		logCrud(
@@ -52,7 +52,7 @@ export const createSFn = createServerFn({ method: "POST" })
 /** 更新客户端用户信息 */
 export const updateSFn = createServerFn({ method: "POST" })
 	.middleware([adminPermGuard(ADMIN_PERMISSIONS.CLIENT_EDIT)])
-	.validator(updateSchema)
+	.validator(clientUserUpdateSchema)
 	.handler(async ({ data, context }) => {
 		const result = await updateClientUser(data.id, data);
 		logCrud(

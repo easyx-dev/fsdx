@@ -4,19 +4,23 @@
 import { describe, expect, it } from "vitest";
 import {
 	FILE_TAG_MAX_LENGTH,
+	fileIdSchema,
 	fileListSchema,
 	normalizeFileTags,
 	updateFileTagsSchema,
 } from "#/services/file/file.schemas";
-import { idSchema } from "../-mods/files.functions";
 
-describe("idSchema", () => {
+describe("fileIdSchema", () => {
 	it("有效 id 通过", () => {
-		expect(idSchema.safeParse({ id: "f-1" }).success).toBe(true);
+		expect(fileIdSchema.safeParse({ id: "f-1" }).success).toBe(true);
 	});
 
 	it("空 id 失败", () => {
-		expect(idSchema.safeParse({ id: "" }).success).toBe(false);
+		expect(fileIdSchema.safeParse({ id: "" }).success).toBe(false);
+	});
+
+	it("缺少 id 失败", () => {
+		expect(fileIdSchema.safeParse({}).success).toBe(false);
 	});
 });
 

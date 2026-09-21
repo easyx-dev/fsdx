@@ -13,8 +13,8 @@ interface GlobalStoreValue {
 	systemConfig: Record<string, string>;
 }
 
-export const globalStoreContext = createContext<GlobalStoreValue>(
-	{} as GlobalStoreValue,
+export const globalStoreContext = createContext<GlobalStoreValue | undefined>(
+	undefined,
 );
 
 export function GlobalStoreProvider({
@@ -33,8 +33,13 @@ export function GlobalStoreProvider({
 	);
 }
 
-export function useGlobalStore() {
-	const { locale, translations, systemConfig } = useContext(globalStoreContext);
+/** 读取全局注入的 locale / translations / systemConfig，必须在 GlobalStoreProvider 内使用 */
+export function useGlobalStore(): GlobalStoreValue {
+	const context = useContext(globalStoreContext);
+	if (!context) {
+		throw new Error("useGlobalStore 必须在 GlobalStoreProvider 内部使用");
+	}
+	const { locale, translations, systemConfig } = context;
 	return {
 		locale,
 		translations,

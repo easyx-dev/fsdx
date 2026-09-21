@@ -6,11 +6,11 @@ import { adminPermGuard } from "#/middleware/admin-auth";
 import { ADMIN_PERMISSIONS } from "#/permissions/admin-permissions";
 import { getAllAdminRoles } from "#/services/admin-role/admin-role.server";
 import {
+	adminUserCreateSchema,
 	adminUserListSchema,
-	createSchema,
+	adminUserUpdateSchema,
 	idSchema,
 	resetPwdSchema,
-	updateSchema,
 } from "#/services/admin-user/admin-user.schemas";
 import {
 	createAdminUser,
@@ -36,7 +36,7 @@ export const getListSFn = createServerFn({ method: "GET" })
 /** 新建管理员 */
 export const createSFn = createServerFn({ method: "POST" })
 	.middleware([adminPermGuard(ADMIN_PERMISSIONS.ADMIN_CREATE)])
-	.validator(createSchema)
+	.validator(adminUserCreateSchema)
 	.handler(async ({ data, context }) => {
 		const record = await createAdminUser(data);
 		logCrud(
@@ -52,7 +52,7 @@ export const createSFn = createServerFn({ method: "POST" })
 /** 更新管理员 */
 export const updateSFn = createServerFn({ method: "POST" })
 	.middleware([adminPermGuard(ADMIN_PERMISSIONS.ADMIN_EDIT)])
-	.validator(updateSchema)
+	.validator(adminUserUpdateSchema)
 	.handler(async ({ data, context }) => {
 		const result = await updateAdminUser(data.id, data);
 		logCrud(

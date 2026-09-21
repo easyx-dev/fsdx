@@ -17,7 +17,7 @@ import { useTableHeight } from "./table-height";
 type ProEllipsis = boolean | { showTitle?: boolean; tooltip?: TooltipProps };
 
 /** 扩展的列类型 */
-export interface ProColumnType<T = any>
+export interface ProColumnType<T = unknown>
 	extends Omit<ColumnType<T>, "ellipsis"> {
 	/** 超出省略，可传入 Tooltip 属性自定义提示 */
 	ellipsis?: ProEllipsis;
@@ -39,7 +39,8 @@ export interface ProColumnType<T = any>
 	renderCopyableText?: (value: unknown, record: T, index: number) => string;
 }
 
-export interface ProTableProps<T = any> extends Omit<TableProps<T>, "columns"> {
+export interface ProTableProps<T = unknown>
+	extends Omit<TableProps<T>, "columns"> {
 	columns: ColumnsType<T>;
 }
 
@@ -79,10 +80,9 @@ function renderByValueType(
 
 /**
  * 将 ProColumn 的处理属性转为原生 antd 列
+ * 行记录类型不收窄：字段假设由调用方的列定义与泛型负责，组件内部只做透传
  */
-function processColumns<T extends Record<string, any>>(
-	columns: ColumnsType<T>,
-): ColumnsType<T> {
+function processColumns<T>(columns: ColumnsType<T>): ColumnsType<T> {
 	return (columns as ProColumnType<T>[]).map((col) => {
 		const {
 			copyable,
@@ -258,7 +258,7 @@ function processColumns<T extends Record<string, any>>(
  * 调用方约定：`fixed` 列必须显式声明 `width`（无宽度会被挤压到剩余空间，
  * 宽度不足时内容溢出到相邻列），且 `scroll.x` 不小于各列宽度之和。
  */
-export function ProTable<T extends Record<string, any>>({
+export function ProTable<T>({
 	bordered = true,
 	columns,
 	scroll,

@@ -7,11 +7,10 @@ import {
 	sniffImage,
 } from "@easyx/image-toolkit";
 import { createServerFn } from "@tanstack/react-start";
-import { z } from "zod";
 import { adminPermGuard } from "#/middleware/admin-auth";
 import { ADMIN_PERMISSIONS } from "#/permissions/admin-permissions";
 import { logCrud } from "#/shared-services/operation-log/operation-log.server";
-import { fileListSchema } from "./file.schemas";
+import { fileIdSchema, fileListSchema } from "./file.schemas";
 import {
 	duplicateFile,
 	getFileInfo,
@@ -175,5 +174,5 @@ export const replaceFileContentSFn = createServerFn({ method: "POST" })
 /** 根据文件 ID 查询原始文件名（供预览组件使用） */
 export const getFileInfoSFn = createServerFn({ method: "GET" })
 	.middleware([adminPermGuard(ADMIN_PERMISSIONS.FILE_VIEW)])
-	.validator(z.object({ id: z.string() }))
+	.validator(fileIdSchema)
 	.handler(async ({ data }) => getFileInfo(data.id));

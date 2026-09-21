@@ -5,6 +5,7 @@ import { describe, expect, it } from "vitest";
 import {
 	contentTranslationListSchema,
 	deleteSchema,
+	fieldTranslationQuerySchema,
 	formSchema,
 } from "#/shared-services/i18n/i18n.content.schemas";
 import { importContentTranslationsSchema } from "../-mods/content-translations.functions";
@@ -77,6 +78,29 @@ describe("deleteSchema", () => {
 	it("有效参数应通过校验", () => {
 		const result = deleteSchema.safeParse({ id: "uuid-1" });
 		expect(result.success).toBe(true);
+	});
+});
+
+describe("fieldTranslationQuerySchema", () => {
+	const base = {
+		entityType: "news",
+		entityId: "news-1",
+		fieldName: "title",
+	};
+
+	it("完整参数通过", () => {
+		expect(fieldTranslationQuerySchema.safeParse(base).success).toBe(true);
+	});
+
+	it("缺少 fieldName 应校验失败", () => {
+		const { fieldName: _fieldName, ...rest } = base;
+		expect(fieldTranslationQuerySchema.safeParse(rest).success).toBe(false);
+	});
+
+	it("空 entityId 应校验失败", () => {
+		expect(
+			fieldTranslationQuerySchema.safeParse({ ...base, entityId: "" }).success,
+		).toBe(false);
 	});
 });
 

@@ -5,12 +5,14 @@
 import { BatchWriter, type BatchWriterEvent } from "@fsdx/lib/batch-writer";
 import { db } from "#/db/index";
 import { trackEvent as trackEventTable } from "#/db/schema";
-import {
-	trackEventMetaCache,
-	trackPropertyMetaCache,
-} from "#/services/track/track.cache";
 import { logger } from "#/shared-services/logger";
-import { isTrackMetaCacheLoaded, loadTrackMetaCache } from "./track.meta";
+import {
+	getTrackPropertyDataType,
+	isTrackEventNameRegistered,
+	isTrackMetaCacheLoaded,
+	isTrackPropertyKeyRegistered,
+	loadTrackMetaCache,
+} from "./track.meta";
 import type { TrackEventInput } from "./track.types";
 import {
 	clampTrackEventTime,
@@ -113,7 +115,7 @@ function trackEventInternal(
 	}
 
 	// 校验事件名是否在元事件中注册
-	if (!trackEventMetaCache.has(input.name)) {
+	if (!isTrackEventNameRegistered(input.name)) {
 		logger.warn(
 			{ name: input.name, sessionId: input.sessionId, ip: input.ip },
 			"埋点事件被丢弃：事件名未注册",
@@ -127,7 +129,7 @@ function trackEventInternal(
 
 		// $ 开头的系统属性只校验键是否存在，不做类型校验（服务端补齐）
 		if (key.startsWith("$")) {
-			if (!trackPropertyMetaCache.has(key)) {
+			if (!isTrackPropertyKeyRegistered(key)) {
 				logger.warn(
 					{ name: input.name, key, sessionId: input.sessionId, ip: input.ip },
 					"埋点事件被丢弃：系统属性键未注册",
@@ -137,7 +139,7 @@ function trackEventInternal(
 			continue;
 		}
 
-		const expectedType = trackPropertyMetaCache.get(key);
+		const expectedType = getTrackPropertyDataType(key);
 		if (!expectedType) {
 			logger.warn(
 				{ name: input.name, key, sessionId: input.sessionId, ip: input.ip },

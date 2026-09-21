@@ -4,7 +4,7 @@
  */
 
 import { cleanup, render, screen } from "@testing-library/react";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import {
 	GlobalStoreProvider,
 	globalStoreContext,
@@ -94,15 +94,17 @@ describe("useGlobalStore", () => {
 		expect(screen.getByTestId("translation").textContent).toBe("Home");
 	});
 
-	it("globalStoreContext 默认值可用（未包裹 Provider 时）", () => {
-		// 直接使用 context 默认值渲染，验证不会崩溃
+	it("未包裹 Provider 时抛出明确错误，不再静默返回 undefined 字段", () => {
+		// 缺少 Provider 属编码错误，对齐 AdminAuthProvider / ClientAuthProvider 的处理
 		const Consumer = () => {
-			const { locale } = useGlobalStore();
-			// locale 为 undefined（默认值 {} as GlobalStoreValue），渲染为空白
-			return <span data-testid="default-locale">{locale ?? ""}</span>;
+			useGlobalStore();
+			return null;
 		};
-		render(<Consumer />);
-		expect(screen.getByTestId("default-locale").textContent).toBe("");
+		const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+		expect(() => render(<Consumer />)).toThrow(
+			"useGlobalStore 必须在 GlobalStoreProvider 内部使用",
+		);
+		errorSpy.mockRestore();
 	});
 });
 

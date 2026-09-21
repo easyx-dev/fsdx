@@ -3,8 +3,6 @@
  */
 
 import { createServerFn } from "@tanstack/react-start";
-import { z } from "zod";
-import { EDITOR_TYPES } from "#/constants/editor-types";
 import { adminPermGuard } from "#/middleware/admin-auth";
 import { ADMIN_PERMISSIONS } from "#/permissions/admin-permissions";
 import {
@@ -17,18 +15,20 @@ import {
 	translateWithAi,
 } from "#/shared-services/i18n/i18n.ai.server";
 import {
+	formSchema as contentTranslationFormSchema,
+	fieldTranslationQuerySchema,
+} from "#/shared-services/i18n/i18n.content.schemas";
+import {
 	getExistingTranslations,
 	getFieldTranslations,
 	getUITranslations,
 	upsertContentTranslation,
 } from "#/shared-services/i18n/i18n.server";
 import { logCrud } from "#/shared-services/operation-log/operation-log.server";
-import { DEFAULT_LOCALE, localeSchema } from "./i18n.types";
 
-/** 带默认值的 locale schema（供路由层/服务层复用） */
-const defaultLocaleSchema = localeSchema.default(DEFAULT_LOCALE);
-
-/** 获取当前请求的 locale 及对应翻译（从 requestMiddleware context 读取 Cookie locale） */
+/**
+ * 获取当前请求的 locale 及对应翻译（从 requestMiddleware context 读取 Cookie locale）
+ */
 export const getLocaleBundleSFn = createServerFn({ method: "GET" }).handler(
 	async ({ context }) => {
 		const locale = context.locale;
@@ -37,34 +37,18 @@ export const getLocaleBundleSFn = createServerFn({ method: "GET" }).handler(
 	},
 );
 
-/** 获取某实体某字段的所有语言翻译（抽屉用） */
+/** 获取某实体某字段的所有语言翻译（抽屉用；schema 与实体翻译页共用单一来源） */
 export const getFieldTranslationsSFn = createServerFn({ method: "GET" })
 	.middleware([adminPermGuard(ADMIN_PERMISSIONS.TRANSLATION_VIEW)])
-	.validator(
-		z.object({
-			entityType: z.string(),
-			entityId: z.string(),
-			fieldName: z.string(),
-		}),
-	)
+	.validator(fieldTranslationQuerySchema)
 	.handler(async ({ data: { entityType, entityId, fieldName } }) => {
 		return getFieldTranslations(entityType, entityId, fieldName);
 	});
 
-/** 实体翻译创建/更新 */
+/** 实体翻译创建/更新（schema 与实体翻译页共用 i18n.content.schemas 的单一来源） */
 export const saveContentTranslationSFn = createServerFn({ method: "POST" })
 	.middleware([adminPermGuard(ADMIN_PERMISSIONS.TRANSLATION_MANAGE)])
-	.validator(
-		z.object({
-			id: z.string().optional(),
-			entityType: z.string().min(1),
-			entityId: z.string().min(1),
-			fieldName: z.string().min(1),
-			locale: defaultLocaleSchema,
-			value: z.string().min(1),
-			valueType: z.enum(EDITOR_TYPES).optional(),
-		}),
-	)
+	.validator(contentTranslationFormSchema)
 	.handler(async ({ data, context }) => {
 		const result = await upsertContentTranslation(data);
 		logCrud(context.user, "translation", "update", undefined, {

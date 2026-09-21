@@ -17,9 +17,9 @@ import {
 	paginationOffset,
 } from "#/shared-services/query/query-utils.server";
 import type {
+	adminUserCreateSchema,
 	adminUserListSchema,
-	createSchema,
-	updateSchema,
+	adminUserUpdateSchema,
 } from "./admin-user.schemas";
 
 /**
@@ -54,10 +54,13 @@ const adminUserSafeCols = {
 };
 
 /** 新建管理员入参（schema 单一来源） */
-export type CreateAdminUserInput = z.infer<typeof createSchema>;
+export type CreateAdminUserInput = z.infer<typeof adminUserCreateSchema>;
 
 /** 更新管理员入参（不含 id，id 由服务层独立参数传递） */
-export type UpdateAdminUserInput = Omit<z.infer<typeof updateSchema>, "id">;
+export type UpdateAdminUserInput = Omit<
+	z.infer<typeof adminUserUpdateSchema>,
+	"id"
+>;
 
 /** 管理员列表查询参数 */
 export type AdminUserListParams = z.infer<typeof adminUserListSchema>;

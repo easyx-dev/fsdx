@@ -6,14 +6,12 @@ import { z } from "zod";
 import { adminPermGuard } from "#/middleware/admin-auth";
 import { ADMIN_PERMISSIONS } from "#/permissions/admin-permissions";
 import { logCrud } from "#/shared-services/operation-log/operation-log.server";
-import { aiProvidersSchema } from "./ai.schemas";
+import { saveAiProvidersSchema } from "./ai.schemas";
 import {
 	fetchProviderModels,
 	getAiProviderList,
 	saveAiProviderList,
 } from "./ai-providers.server";
-
-const saveAiProvidersInputSchema = z.object({ providers: aiProvidersSchema });
 
 /** 拉取厂商模型的入参 */
 export const fetchProviderModelsInputSchema = z.object({
@@ -37,7 +35,7 @@ export const fetchProviderModelsSFn = createServerFn({ method: "POST" })
 /** 保存 AI 厂商配置列表（整列表覆盖） */
 export const saveAiProvidersSFn = createServerFn({ method: "POST" })
 	.middleware([adminPermGuard(ADMIN_PERMISSIONS.AI_PROVIDER_MANAGE)])
-	.validator(saveAiProvidersInputSchema)
+	.validator(saveAiProvidersSchema)
 	.handler(async ({ data, context }) => {
 		await saveAiProviderList(data.providers);
 		logCrud(context.user, "ai-provider", "update", undefined, {

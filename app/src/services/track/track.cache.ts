@@ -1,6 +1,6 @@
 /**
  * 埋点元数据缓存实例：trackEventMetaCache + trackPropertyMetaCache
- * 仅允许 src/services/track/track.server.ts 直接操作
+ * 生命周期（加载 / 失效 / 重置）归 track.meta.ts，track.server.ts 只做只读判断
  */
 import { MemoryCache } from "@fsdx/lib/cache";
 

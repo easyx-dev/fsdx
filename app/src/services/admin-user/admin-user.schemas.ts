@@ -8,7 +8,7 @@ import { listSchema } from "#/validators/common.schemas";
 export const adminUserListSchema = listSchema;
 
 /** 新建管理员 */
-export const createSchema = z.object({
+export const adminUserCreateSchema = z.object({
 	username: z.string().min(1).max(50),
 	email: z.string().email().max(255),
 	password: z.string().min(6).max(100),
@@ -16,7 +16,7 @@ export const createSchema = z.object({
 });
 
 /** 更新管理员 */
-export const updateSchema = z.object({
+export const adminUserUpdateSchema = z.object({
 	id: z.string().min(1),
 	username: z.string().min(1).max(50).optional(),
 	email: z.string().email().max(255).optional(),
@@ -24,7 +24,8 @@ export const updateSchema = z.object({
 		.array(z.string().min(1))
 		.min(1, "至少分配一个角色")
 		.optional(),
-	status: z.string().optional(),
+	/** 账号状态：鉴权链以 status !== "active" 判定停用，故此处必须约束枚举 */
+	status: z.enum(["active", "disabled"]).optional(),
 });
 
 /** 通过 id 删除/查询管理员 */

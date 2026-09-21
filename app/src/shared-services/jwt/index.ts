@@ -4,15 +4,19 @@
  * Cookie 名称约定由宿主应用持有（见 app/src/constants/cookie-names.ts）
  */
 import { jwtVerify, SignJWT } from "jose";
+import { z } from "zod";
 import { type Logger, logger } from "#/shared-services/logger";
 
-/** JWT 载荷 */
-export interface JwtPayload {
-	userId: string;
-	username: string;
+/** JWT 载荷 schema：签名通过后仍需校验结构，避免断言放开 userType */
+export const jwtPayloadSchema = z.object({
+	userId: z.string().min(1),
+	username: z.string().min(1),
 	/** admin 或 client */
-	userType: "admin" | "client";
-}
+	userType: z.enum(["admin", "client"]),
+});
+
+/** JWT 载荷 */
+export type JwtPayload = z.infer<typeof jwtPayloadSchema>;
 
 /** Access Token 有效期：7 天 */
 const ACCESS_TOKEN_EXPIRES = "7d";
@@ -48,7 +52,16 @@ export function createJwt(opts: { secret: string; logger: Logger }): JwtModule {
 		async verifyToken(token: string): Promise<JwtPayload | null> {
 			try {
 				const { payload } = await jwtVerify(token, key);
-				return payload as unknown as JwtPayload;
+				const parsed = jwtPayloadSchema.safeParse(payload);
+				if (!parsed.success) {
+					// 签名有效但载荷结构非法（如 userType 被篡改），按无效 token 处理
+					opts.logger.debug(
+						{ issues: parsed.error.issues.length },
+						"JWT 载荷结构非法",
+					);
+					return null;
+				}
+				return parsed.data;
 			} catch (err) {
 				opts.logger.debug({ error: (err as Error).message }, "JWT 校验失败");
 				return null;

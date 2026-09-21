@@ -18,38 +18,55 @@ function definePermission<C extends string, N extends string, D extends string>(
 	return { code, name, desc, group } as const;
 }
 
-/** 客户端权限完整定义对象类型 */
-export type ClientPermissionDef = ReturnType<typeof definePermission>;
+// ─── 权限码常量 ───
 
-export const CLIENT_PERMISSIONS: Record<string, ClientPermissionDef> = {
+export const CLIENT_PERMISSIONS = {
 	// 业务模块权限码预留位（例）：
 	// DEMO_VIEW: definePermission("demo:view", "示例查看", "允许查看示例数据"),
 };
 
-/** 客户端权限码字符串类型 */
+/** 权限码对象字面量派生类型；空集合时为 never */
+type ClientPermissionDefs =
+	(typeof CLIENT_PERMISSIONS)[keyof typeof CLIENT_PERMISSIONS];
+
+/**
+ * 客户端权限完整定义对象类型
+ * 空集合（当前状态）下退化为 definePermission 的通用返回类型，避免 never 导致守卫无法调用；
+ * 填入权限码后自动收窄为字面量联合，clientPermGuard / hasClientPermission 恢复字面量校验
+ */
+export type ClientPermissionDef = [ClientPermissionDefs] extends [never]
+	? ReturnType<typeof definePermission>
+	: ClientPermissionDefs;
+
+/** 权限码字符串类型 */
 export type ClientPermissionCode = ClientPermissionDef["code"];
+
+/** 权限定义列表：空集合时 Object.values 推出 unknown[]，统一按权限定义对象收口 */
+const clientPermissionDefs = Object.values(
+	CLIENT_PERMISSIONS,
+) as ClientPermissionDef[];
 
 /** 所有客户端权限码的元数据映射（当前为空集合） */
 export const CLIENT_PERMISSION_META: Record<string, ClientPermissionDef> =
-	Object.fromEntries(Object.values(CLIENT_PERMISSIONS).map((d) => [d.code, d]));
+	Object.fromEntries(clientPermissionDefs.map((d) => [d.code, d]));
 
 /** 所有客户端权限码列表（当前为空集合） */
-export const ALL_CLIENT_PERMISSIONS: string[] = Object.values(
-	CLIENT_PERMISSIONS,
-).map((d) => d.code);
+export const ALL_CLIENT_PERMISSIONS: ClientPermissionCode[] =
+	clientPermissionDefs.map((d) => d.code);
 
 /** 按分组归类的客户端权限列表（当前为空集合） */
 export const CLIENT_PERMISSIONS_BY_GROUP: Record<
 	string,
 	ClientPermissionDef[]
-> = Object.values(CLIENT_PERMISSIONS).reduce<
-	Record<string, ClientPermissionDef[]>
->((acc, d) => {
-	const list = acc[d.group] ?? [];
-	list.push(d);
-	acc[d.group] = list;
-	return acc;
-}, {});
+> = clientPermissionDefs.reduce<Record<string, ClientPermissionDef[]>>(
+	(acc, d) => {
+		const list = acc[d.group] ?? [];
+		list.push(d);
+		acc[d.group] = list;
+		return acc;
+	},
+	{},
+);
 
 /**
  * 检查客户端角色是否拥有指定权限

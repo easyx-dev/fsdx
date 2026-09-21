@@ -29,8 +29,8 @@ description: >
 | `uiTranslationCache` | `i18n.ui.cache.ts` | `src/shared-services/i18n/i18n.ui.server.ts` | UI 文案翻译（按 locale 分片） |
 | `clientUserCache` | `client-user.cache.ts` | `src/services/client-auth/client-auth.server.ts` | 客户端用户（按 userId，TTL 5 分钟） |
 | `adminUserCache` | `admin-user.cache.ts` | `src/services/admin-auth/admin-auth.server.ts` | 管理员用户（按 userId，TTL 5 分钟） |
-| `trackEventMetaCache` | `track.cache.ts` | `src/services/track/track.server.ts` | 元事件名校验 |
-| `trackPropertyMetaCache` | `track.cache.ts` | `src/services/track/track.server.ts` | 元属性键及数据类型 |
+| `trackEventMetaCache` | `track.cache.ts` | `src/services/track/track.meta.ts` | 元事件名校验（`track.server.ts` 经 track.meta 导出的查询函数只读访问） |
+| `trackPropertyMetaCache` | `track.cache.ts` | `src/services/track/track.meta.ts` | 元属性键及数据类型（同上） |
 | `sessionRateCache` | `track.validate.ts` | `src/services/track/track.validate.ts` | 埋点 per-session 频控计数（TTL 60s，**内部实例**，不遵循懒加载/新增流程） |
 
 > 实例清单以代码为准（领域数据缓存 + 内部频控缓存）。新增缓存实例时须**同步**更新本表与 [docs/cache-system.md](../../../docs/cache-system.md)。

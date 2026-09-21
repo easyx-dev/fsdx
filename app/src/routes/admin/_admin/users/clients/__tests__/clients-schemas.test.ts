@@ -3,11 +3,11 @@
  */
 import { describe, expect, it } from "vitest";
 import {
+	clientUserCreateSchema,
 	clientUserListSchema,
-	createSchema,
+	clientUserUpdateSchema,
 	idSchema,
 	resetPwdSchema,
-	updateSchema,
 } from "#/services/client-user/client-user.schemas";
 
 describe("clientUserListSchema", () => {
@@ -37,10 +37,10 @@ describe("clientUserListSchema", () => {
 	});
 });
 
-describe("createSchema", () => {
+describe("clientUserCreateSchema", () => {
 	it("合法输入通过", () => {
 		expect(
-			createSchema.safeParse({
+			clientUserCreateSchema.safeParse({
 				username: "user",
 				email: "user@example.com",
 				password: "123456",
@@ -50,7 +50,7 @@ describe("createSchema", () => {
 
 	it("带 clientRoleIds 通过", () => {
 		expect(
-			createSchema.safeParse({
+			clientUserCreateSchema.safeParse({
 				username: "user",
 				email: "user@example.com",
 				password: "123456",
@@ -61,7 +61,7 @@ describe("createSchema", () => {
 
 	it("密码不足 6 位失败", () => {
 		expect(
-			createSchema.safeParse({
+			clientUserCreateSchema.safeParse({
 				username: "user",
 				email: "user@example.com",
 				password: "12345",
@@ -70,10 +70,10 @@ describe("createSchema", () => {
 	});
 });
 
-describe("updateSchema", () => {
+describe("clientUserUpdateSchema", () => {
 	it("部分字段更新通过（emailVerified）", () => {
 		expect(
-			updateSchema.safeParse({
+			clientUserUpdateSchema.safeParse({
 				id: "u-1",
 				emailVerified: true,
 			}).success,
@@ -82,7 +82,7 @@ describe("updateSchema", () => {
 
 	it("角色数组更新通过", () => {
 		expect(
-			updateSchema.safeParse({
+			clientUserUpdateSchema.safeParse({
 				id: "u-1",
 				clientRoleIds: ["r-1"],
 			}).success,
@@ -90,7 +90,9 @@ describe("updateSchema", () => {
 	});
 
 	it("缺少 id 失败", () => {
-		expect(updateSchema.safeParse({ username: "x" }).success).toBe(false);
+		expect(clientUserUpdateSchema.safeParse({ username: "x" }).success).toBe(
+			false,
+		);
 	});
 });
 

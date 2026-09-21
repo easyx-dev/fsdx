@@ -16,9 +16,9 @@ import {
 	paginationOffset,
 } from "#/shared-services/query/query-utils.server";
 import type {
+	clientUserCreateSchema,
 	clientUserListSchema,
-	createSchema,
-	updateSchema,
+	clientUserUpdateSchema,
 } from "./client-user.schemas";
 
 export type ClientUserRecord = Omit<
@@ -32,10 +32,13 @@ export interface ClientUserListItem extends ClientUserRecord {
 }
 
 /** 新建客户端用户入参（schema 单一来源） */
-export type CreateClientUserInput = z.infer<typeof createSchema>;
+export type CreateClientUserInput = z.infer<typeof clientUserCreateSchema>;
 
 /** 更新客户端用户入参（不含 id，id 由服务层独立参数传递） */
-export type UpdateClientUserInput = Omit<z.infer<typeof updateSchema>, "id">;
+export type UpdateClientUserInput = Omit<
+	z.infer<typeof clientUserUpdateSchema>,
+	"id"
+>;
 
 /** 客户端用户列表查询参数 */
 export type ClientUserListParams = z.infer<typeof clientUserListSchema>;

@@ -53,6 +53,21 @@ function invalidateTrackMetaCache(): void {
 	trackMetaCacheLoaded = false;
 }
 
+/** 元事件名是否已注册（缓存未就绪时返回 false，由调用方先经 loadTrackMetaCache 兜底） */
+export function isTrackEventNameRegistered(name: string): boolean {
+	return trackEventMetaCache.has(name);
+}
+
+/** 元属性键是否已注册 */
+export function isTrackPropertyKeyRegistered(key: string): boolean {
+	return trackPropertyMetaCache.has(key);
+}
+
+/** 读取元属性的数据类型；未注册返回 undefined */
+export function getTrackPropertyDataType(key: string): string | undefined {
+	return trackPropertyMetaCache.get(key);
+}
+
 /** 元数据缓存是否已加载（供 trackEvent 启动阶段兜底判断） */
 export function isTrackMetaCacheLoaded(): boolean {
 	return trackMetaCacheLoaded;

@@ -8,7 +8,7 @@ import { listSchema } from "#/validators/common.schemas";
 export const clientUserListSchema = listSchema;
 
 /** 新建客户端用户 */
-export const createSchema = z.object({
+export const clientUserCreateSchema = z.object({
 	username: z.string().min(1).max(50),
 	email: z.string().email().max(255),
 	password: z.string().min(6).max(100),
@@ -16,11 +16,12 @@ export const createSchema = z.object({
 });
 
 /** 更新客户端用户 */
-export const updateSchema = z.object({
+export const clientUserUpdateSchema = z.object({
 	id: z.string().min(1),
 	username: z.string().min(1).max(50).optional(),
 	email: z.string().email().max(255).optional(),
-	status: z.string().optional(),
+	/** 账号状态：鉴权链以 status !== "active" 判定停用，故此处必须约束枚举 */
+	status: z.enum(["active", "disabled"]).optional(),
 	emailVerified: z.boolean().optional(),
 	clientRoleIds: z.array(z.string().min(1)).optional(),
 });

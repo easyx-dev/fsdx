@@ -3,11 +3,11 @@
  */
 import { describe, expect, it } from "vitest";
 import {
+	adminUserCreateSchema,
 	adminUserListSchema,
-	createSchema,
+	adminUserUpdateSchema,
 	idSchema,
 	resetPwdSchema,
-	updateSchema,
 } from "#/services/admin-user/admin-user.schemas";
 
 describe("adminUserListSchema", () => {
@@ -37,10 +37,10 @@ describe("adminUserListSchema", () => {
 	});
 });
 
-describe("createSchema", () => {
+describe("adminUserCreateSchema", () => {
 	it("合法输入通过（多角色数组）", () => {
 		expect(
-			createSchema.safeParse({
+			adminUserCreateSchema.safeParse({
 				username: "admin",
 				email: "admin@example.com",
 				password: "123456",
@@ -51,7 +51,7 @@ describe("createSchema", () => {
 
 	it("缺少 adminRoleIds 失败", () => {
 		expect(
-			createSchema.safeParse({
+			adminUserCreateSchema.safeParse({
 				username: "admin",
 				email: "admin@example.com",
 				password: "123456",
@@ -61,7 +61,7 @@ describe("createSchema", () => {
 
 	it("空角色数组失败", () => {
 		expect(
-			createSchema.safeParse({
+			adminUserCreateSchema.safeParse({
 				username: "admin",
 				email: "admin@example.com",
 				password: "123456",
@@ -72,7 +72,7 @@ describe("createSchema", () => {
 
 	it("非法邮箱格式失败", () => {
 		expect(
-			createSchema.safeParse({
+			adminUserCreateSchema.safeParse({
 				username: "admin",
 				email: "bad",
 				password: "123456",
@@ -82,10 +82,10 @@ describe("createSchema", () => {
 	});
 });
 
-describe("updateSchema", () => {
+describe("adminUserUpdateSchema", () => {
 	it("部分字段更新通过（仅 status）", () => {
 		expect(
-			updateSchema.safeParse({
+			adminUserUpdateSchema.safeParse({
 				id: "u-1",
 				status: "disabled",
 			}).success,
@@ -94,7 +94,7 @@ describe("updateSchema", () => {
 
 	it("角色数组更新通过", () => {
 		expect(
-			updateSchema.safeParse({
+			adminUserUpdateSchema.safeParse({
 				id: "u-1",
 				adminRoleIds: ["r-1", "r-2"],
 			}).success,
@@ -103,7 +103,7 @@ describe("updateSchema", () => {
 
 	it("更新时空角色数组失败", () => {
 		expect(
-			updateSchema.safeParse({
+			adminUserUpdateSchema.safeParse({
 				id: "u-1",
 				adminRoleIds: [],
 			}).success,
@@ -111,7 +111,9 @@ describe("updateSchema", () => {
 	});
 
 	it("缺少 id 失败", () => {
-		expect(updateSchema.safeParse({ username: "x" }).success).toBe(false);
+		expect(adminUserUpdateSchema.safeParse({ username: "x" }).success).toBe(
+			false,
+		);
 	});
 });
 

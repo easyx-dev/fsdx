@@ -10,6 +10,9 @@ export const FILE_TAG_MAX_LENGTH = 100;
 /** 单文件标签数量上限 */
 export const FILE_TAG_MAX_COUNT = 20;
 
+/** 文件 ID 校验（删除 / 单项操作复用） */
+export const fileIdSchema = z.object({ id: z.string().min(1) });
+
 /**
  * 标签归一化：去首尾空白 → 丢弃空项 → 去重（保留首次出现顺序）→ 单标签超长截断
  * 原始输入可能来自手工输入或粘贴（逗号 / 分号分隔由前端负责拆分）

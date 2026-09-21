@@ -27,3 +27,10 @@ export const contentTranslationListSchema = listSchema.extend({
 });
 
 export const deleteSchema = z.object({ id: z.string().min(1) });
+
+/** 查询某实体某字段的全部语言翻译（抽屉用） */
+export const fieldTranslationQuerySchema = z.object({
+	entityType: z.string().min(1),
+	entityId: z.string().min(1),
+	fieldName: z.string().min(1),
+});

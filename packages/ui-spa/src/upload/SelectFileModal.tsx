@@ -5,10 +5,9 @@
 import { EyeOutlined } from "@ant-design/icons";
 import { formatBytes } from "@fsdx/lib/format-bytes";
 import { Button, Image, Input, Modal, Space, Tag } from "antd";
-import type { ColumnsType } from "antd/es/table";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { message } from "../antd-static";
-import { ProTable, TableOperate } from "../table";
+import { type ProColumnType, ProTable, TableOperate } from "../table";
 
 /** 可选择的文件条目（宿主查询结果的扁平结构，与业务 db 类型解耦） */
 export interface SelectableFile {
@@ -124,7 +123,7 @@ export function SelectFileModal({
 		}
 	}, [open, loadFiles]);
 
-	const columns: ColumnsType<SelectableFile> = [
+	const columns: ProColumnType<SelectableFile>[] = [
 		{
 			title: "文件名",
 			dataIndex: "originalName",
@@ -155,13 +154,13 @@ export function SelectFileModal({
 			dataIndex: "createdAt",
 			key: "createdAt",
 			width: 180,
-			render: (_: unknown, r: SelectableFile) =>
-				r.createdAt ? new Date(r.createdAt).toLocaleString("zh-CN") : "-",
+			valueType: "dateTime",
+			emptyText: "-",
 		},
 		{
 			title: "操作",
 			key: "actions",
-			width: 80,
+			width: 100,
 			render: (_: unknown, r: SelectableFile) =>
 				r.mimeType.startsWith("image/") ? (
 					<TableOperate>
@@ -211,7 +210,7 @@ export function SelectFileModal({
 					</Button>
 				</Space>
 			}
-			destroyOnClose
+			destroyOnHidden
 		>
 			<div style={{ marginBottom: 16 }}>
 				<Input.Search
