@@ -15,7 +15,7 @@ shadcn 风格基础组件库，面向前台 SSR 展示型场景。无运行时�
 
 | subpath | 内容 | 关键导出 |
 |---------|------|----------|
-| `@fsdx/ui-ssr/ui` | shadcn 五件套 | `Button`（`buttonVariants`）、`Card`（CardContent / CardHeader / CardTitle 等）、`Badge`（`badgeVariants`）、`Input`、`Textarea` |
+| `@fsdx/ui-ssr/ui` | shadcn 组件 | `Button`（`buttonVariants`）、`Card`（CardContent / CardHeader / CardTitle 等）、`Badge`（`badgeVariants`）、`Input`、`Textarea`、`Carousel`（embla 内核，含 `CarouselContent` / `CarouselItem` / `CarouselPrevious` / `CarouselNext` / `useCarousel` / `CarouselApi`，`autoplay` 间隔毫秒数，hover 暂停） |
 | `@fsdx/ui-ssr/theme` | 主题切换 | `ThemeToggle`（三态：亮/暗/跟随系统）、`useThemeMode(preset)`（useSyncExternalStore，跨标签页/系统偏好联动）、`ThemeMode` / `ThemePreset` / `ThemeScheme` 类型 |
 | `@fsdx/ui-ssr/form` | 表单辅助 | `AutofillBlocker`（阻止浏览器自动填充的诱饵输入）、`ImageCaptchaModal`（图片验证码弹窗，`getCaptcha` / `verify` 回调注入） |
 
