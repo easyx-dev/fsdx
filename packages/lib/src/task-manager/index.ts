@@ -21,9 +21,10 @@ export interface ManagedTask<
 	status: TaskStatus;
 	/** 业务状态（如报表的 range/steps、PPT 的 input/result） */
 	state: TState;
-	/** 事件缓冲（供 SSE 断线重连回放，超限截断保留尾部） */
+	/** 事件缓冲（供 SSE 断线重连回放，超限截断保留尾部）；get / list / create 返回的是快照副本 */
 	events: TEvent[];
-	/** SSE 订阅者（连接断开时移除） */
+	/** SSE 订阅者（连接断开时移除）。get / list / create 返回的是快照副本，改副本不影响管理器内部；
+	 *  订阅与取消一律走 subscribe() 的返回值 */
 	subscribers: Set<(event: TEvent) => void>;
 	createdAt: number;
 	updatedAt: number;

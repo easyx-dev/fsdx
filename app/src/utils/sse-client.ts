@@ -22,20 +22,21 @@ export async function readSSEStream(
 	const decoder = new TextDecoder();
 	let buffer = "";
 
-	/** 派发单个 SSE 事件块：无 data 行或非法 JSON 忽略；回调异常向上抛出 */
+	/** 派发单个 SSE 事件块：无 data 行或非法 JSON 忽略；回调异常原样向上抛出（中断消费） */
 	const dispatch = async (chunk: string): Promise<void> => {
 		const dataLine = chunk
 			.split("\n")
 			.find((line) => line.startsWith("data: "));
 		if (!dataLine) return;
+		let event: BatchTranslateSseEvent;
 		try {
-			const event = JSON.parse(dataLine.slice(6)) as BatchTranslateSseEvent;
-			await onEvent(event);
-		} catch (err) {
-			// 非法事件忽略；回调自身抛错需中断消费（否则会被当作解析失败静默吞掉）
-			if (err instanceof SyntaxError) return;
-			throw err;
+			event = JSON.parse(dataLine.slice(6)) as BatchTranslateSseEvent;
+		} catch {
+			// 非法事件忽略：解析失败不应中断整条流
+			return;
 		}
+		// 解析与回调分开 try：回调自身抛出的 SyntaxError 不能被当作「非法事件」吞掉
+		await onEvent(event);
 	};
 
 	try {

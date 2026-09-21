@@ -104,6 +104,29 @@ describe("readSSEStream", () => {
 		expect(cancelled).toBe(true);
 	});
 
+	it("回调抛 SyntaxError 时同样中断消费（不被当作非法事件吞掉）", async () => {
+		const encoder = new TextEncoder();
+		let cancelled = false;
+		const stream = new ReadableStream<Uint8Array>({
+			start(controller) {
+				controller.enqueue(encoder.encode('data: {"type":"a"}\n\n'));
+			},
+			cancel() {
+				cancelled = true;
+			},
+		});
+		const onEvent = vi.fn(() => {
+			// 回调内部再做一次解析是常见写法，抛出的 SyntaxError 不能被降级为「非法事件」
+			throw new SyntaxError("回调内部的解析失败");
+		});
+
+		await expect(readSSEStream(new Response(stream), onEvent)).rejects.toThrow(
+			"回调内部的解析失败",
+		);
+		expect(onEvent).toHaveBeenCalledTimes(1);
+		expect(cancelled).toBe(true);
+	});
+
 	it("响应无 body 时抛错", async () => {
 		await expect(
 			readSSEStream(new Response(null, { status: 200 }), vi.fn()),

@@ -38,7 +38,13 @@ export function DefaultErrorFallback({
 	// 可展示文案：系统级错误为 null（不向终端用户透出技术细节），业务/校验错误展示服务端归一化文案
 	const message = getDisplayErrorMessage(error);
 
-	// 渲染期不产生副作用：错误日志在提交后输出（渲染期打日志会在并发渲染/重试下重复且可能打断渲染）
+	// 客户端在 effect 中记录：渲染期打日志在并发渲染 / 重试下会重复执行。
+	// 服务端不执行 effect，故 SSR 期间须就地记录——否则前台路由在服务端失败时没有任何日志，
+	// logError 的 isServer 分支也会成为死代码。
+	if (typeof window === "undefined") {
+		logError(error, { componentStack: info?.componentStack });
+	}
+
 	useEffect(() => {
 		logError(error, { componentStack: info?.componentStack });
 	}, [error, info?.componentStack]);

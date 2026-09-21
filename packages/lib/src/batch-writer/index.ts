@@ -144,5 +144,10 @@ export class BatchWriter<T> {
 		// 复位定时器标记：shutdown 后若继续 push，需能重新启动定时刷新
 		this.timerStarted = false;
 		await this.flush();
+		// 首次 flush 期间仍可能有写入（如优雅关闭的后续步骤）：再刷一次，避免退出前残留缓冲。
+		// 只补一轮即可覆盖该窗口，同时避免持续写入时陷入无限刷新
+		if (this.buffer.length > 0) {
+			await this.flush();
+		}
 	}
 }

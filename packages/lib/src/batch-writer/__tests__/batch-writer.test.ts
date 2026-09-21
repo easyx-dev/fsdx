@@ -96,7 +96,28 @@ describe("BatchWriter", () => {
 		expect(insertFn).toHaveBeenCalledTimes(3);
 	});
 
-	it("shutdown 清理定时器并强制刷新，之后 push 仍能重新启动定时刷新", async () => {
+	it("shutdown 首次 flush 期间写入的条目会被补刷一轮", async () => {
+		const insertFn = vi.fn();
+		const writer = new BatchWriter<number>({
+			logLabel: "测试",
+			insertFn,
+		});
+		let pushedDuringFlush = false;
+		insertFn.mockImplementation(async () => {
+			if (pushedDuringFlush) return;
+			pushedDuringFlush = true;
+			// 模拟关闭流程后续步骤的写入：发生在首次 flush 的等待窗口内
+			writer.push(2);
+		});
+
+		writer.push(1);
+		await writer.shutdown();
+
+		expect(insertFn).toHaveBeenNthCalledWith(1, [1]);
+		expect(insertFn).toHaveBeenNthCalledWith(2, [2]);
+	});
+
+	it("shutdown 后定时器已清理，之后 push 仍能重新启动定时刷新", async () => {
 		const insertFn = vi.fn().mockResolvedValue(undefined);
 		const writer = new BatchWriter<number>({
 			logLabel: "测试",
