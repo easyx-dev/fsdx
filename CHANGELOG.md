@@ -58,6 +58,32 @@
 
 ### Infrastructure
 
+- **管理端列表页统一规范：查询状态 / 骨架 / 通用态收敛为固定流水线（[infra]）**：二十余个各写一套的列表页收敛为「骨架负责布局与高度、查询 hook 负责状态与请求、表格负责渲染、单元格负责通用态」，页面只声明差异（列、筛选控件、行操作）。
+  - **查询状态**：新增 `#/utils/use-list-query` 的 `useListQuery`——条件 / 页码 / 每页条数 / 排序的单一事实来源，**全部显式触发**（筛选变更与增删改后刷新，不用 effect 自动拉取），服务端实际生效的 `page` / `pageSize` 回填状态，过期响应按请求序号丢弃；分页与排序统一由 `Table.onChange` 驱动，并提供 `sortProps(field)` 生成受控排序属性。
+  - **页面骨架与工具条**：新增 `AdminListPage`（标题 + 看板 + 工具条 + 表格区域，经 context 注入表体高度）与 `AdminTableToolbar`（左筛选 / 右次要操作 / 条件生效时才显示重置）；`AdminPageContent` 的内容区标记 `data-admin-scroll-container` 作为高度测量参考系。
+  - **表体高度实测**：新增 `@fsdx/ui-spa/table` 的 `useTableBodyHeight` / `TableHeightProvider` / `useTableHeight`——以内容区为参考系测量表格顶部偏移（滚动不影响测量值），表头与分页器实测，`ResizeObserver` 观测内容区全部块级子元素（上传列表展开、侧边栏折叠均重算）；ProTable 经 context 继承，无需逐页传 `scroll.y`。
+  - **通用态落到单元格**：新增 `SortOrderCell`（失焦 / 回车提交，值未变更不发请求）与 `PublishSwitchCell`（切换即提交、乐观更新、失败回滚，状态文案嵌在开关轨道内），配套协议为**单字段 SFn**（`updateXxxSortSFn` / `setXxxPublishedSFn` 复用 `updateSortOrderSchema` / `togglePublishedSchema`）+ `logCrud` 审计，避免复用整表更新回写其它字段。
+  - **列规范组件**：新增 `ImageCell`（图片 / 封面列固定正方形 + `objectFit: contain`，放表格最前，空值渲染 `—`）与 `StatusTag`（多值枚举 → 文案 + 语义色 `success` / `warning` / `danger` / `info` / `neutral`）；ProTable 新增 `dateTimeMinute` 值类型（收敛各页手写的 `dayjs().format("YYYY-MM-DD HH:mm")`）。
+  - **操作列**：`TableOperate` 支持 `disabledReason`（置灰 + Tooltip 说明，`span` 包裹规避 antd 禁用按钮不派发鼠标事件）；`Delete` 不再自行 `message.error`（错误出口唯一交 `callSfn` / `sfnUnwrap`）；上下架与排序不再重复出现在操作列。
+  - **编辑承载统一为抽屉**：新增 `AdminFormDrawer`（宽度三档 `640` / `760` / `40%`、固定 `destroyOnHidden`、底部按钮经 HTML `form` 属性提交，表单侧以可选的 `formId` / `hideActions` / `onSubmittingChange` 配合）；删除 `news` 的 `create.tsx` 与 `$id/edit.tsx` 路由页，新建编辑回归列表页抽屉。
+  - **服务端契约**：`validators/common.schemas.ts` 由死代码转为唯一来源（`listSchema` 基座 + `updateSortOrderSchema` / `togglePublishedSchema` / `sortDirectionSchema`，分页参数统一设界「页码 ≥ 1、每页 1–100」），列表 SFn 一律 `listSchema.extend({...})` 且 `pageSize` 全链路透传（此前多处硬编码 `pageSize: 20`，每页条数控件实为死控件）；角色列表服务补齐服务端分页与排序（另提供不分页的 `getAllAdminRoles` / `getAllClientRoles` 供下拉复用），默认排序由创建时间升序改为降序（与其它列表统一）。
+  - 已迁移页面：`news`、`files`、`file-explorer`、`admin-roles`、`client-roles`、`users/{admins,clients}`、`dicts`、`config`、`messages`、`logs`、`operation-logs`、`track/{query,event-meta,property-meta,analytics}`、`translations/{ui,content}`、`ai-providers`；只读列表只做骨架与列规范，保留「点查询才请求」的交互。可被衍生项目吸收
+
+- **文件库支持多标签与按标签 / 文件 ID 检索（[infra]）**：`file` 表新增 `tags`（PG 原生 `text[]`），文件库由单标签升级为多标签并可独立按标签筛选。
+  - 标签规则集中在一处：`services/file/file.schemas.ts` 的 `normalizeFileTags` 负责去首尾空白 → 丢弃空项 → 去重（保留首次出现顺序）→ 单标签截断（100 字符），schema 归一化后再校验数量上限（20 个）；新增 `updateFileTags` 服务与 `updateFileTagsSFn`（权限 `file:edit`，审计动作 `update_tag`，空数组即清空）。
+  - 列表新增「文件 ID」（可复制）与「标签」列（标签用 `Tag` 渲染，超出折叠为 `+N`，Tooltip 列出全部），标签编辑用 antd tags 模式 Select（`tokenSeparators` 支持粘贴逗号 / 分号分隔文本）；图片宽高由「大小」列移入「标签」列，以该列首个青色 `Tag` 展示（大小列只留体积，尺寸与用户标签同格但不混排）；补充 `MIME 类型` / `存储路径`（已含落盘文件名）/ `SHA256`（可复制）/ `过期时间` 列便于排查存储与内容问题；标签编辑弹窗内展示目标文件名（长名省略 + Tooltip 全名），避免在列表中误开错行；工具栏拆出**独立的标签搜索框**（`tag` 参数，与 `keyword` 互不影响），服务层借 `unnest` 展开数组做包含匹配；`keyword` 同时匹配原始文件名与文件 ID（uuid 显式转文本比较）。可被衍生项目吸收
+
+- **`@fsdx/ui-ssr` 补齐 shadcn Carousel（[infra]）**：新增 `Carousel` / `CarouselContent` / `CarouselItem` / `CarouselPrevious` / `CarouselNext` / `useCarousel`（embla 内核，依赖 `embla-carousel-react` + `embla-carousel-autoplay`）；内置 `autoplay` 间隔属性（毫秒，hover 暂停、交互后不停止），左右箭头用内联 SVG（遵循包内不引入图标库的约定），无障碍按语义元素实现（`section[aria-roledescription=carousel]` / `fieldset[aria-roledescription=slide]`）。可被衍生项目吸收
+
+- **字典支持业务字典播种（[infra]）**：新增 `SEED_DICTS` 常量（模板默认为空数组，由业务项目填充）与 `ensureSeedDicts`，仅首次部署时创建字典与初始条目，**结果字典不受保护**，运营可在「字典管理」中自由增删改（与 `PRESET_DICTS` 的只读保护语义相反；需可编辑的初始选项时用播种而非改预置常量）。可被衍生项目吸收
+
+- **认证与鉴权小幅增强（[infra]）**：
+  - `adminPermGuard` / `adminPermRouteGuard` 支持权限数组（一次鉴权解析多权限，避免串联多个 guard 重复解析），内部改用既有的 `hasAllAdminPermissions`。
+  - `useAdminAuth()` 新增 `hasPermission(permissionDef)`，`AdminUser` 新增 `rolePermissions`（root 用户为 `["**"]`），供列表页按权限置灰操作（服务端 guard 仍是唯一权威）；`getCurrentAdmin` 的角色名与权限码合并为一次查询并过滤已软删除角色（与鉴权路径 `getAdminRolePermissions` 语义对齐，此前会把已删除角色的名称一并下发）。
+  - 新增 `#/utils/use-sfn-section` 的 `useSfnSection`（区块级异步加载：挂载后拉取，提供 `loading` / `failed`，任一块失败不影响其余区块，适用于仪表盘这类多区块页面）。可被衍生项目吸收
+
+- **操作日志展示元数据补齐（[infra]）**：`constants/operation-log-meta.ts` 的模块 / 动作颜色与中文名补齐代码实际发出的取值（`set_published`、`update_tag`、`overwrite_image`、`backup_image`、`rename`、`mkdir`、`client-role`、`message`、`ai-provider`），修复操作日志页存在无名称 / 无色标的记录。
+
 - **部署与构建优化（[infra]）**：
   - `deploy/deploy.sh` 改为零停机：先拉新镜像（旧版继续服务）→ `up -d` 仅重建变更容器（失败回退 `down + up`）→ 按部署前镜像 ID 精确清理旧镜像（不用 `docker image prune -f`，避免误清同宿主机其他项目）→ 输出 `/health` 状态面板。
   - `Dockerfile`：pnpm 改为全局安装 v12（与根 `package.json` 的 `packageManager` 大版本一致，`NPM_REGISTRY` 默认对齐 `.npmrc` 镜像源）；依赖安装走 BuildKit `--mount=type=cache` 复用 pnpm store（不进镜像层）；运行阶段安装 `tini` 作 PID 1（信号转发 + 回收僵尸进程）并设 `TZ=Asia/Shanghai` 对齐业务时区。
@@ -141,6 +167,20 @@
 
 ### Fix
 
+- **news 编辑抽屉保存失败会静默还原用户输入（[infra]）**：`NewsForm` 的回填 effect 把 `onError` 放进了依赖数组，而调用方传入的是每次渲染都新建的行内函数——页面重渲染（提交时 `onSubmittingChange` 触发）即让 effect 重跑，重新请求 `getNewsByIdSFn` 并 `form.setFieldsValue(服务端值)` 覆盖用户已改内容（同时 `loading` 置真使表单被短暂替换为 Spin）。实测 501 字符标题被服务端 schema 拒绝后，标题输入框已回退为原值。改为以 ref 承载最新回调、effect 只依赖 `[id, form]`（与 `RichEditor` 的同类写法一致）。可被衍生项目吸收
+
+- **可空列以 `emptyText` 统一兜底（[infra]）**：`ProTable` 的 `valueType` 对 `null` 返回 `null`，可为空的时间列（文件「过期时间」、用户「最后登录」、新闻「发布时间」）在列表里留白，与同表其它列的 `—` 占位不一致。为列新增 `emptyText` 选项（渲染结果为空时统一替换），上述四列改用 `emptyText: "—"`，避免各页为零值另写 `render` + 手写 `dayjs` 格式化。可被衍生项目吸收
+
+- **e2e 环境被 devtools 悬浮徽标遮挡（[infra]）**：dev 期 `TanStackDevtools` 的启动徽标固定右下角（`z-index: 99999`），会盖住 `AdminFormDrawer` 底部的主按钮——Playwright 判为 pointer events 被拦截而无法点击（`force: true` 也无效，真实鼠标事件仍落在徽标上）。新增 auto fixture 在每个用例注入 CSS 隐藏该徽标（按内部图标结构定位，不依赖其 CSS Module 生成的类名），避免各 spec 各自绕过。可被衍生项目吸收
+
+- **管理端列表页翻页 / 每页条数调整失效（[infra]）**：各列表页同时存在 `pagination.onChange` 与 `Table.onChange`，antd 翻页时会同时触发两者——分页回调按目标页查询，`Table.onChange` 却把页码重置为 1，两个请求互相覆盖，表现为「闪动一下仍停在第一页」，调整每页条数同样无效。移除各页 `pagination.onChange`，分页与排序统一由 `Table.onChange` 处理（分页参数直接取 `Table.onChange` 回传的目标页码与每页条数），并把列表条件收敛为单一查询状态（`useListQuery`，服务端返回后回填实际生效值）。可被衍生项目吸收
+
+- **固定操作列在窄屏溢出（[infra]）**：操作列固定右侧但未声明 `width`，antd 会把无宽度的固定列压缩到剩余空间，窄屏下各列宽度之和超过容器宽度时按钮溢出到相邻列（如「下载」压在边框线上）。为各列表操作列补齐显式 `width`（2 项 160 / 3 项 240 / 4 项 320 / 5 项 400）并把 `scroll.x` 提到各列宽度之和以上；规则同步进 `AGENTS.md`、清单与设计文档。可被衍生项目吸收
+
+- **图片验证码弹窗校验失败无错误提示（[infra]）**：`ImageCaptchaModal` 的 `refresh()` 内无条件 `setModalError("")`，而校验失败分支是「先写错误文案再调用 `refresh()`」，文案被立即清空，表现为验证码错误时只刷新图片、不给任何提示（登录 / 注册 / 找回密码等既有验证码流程同受影响）；改为 `refresh()` 不再清空错误文案，错误由打开弹窗与下次提交覆盖。可被衍生项目吸收
+
+- **后台登录 e2e 断言失效（[infra]）**：`admin-login.spec.ts` 断言仪表盘出现「新闻总数」，而该文案随仪表盘重构为「系统态势总览」后已不存在，`pnpm e2e` 恒失败；改为断言稳定的页面标题（`getByRole("heading", { name: "仪表盘" })`），避免再与 KPI 文案耦合。
+
 - **定时任务 per-tick 日志降级为 debug（[infra]）**：`shared-services/scheduler` 原在每次 `onTick` 以 `info` 记录「开始执行」与「执行完成」，每分钟任务每天写入约 2880 行心跳日志、淹没业务日志；改为 `debug` 并补充 `durationMs`（失败仍为 `error`），注册期日志保持 `info`。生产默认 `info` 下正常执行静默，`LOG_LEVEL=debug` 仍可拿到完整起止与耗时。可被衍生项目吸收
 
 - **日志文件流级别跟随 `LOG_LEVEL`（[infra]）**：`shared-services/logger` 的文件流原硬编码 `level: "info"`，导致 `LOG_LEVEL=debug` 时 debug 日志只进开发控制台、永不落盘，与 `external-observability`「成功外部调用记 debug」及 `/admin/logs` 排障链路自相矛盾；改为文件流跟随配置级别（控制台生产仍仅 `warn` 以上），补 debug 落盘用例。可被衍生项目吸收
@@ -158,6 +198,8 @@
 - **补全前台英文种子翻译并新增完整性守卫（[infra]）**：前台大量 `t("中文")` 文案缺失英文种子（消息中心/退出登录/忘记密码/各类失败提示/分页/已读未读/重置相关等），致使英文站静默回退中文；已补齐 `i18n.seed.ts` 缺失条目，并新增 `i18n.seed.test.ts` 静态扫描守卫，自动校验前台所有 `t()` 字面量均存在于 `SEED_DATA`（en），防止后续新增文案遗漏种子。另修正 `translation.ts` / 缓存注释 / 翻译管理页占位符与「中文作为 key」约定不符的过时表述。
 
 ### Docs
+
+- **管理端列表页规范文档与验收清单（[infra]）**：新增 `docs/admin-list-page.md`（分层职责 / 查询状态机 / 服务端契约 / 表体高度算法 / 图片列 / 操作列宽度 / 通用态 / 抽屉编辑 / 富文本高度）与 `.agents/checklists/admin-list-page.md`（逐项验收）；`AGENTS.md` 的「表格操作列」补齐 4 条硬规则并新增「表格列规范」一节；`.agents/skills/admin-crud` 的列表页示例去毒并补「列表页统一规范」章节；`.agents/guide.md` 补任务导航与清单索引。可被衍生项目吸收
 
 - **日志级别语义与敏感配置加密文档（[infra]）**：`AGENTS.md`「日志约定」补充级别语义 + 一票否决判据 + 外部调用统一出口（`logExternalRequest`），并说明文件流跟随 `LOG_LEVEL`；`docs/deployment-ops.md` 补充 `CONFIG_ENCRYPTION_KEY` 与敏感配置加密说明。可被衍生项目吸收
 
@@ -198,6 +240,12 @@
 - ⚠️ **移除 `@fsdx/ui-spa/sfn-helpers`（[infra]）**：`safeSfnCall` / `unwrapSfn` 由 `#/utils/sfn-error` 的 `callSfn` / `sfnUnwrap` 取代（客户端调用统一经该模块）。
 
 - ⚠️ **消息模块字段统一命名（[infra]）**：`message` 表列 `recipient_type/recipient_id` 重命名为 `user_type/user_id`；对应 SFn 入参 `recipientType/recipientIds` 改为 `userType/userIds`，管理列表返回字段 `recipientName` 改为 `userName`。
+
+- ⚠️ **移除 `news` 的创建 / 编辑路由页（[infra]）**：`/admin/news/create` 与 `/admin/news/$id/edit` 不再存在（新建与编辑统一在列表页抽屉内完成），旧书签 / 浏览器历史访问将 404；`news` 列表页的「快速编辑」入口由「编辑」（同一抽屉）取代。
+
+- ⚠️ **`@fsdx/ui-spa/table` 导出与语义变更（[infra]）**：`ProTable` 在页面骨架内会继承注入的表体高度（显式 `scroll.y` 仍优先）；`TableOperate.Delete` 不再捕获并提示错误（改由调用方 `callSfn` / `sfnUnwrap` 统一出口，调用方需保证 `onConfirm` 不抛出未处理的 rejected promise）；新增 `SortOrderCell` / `PublishSwitchCell` / `StatusTag` / `ImageCell` / `TableHeightProvider` / `useTableBodyHeight` / `useTableHeight` / `withDisabledReason`。
+
+- ⚠️ **列表查询参数统一设界（[infra]）**：`listSchema` 基座的 `page` 要求 ≥ 1、`pageSize` 限制在 1–100；原先自行传入越界分页参数的调用方需按上限收敛。
 
 ## [v2.0.0] - 2026-09-04
 
