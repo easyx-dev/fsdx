@@ -32,8 +32,15 @@ const config = defineConfig({
 			},
 			importProtection: {
 				client: {
-					// 服务端专属依赖：客户端误引即构建失败（captcha 引擎等服务端文件依赖 opentype.js + Buffer）
-					specifiers: ["bcryptjs", "drizzle-orm", "openai", "opentype.js"],
+					// 服务端专属依赖：客户端误引即构建失败（captcha 引擎等服务端文件依赖 opentype.js + Buffer）；
+					// node:crypto 覆盖「中间件经 start.ts 同时进入客户端模块图」这类误引（浏览器侧只会拿到会抛错的空壳）
+					specifiers: [
+						"bcryptjs",
+						"drizzle-orm",
+						"openai",
+						"opentype.js",
+						"node:crypto",
+					],
 				},
 			},
 		}),

@@ -138,6 +138,8 @@
   - 守门覆盖 `.tsx` 与动态 `import()` 两种引入形式；注释剥离按引号感知扫描，不误删字符串/模板字面量中的 `//`、`/*`。客户端 import-protection 拒收清单加入 `opentype.js`——captcha 引擎依赖 `opentype.js` + 顶层 `Buffer`，仅服务端可用，误引入客户端即构建失败而非运行时崩页。
   - 代码体积强制阈值 文件/类 400 → **600** 行，取消原 300 行预警档（函数级 40/60 不变）。可被衍生项目吸收
 
+- **客户端 import-protection 拒收 `node:crypto`（[infra]）**：`src/middleware/request-id.ts` 经 `start.ts` 同时进入客户端模块图，该模块中任何对 node 内置模块的**可见引用**都会被 Vite 在浏览器侧替换为「一访问即抛错」的空壳——实测表现为管理端整站白屏（dev 与生产构建同样受影响，`pnpm build` 也不会失败，仅 e2e 才能发现）。将 `node:crypto` 加入 `importProtection.client.specifiers` 后该类误引在构建期即失败（已做失效性验证：`randomUUID` 改回 `node:crypto` → `pnpm build` 报 `Denied by specifier pattern: node:crypto`）。可被衍生项目吸收
+
 ### Refactor
 
 - **依赖包破坏性升级适配：AI 富文本工作台与图片处理套件（[infra]）**：`@easyx/ai-rich-editor` 0.1 → 2.0、`@easyx/image-toolkit` 0.1 → 1.0，两处接入面按新版 API 同步改造。
@@ -180,6 +182,8 @@
 - **外部系统调用未统一观测、日志级别虚高（[infra]）**：`logExternalRequest` 自引入后在生产代码中零调用，`external_calls_total` / `external_call_duration_seconds` 恒为 0；邮件 / 短信 / webhook 各在自己的成功路径打 `info`，违反「per-call 一律禁 info」判据。四类外发（`mail`、`sms`、`notify/webhook`、`ai` 的 `/models` 拉取，以及 `chat/completions` 代理与 `completeText` / `streamAiChat`）统一改走 `logExternalRequest`（成功 debug、失败 warn + 指标），删除调用方重复日志；`i18n.ai.server` 的 AI 翻译失败日志随之移除（失败已由 `completeText` 收口）。指标口径按「调用是否真正可用」统计——`/models` 拉取在 HTTP 成功但响应体不可用（非 JSON / 结构异常 / 无模型 id）时同样计为失败，并把非法 JSON 的原始 `SyntaxError` 就地归一化为可读文案。新增 `observeExternalStream` 观测**流式**外部调用——单次记日志只能覆盖「请求已发出」，既测不到整段耗时也漏掉流内失败；现按流生命周期收口：自然结束记成功（duration 为整段流耗时）、流内抛错记失败并原样抛出、消费方中途放弃与客户端主动取消（AbortError）不计结果（避免取消抬高失败率）。已实测：一次真实 webhook 外发后 `external_calls_total{system="webhook",outcome="success"} 1`、失败路径 `outcome="error"} 1`。可被衍生项目吸收
 
 - **前台新闻列表分页不可达（[infra]）**：`/news` 的 loader 固定请求第 1 页，分页链接也未携带查询参数——已发布新闻超过一页时第 2 页起无法访问、页码高亮恒为 1、点击无响应（违反路由清单的「前进后退可达」）。分页状态改由 URL 查询串承载（`validateSearch` + `loaderDeps`），`page=1` 经 `stripSearchParams` 从 URL 剔除（第 1 页保持 `/news`），非法页码（非整数 / 小于 1）回退第 1 页；首页、页脚、详情面包屑三处入口链接补 `search`。已实测：`/news` 200、`/news?page=2` 200、`/news?page=1` 307 → `/news`、`/news?page=abc` 307 → `/news`。可被衍生项目吸收
+
+- **上游 `x-request-id` 未做字符校验（[infra]）**：上游透传值仅截断长度即回写响应头、写入日志与 `operation_log.request_id`，控制字符与非 ASCII 值可原样进入链路标识（构成响应头注入面并污染审计）。新增可见 ASCII 白名单（`0x21-0x7E`，不含空格），非法值整体回退为新生成 UUID——不做清洗后沿用，避免残留可疑字符被当作可信链路 ID；长度超限仍截断至列长度。解析逻辑抽为 `resolveRequestId` 并补单测；UUID 生成改用 Web Crypto 全局实现（`node:crypto` 会因本模块进入客户端模块图而被 Vite 外部化，见 Infrastructure 条）。已实测：非 ASCII / 含空格 / 空值请求头均回退 UUID 且请求正常返回。补充说明：计划中「CRLF 触发 `setResponseHeader` 抛错致该请求 500」实测**不可复现**——Node 的 HTTP 解析器会把 CRLF 拆成两个独立请求头，不会作为头值进入本中间件，故本条定位为防御性收紧而非已发生的故障修复。可被衍生项目吸收
 
 - **用户记录内部列泄漏（[infra]）**：管理端与服务端用户接口把整行记录回传客户端，`passwordHash` 随之进入响应 JSON——列表查询此前显式 `select` 了该列，新建 / 更新 / 详情则用无参 `.returning()` / `.select()` 取回全部列，同仓客户端用户列表（`clientUserSafeCols`）已刻意排除该列，属遗漏。现收敛为单一「可出服务端字段投影」（管理端新增 `adminUserSafeCols`，客户端复用既有 `clientUserSafeCols`），列表 / 详情 / 新建 / 更新四条路径统一经投影取数，`AdminUserRecord` 与客户端侧对齐为 `Omit<…, "passwordHash" | "deletedAt">`；补七条投影回归用例（管理端 4、客户端 3；已验证：投影改回全列即失败）。可被衍生项目吸收
 
