@@ -136,6 +136,7 @@ export function useThemeMode(preset: ThemePreset) {
 	// 直接读取 localStorage/媒体查询的最新值应用，而非使用 effect 闭包里的快照——
 	// SSR 前台水合期间 useSyncExternalStore 首帧返回服务端默认值，若用默认值应用会
 	// 短暂覆盖 Document init 脚本已设置好的首帧主题（管理端包在 ClientOnly 内不受影响）。
+	// biome-ignore lint/correctness/useExhaustiveDependencies: mode/prefersDark 只作为重放触发源，effect 内改读最新持久化值
 	useEffect(() => {
 		applyThemeToDom(
 			getStoredMode(preset.storageKey),

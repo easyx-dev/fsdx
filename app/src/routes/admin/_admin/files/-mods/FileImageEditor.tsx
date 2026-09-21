@@ -63,11 +63,13 @@ export function FileImageEditor({
 		configureImageEngine({ wasmUrl });
 	}, [wasmUrl]);
 
-	// 切换目标文件时清空上一次的处理结果与选项
+	// 切换目标文件时清空上一次的处理结果与选项。
+	// 保留组件实例（不靠父级 key 重建），关闭时才有出场动画；关闭态（file=null）无需重置。
 	useEffect(() => {
+		if (!file) return;
 		setPreview(null);
 		setBackupOriginal(false);
-	}, [file?.id]);
+	}, [file]);
 
 	const result = preview?.result ?? null;
 	const canSave = !!file && !!result && !preview?.pending && !saving;

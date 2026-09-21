@@ -13,7 +13,11 @@
 			"**/scripts/**/*",
 			"**/.vscode/**/*",
 			"**/index.html",
+			"**/server.ts",
 			"**/vite.config.ts",
+			"**/vitest.config.ts",
+			"**/drizzle.config.ts",
+			"**/playwright.config.ts",
 			"!**/src/routeTree.gen.ts",
 			"!**/src/styles"
 		]
@@ -31,6 +35,9 @@
 	},
 	"linter": {
 		"enabled": true,
+		"domains": {
+			"react": "recommended"
+		},
 		"rules": {
 			"recommended": true,
 			"a11y": {

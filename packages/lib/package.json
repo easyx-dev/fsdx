@@ -26,6 +26,7 @@
   },
   "dependencies": {
     "clsx": "^2.1.1",
+    "dayjs": "catalog:",
     "tailwind-merge": "^3.6.0"
   }
 }

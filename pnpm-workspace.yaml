@@ -2,6 +2,18 @@ packages:
   - app
   - "packages/*"
 
+# 跨包共用的依赖版本单一事实来源：各包以 "catalog:" 引用，避免同一依赖在多处声明后版本漂移
+catalog:
+  "@ant-design/icons": "^6.3.2"
+  "@easyx/editor": "^2.0.0"
+  "@tanstack/react-router": "^1.170.21"
+  antd: "^6.5.3"
+  dayjs: "^1.11.21"
+  i18next: "^26.3.6"
+  monaco-editor: "^0.56.0"
+  react: "^19.2.8"
+  react-dom: "^19.2.8"
+
 allowBuilds:
   '@alicloud/openapi-core': false
   es5-ext: true
