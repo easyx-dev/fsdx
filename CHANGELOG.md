@@ -262,13 +262,13 @@
 - **工具层与 lib 健壮性修复（[infra]）**：
   - `readSSEStream`：回调由 `void onEvent(...)` 改为 await——原写法丢弃回调 Promise，异步 reject 会变成 unhandledrejection 且无法中断消费；现回调抛错或读流异常时取消底层流并向调用方抛出，`finally` 释放 reader 锁，非法事件仍按解析失败忽略。
   - `useSfnSection`：加请求序号，`fetcher` 变更或组件卸载后在途响应作废，避免旧结果覆盖新区块状态。
-  - `batch-writer.shutdown()` 复位 `timerStarted`：关闭后若仍有写入（如优雅关闭的后续步骤）能重新启动定时刷新，否则这些条目只能靠攒满 `batchSize` 才落库、进程退出即静默丢失；定时器已 `unref`，不会拖住退出。lib 单测同步改为断言新行为（原用例把丢失行为写成了预期）。
+  - `batch-writer.shutdown()` 复位 `timerStarted` 并在首次 flush 后补刷一轮：关闭后若仍有写入（如优雅关闭的后续步骤）能重新启动定时刷新、且首次 flush 等待窗口内进来的条目也会被补刷，否则这些条目只能靠攒满 `batchSize` 才落库、进程退出即静默丢失（定时器已 `unref`，不会拖住退出）。lib 单测同步补用例并断言新行为（原用例把丢失行为写成了预期）。
   - `task-manager`：`get` / `list` / `create` / `replayEvents` 返回快照（原返回内部可变引用，调用方可绕过 `patchState` / `setStatus` 直接改内部状态），`finish` 与 `setStatus` 合并为同一实现，`broadcast` 广播语义不变。
   - `semaphore`：删除从未被读取的 `waiters.reject` 字段，重复两处的 `"EXECUTION_BUSY"` 提为常量。
   - 验证码随机数：`int()` 由 `Math.round` 改 `Math.floor`（原区间首尾取值概率减半），paths 洗牌改 Fisher–Yates（原 `sort(() => Math.random() - 0.5)` 分布明显偏置），`ch-to-path` 的空 `RangeError` 补定位消息。
   - 日志：日志文件清理失败由 `console.warn` 改 `logger.warn`（带文件名与错误）；验证码发送成功由 `info` 降为 `debug` 且不再记录邮箱 / 手机号（PII），短信失败路径同样只记类型。可被衍生项目吸收
 
-- **错误边界不再向终端用户透出技术文案（[infra]）**：新增 `getDisplayErrorMessage(error)`——业务 / 校验 / 鉴权错误返回服务端归一化文案（已剥离 SFn 元信息后缀），系统级错误（SQL / 堆栈 / 英文技术报错 / 未知异常）返回 `null`，由调用方渲染本地化兜底文案。前台 6 个路由错误边界（首页、新闻列表、新闻详情、登录、注册、忘记密码）与 `DefaultErrorFallback` 改用该函数，兜底文案走 i18n 并补英文种子；`DefaultErrorFallback` 的错误日志由渲染期移入 `useEffect`（渲染期打日志在并发渲染 / 重试下会重复执行）。可被衍生项目吸收
+- **错误边界不再向终端用户透出技术文案（[infra]）**：新增 `getDisplayErrorMessage(error)`——业务 / 校验 / 鉴权错误返回服务端归一化文案（已剥离 SFn 元信息后缀），系统级错误（SQL / 堆栈 / 英文技术报错 / 未知异常）返回 `null`，由调用方渲染本地化兜底文案。前台 6 个路由错误边界（首页、新闻列表、新闻详情、登录、注册、忘记密码）与 `DefaultErrorFallback` 改用该函数，兜底文案走 i18n 并补英文种子。`DefaultErrorFallback` 的错误日志按运行端分流：客户端在 `useEffect` 中输出（渲染期打日志在并发渲染 / 重试下会重复执行），**服务端在渲染期就地输出**（SSR 不执行 effect，否则前台路由在服务端失败时不留任何日志）。可被衍生项目吸收
 
 - **UI 包可访问性与交互修复（[infra]）**：
   - `PhotoWall`：上传区与「从文件库选择」由可点击 `div` 改为 `button`（键盘可达，鼠标 hover 反馈与直角风格保留）；移除仅用于阻断冒泡的冗余 `onClick` 包装层。

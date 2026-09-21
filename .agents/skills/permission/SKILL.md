@@ -201,8 +201,7 @@ matchPermission(rolePermissions, "admin:view");  // ❌ false（不同分组）
 
 ```ts
 import {
-  ADMIN_PERMISSION_META,      // Record<string, AdminPermissionDef>
-  ALL_ADMIN_PERMISSIONS,      // AdminPermissionCode[]
+  ADMIN_PERMISSION_META,      // Record<AdminPermissionCode, AdminPermissionDef>
   ADMIN_PERMISSIONS_BY_GROUP, // Record<string, AdminPermissionDef[]>
 } from "#/permissions/admin-permissions";
 
