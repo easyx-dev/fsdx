@@ -72,10 +72,14 @@ export function ImageCaptchaModal({
 	// 关闭动画定时器：重新打开前须清理，避免旧定时器卸载新弹窗
 	const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-	/** 刷新图片验证码 */
+	/**
+	 * 刷新图片验证码
+	 * 不清空错误文案：校验失败分支是「先写错误文案再刷新图片」，
+	 * 若此处清空会让失败提示闪失（表现为验证码错误时只换图、无任何提示）；
+	 * 文案改由打开弹窗与下次提交覆盖
+	 */
 	const refresh = useCallback(() => {
 		setIsLoadingSvg(true);
-		setModalError("");
 		getCaptcha()
 			.then((result) => {
 				setSvg(result.svg);
