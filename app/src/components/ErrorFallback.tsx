@@ -6,7 +6,8 @@
 import type { ErrorComponentProps } from "@tanstack/react-router";
 import { Link } from "@tanstack/react-router";
 import { AlertTriangle, ArrowLeft, Home, RefreshCw } from "lucide-react";
-import { stripSfnErrorMeta } from "#/utils/error-utils";
+import { useEffect } from "react";
+import { getDisplayErrorMessage } from "#/utils/error-utils";
 
 /** 输出错误日志，服务端和客户端均不影响异常展示 */
 function logError(error: unknown, context?: Record<string, unknown>) {
@@ -34,10 +35,13 @@ export function DefaultErrorFallback({
 	reset,
 	info,
 }: ErrorComponentProps) {
-	logError(error, { componentStack: info?.componentStack });
+	// 可展示文案：系统级错误为 null（不向终端用户透出技术细节），业务/校验错误展示服务端归一化文案
+	const message = getDisplayErrorMessage(error);
 
-	const message =
-		error instanceof Error ? stripSfnErrorMeta(error.message) : "未知错误";
+	// 渲染期不产生副作用：错误日志在提交后输出（渲染期打日志会在并发渲染/重试下重复且可能打断渲染）
+	useEffect(() => {
+		logError(error, { componentStack: info?.componentStack });
+	}, [error, info?.componentStack]);
 
 	return (
 		<main className="flex min-h-screen items-center justify-center bg-background px-4">

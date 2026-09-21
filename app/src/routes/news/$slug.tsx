@@ -7,6 +7,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import dayjs from "dayjs";
 import { ArrowLeft, ChevronRight, Home } from "lucide-react";
 import { useTranslation } from "#/components/providers";
+import { getDisplayErrorMessage } from "#/utils/error-utils";
 import { getNewsDetailSFn } from "./-mods/news.functions";
 
 export const Route = createFileRoute("/news/$slug")({
@@ -38,7 +39,8 @@ export const Route = createFileRoute("/news/$slug")({
 });
 
 function NewsDetailError({ error }: { error: unknown }) {
-	const msg = error instanceof Error ? error.message : "加载失败，请稍后重试";
+	const { t } = useTranslation();
+	const msg = getDisplayErrorMessage(error) ?? t("加载失败，请稍后重试");
 	return (
 		<main className="mx-auto max-w-3xl px-4 py-12 text-center sm:py-20">
 			<p className="text-sm text-destructive">{msg}</p>

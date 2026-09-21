@@ -24,6 +24,22 @@ export function classifyError(
 	return "internal";
 }
 
+/**
+ * 错误边界可展示给终端用户的文案
+ * - 业务 / 校验 / 鉴权错误：返回服务端归一化文案（已剥离 SFn 元信息后缀）
+ * - 系统级错误（SQL / 堆栈 / 英文技术报错 / 未知）：返回 null，由调用方渲染本地化兜底文案，
+ *   避免把内部细节透出给用户
+ * 分类优先取服务端随消息携带的 kind（权威），缺失时退回按文案内容判定
+ */
+export function getDisplayErrorMessage(error: unknown): string | null {
+	const { message, kind } = parseSfnErrorMeta(getErrorMessage(error, ""));
+	const effectiveKind = kind ?? classifyError(error);
+	if (effectiveKind === "internal") return null;
+	// 校验错误的首条 issue 文案不在 message 上，需单独提取
+	const text = extractValidationMessage(error) ?? message;
+	return text || null;
+}
+
 /** 随错误消息传输的元信息（类型 / 请求号 / SFn 可读方法名） */
 export interface SfnErrorMetaInfo {
 	/** 错误分类（供客户端识别系统错误） */

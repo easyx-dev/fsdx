@@ -15,6 +15,7 @@ import dayjs from "dayjs";
 import { ArrowRight } from "lucide-react";
 import { useTranslation } from "#/components/providers";
 import type { NewsRecord } from "#/services/news/news.server";
+import { getDisplayErrorMessage } from "#/utils/error-utils";
 import { getLatestNewsSFn } from "./index.functions";
 
 export const Route = createFileRoute("/")({
@@ -48,7 +49,8 @@ const features = [
 ];
 
 function HomeError({ error }: { error: unknown }) {
-	const msg = error instanceof Error ? error.message : "加载失败，请稍后重试";
+	const { t } = useTranslation();
+	const msg = getDisplayErrorMessage(error) ?? t("加载失败，请稍后重试");
 	return (
 		<main className="mx-auto max-w-5xl px-4 py-8 sm:py-16">
 			<section className="mb-12 text-center sm:mb-20">

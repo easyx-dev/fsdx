@@ -24,14 +24,16 @@ import { CaptchaInput } from "#/components/client";
 import { useTranslation } from "#/components/providers";
 import { getCurrentClientSFn } from "#/services/client-auth/client-auth.functions";
 import { track } from "#/services/track/track";
+import { getDisplayErrorMessage } from "#/utils/error-utils";
 import { sfnUnwrap } from "#/utils/sfn-error";
 import { clientRegisterSFn } from "./-mods/register.functions";
 
 function RegisterError({ error }: { error: unknown }) {
+	const { t } = useTranslation();
 	return (
 		<main className="flex flex-1 items-center justify-center bg-background px-4 py-8">
 			<p className="text-sm text-destructive">
-				{error instanceof Error ? error.message : "加载失败，请稍后重试"}
+				{getDisplayErrorMessage(error) ?? t("加载失败，请稍后重试")}
 			</p>
 		</main>
 	);

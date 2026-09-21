@@ -18,6 +18,7 @@ import {
 import dayjs from "dayjs";
 import { useTranslation } from "#/components/providers";
 import type { NewsRecord } from "#/services/news/news.server";
+import { getDisplayErrorMessage } from "#/utils/error-utils";
 import { getPublishedNewsSFn } from "./-mods/news.functions";
 
 export const Route = createFileRoute("/news/")({
@@ -36,7 +37,8 @@ export const Route = createFileRoute("/news/")({
 });
 
 function NewsListError({ error }: { error: unknown }) {
-	const msg = error instanceof Error ? error.message : "加载失败，请稍后重试";
+	const { t } = useTranslation();
+	const msg = getDisplayErrorMessage(error) ?? t("加载失败，请稍后重试");
 	return (
 		<main className="mx-auto max-w-5xl px-4 py-8 sm:py-12">
 			<header className="mb-6 sm:mb-10">

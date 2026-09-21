@@ -6,6 +6,7 @@ import { describe, expect, it } from "vitest";
 import {
 	appendSfnErrorMeta,
 	classifyError,
+	getDisplayErrorMessage,
 	getErrorMessage,
 	parseSfnErrorMeta,
 	sanitizeError,
@@ -252,6 +253,36 @@ describe("classifyError", () => {
 	it("技术错误（英文/未知）归类 internal", () => {
 		expect(classifyError(new Error("duplicate key"))).toBe("internal");
 		expect(classifyError(undefined)).toBe("internal");
+	});
+});
+
+describe("getDisplayErrorMessage", () => {
+	it("业务文案剥离元信息后返回", () => {
+		const error = new Error(
+			appendSfnErrorMeta("库存不足", { requestId: "req-1" }),
+		);
+		expect(getDisplayErrorMessage(error)).toBe("库存不足");
+	});
+
+	it("校验错误返回 issue 文案", () => {
+		expect(
+			getDisplayErrorMessage({ issues: [{ message: "标题不能为空" }] }),
+		).toBe("标题不能为空");
+	});
+
+	it("技术错误（英文 / 未知）返回 null，不透出内部细节", () => {
+		expect(getDisplayErrorMessage(new Error("duplicate key"))).toBeNull();
+		expect(getDisplayErrorMessage(undefined)).toBeNull();
+	});
+
+	it("服务端标记为系统错误（kind=internal）时即使文案含中文也返回 null", () => {
+		const error = new Error(
+			appendSfnErrorMeta("服务器内部错误，请稍后重试", {
+				kind: "internal",
+				requestId: "req-9",
+			}),
+		);
+		expect(getDisplayErrorMessage(error)).toBeNull();
 	});
 });
 

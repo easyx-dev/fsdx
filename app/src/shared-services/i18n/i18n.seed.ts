@@ -7,6 +7,10 @@ import { db } from "#/db/index";
 import { uiTranslation } from "#/db/schema";
 import { logger } from "#/shared-services/logger";
 
+/**
+ * 写入缺失的预置 UI 翻译（基于 (locale, key) 唯一约束 upsert，已有条目不受影响）
+ * 启动时调用；新增种子文案后重启即可增量补齐
+ */
 export async function ensurePresetTranslations(): Promise<void> {
 	const now = new Date();
 	const rows: (typeof uiTranslation.$inferInsert)[] = [];
@@ -31,6 +35,11 @@ const SEED_EN: SeedRow[] = [
 	// common
 	{ locale: "en", key: "返回首页", value: "Back to Home" },
 	{ locale: "en", key: "暂无数据", value: "No Data" },
+	{
+		locale: "en",
+		key: "加载失败，请稍后重试",
+		value: "Failed to load, please try again later",
+	},
 
 	// header
 	{ locale: "en", key: "首页", value: "Home" },
@@ -273,4 +282,5 @@ const SEED_EN: SeedRow[] = [
 	},
 ];
 
+/** 预置翻译种子数据（当前仅英文；中文即 key 本身，无需种子行） */
 export const SEED_DATA: SeedRow[] = [...SEED_EN];
