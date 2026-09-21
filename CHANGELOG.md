@@ -177,6 +177,12 @@
 
 ### Fix
 
+- **用户记录内部列泄漏（[infra]）**：管理端与服务端用户接口把整行记录回传客户端，`passwordHash` 随之进入响应 JSON——列表查询此前显式 `select` 了该列，新建 / 更新 / 详情则用无参 `.returning()` / `.select()` 取回全部列，同仓客户端用户列表（`clientUserSafeCols`）已刻意排除该列，属遗漏。现收敛为单一「可出服务端字段投影」（管理端新增 `adminUserSafeCols`，客户端复用既有 `clientUserSafeCols`），列表 / 详情 / 新建 / 更新四条路径统一经投影取数，`AdminUserRecord` 与客户端侧对齐为 `Omit<…, "passwordHash" | "deletedAt">`；补七条投影回归用例（管理端 4、客户端 3；已验证：投影改回全列即失败）。可被衍生项目吸收
+
+- **文件管理器路径穿越（[infra]）**：`isPathSafe` 只校验传入的子路径，叶子名称（上传文件名 / 重命名新名称 / 新目录名）此前未校验即参与拼接——上传可传 `../../x` 把文件写到 `STORAGE_DIR` 之外，重命名可借 `../` 把条目移到其它目录。新增叶子名校验（拒绝空、`.` / `..` 与任何含路径分隔符的输入，显式拒绝而非静默收敛为 `basename`；反斜杠在 POSIX 下本属合法字符，一并拒绝以拦截 Windows 风格穿越，属有意为之的行为收紧），拼接后再过 `isPathSafe` 作二次校验；重命名的目标父目录仍取条目自身的真实父目录，保持「原地改名」语义。补六条穿越拒绝用例。可被衍生项目吸收
+
+- **Server Route 鉴权失败返回 500 而非 401/403（[infra]）**：`adminPermRouteGuard` / `clientPermRouteGuard` 原以 `createMiddleware().middleware([guard]).server(...)` 组合，而中间件执行顺序为「依赖在前、自身在后」——guard 位于外层，其 `AdminAuthError` / `ClientAuthError` 进不了内层 `catch`（该 catch 实为死代码），鉴权失败退化为框架默认 500。改为把鉴权抽为 `resolveAdminPermContext` / `resolveClientPermContext` 供中间件与守卫共用，守卫退化为单层 middleware（鉴权与 catch 同层）；新增 e2e 断言未登录访问受保护 Server Route 返回 401 JSON（已做失效性验证：旧实现下三条用例全挂）。可被衍生项目吸收
+
 - **news 编辑抽屉保存失败会静默还原用户输入（[infra]）**：`NewsForm` 的回填 effect 把 `onError` 放进了依赖数组，而调用方传入的是每次渲染都新建的行内函数——页面重渲染（提交时 `onSubmittingChange` 触发）即让 effect 重跑，重新请求 `getNewsByIdSFn` 并 `form.setFieldsValue(服务端值)` 覆盖用户已改内容（同时 `loading` 置真使表单被短暂替换为 Spin）。实测 501 字符标题被服务端 schema 拒绝后，标题输入框已回退为原值。改为以 ref 承载最新回调、effect 只依赖 `[id, form]`（与 `RichEditor` 的同类写法一致）。可被衍生项目吸收
 
 - **可空列以 `emptyText` 统一兜底（[infra]）**：`ProTable` 的 `valueType` 对 `null` 返回 `null`，可为空的时间列（文件「过期时间」、用户「最后登录」、新闻「发布时间」）在列表里留白，与同表其它列的 `—` 占位不一致。为列新增 `emptyText` 选项（渲染结果为空时统一替换），上述四列改用 `emptyText: "—"`，避免各页为零值另写 `render` + 手写 `dayjs` 格式化。可被衍生项目吸收
