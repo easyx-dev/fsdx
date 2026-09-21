@@ -48,8 +48,10 @@ export function AdminPageContent({
 					)}
 				</div>
 			</div>
-			{/* 内容区：高度 = 视口 - 标题栏高，内部滚动，便于子元素按已知高度布局 */}
+			{/* 内容区：高度 = 视口 - 标题栏高，内部滚动，便于子元素按已知高度布局。
+				data-admin-scroll-container 标记滚动容器，供列表页骨架测量表格可用高度 */}
 			<div
+				data-admin-scroll-container=""
 				className="scrollbar-thin overflow-auto p-5"
 				style={{ height: "calc(100vh - var(--admin-header-height))" }}
 			>

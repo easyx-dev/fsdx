@@ -22,7 +22,10 @@ test.describe("后台登录", () => {
 	});
 
 	test("root 登录成功跳转仪表盘", async ({ adminPage }) => {
-		await expect(adminPage.getByText("新闻总数")).toBeVisible();
+		// 仪表盘 KPI 文案随域与权限变化，断言稳定的页面标题
+		await expect(
+			adminPage.getByRole("heading", { name: "仪表盘" }),
+		).toBeVisible();
 	});
 
 	test("已登录访问登录页仍渲染登录表单", async ({ adminPage }) => {

@@ -2,14 +2,13 @@
  * 客户端角色管理共享 Zod Schema
  */
 import { z } from "zod";
+import { listSchema } from "#/validators/common.schemas";
 
 /** 通过 id 删除角色 */
 export const idSchema = z.object({ id: z.string().min(1) });
 
-/** 角色列表查询 */
-export const clientRoleListSchema = z.object({
-	keyword: z.string().optional(),
-});
+/** 角色列表查询：通用分页 / 排序参数 + 关键词（关键词已含于基座，无额外业务筛选） */
+export const clientRoleListSchema = listSchema;
 
 /** 新建角色 */
 export const clientRoleCreateSchema = z.object({

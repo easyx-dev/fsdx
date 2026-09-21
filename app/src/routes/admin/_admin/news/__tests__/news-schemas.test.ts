@@ -6,19 +6,47 @@ import {
 	createNewsSchema,
 	exportSchema,
 	getNewsSchema,
-	listSchema,
 	newsImportSchema,
+	newsListSchema,
 	publishNewsSchema,
 	updateNewsSchema,
+	updateNewsSortSchema,
 } from "#/services/news/news.schemas";
 
-describe("listSchema", () => {
+describe("newsListSchema", () => {
 	it("空参数通过", () => {
-		expect(listSchema.safeParse({}).success).toBe(true);
+		expect(newsListSchema.safeParse({}).success).toBe(true);
 	});
 
 	it("isPublished 布尔筛选通过", () => {
-		expect(listSchema.safeParse({ isPublished: false }).success).toBe(true);
+		expect(newsListSchema.safeParse({ isPublished: false }).success).toBe(true);
+	});
+
+	it("分页参数全链路透传通过", () => {
+		const result = newsListSchema.safeParse({
+			page: 2,
+			pageSize: 50,
+			sortField: "sortOrder",
+			sortOrder: "descend",
+		});
+		expect(result.success).toBe(true);
+		if (result.success) {
+			expect(result.data.pageSize).toBe(50);
+		}
+	});
+});
+
+describe("updateNewsSortSchema", () => {
+	it("合法排序权重通过", () => {
+		expect(
+			updateNewsSortSchema.safeParse({ id: "n-1", sortOrder: 10 }).success,
+		).toBe(true);
+	});
+
+	it("负数排序权重失败", () => {
+		expect(
+			updateNewsSortSchema.safeParse({ id: "n-1", sortOrder: -1 }).success,
+		).toBe(false);
 	});
 });
 

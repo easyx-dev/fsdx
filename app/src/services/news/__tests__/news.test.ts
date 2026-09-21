@@ -44,6 +44,7 @@ import {
 	getNewsBySlug,
 	getNewsList,
 	setNewsPublished,
+	updateNewsSortOrder,
 } from "#/services/news/news.server";
 
 const newsRecord = {
@@ -320,5 +321,23 @@ describe("ensureUniqueSlug", () => {
 		await expect(ensureUniqueSlug("my-slug")).rejects.toThrow(
 			'无法为 slug "my-slug" 生成唯一标识',
 		);
+	});
+});
+
+describe("updateNewsSortOrder", () => {
+	beforeEach(() => vi.clearAllMocks());
+
+	it("记录不存在时返回 false 且不写库", async () => {
+		mockRows.mockReset().mockResolvedValue([]);
+
+		expect(await updateNewsSortOrder("不存在", 5)).toBe(false);
+		expect(mockDb.update).not.toHaveBeenCalled();
+	});
+
+	it("记录存在时写入排序权重并返回 true", async () => {
+		mockRows.mockReset().mockResolvedValue([{ id: "n-1" }]);
+
+		expect(await updateNewsSortOrder("n-1", 5)).toBe(true);
+		expect(mockDb.update).toHaveBeenCalled();
 	});
 });

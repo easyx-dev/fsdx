@@ -6,19 +6,27 @@ import {
 	createDictSchema,
 	createItemSchema,
 	dictImportSchema,
-	dictSlugSchema,
+	dictListSchema,
 	idSchema,
 	updateDictSchema,
 	updateItemSchema,
 } from "#/shared-services/dict/dict.schemas";
 
-describe("dictSlugSchema", () => {
-	it("有效 slug 通过", () => {
-		expect(dictSlugSchema.safeParse({ dictSlug: "d-1" }).success).toBe(true);
+describe("dictListSchema", () => {
+	it("含分页 / 排序参数的查询通过", () => {
+		expect(
+			dictListSchema.safeParse({
+				dictSlug: "d-1",
+				page: 1,
+				pageSize: 50,
+				sortField: "sortOrder",
+				sortOrder: "ascend",
+			}).success,
+		).toBe(true);
 	});
 
 	it("空 slug 失败", () => {
-		expect(dictSlugSchema.safeParse({ dictSlug: "" }).success).toBe(false);
+		expect(dictListSchema.safeParse({ dictSlug: "" }).success).toBe(false);
 	});
 });
 

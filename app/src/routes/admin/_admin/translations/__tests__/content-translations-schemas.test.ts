@@ -3,24 +3,25 @@
  */
 import { describe, expect, it } from "vitest";
 import {
+	contentTranslationListSchema,
 	deleteSchema,
 	formSchema,
-	getListSchema,
 } from "#/shared-services/i18n/i18n.content.schemas";
 import { importContentTranslationsSchema } from "../-mods/content-translations.functions";
 
-describe("getListSchema", () => {
+describe("contentTranslationListSchema", () => {
 	it("空参数应通过校验", () => {
-		const result = getListSchema.safeParse({});
+		const result = contentTranslationListSchema.safeParse({});
 		expect(result.success).toBe(true);
 	});
 
 	it("所有参数同时传入应通过校验", () => {
-		const result = getListSchema.safeParse({
+		const result = contentTranslationListSchema.safeParse({
 			entityType: "news",
 			locale: "zh",
 			keyword: "标题",
 			page: 1,
+			pageSize: 20,
 			sortField: "createdAt",
 			sortOrder: "ascend",
 		});

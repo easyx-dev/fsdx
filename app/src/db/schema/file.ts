@@ -6,6 +6,7 @@ import {
 	index,
 	integer,
 	pgTable,
+	text,
 	timestamp,
 	uuid,
 	varchar,
@@ -26,6 +27,11 @@ export const file = pgTable(
 		width: integer("width"),
 		/** 图片高度（非图片或未解析时为 null） */
 		height: integer("height"),
+		/**
+		 * 文件标签（字符串数组，PG 原生数组）
+		 * 多标签便于在文件库中归类与按标签筛选；写入前经服务层归一化（去空白 / 去重 / 限长限量）
+		 */
+		tags: text("tags").array().$type<string>(),
 		status: varchar({ length: 20 }).default("temp").notNull(),
 		expiredAt: timestamp("expired_at", { withTimezone: true }),
 		createdByType: varchar("created_by_type", { length: 20 }),

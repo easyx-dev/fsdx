@@ -8,9 +8,9 @@ import { z } from "zod";
 import { adminPermGuard } from "#/middleware/admin-auth";
 import { ADMIN_PERMISSIONS } from "#/permissions/admin-permissions";
 import {
+	contentTranslationListSchema,
 	deleteSchema,
 	formSchema,
-	getListSchema,
 } from "#/shared-services/i18n/i18n.content.schemas";
 import {
 	type ContentTranslationExportData,
@@ -25,7 +25,7 @@ import { logCrud } from "#/shared-services/operation-log/operation-log.server";
 
 export const getListSFn = createServerFn({ method: "GET" })
 	.middleware([adminPermGuard(ADMIN_PERMISSIONS.TRANSLATION_VIEW)])
-	.validator(getListSchema)
+	.validator(contentTranslationListSchema)
 	.handler(async ({ data }) => listContentTranslations(data));
 
 export const saveSFn = createServerFn({ method: "POST" })

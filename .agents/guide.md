@@ -17,6 +17,7 @@
 | 编写单元测试 / 修复测试 | [test-writing](skills/test-writing/SKILL.md) |
 | 国际化 / 翻译文案 / 实体字段翻译 | [i18n](skills/i18n/SKILL.md)、[docs/i18n.md](../docs/i18n.md) |
 | 新增管理端 CRUD 模块 | [admin-crud](skills/admin-crud/SKILL.md) |
+| 新增 / 改造管理端列表页 | [admin-crud](skills/admin-crud/SKILL.md)「列表页统一规范」、[docs/admin-list-page.md](../docs/admin-list-page.md)、[admin-list-page 清单](checklists/admin-list-page.md) |
 | 埋点 / 事件分析 | [docs/event-tracking.md](../docs/event-tracking.md)、`src/services/track/` |
 | 部署 / 定时任务 / 日志 | [docs/deployment-ops.md](../docs/deployment-ops.md)；生产部署运维见 [deploy/README.md](../deploy/README.md)（子仓库 fsdx-deploy） |
 
@@ -47,6 +48,7 @@
 | [sfn-checklist](checklists/sfn-checklist.md) | SFn 新增/修改自查 |
 | [route-checklist](checklists/route-checklist.md) | 路由新增/修改自查 |
 | [component-checklist](checklists/component-checklist.md) | 组件新增/修改自查 |
+| [admin-list-page](checklists/admin-list-page.md) | 管理端列表页新增/改造自查 |
 | [derive-checklist](checklists/derive-checklist.md) | 派生项目（更名）自查 |
 | [upstream-sync-checklist](checklists/upstream-sync-checklist.md) | 上游↔下游同步自查 |
 
@@ -56,5 +58,5 @@
 |----|------|------|
 | 规则本体 | [AGENTS.md](../AGENTS.md) | 唯一自动加载，跨模块规则/约定/索引 |
 | 边界模型 | [documentation-architecture](../docs/documentation-architecture.md) | 文档体系边界与事实 SSOT 表 |
-| 平台机制 | [docs/](../docs/) | architecture-overview / database-design / auth-permission-model / cache-system / event-tracking / i18n / deployment-ops / project-ecosystem |
+| 平台机制 | [docs/](../docs/) | architecture-overview / admin-list-page / database-design / auth-permission-model / cache-system / event-tracking / i18n / deployment-ops / project-ecosystem |
 | 历史档案 | [docs/archive/](../docs/archive/) | 已归档版本与历史方案 |

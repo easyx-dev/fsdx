@@ -1,29 +1,13 @@
 /**
  * 管理端个人收件箱页面：查看、已读、删除自己的消息
  */
-import {
-	CheckOutlined,
-	DeleteOutlined,
-	ExclamationCircleOutlined,
-	FileTextOutlined,
-	InfoCircleOutlined,
-} from "@ant-design/icons";
+import { CheckOutlined, SettingOutlined } from "@ant-design/icons";
 import { message } from "@fsdx/ui-spa/antd-static";
+import { ProTable } from "@fsdx/ui-spa/table";
 import { createFileRoute } from "@tanstack/react-router";
-import {
-	Button,
-	Empty,
-	List,
-	Pagination,
-	Popconfirm,
-	Space,
-	Spin,
-	Tabs,
-	Tag,
-	Typography,
-} from "antd";
+import { Button, Tabs, Tag } from "antd";
 import { useCallback, useEffect, useState } from "react";
-import { AdminPageContent } from "#/components/admin";
+import { AdminListPage, AdminTableToolbar } from "#/components/admin";
 import {
 	deleteAdminMessageSFn,
 	getAdminMessagesSFn,
@@ -33,256 +17,159 @@ import {
 } from "#/services/message/message.functions";
 import type { MessageRecord } from "#/services/message/message.server";
 import { sfnUnwrap } from "#/utils/sfn-error";
+import { useListQuery } from "#/utils/use-list-query";
+import { messageInboxColumns } from "./-mods/messageInboxColumns";
 import { NotifyChannelSettingsModal } from "./-mods/NotifyChannelSettingsModal";
-
-const { Text, Paragraph } = Typography;
 
 export const Route = createFileRoute("/admin/_admin/messages/")({
 	component: AdminInboxPage,
+	loader: async () => await getAdminMessagesSFn({ data: {} }),
 });
 
-const PAGE_SIZE = 10;
+/** 收件箱状态筛选（空串表示全部） */
+type InboxStatus = "" | "unread" | "read";
 
-const messageTypeIcon: Record<string, React.ReactNode> = {
-	ppt: <FileTextOutlined />,
-	task: <ExclamationCircleOutlined />,
-	system: <InfoCircleOutlined />,
-};
-const messageTypeColor: Record<string, string> = {
-	ppt: "blue",
-	task: "orange",
-	system: "default",
-};
+/** 收件箱筛选条件 */
+interface InboxFilters {
+	status: InboxStatus;
+}
 
 function AdminInboxPage() {
-	const [loading, setLoading] = useState(false);
-	const [messages, setMessages] = useState<MessageRecord[]>([]);
-	const [tab, setTab] = useState<"all" | "unread" | "read">("all");
-	const [page, setPage] = useState(1);
-	const [total, setTotal] = useState(0);
+	const initialData = Route.useLoaderData();
 	const [unreadCount, setUnreadCount] = useState(0);
 	const [notifyOpen, setNotifyOpen] = useState(false);
 
-	const fetchMessages = useCallback(async () => {
-		setLoading(true);
-		// 列表加载失败不打扰用户（silent），仍保留诊断日志
-		const [result] = await sfnUnwrap(
-			getAdminMessagesSFn({
-				data: {
-					status: tab === "all" ? undefined : tab,
-					page,
-					pageSize: PAGE_SIZE,
-				},
-			}),
-			{ silent: true },
-		);
-		setLoading(false);
-		if (!result) {
-			setMessages([]);
-			setTotal(0);
-			return;
-		}
-		setMessages(result.records);
-		setTotal(result.total);
-	}, [tab, page]);
+	const list = useListQuery<MessageRecord, InboxFilters>({
+		initial: initialData,
+		initialFilters: { status: "" },
+		errorMessage: "加载消息失败",
+		fetcher: useCallback(
+			({ page, pageSize, filters }) =>
+				getAdminMessagesSFn({
+					data: {
+						status: filters.status || undefined,
+						page,
+						pageSize,
+					},
+				}),
+			[],
+		),
+	});
 
+	/** 未读数为辅助信息，失败无需打扰用户 */
 	const fetchUnreadCount = useCallback(async () => {
-		// 未读数为辅助信息，失败无需打扰用户
 		const [count] = await sfnUnwrap(getAdminUnreadCountSFn(), { silent: true });
 		if (count !== null) setUnreadCount(count);
 	}, []);
 
 	useEffect(() => {
-		fetchMessages();
-	}, [fetchMessages]);
-
-	useEffect(() => {
-		fetchUnreadCount();
+		void fetchUnreadCount();
 	}, [fetchUnreadCount]);
 
-	const handleMarkRead = async (id: string) => {
+	const handleMarkRead = async (record: MessageRecord) => {
 		const [, err] = await sfnUnwrap(
-			markAdminMessageAsReadSFn({ data: { id } }),
+			markAdminMessageAsReadSFn({ data: { id: record.id } }),
+			{ error: "标记已读失败" },
 		);
 		if (err) return;
-		fetchMessages();
-		fetchUnreadCount();
+		await list.reload();
+		void fetchUnreadCount();
 	};
 
 	const handleMarkAllRead = async () => {
 		const [, err] = await sfnUnwrap(markAllAdminMessagesAsReadSFn());
 		if (err) return;
 		message.success("已全部标记为已读");
-		fetchMessages();
-		fetchUnreadCount();
+		await list.reload();
+		void fetchUnreadCount();
 	};
 
-	const handleDelete = async (id: string) => {
-		const [, err] = await sfnUnwrap(deleteAdminMessageSFn({ data: { id } }));
+	const handleDelete = async (record: MessageRecord) => {
+		const [, err] = await sfnUnwrap(
+			deleteAdminMessageSFn({ data: { id: record.id } }),
+			{ error: "删除失败" },
+		);
 		if (err) return;
 		message.success("已删除");
-		fetchMessages();
-		fetchUnreadCount();
+		await list.reload();
+		void fetchUnreadCount();
 	};
 
-	const handleTabChange = (key: string) => {
-		setTab(key as typeof tab);
-		setPage(1);
-	};
+	const columns = messageInboxColumns({
+		onMarkRead: handleMarkRead,
+		onDelete: handleDelete,
+	});
 
 	const tabItems = [
 		{ key: "all", label: "全部" },
 		{
 			key: "unread",
 			label: (
-				<Space size={4}>
+				<span className="inline-flex items-center gap-1">
 					未读
 					{unreadCount > 0 && (
-						<Tag color="red" style={{ marginLeft: 4, borderRadius: "50%" }}>
+						<Tag color="red" className="rounded-full">
 							{unreadCount}
 						</Tag>
 					)}
-				</Space>
+				</span>
 			),
 		},
 		{ key: "read", label: "已读" },
 	];
 
 	return (
-		<AdminPageContent
+		<AdminListPage
 			title="我的消息"
 			description="查看系统推送给你的通知消息"
 			extra={
-				<Space>
+				unreadCount > 0 ? (
 					<Button
-						type="link"
 						icon={<CheckOutlined />}
-						onClick={() => setNotifyOpen(true)}
+						onClick={() => void handleMarkAllRead()}
 					>
-						通知设置
+						全部已读
 					</Button>
-					{unreadCount > 0 && (
+				) : undefined
+			}
+			toolbar={
+				<AdminTableToolbar
+					extra={
 						<Button
-							type="link"
-							icon={<CheckOutlined />}
-							onClick={handleMarkAllRead}
+							icon={<SettingOutlined />}
+							onClick={() => setNotifyOpen(true)}
 						>
-							全部已读
+							通知设置
 						</Button>
-					)}
-				</Space>
+					}
+				>
+					<Tabs
+						activeKey={list.filters.status || "all"}
+						onChange={(key) =>
+							list.applyFilters({
+								status: (key === "all" ? "" : key) as InboxStatus,
+							})
+						}
+						items={tabItems}
+						className="[&_.ant-tabs-nav]:mb-0"
+					/>
+				</AdminTableToolbar>
 			}
 		>
-			<Tabs activeKey={tab} onChange={handleTabChange} items={tabItems} />
-
-			<Spin spinning={loading}>
-				{messages.length === 0 && !loading ? (
-					<Empty description="暂无消息" style={{ marginTop: 48 }} />
-				) : (
-					<>
-						<List
-							dataSource={messages}
-							renderItem={(item) => (
-								<List.Item
-									key={item.id}
-									style={{
-										padding: "16px 0",
-										backgroundColor:
-											item.status === "unread"
-												? "var(--ant-color-primary-bg)"
-												: undefined,
-									}}
-								>
-									<List.Item.Meta
-										avatar={
-											<Tag color={messageTypeColor[item.type] ?? "default"}>
-												{messageTypeIcon[item.type] ?? <InfoCircleOutlined />}
-											</Tag>
-										}
-										title={
-											<Space>
-												<Text strong={item.status === "unread"}>
-													{item.title}
-												</Text>
-												{item.status === "unread" && (
-													<Tag color="red">未读</Tag>
-												)}
-											</Space>
-										}
-										description={
-											<>
-												{item.content && (
-													<Paragraph
-														ellipsis={{ rows: 2 }}
-														style={{ marginBottom: 8 }}
-													>
-														{item.content}
-													</Paragraph>
-												)}
-												<Space size="small">
-													<Text type="secondary" style={{ fontSize: 12 }}>
-														{new Date(item.createdAt).toLocaleString("zh-CN")}
-													</Text>
-													{item.relatedLink && (
-														<Button
-															type="link"
-															size="small"
-															href={item.relatedLink}
-															target="_blank"
-														>
-															查看详情
-														</Button>
-													)}
-												</Space>
-											</>
-										}
-									/>
-									<Space>
-										{item.status === "unread" && (
-											<Button
-												type="text"
-												size="small"
-												icon={<CheckOutlined />}
-												onClick={() => handleMarkRead(item.id)}
-											>
-												已读
-											</Button>
-										)}
-										<Popconfirm
-											title="确定删除该消息？"
-											onConfirm={() => handleDelete(item.id)}
-										>
-											<Button
-												type="text"
-												size="small"
-												danger
-												icon={<DeleteOutlined />}
-											>
-												删除
-											</Button>
-										</Popconfirm>
-									</Space>
-								</List.Item>
-							)}
-						/>
-						{total > PAGE_SIZE && (
-							<div style={{ marginTop: 24, textAlign: "center" }}>
-								<Pagination
-									current={page}
-									pageSize={PAGE_SIZE}
-									total={total}
-									onChange={(p: number) => setPage(p)}
-									showSizeChanger={false}
-								/>
-							</div>
-						)}
-					</>
-				)}
-			</Spin>
+			<ProTable
+				dataSource={list.data.records}
+				columns={columns}
+				rowKey="id"
+				loading={list.loading}
+				locale={{ emptyText: "暂无消息" }}
+				scroll={{ x: 800 }}
+				onChange={list.onTableChange}
+				pagination={list.pagination}
+			/>
 			<NotifyChannelSettingsModal
 				open={notifyOpen}
 				onClose={() => setNotifyOpen(false)}
 			/>
-		</AdminPageContent>
+		</AdminListPage>
 	);
 }

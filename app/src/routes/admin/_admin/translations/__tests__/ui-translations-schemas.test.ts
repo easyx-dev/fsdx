@@ -5,18 +5,29 @@ import { describe, expect, it } from "vitest";
 import {
 	deleteSchema,
 	formSchema,
-	getListSchema,
+	uiTranslationListSchema,
 } from "#/shared-services/i18n/i18n.ui.schemas";
 import { importUITranslationsSchema } from "../-mods/ui-translations.functions";
 
-describe("getListSchema", () => {
+describe("uiTranslationListSchema", () => {
 	it("空参数应通过校验", () => {
-		const result = getListSchema.safeParse({});
+		const result = uiTranslationListSchema.safeParse({});
 		expect(result.success).toBe(true);
 	});
 
 	it("传入 locale 筛选应通过校验", () => {
-		const result = getListSchema.safeParse({ locale: "zh" });
+		const result = uiTranslationListSchema.safeParse({ locale: "zh" });
+		expect(result.success).toBe(true);
+	});
+
+	it("分页 / 每页条数 / 排序参数应通过校验", () => {
+		const result = uiTranslationListSchema.safeParse({
+			keyword: "首页",
+			page: 2,
+			pageSize: 50,
+			sortField: "key",
+			sortOrder: "ascend",
+		});
 		expect(result.success).toBe(true);
 	});
 });

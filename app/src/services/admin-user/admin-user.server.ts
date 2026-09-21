@@ -17,8 +17,8 @@ import {
 	paginationOffset,
 } from "#/shared-services/query/query-utils.server";
 import type {
+	adminUserListSchema,
 	createSchema,
-	listSchema,
 	updateSchema,
 } from "./admin-user.schemas";
 
@@ -36,7 +36,7 @@ export type CreateAdminUserInput = z.infer<typeof createSchema>;
 export type UpdateAdminUserInput = Omit<z.infer<typeof updateSchema>, "id">;
 
 /** 管理员列表查询参数 */
-export type AdminUserListParams = z.infer<typeof listSchema>;
+export type AdminUserListParams = z.infer<typeof adminUserListSchema>;
 
 /** 批量查询角色 id 到名称的映射 */
 async function getRoleNameMap(roleIds: string[]): Promise<Map<string, string>> {

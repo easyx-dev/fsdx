@@ -246,7 +246,7 @@ function AdminForgotPasswordPage() {
 						确定
 					</Button>,
 				]}
-				destroyOnClose
+				destroyOnHidden
 			>
 				<div className="flex flex-col items-center gap-3">
 					{captchaError && (

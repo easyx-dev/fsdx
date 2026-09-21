@@ -28,8 +28,15 @@ describe("messageListSchema", () => {
 		);
 	});
 
-	it("pageSize 超过 100 校验失败", () => {
-		expect(messageListSchema.safeParse({ pageSize: 101 }).success).toBe(false);
+	it("分页 / 排序参数走通用列表基座，通过校验", () => {
+		expect(
+			messageListSchema.safeParse({
+				page: 1,
+				pageSize: 50,
+				sortField: "createdAt",
+				sortOrder: "descend",
+			}).success,
+		).toBe(true);
 	});
 });
 

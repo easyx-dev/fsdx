@@ -19,13 +19,13 @@ import {
 import {
 	deleteSchema,
 	formSchema,
-	getListSchema,
+	uiTranslationListSchema,
 } from "#/shared-services/i18n/i18n.ui.schemas";
 import { logCrud } from "#/shared-services/operation-log/operation-log.server";
 
 export const getListSFn = createServerFn({ method: "GET" })
 	.middleware([adminPermGuard(ADMIN_PERMISSIONS.TRANSLATION_VIEW)])
-	.validator(getListSchema)
+	.validator(uiTranslationListSchema)
 	.handler(async ({ data }) => listUITranslations(data));
 
 export const saveSFn = createServerFn({ method: "POST" })

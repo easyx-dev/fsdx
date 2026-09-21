@@ -5,8 +5,15 @@ import { and, eq, ilike, isNull, or } from "drizzle-orm";
 import type { z } from "zod";
 import { db } from "#/db/index";
 import { adminRole } from "#/db/schema";
+import {
+	buildSortClause,
+	executePaginatedQuery,
+	notDeleted,
+	paginationOffset,
+} from "#/shared-services/query/query-utils.server";
 import type {
 	adminRoleCreateSchema,
+	adminRoleListSchema,
 	adminRoleUpdateSchema,
 } from "./admin-role.schemas";
 
@@ -21,22 +28,69 @@ export type UpdateAdminRoleInput = Omit<
 	"id"
 >;
 
-/** 获取角色列表（支持关键词搜索） */
-export async function getAdminRoleList(keyword?: string) {
+/** 角色列表查询参数（分页、关键词、排序） */
+export type AdminRoleListParams = z.infer<typeof adminRoleListSchema>;
+
+/** 角色关键词搜索条件（名称 / 标识模糊匹配） */
+function keywordCondition(keyword?: string) {
+	return keyword
+		? or(
+				ilike(adminRole.name, `%${keyword}%`),
+				ilike(adminRole.slug, `%${keyword}%`),
+			)
+		: undefined;
+}
+
+/** 获取角色列表（支持关键词搜索、分页与排序） */
+export async function getAdminRoleList(params?: AdminRoleListParams) {
+	const {
+		keyword,
+		page = 1,
+		pageSize = 20,
+		sortField,
+		sortOrder,
+	} = params ?? {};
+	const offset = paginationOffset(page, pageSize);
+
+	const whereCondition = and(
+		notDeleted(adminRole.deletedAt),
+		keywordCondition(keyword),
+	);
+
+	// 排序字段安全映射，仅允许已知列
+	const sortFieldMap = {
+		name: adminRole.name,
+		slug: adminRole.slug,
+		createdAt: adminRole.createdAt,
+		updatedAt: adminRole.updatedAt,
+	};
+	const direction = buildSortClause(
+		sortFieldMap,
+		sortField,
+		sortOrder,
+		"createdAt",
+	);
+
+	return executePaginatedQuery(
+		db
+			.select()
+			.from(adminRole)
+			.where(whereCondition)
+			.orderBy(direction)
+			.limit(pageSize)
+			.offset(offset),
+		db.$count(db.select().from(adminRole).where(whereCondition)),
+		page,
+		pageSize,
+	);
+}
+
+/** 获取全部角色（不分页，供表单角色下拉使用） */
+export async function getAllAdminRoles() {
 	return db
 		.select()
 		.from(adminRole)
-		.where(
-			and(
-				isNull(adminRole.deletedAt),
-				keyword
-					? or(
-							ilike(adminRole.name, `%${keyword}%`),
-							ilike(adminRole.slug, `%${keyword}%`),
-						)
-					: undefined,
-			),
-		)
+		.where(notDeleted(adminRole.deletedAt))
 		.orderBy(adminRole.createdAt);
 }
 

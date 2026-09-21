@@ -96,12 +96,23 @@ export async function getCurrentAdmin(
 	if (!user || user.deletedAt || user.status !== "active") return null;
 
 	let roleNames: string[] = [];
+	let rolePermissions: string[] = ["**"];
 	if (!user.isRoot) {
+		// 一次查询同时取角色名与权限码：避免为权限再查一遍 roles
+		// 过滤软删除角色，与鉴权路径的 getAdminRolePermissions 保持同一语义
 		const roles = await db
 			.select()
 			.from(adminRole)
-			.where(inArray(adminRole.id, user.adminRoleIds));
+			.where(
+				and(
+					inArray(adminRole.id, user.adminRoleIds),
+					isNull(adminRole.deletedAt),
+				),
+			);
 		roleNames = roles.map((r) => r.name);
+		rolePermissions = [
+			...new Set(roles.flatMap((r) => (r.permissions as string[]) ?? [])),
+		];
 	}
 
 	return {
@@ -111,6 +122,7 @@ export async function getCurrentAdmin(
 		avatar: user.avatar,
 		isRoot: user.isRoot,
 		roleNames,
+		rolePermissions,
 		userType: "admin",
 	};
 }

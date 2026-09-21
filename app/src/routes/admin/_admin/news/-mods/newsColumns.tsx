@@ -1,14 +1,18 @@
 /**
- * 新闻管理表格列定义（含发布/归档、翻译操作）
+ * 新闻管理表格列定义
+ * 封面列放最前；发布状态与排序权重为通用态（单元格内联编辑）；时间列走 ProTable valueType
  */
-import { message } from "@fsdx/ui-spa/antd-static";
-import { TableOperate } from "@fsdx/ui-spa/table";
-import { Button, Image, Space, Tag } from "antd";
-import dayjs from "dayjs";
+import {
+	ImageCell,
+	PublishSwitchCell,
+	SortOrderCell,
+	StatusTag,
+	type StatusTagOption,
+	TableOperate,
+} from "@fsdx/ui-spa/table";
+import { Space, Tag } from "antd";
 import { FieldTranslationDrawer } from "#/components/admin";
 import type { NewsRecord } from "#/services/news/news.server";
-import { callSfn } from "#/utils/sfn-error";
-import { deleteNewsSFn, setNewsPublishedSFn } from "./news.functions";
 
 /** 新闻可翻译字段定义 */
 const NEWS_TRANSLATABLE_FIELDS = [
@@ -17,178 +21,160 @@ const NEWS_TRANSLATABLE_FIELDS = [
 	{ name: "content", label: "新闻内容", valueType: "rich" as const },
 ];
 
+/** 内容类型：外部链接 / 内部文章 */
+const NEWS_TYPE_OPTIONS: Record<string, StatusTagOption> = {
+	external: { label: "外部链接", tone: "info" },
+	internal: { label: "内部文章", tone: "success" },
+};
+
 interface NewsColumnsOptions {
-	onRefresh: () => Promise<void>;
-	onQuickEdit: (record: NewsRecord) => void;
+	/** 列排序属性生成器（来自 useListQuery.sortProps） */
+	sortProps: (field: string) => {
+		sorter: true;
+		sortOrder?: "ascend" | "descend";
+	};
+	/** 打开编辑抽屉 */
+	onEdit: (record: NewsRecord) => void;
+	/** 单元格内切换发布状态 */
+	onTogglePublished: (record: NewsRecord, next: boolean) => Promise<void>;
+	/** 单元格内修改排序权重 */
+	onChangeSortOrder: (record: NewsRecord, next: number) => Promise<void>;
+	/** 删除 */
+	onDelete: (record: NewsRecord) => Promise<void>;
+	/** 权限开关：无权限的操作置灰并提示（服务端 guard 仍为唯一权威） */
+	permissions: {
+		edit: boolean;
+		publish: boolean;
+		delete: boolean;
+	};
 }
 
-/** 新闻表格列：状态标签、发布/归档、跳转编辑、快速编辑、翻译 */
+const NO_EDIT_PERMISSION = "无「编辑新闻」权限";
+const NO_PUBLISH_PERMISSION = "无「新闻上下架」权限";
+const NO_DELETE_PERMISSION = "无「删除新闻」权限";
+
+/** 新闻表格列 */
 export function newsColumns(options: NewsColumnsOptions) {
+	const { permissions } = options;
 	return [
 		{
-			title: "标题",
-			dataIndex: "title",
-			key: "title",
-			width: 200,
+			// 图片列放最前（无序号 / ID / 展开 / 选择列），固定正方形等比缩放
+			title: "封面",
+			key: "cover",
+			width: 80,
+			render: (_: unknown, record: NewsRecord) => (
+				<ImageCell
+					src={record.coverImageId ? `/file/r/${record.coverImageId}` : null}
+				/>
+			),
 		},
+		{ title: "标题", dataIndex: "title", key: "title", width: 200 },
 		{
 			title: "摘要",
 			dataIndex: "description",
 			key: "description",
-			width: 200,
 			ellipsis: true,
 		},
 		{
-			title: "封面",
-			key: "cover",
-			width: 80,
-			render: (_: unknown, record: NewsRecord) => {
-				if (!record.coverImageId)
-					return <span style={{ color: "var(--s-text-tertiary)" }}>—</span>;
-				return (
-					<Image
-						src={`/file/r/${record.coverImageId}`}
-						width={60}
-						height={40}
-						style={{ objectFit: "cover", borderRadius: 0 }}
-					/>
-				);
-			},
-		},
-		{
+			// 发布状态：单元格内开关直接切换（乐观更新 + 失败回滚）
 			title: "状态",
 			dataIndex: "isPublished",
 			key: "isPublished",
-			width: 140,
-			render: (_: boolean, record: NewsRecord) => {
-				return (
+			width: 130,
+			render: (_: unknown, record: NewsRecord) => (
+				<PublishSwitchCell
+					published={record.isPublished}
+					labels={{ on: "已发布", off: "未发布" }}
+					onToggle={(next) => options.onTogglePublished(record, next)}
+					disabled={!permissions.publish}
+					disabledReason={NO_PUBLISH_PERMISSION}
+				/>
+			),
+		},
+		{
+			title: "标记",
+			key: "flags",
+			width: 120,
+			render: (_: unknown, record: NewsRecord) =>
+				record.isPinned || record.isRecommended ? (
 					<Space size={4}>
-						<Tag color={record.isPublished ? "green" : "gold"}>
-							{record.isPublished ? "已发布" : "未发布"}
-						</Tag>
 						{record.isPinned && <Tag color="blue">置顶</Tag>}
 						{record.isRecommended && <Tag color="gold">推荐</Tag>}
 					</Space>
-				);
-			},
+				) : (
+					"—"
+				),
 		},
 		{
+			// 排序权重：单元格内失焦 / 回车提交；表头排序用于按该列排序
 			title: "排序",
 			dataIndex: "sortOrder",
 			key: "sortOrder",
-			width: 90,
-			sorter: true,
+			width: 110,
+			...options.sortProps("sortOrder"),
+			render: (_: unknown, record: NewsRecord) => (
+				<SortOrderCell
+					value={record.sortOrder}
+					onSubmit={(next) => options.onChangeSortOrder(record, next)}
+					disabled={!permissions.edit}
+					disabledReason={NO_EDIT_PERMISSION}
+				/>
+			),
 		},
 		{
 			title: "类型",
 			key: "type",
-			width: 90,
-			render: (_: unknown, record: NewsRecord) => {
-				if (record.externalUrl) return <Tag color="cyan">外部链接</Tag>;
-				return <Tag color="green">内部文章</Tag>;
-			},
+			width: 110,
+			render: (_: unknown, record: NewsRecord) => (
+				<StatusTag
+					value={record.externalUrl ? "external" : "internal"}
+					options={NEWS_TYPE_OPTIONS}
+				/>
+			),
 		},
 		{
 			title: "发布时间",
 			dataIndex: "publishedAt",
 			key: "publishedAt",
-			width: 160,
-			sorter: true,
-			render: (val: string | null) =>
-				val ? dayjs(val).format("YYYY-MM-DD HH:mm") : "—",
+			width: 150,
+			...options.sortProps("publishedAt"),
+			valueType: "dateTimeMinute",
+			emptyText: "—",
 		},
 		{
 			title: "创建时间",
 			dataIndex: "createdAt",
 			key: "createdAt",
-			width: 160,
-			sorter: true,
-			render: (val: string | null) =>
-				val ? dayjs(val).format("YYYY-MM-DD HH:mm") : "—",
+			width: 150,
+			...options.sortProps("createdAt"),
+			valueType: "dateTimeMinute",
 		},
 		{
 			title: "更新时间",
 			dataIndex: "updatedAt",
 			key: "updatedAt",
-			width: 160,
-			sorter: true,
-			render: (val: string | null) =>
-				val ? dayjs(val).format("YYYY-MM-DD HH:mm") : "—",
+			width: 150,
+			...options.sortProps("updatedAt"),
+			valueType: "dateTimeMinute",
 		},
 		{
 			title: "操作",
 			key: "actions",
 			fixed: "right" as const,
+			// 操作列固定右侧必须显式声明宽度（宽度不足会被挤压导致按钮溢出）
+			width: 240,
 			render: (_: unknown, record: NewsRecord) => (
 				<TableOperate>
-					{!record.isPublished && (
-						<TableOperate.Custom>
-							<Button
-								type="link"
-								size="small"
-								onClick={async () => {
-									try {
-										await callSfn(
-											setNewsPublishedSFn({
-												data: { id: record.id, isPublished: true },
-											}),
-										);
-										await options.onRefresh();
-									} catch {
-										// callSfn 已提示
-									}
-								}}
-							>
-								发布
-							</Button>
-						</TableOperate.Custom>
-					)}
-					{record.isPublished && (
-						<TableOperate.Custom>
-							<Button
-								type="link"
-								size="small"
-								onClick={async () => {
-									try {
-										await callSfn(
-											setNewsPublishedSFn({
-												data: { id: record.id, isPublished: false },
-											}),
-										);
-										await options.onRefresh();
-									} catch {
-										// callSfn 已提示
-									}
-								}}
-							>
-								下线
-							</Button>
-						</TableOperate.Custom>
-					)}
-					<TableOperate.Link
-						to="/admin/news/$id/edit"
-						params={{ id: record.id }}
+					<TableOperate.Edit
+						onClick={() => options.onEdit(record)}
+						disabled={!permissions.edit}
+						disabledReason={NO_EDIT_PERMISSION}
 					/>
-					<TableOperate.Custom>
-						<Button
-							type="link"
-							size="small"
-							onClick={() => options.onQuickEdit(record)}
-						>
-							快速编辑
-						</Button>
-					</TableOperate.Custom>
 					<TableOperate.Delete
 						recordName="这条新闻"
-						onConfirm={async () => {
-							try {
-								await callSfn(deleteNewsSFn({ data: { id: record.id } }));
-								message.success("已删除");
-								await options.onRefresh();
-							} catch {
-								// callSfn 已提示
-							}
-						}}
+						disabled={!permissions.delete}
+						disabledReason={NO_DELETE_PERMISSION}
+						onConfirm={() => options.onDelete(record)}
 					/>
 					<TableOperate.Custom>
 						<FieldTranslationDrawer

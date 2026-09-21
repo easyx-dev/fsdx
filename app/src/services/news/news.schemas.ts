@@ -3,16 +3,14 @@
  */
 
 import { z } from "zod";
+import { listSchema, updateSortOrderSchema } from "#/validators/common.schemas";
 
 /** 通过 id 获取/删除单条新闻 */
 export const getNewsSchema = z.object({ id: z.string().min(1) });
 
-/** 新闻列表查询（管理端） */
-export const listSchema = z.object({
+/** 新闻列表查询（管理端）：通用分页 / 排序参数 + 业务筛选 */
+export const newsListSchema = listSchema.extend({
 	isPublished: z.boolean().optional(),
-	page: z.number().optional(),
-	sortField: z.string().optional(),
-	sortOrder: z.enum(["ascend", "descend"]).optional(),
 });
 
 /** 变更新闻发布状态（上架 / 下架） */
@@ -20,6 +18,9 @@ export const publishNewsSchema = z.object({
 	id: z.string().min(1),
 	isPublished: z.boolean(),
 });
+
+/** 列表内联修改排序权重 */
+export const updateNewsSortSchema = updateSortOrderSchema;
 
 /** 新闻导入 */
 export const newsImportSchema = z.object({

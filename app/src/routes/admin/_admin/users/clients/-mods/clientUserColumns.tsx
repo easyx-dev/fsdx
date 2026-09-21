@@ -1,0 +1,169 @@
+/**
+ * 客户端用户表格列定义
+ * 头像列放最前（ImageCell）；状态列跟随字典（DictTag）、邮箱验证走 StatusTag；时间列统一到分钟
+ */
+import { KeyOutlined } from "@ant-design/icons";
+import {
+	ImageCell,
+	StatusTag,
+	type StatusTagOption,
+	TableOperate,
+	withDisabledReason,
+} from "@fsdx/ui-spa/table";
+import { Button, Tag } from "antd";
+import { DictTag } from "#/components/admin";
+import type { ClientUserListItem } from "#/services/client-user/client-user.server";
+import type { SortProps } from "#/utils/use-list-query";
+
+/** 邮箱验证状态展示配置 */
+const EMAIL_VERIFIED_OPTIONS: Record<string, StatusTagOption> = {
+	true: { label: "已验证", tone: "success" },
+	false: { label: "未验证", tone: "neutral" },
+};
+
+interface ClientUserColumnsOptions {
+	/** 列排序属性生成器（来自 useListQuery.sortProps） */
+	sortProps: (field: string) => SortProps;
+	/** 打开编辑弹窗 */
+	onEdit: (record: ClientUserListItem) => void;
+	/** 打开重置密码弹窗 */
+	onResetPwd: (record: ClientUserListItem) => void;
+	/** 删除 */
+	onDelete: (record: ClientUserListItem) => Promise<void>;
+	/** 权限开关：无权限的操作置灰并提示（服务端 guard 仍为唯一权威） */
+	permissions: {
+		edit: boolean;
+		delete: boolean;
+	};
+}
+
+const NO_EDIT_PERMISSION = "无「编辑客户端用户」权限";
+const NO_DELETE_PERMISSION = "无「删除客户端用户」权限";
+
+/** 客户端用户表格列 */
+export function clientUserColumns(options: ClientUserColumnsOptions) {
+	const { permissions } = options;
+	return [
+		{
+			// 头像列放最前（无序号 / ID / 展开 / 选择列），固定正方形等比缩放
+			title: "头像",
+			key: "avatar",
+			width: 80,
+			render: (_: unknown, record: ClientUserListItem) => (
+				<ImageCell src={record.avatar ?? null} />
+			),
+		},
+		{
+			title: "用户名",
+			dataIndex: "username",
+			key: "username",
+			width: 140,
+			...options.sortProps("username"),
+		},
+		{
+			title: "邮箱",
+			dataIndex: "email",
+			key: "email",
+			width: 220,
+			ellipsis: true,
+			...options.sortProps("email"),
+		},
+		{
+			title: "邮箱验证",
+			dataIndex: "emailVerified",
+			key: "emailVerified",
+			width: 100,
+			render: (value: boolean) => (
+				<StatusTag value={value} options={EMAIL_VERIFIED_OPTIONS} />
+			),
+		},
+		{
+			title: "角色",
+			dataIndex: "roleNames",
+			key: "roleNames",
+			width: 160,
+			render: (_: unknown, record: ClientUserListItem) =>
+				record.roleNames.length > 0 ? (
+					<div className="flex flex-wrap gap-1">
+						{record.roleNames.map((name) => (
+							<Tag key={name} color="blue">
+								{name}
+							</Tag>
+						))}
+					</div>
+				) : (
+					<span>—</span>
+				),
+		},
+		{
+			title: "状态",
+			dataIndex: "status",
+			key: "status",
+			width: 90,
+			render: (value: string) => (
+				<DictTag dictSlug="user_status" value={value} />
+			),
+		},
+		{
+			title: "最后登录",
+			dataIndex: "lastLoginAt",
+			key: "lastLoginAt",
+			width: 150,
+			valueType: "dateTimeMinute",
+			emptyText: "—",
+		},
+		{
+			title: "创建时间",
+			dataIndex: "createdAt",
+			key: "createdAt",
+			width: 150,
+			...options.sortProps("createdAt"),
+			valueType: "dateTimeMinute",
+		},
+		{
+			title: "更新时间",
+			dataIndex: "updatedAt",
+			key: "updatedAt",
+			width: 150,
+			...options.sortProps("updatedAt"),
+			valueType: "dateTimeMinute",
+		},
+		{
+			title: "操作",
+			key: "actions",
+			fixed: "right" as const,
+			// 操作列固定右侧必须显式声明宽度（3 项操作 240）
+			width: 240,
+			render: (_: unknown, record: ClientUserListItem) => (
+				<TableOperate>
+					<TableOperate.Edit
+						onClick={() => options.onEdit(record)}
+						disabled={!permissions.edit}
+						disabledReason={NO_EDIT_PERMISSION}
+					/>
+					<TableOperate.Custom>
+						{withDisabledReason(
+							<Button
+								type="link"
+								size="small"
+								icon={<KeyOutlined />}
+								disabled={!permissions.edit}
+								onClick={() => options.onResetPwd(record)}
+							>
+								重置密码
+							</Button>,
+							!permissions.edit,
+							NO_EDIT_PERMISSION,
+						)}
+					</TableOperate.Custom>
+					<TableOperate.Delete
+						recordName="此用户"
+						disabled={!permissions.delete}
+						disabledReason={NO_DELETE_PERMISSION}
+						onConfirm={() => options.onDelete(record)}
+					/>
+				</TableOperate>
+			),
+		},
+	];
+}

@@ -10,8 +10,10 @@ import {
 	createDictSchema,
 	createItemSchema,
 	dictImportSchema,
-	dictSlugSchema,
+	dictItemStatusSchema,
+	dictListSchema,
 	idSchema,
+	updateDictItemSortSchema,
 	updateDictSchema,
 	updateItemSchema,
 } from "#/shared-services/dict/dict.schemas";
@@ -24,7 +26,9 @@ import {
 	getDictItems,
 	getDictList,
 	importDicts,
+	setDictItemStatus,
 	updateDictItemRecord,
+	updateDictItemSortOrder,
 	updateDictRecord,
 } from "#/shared-services/dict/dict.server";
 import type { DictImportData } from "#/shared-services/dict/dict.types";
@@ -37,12 +41,12 @@ export const getDictListSFn = createServerFn({ method: "GET" })
 		return getDictList();
 	});
 
-/** 获取字典条目列表 */
+/** 获取字典条目列表（分页） */
 export const getDictItemsSFn = createServerFn({ method: "GET" })
 	.middleware([adminPermGuard(ADMIN_PERMISSIONS.DICT_VIEW)])
-	.validator(dictSlugSchema)
-	.handler(async ({ data: { dictSlug } }) => {
-		return getDictItems(dictSlug);
+	.validator(dictListSchema)
+	.handler(async ({ data }) => {
+		return getDictItems(data);
 	});
 
 /** 创建字典类型 */
@@ -108,6 +112,43 @@ export const updateDictItemSFn = createServerFn({ method: "POST" })
 			"update",
 			{ id: data.id },
 			{ targetType: "dict_item" },
+		);
+		return { success: true };
+	});
+
+/** 列表内联修改条目排序权重（仅更新一个字段，避免复用整条更新回写其它字段） */
+export const updateDictItemSortSFn = createServerFn({ method: "POST" })
+	.middleware([adminPermGuard(ADMIN_PERMISSIONS.DICT_EDIT_ITEM)])
+	.validator(updateDictItemSortSchema)
+	.handler(async ({ data: { id, sortOrder }, context }) => {
+		const updated = await updateDictItemSortOrder(id, sortOrder);
+		if (!updated) throw new Error("条目不存在或已被删除");
+		logCrud(
+			context.user,
+			"dict",
+			"update",
+			{ id },
+			{
+				targetType: "dict_item",
+				detail: { field: "sortOrder", to: sortOrder },
+			},
+		);
+		return { success: true };
+	});
+
+/** 列表中切换条目启用状态（仅更新一个字段） */
+export const setDictItemStatusSFn = createServerFn({ method: "POST" })
+	.middleware([adminPermGuard(ADMIN_PERMISSIONS.DICT_EDIT_ITEM)])
+	.validator(dictItemStatusSchema)
+	.handler(async ({ data: { id, status }, context }) => {
+		const updated = await setDictItemStatus(id, status);
+		if (!updated) throw new Error("条目不存在或已被删除");
+		logCrud(
+			context.user,
+			"dict",
+			"update",
+			{ id },
+			{ targetType: "dict_item", detail: { field: "status", to: status } },
 		);
 		return { success: true };
 	});

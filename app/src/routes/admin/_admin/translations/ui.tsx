@@ -5,23 +5,34 @@ import { DownloadOutlined, PlusOutlined } from "@ant-design/icons";
 import { downloadFile } from "@fsdx/lib/export";
 import { message } from "@fsdx/ui-spa/antd-static";
 import { JsonImportButton } from "@fsdx/ui-spa/json-import-button";
-import { ProTable, TableOperate } from "@fsdx/ui-spa/table";
+import {
+	ProTable,
+	StatusTag,
+	type StatusTagOption,
+	TableOperate,
+	withDisabledReason,
+} from "@fsdx/ui-spa/table";
 import { createFileRoute } from "@tanstack/react-router";
-import type { TableProps } from "antd";
-import { Button, Form, Input, Modal, Select, Space, Tag } from "antd";
+import { Button, Form, Input, Modal, Select } from "antd";
 import dayjs from "dayjs";
 import type { ChangeEvent } from "react";
-import { useCallback, useEffect, useState } from "react";
-import { AdminPageContent, EditorTypes } from "#/components/admin";
+import { useCallback, useState } from "react";
+import {
+	AdminListPage,
+	AdminTableToolbar,
+	EditorTypes,
+	useAdminAuth,
+} from "#/components/admin";
 import type { uiTranslation } from "#/db/schema";
+import { ADMIN_PERMISSIONS } from "#/permissions/admin-permissions";
 import {
 	DEFAULT_LOCALE,
 	type Locale,
 	SUPPORTED_LOCALES,
 } from "#/shared-services/i18n/i18n.types";
 import { formSchema } from "#/shared-services/i18n/i18n.ui.schemas";
-import type { SortOrder } from "#/types/query";
 import { callSfn, sfnUnwrap } from "#/utils/sfn-error";
+import { useListQuery } from "#/utils/use-list-query";
 import {
 	deleteSFn,
 	exportUITranslationsSFn,
@@ -38,6 +49,19 @@ const MANAGED_LOCALES = SUPPORTED_LOCALES.filter(
 	(l): l is Locale => l !== DEFAULT_LOCALE,
 );
 
+/** 语言列展示：locale → 大写文案 + 语义色 */
+const LOCALE_OPTIONS: Record<string, StatusTagOption> = Object.fromEntries(
+	SUPPORTED_LOCALES.map((l) => [l, { label: l.toUpperCase() }]),
+);
+
+/** 列表筛选条件 */
+interface UiTranslationFilters {
+	locale?: Locale;
+	keyword: string;
+}
+
+const NO_MANAGE_PERMISSION = "无「管理翻译」权限";
+
 export const Route = createFileRoute("/admin/_admin/translations/ui")({
 	component: UITranslationPage,
 	loader: async () => await getListSFn({ data: {} }),
@@ -45,58 +69,45 @@ export const Route = createFileRoute("/admin/_admin/translations/ui")({
 
 function UITranslationPage() {
 	const initial = Route.useLoaderData();
-	const [data, setData] = useState(initial);
+	const { hasPermission } = useAdminAuth();
 	const [modalOpen, setModalOpen] = useState(false);
 	const [editing, setEditing] = useState<UiTranslationRow | null>(null);
-	const [filterLocale, setFilterLocale] = useState<Locale>();
-	const [filterKeyword, setFilterKeyword] = useState<string>("");
-	// 防抖后的搜索关键字，用于触发 API 请求
-	const [debouncedKeyword, setDebouncedKeyword] = useState<string>("");
-	const [sortField, setSortField] = useState<string>();
-	const [sortOrder, setSortOrder] = useState<SortOrder>();
+	/** 搜索框草稿值：回车 / 点击搜索时才写入查询条件 */
+	const [keywordDraft, setKeywordDraft] = useState("");
 	const [form] = Form.useForm();
 
-	// 搜索关键字输入防抖（300ms）
-	useEffect(() => {
-		const timer = setTimeout(() => setDebouncedKeyword(filterKeyword), 300);
-		return () => clearTimeout(timer);
-	}, [filterKeyword]);
+	const canManage = hasPermission(ADMIN_PERMISSIONS.TRANSLATION_MANAGE);
 
-	const refresh = useCallback(
-		async (locale?: Locale, keyword?: string) => {
-			const [result] = await sfnUnwrap(
+	const list = useListQuery<UiTranslationRow, UiTranslationFilters>({
+		initial,
+		initialFilters: { locale: undefined, keyword: "" },
+		errorMessage: "加载翻译列表失败",
+		fetcher: useCallback(
+			({ page, pageSize, sortField, sortOrder, filters }) =>
 				getListSFn({
-					data: { locale, keyword, page: data.page, sortField, sortOrder },
+					data: {
+						locale: filters.locale,
+						keyword: filters.keyword || undefined,
+						page,
+						pageSize,
+						sortField,
+						sortOrder,
+					},
 				}),
-			);
-			if (result) setData(result);
-		},
-		[data.page, sortField, sortOrder],
-	);
+			[],
+		),
+	});
 
-	/** 表格排序变更 */
-	const handleTableChange: TableProps<UiTranslationRow>["onChange"] = async (
-		_pagination,
-		_filters,
-		sorter,
-	) => {
-		const s = Array.isArray(sorter) ? sorter[0] : sorter;
-		const field = typeof s?.field === "string" ? s.field : undefined;
-		const order =
-			s?.order === "ascend" || s?.order === "descend" ? s.order : undefined;
-		setSortField(field);
-		setSortOrder(order);
-		const [result] = await sfnUnwrap(
-			getListSFn({
-				data: {
-					locale: filterLocale,
-					keyword: debouncedKeyword,
-					sortField: field,
-					sortOrder: order,
-				},
-			}),
-		);
-		if (result) setData(result);
+	/** 应用搜索关键字（清空同样走 applyFilters，回到第 1 页） */
+	const applyKeyword = (value: string) => {
+		setKeywordDraft(value);
+		list.applyFilters({ keyword: value });
+	};
+
+	/** 重置筛选：清空关键字与语言并回到第 1 页 */
+	const resetFilters = () => {
+		setKeywordDraft("");
+		list.applyFilters({ keyword: "", locale: undefined });
 	};
 
 	async function handleSubmit(values: Record<string, unknown>) {
@@ -114,7 +125,7 @@ function UITranslationPage() {
 		setModalOpen(false);
 		setEditing(null);
 		form.resetFields();
-		await refresh(filterLocale, debouncedKeyword);
+		await list.reload();
 	}
 
 	function openCreate() {
@@ -131,10 +142,12 @@ function UITranslationPage() {
 	}
 
 	async function handleDelete(id: string) {
-		const [, err] = await sfnUnwrap(deleteSFn({ data: { id } }));
+		const [, err] = await sfnUnwrap(deleteSFn({ data: { id } }), {
+			error: "删除失败",
+		});
 		if (err) return;
 		message.success("翻译已删除");
-		await refresh(filterLocale, debouncedKeyword);
+		await list.reload();
 	}
 
 	/** 导出 UI 翻译数据（JSON） */
@@ -151,9 +164,6 @@ function UITranslationPage() {
 		);
 		message.success("导出完成");
 	}
-	useEffect(() => {
-		refresh(filterLocale, debouncedKeyword);
-	}, [filterLocale, debouncedKeyword, refresh]);
 
 	const columns = [
 		{
@@ -161,8 +171,8 @@ function UITranslationPage() {
 			dataIndex: "locale",
 			key: "locale",
 			width: 80,
-			sorter: true,
-			render: (v: string) => <Tag>{v.toUpperCase()}</Tag>,
+			...list.sortProps("locale"),
+			render: (v: string) => <StatusTag value={v} options={LOCALE_OPTIONS} />,
 		},
 		{
 			title: "Key",
@@ -170,7 +180,7 @@ function UITranslationPage() {
 			key: "key",
 			width: 200,
 			ellipsis: true,
-			sorter: true,
+			...list.sortProps("key"),
 		},
 		{
 			title: "翻译值",
@@ -190,118 +200,125 @@ function UITranslationPage() {
 			title: "创建时间",
 			dataIndex: "createdAt",
 			key: "createdAt",
-			width: 185,
-			valueType: "dateTime",
+			width: 150,
+			valueType: "dateTimeMinute",
 		},
 		{
 			title: "更新时间",
 			dataIndex: "updatedAt",
 			key: "updatedAt",
-			width: 185,
-			valueType: "dateTime",
-			sorter: true,
+			width: 150,
+			valueType: "dateTimeMinute",
+			...list.sortProps("updatedAt"),
 		},
 		{
 			title: "操作",
 			key: "actions",
 			fixed: "right" as const,
+			// 操作列固定右侧必须显式声明宽度（2 项操作取 160）
+			width: 160,
 			render: (_: unknown, record: UiTranslationRow) =>
 				record.locale === DEFAULT_LOCALE ? (
 					// 默认语言为源语言，key 即原文，禁止编辑/删除
 					<span className="text-xs text-muted-foreground">源语言（只读）</span>
 				) : (
 					<TableOperate>
-						<TableOperate.Edit onClick={() => openEdit(record)} />
-						<TableOperate.Delete onConfirm={() => handleDelete(record.id)} />
+						<TableOperate.Edit
+							onClick={() => openEdit(record)}
+							disabled={!canManage}
+							disabledReason={NO_MANAGE_PERMISSION}
+						/>
+						<TableOperate.Delete
+							recordName="这条翻译"
+							disabled={!canManage}
+							disabledReason={NO_MANAGE_PERMISSION}
+							onConfirm={() => handleDelete(record.id)}
+						/>
 					</TableOperate>
 				),
 		},
 	];
 
 	return (
-		<AdminPageContent
+		<AdminListPage
 			title="UI 翻译管理"
-			extra={
-				<Space>
-					<Button icon={<DownloadOutlined />} onClick={handleExport}>
-						导出 JSON
-					</Button>
+			description="维护界面文案的多语言翻译，中文为源语言不可编辑"
+			extra={withDisabledReason(
+				<Button
+					type="primary"
+					icon={<PlusOutlined />}
+					disabled={!canManage}
+					onClick={openCreate}
+				>
+					新增翻译
+				</Button>,
+				!canManage,
+				NO_MANAGE_PERMISSION,
+			)}
+			toolbar={
+				<AdminTableToolbar
+					onReset={resetFilters}
+					extra={
+						<>
+							<Button
+								icon={<DownloadOutlined />}
+								disabled={!hasPermission(ADMIN_PERMISSIONS.TRANSLATION_EXPORT)}
+								onClick={() => void handleExport()}
+							>
+								导出 JSON
+							</Button>
 
-					<JsonImportButton
-						onImport={async (jsonString) => {
-							const data = JSON.parse(jsonString);
-							const result = await callSfn(
-								importUITranslationsSFn({ data: { data } }),
-							);
-							message.success(
-								`导入完成：新增 ${result.created} / 更新 ${result.updated}`,
-							);
-							await refresh(filterLocale, debouncedKeyword);
-						}}
-					>
-						导入 JSON
-					</JsonImportButton>
-
-					<Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>
-						新增翻译
-					</Button>
-				</Space>
-			}
-		>
-			<div className="mb-4">
-				<Space>
+							<JsonImportButton
+								disabled={!hasPermission(ADMIN_PERMISSIONS.TRANSLATION_IMPORT)}
+								onImport={async (jsonString) => {
+									const data = JSON.parse(jsonString);
+									const result = await callSfn(
+										importUITranslationsSFn({ data: { data } }),
+									);
+									message.success(
+										`导入完成：新增 ${result.created} / 更新 ${result.updated}`,
+									);
+									await list.reload();
+								}}
+							>
+								导入 JSON
+							</JsonImportButton>
+						</>
+					}
+				>
 					<Input.Search
 						placeholder="搜索 Key 或翻译值"
 						allowClear
 						style={{ width: 260 }}
-						value={filterKeyword}
+						value={keywordDraft}
 						onChange={(e: ChangeEvent<HTMLInputElement>) =>
-							setFilterKeyword(e.target.value)
+							setKeywordDraft(e.target.value)
 						}
-						onSearch={(v: string) => {
-							setFilterKeyword(v);
-							setDebouncedKeyword(v);
-						}}
+						onSearch={applyKeyword}
 					/>
 					<Select
 						placeholder="筛选语言"
 						allowClear
 						style={{ width: 120 }}
-						value={filterLocale}
-						onChange={(v?: Locale) => setFilterLocale(v)}
+						value={list.filters.locale}
+						onChange={(v?: Locale) => list.applyFilters({ locale: v })}
 						options={MANAGED_LOCALES.map((l) => ({
 							label: l.toUpperCase(),
 							value: l,
 						}))}
 					/>
-				</Space>
-			</div>
-
+				</AdminTableToolbar>
+			}
+		>
 			<ProTable
-				dataSource={data.records}
+				dataSource={list.data.records}
 				columns={columns}
 				rowKey="id"
-				onChange={handleTableChange}
-				scroll={{ x: 1400 }}
-				pagination={{
-					total: data.total,
-					pageSize: data.pageSize,
-					current: data.page,
-					onChange: async (page) => {
-						const [r] = await sfnUnwrap(
-							getListSFn({
-								data: {
-									locale: filterLocale,
-									keyword: debouncedKeyword,
-									page,
-									sortField,
-									sortOrder,
-								},
-							}),
-						);
-						if (r) setData(r);
-					},
-				}}
+				loading={list.loading}
+				locale={{ emptyText: "暂无翻译" }}
+				scroll={{ x: 1310 }}
+				onChange={list.onTableChange}
+				pagination={list.pagination}
 			/>
 
 			<Modal
@@ -334,6 +351,6 @@ function UITranslationPage() {
 					</Form.Item>
 				</Form>
 			</Modal>
-		</AdminPageContent>
+		</AdminListPage>
 	);
 }

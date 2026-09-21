@@ -16,8 +16,8 @@ import {
 	paginationOffset,
 } from "#/shared-services/query/query-utils.server";
 import type {
+	clientUserListSchema,
 	createSchema,
-	listSchema,
 	updateSchema,
 } from "./client-user.schemas";
 
@@ -38,7 +38,7 @@ export type CreateClientUserInput = z.infer<typeof createSchema>;
 export type UpdateClientUserInput = Omit<z.infer<typeof updateSchema>, "id">;
 
 /** 客户端用户列表查询参数 */
-export type ClientUserListParams = z.infer<typeof listSchema>;
+export type ClientUserListParams = z.infer<typeof clientUserListSchema>;
 
 const clientUserSafeCols = {
 	id: clientUser.id,

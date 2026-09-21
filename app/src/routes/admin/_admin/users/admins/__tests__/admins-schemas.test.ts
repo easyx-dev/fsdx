@@ -3,21 +3,21 @@
  */
 import { describe, expect, it } from "vitest";
 import {
+	adminUserListSchema,
 	createSchema,
 	idSchema,
-	listSchema,
 	resetPwdSchema,
 	updateSchema,
 } from "#/services/admin-user/admin-user.schemas";
 
-describe("listSchema", () => {
+describe("adminUserListSchema", () => {
 	it("空参数通过", () => {
-		expect(listSchema.safeParse({}).success).toBe(true);
+		expect(adminUserListSchema.safeParse({}).success).toBe(true);
 	});
 
 	it("全部参数通过", () => {
 		expect(
-			listSchema.safeParse({
+			adminUserListSchema.safeParse({
 				page: 1,
 				pageSize: 10,
 				keyword: "admin",
@@ -25,6 +25,15 @@ describe("listSchema", () => {
 				sortOrder: "descend",
 			}).success,
 		).toBe(true);
+	});
+
+	it("分页参数全链路透传", () => {
+		const result = adminUserListSchema.safeParse({ page: 3, pageSize: 50 });
+		expect(result.success).toBe(true);
+		if (result.success) {
+			expect(result.data.page).toBe(3);
+			expect(result.data.pageSize).toBe(50);
+		}
 	});
 });
 

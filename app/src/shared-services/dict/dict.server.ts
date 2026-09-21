@@ -2,11 +2,17 @@
  * 字典管理：CRUD + 导入导出 + 内存缓存（领域实体唯一归属）
  */
 import { and, asc, eq, isNull } from "drizzle-orm";
-import { PRESET_DICTS } from "#/constants";
+import { PRESET_DICTS, SEED_DICTS } from "#/constants";
 import { db, withTransaction } from "#/db/index";
 import { dict, dictItem } from "#/db/schema";
 import { dictCache } from "#/shared-services/dict/dict.cache";
 import { logger } from "#/shared-services/logger";
+import {
+	buildSortClause,
+	executePaginatedQuery,
+	paginationOffset,
+} from "#/shared-services/query/query-utils.server";
+import type { PaginatedResult, PaginatedSortParams } from "#/types/query";
 import type { DictImportData, DictImportResult } from "./dict.types";
 
 export type DictRecord = typeof dict.$inferSelect;
@@ -153,17 +159,84 @@ export async function ensurePresetDicts(): Promise<void> {
 	}
 }
 
+/**
+ * 播种业务字典（幂等）：字典不存在时创建并写入初始条目
+ * 与 ensurePresetDicts 的区别：结果字典**不受保护**，运营可自由增删改
+ */
+export async function ensureSeedDicts(): Promise<void> {
+	for (const seed of SEED_DICTS) {
+		const [existingDict] = await db
+			.select()
+			.from(dict)
+			.where(eq(dict.slug, seed.slug))
+			.limit(1);
+		if (existingDict) continue;
+
+		const [newDict] = await db
+			.insert(dict)
+			.values({
+				name: seed.name,
+				slug: seed.slug,
+				description: seed.description ?? null,
+			})
+			.returning();
+
+		for (const item of seed.items) {
+			await db.insert(dictItem).values({
+				dictSlug: newDict.slug,
+				label: item.label,
+				value: item.value,
+				sortOrder: item.sortOrder,
+				color: item.color ?? null,
+				extraType: item.extraType ?? null,
+				extra: item.extra ?? null,
+			});
+		}
+		logger.info({ slug: seed.slug }, "业务字典已播种");
+	}
+}
+
 // ========== 字典条目管理 ==========
 
-/** 获取字典条目列表 */
+/**
+ * 获取某个字典的条目列表（服务端分页 + 排序，排序字段走白名单）
+ * sortField 命中白名单才生效；未传排序时按 sortOrder 升序
+ */
 export async function getDictItems(
-	dictSlug: string,
-): Promise<DictItemRecord[]> {
-	return db
-		.select()
-		.from(dictItem)
-		.where(and(isNull(dictItem.deletedAt), eq(dictItem.dictSlug, dictSlug)))
-		.orderBy(asc(dictItem.sortOrder));
+	params: { dictSlug: string } & PaginatedSortParams,
+): Promise<PaginatedResult<DictItemRecord>> {
+	const { dictSlug, page = 1, pageSize = 20, sortField, sortOrder } = params;
+	const offset = paginationOffset(page, pageSize);
+	const whereCondition = and(
+		isNull(dictItem.deletedAt),
+		eq(dictItem.dictSlug, dictSlug),
+	);
+
+	const sortFieldMap = {
+		sortOrder: dictItem.sortOrder,
+		createdAt: dictItem.createdAt,
+		updatedAt: dictItem.updatedAt,
+	};
+	const direction = buildSortClause(
+		sortFieldMap,
+		sortField,
+		sortOrder,
+		"sortOrder",
+	);
+	const orderBy = sortField ? [direction] : [asc(dictItem.sortOrder)];
+
+	return executePaginatedQuery(
+		db
+			.select()
+			.from(dictItem)
+			.where(whereCondition)
+			.orderBy(...orderBy)
+			.limit(pageSize)
+			.offset(offset),
+		db.$count(db.select().from(dictItem).where(whereCondition)),
+		page,
+		pageSize,
+	);
 }
 
 /** 更新字典类型并返回是否成功 */
@@ -236,6 +309,52 @@ export async function updateDictItemRecord(
 		await loadDictCache();
 	}
 	return !!updated;
+}
+
+/**
+ * 列表内联修改条目排序权重（仅更新一个字段）
+ * 记录不存在或已删除时返回 false，由调用方决定提示；排序不参与字典缓存，无需刷新
+ */
+export async function updateDictItemSortOrder(
+	id: string,
+	sortOrder: number,
+): Promise<boolean> {
+	const [existing] = await db
+		.select({ id: dictItem.id })
+		.from(dictItem)
+		.where(and(eq(dictItem.id, id), isNull(dictItem.deletedAt)))
+		.limit(1);
+	if (!existing) return false;
+
+	await db
+		.update(dictItem)
+		.set({ sortOrder, updatedAt: new Date() })
+		.where(eq(dictItem.id, id));
+
+	return true;
+}
+
+/**
+ * 列表内联切换条目启用状态（仅更新一个字段）
+ * 记录不存在或已删除时返回 false；status 不参与字典缓存，无需刷新
+ */
+export async function setDictItemStatus(
+	id: string,
+	status: string,
+): Promise<boolean> {
+	const [existing] = await db
+		.select({ id: dictItem.id })
+		.from(dictItem)
+		.where(and(eq(dictItem.id, id), isNull(dictItem.deletedAt)))
+		.limit(1);
+	if (!existing) return false;
+
+	await db
+		.update(dictItem)
+		.set({ status, updatedAt: new Date() })
+		.where(eq(dictItem.id, id));
+
+	return true;
 }
 
 /** 软删除字典条目并返回是否成功 */

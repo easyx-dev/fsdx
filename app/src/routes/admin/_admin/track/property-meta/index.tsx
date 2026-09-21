@@ -3,11 +3,16 @@
  */
 import { PlusOutlined } from "@ant-design/icons";
 import { message } from "@fsdx/ui-spa/antd-static";
-import { ProTable, TableOperate } from "@fsdx/ui-spa/table";
+import {
+	ProTable,
+	StatusTag,
+	type StatusTagOption,
+	TableOperate,
+} from "@fsdx/ui-spa/table";
 import { createFileRoute } from "@tanstack/react-router";
 import { Button, Form, Input, Modal, Select, Tag } from "antd";
 import { useState } from "react";
-import { AdminPageContent } from "#/components/admin";
+import { AdminListPage } from "#/components/admin";
 import { getTrackPropertyMetaSFn } from "#/services/track/track.functions";
 import type { TrackPropertyMetaRecord as PresetPropertyRecord } from "#/services/track/track.types";
 import { callSfn, sfnUnwrap } from "#/utils/sfn-error";
@@ -17,6 +22,12 @@ import {
 	PROPERTY_DATA_TYPES,
 	updatePropertyMetaSFn,
 } from "./-mods/property-meta.functions";
+
+/** 元属性来源 → 展示配置（系统预置 / 自定义） */
+const META_SOURCE_OPTIONS: Record<string, StatusTagOption> = {
+	true: { label: "系统预置", tone: "info" },
+	false: { label: "自定义", tone: "success" },
+};
 
 export const Route = createFileRoute("/admin/_admin/track/property-meta/")({
 	component: PresetPropertiesPage,
@@ -135,27 +146,30 @@ function PresetPropertiesPage() {
 			dataIndex: "isPreset",
 			key: "isPreset",
 			width: 100,
-			render: (v: boolean) =>
-				v ? <Tag color="blue">系统预置</Tag> : <Tag color="green">自定义</Tag>,
+			render: (v: boolean) => (
+				<StatusTag value={v} options={META_SOURCE_OPTIONS} />
+			),
 		},
 		{
 			title: "创建时间",
 			dataIndex: "createdAt",
 			key: "createdAt",
-			width: 185,
-			valueType: "dateTime",
+			width: 160,
+			valueType: "dateTimeMinute" as const,
 		},
 		{
 			title: "更新时间",
 			dataIndex: "updatedAt",
 			key: "updatedAt",
-			width: 185,
-			valueType: "dateTime",
+			width: 160,
+			valueType: "dateTimeMinute" as const,
 		},
 		{
 			title: "操作",
 			key: "actions",
 			fixed: "right" as const,
+			// 固定右侧列必须显式声明宽度
+			width: 160,
 			render: (_: unknown, record: PresetPropertyRecord) => (
 				<TableOperate>
 					<TableOperate.Edit onClick={() => handleEdit(record)} />
@@ -171,7 +185,7 @@ function PresetPropertiesPage() {
 	];
 
 	return (
-		<AdminPageContent
+		<AdminListPage
 			title="元属性管理"
 			description="管理系统预置和自定义的事件属性字段定义"
 			extra={
@@ -225,6 +239,6 @@ function PresetPropertiesPage() {
 					</Form.Item>
 				</Form>
 			</Modal>
-		</AdminPageContent>
+		</AdminListPage>
 	);
 }

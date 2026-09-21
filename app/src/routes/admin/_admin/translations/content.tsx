@@ -5,23 +5,34 @@ import { DownloadOutlined, PlusOutlined } from "@ant-design/icons";
 import { downloadFile } from "@fsdx/lib/export";
 import { message } from "@fsdx/ui-spa/antd-static";
 import { JsonImportButton } from "@fsdx/ui-spa/json-import-button";
-import { ProTable, TableOperate } from "@fsdx/ui-spa/table";
+import {
+	ProTable,
+	StatusTag,
+	type StatusTagOption,
+	TableOperate,
+	withDisabledReason,
+} from "@fsdx/ui-spa/table";
 import { createFileRoute } from "@tanstack/react-router";
-import type { TableProps } from "antd";
-import { Button, Form, Input, Modal, Select, Space, Tag } from "antd";
+import { Button, Form, Input, Modal, Select } from "antd";
 import dayjs from "dayjs";
 import type { ChangeEvent } from "react";
-import { useEffect, useState } from "react";
-import { AdminPageContent, EditorTypes } from "#/components/admin";
+import { useCallback, useState } from "react";
+import {
+	AdminListPage,
+	AdminTableToolbar,
+	EditorTypes,
+	useAdminAuth,
+} from "#/components/admin";
 import type { contentTranslation } from "#/db/schema";
+import { ADMIN_PERMISSIONS } from "#/permissions/admin-permissions";
 import { formSchema } from "#/shared-services/i18n/i18n.content.schemas";
 import {
 	DEFAULT_LOCALE,
 	type Locale,
 	SUPPORTED_LOCALES,
 } from "#/shared-services/i18n/i18n.types";
-import type { SortOrder } from "#/types/query";
 import { callSfn, sfnUnwrap } from "#/utils/sfn-error";
+import { useListQuery } from "#/utils/use-list-query";
 import {
 	deleteSFn,
 	exportContentTranslationsSFn,
@@ -38,6 +49,25 @@ const MANAGED_LOCALES = SUPPORTED_LOCALES.filter(
 	(l): l is Locale => l !== DEFAULT_LOCALE,
 );
 
+/** 语言列展示：locale → 大写文案 + 语义色 */
+const LOCALE_OPTIONS: Record<string, StatusTagOption> = Object.fromEntries(
+	SUPPORTED_LOCALES.map((l) => [l, { label: l.toUpperCase() }]),
+);
+
+/** 实体类型列展示 */
+const ENTITY_TYPE_OPTIONS: Record<string, StatusTagOption> = {
+	news: { label: "新闻", tone: "info" },
+};
+
+/** 列表筛选条件 */
+interface ContentTranslationFilters {
+	entityType?: string;
+	locale?: Locale;
+	keyword: string;
+}
+
+const NO_MANAGE_PERMISSION = "无「管理翻译」权限";
+
 export const Route = createFileRoute("/admin/_admin/translations/content")({
 	component: ContentTranslationPage,
 	loader: async () => await getListSFn({ data: {} }),
@@ -45,85 +75,51 @@ export const Route = createFileRoute("/admin/_admin/translations/content")({
 
 function ContentTranslationPage() {
 	const initial = Route.useLoaderData();
-	const [data, setData] = useState(initial);
+	const { hasPermission } = useAdminAuth();
 	const [modalOpen, setModalOpen] = useState(false);
 	const [editing, setEditing] = useState<ContentTranslationRow | null>(null);
-	const [filterEntityType, setFilterEntityType] = useState<
-		string | undefined
-	>();
-	const [filterLocale, setFilterLocale] = useState<Locale>();
-	const [filterKeyword, setFilterKeyword] = useState<string>("");
-	// 防抖后的搜索关键字
-	const [debouncedKeyword, setDebouncedKeyword] = useState<string>("");
-	const [sortField, setSortField] = useState<string>();
-	const [sortOrder, setSortOrder] = useState<SortOrder>();
+	/** 搜索框草稿值：回车 / 点击搜索时才写入查询条件 */
+	const [keywordDraft, setKeywordDraft] = useState("");
 	const [form] = Form.useForm();
 
-	// 搜索关键字输入防抖（300ms）
-	useEffect(() => {
-		const timer = setTimeout(() => setDebouncedKeyword(filterKeyword), 300);
-		return () => clearTimeout(timer);
-	}, [filterKeyword]);
+	const canManage = hasPermission(ADMIN_PERMISSIONS.TRANSLATION_MANAGE);
 
-	// 筛选条件变更时重置到第一页并刷新
-	useEffect(() => {
-		async function doRefresh() {
-			const [result] = await sfnUnwrap(
+	const list = useListQuery<ContentTranslationRow, ContentTranslationFilters>({
+		initial,
+		initialFilters: { entityType: undefined, locale: undefined, keyword: "" },
+		errorMessage: "加载翻译列表失败",
+		fetcher: useCallback(
+			({ page, pageSize, sortField, sortOrder, filters }) =>
 				getListSFn({
 					data: {
-						entityType: filterEntityType,
-						locale: filterLocale,
-						keyword: debouncedKeyword,
-						page: 1,
+						entityType: filters.entityType,
+						locale: filters.locale,
+						keyword: filters.keyword || undefined,
+						page,
+						pageSize,
 						sortField,
 						sortOrder,
 					},
 				}),
-				{ error: "加载翻译列表失败" },
-			);
-			if (result) setData(result);
-		}
-		doRefresh();
-	}, [filterEntityType, filterLocale, debouncedKeyword, sortField, sortOrder]);
+			[],
+		),
+	});
 
-	async function refresh() {
-		const [result] = await sfnUnwrap(
-			getListSFn({
-				data: {
-					entityType: filterEntityType,
-					locale: filterLocale,
-					keyword: debouncedKeyword,
-					page: data.page,
-					sortField,
-					sortOrder,
-				},
-			}),
-		);
-		if (result) setData(result);
-	}
+	/** 应用搜索关键字（清空同样走 applyFilters，回到第 1 页） */
+	const applyKeyword = (value: string) => {
+		setKeywordDraft(value);
+		list.applyFilters({ keyword: value });
+	};
 
-	/** 表格排序变更 */
-	const handleTableChange: TableProps<ContentTranslationRow>["onChange"] =
-		async (_pagination, _filters, sorter) => {
-			const s = Array.isArray(sorter) ? sorter[0] : sorter;
-			const field = typeof s?.field === "string" ? s.field : undefined;
-			const order =
-				s?.order === "ascend" || s?.order === "descend" ? s.order : undefined;
-			setSortField(field);
-			setSortOrder(order);
-			const [result] = await sfnUnwrap(
-				getListSFn({
-					data: {
-						entityType: filterEntityType,
-						locale: filterLocale,
-						keyword: debouncedKeyword,
-						sortField: field,
-						sortOrder: order,
-					},
-				}),
-			);
-			if (result) setData(result);
-		};
+	/** 重置筛选：清空关键字、实体类型与语言并回到第 1 页 */
+	const resetFilters = () => {
+		setKeywordDraft("");
+		list.applyFilters({
+			keyword: "",
+			entityType: undefined,
+			locale: undefined,
+		});
+	};
 
 	async function handleSubmit(values: Record<string, unknown>) {
 		let parsed: ReturnType<typeof formSchema.parse>;
@@ -140,7 +136,7 @@ function ContentTranslationPage() {
 		setModalOpen(false);
 		setEditing(null);
 		form.resetFields();
-		await refresh();
+		await list.reload();
 	}
 
 	function openCreate() {
@@ -161,10 +157,12 @@ function ContentTranslationPage() {
 	}
 
 	async function handleDelete(id: string) {
-		const [, err] = await sfnUnwrap(deleteSFn({ data: { id } }));
+		const [, err] = await sfnUnwrap(deleteSFn({ data: { id } }), {
+			error: "删除失败",
+		});
 		if (err) return;
 		message.success("翻译已删除");
-		await refresh();
+		await list.reload();
 	}
 
 	/** 导出实体翻译数据（JSON） */
@@ -181,14 +179,17 @@ function ContentTranslationPage() {
 		);
 		message.success("导出完成");
 	}
+
 	const columns = [
 		{
 			title: "实体类型",
 			dataIndex: "entityType",
 			key: "entityType",
 			width: 120,
-			sorter: true,
-			render: (v: string) => <Tag color="blue">{v}</Tag>,
+			...list.sortProps("entityType"),
+			render: (v: string) => (
+				<StatusTag value={v} options={ENTITY_TYPE_OPTIONS} />
+			),
 		},
 		{
 			title: "实体 ID",
@@ -203,15 +204,15 @@ function ContentTranslationPage() {
 			dataIndex: "fieldName",
 			key: "fieldName",
 			width: 100,
-			sorter: true,
+			...list.sortProps("fieldName"),
 		},
 		{
 			title: "语言",
 			dataIndex: "locale",
 			key: "locale",
 			width: 90,
-			sorter: true,
-			render: (v: string) => <Tag>{v.toUpperCase()}</Tag>,
+			...list.sortProps("locale"),
+			render: (v: string) => <StatusTag value={v} options={LOCALE_OPTIONS} />,
 		},
 		{
 			title: "翻译值",
@@ -224,133 +225,137 @@ function ContentTranslationPage() {
 			title: "创建时间",
 			dataIndex: "createdAt",
 			key: "createdAt",
-			width: 185,
-			valueType: "dateTime",
+			width: 150,
+			valueType: "dateTimeMinute",
 		},
 		{
 			title: "更新时间",
 			dataIndex: "updatedAt",
 			key: "updatedAt",
-			width: 185,
-			valueType: "dateTime",
-			sorter: true,
+			width: 150,
+			valueType: "dateTimeMinute",
+			...list.sortProps("updatedAt"),
 		},
 		{
 			title: "操作",
 			key: "actions",
 			fixed: "right" as const,
+			// 操作列固定右侧必须显式声明宽度（2 项操作取 160）
+			width: 160,
 			render: (_: unknown, record: ContentTranslationRow) =>
 				record.locale === DEFAULT_LOCALE ? (
 					// 默认语言为源语言，值存主表原字段，禁止编辑/删除
 					<span className="text-xs text-muted-foreground">源语言（只读）</span>
 				) : (
 					<TableOperate>
-						<TableOperate.Edit onClick={() => openEdit(record)} />
-						<TableOperate.Delete onConfirm={() => handleDelete(record.id)} />
+						<TableOperate.Edit
+							onClick={() => openEdit(record)}
+							disabled={!canManage}
+							disabledReason={NO_MANAGE_PERMISSION}
+						/>
+						<TableOperate.Delete
+							recordName="这条翻译"
+							disabled={!canManage}
+							disabledReason={NO_MANAGE_PERMISSION}
+							onConfirm={() => handleDelete(record.id)}
+						/>
 					</TableOperate>
 				),
 		},
 	];
 
 	return (
-		<AdminPageContent
+		<AdminListPage
 			title="实体翻译管理"
-			extra={
-				<Space>
-					<Button icon={<DownloadOutlined />} onClick={handleExport}>
-						导出 JSON
-					</Button>
+			description="维护业务实体字段的多语言翻译，中文为源语言不可编辑"
+			extra={withDisabledReason(
+				<Button
+					type="primary"
+					icon={<PlusOutlined />}
+					disabled={!canManage}
+					onClick={openCreate}
+				>
+					新增翻译
+				</Button>,
+				!canManage,
+				NO_MANAGE_PERMISSION,
+			)}
+			toolbar={
+				<AdminTableToolbar
+					onReset={resetFilters}
+					extra={
+						<>
+							<Button
+								icon={<DownloadOutlined />}
+								disabled={!hasPermission(ADMIN_PERMISSIONS.TRANSLATION_EXPORT)}
+								onClick={() => void handleExport()}
+							>
+								导出 JSON
+							</Button>
 
-					<JsonImportButton
-						onImport={async (jsonString) => {
-							const data = JSON.parse(jsonString);
-							const result = await callSfn(
-								importContentTranslationsSFn({
-									data: { data },
-								}),
-							);
-							message.success(
-								`导入完成：新增 ${result.created} / 更新 ${result.updated}`,
-							);
-							await refresh();
-						}}
-					>
-						导入 JSON
-					</JsonImportButton>
-
-					<Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>
-						新增翻译
-					</Button>
-				</Space>
-			}
-		>
-			<div className="mb-4">
-				<Space>
+							<JsonImportButton
+								disabled={!hasPermission(ADMIN_PERMISSIONS.TRANSLATION_IMPORT)}
+								onImport={async (jsonString) => {
+									const data = JSON.parse(jsonString);
+									const result = await callSfn(
+										importContentTranslationsSFn({
+											data: { data },
+										}),
+									);
+									message.success(
+										`导入完成：新增 ${result.created} / 更新 ${result.updated}`,
+									);
+									await list.reload();
+								}}
+							>
+								导入 JSON
+							</JsonImportButton>
+						</>
+					}
+				>
 					<Input.Search
 						placeholder="搜索字段名或翻译值"
 						allowClear
 						style={{ width: 260 }}
-						value={filterKeyword}
+						value={keywordDraft}
 						onChange={(e: ChangeEvent<HTMLInputElement>) =>
-							setFilterKeyword(e.target.value)
+							setKeywordDraft(e.target.value)
 						}
-						onSearch={(v: string) => {
-							setFilterKeyword(v);
-							setDebouncedKeyword(v);
-						}}
+						onSearch={applyKeyword}
 					/>
 					<Select
 						placeholder="实体类型"
 						allowClear
 						style={{ width: 120 }}
-						value={filterEntityType}
-						onChange={(v: string | undefined) => {
-							setFilterEntityType(v);
-						}}
+						value={list.filters.entityType}
+						onChange={(v: string | undefined) =>
+							list.applyFilters({ entityType: v })
+						}
 						options={[{ label: "新闻", value: "news" }]}
 					/>
 					<Select
 						placeholder="语言"
 						allowClear
 						style={{ width: 100 }}
-						value={filterLocale}
-						onChange={(v?: Locale) => {
-							setFilterLocale(v);
-						}}
+						value={list.filters.locale}
+						onChange={(v?: Locale) => list.applyFilters({ locale: v })}
 						options={MANAGED_LOCALES.map((l) => ({
 							label: l.toUpperCase(),
 							value: l,
 						}))}
 					/>
-				</Space>
-			</div>
-
+				</AdminTableToolbar>
+			}
+		>
 			<ProTable
-				dataSource={data.records}
+				dataSource={list.data.records}
 				columns={columns}
 				rowKey="id"
-				onChange={handleTableChange}
-				scroll={{ x: 1440 }}
-				pagination={{
-					total: data.total,
-					pageSize: data.pageSize,
-					current: data.page,
-					onChange: async (page) => {
-						const [r] = await sfnUnwrap(
-							getListSFn({
-								data: {
-									entityType: filterEntityType,
-									locale: filterLocale,
-									keyword: debouncedKeyword,
-									page,
-									sortField,
-									sortOrder,
-								},
-							}),
-						);
-						if (r) setData(r);
-					},
-				}}
+				loading={list.loading}
+				locale={{ emptyText: "暂无翻译" }}
+				scroll={{ x: 1340 }}
+				onChange={list.onTableChange}
+				pagination={list.pagination}
 			/>
 
 			<Modal
@@ -401,6 +406,6 @@ function ContentTranslationPage() {
 					</Form.Item>
 				</Form>
 			</Modal>
-		</AdminPageContent>
+		</AdminListPage>
 	);
 }

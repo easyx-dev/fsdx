@@ -1,29 +1,39 @@
 /**
  * 客户端角色管理页面：CRUD + 权限分配
+ * 列表骨架 / 查询状态 / 分页排序统一走 AdminListPage + useListQuery
  */
 import { PlusOutlined, SearchOutlined } from "@ant-design/icons";
 import { message } from "@fsdx/ui-spa/antd-static";
-import { PermissionTags } from "@fsdx/ui-spa/permission-tags";
-import { ProTable, TableOperate } from "@fsdx/ui-spa/table";
+import { ProTable, withDisabledReason } from "@fsdx/ui-spa/table";
 import { createFileRoute } from "@tanstack/react-router";
 import { Button, Form, Input, Modal } from "antd";
 import type { ChangeEvent } from "react";
-import { useState } from "react";
-import { AdminPageContent, PermissionSelector } from "#/components/admin";
+import { useCallback, useState } from "react";
 import {
-	CLIENT_PERMISSION_META,
-	CLIENT_PERMISSIONS_BY_GROUP,
-} from "#/permissions/client-permissions";
+	AdminListPage,
+	AdminTableToolbar,
+	PermissionSelector,
+	useAdminAuth,
+} from "#/components/admin";
+import { ADMIN_PERMISSIONS } from "#/permissions/admin-permissions";
+import { CLIENT_PERMISSIONS_BY_GROUP } from "#/permissions/client-permissions";
 import type { ClientRoleRecord } from "#/services/client-role/client-role.server";
 import { callSfn, sfnUnwrap } from "#/utils/sfn-error";
+import { useListQuery } from "#/utils/use-list-query";
 import {
 	createClientRoleSFn,
 	deleteClientRoleSFn,
 	getClientRolesSFn,
 	updateClientRoleSFn,
 } from "./-mods/client-roles.functions";
+import { clientRoleColumns } from "./-mods/clientRoleColumns";
 
-// ─── Route & Component ──────────────────────────────────────────────
+const NO_CREATE_PERMISSION = "无「创建客户端角色」权限";
+
+/** 列表筛选条件 */
+interface ClientRoleFilters {
+	keyword?: string;
+}
 
 export const Route = createFileRoute("/admin/_admin/client-roles/")({
 	component: ClientRolesPage,
@@ -31,25 +41,48 @@ export const Route = createFileRoute("/admin/_admin/client-roles/")({
 });
 
 function ClientRolesPage() {
-	const initialRoles = Route.useLoaderData();
-	const [roles, setRoles] = useState<ClientRoleRecord[]>(initialRoles);
+	const initialData = Route.useLoaderData();
+	const { hasPermission } = useAdminAuth();
 	const [keyword, setKeyword] = useState("");
 	const [modalOpen, setModalOpen] = useState(false);
 	const [editingRole, setEditingRole] = useState<ClientRoleRecord | null>(null);
 	const [saving, setSaving] = useState(false);
 	const [form] = Form.useForm();
 
-	/** 刷新列表 */
-	const refresh = async () => {
-		const [data] = await sfnUnwrap(
-			getClientRolesSFn({ data: { keyword: keyword || undefined } }),
-		);
-		if (data) setRoles(data);
+	const list = useListQuery<ClientRoleRecord, ClientRoleFilters>({
+		initial: initialData,
+		initialFilters: { keyword: undefined },
+		errorMessage: "加载客户端角色列表失败",
+		fetcher: useCallback(
+			({ page, pageSize, sortField, sortOrder, filters }) =>
+				getClientRolesSFn({
+					data: {
+						page,
+						pageSize,
+						sortField,
+						sortOrder,
+						keyword: filters.keyword,
+					},
+				}),
+			[],
+		),
+	});
+
+	const permissions = {
+		create: hasPermission(ADMIN_PERMISSIONS.CLIENT_ROLE_CREATE),
+		edit: hasPermission(ADMIN_PERMISSIONS.CLIENT_ROLE_EDIT),
+		delete: hasPermission(ADMIN_PERMISSIONS.CLIENT_ROLE_DELETE),
 	};
 
-	/** 搜索 */
-	const handleSearch = async () => {
-		await refresh();
+	/** 关键词搜索（回到第一页） */
+	const handleSearch = () => {
+		list.applyFilters({ keyword: keyword.trim() || undefined });
+	};
+
+	/** 重置筛选条件 */
+	const handleReset = () => {
+		setKeyword("");
+		list.applyFilters({ keyword: undefined });
 	};
 
 	/** 打开新建弹窗 */
@@ -87,7 +120,7 @@ function ClientRolesPage() {
 				message.success("角色已创建");
 			}
 			setModalOpen(false);
-			await refresh();
+			await list.reload();
 		} catch {
 			// 表单校验由 antd 提示，SFn 失败由 callSfn 统一提示
 		} finally {
@@ -95,109 +128,66 @@ function ClientRolesPage() {
 		}
 	};
 
-	/** 删除角色 */
-	const handleDelete = async (id: string) => {
-		try {
-			await callSfn(deleteClientRoleSFn({ data: { id } }));
-			message.success("角色已删除");
-			await refresh();
-		} catch {
-			// callSfn 已提示
-		}
+	/** 删除角色（失败由统一出口提示） */
+	const handleDelete = async (record: ClientRoleRecord) => {
+		const [, err] = await sfnUnwrap(
+			deleteClientRoleSFn({ data: { id: record.id } }),
+			{ error: "删除失败" },
+		);
+		if (err) return;
+		message.success("角色已删除");
+		await list.reload();
 	};
 
-	const columns = [
-		{
-			title: "角色名称",
-			dataIndex: "name",
-			key: "name",
-			width: 160,
-		},
-		{
-			title: "标识",
-			dataIndex: "slug",
-			key: "slug",
-			width: 140,
-			render: (v: string) => <code className="text-xs">{v}</code>,
-		},
-		{
-			title: "权限",
-			dataIndex: "permissions",
-			key: "permissions",
-			width: 280,
-			render: (perms: string[]) => (
-				<PermissionTags permissions={perms} meta={CLIENT_PERMISSION_META} />
-			),
-		},
-		{
-			title: "描述",
-			dataIndex: "description",
-			key: "description",
-			ellipsis: true,
-			width: 140,
-		},
-		{
-			title: "创建时间",
-			dataIndex: "createdAt",
-			key: "createdAt",
-			width: 185,
-			valueType: "dateTime",
-		},
-		{
-			title: "更新时间",
-			dataIndex: "updatedAt",
-			key: "updatedAt",
-			width: 185,
-			valueType: "dateTime",
-		},
-		{
-			title: "操作",
-			key: "actions",
-			fixed: "right" as const,
-			render: (_: unknown, record: ClientRoleRecord) => (
-				<TableOperate>
-					<TableOperate.Edit onClick={() => handleEdit(record)} />
-					<TableOperate.Delete
-						recordName="此角色"
-						onConfirm={() => handleDelete(record.id)}
-					/>
-				</TableOperate>
-			),
-		},
-	];
+	const columns = clientRoleColumns({
+		sortProps: list.sortProps,
+		onEdit: handleEdit,
+		onDelete: handleDelete,
+		permissions: { edit: permissions.edit, delete: permissions.delete },
+	});
 
 	return (
-		<AdminPageContent
+		<AdminListPage
 			title="客户端角色管理"
 			description="管理客户端角色及其权限分配"
-			extra={
-				<Button type="primary" icon={<PlusOutlined />} onClick={handleCreate}>
+			extra={withDisabledReason(
+				<Button
+					type="primary"
+					icon={<PlusOutlined />}
+					disabled={!permissions.create}
+					onClick={handleCreate}
+				>
 					新建角色
-				</Button>
+				</Button>,
+				!permissions.create,
+				NO_CREATE_PERMISSION,
+			)}
+			toolbar={
+				<AdminTableToolbar onReset={handleReset}>
+					<Input
+						placeholder="搜索角色名称或标识..."
+						value={keyword}
+						onChange={(e: ChangeEvent<HTMLInputElement>) =>
+							setKeyword(e.target.value)
+						}
+						onPressEnter={handleSearch}
+						allowClear
+						style={{ width: 260 }}
+						prefix={<SearchOutlined />}
+					/>
+					<Button onClick={handleSearch}>搜索</Button>
+				</AdminTableToolbar>
 			}
 		>
-			{/* 搜索栏 */}
-			<div className="mb-4 flex items-center gap-2">
-				<Input
-					placeholder="搜索角色名称或标识..."
-					value={keyword}
-					onChange={(e: ChangeEvent<HTMLInputElement>) =>
-						setKeyword(e.target.value)
-					}
-					onPressEnter={handleSearch}
-					allowClear
-					style={{ width: 260 }}
-					prefix={<SearchOutlined />}
-				/>
-				<Button onClick={handleSearch}>搜索</Button>
-			</div>
-
 			<ProTable
-				dataSource={roles}
+				dataSource={list.data.records}
 				columns={columns}
-				scroll={{ x: 1280 }}
 				rowKey="id"
+				loading={list.loading}
 				locale={{ emptyText: "暂无角色" }}
+				scroll={{ x: 1260 }}
+				onChange={list.onTableChange}
+				pagination={list.pagination}
 			/>
 
 			{/* 创建/编辑弹窗 */}
@@ -233,6 +223,6 @@ function ClientRolesPage() {
 					</Form.Item>
 				</Form>
 			</Modal>
-		</AdminPageContent>
+		</AdminListPage>
 	);
 }

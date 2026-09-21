@@ -1,5 +1,6 @@
 /**
- * 埋点事件查询页面：按条件筛选、分页查看触发事件
+ * 埋点事件查询页面：按事件、关键词与日期范围检索客户端上报的埋点事件
+ * 筛选为「点查询才请求」模式，事件/关键词/日期仅维护草稿条件
  */
 import {
 	DownloadOutlined,
@@ -7,38 +8,36 @@ import {
 	SearchOutlined,
 } from "@ant-design/icons";
 import { message } from "@fsdx/ui-spa/antd-static";
+import { ProTable } from "@fsdx/ui-spa/table";
 import { createFileRoute } from "@tanstack/react-router";
-import {
-	Button,
-	DatePicker,
-	Input,
-	Select,
-	Space,
-	Table,
-	Tag,
-	Tooltip,
-} from "antd";
+import { Button, DatePicker, Input, Select, Tag, Tooltip } from "antd";
 import dayjs from "dayjs";
 import type { ChangeEvent } from "react";
-import { useMemo, useState } from "react";
-import { AdminPageContent } from "#/components/admin";
+import { useCallback, useMemo, useState } from "react";
+import { AdminListPage, AdminTableToolbar } from "#/components/admin";
 import {
 	getTrackEventMetaSFn,
 	getTrackPropertyMetaSFn,
 } from "#/services/track/track.functions";
 import type {
-	TrackEventQueryResult,
 	TrackEventRecord,
 	TrackPropertyMetaRecord,
 } from "#/services/track/track.types";
-import type { SortOrder } from "#/types/query";
-import { callSfn } from "#/utils/sfn-error";
+import { useListQuery } from "#/utils/use-list-query";
 import {
 	getTrackEventNamesSFn,
 	searchTrackEventsSFn,
 } from "./-mods/query.functions";
 
 const { RangePicker } = DatePicker;
+
+/** 埋点事件列表筛选条件 */
+interface TrackEventFilters {
+	name: string;
+	keyword: string;
+	startDate?: string;
+	endDate?: string;
+}
 
 export const Route = createFileRoute("/admin/_admin/track/query")({
 	component: EventListPage,
@@ -56,21 +55,51 @@ export const Route = createFileRoute("/admin/_admin/track/query")({
 
 function EventListPage() {
 	const {
-		eventNames: initialEventNames,
+		eventNames,
 		presetEvents,
 		presetProperties,
 		result: initialResult,
 	} = Route.useLoaderData();
 
-	const [data, setData] = useState<TrackEventQueryResult>(initialResult);
-	const [eventNames] = useState<string[]>(initialEventNames);
-	const [loading, setLoading] = useState(false);
+	// 草稿条件：仅在点击「查询」时提交
+	const [eventName, setEventName] = useState<string>();
+	const [keyword, setKeyword] = useState("");
+	const [dateRange, setDateRange] = useState<[dayjs.Dayjs, dayjs.Dayjs] | null>(
+		null,
+	);
+
+	const list = useListQuery<TrackEventRecord, TrackEventFilters>({
+		initial: {
+			records: initialResult.records,
+			total: initialResult.total,
+			page: initialResult.page,
+			pageSize: initialResult.pageSize,
+		},
+		initialFilters: { name: "", keyword: "" },
+		errorMessage: "埋点事件查询失败",
+		fetcher: useCallback(
+			async ({ page, pageSize, sortField, sortOrder, filters }) =>
+				searchTrackEventsSFn({
+					data: {
+						name: filters.name || undefined,
+						keyword: filters.keyword || undefined,
+						startDate: filters.startDate,
+						endDate: filters.endDate,
+						page,
+						pageSize,
+						sortField,
+						sortOrder,
+					},
+				}),
+			[],
+		),
+	});
 
 	/** 事件名 → 显示名称映射 */
 	const eventLabelMap = useMemo(() => {
 		const map: Record<string, string> = {};
-		for (const e of presetEvents) {
-			map[e.name] = e.label;
+		for (const event of presetEvents) {
+			map[event.name] = event.label;
 		}
 		return map;
 	}, [presetEvents]);
@@ -81,77 +110,39 @@ function EventListPage() {
 			string,
 			Pick<TrackPropertyMetaRecord, "label" | "dataType">
 		> = {};
-		for (const p of presetProperties) {
-			map[p.key] = { label: p.label, dataType: p.dataType };
+		for (const property of presetProperties) {
+			map[property.key] = {
+				label: property.label,
+				dataType: property.dataType,
+			};
 		}
 		return map;
 	}, [presetProperties]);
 
-	// 筛选条件
-	const [filterEvent, setFilterEvent] = useState<string>();
-	const [filterKeyword, setFilterKeyword] = useState("");
-	const [filterDateRange, setFilterDateRange] = useState<
-		[dayjs.Dayjs, dayjs.Dayjs] | null
-	>(null);
-	const pageSize = 20;
-	const [sortField, setSortField] = useState<string>();
-	const [sortOrder, setSortOrder] = useState<SortOrder>();
-
-	/** 核心查询方法：接受明确的 page/pageSize，消除闭包过期问题 */
-	const searchWith = async (
-		p: number,
-		ps: number,
-		sf?: string,
-		so?: SortOrder,
-	) => {
-		setLoading(true);
-		try {
-			const field = sf !== undefined ? sf : sortField;
-			const order = so !== undefined ? so : sortOrder;
-			const result = await callSfn(
-				searchTrackEventsSFn({
-					data: {
-						name: filterEvent,
-						keyword: filterKeyword || undefined,
-						startDate: filterDateRange?.[0]?.format("YYYY-MM-DD"),
-						endDate: filterDateRange?.[1]?.format("YYYY-MM-DD"),
-						page: p,
-						pageSize: ps,
-						sortField: field,
-						sortOrder: order,
-					},
-				}),
-			);
-			setData(result);
-		} catch {
-			// callSfn 已提示
-		} finally {
-			setLoading(false);
-		}
-	};
-
-	/** 表格排序变更 */
-	const handleTableChange = (
-		_pagination: unknown,
-		_filters: unknown,
-		sorter: unknown,
-	) => {
-		const s = sorter as { field?: string; order?: string };
-		setSortField(s.field);
-		setSortOrder(s.order as SortOrder | undefined);
-		searchWith(data.page, pageSize, s.field, s.order as SortOrder | undefined);
-	};
-
-	/** 搜索按钮：重置到第 1 页 */
+	/** 提交草稿条件查询（applyFilters 自动回到第 1 页） */
 	const handleSearch = () => {
-		searchWith(1, pageSize);
+		list.applyFilters({
+			name: eventName ?? "",
+			keyword,
+			startDate: dateRange?.[0]?.format("YYYY-MM-DD"),
+			endDate: dateRange?.[1]?.format("YYYY-MM-DD"),
+		});
 	};
 
-	/** 分页切换 */
-	const handlePageChange = async (p: number, ps: number) => {
-		await searchWith(p, ps);
+	/** 重置筛选条件并重新查询 */
+	const handleReset = () => {
+		setEventName(undefined);
+		setKeyword("");
+		setDateRange(null);
+		list.applyFilters({
+			name: "",
+			keyword: "",
+			startDate: undefined,
+			endDate: undefined,
+		});
 	};
 
+	/** 导出当前页事件为 CSV */
 	const handleExport = () => {
 		const headers = [
 			"事件名称",
@@ -161,18 +152,18 @@ function EventListPage() {
 			"触发时间",
 			"接收时间",
 		];
-		const rows = data.records.map((e: TrackEventRecord) => [
-			e.name,
-			e.userId ?? "-",
-			e.sessionId,
-			JSON.stringify(e.properties),
-			e.time ? new Date(e.time).toISOString() : "-",
-			e.createdAt ? new Date(e.createdAt).toISOString() : "-",
+		const rows = list.data.records.map((event) => [
+			event.name,
+			event.userId ?? "-",
+			event.sessionId,
+			JSON.stringify(event.properties),
+			event.time ? new Date(event.time).toISOString() : "-",
+			event.createdAt ? new Date(event.createdAt).toISOString() : "-",
 		]);
 		const csv = [
 			headers.join(","),
-			...rows.map((r) =>
-				r.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(","),
+			...rows.map((row) =>
+				row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(","),
 			),
 		].join("\n");
 		const blob = new Blob([`\uFEFF${csv}`], {
@@ -187,6 +178,7 @@ function EventListPage() {
 		message.success("导出成功");
 	};
 
+	/** 属性值的展示文本：对象转 JSON，空值显示占位符 */
 	const formatValue = (value: unknown): string => {
 		if (value === null || value === undefined) return "-";
 		if (typeof value === "object") return JSON.stringify(value, null, 2);
@@ -199,14 +191,14 @@ function EventListPage() {
 			dataIndex: "name",
 			key: "name",
 			width: 140,
-			render: (v: string) => {
-				const label = eventLabelMap[v];
+			render: (value: string) => {
+				const label = eventLabelMap[value];
 				return (
 					<span className="flex items-center gap-1.5">
-						<span className="text-sm font-medium">{label ?? v}</span>
+						<span className="text-sm font-medium">{label ?? value}</span>
 						{label && (
 							<Tag className="m-0 text-xs leading-none" color="blue">
-								{v}
+								{value}
 							</Tag>
 						)}
 					</span>
@@ -219,8 +211,8 @@ function EventListPage() {
 			key: "userId",
 			width: 200,
 			ellipsis: true,
-			render: (v: string | null) =>
-				v || <span className="text-muted-foreground">匿名</span>,
+			render: (value: string | null) =>
+				value || <span className="text-muted-foreground">匿名</span>,
 		},
 		{
 			title: "会话 ID",
@@ -235,91 +227,99 @@ function EventListPage() {
 			key: "properties",
 			width: 200,
 			ellipsis: true,
-			render: (v: Record<string, unknown>) => JSON.stringify(v),
+			render: (value: Record<string, unknown>) => JSON.stringify(value),
 		},
 		{
 			title: "触发时间",
 			dataIndex: "time",
 			key: "time",
 			width: 180,
-			sorter: true,
-			sortOrder: sortField === "time" ? sortOrder : undefined,
-			render: (v: string) => (v ? dayjs(v).format("YYYY-MM-DD HH:mm:ss") : "-"),
+			valueType: "dateTimeMinute" as const,
+			// 服务层排序白名单仅支持 time
+			...list.sortProps("time"),
 		},
 		{
 			title: "接收时间",
 			dataIndex: "createdAt",
 			key: "createdAt",
 			width: 180,
-			render: (v: string) => (v ? dayjs(v).format("YYYY-MM-DD HH:mm:ss") : "-"),
+			valueType: "dateTimeMinute" as const,
 		},
 	];
 
 	return (
-		<AdminPageContent
+		<AdminListPage
 			title="埋点事件查询"
 			description="查询和分析客户端上报的埋点事件数据"
-			extra={
-				<Space>
-					<Button
-						icon={<DownloadOutlined />}
-						onClick={handleExport}
-						disabled={data.records.length === 0}
-					>
-						导出 CSV
-					</Button>
-					<Button icon={<ReloadOutlined />} onClick={handleSearch}>
-						刷新
-					</Button>
-				</Space>
+			toolbar={
+				<AdminTableToolbar
+					onReset={handleReset}
+					extra={
+						<>
+							<Button
+								type="primary"
+								icon={<SearchOutlined />}
+								onClick={handleSearch}
+							>
+								查询
+							</Button>
+							<Button
+								icon={<DownloadOutlined />}
+								onClick={handleExport}
+								disabled={list.data.records.length === 0}
+							>
+								导出 CSV
+							</Button>
+							<Button
+								icon={<ReloadOutlined />}
+								onClick={() => void list.reload()}
+							>
+								刷新
+							</Button>
+						</>
+					}
+				>
+					<Select
+						placeholder="事件名称"
+						value={eventName}
+						onChange={setEventName}
+						allowClear
+						style={{ width: 160 }}
+						options={eventNames.map((name) => ({
+							label: eventLabelMap[name] ?? name,
+							value: name,
+						}))}
+					/>
+					<Input
+						placeholder="关键词搜索（事件/属性）"
+						value={keyword}
+						onChange={(e: ChangeEvent<HTMLInputElement>) =>
+							setKeyword(e.target.value)
+						}
+						onPressEnter={handleSearch}
+						allowClear
+						style={{ width: 240 }}
+						prefix={<SearchOutlined />}
+					/>
+					<RangePicker
+						value={dateRange}
+						onChange={(value) =>
+							setDateRange(value as [dayjs.Dayjs, dayjs.Dayjs] | null)
+						}
+						showTime={false}
+						placeholder={["开始日期", "结束日期"]}
+					/>
+				</AdminTableToolbar>
 			}
 		>
-			{/* 筛选栏 */}
-			<div className="mb-4 flex flex-wrap items-center gap-3">
-				<Select
-					placeholder="事件名称"
-					value={filterEvent}
-					onChange={(v: string | undefined) => {
-						setFilterEvent(v);
-					}}
-					allowClear
-					style={{ width: 160 }}
-					options={eventNames.map((n) => ({
-						label: eventLabelMap[n] ?? n,
-						value: n,
-					}))}
-				/>
-				<Input
-					placeholder="关键词搜索（事件/属性）"
-					value={filterKeyword}
-					onChange={(e: ChangeEvent<HTMLInputElement>) =>
-						setFilterKeyword(e.target.value)
-					}
-					onPressEnter={handleSearch}
-					allowClear
-					style={{ width: 240 }}
-					prefix={<SearchOutlined />}
-				/>
-				<RangePicker
-					value={filterDateRange}
-					onChange={(v: [dayjs.Dayjs | null, dayjs.Dayjs | null] | null) => {
-						setFilterDateRange(v as [dayjs.Dayjs, dayjs.Dayjs] | null);
-					}}
-					showTime={false}
-					placeholder={["开始日期", "结束日期"]}
-				/>
-				<Button type="primary" icon={<SearchOutlined />} onClick={handleSearch}>
-					查询
-				</Button>
-			</div>
-
-			<Table
+			<ProTable
 				columns={columns}
-				dataSource={data.records}
+				dataSource={list.data.records}
 				rowKey="id"
-				loading={loading}
+				loading={list.loading}
 				scroll={{ x: 1100 }}
-				onChange={handleTableChange}
+				onChange={list.onTableChange}
+				pagination={list.pagination}
 				locale={{ emptyText: "暂无事件数据" }}
 				expandable={{
 					rowExpandable: (record: TrackEventRecord) =>
@@ -362,15 +362,7 @@ function EventListPage() {
 						);
 					},
 				}}
-				pagination={{
-					current: data.page,
-					pageSize: data.pageSize,
-					total: data.total,
-					onChange: handlePageChange,
-					showSizeChanger: false,
-					showTotal: (total: number) => `共 ${total} 条`,
-				}}
 			/>
-		</AdminPageContent>
+		</AdminListPage>
 	);
 }

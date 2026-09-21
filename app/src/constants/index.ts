@@ -46,3 +46,31 @@ export const PRESET_DICTS: {
 		],
 	},
 ];
+
+/** 业务预置字典定义：slug / 初始条目，由业务项目按需填充 */
+export interface SeedDict {
+	slug: string;
+	name: string;
+	description?: string;
+	items: PresetDictItem[];
+}
+
+/**
+ * 业务预置字典常量：仅首次部署时播种初始值，**结果字典不受保护**，
+ * 运营可在「字典管理」中自由增删改条目（与 PRESET_DICTS 的只读保护语义相反）。
+ *
+ * 需要「有初始选项、但选项随业务演进」的枚举时用本常量，不要去改 PRESET_DICTS；
+ * 模板默认为空数组，由业务项目按需填充：
+ *
+ * ```ts
+ * export const SEED_DICTS: SeedDict[] = [
+ *   {
+ *     slug: "product_category",
+ *     name: "产品分类",
+ *     description: "产品分类选项",
+ *     items: [{ label: "示例分类", value: "sample", sortOrder: 0 }],
+ *   },
+ * ];
+ * ```
+ */
+export const SEED_DICTS: SeedDict[] = [];

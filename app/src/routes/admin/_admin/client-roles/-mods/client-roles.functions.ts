@@ -18,11 +18,11 @@ import {
 } from "#/services/client-role/client-role.server";
 import { logCrud } from "#/shared-services/operation-log/operation-log.server";
 
-/** 获取客户端角色列表 */
+/** 获取客户端角色列表（分页、筛选、排序） */
 export const getClientRolesSFn = createServerFn({ method: "GET" })
 	.middleware([adminPermGuard(ADMIN_PERMISSIONS.CLIENT_ROLE_VIEW)])
 	.validator(clientRoleListSchema)
-	.handler(async ({ data }) => getClientRoleList(data.keyword));
+	.handler(async ({ data }) => getClientRoleList(data));
 
 /** 创建客户端角色 */
 export const createClientRoleSFn = createServerFn({ method: "POST" })

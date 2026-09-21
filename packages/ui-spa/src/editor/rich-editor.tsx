@@ -58,7 +58,19 @@ export interface RichEditorProps {
 	uploadImage?: (file: File) => Promise<string>;
 	/** 媒体能力集合（图片/视频/音频/附件上传 + 媒体库列表），由宿主注入 */
 	media?: RichEditorMedia;
+	/** 编辑器最小高度（number 视为 px）；默认 300 */
+	minHeight?: number | string;
+	/** 编辑器最大高度：内容撑到上限后编辑器内部滚动；默认 512（抽屉内不顶出 footer） */
+	maxHeight?: number | string;
+	/** 固定高度：给定值时高度固定并内部滚动（默认随内容伸缩、受 maxHeight 约束） */
+	height?: number | "auto" | string;
+	/** 是否启用右下角拖拽手柄调节高度（受 minHeight / maxHeight 约束）；默认开启 */
+	resizable?: boolean;
 }
+
+/** 编辑器默认高度：抽屉内一屏可见正文 + footer，需要更大时由用户拖拽手柄或宿主覆盖 */
+const DEFAULT_MIN_HEIGHT = 300;
+const DEFAULT_MAX_HEIGHT = 512;
 
 /** @easyx/editor 编辑器实例类型 */
 type EasyxEditorInstance = ReturnType<typeof createEditor>;
@@ -89,9 +101,16 @@ export function RichEditor({
 	onChange,
 	uploadImage,
 	media,
+	minHeight = DEFAULT_MIN_HEIGHT,
+	maxHeight = DEFAULT_MAX_HEIGHT,
+	height,
+	resizable = true,
 }: RichEditorProps) {
 	const containerRef = useRef<HTMLDivElement>(null);
 	const editorRef = useRef<EasyxEditorInstance | null>(null);
+	// 高度仅在挂载时生效（编辑器创建参数），ref 承载最新值以满足 hooks 依赖规则
+	const heightRef = useRef({ minHeight, maxHeight, height, resizable });
+	heightRef.current = { minHeight, maxHeight, height, resizable };
 	// refs 承载最新回调/值，避免挂载 effect 产生陈旧闭包，同时满足 hooks 依赖规则
 	const onChangeRef = useRef(onChange);
 	const uploadImageRef = useRef(uploadImage);
@@ -117,7 +136,10 @@ export function RichEditor({
 			placeholder: "开始写作...",
 			defaultContent: latestValueRef.current,
 			defaultTheme: isDark() ? "dark" : "light",
-			minHeight: 300,
+			minHeight: heightRef.current.minHeight,
+			maxHeight: heightRef.current.maxHeight,
+			height: heightRef.current.height,
+			resizable: heightRef.current.resizable,
 			onChange: (html) => {
 				lastEmittedRef.current = html;
 				onChangeRef.current?.(html);

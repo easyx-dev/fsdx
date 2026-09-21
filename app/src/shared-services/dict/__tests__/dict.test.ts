@@ -8,6 +8,25 @@ vi.mock("#/shared-services/logger", () => ({
 	logger: { error: vi.fn(), info: vi.fn(), warn: vi.fn() },
 }));
 
+// 模板的 SEED_DICTS 默认为空，此处注入样本以覆盖播种逻辑（保留 PRESET_DICTS 真实值）
+vi.mock("#/constants", async (importOriginal) => {
+	const actual = await importOriginal<typeof import("#/constants")>();
+	return {
+		...actual,
+		SEED_DICTS: [
+			{
+				slug: "seed_status",
+				name: "播种状态",
+				description: "播种用示例字典",
+				items: [
+					{ label: "启用", value: "on", sortOrder: 0, color: "green" },
+					{ label: "停用", value: "off", sortOrder: 1 },
+				],
+			},
+		],
+	};
+});
+
 const { mockDictCache } = vi.hoisted(() => {
 	const store = new Map<string, Record<string, string>>();
 	return {
@@ -65,6 +84,7 @@ import {
 	createDict,
 	deleteDict,
 	ensurePresetDicts,
+	ensureSeedDicts,
 	getAllDictOptions,
 	getDictList,
 	importDicts,
@@ -181,6 +201,40 @@ describe("ensurePresetDicts", () => {
 		]);
 
 		await ensurePresetDicts();
+
+		expect(mockDb.insert).not.toHaveBeenCalled();
+	});
+});
+
+describe("ensureSeedDicts", () => {
+	beforeEach(() => vi.clearAllMocks());
+
+	it("字典缺失时创建字典并写入全部条目", async () => {
+		mockRows.mockReset().mockResolvedValue([]);
+		mockDb.insert.mockReturnValue({
+			values: vi.fn(() => ({
+				returning: vi
+					.fn()
+					.mockResolvedValue([
+						{ id: "d-seed", slug: "seed_status", name: "播种状态" },
+					]),
+			})),
+		});
+
+		await ensureSeedDicts();
+
+		// 1 次建字典 + 2 次写条目
+		expect(mockDb.insert).toHaveBeenCalledTimes(3);
+	});
+
+	it("字典已存在时跳过播种", async () => {
+		mockRows
+			.mockReset()
+			.mockResolvedValue([
+				{ id: "d-seed", slug: "seed_status", name: "播种状态" },
+			]);
+
+		await ensureSeedDicts();
 
 		expect(mockDb.insert).not.toHaveBeenCalled();
 	});

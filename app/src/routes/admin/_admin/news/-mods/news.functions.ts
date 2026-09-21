@@ -8,10 +8,11 @@ import {
 	createNewsSchema,
 	exportSchema,
 	getNewsSchema,
-	listSchema,
 	newsImportSchema,
+	newsListSchema,
 	publishNewsSchema,
 	updateNewsSchema,
+	updateNewsSortSchema,
 } from "#/services/news/news.schemas";
 import {
 	checkRecommendedLimit,
@@ -26,19 +27,22 @@ import {
 	type NewsUpdateData,
 	setNewsPublished,
 	updateNewsRecord,
+	updateNewsSortOrder,
 } from "#/services/news/news.server";
 import { logCrud } from "#/shared-services/operation-log/operation-log.server";
 
 /** 获取新闻列表（分页、筛选、排序） */
 export const getNewsListSFn = createServerFn({ method: "GET" })
 	.middleware([adminPermGuard(ADMIN_PERMISSIONS.NEWS_VIEW)])
-	.validator(listSchema)
+	.validator(newsListSchema)
 	.handler(
-		async ({ data: { isPublished, page = 1, sortField, sortOrder } }) => {
+		async ({
+			data: { isPublished, page = 1, pageSize = 20, sortField, sortOrder },
+		}) => {
 			return getNewsList({
 				isPublished,
 				page,
-				pageSize: 20,
+				pageSize,
 				sortField,
 				sortOrder,
 			});
@@ -152,6 +156,23 @@ export const setNewsPublishedSFn = createServerFn({ method: "POST" })
 			name: newsRecord?.title || id,
 		});
 		return result;
+	});
+
+/** 列表内联修改排序权重（仅更新一个字段，避免复用整表更新回写其它字段） */
+export const updateNewsSortSFn = createServerFn({ method: "POST" })
+	.middleware([adminPermGuard(ADMIN_PERMISSIONS.NEWS_EDIT)])
+	.validator(updateNewsSortSchema)
+	.handler(async ({ data: { id, sortOrder }, context }) => {
+		const updated = await updateNewsSortOrder(id, sortOrder);
+		if (!updated) throw new Error("新闻不存在或已被删除");
+		logCrud(
+			context.user,
+			"news",
+			"update",
+			{ id },
+			{ detail: { field: "sortOrder", to: sortOrder } },
+		);
+		return { success: true };
 	});
 
 /** 批量导入新闻（按标题去重） */

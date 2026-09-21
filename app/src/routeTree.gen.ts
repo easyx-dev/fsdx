@@ -46,7 +46,6 @@ import { Route as AdminAdminLogsAnalyticsRouteImport } from './routes/admin/_adm
 import { Route as AdminAdminMessagesIndexRouteImport } from './routes/admin/_admin/messages/index'
 import { Route as AdminAdminMessagesManageRouteImport } from './routes/admin/_admin/messages/manage'
 import { Route as AdminAdminNewsIndexRouteImport } from './routes/admin/_admin/news/index'
-import { Route as AdminAdminNewsCreateRouteImport } from './routes/admin/_admin/news/create'
 import { Route as AdminAdminOperationLogsIndexRouteImport } from './routes/admin/_admin/operation-logs/index'
 import { Route as AdminAdminOperationLogsAnalyticsRouteImport } from './routes/admin/_admin/operation-logs/analytics'
 import { Route as AdminAdminSystemMonitorRouteImport } from './routes/admin/_admin/system/monitor'
@@ -55,7 +54,6 @@ import { Route as AdminAdminTranslationsContentRouteImport } from './routes/admi
 import { Route as AdminAdminTranslationsUiRouteImport } from './routes/admin/_admin/translations/ui'
 import { Route as AdminAdminFileExplorerDownloadSplatRouteImport } from './routes/admin/_admin/file-explorer/download.$'
 import { Route as AdminAdminLogsDownloadIdRouteImport } from './routes/admin/_admin/logs/download.$id'
-import { Route as AdminAdminNewsIdEditRouteImport } from './routes/admin/_admin/news/$id/edit'
 import { Route as AdminAdminTrackAnalyticsIndexRouteImport } from './routes/admin/_admin/track/analytics/index'
 import { Route as AdminAdminTrackEventMetaIndexRouteImport } from './routes/admin/_admin/track/event-meta/index'
 import { Route as AdminAdminTrackPropertyMetaIndexRouteImport } from './routes/admin/_admin/track/property-meta/index'
@@ -254,11 +252,6 @@ const AdminAdminNewsIndexRoute = AdminAdminNewsIndexRouteImport.update({
   path: '/news/',
   getParentRoute: () => AdminAdminRoute,
 } as any)
-const AdminAdminNewsCreateRoute = AdminAdminNewsCreateRouteImport.update({
-  id: '/news/create',
-  path: '/news/create',
-  getParentRoute: () => AdminAdminRoute,
-} as any)
 const AdminAdminOperationLogsIndexRoute =
   AdminAdminOperationLogsIndexRouteImport.update({
     id: '/operation-logs/',
@@ -305,11 +298,6 @@ const AdminAdminLogsDownloadIdRoute =
     path: '/logs/download/$id',
     getParentRoute: () => AdminAdminRoute,
   } as any)
-const AdminAdminNewsIdEditRoute = AdminAdminNewsIdEditRouteImport.update({
-  id: '/news/$id/edit',
-  path: '/news/$id/edit',
-  getParentRoute: () => AdminAdminRoute,
-} as any)
 const AdminAdminTrackAnalyticsIndexRoute =
   AdminAdminTrackAnalyticsIndexRouteImport.update({
     id: '/track/analytics/',
@@ -368,7 +356,6 @@ export interface FileRoutesByFullPath {
   '/admin/demo/upload': typeof AdminAdminDemoUploadRoute
   '/admin/logs/analytics': typeof AdminAdminLogsAnalyticsRoute
   '/admin/messages/manage': typeof AdminAdminMessagesManageRoute
-  '/admin/news/create': typeof AdminAdminNewsCreateRoute
   '/admin/operation-logs/analytics': typeof AdminAdminOperationLogsAnalyticsRoute
   '/admin/system/monitor': typeof AdminAdminSystemMonitorRoute
   '/admin/track/query': typeof AdminAdminTrackQueryRoute
@@ -387,7 +374,6 @@ export interface FileRoutesByFullPath {
   '/admin/operation-logs/': typeof AdminAdminOperationLogsIndexRoute
   '/admin/file-explorer/download/$': typeof AdminAdminFileExplorerDownloadSplatRoute
   '/admin/logs/download/$id': typeof AdminAdminLogsDownloadIdRoute
-  '/admin/news/$id/edit': typeof AdminAdminNewsIdEditRoute
   '/admin/track/analytics/': typeof AdminAdminTrackAnalyticsIndexRoute
   '/admin/track/event-meta/': typeof AdminAdminTrackEventMetaIndexRoute
   '/admin/track/property-meta/': typeof AdminAdminTrackPropertyMetaIndexRoute
@@ -420,7 +406,6 @@ export interface FileRoutesByTo {
   '/admin/demo/upload': typeof AdminAdminDemoUploadRoute
   '/admin/logs/analytics': typeof AdminAdminLogsAnalyticsRoute
   '/admin/messages/manage': typeof AdminAdminMessagesManageRoute
-  '/admin/news/create': typeof AdminAdminNewsCreateRoute
   '/admin/operation-logs/analytics': typeof AdminAdminOperationLogsAnalyticsRoute
   '/admin/system/monitor': typeof AdminAdminSystemMonitorRoute
   '/admin/track/query': typeof AdminAdminTrackQueryRoute
@@ -439,7 +424,6 @@ export interface FileRoutesByTo {
   '/admin/operation-logs': typeof AdminAdminOperationLogsIndexRoute
   '/admin/file-explorer/download/$': typeof AdminAdminFileExplorerDownloadSplatRoute
   '/admin/logs/download/$id': typeof AdminAdminLogsDownloadIdRoute
-  '/admin/news/$id/edit': typeof AdminAdminNewsIdEditRoute
   '/admin/track/analytics': typeof AdminAdminTrackAnalyticsIndexRoute
   '/admin/track/event-meta': typeof AdminAdminTrackEventMetaIndexRoute
   '/admin/track/property-meta': typeof AdminAdminTrackPropertyMetaIndexRoute
@@ -475,7 +459,6 @@ export interface FileRoutesById {
   '/admin/_admin/demo/upload': typeof AdminAdminDemoUploadRoute
   '/admin/_admin/logs/analytics': typeof AdminAdminLogsAnalyticsRoute
   '/admin/_admin/messages/manage': typeof AdminAdminMessagesManageRoute
-  '/admin/_admin/news/create': typeof AdminAdminNewsCreateRoute
   '/admin/_admin/operation-logs/analytics': typeof AdminAdminOperationLogsAnalyticsRoute
   '/admin/_admin/system/monitor': typeof AdminAdminSystemMonitorRoute
   '/admin/_admin/track/query': typeof AdminAdminTrackQueryRoute
@@ -494,7 +477,6 @@ export interface FileRoutesById {
   '/admin/_admin/operation-logs/': typeof AdminAdminOperationLogsIndexRoute
   '/admin/_admin/file-explorer/download/$': typeof AdminAdminFileExplorerDownloadSplatRoute
   '/admin/_admin/logs/download/$id': typeof AdminAdminLogsDownloadIdRoute
-  '/admin/_admin/news/$id/edit': typeof AdminAdminNewsIdEditRoute
   '/admin/_admin/track/analytics/': typeof AdminAdminTrackAnalyticsIndexRoute
   '/admin/_admin/track/event-meta/': typeof AdminAdminTrackEventMetaIndexRoute
   '/admin/_admin/track/property-meta/': typeof AdminAdminTrackPropertyMetaIndexRoute
@@ -530,7 +512,6 @@ export interface FileRouteTypes {
     | '/admin/demo/upload'
     | '/admin/logs/analytics'
     | '/admin/messages/manage'
-    | '/admin/news/create'
     | '/admin/operation-logs/analytics'
     | '/admin/system/monitor'
     | '/admin/track/query'
@@ -549,7 +530,6 @@ export interface FileRouteTypes {
     | '/admin/operation-logs/'
     | '/admin/file-explorer/download/$'
     | '/admin/logs/download/$id'
-    | '/admin/news/$id/edit'
     | '/admin/track/analytics/'
     | '/admin/track/event-meta/'
     | '/admin/track/property-meta/'
@@ -582,7 +562,6 @@ export interface FileRouteTypes {
     | '/admin/demo/upload'
     | '/admin/logs/analytics'
     | '/admin/messages/manage'
-    | '/admin/news/create'
     | '/admin/operation-logs/analytics'
     | '/admin/system/monitor'
     | '/admin/track/query'
@@ -601,7 +580,6 @@ export interface FileRouteTypes {
     | '/admin/operation-logs'
     | '/admin/file-explorer/download/$'
     | '/admin/logs/download/$id'
-    | '/admin/news/$id/edit'
     | '/admin/track/analytics'
     | '/admin/track/event-meta'
     | '/admin/track/property-meta'
@@ -636,7 +614,6 @@ export interface FileRouteTypes {
     | '/admin/_admin/demo/upload'
     | '/admin/_admin/logs/analytics'
     | '/admin/_admin/messages/manage'
-    | '/admin/_admin/news/create'
     | '/admin/_admin/operation-logs/analytics'
     | '/admin/_admin/system/monitor'
     | '/admin/_admin/track/query'
@@ -655,7 +632,6 @@ export interface FileRouteTypes {
     | '/admin/_admin/operation-logs/'
     | '/admin/_admin/file-explorer/download/$'
     | '/admin/_admin/logs/download/$id'
-    | '/admin/_admin/news/$id/edit'
     | '/admin/_admin/track/analytics/'
     | '/admin/_admin/track/event-meta/'
     | '/admin/_admin/track/property-meta/'
@@ -941,13 +917,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminAdminNewsIndexRouteImport
       parentRoute: typeof AdminAdminRoute
     }
-    '/admin/_admin/news/create': {
-      id: '/admin/_admin/news/create'
-      path: '/news/create'
-      fullPath: '/admin/news/create'
-      preLoaderRoute: typeof AdminAdminNewsCreateRouteImport
-      parentRoute: typeof AdminAdminRoute
-    }
     '/admin/_admin/operation-logs/': {
       id: '/admin/_admin/operation-logs/'
       path: '/operation-logs'
@@ -1004,13 +973,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminAdminLogsDownloadIdRouteImport
       parentRoute: typeof AdminAdminRoute
     }
-    '/admin/_admin/news/$id/edit': {
-      id: '/admin/_admin/news/$id/edit'
-      path: '/news/$id/edit'
-      fullPath: '/admin/news/$id/edit'
-      preLoaderRoute: typeof AdminAdminNewsIdEditRouteImport
-      parentRoute: typeof AdminAdminRoute
-    }
     '/admin/_admin/track/analytics/': {
       id: '/admin/_admin/track/analytics/'
       path: '/track/analytics'
@@ -1059,7 +1021,6 @@ interface AdminAdminRouteChildren {
   AdminAdminDemoUploadRoute: typeof AdminAdminDemoUploadRoute
   AdminAdminLogsAnalyticsRoute: typeof AdminAdminLogsAnalyticsRoute
   AdminAdminMessagesManageRoute: typeof AdminAdminMessagesManageRoute
-  AdminAdminNewsCreateRoute: typeof AdminAdminNewsCreateRoute
   AdminAdminOperationLogsAnalyticsRoute: typeof AdminAdminOperationLogsAnalyticsRoute
   AdminAdminSystemMonitorRoute: typeof AdminAdminSystemMonitorRoute
   AdminAdminTrackQueryRoute: typeof AdminAdminTrackQueryRoute
@@ -1078,7 +1039,6 @@ interface AdminAdminRouteChildren {
   AdminAdminOperationLogsIndexRoute: typeof AdminAdminOperationLogsIndexRoute
   AdminAdminFileExplorerDownloadSplatRoute: typeof AdminAdminFileExplorerDownloadSplatRoute
   AdminAdminLogsDownloadIdRoute: typeof AdminAdminLogsDownloadIdRoute
-  AdminAdminNewsIdEditRoute: typeof AdminAdminNewsIdEditRoute
   AdminAdminTrackAnalyticsIndexRoute: typeof AdminAdminTrackAnalyticsIndexRoute
   AdminAdminTrackEventMetaIndexRoute: typeof AdminAdminTrackEventMetaIndexRoute
   AdminAdminTrackPropertyMetaIndexRoute: typeof AdminAdminTrackPropertyMetaIndexRoute
@@ -1096,7 +1056,6 @@ const AdminAdminRouteChildren: AdminAdminRouteChildren = {
   AdminAdminDemoUploadRoute: AdminAdminDemoUploadRoute,
   AdminAdminLogsAnalyticsRoute: AdminAdminLogsAnalyticsRoute,
   AdminAdminMessagesManageRoute: AdminAdminMessagesManageRoute,
-  AdminAdminNewsCreateRoute: AdminAdminNewsCreateRoute,
   AdminAdminOperationLogsAnalyticsRoute: AdminAdminOperationLogsAnalyticsRoute,
   AdminAdminSystemMonitorRoute: AdminAdminSystemMonitorRoute,
   AdminAdminTrackQueryRoute: AdminAdminTrackQueryRoute,
@@ -1116,7 +1075,6 @@ const AdminAdminRouteChildren: AdminAdminRouteChildren = {
   AdminAdminFileExplorerDownloadSplatRoute:
     AdminAdminFileExplorerDownloadSplatRoute,
   AdminAdminLogsDownloadIdRoute: AdminAdminLogsDownloadIdRoute,
-  AdminAdminNewsIdEditRoute: AdminAdminNewsIdEditRoute,
   AdminAdminTrackAnalyticsIndexRoute: AdminAdminTrackAnalyticsIndexRoute,
   AdminAdminTrackEventMetaIndexRoute: AdminAdminTrackEventMetaIndexRoute,
   AdminAdminTrackPropertyMetaIndexRoute: AdminAdminTrackPropertyMetaIndexRoute,

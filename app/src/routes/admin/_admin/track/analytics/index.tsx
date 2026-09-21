@@ -7,7 +7,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { Card, Col, Empty, Row, Spin } from "antd";
 import dayjs from "dayjs";
 import { useCallback, useEffect, useState } from "react";
-import { AdminPageContent } from "#/components/admin";
+import { AdminListPage } from "#/components/admin";
 import {
 	AnalyticsKpiCards,
 	type AnalyticsKpiItem,
@@ -146,7 +146,7 @@ function TrackAnalyticsPage() {
 	};
 
 	return (
-		<AdminPageContent
+		<AdminListPage
 			title="事件分析"
 			description="查看埋点事件趋势、分布和 Top 页面排行"
 		>
@@ -216,6 +216,6 @@ function TrackAnalyticsPage() {
 					</div>
 				)}
 			</Spin>
-		</AdminPageContent>
+		</AdminListPage>
 	);
 }

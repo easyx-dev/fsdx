@@ -1,5 +1,5 @@
 /**
- * 文件管理页面：上传、列表、下载、删除、秒传
+ * 文件管理页面：上传、列表、标签、下载、删除、秒传
  */
 import {
 	ClockCircleOutlined,
@@ -10,16 +10,26 @@ import { isImageMimeType, isProcessableMimeType } from "@easyx/image-toolkit";
 import { message } from "@fsdx/ui-spa/antd-static";
 import { ProTable } from "@fsdx/ui-spa/table";
 import { createFileRoute, useRouter } from "@tanstack/react-router";
-import type { TableProps, UploadProps } from "antd";
+import type { UploadProps } from "antd";
 import { Button, Col, Input, Modal, Row, Segmented, Upload } from "antd";
-import { useRef, useState } from "react";
-import { AdminPageContent } from "#/components/admin";
+import { useCallback, useRef, useState } from "react";
+import { AdminListPage, AdminTableToolbar } from "#/components/admin";
 import { getFileListSFn, uploadFileSFn } from "#/services/file/file.functions";
 import type { FileRecord } from "#/services/file/file.server";
-import { callSfn } from "#/utils/sfn-error";
+import { callSfn, sfnUnwrap } from "#/utils/sfn-error";
+import { useListQuery } from "#/utils/use-list-query";
 import { FileImageEditor } from "./-mods/FileImageEditor";
+import { FileTagsModal } from "./-mods/FileTagsModal";
 import { deleteFileSFn, makePermanentSFn } from "./-mods/files.functions";
 import { createFilesColumns } from "./-mods/filesColumns";
+
+/** 列表筛选条件 */
+interface FileFilters {
+	status: "" | "temp" | "permanent";
+	keyword: string;
+	/** 标签关键词（独立于 keyword，避免文件名搜索与标签搜索相互干扰） */
+	tag: string;
+}
 
 export const Route = createFileRoute("/admin/_admin/files/")({
 	component: FilesPage,
@@ -29,71 +39,37 @@ export const Route = createFileRoute("/admin/_admin/files/")({
 function FilesPage() {
 	const router = useRouter();
 	const initialData = Route.useLoaderData();
-	const [data, setData] = useState(initialData);
-	const [filter, setFilter] = useState<"" | "temp" | "permanent">("");
 	const uploadingCountRef = useRef(0);
 	const [uploading, setUploading] = useState(false);
-	const [keyword, setKeyword] = useState("");
-	const [sortField, setSortField] = useState<string>();
-	const [sortOrder, setSortOrder] = useState<
-		"ascend" | "descend" | undefined
-	>();
+	/** 搜索框的本地输入值（点搜索才应用到查询条件） */
+	const [keywordInput, setKeywordInput] = useState("");
+	const [tagInput, setTagInput] = useState("");
 	const [previewFile, setPreviewFile] = useState<FileRecord | null>(null);
 	/** 待编辑图片（非 null 时打开图片编辑器） */
 	const [editingFile, setEditingFile] = useState<FileRecord | null>(null);
+	/** 待编辑标签的文件（非 null 时打开标签弹窗） */
+	const [taggingFile, setTaggingFile] = useState<FileRecord | null>(null);
 
-	/** 按当前条件刷新文件列表 */
-	const refreshFiles = async (params?: {
-		status?: "" | "temp" | "permanent";
-		keyword?: string;
-		sortField?: string;
-		sortOrder?: "ascend" | "descend";
-		page?: number;
-	}) => {
-		try {
-			const result = await callSfn(
+	const list = useListQuery<FileRecord, FileFilters>({
+		initial: initialData,
+		initialFilters: { status: "", keyword: "", tag: "" },
+		errorMessage: "加载文件列表失败",
+		fetcher: useCallback(
+			({ page, pageSize, sortField, sortOrder, filters }) =>
 				getFileListSFn({
 					data: {
-						status: (params?.status ?? filter) || undefined,
-						keyword: (params?.keyword ?? keyword) || undefined,
-						sortField: params?.sortField ?? sortField,
-						sortOrder: params?.sortOrder ?? sortOrder,
-						page: params?.page,
+						status: filters.status || undefined,
+						keyword: filters.keyword || undefined,
+						tag: filters.tag || undefined,
+						sortField,
+						sortOrder,
+						page,
+						pageSize,
 					},
 				}),
-			);
-			setData(result);
-		} catch {
-			// callSfn 已提示
-		}
-	};
-
-	/** 切换筛选状态并刷新列表 */
-	const handleFilterChange = async (status: "" | "temp" | "permanent") => {
-		setFilter(status);
-		await refreshFiles({ status });
-	};
-
-	/** 按关键词搜索 */
-	const handleSearch = async (value: string) => {
-		setKeyword(value);
-		await refreshFiles({ keyword: value });
-	};
-
-	/** 表格排序变更 */
-	const handleTableChange: TableProps<FileRecord>["onChange"] = async (
-		_pagination,
-		_filters,
-		sorter,
-	) => {
-		const s = Array.isArray(sorter) ? sorter[0] : sorter;
-		const field = typeof s?.field === "string" ? s.field : undefined;
-		const order =
-			s?.order === "ascend" || s?.order === "descend" ? s.order : undefined;
-		setSortField(field);
-		setSortOrder(order);
-		await refreshFiles({ sortField: field, sortOrder: order });
-	};
+			[],
+		),
+	});
 
 	/** 上传核心逻辑（支持多文件并行上传） */
 	const doUpload = async (
@@ -123,7 +99,7 @@ function FilesPage() {
 			if (uploadingCountRef.current === 0) {
 				setUploading(false);
 				message.success("上传完成");
-				await refreshFiles();
+				await list.reload();
 				await router.invalidate();
 			}
 		}
@@ -141,113 +117,130 @@ function FilesPage() {
 		await doUpload(file as File, true, onSuccess, onError);
 	};
 
-	/** 临时文件转永久 */
+	/** 临时文件转永久（失败由统一出口提示） */
 	const handleMakePermanent = async (record: FileRecord) => {
-		try {
-			await callSfn(makePermanentSFn({ data: { id: record.id } }));
-			message.success("已转为永久");
-			await refreshFiles();
-		} catch {
-			// callSfn 已提示
-		}
+		const [, err] = await sfnUnwrap(
+			makePermanentSFn({ data: { id: record.id } }),
+			{ error: "转为永久失败" },
+		);
+		if (err) return;
+		message.success("已转为永久");
+		await list.reload();
 	};
 
-	/** 删除文件 */
+	/** 删除文件（失败由统一出口提示） */
 	const handleDelete = async (record: FileRecord) => {
-		try {
-			await callSfn(deleteFileSFn({ data: { id: record.id } }));
-			message.success("已删除");
-			await refreshFiles();
-		} catch {
-			// callSfn 已提示
-		}
+		const [, err] = await sfnUnwrap(
+			deleteFileSFn({ data: { id: record.id } }),
+			{ error: "删除失败" },
+		);
+		if (err) return;
+		message.success("已删除");
+		await list.reload();
+	};
+
+	/** 重置全部筛选条件 */
+	const handleReset = () => {
+		setKeywordInput("");
+		setTagInput("");
+		list.applyFilters({ status: "", keyword: "", tag: "" });
 	};
 
 	const columns = createFilesColumns({
 		onPreview: setPreviewFile,
 		onEdit: setEditingFile,
+		onEditTags: setTaggingFile,
 		onMakePermanent: handleMakePermanent,
 		onDelete: handleDelete,
 	});
 
 	return (
-		<AdminPageContent title="文件管理">
-			{/* 双路上传区：永久 / 临时 */}
-			<Row gutter={16} style={{ marginBottom: 16 }}>
-				<Col span={12}>
-					<Upload.Dragger
-						customRequest={permanentRequest}
-						showUploadList={true}
-						multiple
-						disabled={uploading}
-						className="compact-dragger"
-					>
-						<p className="ant-upload-text">
-							<CloudUploadOutlined style={{ marginRight: 6 }} />
-							永久文件上传
-						</p>
-					</Upload.Dragger>
-				</Col>
-				<Col span={12}>
-					<Upload.Dragger
-						customRequest={tempRequest}
-						showUploadList={true}
-						multiple
-						disabled={uploading}
-						className="compact-dragger"
-					>
-						<p className="ant-upload-text">
-							<ClockCircleOutlined style={{ marginRight: 6 }} />
-							临时文件上传（7 天后过期）
-						</p>
-					</Upload.Dragger>
-				</Col>
-			</Row>
-
-			{/* 筛选 + 搜索栏 */}
-			<div
-				style={{
-					marginBottom: 16,
-					display: "flex",
-					gap: 12,
-					alignItems: "center",
-					flexWrap: "wrap",
-				}}
-			>
-				<Segmented
-					options={[
-						{ label: "全部", value: "" },
-						{ label: "临时", value: "temp" },
-						{ label: "永久", value: "permanent" },
-					]}
-					value={filter}
-					onChange={(value: string | number) => {
-						handleFilterChange(value as "" | "temp" | "permanent");
-					}}
-				/>
-				<Input.Search
-					placeholder="搜索文件名..."
-					allowClear
-					onSearch={handleSearch}
-					style={{ width: 240 }}
-				/>
-			</div>
-
+		<AdminListPage
+			title="文件管理"
+			description="支持文件名 / 文件 ID 与标签检索；临时文件 7 天后自动清理"
+			stats={
+				// 双路上传区：永久 / 临时
+				<Row gutter={16}>
+					<Col span={12}>
+						<Upload.Dragger
+							customRequest={permanentRequest}
+							showUploadList={true}
+							multiple
+							disabled={uploading}
+							className="compact-dragger"
+						>
+							<p className="ant-upload-text">
+								<CloudUploadOutlined style={{ marginRight: 6 }} />
+								永久文件上传
+							</p>
+						</Upload.Dragger>
+					</Col>
+					<Col span={12}>
+						<Upload.Dragger
+							customRequest={tempRequest}
+							showUploadList={true}
+							multiple
+							disabled={uploading}
+							className="compact-dragger"
+						>
+							<p className="ant-upload-text">
+								<ClockCircleOutlined style={{ marginRight: 6 }} />
+								临时文件上传（7 天后过期）
+							</p>
+						</Upload.Dragger>
+					</Col>
+				</Row>
+			}
+			toolbar={
+				<AdminTableToolbar onReset={handleReset}>
+					<Segmented
+						options={[
+							{ label: "全部", value: "" },
+							{ label: "临时", value: "temp" },
+							{ label: "永久", value: "permanent" },
+						]}
+						value={list.filters.status}
+						onChange={(value) =>
+							list.applyFilters({
+								status: value as FileFilters["status"],
+							})
+						}
+					/>
+					<Input.Search
+						placeholder="搜索文件名 / 文件 ID"
+						allowClear
+						value={keywordInput}
+						onChange={(event) => setKeywordInput(event.target.value)}
+						onSearch={(value) => list.applyFilters({ keyword: value })}
+						style={{ width: 240 }}
+					/>
+					<Input.Search
+						placeholder="按标签搜索"
+						allowClear
+						value={tagInput}
+						onChange={(event) => setTagInput(event.target.value)}
+						onSearch={(value) => list.applyFilters({ tag: value })}
+						style={{ width: 200 }}
+					/>
+				</AdminTableToolbar>
+			}
+		>
 			<ProTable
-				dataSource={data.records}
+				dataSource={list.data.records}
 				columns={columns}
 				rowKey="id"
+				loading={list.loading}
 				locale={{ emptyText: "暂无文件" }}
-				scroll={{ x: 1050 }}
-				onChange={handleTableChange}
-				pagination={{
-					total: data.total,
-					pageSize: data.pageSize,
-					current: data.page,
-					onChange: async (page) => {
-						await refreshFiles({ page });
-					},
-				}}
+				scroll={{ x: 2500 }}
+				onChange={list.onTableChange}
+				pagination={list.pagination}
+			/>
+
+			{/* 标签编辑弹窗（单字段快速修改） */}
+			<FileTagsModal
+				file={taggingFile}
+				onClose={() => setTaggingFile(null)}
+				onSaved={() => void list.reload()}
 			/>
 
 			{/* 图片预览 Modal */}
@@ -286,9 +279,9 @@ function FilesPage() {
 				file={editingFile}
 				onClose={() => setEditingFile(null)}
 				onSaved={() => {
-					void refreshFiles();
+					void list.reload();
 				}}
 			/>
-		</AdminPageContent>
+		</AdminListPage>
 	);
 }

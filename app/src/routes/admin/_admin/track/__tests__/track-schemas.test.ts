@@ -2,9 +2,9 @@
  * 埋点事件 Schema 验证测试
  */
 import { describe, expect, it } from "vitest";
-import { trackEventQuerySchema } from "#/routes/admin/_admin/track/-mods/query.functions";
 import { analyticsQuerySchema } from "#/routes/admin/_admin/track/analytics/-mods/analytics.functions";
 import { trackEventSchema } from "#/services/track/track.functions";
+import { trackEventListSchema } from "#/services/track/track-query.schemas";
 
 describe("trackEventSchema", () => {
 	it("最小有效参数应通过校验", () => {
@@ -76,14 +76,14 @@ describe("trackEventSchema", () => {
 	});
 });
 
-describe("trackEventQuerySchema", () => {
+describe("trackEventListSchema", () => {
 	it("空参数应通过校验", () => {
-		const result = trackEventQuerySchema.safeParse({});
+		const result = trackEventListSchema.safeParse({});
 		expect(result.success).toBe(true);
 	});
 
 	it("所有参数同时传入应通过校验", () => {
-		const result = trackEventQuerySchema.safeParse({
+		const result = trackEventListSchema.safeParse({
 			name: "PageView",
 			userId: "user-1",
 			sessionId: "abc123",
@@ -98,18 +98,21 @@ describe("trackEventQuerySchema", () => {
 		expect(result.success).toBe(true);
 	});
 
-	it("pageSize 超过 100 应校验失败", () => {
-		const result = trackEventQuerySchema.safeParse({ pageSize: 101 });
-		expect(result.success).toBe(false);
+	it("每页条数应原样透传（前端分页控件依赖）", () => {
+		const result = trackEventListSchema.safeParse({ pageSize: 50 });
+		expect(result.success).toBe(true);
+		if (result.success) {
+			expect(result.data.pageSize).toBe(50);
+		}
 	});
 
 	it("sortOrder 传入非法值应校验失败", () => {
-		const result = trackEventQuerySchema.safeParse({ sortOrder: "invalid" });
+		const result = trackEventListSchema.safeParse({ sortOrder: "invalid" });
 		expect(result.success).toBe(false);
 	});
 
 	it("日期格式非 YYYY-MM-DD 应校验失败", () => {
-		const result = trackEventQuerySchema.safeParse({
+		const result = trackEventListSchema.safeParse({
 			startDate: "2024/01/01",
 			endDate: "2024-12-31T00:00:00.000Z",
 		});
@@ -117,7 +120,7 @@ describe("trackEventQuerySchema", () => {
 	});
 
 	it("不存在的日历日期应校验失败", () => {
-		const result = trackEventQuerySchema.safeParse({
+		const result = trackEventListSchema.safeParse({
 			startDate: "2024-02-31",
 			endDate: "2024-12-31",
 		});

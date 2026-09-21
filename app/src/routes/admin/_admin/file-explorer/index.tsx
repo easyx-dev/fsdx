@@ -15,7 +15,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import type { UploadProps } from "antd";
 import { Button, Input, Space, Tag, Tooltip, Upload } from "antd";
 import { useCallback, useState } from "react";
-import { AdminPageContent } from "#/components/admin";
+import { AdminListPage, AdminTableToolbar } from "#/components/admin";
 import {
 	createDirectorySFn,
 	deleteEntrySFn,
@@ -228,22 +228,13 @@ function FileExplorerPage() {
 		onDelete: handleDelete,
 	});
 
-	/** 工具栏 */
+	/** 目录统计与写保护状态（工具条右侧信息） */
 	const dirCount = data.entries.filter((e) => e.type === "directory").length;
 	const fileCount = data.entries.filter((e) => e.type === "file").length;
 
-	const toolbar = (
+	/** 主操作：上传 / 新建目录 / 刷新 */
+	const actions = (
 		<Space size={12}>
-			{data.writeProtected && <Tag color="warning">写保护</Tag>}
-			<span style={{ color: "var(--ant-color-text-tertiary)", fontSize: 13 }}>
-				{data.entries.length > 0 && (
-					<>
-						{dirCount > 0 && `${dirCount} 个目录`}
-						{dirCount > 0 && fileCount > 0 && "，"}
-						{fileCount > 0 && `${fileCount} 个文件`}
-					</>
-				)}
-			</span>
 			<Upload
 				customRequest={customUploadRequest}
 				showUploadList={false}
@@ -282,10 +273,32 @@ function FileExplorerPage() {
 	);
 
 	return (
-		<AdminPageContent
+		<AdminListPage
 			title="资源管理器"
-			titleTrailing={
-				<Space size={8} style={{ width: "100%" }}>
+			description="浏览与管理服务器本地存储目录"
+			extra={actions}
+			toolbar={
+				<AdminTableToolbar
+					extra={
+						<Space size={12}>
+							{data.writeProtected && <Tag color="warning">写保护</Tag>}
+							<span
+								style={{
+									color: "var(--ant-color-text-tertiary)",
+									fontSize: 13,
+								}}
+							>
+								{data.entries.length > 0 && (
+									<>
+										{dirCount > 0 && `${dirCount} 个目录`}
+										{dirCount > 0 && fileCount > 0 && "，"}
+										{fileCount > 0 && `${fileCount} 个文件`}
+									</>
+								)}
+							</span>
+						</Space>
+					}
+				>
 					<Input
 						value={pathDraft}
 						onChange={(e) => setPathDraft(e.target.value)}
@@ -306,9 +319,8 @@ function FileExplorerPage() {
 					>
 						前往
 					</Button>
-				</Space>
+				</AdminTableToolbar>
 			}
-			extra={toolbar}
 		>
 			<ProTable
 				dataSource={data.entries}
@@ -331,7 +343,7 @@ function FileExplorerPage() {
 						</div>
 					),
 				}}
-				scroll={{ x: 800 }}
+				scroll={{ x: 970 }}
 				pagination={false}
 				bordered
 			/>
@@ -371,6 +383,6 @@ function FileExplorerPage() {
 					setPreviewContent("");
 				}}
 			/>
-		</AdminPageContent>
+		</AdminListPage>
 	);
 }

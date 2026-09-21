@@ -39,28 +39,54 @@ import {
 	createAdminRole,
 	deleteAdminRole,
 	getAdminRoleList,
+	getAllAdminRoles,
 	updateAdminRole,
 } from "#/services/admin-role/admin-role.server";
 
 describe("getAdminRoleList", () => {
-	it("返回空列表", async () => {
-		mockRows.mockResolvedValue([]);
-
-		const result = await getAdminRoleList();
-		expect(Array.isArray(result)).toBe(true);
-		expect(result).toHaveLength(0);
-	});
-
-	it("支持关键词搜索", async () => {
+	it("返回分页列表及总数", async () => {
 		const mockRoles = [
 			{ id: "r-1", name: "管理员", slug: "admin", permissions: ["**"] },
 			{ id: "r-2", name: "编辑", slug: "editor", permissions: ["news:read"] },
 		];
 		mockRows.mockResolvedValue(mockRoles);
+		mockDb.$count.mockResolvedValue(2);
 
-		const result = await getAdminRoleList("管理");
-		expect(result).toHaveLength(2);
-		expect(result[0].name).toBe("管理员");
+		const result = await getAdminRoleList();
+		expect(result.records).toEqual(mockRoles);
+		expect(result.total).toBe(2);
+		expect(result.page).toBe(1);
+		expect(result.pageSize).toBe(20);
+	});
+
+	it("分页参数正确传递", async () => {
+		mockRows.mockResolvedValue([]);
+		mockDb.$count.mockResolvedValue(0);
+
+		const result = await getAdminRoleList({ page: 3, pageSize: 10 });
+		expect(result.page).toBe(3);
+		expect(result.pageSize).toBe(10);
+	});
+
+	it("支持关键词搜索", async () => {
+		mockRows.mockResolvedValue([]);
+		mockDb.$count.mockResolvedValue(0);
+
+		const result = await getAdminRoleList({ keyword: "管理" });
+		expect(result.records).toEqual([]);
+		expect(mockDb.select).toHaveBeenCalled();
+	});
+});
+
+describe("getAllAdminRoles", () => {
+	it("返回全部角色（不分页）", async () => {
+		const mockRoles = [
+			{ id: "r-1", name: "管理员", slug: "admin", permissions: ["**"] },
+		];
+		mockRows.mockResolvedValue(mockRoles);
+
+		const result = await getAllAdminRoles();
+		expect(result).toEqual(mockRoles);
 	});
 });
 

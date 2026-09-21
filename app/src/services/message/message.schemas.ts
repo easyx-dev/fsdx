@@ -2,6 +2,7 @@
  * 消息模块 zod 校验 schema：收件箱查询、管理列表、发送、收件人搜索、用户通知渠道配置
  */
 import { z } from "zod";
+import { listSchema } from "#/validators/common.schemas";
 
 /** 用户端类型 */
 const userTypeSchema = z.enum(["admin", "client"]);
@@ -9,11 +10,9 @@ const userTypeSchema = z.enum(["admin", "client"]);
 /** 消息状态 */
 const statusSchema = z.enum(["unread", "read"]);
 
-/** 收件箱消息列表查询（客户端 / 管理端自助共用） */
-export const messageListSchema = z.object({
+/** 收件箱消息列表查询（客户端 / 管理端自助共用）：通用分页参数 + 状态筛选 */
+export const messageListSchema = listSchema.extend({
 	status: statusSchema.optional(),
-	page: z.number().int().min(1).optional(),
-	pageSize: z.number().int().min(1).max(100).optional(),
 });
 
 /** 单条消息操作（标记已读 / 删除） */
@@ -21,14 +20,12 @@ export const messageIdSchema = z.object({
 	id: z.string().min(1),
 });
 
-/** 管理端全量消息列表查询 */
-export const adminMessageListSchema = z.object({
+/** 管理端全量消息列表查询：通用分页参数 + 用户 / 状态 / 关键词筛选 */
+export const adminMessageListSchema = listSchema.extend({
 	userType: userTypeSchema.optional(),
 	status: statusSchema.optional(),
 	type: z.string().max(50).optional(),
 	keyword: z.string().max(100).optional(),
-	page: z.number().int().min(1).optional(),
-	pageSize: z.number().int().min(1).max(100).optional(),
 });
 
 /** 发送消息（管理端向用户批量发送） */

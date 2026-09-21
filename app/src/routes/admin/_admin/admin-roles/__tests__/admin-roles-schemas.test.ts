@@ -19,6 +19,19 @@ describe("adminRoleListSchema", () => {
 			true,
 		);
 	});
+
+	it("分页参数全链路透传通过", () => {
+		const result = adminRoleListSchema.safeParse({
+			page: 2,
+			pageSize: 50,
+			sortField: "createdAt",
+			sortOrder: "descend",
+		});
+		expect(result.success).toBe(true);
+		if (result.success) {
+			expect(result.data.pageSize).toBe(50);
+		}
+	});
 });
 
 describe("adminRoleCreateSchema", () => {

@@ -10,6 +10,8 @@ export interface AdminUser {
 	avatar?: string | null;
 	isRoot: boolean;
 	roleNames?: string[];
+	/** 角色权限码集合（root 用户为 ["**"]），供前端按权限条件渲染 */
+	rolePermissions: string[];
 	userType: "admin";
 }
 

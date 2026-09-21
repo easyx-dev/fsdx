@@ -1,5 +1,6 @@
 /**
- * 新闻列表页（antd Table）
+ * 新闻列表页
+ * 新建 / 编辑统一走抽屉，发布状态与排序权重在单元格内直接修改
  */
 import {
 	DownloadOutlined,
@@ -9,22 +10,44 @@ import {
 import { downloadFile } from "@fsdx/lib/export";
 import { message } from "@fsdx/ui-spa/antd-static";
 import { JsonImportButton } from "@fsdx/ui-spa/json-import-button";
-import { ProTable } from "@fsdx/ui-spa/table";
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { Button, Drawer, Segmented, Space } from "antd";
-import type { SegmentedValue } from "antd/es/segmented";
+import { ProTable, withDisabledReason } from "@fsdx/ui-spa/table";
+import { createFileRoute } from "@tanstack/react-router";
+import { Button } from "antd";
 import dayjs from "dayjs";
-import { useState } from "react";
-import { AdminPageContent } from "#/components/admin";
+import { useCallback, useState } from "react";
+import {
+	AdminFormDrawer,
+	AdminListPage,
+	AdminTableToolbar,
+	FORM_DRAWER_WIDTH,
+	PublishedFilter,
+	type PublishedFilterValue,
+	toIsPublished,
+	useAdminAuth,
+} from "#/components/admin";
+import { ADMIN_PERMISSIONS } from "#/permissions/admin-permissions";
 import type { NewsRecord } from "#/services/news/news.server";
 import { callSfn, sfnUnwrap } from "#/utils/sfn-error";
+import { useListQuery } from "#/utils/use-list-query";
 import { NewsForm } from "./-mods/NewsForm";
 import {
+	deleteNewsSFn,
 	exportNewsSFn,
 	getNewsListSFn,
 	importNewsSFn,
+	setNewsPublishedSFn,
+	updateNewsSortSFn,
 } from "./-mods/news.functions";
 import { newsColumns } from "./-mods/newsColumns";
+
+/** 表单 <form id>：抽屉底部按钮据此触发提交 */
+const FORM_ID = "news-form";
+const NO_CREATE_PERMISSION = "无「新建新闻」权限";
+
+/** 列表筛选条件 */
+interface NewsFilters {
+	published: PublishedFilterValue;
+}
 
 export const Route = createFileRoute("/admin/_admin/news/")({
 	component: NewsListPage,
@@ -32,68 +55,71 @@ export const Route = createFileRoute("/admin/_admin/news/")({
 });
 
 function NewsListPage() {
-	const newsData = Route.useLoaderData();
-	const [data, setData] = useState(newsData);
-	const [filter, setFilter] = useState<string>("");
-	const [sortField, setSortField] = useState<string>();
-	const [sortOrder, setSortOrder] = useState<
-		"ascend" | "descend" | undefined
-	>();
-
-	/** 抽屉编辑状态 */
+	const initialData = Route.useLoaderData();
+	const { hasPermission } = useAdminAuth();
 	const [drawerOpen, setDrawerOpen] = useState(false);
-	const [editingRecordId, setEditingRecordId] = useState<string | null>(null);
+	const [editingId, setEditingId] = useState<string | null>(null);
+	const [submitting, setSubmitting] = useState(false);
 
-	/** 发布状态筛选选项（空串为全部） */
-	const segmentedOptions = [
-		{ label: "全部", value: "" },
-		{ label: "已发布", value: "published" },
-		{ label: "未发布", value: "unpublished" },
-	];
+	const list = useListQuery<NewsRecord, NewsFilters>({
+		initial: initialData,
+		initialFilters: { published: "" },
+		errorMessage: "加载列表失败",
+		fetcher: useCallback(
+			({ page, pageSize, sortField, sortOrder, filters }) =>
+				getNewsListSFn({
+					data: {
+						isPublished: toIsPublished(filters.published),
+						sortField,
+						sortOrder,
+						page,
+						pageSize,
+					},
+				}),
+			[],
+		),
+	});
 
-	/** 将筛选值转为 isPublished 查询参数 */
-	function toIsPublished(value: string): boolean | undefined {
-		if (value === "published") return true;
-		if (value === "unpublished") return false;
-		return undefined;
-	}
-
-	async function refresh(s?: string, sf?: string, so?: string) {
-		const filterValue = s !== undefined ? s : filter;
-		const field = sf !== undefined ? sf : sortField;
-		const order = so !== undefined ? so : sortOrder;
-		const [result] = await sfnUnwrap(
-			getNewsListSFn({
-				data: {
-					isPublished: toIsPublished(filterValue),
-					sortField: field,
-					sortOrder: order as "ascend" | "descend" | undefined,
-				},
-			}),
-		);
-		if (result) setData(result);
-	}
-
-	/** 表格排序变更 */
-	const handleTableChange = async (
-		_pagination: unknown,
-		_filters: unknown,
-		sorter: unknown,
-	) => {
-		const s = sorter as { field?: string; order?: string };
-		setSortField(s.field);
-		setSortOrder(s.order as "ascend" | "descend" | undefined);
-		await refresh(undefined, s.field, s.order);
+	const permissions = {
+		create: hasPermission(ADMIN_PERMISSIONS.NEWS_CREATE),
+		edit: hasPermission(ADMIN_PERMISSIONS.NEWS_EDIT),
+		publish: hasPermission(ADMIN_PERMISSIONS.NEWS_PUBLISH),
+		delete: hasPermission(ADMIN_PERMISSIONS.NEWS_DELETE),
 	};
 
-	/** 打开抽屉编辑 */
-	function handleQuickEdit(record: NewsRecord) {
-		setEditingRecordId(record.id);
-		setDrawerOpen(true);
-	}
+	/** 单元格内切换发布状态 */
+	const handleTogglePublished = async (record: NewsRecord, next: boolean) => {
+		await callSfn(
+			setNewsPublishedSFn({ data: { id: record.id, isPublished: next } }),
+		);
+		message.success(next ? "已发布" : "已下线");
+		await list.reload();
+	};
+
+	/** 单元格内修改排序权重 */
+	const handleChangeSortOrder = async (record: NewsRecord, next: number) => {
+		await callSfn(
+			updateNewsSortSFn({ data: { id: record.id, sortOrder: next } }),
+		);
+		message.success("排序已更新");
+		await list.reload();
+	};
+
+	/** 删除（失败由统一出口提示） */
+	const handleDelete = async (record: NewsRecord) => {
+		const [, err] = await sfnUnwrap(
+			deleteNewsSFn({ data: { id: record.id } }),
+			{
+				error: "删除失败",
+			},
+		);
+		if (err) return;
+		message.success("已删除");
+		await list.reload();
+	};
 
 	/** 导出新闻数据 */
-	async function handleExport(format: "csv" | "json") {
+	const handleExport = async (format: "csv" | "json") => {
 		const [result] = await sfnUnwrap(exportNewsSFn({ data: { format } }), {
 			error: "导出失败",
 		});
@@ -104,112 +130,124 @@ function NewsListPage() {
 			format === "csv" ? "text/csv;charset=utf-8" : "application/json";
 		downloadFile(result.content, `news_export_${timestamp}.${ext}`, mime);
 		message.success("导出完成");
-	}
+	};
+
+	const openCreate = () => {
+		setEditingId(null);
+		setDrawerOpen(true);
+	};
 
 	const columns = newsColumns({
-		onRefresh: () => refresh(),
-		onQuickEdit: handleQuickEdit,
+		sortProps: list.sortProps,
+		onEdit: (record) => {
+			setEditingId(record.id);
+			setDrawerOpen(true);
+		},
+		onTogglePublished: handleTogglePublished,
+		onChangeSortOrder: handleChangeSortOrder,
+		onDelete: handleDelete,
+		permissions,
 	});
 
 	return (
-		<AdminPageContent
+		<AdminListPage
 			title="新闻管理"
-			extra={
-				<Space>
-					<JsonImportButton
-						onImport={async (jsonString) => {
-							const data = JSON.parse(jsonString);
-							const result = await callSfn(importNewsSFn({ data }));
-							const msg = `新增 ${result.created} 条`;
-							if (result.skipped > 0) {
-								message.success(
-									`${msg}，跳过 ${result.skipped} 条（标题重复）`,
-								);
-							} else {
-								message.success(msg);
-							}
-							await refresh();
-						}}
-					>
-						导入 JSON
-					</JsonImportButton>
-					<Button
-						icon={<DownloadOutlined />}
-						onClick={() => handleExport("csv")}
-					>
-						导出 CSV
-					</Button>
-					<Button
-						icon={<FileTextOutlined />}
-						onClick={() => handleExport("json")}
-					>
-						导出 JSON
-					</Button>
-					<Link to="/admin/news/create">
-						<Button type="primary" icon={<PlusOutlined />}>
-							新建新闻
-						</Button>
-					</Link>
-				</Space>
+			description="发布状态与排序可在列表内直接修改"
+			extra={withDisabledReason(
+				<Button
+					type="primary"
+					icon={<PlusOutlined />}
+					disabled={!permissions.create}
+					onClick={openCreate}
+				>
+					新建新闻
+				</Button>,
+				!permissions.create,
+				NO_CREATE_PERMISSION,
+			)}
+			toolbar={
+				<AdminTableToolbar
+					extra={
+						<>
+							<JsonImportButton
+								onImport={async (jsonString) => {
+									const data = JSON.parse(jsonString);
+									const result = await callSfn(importNewsSFn({ data }));
+									const msg = `新增 ${result.created} 条`;
+									if (result.skipped > 0) {
+										message.success(
+											`${msg}，跳过 ${result.skipped} 条（标题重复）`,
+										);
+									} else {
+										message.success(msg);
+									}
+									await list.reload();
+								}}
+							>
+								导入 JSON
+							</JsonImportButton>
+							<Button
+								icon={<DownloadOutlined />}
+								onClick={() => void handleExport("csv")}
+							>
+								导出 CSV
+							</Button>
+							<Button
+								icon={<FileTextOutlined />}
+								onClick={() => void handleExport("json")}
+							>
+								导出 JSON
+							</Button>
+						</>
+					}
+				>
+					<PublishedFilter
+						value={list.filters.published}
+						labels={{ published: "已发布", unpublished: "未发布" }}
+						onChange={(published) => list.applyFilters({ published })}
+					/>
+				</AdminTableToolbar>
 			}
 		>
-			<div className="mb-4">
-				<Segmented
-					options={segmentedOptions}
-					value={filter}
-					onChange={(value: SegmentedValue) => {
-						setFilter(value as string);
-						refresh(value as string);
-					}}
-				/>
-			</div>
-
 			<ProTable
-				dataSource={data.records}
+				dataSource={list.data.records}
 				columns={columns}
 				rowKey="id"
-				onChange={handleTableChange}
-				scroll={{ x: 1660 }}
-				pagination={{
-					total: data.total,
-					pageSize: data.pageSize,
-					current: data.page,
-					onChange: async (page) => {
-						const [result] = await sfnUnwrap(
-							getNewsListSFn({
-								data: {
-									isPublished: toIsPublished(filter),
-									page,
-									sortField,
-									sortOrder,
-								},
-							}),
-						);
-						if (result) setData(result);
-					},
-				}}
+				loading={list.loading}
+				locale={{ emptyText: "暂无新闻" }}
+				scroll={{ x: 1540 }}
+				onChange={list.onTableChange}
+				pagination={list.pagination}
 			/>
 
-			<Drawer
-				title="快速编辑新闻"
+			<AdminFormDrawer
 				open={drawerOpen}
 				onClose={() => setDrawerOpen(false)}
-				width={720}
-				destroyOnClose
+				entityName="新闻"
+				id={editingId}
+				formId={FORM_ID}
+				submitting={submitting}
+				width={FORM_DRAWER_WIDTH.full}
 			>
-				{editingRecordId && (
-					<NewsForm
-						id={editingRecordId}
-						onSuccess={() => {
-							message.success("新闻已更新");
-							setDrawerOpen(false);
-							refresh();
-						}}
-						onError={(err) => message.error(err.message)}
-						onCancel={() => setDrawerOpen(false)}
-					/>
-				)}
-			</Drawer>
-		</AdminPageContent>
+				<NewsForm
+					id={editingId ?? undefined}
+					formId={FORM_ID}
+					hideActions
+					onSubmittingChange={setSubmitting}
+					onSuccess={() => {
+						message.success(editingId ? "新闻已更新" : "新闻已创建");
+						setDrawerOpen(false);
+						void list.reload();
+					}}
+					// 记录已不存在（别处删除 / 行数据过期）时给出提示并收起抽屉，避免编辑态空表单
+					onError={() => {
+						message.error("新闻不存在或已被删除");
+						setDrawerOpen(false);
+						void list.reload();
+					}}
+					onCancel={() => setDrawerOpen(false)}
+				/>
+			</AdminFormDrawer>
+		</AdminListPage>
 	);
 }

@@ -1,16 +1,18 @@
 /**
  * 管理端消息管理页面：全量消息列表 + 向用户发送消息
  */
-import {
-	ReloadOutlined,
-	SearchOutlined,
-	SendOutlined,
-} from "@ant-design/icons";
+import { SearchOutlined, SendOutlined } from "@ant-design/icons";
 import { message } from "@fsdx/ui-spa/antd-static";
+import { ProTable, withDisabledReason } from "@fsdx/ui-spa/table";
 import { createFileRoute } from "@tanstack/react-router";
-import { Button, Form, Input, Select, Table } from "antd";
-import { useCallback, useEffect, useState } from "react";
-import { AdminPageContent } from "#/components/admin";
+import { Button, Form, Input, Select } from "antd";
+import { useCallback, useState } from "react";
+import {
+	AdminListPage,
+	AdminTableToolbar,
+	useAdminAuth,
+} from "#/components/admin";
+import { ADMIN_PERMISSIONS } from "#/permissions/admin-permissions";
 import {
 	deleteAnyMessageSFn,
 	listAllMessagesSFn,
@@ -22,19 +24,20 @@ import type {
 	RecipientOption,
 } from "#/services/message/message.server";
 import { callSfn, sfnUnwrap } from "#/utils/sfn-error";
+import { useListQuery } from "#/utils/use-list-query";
 import { messageManageColumns } from "./-mods/messageManageColumns";
 import { SendMessageModal } from "./-mods/SendMessageModal";
 
 export const Route = createFileRoute("/admin/_admin/messages/manage")({
 	component: MessageManagePage,
+	loader: async () => await listAllMessagesSFn({ data: {} }),
 });
 
-const PAGE_SIZE = 20;
-
-interface MessageManageFormValues {
-	userType?: "admin" | "client";
-	status?: "unread" | "read";
-	keyword?: string;
+/** 全量消息列表筛选条件（空串表示不筛选） */
+interface MessageManageFilters {
+	userType: "" | "admin" | "client";
+	status: "" | "unread" | "read";
+	keyword: string;
 }
 
 interface SendMessageFormValues {
@@ -46,17 +49,12 @@ interface SendMessageFormValues {
 	relatedLink?: string;
 }
 
-function MessageManagePage() {
-	const [result, setResult] = useState<{
-		records: MessageWithUser[];
-		total: number;
-		page: number;
-		pageSize: number;
-	}>({ records: [], total: 0, page: 1, pageSize: PAGE_SIZE });
-	const [loading, setLoading] = useState(false);
-	const [page, setPage] = useState(1);
-	const [searchForm] = Form.useForm<MessageManageFormValues>();
+const NO_SEND_PERMISSION = "无「发送消息」权限";
 
+function MessageManagePage() {
+	const initialData = Route.useLoaderData();
+	const { hasPermission } = useAdminAuth();
+	const [keyword, setKeyword] = useState("");
 	const [sendOpen, setSendOpen] = useState(false);
 	const [sending, setSending] = useState(false);
 	const [sendForm] = Form.useForm<SendMessageFormValues>();
@@ -65,50 +63,38 @@ function MessageManagePage() {
 	);
 	const [recipientSearching, setRecipientSearching] = useState(false);
 
-	/** 执行列表查询 */
-	const doSearch = useCallback(
-		async (targetPage = 1) => {
-			setLoading(true);
-			const values = searchForm.getFieldsValue();
-			const [data] = await sfnUnwrap(
+	const canSend = hasPermission(ADMIN_PERMISSIONS.MESSAGE_SEND);
+	const canDelete = hasPermission(ADMIN_PERMISSIONS.MESSAGE_DELETE);
+
+	const list = useListQuery<MessageWithUser, MessageManageFilters>({
+		initial: initialData,
+		initialFilters: { userType: "", status: "", keyword: "" },
+		errorMessage: "查询失败，请稍后重试",
+		fetcher: useCallback(
+			({ page, pageSize, filters }) =>
 				listAllMessagesSFn({
 					data: {
-						userType: values.userType || undefined,
-						status: values.status || undefined,
-						keyword: values.keyword || undefined,
-						page: targetPage,
-						pageSize: PAGE_SIZE,
+						userType: filters.userType || undefined,
+						status: filters.status || undefined,
+						keyword: filters.keyword || undefined,
+						page,
+						pageSize,
 					},
 				}),
-				{ error: "查询失败，请稍后重试" },
-			);
-			setLoading(false);
-			if (!data) return;
-			setResult(data);
-			setPage(targetPage);
-		},
-		[searchForm],
-	);
-
-	useEffect(() => {
-		doSearch();
-	}, [doSearch]);
-
-	/** 重置筛选条件 */
-	const handleReset = () => {
-		searchForm.resetFields();
-		doSearch();
-	};
+			[],
+		),
+	});
 
 	/** 加载收件人候选（发送消息选择器数据源） */
 	const fetchRecipients = useCallback(
-		async (keyword?: string) => {
-			const userType = sendForm.getFieldValue("userType") ?? "client";
+		async (searchKeyword?: string) => {
+			const userType =
+				(sendForm.getFieldValue("userType") as "admin" | "client") ?? "client";
 			setRecipientSearching(true);
 			// 候选加载失败无需打扰用户，仅清空列表
 			const [options] = await sfnUnwrap(
 				searchRecipientsSFn({
-					data: { userType, keyword: keyword || undefined },
+					data: { userType, keyword: searchKeyword || undefined },
 				}),
 				{ silent: true },
 			);
@@ -123,14 +109,14 @@ function MessageManagePage() {
 		sendForm.resetFields();
 		setRecipientOptions([]);
 		setSendOpen(true);
-		fetchRecipients();
+		void fetchRecipients();
 	};
 
 	/** 切换用户类型时重新加载候选 */
 	const handleUserTypeChange = () => {
 		sendForm.setFieldValue("userIds", []);
 		setRecipientOptions([]);
-		fetchRecipients();
+		void fetchRecipients();
 	};
 
 	/** 提交发送消息 */
@@ -143,7 +129,7 @@ function MessageManagePage() {
 			});
 			message.success(`已向 ${count} 位用户发送消息`);
 			setSendOpen(false);
-			doSearch();
+			await list.reload();
 		} catch {
 			// callSfn 已提示
 		} finally {
@@ -152,98 +138,88 @@ function MessageManagePage() {
 	};
 
 	/** 删除任意消息 */
-	const handleDelete = async (id: string) => {
-		try {
-			await callSfn(deleteAnyMessageSFn({ data: { id } }), {
-				error: "删除失败，请稍后重试",
-			});
-			message.success("已删除");
-			doSearch();
-		} catch {
-			// callSfn 已提示
-		}
+	const handleDelete = async (record: MessageWithUser) => {
+		const [, err] = await sfnUnwrap(
+			deleteAnyMessageSFn({ data: { id: record.id } }),
+			{ error: "删除失败，请稍后重试" },
+		);
+		if (err) return;
+		message.success("已删除");
+		await list.reload();
 	};
 
-	const columns = messageManageColumns({ onDelete: handleDelete });
+	/** 重置筛选条件 */
+	const handleReset = () => {
+		setKeyword("");
+		list.applyFilters({ userType: "", status: "", keyword: "" });
+	};
+
+	const columns = messageManageColumns({
+		onDelete: handleDelete,
+		permissions: { delete: canDelete },
+	});
 
 	return (
-		<AdminPageContent
+		<AdminListPage
 			title="消息管理"
 			description="查看全部用户消息，并向管理端或客户端用户发送通知"
-			extra={
-				<Button type="primary" icon={<SendOutlined />} onClick={openSendModal}>
+			extra={withDisabledReason(
+				<Button
+					type="primary"
+					icon={<SendOutlined />}
+					disabled={!canSend}
+					onClick={openSendModal}
+				>
 					发送消息
-				</Button>
-			}
-		>
-			{/* 筛选栏 */}
-			<Form
-				form={searchForm}
-				layout="inline"
-				onFinish={() => doSearch()}
-				style={{ marginBottom: 16, flexWrap: "wrap", gap: 8 }}
-			>
-				<Form.Item name="userType" label="用户类型">
+				</Button>,
+				!canSend,
+				NO_SEND_PERMISSION,
+			)}
+			toolbar={
+				<AdminTableToolbar onReset={handleReset}>
 					<Select
+						value={list.filters.userType}
+						onChange={(value) => list.applyFilters({ userType: value })}
 						options={[
-							{ label: "全部", value: "" },
+							{ label: "全部用户", value: "" },
 							{ label: "管理端", value: "admin" },
 							{ label: "客户端", value: "client" },
 						]}
 						style={{ width: 130 }}
 					/>
-				</Form.Item>
-
-				<Form.Item name="status" label="状态">
 					<Select
+						value={list.filters.status}
+						onChange={(value) => list.applyFilters({ status: value })}
 						options={[
-							{ label: "全部", value: "" },
+							{ label: "全部状态", value: "" },
 							{ label: "未读", value: "unread" },
 							{ label: "已读", value: "read" },
 						]}
-						style={{ width: 110 }}
+						style={{ width: 120 }}
 					/>
-				</Form.Item>
-
-				<Form.Item name="keyword" label="关键词">
-					<Input
+					<Input.Search
 						placeholder="搜索消息标题..."
 						allowClear
-						style={{ width: 200 }}
+						enterButton={<SearchOutlined />}
+						value={keyword}
+						onChange={(e) => setKeyword(e.target.value)}
+						onSearch={(value) => list.applyFilters({ keyword: value })}
+						style={{ width: 260 }}
 					/>
-				</Form.Item>
-
-				<Form.Item>
-					<Button type="primary" htmlType="submit" icon={<SearchOutlined />}>
-						搜索
-					</Button>
-				</Form.Item>
-
-				<Form.Item>
-					<Button icon={<ReloadOutlined />} onClick={handleReset}>
-						重置
-					</Button>
-				</Form.Item>
-			</Form>
-
-			{/* 消息列表 */}
-			<Table
-				rowKey="id"
-				loading={loading}
+				</AdminTableToolbar>
+			}
+		>
+			<ProTable
+				dataSource={list.data.records}
 				columns={columns}
-				dataSource={result.records}
-				pagination={{
-					total: result.total,
-					current: page,
-					pageSize: PAGE_SIZE,
-					showSizeChanger: false,
-					showTotal: (total: number, range: [number, number]) =>
-						`第 ${range[0]}-${range[1]} 条，共 ${total} 条`,
-					onChange: (p: number) => doSearch(p),
-				}}
+				rowKey="id"
+				loading={list.loading}
+				locale={{ emptyText: "暂无消息" }}
+				scroll={{ x: 900 }}
+				onChange={list.onTableChange}
+				pagination={list.pagination}
 			/>
 
-			{/* 发送消息弹窗 */}
 			<SendMessageModal
 				open={sendOpen}
 				sending={sending}
@@ -251,10 +227,10 @@ function MessageManagePage() {
 				recipientOptions={recipientOptions}
 				isSearching={recipientSearching}
 				onUserTypeChange={handleUserTypeChange}
-				onRecipientSearch={(keyword: string) => fetchRecipients(keyword)}
-				onOk={handleSend}
+				onRecipientSearch={(kw: string) => void fetchRecipients(kw)}
+				onOk={() => void handleSend()}
 				onCancel={() => setSendOpen(false)}
 			/>
-		</AdminPageContent>
+		</AdminListPage>
 	);
 }

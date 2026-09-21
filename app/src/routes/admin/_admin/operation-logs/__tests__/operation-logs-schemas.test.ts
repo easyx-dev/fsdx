@@ -1,17 +1,17 @@
 /**
- * 操作日志 Schema 验证测试
+ * 操作日志列表 Schema 验证测试
  */
 import { describe, expect, it } from "vitest";
-import { searchOperationLogsSchema } from "../-mods/operation-logs.functions";
+import { operationLogListSchema } from "#/shared-services/operation-log/operation-log.schemas";
 
-describe("searchOperationLogsSchema", () => {
+describe("operationLogListSchema", () => {
 	it("空参数应通过校验", () => {
-		const result = searchOperationLogsSchema.safeParse({});
+		const result = operationLogListSchema.safeParse({});
 		expect(result.success).toBe(true);
 	});
 
 	it("所有参数同时传入应通过校验", () => {
-		const result = searchOperationLogsSchema.safeParse({
+		const result = operationLogListSchema.safeParse({
 			module: "news",
 			action: "create",
 			keyword: "admin",
@@ -25,8 +25,16 @@ describe("searchOperationLogsSchema", () => {
 		expect(result.success).toBe(true);
 	});
 
+	it("每页条数应原样透传（前端分页控件依赖）", () => {
+		const result = operationLogListSchema.safeParse({ pageSize: 50 });
+		expect(result.success).toBe(true);
+		if (result.success) {
+			expect(result.data.pageSize).toBe(50);
+		}
+	});
+
 	it("日期格式非 YYYY-MM-DD 应校验失败", () => {
-		const result = searchOperationLogsSchema.safeParse({
+		const result = operationLogListSchema.safeParse({
 			startDate: "2024/01/01",
 			endDate: "2024-12-31T00:00:00.000Z",
 		});
@@ -34,7 +42,7 @@ describe("searchOperationLogsSchema", () => {
 	});
 
 	it("不存在的日历日期应校验失败", () => {
-		const result = searchOperationLogsSchema.safeParse({
+		const result = operationLogListSchema.safeParse({
 			startDate: "2024-02-31",
 			endDate: "2024-12-31",
 		});

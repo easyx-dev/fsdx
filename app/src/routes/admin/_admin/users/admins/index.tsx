@@ -1,19 +1,26 @@
 /**
  * 管理员管理页面：CRUD + 角色分配 + 密码重置
+ * 列表骨架 / 查询状态 / 分页排序统一走 AdminListPage + useListQuery
  */
-import { KeyOutlined, PlusOutlined, SearchOutlined } from "@ant-design/icons";
+import { PlusOutlined, SearchOutlined } from "@ant-design/icons";
 import { message } from "@fsdx/ui-spa/antd-static";
-import { ProTable, TableOperate } from "@fsdx/ui-spa/table";
+import { ProTable, withDisabledReason } from "@fsdx/ui-spa/table";
 import { AutofillBlocker } from "@fsdx/ui-ssr/form";
 import { createFileRoute } from "@tanstack/react-router";
-import { Button, Form, Input, Modal, Select, Tag } from "antd";
+import { Button, Form, Input, Modal, Select } from "antd";
 import type { ChangeEvent } from "react";
-import { useState } from "react";
-import { AdminPageContent, DictSelect, DictTag } from "#/components/admin";
+import { useCallback, useState } from "react";
+import {
+	AdminListPage,
+	AdminTableToolbar,
+	DictSelect,
+	useAdminAuth,
+} from "#/components/admin";
+import { ADMIN_PERMISSIONS } from "#/permissions/admin-permissions";
 import type { AdminRoleRecord } from "#/services/admin-role/admin-role.server";
 import type { AdminUserListItem } from "#/services/admin-user/admin-user.server";
-import type { SortOrder } from "#/types/query";
 import { callSfn, sfnUnwrap } from "#/utils/sfn-error";
+import { useListQuery } from "#/utils/use-list-query";
 import {
 	createSFn,
 	deleteSFn,
@@ -22,14 +29,20 @@ import {
 	resetPwdSFn,
 	updateSFn,
 } from "./-mods/admins.functions";
+import { adminUserColumns } from "./-mods/adminUserColumns";
 
-// ─── Route & Component ──────────────────────────────────────────────
+const NO_CREATE_PERMISSION = "无「创建管理员」权限";
+
+/** 列表筛选条件 */
+interface AdminUserFilters {
+	keyword?: string;
+}
 
 export const Route = createFileRoute("/admin/_admin/users/admins/")({
 	component: AdminsPage,
 	loader: async () => {
 		const [result, roles] = await Promise.all([
-			getListSFn({ data: { page: 1, pageSize: 20 } }),
+			getListSFn({ data: {} }),
 			getAdminRolesForSelectSFn(),
 		]);
 		return { result, roles };
@@ -38,12 +51,9 @@ export const Route = createFileRoute("/admin/_admin/users/admins/")({
 
 function AdminsPage() {
 	const initial = Route.useLoaderData();
-	const [data, setData] = useState(initial.result);
+	const { hasPermission } = useAdminAuth();
 	const [roles] = useState<AdminRoleRecord[]>(initial.roles);
 	const [keyword, setKeyword] = useState("");
-	const [page, setPage] = useState(1);
-	const [sortField, setSortField] = useState<string>();
-	const [sortOrder, setSortOrder] = useState<SortOrder>();
 	const [modalOpen, setModalOpen] = useState(false);
 	const [pwdModalOpen, setPwdModalOpen] = useState(false);
 	const [editingUser, setEditingUser] = useState<AdminUserListItem | null>(
@@ -53,34 +63,40 @@ function AdminsPage() {
 	const [form] = Form.useForm();
 	const [pwdForm] = Form.useForm();
 
-	const refresh = async (p = page) => {
-		const [result] = await sfnUnwrap(
-			getListSFn({
-				data: {
-					page: p,
-					pageSize: 20,
-					keyword: keyword || undefined,
-					sortField,
-					sortOrder,
-				},
-			}),
-		);
-		if (!result) return;
-		setData(result);
-		setPage(p);
+	const list = useListQuery<AdminUserListItem, AdminUserFilters>({
+		initial: initial.result,
+		initialFilters: { keyword: undefined },
+		errorMessage: "加载管理员列表失败",
+		fetcher: useCallback(
+			({ page, pageSize, sortField, sortOrder, filters }) =>
+				getListSFn({
+					data: {
+						page,
+						pageSize,
+						sortField,
+						sortOrder,
+						keyword: filters.keyword,
+					},
+				}),
+			[],
+		),
+	});
+
+	const permissions = {
+		create: hasPermission(ADMIN_PERMISSIONS.ADMIN_CREATE),
+		edit: hasPermission(ADMIN_PERMISSIONS.ADMIN_EDIT),
+		delete: hasPermission(ADMIN_PERMISSIONS.ADMIN_DELETE),
 	};
 
-	const handleSearch = () => refresh(1);
+	/** 关键词搜索（回到第一页） */
+	const handleSearch = () => {
+		list.applyFilters({ keyword: keyword.trim() || undefined });
+	};
 
-	const handleTableChange = async (
-		_pagination: unknown,
-		_filters: unknown,
-		sorter: unknown,
-	) => {
-		const s = sorter as { field?: string; order?: string };
-		setSortField(s.field);
-		setSortOrder(s.order as SortOrder);
-		await refresh(1);
+	/** 重置筛选条件 */
+	const handleReset = () => {
+		setKeyword("");
+		list.applyFilters({ keyword: undefined });
 	};
 
 	const handleCreate = () => {
@@ -112,7 +128,7 @@ function AdminsPage() {
 				message.success("管理员已创建");
 			}
 			setModalOpen(false);
-			await refresh();
+			await list.reload();
 		} catch {
 			// 表单校验由 antd 提示，SFn 失败由 callSfn 统一提示
 		} finally {
@@ -120,14 +136,14 @@ function AdminsPage() {
 		}
 	};
 
-	const handleDelete = async (id: string) => {
-		try {
-			await callSfn(deleteSFn({ data: { id } }));
-			message.success("管理员已删除");
-			await refresh();
-		} catch {
-			// callSfn 已提示
-		}
+	/** 删除管理员（失败由统一出口提示） */
+	const handleDelete = async (record: AdminUserListItem) => {
+		const [, err] = await sfnUnwrap(deleteSFn({ data: { id: record.id } }), {
+			error: "删除失败",
+		});
+		if (err) return;
+		message.success("管理员已删除");
+		await list.reload();
 	};
 
 	const handleResetPwd = (record: AdminUserListItem) => {
@@ -155,143 +171,56 @@ function AdminsPage() {
 		}
 	};
 
-	const columns = [
-		{
-			title: "用户名",
-			dataIndex: "username",
-			key: "username",
-			width: 140,
-			sorter: true,
-		},
-		{
-			title: "邮箱",
-			dataIndex: "email",
-			key: "email",
-			width: 200,
-			ellipsis: true,
-			sorter: true,
-		},
-		{
-			title: "角色",
-			dataIndex: "roleNames",
-			key: "roleNames",
-			width: 180,
-			render: (_: unknown, record: AdminUserListItem) =>
-				record.isRoot ? (
-					<Tag color="red">超级管理员</Tag>
-				) : (
-					<div className="flex flex-wrap gap-1">
-						{record.roleNames.length > 0 ? (
-							record.roleNames.map((name) => (
-								<Tag key={name} color="blue">
-									{name}
-								</Tag>
-							))
-						) : (
-							<span>—</span>
-						)}
-					</div>
-				),
-		},
-		{
-			title: "状态",
-			dataIndex: "status",
-			key: "status",
-			width: 90,
-			render: (v: string) => <DictTag dictSlug="user_status" value={v} />,
-		},
-		{
-			title: "最后登录",
-			dataIndex: "lastLoginAt",
-			key: "lastLoginAt",
-			width: 185,
-			valueType: "dateTime",
-			sorter: true,
-		},
-		{
-			title: "创建时间",
-			dataIndex: "createdAt",
-			key: "createdAt",
-			width: 185,
-			valueType: "dateTime",
-			sorter: true,
-		},
-		{
-			title: "更新时间",
-			dataIndex: "updatedAt",
-			key: "updatedAt",
-			width: 185,
-			valueType: "dateTime",
-			sorter: true,
-		},
-		{
-			title: "操作",
-			key: "actions",
-			fixed: "right" as const,
-			render: (_: unknown, record: AdminUserListItem) => (
-				<TableOperate>
-					<TableOperate.Edit onClick={() => handleEdit(record)} />
-					<TableOperate.Custom>
-						<Button
-							type="link"
-							size="small"
-							icon={<KeyOutlined />}
-							onClick={() => handleResetPwd(record)}
-						>
-							重置密码
-						</Button>
-					</TableOperate.Custom>
-					{!record.isRoot && (
-						<TableOperate.Delete
-							recordName="此管理员"
-							onConfirm={() => handleDelete(record.id)}
-						/>
-					)}
-				</TableOperate>
-			),
-		},
-	];
+	const columns = adminUserColumns({
+		sortProps: list.sortProps,
+		onEdit: handleEdit,
+		onResetPwd: handleResetPwd,
+		onDelete: handleDelete,
+		permissions: { edit: permissions.edit, delete: permissions.delete },
+	});
 
 	return (
-		<AdminPageContent
+		<AdminListPage
 			title="管理员管理"
 			description="管理系统管理员账号与角色分配"
-			extra={
-				<Button type="primary" icon={<PlusOutlined />} onClick={handleCreate}>
+			extra={withDisabledReason(
+				<Button
+					type="primary"
+					icon={<PlusOutlined />}
+					disabled={!permissions.create}
+					onClick={handleCreate}
+				>
 					新建管理员
-				</Button>
+				</Button>,
+				!permissions.create,
+				NO_CREATE_PERMISSION,
+			)}
+			toolbar={
+				<AdminTableToolbar onReset={handleReset}>
+					<Input
+						placeholder="搜索用户名或邮箱..."
+						value={keyword}
+						onChange={(e: ChangeEvent<HTMLInputElement>) =>
+							setKeyword(e.target.value)
+						}
+						onPressEnter={handleSearch}
+						allowClear
+						style={{ width: 260 }}
+						prefix={<SearchOutlined />}
+					/>
+					<Button onClick={handleSearch}>搜索</Button>
+				</AdminTableToolbar>
 			}
 		>
-			<div className="mb-4 flex items-center gap-2">
-				<Input
-					placeholder="搜索用户名或邮箱..."
-					value={keyword}
-					onChange={(e: ChangeEvent<HTMLInputElement>) =>
-						setKeyword(e.target.value)
-					}
-					onPressEnter={handleSearch}
-					allowClear
-					style={{ width: 260 }}
-					prefix={<SearchOutlined />}
-				/>
-				<Button onClick={handleSearch}>搜索</Button>
-			</div>
-
 			<ProTable
-				dataSource={data.records}
+				dataSource={list.data.records}
 				columns={columns}
 				rowKey="id"
+				loading={list.loading}
 				locale={{ emptyText: "暂无管理员" }}
-				scroll={{ x: 1400 }}
-				pagination={{
-					total: data.total,
-					current: page,
-					pageSize: 20,
-					showSizeChanger: false,
-					showTotal: (total) => `共 ${total} 条`,
-					onChange: (p) => refresh(p),
-				}}
-				onChange={handleTableChange}
+				scroll={{ x: 1380 }}
+				onChange={list.onTableChange}
+				pagination={list.pagination}
 			/>
 
 			{/* 创建/编辑弹窗 */}
@@ -380,6 +309,6 @@ function AdminsPage() {
 					</Form.Item>
 				</Form>
 			</Modal>
-		</AdminPageContent>
+		</AdminListPage>
 	);
 }

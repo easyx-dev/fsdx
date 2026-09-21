@@ -2,15 +2,10 @@
  * 管理端用户（admin_user）zod schema：单一来源
  */
 import { z } from "zod";
+import { listSchema } from "#/validators/common.schemas";
 
-/** 管理员列表查询 */
-export const listSchema = z.object({
-	page: z.number().optional(),
-	pageSize: z.number().optional(),
-	keyword: z.string().optional(),
-	sortField: z.string().optional(),
-	sortOrder: z.enum(["ascend", "descend"]).optional(),
-});
+/** 管理员列表查询：通用分页 / 排序参数 + 关键词（关键词已含于基座，无额外业务筛选） */
+export const adminUserListSchema = listSchema;
 
 /** 新建管理员 */
 export const createSchema = z.object({

@@ -4,11 +4,11 @@
 import { createServerFn } from "@tanstack/react-start";
 import { adminPermGuard } from "#/middleware/admin-auth";
 import { ADMIN_PERMISSIONS } from "#/permissions/admin-permissions";
-import { getAdminRoleList } from "#/services/admin-role/admin-role.server";
+import { getAllAdminRoles } from "#/services/admin-role/admin-role.server";
 import {
+	adminUserListSchema,
 	createSchema,
 	idSchema,
-	listSchema,
 	resetPwdSchema,
 	updateSchema,
 } from "#/services/admin-user/admin-user.schemas";
@@ -22,15 +22,15 @@ import {
 } from "#/services/admin-user/admin-user.server";
 import { logCrud } from "#/shared-services/operation-log/operation-log.server";
 
-/** 获取角色下拉列表 */
+/** 获取角色下拉列表（不分页） */
 export const getAdminRolesForSelectSFn = createServerFn({ method: "GET" })
 	.middleware([adminPermGuard(ADMIN_PERMISSIONS.ADMIN_VIEW)])
-	.handler(async () => getAdminRoleList());
+	.handler(async () => getAllAdminRoles());
 
 /** 获取管理员列表（分页、筛选、排序） */
 export const getListSFn = createServerFn({ method: "GET" })
 	.middleware([adminPermGuard(ADMIN_PERMISSIONS.ADMIN_VIEW)])
-	.validator(listSchema)
+	.validator(adminUserListSchema)
 	.handler(async ({ data }) => getAdminUserList(data));
 
 /** 新建管理员 */

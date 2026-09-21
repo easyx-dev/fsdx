@@ -1,43 +1,35 @@
 /**
- * 日志查询页面：antd Form + Table 实现日志搜索、筛选与分页
+ * 日志查询页面：按级别、关键词与日期范围检索日志文件内容
+ * 筛选为「点查询才请求」模式，输入框仅维护草稿条件
  */
-
-import {
-	DownloadOutlined,
-	FileTextOutlined,
-	ReloadOutlined,
-	SearchOutlined,
-} from "@ant-design/icons";
-import { ProTable } from "@fsdx/ui-spa/table";
+import { DownloadOutlined, SearchOutlined } from "@ant-design/icons";
+import { ProTable, StatusTag, type StatusTagOption } from "@fsdx/ui-spa/table";
 import { createFileRoute } from "@tanstack/react-router";
-import {
-	Button,
-	DatePicker,
-	Form,
-	Input,
-	Select,
-	Space,
-	Tag,
-	Tooltip,
-} from "antd";
+import { Button, DatePicker, Input, Select, Space, Tag, Tooltip } from "antd";
 import type { Dayjs } from "dayjs";
 import dayjs from "dayjs";
-import { useState } from "react";
-import { AdminPageContent } from "#/components/admin";
-import { LEVEL_COLORS, LEVEL_OPTIONS } from "#/constants";
-import type { LogEntry, LogQueryResult } from "#/services/logs/logs.server";
-import { callSfn, sfnUnwrap } from "#/utils/sfn-error";
+import { useCallback, useState } from "react";
+import { AdminListPage, AdminTableToolbar } from "#/components/admin";
+import { LEVEL_OPTIONS } from "#/constants";
+import type { LogEntry } from "#/services/logs/logs.server";
+import { useListQuery } from "#/utils/use-list-query";
 import { getDatesSFn, searchLogsSFn } from "./-mods/logs.functions";
 
-/** 将日志时间戳转为本地化时间字符串 */
-function formatTime(entry: LogEntry): string {
-	const t =
-		typeof entry.time === "number"
-			? new Date(entry.time)
-			: entry.time
-				? new Date(entry.time as string)
-				: new Date();
-	return dayjs(t).format("YYYY-MM-DD HH:mm");
+/** 日志级别 → 展示配置（对齐 LEVEL_COLORS 的语义色） */
+const LEVEL_TAG_OPTIONS: Record<string, StatusTagOption> = {
+	info: { label: "INFO", tone: "info" },
+	warn: { label: "WARN", tone: "warning" },
+	error: { label: "ERROR", tone: "danger" },
+	fatal: { label: "FATAL", tone: "danger" },
+	debug: { label: "DEBUG", tone: "neutral" },
+};
+
+/** 日志列表筛选条件 */
+interface LogFilters {
+	keyword: string;
+	level: string;
+	startDate?: string;
+	endDate?: string;
 }
 
 export const Route = createFileRoute("/admin/_admin/logs/")({
@@ -53,83 +45,88 @@ export const Route = createFileRoute("/admin/_admin/logs/")({
 
 function LogsPage() {
 	const initial = Route.useLoaderData();
-	const [result, setResult] = useState<LogQueryResult>(initial.result);
 	const [availableDates] = useState<string[]>(initial.availableDates);
-	const [page, setPage] = useState(1);
-	const [pageSize] = useState(20);
-	const [form] = Form.useForm();
 
-	/** 执行日志搜索 */
-	const doSearch = async (p = 1) => {
-		const values = form.getFieldsValue();
-		const dateRange: [Dayjs, Dayjs] | undefined = values.dateRange;
-		const startDate = dateRange?.[0] ? dateRange[0].format("YYYY-MM-DD") : "";
-		const endDate = dateRange?.[1] ? dateRange[1].format("YYYY-MM-DD") : "";
+	// 草稿条件：仅在点击「查询」时提交，避免输入即请求
+	const [keyword, setKeyword] = useState("");
+	const [level, setLevel] = useState("");
+	const [dateRange, setDateRange] = useState<[Dayjs, Dayjs] | null>(null);
 
-		try {
-			const data = await callSfn(
-				searchLogsSFn({
-					data: {
-						keyword: values.keyword || undefined,
-						level: values.level || undefined,
-						startDate: startDate || undefined,
-						endDate: endDate || undefined,
-						page: p,
-						pageSize,
-					},
-				}),
-				{ error: "日志查询失败，请稍后重试" },
-			);
-			setResult(data);
-			setPage(p);
-		} catch {
-			// callSfn 已提示
-		}
-	};
+	const list = useListQuery<LogEntry, LogFilters>({
+		initial: {
+			records: initial.result.entries,
+			total: initial.result.total,
+			page: initial.result.page,
+			pageSize: initial.result.pageSize,
+		},
+		initialFilters: { keyword: "", level: "" },
+		errorMessage: "日志查询失败",
+		fetcher: useCallback(async ({ page, pageSize, filters }) => {
+			const result = await searchLogsSFn({
+				data: {
+					keyword: filters.keyword || undefined,
+					level: filters.level || undefined,
+					startDate: filters.startDate,
+					endDate: filters.endDate,
+					page,
+					pageSize,
+				},
+			});
+			return {
+				records: result.entries,
+				total: result.total,
+				page: result.page,
+				pageSize: result.pageSize,
+			};
+		}, []),
+	});
 
-	/** 重置筛选条件并重新搜索 */
-	const handleReset = () => {
-		form.resetFields();
-		doSearch();
-	};
-
-	/** 点击日期标签快速搜索 */
-	const handleDateClick = (date: string) => {
-		void sfnUnwrap(
-			searchLogsSFn({
-				data: { startDate: date, endDate: date, page: 1, pageSize },
-			}),
-			{ error: "日志查询失败，请稍后重试" },
-		).then(([data]) => {
-			if (data === null) return;
-			setResult(data);
-			setPage(1);
+	/** 提交草稿条件查询（applyFilters 自动回到第 1 页） */
+	const handleSearch = () => {
+		list.applyFilters({
+			keyword,
+			level,
+			startDate: dateRange?.[0]?.format("YYYY-MM-DD"),
+			endDate: dateRange?.[1]?.format("YYYY-MM-DD"),
 		});
 	};
 
-	/** 将 entry 转为 Table dataSource 可用的记录，追加唯一 key */
-	const dataSource = result.entries.map((entry, idx) => ({
-		...entry,
-		_rowKey: `${result.page}-${idx}`,
-	}));
+	/** 重置筛选条件并重新查询 */
+	const handleReset = () => {
+		setKeyword("");
+		setLevel("");
+		setDateRange(null);
+		list.applyFilters({
+			keyword: "",
+			level: "",
+			startDate: undefined,
+			endDate: undefined,
+		});
+	};
 
+	/** 点击日期标签：以该日为范围查询（保留已提交的关键词与级别） */
+	const handleDateClick = (date: string) => {
+		const day = dayjs(date);
+		setDateRange([day, day]);
+		list.applyFilters({ startDate: date, endDate: date });
+	};
+
+	// 日志条目无稳定主键，行标识由时间戳与页内序号组合
 	const columns = [
 		{
 			title: "时间",
 			dataIndex: "time",
 			key: "time",
 			width: 180,
-			render: (_: unknown, record: LogEntry) => formatTime(record),
+			valueType: "dateTimeMinute" as const,
 		},
 		{
 			title: "级别",
 			dataIndex: "level",
 			key: "level",
 			width: 90,
-			render: (level: string) => (
-				<Tag color={LEVEL_COLORS[level] || "default"}>
-					{typeof level === "string" ? level.toUpperCase() : "—"}
-				</Tag>
+			render: (value: string) => (
+				<StatusTag value={value} options={LEVEL_TAG_OPTIONS} />
 			),
 		},
 		{
@@ -142,95 +139,86 @@ function LogsPage() {
 	];
 
 	return (
-		<AdminPageContent title="日志查询" description="搜索和查看系统操作日志文件">
-			{/* 搜索表单 */}
-			<Form
-				form={form}
-				layout="inline"
-				onFinish={() => doSearch()}
-				style={{ marginBottom: 12, flexWrap: "wrap", gap: 8 }}
-			>
-				<Form.Item name="keyword" label="关键词">
-					<Input placeholder="搜索日志..." allowClear style={{ width: 180 }} />
-				</Form.Item>
-
-				<Form.Item name="level" label="级别">
-					<Select options={LEVEL_OPTIONS} style={{ width: 110 }} />
-				</Form.Item>
-
-				<Form.Item name="dateRange" label="日期范围">
-					<DatePicker.RangePicker
-						placeholder={["开始日期", "结束日期"]}
-						format="YYYY-MM-DD"
-						style={{ width: 260 }}
-					/>
-				</Form.Item>
-
-				<Form.Item>
-					<Button type="primary" htmlType="submit" icon={<SearchOutlined />}>
-						搜索
-					</Button>
-				</Form.Item>
-
-				<Form.Item>
-					<Button icon={<ReloadOutlined />} onClick={handleReset}>
-						重置
-					</Button>
-				</Form.Item>
-			</Form>
-
-			{/* 可用日期快速选择 */}
-			{availableDates.length > 0 && (
-				<div
-					style={{
-						marginBottom: 16,
-						display: "flex",
-						flexWrap: "wrap",
-						gap: 6,
-						alignItems: "center",
-					}}
-				>
-					<span
-						style={{ fontSize: 12, color: "var(--ant-color-text-tertiary)" }}
-					>
-						日志日期：
-					</span>
-					{availableDates.slice(0, 14).map((d: string) => (
-						<Space key={d} size={0}>
-							<Tag
-								color="default"
-								style={{ cursor: "pointer", margin: 0 }}
-								onClick={() => handleDateClick(d)}
+		<AdminListPage
+			title="日志查询"
+			description="搜索和查看系统操作日志文件"
+			toolbar={
+				<div className="flex flex-col gap-3">
+					<AdminTableToolbar
+						onReset={handleReset}
+						extra={
+							<Button
+								type="primary"
+								icon={<SearchOutlined />}
+								onClick={handleSearch}
 							>
-								{d}
-							</Tag>
-							<Tooltip title="下载该日日志文件">
-								<a
-									href={`/admin/logs/download/${d}`}
-									style={{
-										display: "inline-flex",
-										alignItems: "center",
-										padding: "0 4px",
-									}}
-								>
-									<DownloadOutlined
-										style={{
-											fontSize: 12,
-											color: "var(--ant-color-text-tertiary)",
-										}}
-									/>
-								</a>
-							</Tooltip>
-						</Space>
-					))}
-				</div>
-			)}
+								查询
+							</Button>
+						}
+					>
+						<Input
+							placeholder="搜索日志关键词"
+							value={keyword}
+							onChange={(e) => setKeyword(e.target.value)}
+							onPressEnter={handleSearch}
+							allowClear
+							style={{ width: 200 }}
+						/>
+						<Select
+							value={level}
+							onChange={setLevel}
+							options={LEVEL_OPTIONS}
+							style={{ width: 110 }}
+						/>
+						<DatePicker.RangePicker
+							value={dateRange}
+							onChange={(value) => setDateRange(value as [Dayjs, Dayjs] | null)}
+							placeholder={["开始日期", "结束日期"]}
+							format="YYYY-MM-DD"
+							style={{ width: 260 }}
+						/>
+					</AdminTableToolbar>
 
-			{/* 日志结果表格 */}
+					{/* 可用日期快选：点击按当天查询，右侧图标下载该日日志文件 */}
+					{availableDates.length > 0 && (
+						<div className="flex flex-wrap items-center gap-1.5">
+							<span className="text-xs text-muted-foreground">日志日期：</span>
+							{availableDates.slice(0, 14).map((date) => (
+								<Space key={date} size={0}>
+									<Tag
+										color="default"
+										className="cursor-pointer"
+										style={{ margin: 0 }}
+										onClick={() => handleDateClick(date)}
+									>
+										{date}
+									</Tag>
+									<Tooltip title="下载该日日志文件">
+										<a
+											href={`/admin/logs/download/${date}`}
+											className="inline-flex items-center px-1"
+										>
+											<DownloadOutlined className="text-xs text-muted-foreground" />
+										</a>
+									</Tooltip>
+								</Space>
+							))}
+						</div>
+					)}
+				</div>
+			}
+		>
 			<ProTable
-				dataSource={dataSource}
+				dataSource={list.data.records}
 				columns={columns}
-				rowKey="_rowKey"
+				rowKey={(record, index) =>
+					`${record.time ?? record.timestamp ?? ""}-${index}`
+				}
+				loading={list.loading}
+				locale={{ emptyText: "暂无日志" }}
+				scroll={{ x: 900 }}
+				onChange={list.onTableChange}
+				pagination={list.pagination}
 				expandable={{
 					expandedRowRender: (record: LogEntry) => (
 						<pre
@@ -249,32 +237,7 @@ function LogsPage() {
 					),
 					rowExpandable: () => true,
 				}}
-				locale={{
-					emptyText: (
-						<div style={{ padding: "32px 0" }}>
-							<FileTextOutlined
-								style={{
-									fontSize: 32,
-									color: "var(--ant-color-text-quaternary)",
-									marginBottom: 8,
-								}}
-							/>
-							<p style={{ color: "var(--ant-color-text-tertiary)" }}>
-								{result.total === 0 ? "暂无日志" : "未找到匹配"}
-							</p>
-						</div>
-					),
-				}}
-				pagination={{
-					total: result.total,
-					current: page,
-					pageSize,
-					showSizeChanger: false,
-					showTotal: (total, range) =>
-						`第 ${range[0]}-${range[1]} 条，共 ${total} 条`,
-					onChange: (p: number) => doSearch(p),
-				}}
 			/>
-		</AdminPageContent>
+		</AdminListPage>
 	);
 }

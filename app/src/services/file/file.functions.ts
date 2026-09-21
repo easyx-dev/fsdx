@@ -11,6 +11,7 @@ import { z } from "zod";
 import { adminPermGuard } from "#/middleware/admin-auth";
 import { ADMIN_PERMISSIONS } from "#/permissions/admin-permissions";
 import { logCrud } from "#/shared-services/operation-log/operation-log.server";
+import { fileListSchema } from "./file.schemas";
 import {
 	duplicateFile,
 	getFileInfo,
@@ -19,19 +20,6 @@ import {
 	replaceFileContent,
 	uploadFile,
 } from "./file.server";
-
-/** 文件列表查询参数 schema */
-export const fileListSchema = z.object({
-	status: z.enum(["temp", "permanent"]).optional(),
-	keyword: z.string().optional(),
-	mimePrefix: z.string().optional(),
-	/** 需要排除的 mime 前缀（如附件媒体库排除 image/ video/ audio/） */
-	excludeMimePrefixes: z.array(z.string()).optional(),
-	sortField: z.string().optional(),
-	sortOrder: z.enum(["ascend", "descend"]).optional(),
-	page: z.number().optional(),
-	pageSize: z.number().optional(),
-});
 
 /** 获取文件列表（分页、筛选、搜索、排序） */
 export const getFileListSFn = createServerFn({ method: "GET" })

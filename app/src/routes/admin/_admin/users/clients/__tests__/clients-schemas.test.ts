@@ -3,21 +3,21 @@
  */
 import { describe, expect, it } from "vitest";
 import {
+	clientUserListSchema,
 	createSchema,
 	idSchema,
-	listSchema,
 	resetPwdSchema,
 	updateSchema,
 } from "#/services/client-user/client-user.schemas";
 
-describe("listSchema", () => {
+describe("clientUserListSchema", () => {
 	it("空参数通过", () => {
-		expect(listSchema.safeParse({}).success).toBe(true);
+		expect(clientUserListSchema.safeParse({}).success).toBe(true);
 	});
 
 	it("全部参数通过", () => {
 		expect(
-			listSchema.safeParse({
+			clientUserListSchema.safeParse({
 				page: 1,
 				pageSize: 10,
 				keyword: "test",
@@ -25,6 +25,15 @@ describe("listSchema", () => {
 				sortOrder: "ascend",
 			}).success,
 		).toBe(true);
+	});
+
+	it("分页参数全链路透传", () => {
+		const result = clientUserListSchema.safeParse({ page: 3, pageSize: 50 });
+		expect(result.success).toBe(true);
+		if (result.success) {
+			expect(result.data.page).toBe(3);
+			expect(result.data.pageSize).toBe(50);
+		}
 	});
 });
 

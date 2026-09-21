@@ -91,12 +91,14 @@ export function fileExplorerColumns(options: FileExplorerColumnsOptions) {
 			width: 180,
 			sorter: (a: FsEntry, b: FsEntry) =>
 				new Date(a.mtime).getTime() - new Date(b.mtime).getTime(),
-			valueType: "dateTime",
+			valueType: "dateTimeMinute",
 		},
 		{
 			title: "操作",
 			key: "actions",
 			fixed: "right" as const,
+			// 操作列固定右侧必须显式声明宽度（最多 4 项操作取 320）
+			width: 320,
 			render: (_: unknown, record: FsEntry) => {
 				const isWriteLocked = options.writeProtected;
 
@@ -144,9 +146,7 @@ export function fileExplorerColumns(options: FileExplorerColumnsOptions) {
 						{!isWriteLocked && (
 							<TableOperate.Delete
 								recordName={record.name}
-								onConfirm={async () => {
-									await options.onDelete(record);
-								}}
+								onConfirm={() => options.onDelete(record)}
 							/>
 						)}
 					</TableOperate>

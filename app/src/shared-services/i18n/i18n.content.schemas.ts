@@ -4,6 +4,7 @@
 
 import { z } from "zod";
 import { EDITOR_TYPES } from "#/constants/editor-types";
+import { listSchema } from "#/validators/common.schemas";
 import { localeSchema } from "./i18n.types";
 
 export const formSchema = z.object({
@@ -16,13 +17,13 @@ export const formSchema = z.object({
 	valueType: z.enum(EDITOR_TYPES).optional(),
 });
 
-export const getListSchema = z.object({
+/**
+ * 实体翻译列表查询：通用分页 / 每页条数 / 关键词 / 排序参数 + 实体类型与语言筛选
+ * pageSize 必须随查询透传到服务层，前端每页条数控件才不是无效控件
+ */
+export const contentTranslationListSchema = listSchema.extend({
 	entityType: z.string().optional(),
 	locale: localeSchema.optional(),
-	keyword: z.string().optional(),
-	page: z.number().optional(),
-	sortField: z.string().optional(),
-	sortOrder: z.enum(["ascend", "descend"]).optional(),
 });
 
 export const deleteSchema = z.object({ id: z.string().min(1) });

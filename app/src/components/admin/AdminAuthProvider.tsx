@@ -8,8 +8,13 @@ import {
 	useCallback,
 	useContext,
 	useEffect,
+	useMemo,
 	useState,
 } from "react";
+import {
+	type AdminPermissionDef,
+	hasAdminPermission,
+} from "#/permissions/admin-permissions";
 import { getCurrentAdminSFn } from "#/services/admin-auth/admin-auth.functions";
 import type { AdminUser } from "#/services/admin-auth/admin-auth.types";
 import { sfnUnwrap } from "#/utils/sfn-error";
@@ -21,6 +26,8 @@ interface AdminAuthContextType {
 	isLoading: boolean;
 	/** 重新获取当前管理员信息（登录/退出后调用） */
 	refetch: () => void;
+	/** 判断当前管理员是否拥有某权限码（未登录一律 false） */
+	hasPermission: (permission: AdminPermissionDef) => boolean;
 }
 
 const AdminAuthContext = createContext<AdminAuthContextType | undefined>(
@@ -53,8 +60,20 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
 		loadUser().finally(() => setIsLoading(false));
 	}, [loadUser]);
 
+	/** 基于当前用户权限码判断；未登录或无权限返回 false */
+	const hasPermission = useCallback(
+		(permission: AdminPermissionDef) =>
+			hasAdminPermission(user?.rolePermissions ?? [], permission),
+		[user],
+	);
+
+	const value = useMemo(
+		() => ({ user, isLoading, refetch, hasPermission }),
+		[user, isLoading, refetch, hasPermission],
+	);
+
 	return (
-		<AdminAuthContext.Provider value={{ user, isLoading, refetch }}>
+		<AdminAuthContext.Provider value={value}>
 			{children}
 		</AdminAuthContext.Provider>
 	);

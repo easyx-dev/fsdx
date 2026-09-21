@@ -2,13 +2,20 @@
  * AI 厂商管理页面：多厂商配置 CRUD（底层均为 OpenAI 兼容协议）
  * 配置为对象形式：{ [厂商id]: { name, baseUrl, apiKey, default?, models } }
  */
-import { PlusOutlined } from "@ant-design/icons";
+import { CheckCircleOutlined, PlusOutlined } from "@ant-design/icons";
 import { message } from "@fsdx/ui-spa/antd-static";
-import { TableOperate } from "@fsdx/ui-spa/table";
+import {
+	ProTable,
+	StatusTag,
+	type StatusTagOption,
+	TableOperate,
+	withDisabledReason,
+} from "@fsdx/ui-spa/table";
 import { createFileRoute } from "@tanstack/react-router";
-import { Button, Card, Table, Tag, Tooltip, Typography } from "antd";
+import { Button, Tag, Typography } from "antd";
 import { useState } from "react";
-import { AdminPageContent } from "#/components/admin";
+import { AdminListPage, useAdminAuth } from "#/components/admin";
+import { ADMIN_PERMISSIONS } from "#/permissions/admin-permissions";
 import type {
 	AiProviderConfig,
 	AiProviderView,
@@ -26,6 +33,13 @@ export const Route = createFileRoute("/admin/_admin/ai-providers/")({
 	component: AiProvidersPage,
 	loader: async () => await getAiProvidersSFn(),
 });
+
+/** 默认厂商展示选项 */
+const DEFAULT_OPTIONS: Record<string, StatusTagOption> = {
+	true: { label: "默认", tone: "info" },
+};
+
+const NO_MANAGE_PERMISSION = "无「AI 厂商管理」权限";
 
 /** 视图 → 持久化对象（去掉 id 字段，id 作为对象键；models 平移为对象） */
 function toProviderConfig(view: AiProviderView): AiProviderConfig {
@@ -55,10 +69,14 @@ function toProviderConfig(view: AiProviderView): AiProviderConfig {
 
 function AiProvidersPage() {
 	const loaderData = Route.useLoaderData() as AiProviderView[];
+	const { hasPermission } = useAdminAuth();
 	const [providers, setProviders] = useState<AiProviderView[]>(loaderData);
 	const [modalOpen, setModalOpen] = useState(false);
 	const [editing, setEditing] = useState<AiProviderView | null>(null);
 
+	const canManage = hasPermission(ADMIN_PERMISSIONS.AI_PROVIDER_MANAGE);
+
+	/** 整列表覆盖保存（厂商配置以对象形式存于系统配置，无分页概念） */
 	const save = async (next: AiProviderView[]) => {
 		try {
 			const providersObj = Object.fromEntries(
@@ -134,12 +152,16 @@ function AiProvidersPage() {
 			dataIndex: "default",
 			key: "default",
 			width: 90,
-			render: (val: boolean) => (val ? <Tag color="blue">默认</Tag> : null),
+			render: (val: boolean) => (
+				<StatusTag value={String(!!val)} options={DEFAULT_OPTIONS} />
+			),
 		},
 		{
 			title: "操作",
 			key: "actions",
-			width: 200,
+			fixed: "right" as const,
+			// 操作列固定右侧必须显式声明宽度（3 项 → 240）
+			width: 240,
 			render: (_: unknown, record: AiProviderView) => (
 				<TableOperate>
 					<TableOperate.Edit
@@ -147,21 +169,28 @@ function AiProvidersPage() {
 							setEditing(record);
 							setModalOpen(true);
 						}}
+						disabled={!canManage}
+						disabledReason={NO_MANAGE_PERMISSION}
 					/>
 					<TableOperate.Custom>
-						<Tooltip title="设为默认厂商">
+						{withDisabledReason(
 							<Button
 								type="link"
 								size="small"
-								disabled={!!record.default}
+								icon={<CheckCircleOutlined />}
+								disabled={!canManage || !!record.default}
 								onClick={() => handleSetDefault(record)}
 							>
 								设为默认
-							</Button>
-						</Tooltip>
+							</Button>,
+							!canManage,
+							NO_MANAGE_PERMISSION,
+						)}
 					</TableOperate.Custom>
 					<TableOperate.Delete
 						recordName={`厂商 ${record.name}`}
+						disabled={!canManage}
+						disabledReason={NO_MANAGE_PERMISSION}
 						onConfirm={() => handleDelete(record)}
 					/>
 				</TableOperate>
@@ -170,32 +199,32 @@ function AiProvidersPage() {
 	];
 
 	return (
-		<AdminPageContent
+		<AdminListPage
 			title="AI 厂商管理"
 			description="配置多个 OpenAI 兼容 API 厂商（DeepSeek / Moonshot / Qwen / 本地 vLLM 等），并指定默认厂商与各模型能力位。"
+			extra={withDisabledReason(
+				<Button
+					type="primary"
+					icon={<PlusOutlined />}
+					disabled={!canManage}
+					onClick={() => {
+						setEditing(null);
+						setModalOpen(true);
+					}}
+				>
+					新增厂商
+				</Button>,
+				!canManage,
+				NO_MANAGE_PERMISSION,
+			)}
 		>
-			<Card size="small">
-				<div className="mb-3">
-					<Button
-						type="primary"
-						icon={<PlusOutlined />}
-						onClick={() => {
-							setEditing(null);
-							setModalOpen(true);
-						}}
-					>
-						新增厂商
-					</Button>
-				</div>
-				<Table
-					rowKey="id"
-					columns={columns}
-					dataSource={providers}
-					pagination={false}
-					size="small"
-					locale={{ emptyText: "尚未配置 AI 厂商，点击右上角「新增厂商」开始" }}
-				/>
-			</Card>
+			<ProTable
+				rowKey="id"
+				columns={columns}
+				dataSource={providers}
+				pagination={false}
+				locale={{ emptyText: "尚未配置 AI 厂商，点击右上角「新增厂商」开始" }}
+			/>
 			<AiProviderFormModal
 				open={modalOpen}
 				editing={editing}
@@ -205,6 +234,6 @@ function AiProvidersPage() {
 					setEditing(null);
 				}}
 			/>
-		</AdminPageContent>
+		</AdminListPage>
 	);
 }

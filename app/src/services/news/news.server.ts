@@ -221,6 +221,29 @@ export async function setNewsPublished(
 	return { success: true };
 }
 
+/**
+ * 列表内联修改排序权重（仅更新一个字段）
+ * 记录不存在或已删除时返回 false，由调用方决定提示
+ */
+export async function updateNewsSortOrder(
+	id: string,
+	sortOrder: number,
+): Promise<boolean> {
+	const [existing] = await db
+		.select({ id: news.id })
+		.from(news)
+		.where(and(eq(news.id, id), notDeleted(news.deletedAt)))
+		.limit(1);
+	if (!existing) return false;
+
+	await db
+		.update(news)
+		.set({ sortOrder, updatedAt: new Date() })
+		.where(eq(news.id, id));
+
+	return true;
+}
+
 /** 删除新闻（软删除） */
 export async function deleteNews(id: string): Promise<boolean> {
 	const existing = await getNewsById(id);

@@ -3,7 +3,7 @@
  */
 import { createHash, randomUUID } from "node:crypto";
 import dayjs from "dayjs";
-import { and, eq, ilike, lt, not } from "drizzle-orm";
+import { and, eq, ilike, lt, not, or, sql } from "drizzle-orm";
 import { db } from "#/db/index";
 import { file } from "#/db/schema";
 import { logger } from "#/shared-services/logger";
@@ -99,11 +99,13 @@ export async function cleanExpiredFiles(): Promise<number> {
 	return expiredFiles.length;
 }
 
-/** 获取文件列表（支持分页、筛选、关键词搜索、排序） */
+/** 获取文件列表（支持分页、筛选、关键词 / 标签搜索、排序） */
 export async function getFileList(
 	params?: PaginatedSortParams & {
 		status?: string;
 		keyword?: string;
+		/** 标签关键词：按标签元素做包含匹配（与关键词搜索一致的模糊语义） */
+		tag?: string;
 		mimePrefix?: string;
 		excludeMimePrefixes?: string[];
 	},
@@ -111,6 +113,7 @@ export async function getFileList(
 	const {
 		status,
 		keyword,
+		tag,
 		mimePrefix,
 		excludeMimePrefixes,
 		sortField,
@@ -121,7 +124,23 @@ export async function getFileList(
 	const cappedPageSize = Math.min(pageSize, 100);
 	const conditions = [notDeleted(file.deletedAt)];
 	if (status) conditions.push(eq(file.status, status));
-	if (keyword) conditions.push(ilike(file.originalName, `%${keyword}%`));
+	// 关键词同时匹配原始文件名与文件 ID（ID 为 UUID，支持整串或片段）
+	if (keyword) {
+		const pattern = `%${keyword}%`;
+		// uuid 列与文本比较需显式转型，否则 PG 不会做隐式转换
+		const keywordCondition = or(
+			ilike(file.originalName, pattern),
+			sql`${file.id}::text ILIKE ${pattern}`,
+		);
+		if (keywordCondition) conditions.push(keywordCondition);
+	}
+	// 标签搜索：tags 为数组列，展开元素后做包含匹配（未打标签的文件自然不命中）
+	if (tag) {
+		const pattern = `%${tag}%`;
+		conditions.push(
+			sql`EXISTS (SELECT 1 FROM unnest(${file.tags}) AS tag WHERE tag ILIKE ${pattern})`,
+		);
+	}
 
 	if (mimePrefix) conditions.push(ilike(file.mimeType, `${mimePrefix}%`));
 	// 排除指定 mime 前缀（如附件媒体库排除图片/视频/音频）
@@ -197,6 +216,30 @@ export async function makePermanent(id: string): Promise<boolean> {
 	await db
 		.update(file)
 		.set({ status: "permanent", expiredAt: null, updatedAt: new Date() })
+		.where(eq(file.id, id));
+
+	return true;
+}
+
+/**
+ * 覆盖文件标签（字符串数组，空数组即清空标签）
+ * 标签的归一化（去空白 / 去重 / 限长限量）由调用方 schema 负责，服务层只做落库
+ * 文件不存在或已删除时返回 false，由调用方决定提示
+ */
+export async function updateFileTags(
+	id: string,
+	tags: string[],
+): Promise<boolean> {
+	const [existing] = await db
+		.select({ id: file.id })
+		.from(file)
+		.where(and(eq(file.id, id), notDeleted(file.deletedAt)))
+		.limit(1);
+	if (!existing) return false;
+
+	await db
+		.update(file)
+		.set({ tags, updatedAt: new Date() })
 		.where(eq(file.id, id));
 
 	return true;

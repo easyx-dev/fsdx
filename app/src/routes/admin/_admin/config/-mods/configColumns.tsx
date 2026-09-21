@@ -1,8 +1,8 @@
 /**
  * 系统配置表格列定义
+ * 状态 / 布尔用法统一走 StatusTag，时间列走 ProTable valueType，操作列权限置灰
  */
-import { TableOperate } from "@fsdx/ui-spa/table";
-import { Tag } from "antd";
+import { StatusTag, TableOperate } from "@fsdx/ui-spa/table";
 import {
 	EditorTypes,
 	FieldTranslationDrawer,
@@ -16,13 +16,34 @@ const CONFIG_TRANSLATABLE_FIELDS: TranslatableField[] = [
 	{ name: "value", label: "配置值", valueType: "text" },
 ];
 
+/** 敏感配置是否已配置的展示选项 */
+const SECRET_OPTIONS = {
+	configured: { label: "已配置", tone: "success" as const },
+	unconfigured: { label: "未配置", tone: "neutral" as const },
+};
+
+/** 布尔配置值展示选项 */
+const BOOL_OPTIONS = {
+	true: { label: "是", tone: "success" as const },
+	false: { label: "否", tone: "neutral" as const },
+};
+
 interface ConfigColumnsOptions {
 	onEdit: (record: ConfigRecord) => void;
-	onDelete: (id: string) => void;
+	onDelete: (record: ConfigRecord) => void;
+	/** 权限开关：无权限的操作置灰并提示（服务端 guard 仍为唯一权威） */
+	permissions: {
+		edit: boolean;
+		delete: boolean;
+	};
 }
+
+const NO_EDIT_PERMISSION = "无「编辑配置」权限";
+const NO_DELETE_PERMISSION = "无「删除配置」权限";
 
 /** 系统配置表格列：客户端可见项支持字段翻译 */
 export function configColumns(options: ConfigColumnsOptions) {
+	const { permissions } = options;
 	return [
 		{
 			title: "配置键",
@@ -43,18 +64,16 @@ export function configColumns(options: ConfigColumnsOptions) {
 				// 敏感配置不回显值，仅展示是否已配置
 				if (record.isSecret) {
 					return (
-						<Tag color={val ? "success" : "default"}>
-							{val ? "已配置" : "未配置"}
-						</Tag>
+						<StatusTag
+							value={val ? "configured" : "unconfigured"}
+							options={SECRET_OPTIONS}
+						/>
 					);
 				}
-				// 布尔类型用彩色标签展示：是（绿）/ 否（灰）
+				// 布尔类型用状态标签展示：是（绿）/ 否（灰）
 				if (record.valueType === "boolean") {
-					const enabled = toBool(val);
 					return (
-						<Tag color={enabled ? "success" : "default"}>
-							{enabled ? "是" : "否"}
-						</Tag>
+						<StatusTag value={String(toBool(val))} options={BOOL_OPTIONS} />
 					);
 				}
 				return val;
@@ -81,7 +100,9 @@ export function configColumns(options: ConfigColumnsOptions) {
 			dataIndex: "clientVisible",
 			key: "clientVisible",
 			width: 100,
-			render: (val: boolean) => (val ? "是" : "否"),
+			render: (val: boolean) => (
+				<StatusTag value={String(val)} options={BOOL_OPTIONS} />
+			),
 		},
 		{
 			title: "描述",
@@ -95,30 +116,38 @@ export function configColumns(options: ConfigColumnsOptions) {
 			title: "创建时间",
 			dataIndex: "createdAt",
 			key: "createdAt",
-			width: 185,
-			valueType: "dateTime",
+			width: 160,
+			valueType: "dateTimeMinute",
 		},
 		{
 			title: "更新时间",
 			dataIndex: "updatedAt",
 			key: "updatedAt",
-			width: 185,
-			valueType: "dateTime",
+			width: 160,
+			valueType: "dateTimeMinute",
 		},
 		{
 			title: "操作",
 			key: "actions",
 			fixed: "right" as const,
+			// 操作列固定右侧必须显式声明宽度（3 项 → 240）
+			width: 240,
 			render: (_: unknown, record: ConfigRecord) => {
 				// 敏感配置不参与客户端下发，翻译入口无意义
 				const showTranslation =
 					record.clientVisible === true && !record.isSecret;
 				return (
 					<TableOperate>
-						<TableOperate.Edit onClick={() => options.onEdit(record)} />
+						<TableOperate.Edit
+							onClick={() => options.onEdit(record)}
+							disabled={!permissions.edit}
+							disabledReason={NO_EDIT_PERMISSION}
+						/>
 						<TableOperate.Delete
 							recordName="该配置"
-							onConfirm={() => options.onDelete(record.id)}
+							disabled={!permissions.delete}
+							disabledReason={NO_DELETE_PERMISSION}
+							onConfirm={() => options.onDelete(record)}
 						/>
 						{showTranslation && (
 							<TableOperate.Custom>

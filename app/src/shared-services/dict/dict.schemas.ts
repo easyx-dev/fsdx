@@ -3,9 +3,22 @@
  */
 
 import { z } from "zod";
+import { listSchema, updateSortOrderSchema } from "#/validators/common.schemas";
 
-export const dictSlugSchema = z.object({ dictSlug: z.string().min(1) });
+/** 字典条目列表查询：通用分页 / 排序参数 + 所属字典 slug */
+export const dictListSchema = listSchema.extend({
+	dictSlug: z.string().min(1),
+});
 export const idSchema = z.object({ id: z.string().min(1) });
+
+/** 列表内联修改条目排序权重（单字段更新） */
+export const updateDictItemSortSchema = updateSortOrderSchema;
+
+/** 列表中切换条目启用状态（单字段更新） */
+export const dictItemStatusSchema = z.object({
+	id: z.string().min(1),
+	status: z.enum(["active", "disabled"]),
+});
 
 export const createDictSchema = z.object({
 	name: z.string().min(1).max(100),

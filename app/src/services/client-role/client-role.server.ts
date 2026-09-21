@@ -5,8 +5,15 @@ import { and, eq, ilike, isNull, or } from "drizzle-orm";
 import type { z } from "zod";
 import { db } from "#/db/index";
 import { clientRole } from "#/db/schema";
+import {
+	buildSortClause,
+	executePaginatedQuery,
+	notDeleted,
+	paginationOffset,
+} from "#/shared-services/query/query-utils.server";
 import type {
 	clientRoleCreateSchema,
+	clientRoleListSchema,
 	clientRoleUpdateSchema,
 } from "./client-role.schemas";
 
@@ -21,22 +28,69 @@ export type UpdateClientRoleInput = Omit<
 	"id"
 >;
 
-/** 获取角色列表（支持关键词搜索） */
-export async function getClientRoleList(keyword?: string) {
+/** 角色列表查询参数（分页、关键词、排序） */
+export type ClientRoleListParams = z.infer<typeof clientRoleListSchema>;
+
+/** 角色关键词搜索条件（名称 / 标识模糊匹配） */
+function keywordCondition(keyword?: string) {
+	return keyword
+		? or(
+				ilike(clientRole.name, `%${keyword}%`),
+				ilike(clientRole.slug, `%${keyword}%`),
+			)
+		: undefined;
+}
+
+/** 获取角色列表（支持关键词搜索、分页与排序） */
+export async function getClientRoleList(params?: ClientRoleListParams) {
+	const {
+		keyword,
+		page = 1,
+		pageSize = 20,
+		sortField,
+		sortOrder,
+	} = params ?? {};
+	const offset = paginationOffset(page, pageSize);
+
+	const whereCondition = and(
+		notDeleted(clientRole.deletedAt),
+		keywordCondition(keyword),
+	);
+
+	// 排序字段安全映射，仅允许已知列
+	const sortFieldMap = {
+		name: clientRole.name,
+		slug: clientRole.slug,
+		createdAt: clientRole.createdAt,
+		updatedAt: clientRole.updatedAt,
+	};
+	const direction = buildSortClause(
+		sortFieldMap,
+		sortField,
+		sortOrder,
+		"createdAt",
+	);
+
+	return executePaginatedQuery(
+		db
+			.select()
+			.from(clientRole)
+			.where(whereCondition)
+			.orderBy(direction)
+			.limit(pageSize)
+			.offset(offset),
+		db.$count(db.select().from(clientRole).where(whereCondition)),
+		page,
+		pageSize,
+	);
+}
+
+/** 获取全部角色（不分页，供表单角色下拉使用） */
+export async function getAllClientRoles() {
 	return db
 		.select()
 		.from(clientRole)
-		.where(
-			and(
-				isNull(clientRole.deletedAt),
-				keyword
-					? or(
-							ilike(clientRole.name, `%${keyword}%`),
-							ilike(clientRole.slug, `%${keyword}%`),
-						)
-					: undefined,
-			),
-		)
+		.where(notDeleted(clientRole.deletedAt))
 		.orderBy(clientRole.createdAt);
 }
 

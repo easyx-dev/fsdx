@@ -38,20 +38,13 @@ vi.mock("#/db", () => ({ db: mockDb }));
 import {
 	createClientRole,
 	deleteClientRole,
+	getAllClientRoles,
 	getClientRoleList,
 	updateClientRole,
 } from "#/services/client-role/client-role.server";
 
 describe("getClientRoleList", () => {
-	it("返回空列表", async () => {
-		mockRows.mockResolvedValue([]);
-
-		const result = await getClientRoleList();
-		expect(Array.isArray(result)).toBe(true);
-		expect(result).toHaveLength(0);
-	});
-
-	it("支持关键词搜索", async () => {
+	it("返回分页列表及总数", async () => {
 		const mockRoles = [
 			{
 				id: "r-1",
@@ -62,10 +55,43 @@ describe("getClientRoleList", () => {
 			{ id: "r-2", name: "普通用户", slug: "normal-user", permissions: [] },
 		];
 		mockRows.mockResolvedValue(mockRoles);
+		mockDb.$count.mockResolvedValue(2);
 
-		const result = await getClientRoleList("用户");
-		expect(result).toHaveLength(2);
-		expect(result[0].name).toBe("超级用户");
+		const result = await getClientRoleList();
+		expect(result.records).toEqual(mockRoles);
+		expect(result.total).toBe(2);
+		expect(result.page).toBe(1);
+		expect(result.pageSize).toBe(20);
+	});
+
+	it("分页参数正确传递", async () => {
+		mockRows.mockResolvedValue([]);
+		mockDb.$count.mockResolvedValue(0);
+
+		const result = await getClientRoleList({ page: 2, pageSize: 50 });
+		expect(result.page).toBe(2);
+		expect(result.pageSize).toBe(50);
+	});
+
+	it("支持关键词搜索", async () => {
+		mockRows.mockResolvedValue([]);
+		mockDb.$count.mockResolvedValue(0);
+
+		const result = await getClientRoleList({ keyword: "用户" });
+		expect(result.records).toEqual([]);
+		expect(mockDb.select).toHaveBeenCalled();
+	});
+});
+
+describe("getAllClientRoles", () => {
+	it("返回全部角色（不分页）", async () => {
+		const mockRoles = [
+			{ id: "r-1", name: "超级用户", slug: "client-super-admin" },
+		];
+		mockRows.mockResolvedValue(mockRoles);
+
+		const result = await getAllClientRoles();
+		expect(result).toEqual(mockRoles);
 	});
 });
 

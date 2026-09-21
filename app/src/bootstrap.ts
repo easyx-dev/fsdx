@@ -11,7 +11,10 @@ import {
 	loadTrackMetaCache,
 } from "#/services/track/track.server";
 import { ensurePresetConfigs } from "#/shared-services/config/config.server";
-import { ensurePresetDicts } from "#/shared-services/dict/dict.server";
+import {
+	ensurePresetDicts,
+	ensureSeedDicts,
+} from "#/shared-services/dict/dict.server";
 import { ensurePresetTranslations } from "#/shared-services/i18n/i18n.seed";
 import { logger } from "#/shared-services/logger";
 import { flushOperationLogs } from "#/shared-services/operation-log/operation-log.server";
@@ -27,9 +30,13 @@ export async function bootstrap() {
 
 	// 预置数据：确保缓存就绪后再处理请求
 	try {
-		await Promise.all([ensurePresetDicts(), ensurePresetConfigs()]);
+		await Promise.all([
+			ensurePresetDicts(),
+			ensureSeedDicts(),
+			ensurePresetConfigs(),
+		]);
 	} catch (err) {
-		logger.error({ err }, "预置字典或系统配置初始化失败");
+		logger.error({ err }, "预置字典 / 业务字典播种 / 系统配置初始化失败");
 	}
 	void ensurePresetTranslations().catch((err) => {
 		logger.error({ err }, "预置翻译初始化失败");

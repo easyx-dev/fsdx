@@ -18,11 +18,11 @@ import {
 } from "#/services/admin-role/admin-role.server";
 import { logCrud } from "#/shared-services/operation-log/operation-log.server";
 
-/** 获取角色列表 */
+/** 获取角色列表（分页、筛选、排序） */
 export const getAdminRolesSFn = createServerFn({ method: "GET" })
 	.middleware([adminPermGuard(ADMIN_PERMISSIONS.ADMIN_ROLE_VIEW)])
 	.validator(adminRoleListSchema)
-	.handler(async ({ data }) => getAdminRoleList(data.keyword));
+	.handler(async ({ data }) => getAdminRoleList(data));
 
 /** 创建角色 */
 export const createAdminRoleSFn = createServerFn({ method: "POST" })

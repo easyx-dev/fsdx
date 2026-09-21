@@ -59,6 +59,7 @@ import {
 	replaceFileContent,
 	sha256,
 	TEMP_EXPIRE_HOURS,
+	updateFileTags,
 	uploadFile,
 } from "#/services/file/file.server";
 import { logger } from "#/shared-services/logger";
@@ -611,5 +612,30 @@ describe("removeFile", () => {
 
 		await expect(removeFile("f-1")).resolves.toBeUndefined();
 		expect(vi.mocked(logger.warn)).toHaveBeenCalled();
+	});
+});
+
+describe("updateFileTags", () => {
+	beforeEach(() => vi.clearAllMocks());
+
+	it("文件不存在时返回 false 且不写库", async () => {
+		mockRows.mockReset().mockResolvedValue([]);
+
+		expect(await updateFileTags("不存在", ["产品"])).toBe(false);
+		expect(mockDb.update).not.toHaveBeenCalled();
+	});
+
+	it("文件存在时写入标签并返回 true", async () => {
+		mockRows.mockReset().mockResolvedValue([{ id: "f-1" }]);
+
+		expect(await updateFileTags("f-1", ["产品", "案例"])).toBe(true);
+		expect(mockDb.update).toHaveBeenCalled();
+	});
+
+	it("空数组表示清空标签", async () => {
+		mockRows.mockReset().mockResolvedValue([{ id: "f-1" }]);
+
+		expect(await updateFileTags("f-1", [])).toBe(true);
+		expect(mockDb.update).toHaveBeenCalled();
 	});
 });

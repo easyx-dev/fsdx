@@ -1,33 +1,44 @@
 /**
  * 消息管理表格列定义
+ * 用户类型 / 类型 / 状态统一走 StatusTag，时间列走 ProTable valueType，删除权限置灰
  */
-import { TableOperate } from "@fsdx/ui-spa/table";
-import { Tag } from "antd";
-import dayjs from "dayjs";
+import {
+	StatusTag,
+	type StatusTagOption,
+	TableOperate,
+} from "@fsdx/ui-spa/table";
 import { MESSAGE_TYPE_LABELS } from "#/constants/message-types";
 import type { MessageWithUser } from "#/services/message/message.server";
 
-/** 用户类型展示映射 */
-const USER_TYPE_LABELS: Record<string, string> = {
-	admin: "管理端",
-	client: "客户端",
+/** 用户类型展示选项 */
+const USER_TYPE_OPTIONS: Record<string, StatusTagOption> = {
+	admin: { label: "管理端", tone: "info" },
+	client: { label: "客户端", tone: "success" },
 };
 
-/** 用户类型 Tag 颜色 */
-const USER_TYPE_COLORS: Record<string, string> = {
-	admin: "purple",
-	client: "cyan",
-};
+/** 消息类型展示选项（由共享标签派生，未知类型兜底原值） */
+const TYPE_OPTIONS: Record<string, StatusTagOption> = Object.fromEntries(
+	Object.entries(MESSAGE_TYPE_LABELS).map(([value, label]) => [
+		value,
+		{ label, tone: "neutral" as const },
+	]),
+);
 
-/** 消息状态 Tag 颜色 */
-const STATUS_COLORS: Record<string, string> = {
-	unread: "red",
-	read: "default",
+/** 消息状态展示选项 */
+const STATUS_OPTIONS: Record<string, StatusTagOption> = {
+	unread: { label: "未读", tone: "danger" },
+	read: { label: "已读", tone: "neutral" },
 };
 
 interface MessageManageColumnsOptions {
-	onDelete: (id: string) => void;
+	onDelete: (record: MessageWithUser) => Promise<void>;
+	/** 权限开关：无权限的操作置灰并提示（服务端 guard 仍为唯一权威） */
+	permissions: {
+		delete: boolean;
+	};
 }
+
+const NO_DELETE_PERMISSION = "无「删除消息」权限";
 
 /** 消息管理表格列：用户/标题/类型/状态/时间 + 删除 */
 export function messageManageColumns(options: MessageManageColumnsOptions) {
@@ -38,12 +49,10 @@ export function messageManageColumns(options: MessageManageColumnsOptions) {
 			key: "userName",
 			width: 200,
 			render: (name: string, record: MessageWithUser) => (
-				<>
-					<Tag color={USER_TYPE_COLORS[record.userType]}>
-						{USER_TYPE_LABELS[record.userType]}
-					</Tag>
+				<span className="inline-flex items-center gap-1">
+					<StatusTag value={record.userType} options={USER_TYPE_OPTIONS} />
 					{name}
-				</>
+				</span>
 			),
 		},
 		{
@@ -56,36 +65,40 @@ export function messageManageColumns(options: MessageManageColumnsOptions) {
 			title: "类型",
 			dataIndex: "type",
 			key: "type",
-			width: 90,
-			render: (v: string) => MESSAGE_TYPE_LABELS[v] ?? v,
+			width: 100,
+			render: (val: string) => (
+				<StatusTag value={val} options={TYPE_OPTIONS} fallback={val} />
+			),
 		},
 		{
 			title: "状态",
 			dataIndex: "status",
 			key: "status",
-			width: 90,
-			render: (v: string) => (
-				<Tag color={STATUS_COLORS[v] ?? "default"}>
-					{v === "unread" ? "未读" : "已读"}
-				</Tag>
+			width: 100,
+			render: (val: string) => (
+				<StatusTag value={val} options={STATUS_OPTIONS} />
 			),
 		},
 		{
 			title: "时间",
 			dataIndex: "createdAt",
 			key: "createdAt",
-			width: 180,
-			render: (v: string) => dayjs(v).format("YYYY-MM-DD HH:mm"),
+			width: 160,
+			valueType: "dateTimeMinute",
 		},
 		{
 			title: "操作",
-			key: "action",
-			width: 100,
+			key: "actions",
+			fixed: "right" as const,
+			// 操作列固定右侧必须显式声明宽度（1 项 → 80）
+			width: 80,
 			render: (_: unknown, record: MessageWithUser) => (
 				<TableOperate>
 					<TableOperate.Delete
 						recordName="该消息"
-						onConfirm={() => options.onDelete(record.id)}
+						disabled={!options.permissions.delete}
+						disabledReason={NO_DELETE_PERMISSION}
+						onConfirm={() => options.onDelete(record)}
 					/>
 				</TableOperate>
 			),

@@ -31,7 +31,7 @@ export function MkdirModal({
 			confirmLoading={loading}
 			onOk={onOk}
 			onCancel={onCancel}
-			destroyOnClose
+			destroyOnHidden
 			styles={{ body: { paddingBottom: 8 } }}
 		>
 			<Input
@@ -73,7 +73,7 @@ export function RenameModal({
 			confirmLoading={loading}
 			onOk={onOk}
 			onCancel={onCancel}
-			destroyOnClose
+			destroyOnHidden
 			styles={{ body: { paddingBottom: 8 } }}
 		>
 			<Input
@@ -111,7 +111,7 @@ export function PreviewModal({
 			footer={null}
 			width="75%"
 			onCancel={onCancel}
-			destroyOnClose
+			destroyOnHidden
 			styles={{ body: { padding: 0 } }}
 		>
 			{loading ? (

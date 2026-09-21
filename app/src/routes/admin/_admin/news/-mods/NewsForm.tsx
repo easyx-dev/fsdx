@@ -1,6 +1,7 @@
 /**
  * 新闻管理路由自包含表单组件
  * 传入 id 即编辑（自动拉取数据），不传即新建，内部管理表单状态与提交逻辑
+ * 回调以 ref 承载最新引用，避免父级重渲染导致回填 effect 重跑（会覆盖用户正在编辑的内容）
  */
 
 import {
@@ -13,7 +14,7 @@ import {
 	Switch,
 } from "antd";
 import dayjs from "dayjs";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ImageUpload, RichEditor } from "#/components/admin";
 import { callSfn } from "#/utils/sfn-error";
 import { createNewsSFn, getNewsByIdSFn, updateNewsSFn } from "./news.functions";
@@ -35,6 +36,12 @@ export interface NewsFormValues {
 interface NewsFormProps {
 	/** 编辑时传入新闻 id，不传为新建模式 */
 	id?: string;
+	/** <form id>：宿主（AdminFormDrawer）以底部按钮提交时传入 */
+	formId?: string;
+	/** 隐藏表单自带操作按钮（宿主已提供吸底按钮时使用） */
+	hideActions?: boolean;
+	/** 提交中状态回传（宿主据此控制底部按钮 loading） */
+	onSubmittingChange?: (submitting: boolean) => void;
 	/** 保存成功回调，传入记录 id */
 	onSuccess?: (recordId: string) => void;
 	/** 保存失败或记录不存在时回调 */
@@ -43,11 +50,22 @@ interface NewsFormProps {
 	onCancel?: () => void;
 }
 
-export function NewsForm({ id, onSuccess, onError, onCancel }: NewsFormProps) {
+export function NewsForm({
+	id,
+	formId,
+	hideActions,
+	onSubmittingChange,
+	onSuccess,
+	onError,
+	onCancel,
+}: NewsFormProps) {
 	const [form] = Form.useForm();
 	const [loading, setLoading] = useState(!!id);
 	const [submitting, setSubmitting] = useState(false);
 	const isEdit = !!id;
+	// 回调放进 ref：回填 effect 只依赖 id / form，父级每次渲染换新函数也不会重跑
+	const onErrorRef = useRef(onError);
+	onErrorRef.current = onError;
 
 	// 编辑模式：拉取数据回填表单
 	useEffect(() => {
@@ -75,7 +93,7 @@ export function NewsForm({ id, onSuccess, onError, onCancel }: NewsFormProps) {
 						sortOrder: record.sortOrder ?? 0,
 					});
 				} else {
-					onError?.(new Error("新闻不存在"));
+					onErrorRef.current?.(new Error("新闻不存在"));
 				}
 			} catch {
 				// callSfn 已提示
@@ -86,10 +104,11 @@ export function NewsForm({ id, onSuccess, onError, onCancel }: NewsFormProps) {
 		return () => {
 			cancelled = true;
 		};
-	}, [id, form, onError]);
+	}, [id, form]);
 
 	const handleSubmit = async (values: NewsFormValues) => {
 		setSubmitting(true);
+		onSubmittingChange?.(true);
 		try {
 			if (id) {
 				const coverImageId = values.coverImageId || undefined;
@@ -141,6 +160,7 @@ export function NewsForm({ id, onSuccess, onError, onCancel }: NewsFormProps) {
 			// callSfn 已提示
 		} finally {
 			setSubmitting(false);
+			onSubmittingChange?.(false);
 		}
 	};
 
@@ -154,6 +174,7 @@ export function NewsForm({ id, onSuccess, onError, onCancel }: NewsFormProps) {
 
 	return (
 		<Form
+			id={formId}
 			form={form}
 			layout="vertical"
 			onFinish={handleSubmit}
@@ -248,14 +269,17 @@ export function NewsForm({ id, onSuccess, onError, onCancel }: NewsFormProps) {
 				</Form.Item>
 			</div>
 
-			<Form.Item>
-				<div className="flex gap-2">
-					<Button type="primary" htmlType="submit" loading={submitting}>
-						保存
-					</Button>
-					{onCancel && <Button onClick={onCancel}>取消</Button>}
-				</div>
-			</Form.Item>
+			{/* 宿主（AdminFormDrawer）提供吸底按钮时隐藏自带操作 */}
+			{!hideActions && (
+				<Form.Item>
+					<div className="flex gap-2">
+						<Button type="primary" htmlType="submit" loading={submitting}>
+							保存
+						</Button>
+						{onCancel && <Button onClick={onCancel}>取消</Button>}
+					</div>
+				</Form.Item>
+			)}
 		</Form>
 	);
 }

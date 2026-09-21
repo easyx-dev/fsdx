@@ -8,7 +8,7 @@ import { getCookie } from "@tanstack/react-start/server";
 import { COOKIE_NAMES } from "#/constants/cookie-names";
 import {
 	type AdminPermissionDef,
-	hasAdminPermission,
+	hasAllAdminPermissions,
 } from "#/permissions/admin-permissions";
 import { runWithRequestContext } from "#/shared-services/request-context";
 
@@ -61,16 +61,20 @@ export const adminAuthGuard = createMiddleware().server(async ({ next }) => {
 /**
  * 管理端权限校验中间件工厂
  * 直接调用 resolveAdminAuthContext 完成登录校验和权限校验
+ * required 传数组时要求同时具备全部权限（一次鉴权解析，避免串联多个 guard 重复解析）
  * Server Function 和 Server Route 通用
  */
-export function adminPermGuard(required: AdminPermissionDef) {
+export function adminPermGuard(
+	required: AdminPermissionDef | AdminPermissionDef[],
+) {
+	const requiredList = Array.isArray(required) ? required : [required];
 	return createMiddleware().server(async ({ next }) => {
 		const token = getCookie(COOKIE_NAMES.ADMIN_TOKEN);
 		const { resolveAdminAuthContext } = await import(
 			"#/middleware/admin-auth.server"
 		);
 		const ctx = await resolveAdminAuthContext(token);
-		if (!hasAdminPermission(ctx.rolePermissions, required)) {
+		if (!hasAllAdminPermissions(ctx.rolePermissions, requiredList)) {
 			throw new AdminAuthError("权限不足", 403);
 		}
 		return runWithRequestContext(
@@ -91,7 +95,9 @@ export function adminPermGuard(required: AdminPermissionDef) {
  * Server Route 专用权限守卫
  * 组合 adminPermGuard，捕获 AdminAuthError 转为对应 HTTP 状态码 JSON，避免中间件抛错被框架统一转 500
  */
-export function adminPermRouteGuard(required: AdminPermissionDef) {
+export function adminPermRouteGuard(
+	required: AdminPermissionDef | AdminPermissionDef[],
+) {
 	const guard = adminPermGuard(required);
 	return createMiddleware()
 		.middleware([guard])

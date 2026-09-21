@@ -1,19 +1,25 @@
 /**
- * 系统配置管理页面：键值对 CRUD（antd Table + Form + Modal）
+ * 系统配置管理页面：键值对 CRUD（左分组 + 右表格）
+ * 表格数据为全量配置的前端过滤（分组统计需要全量），故保持本地筛选与分页
  */
 import { DownloadOutlined, PlusOutlined } from "@ant-design/icons";
 import { downloadFile } from "@fsdx/lib/export";
 import { message } from "@fsdx/ui-spa/antd-static";
 import { JsonImportButton } from "@fsdx/ui-spa/json-import-button";
-import { ProTable } from "@fsdx/ui-spa/table";
+import { ProTable, withDisabledReason } from "@fsdx/ui-spa/table";
 import { createFileRoute, useRouter } from "@tanstack/react-router";
-import { Button, Card, Flex, Form, Input, Space } from "antd";
+import { Button, Card, Flex, Form, Input } from "antd";
 import dayjs from "dayjs";
 import type { ChangeEvent } from "react";
 import { useMemo, useState } from "react";
-import { AdminPageContent } from "#/components/admin";
+import {
+	AdminListPage,
+	AdminTableToolbar,
+	useAdminAuth,
+} from "#/components/admin";
+import { ADMIN_PERMISSIONS } from "#/permissions/admin-permissions";
 import type { ConfigRecord } from "#/shared-services/config/config.server";
-import { callSfn } from "#/utils/sfn-error";
+import { callSfn, sfnUnwrap } from "#/utils/sfn-error";
 import { ConfigFormModal } from "./-mods/ConfigFormModal";
 import {
 	createConfigSFn,
@@ -32,15 +38,26 @@ export const Route = createFileRoute("/admin/_admin/config/")({
 	loader: async () => await getConfigListSFn(),
 });
 
+const NO_CREATE_PERMISSION = "无「创建配置」权限";
+
 /** 系统配置管理页面组件 */
 function ConfigPage() {
 	const router = useRouter();
 	const configs = Route.useLoaderData();
+	const { hasPermission } = useAdminAuth();
 	const [searchText, setSearchText] = useState("");
 	const [selectedGroup, setSelectedGroup] = useState<string | null>(null);
 	const [modalOpen, setModalOpen] = useState(false);
 	const [editing, setEditing] = useState<ConfigRecord | null>(null);
 	const [form] = Form.useForm();
+
+	const permissions = {
+		create: hasPermission(ADMIN_PERMISSIONS.CONFIG_CREATE),
+		edit: hasPermission(ADMIN_PERMISSIONS.CONFIG_EDIT),
+		delete: hasPermission(ADMIN_PERMISSIONS.CONFIG_DELETE),
+		export: hasPermission(ADMIN_PERMISSIONS.CONFIG_EXPORT),
+		import: hasPermission(ADMIN_PERMISSIONS.CONFIG_IMPORT),
+	};
 
 	/** 从配置数据中提取分组列表 */
 	const groups = useMemo(() => {
@@ -154,35 +171,29 @@ function ConfigPage() {
 	};
 
 	/** 删除配置 */
-	const handleDelete = async (id: string) => {
-		try {
-			await callSfn(deleteConfigSFn({ data: { id } }));
-			message.success("已删除");
-			router.invalidate();
-		} catch {
-			// callSfn 已提示
-		}
+	const handleDelete = async (record: ConfigRecord) => {
+		const [, err] = await sfnUnwrap(
+			deleteConfigSFn({ data: { id: record.id } }),
+			{ error: "删除失败" },
+		);
+		if (err) return;
+		message.success("已删除");
+		router.invalidate();
 	};
 
 	/** 导出系统配置数据（JSON） */
 	const handleExportConfigs = async () => {
-		try {
-			const json = await callSfn(exportConfigsSFn());
-			const timestamp = dayjs().format("YYYY-MM-DD");
-			downloadFile(
-				json,
-				`configs_export_${timestamp}.json`,
-				"application/json",
-			);
-			message.success("导出完成");
-		} catch {
-			// callSfn 已提示
-		}
+		const [json] = await sfnUnwrap(exportConfigsSFn(), { error: "导出失败" });
+		if (!json) return;
+		const timestamp = dayjs().format("YYYY-MM-DD");
+		downloadFile(json, `configs_export_${timestamp}.json`, "application/json");
+		message.success("导出完成");
 	};
 
 	const configColumnsDef = configColumns({
 		onEdit: openModal,
 		onDelete: handleDelete,
+		permissions,
 	});
 
 	const activeGroupName =
@@ -193,36 +204,67 @@ function ConfigPage() {
 				: selectedGroup;
 
 	return (
-		<AdminPageContent
+		<AdminListPage
 			title="系统配置"
-			extra={
-				<Space>
-					<Button icon={<DownloadOutlined />} onClick={handleExportConfigs}>
-						导出 JSON
-					</Button>
-
-					<JsonImportButton
-						successMessage="导入完成"
-						onImport={async (jsonString) => {
-							const data = JSON.parse(jsonString);
-							const result = await callSfn(importConfigsSFn({ data }));
-							message.success(
-								`导入完成：新增 ${result.created} / 更新 ${result.updated}`,
-							);
-							router.invalidate();
-						}}
-					>
-						导入 JSON
-					</JsonImportButton>
-
-					<Button
-						type="primary"
-						icon={<PlusOutlined />}
-						onClick={() => openModal()}
-					>
-						新建配置
-					</Button>
-				</Space>
+			description="维护系统键值配置，敏感项值不回显"
+			extra={withDisabledReason(
+				<Button
+					type="primary"
+					icon={<PlusOutlined />}
+					disabled={!permissions.create}
+					onClick={() => openModal()}
+				>
+					新建配置
+				</Button>,
+				!permissions.create,
+				NO_CREATE_PERMISSION,
+			)}
+			toolbar={
+				<AdminTableToolbar
+					extra={
+						<>
+							{withDisabledReason(
+								<Button
+									icon={<DownloadOutlined />}
+									disabled={!permissions.export}
+									onClick={() => void handleExportConfigs()}
+								>
+									导出 JSON
+								</Button>,
+								!permissions.export,
+								"无「导出配置」权限",
+							)}
+							{withDisabledReason(
+								<JsonImportButton
+									disabled={!permissions.import}
+									successMessage="导入完成"
+									onImport={async (jsonString) => {
+										const data = JSON.parse(jsonString);
+										const result = await callSfn(importConfigsSFn({ data }));
+										message.success(
+											`导入完成：新增 ${result.created} / 更新 ${result.updated}`,
+										);
+										router.invalidate();
+									}}
+								>
+									导入 JSON
+								</JsonImportButton>,
+								!permissions.import,
+								"无「导入配置」权限",
+							)}
+						</>
+					}
+				>
+					<Input.Search
+						placeholder="搜索配置键或值"
+						allowClear
+						style={{ width: 240 }}
+						value={searchText}
+						onChange={(e: ChangeEvent<HTMLInputElement>) =>
+							setSearchText(e.target.value)
+						}
+					/>
+				</AdminTableToolbar>
 			}
 		>
 			<Flex gap={20}>
@@ -291,20 +333,6 @@ function ConfigPage() {
 							</span>
 						</span>
 					}
-					extra={
-						<Space>
-							<Input.Search
-								placeholder="搜索配置键或值"
-								allowClear
-								size="small"
-								style={{ width: 200 }}
-								value={searchText}
-								onChange={(e: ChangeEvent<HTMLInputElement>) =>
-									setSearchText(e.target.value)
-								}
-							/>
-						</Space>
-					}
 					classNames={{
 						root: "flex-1 min-w-0",
 					}}
@@ -313,7 +341,7 @@ function ConfigPage() {
 					<ProTable
 						dataSource={filteredConfigs}
 						columns={configColumnsDef}
-						scroll={{ x: 1500 }}
+						scroll={{ x: 1510 }}
 						rowKey="id"
 						size="small"
 						pagination={false}
@@ -329,6 +357,6 @@ function ConfigPage() {
 				onCancel={closeModal}
 				onSubmit={handleSubmit}
 			/>
-		</AdminPageContent>
+		</AdminListPage>
 	);
 }

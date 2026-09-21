@@ -2,6 +2,7 @@
  * ProTable：基于 antd Table 的增强表格组件
  * 默认开启 bordered，支持 valueType 自动渲染、renderText 自定义文本、
  * renderCopyableText 自定义复制、ellipsis Tooltip、copyable 复制
+ * 表体高度可继承就近页面骨架注入的剩余空间（见 table-height）
  */
 import { CopyOutlined } from "@ant-design/icons";
 import type { TableProps, TooltipProps } from "antd";
@@ -10,6 +11,7 @@ import type { ColumnsType, ColumnType } from "antd/es/table";
 import dayjs from "dayjs";
 import { useMemo } from "react";
 import { copyText } from "../clipboard";
+import { useTableHeight } from "./table-height";
 
 /** 扩展的 ellipsis 类型：支持 boolean 和自定义 Tooltip */
 type ProEllipsis = boolean | { showTitle?: boolean; tooltip?: TooltipProps };
@@ -21,8 +23,16 @@ export interface ProColumnType<T = any>
 	ellipsis?: ProEllipsis;
 	/** 是否显示复制按钮，复制 dataIndex 对应的原始值 */
 	copyable?: boolean;
-	/** 值类型：text 直接展示字符串，dateTime 格式化为 YYYY-MM-DD HH:mm:ss */
-	valueType?: "text" | "dateTime";
+	/**
+	 * 值类型：text 直接展示，dateTime 格式化为 YYYY-MM-DD HH:mm:ss，
+	 * dateTimeMinute 格式化为 YYYY-MM-DD HH:mm
+	 */
+	valueType?: "text" | "dateTime" | "dateTimeMinute";
+	/**
+	 * 空值占位内容：渲染结果为空（null / undefined / 空字符串）时展示
+	 * 常用于可为空的时间列（如「过期时间」「最后登录」）与可选文本列，避免各页重复兜底
+	 */
+	emptyText?: React.ReactNode;
 	/** 自定义文本渲染，必须返回 string；启用后 ellipsis 的 Tooltip 以此值为标题 */
 	renderText?: (value: unknown, record: T, index: number) => string;
 	/** 自定义复制文本，存在时复制此返回值；复制成功后提示"已复制" */
@@ -51,7 +61,7 @@ function hasCustomTooltip(
  * 根据 valueType 自动渲染值
  */
 function renderByValueType(
-	valueType: "text" | "dateTime",
+	valueType: "text" | "dateTime" | "dateTimeMinute",
 	value: unknown,
 ): string | null {
 	if (value === null || value === undefined) return null;
@@ -60,6 +70,8 @@ function renderByValueType(
 			return dayjs(value as string | number | Date).format(
 				"YYYY-MM-DD HH:mm:ss",
 			);
+		case "dateTimeMinute":
+			return dayjs(value as string | number | Date).format("YYYY-MM-DD HH:mm");
 		default:
 			return String(value);
 	}
@@ -75,6 +87,7 @@ function processColumns<T extends Record<string, any>>(
 		const {
 			copyable,
 			ellipsis,
+			emptyText,
 			valueType,
 			renderText,
 			renderCopyableText,
@@ -92,6 +105,20 @@ function processColumns<T extends Record<string, any>>(
 			effectiveRender = (value: unknown) => renderByValueType(valueType, value);
 		} else {
 			effectiveRender = originalRender;
+		}
+
+		// 空值兜底：声明了 emptyText 的列，渲染结果为空时统一替换为占位内容
+		// （放在 valueType / render 之后，避免各页为零值再手写一遍格式化逻辑）
+		if (emptyText !== undefined) {
+			const baseRender = effectiveRender;
+			effectiveRender = (value: unknown, record: T, index: number) => {
+				const content = baseRender
+					? baseRender(value, record, index)
+					: (value as React.ReactNode);
+				return content === null || content === undefined || content === ""
+					? emptyText
+					: content;
+			};
 		}
 
 		const hasCopyable = copyable === true;
@@ -220,20 +247,38 @@ function processColumns<T extends Record<string, any>>(
 /**
  * ProTable 组件：增强的 antd Table
  * - 默认 bordered
- * - valueType 自动渲染（text / dateTime）
+ * - valueType 自动渲染（text / dateTime / dateTimeMinute）
  * - renderText 自定义文本渲染 + ellipsis Tooltip
  * - renderCopyableText 自定义复制文本 + 复制后提示
  * - ellipsis 统一 Tooltip 支持
  * - copyable 支持列值复制
+ * - emptyText 为空值提供占位内容（可选）
+ * - 表体高度缺省继承页面骨架注入的剩余空间（显式 scroll.y 优先）
+ *
+ * 调用方约定：`fixed` 列必须显式声明 `width`（无宽度会被挤压到剩余空间，
+ * 宽度不足时内容溢出到相邻列），且 `scroll.x` 不小于各列宽度之和。
  */
 export function ProTable<T extends Record<string, any>>({
 	bordered = true,
 	columns,
+	scroll,
 	...restProps
 }: ProTableProps<T>) {
 	const processedColumns = useMemo(() => processColumns<T>(columns), [columns]);
+	// 页面骨架（AdminListPage）测量出剩余高度后经 context 下发，表格无需逐页传 scroll.y
+	const autoHeight = useTableHeight();
+	const mergedScroll = useMemo(() => {
+		const y = scroll?.y ?? autoHeight;
+		if (y === undefined) return scroll;
+		return { ...scroll, y };
+	}, [scroll, autoHeight]);
 
 	return (
-		<Table<T> bordered={bordered} columns={processedColumns} {...restProps} />
+		<Table<T>
+			bordered={bordered}
+			columns={processedColumns}
+			scroll={mergedScroll}
+			{...restProps}
+		/>
 	);
 }

@@ -191,7 +191,27 @@ packages/
 
 - 所有管理端表格的操作列**必须**使用 `TableOperate` 容器组件包裹（`@fsdx/ui-spa/table`）
 - 标准操作子组件：`TableOperate.Edit`（编辑）、`TableOperate.Delete`（删除）、`TableOperate.Link`（路由跳转）、`TableOperate.Custom`（自定义扩展）
-- 全部操作按钮统一 **图标 + 文字** 风格；`TableOperate.Delete` 内置 `Popconfirm` + 错误处理，确认文案模式 `"确定删除{recordName}？"`
+- 全部操作按钮统一 **图标 + 文字** 风格；`TableOperate.Delete` 内置 `Popconfirm`，确认文案模式 `"确定删除{recordName}？"`
+- **操作数上限 5**，超出收进「更多」（`TableOperate.Custom`）
+- **操作列必须显式声明 `width`**（固定列无宽度会被挤压到剩余空间，宽度不足时按钮溢出到相邻列）：按「图标 + 文字」估算，每项约 `16(图标) + 4(间距) + 文案宽度 + 16(内边距)`，再加单元格左右内边距（约 24）；2 项取 `160`，3 项取 `240`，4 项取 `320`，5 项（含「编辑图片」这类四字文案）取 `400`
+- **`scroll.x` 不小于各列宽度之和**（含操作列）：否则窄屏下无宽度列与固定列会被共同挤压，同样导致溢出；存在无宽度列（分摊剩余空间）时，`scroll.x` 需**大于**定宽列之和，差额即分给它们（差额过小会被压成窄条）
+- **无权限时置灰并说明原因**：传 `disabled` + `disabledReason`（如「无『编辑角色』权限」），不要隐藏按钮；服务端 `adminPermGuard` 仍是唯一权威
+- **错误出口唯一**：操作列子组件不得自行 `message.error` 捕获 SFn 错误，一律交 `callSfn` / `sfnUnwrap`；`onConfirm` 用 `sfnUnwrap`（不抛错），避免未处理的 rejected promise
+- **通用态不进操作列**：上架状态用 `PublishSwitchCell`、排序权重用 `SortOrderCell`，在单元格内直接修改（单字段 SFn + 审计）
+
+> 管理端列表页的统一规范（骨架 / 工具条 / 查询状态 / 分页 / 表体高度 / 抽屉编辑）见 [admin-crud](.agents/skills/admin-crud/SKILL.md)「列表页统一规范」与 [docs/admin-list-page.md](docs/admin-list-page.md)，验收项见 [admin-list-page](.agents/checklists/admin-list-page.md)。
+
+### 表格列规范
+
+- **图片 / 封面 / 缩略图列放表格最前**（序号、ID、展开、选择列除外），统一用 `ImageCell` 渲染（`@fsdx/ui-spa/table`）
+- 图片按**固定正方形**展示（默认 48×48，`ImageCell` 的 `size` 可调），`objectFit: contain` 等比缩放不裁切；列宽取 `size + 32`（默认 80），空值渲染 `—`
+- **排序列表头排序走服务端**：列上用 `...listQuery.sortProps("字段名")`（返回 `{ sorter: true, sortOrder }`，受控回填当前方向），字段名与列 `dataIndex` 一致且必须在服务层 `buildSortClause` 的字段白名单内；默认排序在服务层声明，禁止把整表数据拉到前端排
+- **状态列按形态选组件**：布尔状态（上架 / 启用）用 `PublishSwitchCell` 就地切换；多值枚举用 `StatusTag` 统一文案与语义色（`success` / `warning` / `danger` / `info` / `neutral`），取值来自可编辑字典时改用 `DictTag`（跟随字典管理）；枚举需就地切换时用 `Select`（`variant="borderless"`）或 `Switch`，交互同 `PublishSwitchCell`
+- 状态变更落库走**单字段 SFn**（`updateXxxSortSFn` / `setXxxPublishedSFn` / 模块状态 SFn）+ `logCrud` 审计，禁止复用整表更新
+- 时间列用 ProTable 的 `valueType: "dateTime"` / `"dateTimeMinute"`，禁止各页手写 `dayjs().format`
+- **可空列用 `emptyText` 兜底**（如「过期时间」「最后登录」这类可为 null 的时间列）：传 `emptyText: "—"`，由 ProTable 在渲染结果为空时替换，禁止各页为零值另写 `render` + 格式化
+- 字节 / 体积列用 `@fsdx/lib/format-bytes` 的 `formatBytes`
+- **内联编辑列（`SortOrderCell` / `PublishSwitchCell`）禁止 `ellipsis` / `copyable`**：ProTable 会用 `overflow: hidden` 的 span 包裹控件
 
 ## 日志约定
 
