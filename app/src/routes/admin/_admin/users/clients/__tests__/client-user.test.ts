@@ -33,7 +33,7 @@ const { mockDb, mockRows } = vi.hoisted(() => {
 		mockRows: rows,
 		mockDb: {
 			$count: vi.fn(),
-			select: vi.fn(() => chain),
+			select: vi.fn((..._args: unknown[]) => chain),
 			insert: vi.fn(() => ({
 				values: vi.fn(() => ({ returning: vi.fn() })),
 			})),
@@ -140,6 +140,19 @@ describe("getClientUser", () => {
 
 		expect(result).toBeUndefined();
 	});
+
+	it("详情投影不含 passwordHash", async () => {
+		mockRows.mockResolvedValue([]);
+
+		await getClientUser("u1");
+
+		const projection = mockDb.select.mock.calls[0][0] as Record<
+			string,
+			unknown
+		>;
+		expect(projection).toBeDefined();
+		expect(Object.keys(projection)).not.toContain("passwordHash");
+	});
 });
 
 describe("createClientUser", () => {
@@ -192,6 +205,23 @@ describe("createClientUser", () => {
 				passwordHash: "mocked_hash",
 			}),
 		);
+	});
+
+	it("返回投影不含 passwordHash", async () => {
+		const returningSpy = vi.fn((..._args: unknown[]) => Promise.resolve([]));
+		mockDb.insert.mockReturnValue({
+			values: vi.fn(() => ({ returning: returningSpy })),
+		});
+
+		await createClientUser({
+			username: "newuser",
+			email: "new@test.com",
+			password: "secret123",
+		});
+
+		const projection = returningSpy.mock.calls[0][0] as Record<string, unknown>;
+		expect(projection).toBeDefined();
+		expect(Object.keys(projection)).not.toContain("passwordHash");
 	});
 });
 
@@ -265,6 +295,21 @@ describe("updateClientUser", () => {
 			updateClientUser("u1", { clientRoleIds: ["cr-ghost"] }),
 		).rejects.toThrow("存在无效或已删除的角色");
 		expect(mockDb.update).not.toHaveBeenCalled();
+	});
+
+	it("返回投影不含 passwordHash", async () => {
+		const returningSpy = vi.fn((..._args: unknown[]) => Promise.resolve([]));
+		mockDb.update.mockReturnValue({
+			set: vi.fn(() => ({
+				where: vi.fn(() => ({ returning: returningSpy })),
+			})),
+		});
+
+		await updateClientUser("u1", { username: "renamed" });
+
+		const projection = returningSpy.mock.calls[0][0] as Record<string, unknown>;
+		expect(projection).toBeDefined();
+		expect(Object.keys(projection)).not.toContain("passwordHash");
 	});
 });
 

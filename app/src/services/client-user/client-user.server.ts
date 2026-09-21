@@ -137,10 +137,10 @@ export async function getClientUserList(params?: ClientUserListParams) {
 	};
 }
 
-/** 获取单个客户端用户 */
+/** 获取单个客户端用户（对外形态，不含内部字段） */
 export async function getClientUser(id: string) {
 	const [record] = await db
-		.select()
+		.select(clientUserSafeCols)
 		.from(clientUser)
 		.where(and(eq(clientUser.id, id), notDeleted(clientUser.deletedAt)))
 		.limit(1);
@@ -161,7 +161,7 @@ export async function createClientUser(input: CreateClientUserInput) {
 			status: "active",
 			clientRoleIds: roleIds,
 		})
-		.returning();
+		.returning(clientUserSafeCols);
 	return record;
 }
 
@@ -191,7 +191,7 @@ export async function updateClientUser(
 		.update(clientUser)
 		.set(setData)
 		.where(and(eq(clientUser.id, id), notDeleted(clientUser.deletedAt)))
-		.returning();
+		.returning(clientUserSafeCols);
 	if (record) {
 		// 状态或角色分配变更时清除缓存，避免返回已禁用用户或过期角色列表
 		if (input.status !== undefined || input.clientRoleIds !== undefined) {

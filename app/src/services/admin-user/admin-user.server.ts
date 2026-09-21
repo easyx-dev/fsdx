@@ -22,12 +22,36 @@ import type {
 	updateSchema,
 } from "./admin-user.schemas";
 
-export type AdminUserRecord = typeof adminUser.$inferSelect;
+/**
+ * 管理员记录（对外形态）
+ * 排除 passwordHash（仅服务端校验用）与 deletedAt（由查询条件表达），供服务层对外返回
+ */
+export type AdminUserRecord = Omit<
+	typeof adminUser.$inferSelect,
+	"passwordHash" | "deletedAt"
+>;
 
 /** 管理员列表项（含角色名称数组） */
 export interface AdminUserListItem extends AdminUserRecord {
 	roleNames: string[];
 }
+
+/**
+ * 可出服务端的字段投影
+ * 服务层所有对外返回的记录（列表 / 详情 / 新建 / 更新）统一经此投影，避免内部列泄漏
+ */
+const adminUserSafeCols = {
+	id: adminUser.id,
+	username: adminUser.username,
+	email: adminUser.email,
+	avatar: adminUser.avatar,
+	adminRoleIds: adminUser.adminRoleIds,
+	isRoot: adminUser.isRoot,
+	status: adminUser.status,
+	lastLoginAt: adminUser.lastLoginAt,
+	createdAt: adminUser.createdAt,
+	updatedAt: adminUser.updatedAt,
+};
 
 /** 新建管理员入参（schema 单一来源） */
 export type CreateAdminUserInput = z.infer<typeof createSchema>;
@@ -98,20 +122,7 @@ export async function getAdminUserList(params?: AdminUserListParams) {
 
 	const result = await executePaginatedQuery(
 		db
-			.select({
-				id: adminUser.id,
-				username: adminUser.username,
-				email: adminUser.email,
-				avatar: adminUser.avatar,
-				adminRoleIds: adminUser.adminRoleIds,
-				isRoot: adminUser.isRoot,
-				status: adminUser.status,
-				lastLoginAt: adminUser.lastLoginAt,
-				createdAt: adminUser.createdAt,
-				updatedAt: adminUser.updatedAt,
-				deletedAt: adminUser.deletedAt,
-				passwordHash: adminUser.passwordHash,
-			})
+			.select(adminUserSafeCols)
 			.from(adminUser)
 			.where(whereCondition)
 			.orderBy(direction)
@@ -136,10 +147,10 @@ export async function getAdminUserList(params?: AdminUserListParams) {
 	};
 }
 
-/** 获取单个管理员 */
+/** 获取单个管理员（对外形态，不含内部字段） */
 export async function getAdminUser(id: string) {
 	const [record] = await db
-		.select()
+		.select(adminUserSafeCols)
 		.from(adminUser)
 		.where(and(eq(adminUser.id, id), notDeleted(adminUser.deletedAt)))
 		.limit(1);
@@ -159,7 +170,7 @@ export async function createAdminUser(input: CreateAdminUserInput) {
 			adminRoleIds: input.adminRoleIds,
 			status: "active",
 		})
-		.returning();
+		.returning(adminUserSafeCols);
 	return record;
 }
 
@@ -188,7 +199,7 @@ export async function updateAdminUser(id: string, input: UpdateAdminUserInput) {
 		.update(adminUser)
 		.set(setData)
 		.where(and(eq(adminUser.id, id), notDeleted(adminUser.deletedAt)))
-		.returning();
+		.returning(adminUserSafeCols);
 	if (record) {
 		// 角色分配变更时清除缓存，避免鉴权读到过期角色列表
 		if (input.adminRoleIds !== undefined || input.status !== undefined) {
