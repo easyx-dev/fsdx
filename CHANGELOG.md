@@ -191,6 +191,12 @@
 
 - **埋点元数据缓存所有权回归单一模块（[infra]）**：`trackEventMetaCache` / `trackPropertyMetaCache` 原被 `track.meta.ts`（加载 / 失效）与 `track.server.ts`（校验读取）同时直接操作，与「缓存实例只能在唯一模块直接操作」规则不符。现 `track.meta.ts` 独占实例并导出 `isTrackEventNameRegistered` / `isTrackPropertyKeyRegistered` / `getTrackPropertyDataType`，`track.server.ts` 只读经这些函数；`cache` skill 的所有权表同步更正。可被衍生项目吸收
 
+- **`-mods/` 命名规整与死代码清理（[infra]）**：
+  - 逻辑文件改点分式（`<模块名>.<类型>.ts`）：`dashboard.charts.ts` / `dashboard.formatters.ts` / `analytics.shared.ts` / `analytics.trend-config.ts` / `log-analytics.config.ts` / `operation-log-analytics.config.ts` / `system-monitor.config.ts`；承载 React 组件的 5 个 kebab 文件改 PascalCase（`AnalyticsDimensionPanel.tsx` / `AnalyticsEventRanking.tsx` / `AnalyticsFilterBar.tsx` / `AnalyticsTopPages.tsx` / `AnalyticsTrendChart.tsx`），对应测试文件同步更名。纯命名，无行为变更。
+  - 裸 `interface Props` 与内联匿名 props 类型补具名类型（`NotifyChannelSettingsModalProps` / `TableHeightProviderProps`）。
+  - 删除零引用死代码：`ALL_ADMIN_PERMISSIONS` / `ALL_CLIENT_PERMISSIONS`（`ADMIN_PERMISSION_META` / 分组表保留）、`isValidTrackPropertyValue` 纯别名（直接导出 `isValidPropertyValue`）、`download.server` 两个未对外使用的 `export`、`admin/_admin.tsx` 空 `head`、`AdminLayout` 无 `onClick` 的「修改资料」按钮、`i18n.content.server` 两个返回值相同的死分支、`news.server` 重复的 slug import、`message.server` 的中转变量。
+  - 内存缓存移除从未被读取的 `name` 选项（注释称「用于日志」，与 lib 零日志耦合相悖）与 `CacheOptions` 的未使用泛型，8 处缓存实例化同步收敛；补 JSDoc（config / dict / i18n.seed 共 12 个导出）并修正缓存注释的自引用笔误与过期路径。可被衍生项目吸收
+
 ### Fix
 
 - **外部系统调用未统一观测、日志级别虚高（[infra]）**：`logExternalRequest` 自引入后在生产代码中零调用，`external_calls_total` / `external_call_duration_seconds` 恒为 0；邮件 / 短信 / webhook 各在自己的成功路径打 `info`，违反「per-call 一律禁 info」判据。四类外发（`mail`、`sms`、`notify/webhook`、`ai` 的 `/models` 拉取，以及 `chat/completions` 代理与 `completeText` / `streamAiChat`）统一改走 `logExternalRequest`（成功 debug、失败 warn + 指标），删除调用方重复日志；`i18n.ai.server` 的 AI 翻译失败日志随之移除（失败已由 `completeText` 收口）。指标口径按「调用是否真正可用」统计——`/models` 拉取在 HTTP 成功但响应体不可用（非 JSON / 结构异常 / 无模型 id）时同样计为失败，并把非法 JSON 的原始 `SyntaxError` 就地归一化为可读文案。新增 `observeExternalStream` 观测**流式**外部调用——单次记日志只能覆盖「请求已发出」，既测不到整段耗时也漏掉流内失败；现按流生命周期收口：自然结束记成功（duration 为整段流耗时）、流内抛错记失败并原样抛出、消费方中途放弃与客户端主动取消（AbortError）不计结果（避免取消抬高失败率）。已实测：一次真实 webhook 外发后 `external_calls_total{system="webhook",outcome="success"} 1`、失败路径 `outcome="error"} 1`。可被衍生项目吸收
@@ -252,6 +258,25 @@
   - `JsonImportButton`：`{...buttonProps}` 展开后又覆写 `onClick`，宿主传入的 `onClick` 被静默丢弃；改为内部 handler 先派发宿主的 `onClick`。可被衍生项目吸收
 
 - **补齐守卫与工具层测试缺口**：新增 `client-auth` 中间件测试（无 token / 无效 token / 管理端 token 冒用 → 401，用户不存在 → 401，被禁用 → 403，`hasClientPermission` 命中与未命中）；`utils` 的 `bool` / `sse-client` / `use-list-query` / `use-sfn-section` 补测试（含过期响应丢弃、SSE 分片重组与错误路径）；`fieldTranslationQuerySchema`、`fileIdSchema` 补 validator 拒绝路径用例。
+
+- **工具层与 lib 健壮性修复（[infra]）**：
+  - `readSSEStream`：回调由 `void onEvent(...)` 改为 await——原写法丢弃回调 Promise，异步 reject 会变成 unhandledrejection 且无法中断消费；现回调抛错或读流异常时取消底层流并向调用方抛出，`finally` 释放 reader 锁，非法事件仍按解析失败忽略。
+  - `useSfnSection`：加请求序号，`fetcher` 变更或组件卸载后在途响应作废，避免旧结果覆盖新区块状态。
+  - `batch-writer.shutdown()` 复位 `timerStarted`：关闭后若仍有写入（如优雅关闭的后续步骤）能重新启动定时刷新，否则这些条目只能靠攒满 `batchSize` 才落库、进程退出即静默丢失；定时器已 `unref`，不会拖住退出。lib 单测同步改为断言新行为（原用例把丢失行为写成了预期）。
+  - `task-manager`：`get` / `list` / `create` / `replayEvents` 返回快照（原返回内部可变引用，调用方可绕过 `patchState` / `setStatus` 直接改内部状态），`finish` 与 `setStatus` 合并为同一实现，`broadcast` 广播语义不变。
+  - `semaphore`：删除从未被读取的 `waiters.reject` 字段，重复两处的 `"EXECUTION_BUSY"` 提为常量。
+  - 验证码随机数：`int()` 由 `Math.round` 改 `Math.floor`（原区间首尾取值概率减半），paths 洗牌改 Fisher–Yates（原 `sort(() => Math.random() - 0.5)` 分布明显偏置），`ch-to-path` 的空 `RangeError` 补定位消息。
+  - 日志：日志文件清理失败由 `console.warn` 改 `logger.warn`（带文件名与错误）；验证码发送成功由 `info` 降为 `debug` 且不再记录邮箱 / 手机号（PII），短信失败路径同样只记类型。可被衍生项目吸收
+
+- **错误边界不再向终端用户透出技术文案（[infra]）**：新增 `getDisplayErrorMessage(error)`——业务 / 校验 / 鉴权错误返回服务端归一化文案（已剥离 SFn 元信息后缀），系统级错误（SQL / 堆栈 / 英文技术报错 / 未知异常）返回 `null`，由调用方渲染本地化兜底文案。前台 6 个路由错误边界（首页、新闻列表、新闻详情、登录、注册、忘记密码）与 `DefaultErrorFallback` 改用该函数，兜底文案走 i18n 并补英文种子；`DefaultErrorFallback` 的错误日志由渲染期移入 `useEffect`（渲染期打日志在并发渲染 / 重试下会重复执行）。可被衍生项目吸收
+
+- **UI 包可访问性与交互修复（[infra]）**：
+  - `PhotoWall`：上传区与「从文件库选择」由可点击 `div` 改为 `button`（键盘可达，鼠标 hover 反馈与直角风格保留）；移除仅用于阻断冒泡的冗余 `onClick` 包装层。
+  - `FileUpload`：「从文件库选择」由 `span` 改 `button`（保留阻止冒泡，避免同时触发 Dragger 的文件选择）。
+  - `permission-tags`：溢出项展开触发由 `div` 改 `button` 并补 `click` 触发，键盘用户可展开。
+  - `ImageCaptchaModal`：遮罩改独立 `button`（键盘可关闭，不再与弹窗内容嵌套交互元素），弹窗根补 `role="dialog"` + `aria-modal` + `aria-label`；开场 `requestAnimationFrame` 与关闭定时器在卸载 / 立即关闭时清理，避免迟到的 `setModalVisible` 把已关闭的弹窗又设为可见。
+  - `ImageCell` 补 `alt`（缺省取图片地址）；`Carousel` 补 `off("reInit")` 解绑。
+  - `SelectFileModal`：打开时的加载 effect 依赖收敛为 `[open]`（改经 ref 取最新加载函数），宿主传入不稳定回调时不再每次渲染重置分页并重复拉取。可被衍生项目吸收
 
 ### Docs
 
