@@ -21,11 +21,11 @@ import {
 	LogAnalyticsFilter,
 	type LogAnalyticsFilterState,
 } from "./-mods/LogAnalyticsFilter";
+import { buildLogTrendConfig } from "./-mods/log-analytics.config";
 import {
 	getLogAnalyticsSFn,
 	type LogAnalyticsParams,
 } from "./-mods/log-analytics.functions";
-import { buildLogTrendConfig } from "./-mods/log-analytics-config";
 
 /** 级别中文名 */
 const LEVEL_LABELS: Record<string, string> = {

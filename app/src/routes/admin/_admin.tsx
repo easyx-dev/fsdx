@@ -8,11 +8,6 @@ import { getCurrentAdminSFn } from "#/services/admin-auth/admin-auth.functions";
 
 export const Route = createFileRoute("/admin/_admin")({
 	ssr: false,
-	head: async () => {
-		return {
-			styles: [],
-		};
-	},
 	beforeLoad: async ({ location }) => {
 		const user = await getCurrentAdminSFn();
 

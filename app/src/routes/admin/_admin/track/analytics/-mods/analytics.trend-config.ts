@@ -4,7 +4,7 @@
  */
 import type { LineConfig } from "@ant-design/charts";
 import type { TimeSeriesPoint } from "#/services/track/track.types";
-import { ANALYTICS_SERIES_COLORS, compareLabel } from "./analytics-shared";
+import { ANALYTICS_SERIES_COLORS, compareLabel } from "./analytics.shared";
 
 /** 趋势筛选条件（用于确定分组与周期对比） */
 export interface TrendChartFilter {

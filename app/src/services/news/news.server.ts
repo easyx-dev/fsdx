@@ -20,7 +20,7 @@ import { ensureUniqueSlug, generateSlug } from "./news.slug";
 export type NewsRecord = typeof news.$inferSelect;
 
 // 转发共享的 slug 工具（路由层经 news.server 统一引用，避免改多处导入路径）
-export { ensureUniqueSlug, generateSlug } from "./news.slug";
+export { ensureUniqueSlug, generateSlug };
 
 /** 新闻更新数据 */
 export type NewsUpdateData = Partial<typeof news.$inferInsert>;

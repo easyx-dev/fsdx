@@ -3,7 +3,7 @@
  */
 import { Card, Space, Tag } from "antd";
 import type { SystemOverview } from "#/services/system-metric/system-metric.types";
-import { formatUptime } from "./dashboard-formatters";
+import { formatUptime } from "./dashboard.formatters";
 
 interface DashboardHealthStripProps {
 	system: SystemOverview;

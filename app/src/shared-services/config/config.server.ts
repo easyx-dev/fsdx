@@ -18,6 +18,7 @@ import { decryptConfigValue, encryptConfigValue } from "./config-secret.server";
 
 export type ConfigRecord = typeof systemConfig.$inferSelect;
 
+/** 重新加载系统配置全量列表到缓存（启动、增删改后调用，key 固定为 "all"） */
 export async function loadConfigCache(): Promise<void> {
 	const configs = await db
 		.select({
@@ -41,6 +42,10 @@ function readConfigValue(
 	return row.isSecret && row.value ? decryptConfigValue(row.value) : row.value;
 }
 
+/**
+ * 读取单个配置项的值
+ * 缓存未就绪时回源加载；敏感项在此解密，读取失败按空串返回
+ */
 export async function getConfig(key: string): Promise<string> {
 	let list = configCache.get("all");
 	if (!list) {
@@ -62,6 +67,7 @@ export async function getConfigList() {
 	);
 }
 
+/** 新建系统配置项：key 唯一，敏感项的值加密后入库，成功后刷新缓存 */
 export async function createConfig(params: {
 	key: string;
 	value: string;
@@ -135,6 +141,10 @@ export async function upsertConfig(
 	logger.info({ key }, "系统配置已写入");
 }
 
+/**
+ * 按 id 更新配置项（不存在的 id 返回 null）
+ * value 缺省表示保持原值——管理端编辑敏感项留空即走此分支；敏感行新值加密入库（isSecret 创建后不可改）
+ */
 export async function updateConfig(
 	id: string,
 	params: {
@@ -171,6 +181,7 @@ export async function updateConfig(
 	return updated ?? null;
 }
 
+/** 按 id 软删除配置项（不存在返回 false），成功后刷新缓存 */
 export async function deleteConfig(id: string) {
 	const [existing] = await db
 		.select()

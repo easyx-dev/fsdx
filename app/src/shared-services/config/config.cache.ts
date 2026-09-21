@@ -3,7 +3,7 @@
  * 仅允许 src/shared-services/config/config.server.ts 直接操作
  * 实例挂载于 globalThis 跨 bundle 共享：Nitro 入口（bootstrap 注入 getConfig）与 SSR 渲染器
  * 分别打包本模块，模块级单例会分裂导致启动后修改的配置在另一侧读不到空值。
- * 与 metrics 同模式的 globalThis 存取样板（见 config.cache）。
+ * 与 metrics 同模式的 globalThis 存取样板（见 shared-services/metrics）。
  */
 import { MemoryCache } from "@fsdx/lib/cache";
 
@@ -40,13 +40,12 @@ function getSharedCache<T>(
 /** 系统配置缓存实例：全量缓存配置列表，key 固定为 "all"（跨 bundle 共享） */
 export const configCache: MemoryCache<CachedConfig[]> = getSharedCache(
 	CONFIG_CACHE_KEY,
-	() => new MemoryCache<CachedConfig[]>({ name: "config" }),
+	() => new MemoryCache<CachedConfig[]>({}),
 );
 
 /** 系统配置的 content_translation 翻译缓存：key = locale，value = { entityId: translatedValue }（跨 bundle 共享） */
 export const configTranslationCache: MemoryCache<Record<string, string>> =
 	getSharedCache(
 		CONFIG_TRANSLATION_CACHE_KEY,
-		() =>
-			new MemoryCache<Record<string, string>>({ name: "config_translation" }),
+		() => new MemoryCache<Record<string, string>>({}),
 	);

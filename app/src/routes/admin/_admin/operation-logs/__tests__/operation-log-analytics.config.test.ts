@@ -6,7 +6,7 @@ import { describe, expect, it } from "vitest";
 import {
 	buildOperationDistributionConfig,
 	buildOperationTrendConfig,
-} from "../-mods/operation-log-analytics-config";
+} from "../-mods/operation-log-analytics.config";
 
 describe("buildOperationTrendConfig", () => {
 	it("空数据返回 null", () => {

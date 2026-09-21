@@ -50,10 +50,6 @@ const clientPermissionDefs = Object.values(
 export const CLIENT_PERMISSION_META: Record<string, ClientPermissionDef> =
 	Object.fromEntries(clientPermissionDefs.map((d) => [d.code, d]));
 
-/** 所有客户端权限码列表（当前为空集合） */
-export const ALL_CLIENT_PERMISSIONS: ClientPermissionCode[] =
-	clientPermissionDefs.map((d) => d.code);
-
 /** 按分组归类的客户端权限列表（当前为空集合） */
 export const CLIENT_PERMISSIONS_BY_GROUP: Record<
 	string,

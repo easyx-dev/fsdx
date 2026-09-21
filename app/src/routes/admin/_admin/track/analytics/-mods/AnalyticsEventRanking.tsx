@@ -7,7 +7,7 @@ import type {
 	EventRankingItem,
 	TrackEventMetaRecord,
 } from "#/services/track/track.types";
-import { formatPercent } from "./analytics-shared";
+import { formatPercent } from "./analytics.shared";
 
 interface AnalyticsEventRankingProps {
 	items: EventRankingItem[];

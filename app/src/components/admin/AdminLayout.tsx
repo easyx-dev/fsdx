@@ -4,7 +4,6 @@
  */
 import {
 	BellOutlined,
-	EditOutlined,
 	LogoutOutlined,
 	MenuFoldOutlined,
 	MenuUnfoldOutlined,
@@ -162,12 +161,7 @@ export function AdminLayout({ children }: { children: ReactNode }) {
 									</div>
 									<Divider size="small" />
 									{/* 退出登录 */}
-									<Flex justify="space-between" align="center">
-										<Button type="link">
-											<EditOutlined />
-											修改资料
-										</Button>
-										<Divider size="small" vertical />
+									<Flex justify="flex-end" align="center">
 										<Button type="link" onClick={handleLogout} danger>
 											<LogoutOutlined />
 											退出登录

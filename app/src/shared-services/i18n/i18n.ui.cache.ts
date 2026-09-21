@@ -5,6 +5,4 @@
 import { MemoryCache } from "@fsdx/lib/cache";
 
 /** UI 翻译缓存实例 */
-export const uiTranslationCache = new MemoryCache<Record<string, string>>({
-	name: "ui_translation",
-});
+export const uiTranslationCache = new MemoryCache<Record<string, string>>({});

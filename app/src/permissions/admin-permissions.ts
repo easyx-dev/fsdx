@@ -365,11 +365,6 @@ export const ADMIN_PERMISSION_META: Record<
 	Object.values(ADMIN_PERMISSIONS).map((d) => [d.code, d]),
 ) as Record<AdminPermissionCode, AdminPermissionDef>;
 
-/** 所有权限码列表 */
-export const ALL_ADMIN_PERMISSIONS: AdminPermissionCode[] = Object.values(
-	ADMIN_PERMISSIONS,
-).map((d) => d.code);
-
 /** 按分组归类的权限列表（从 ADMIN_PERMISSIONS 自动派生） */
 export const ADMIN_PERMISSIONS_BY_GROUP: Record<string, AdminPermissionDef[]> =
 	Object.values(ADMIN_PERMISSIONS).reduce<Record<string, AdminPermissionDef[]>>(

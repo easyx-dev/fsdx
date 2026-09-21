@@ -17,7 +17,7 @@ import type { TrackEventInput } from "./track.types";
 import {
 	clampTrackEventTime,
 	isTrackSessionRateLimited,
-	isValidTrackPropertyValue,
+	isValidPropertyValue,
 } from "./track.validate";
 
 // ═══════════════════════════════════════════════════
@@ -148,7 +148,7 @@ function trackEventInternal(
 			return;
 		}
 
-		if (!isValidTrackPropertyValue(value, expectedType)) {
+		if (!isValidPropertyValue(value, expectedType)) {
 			logger.warn(
 				{
 					name: input.name,

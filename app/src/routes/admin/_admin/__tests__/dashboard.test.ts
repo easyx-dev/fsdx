@@ -4,12 +4,12 @@
 
 import { describe, expect, it } from "vitest";
 import type { SystemMetricHistoryPoint } from "#/services/system-metric/system-metric.types";
-import { dashboardOverviewSchema } from "../-mods/dashboard.schemas";
 import {
 	buildResourceTrendConfig,
 	buildTrafficTrendConfig,
-} from "../-mods/dashboard-charts";
-import { formatUptime } from "../-mods/dashboard-formatters";
+} from "../-mods/dashboard.charts";
+import { formatUptime } from "../-mods/dashboard.formatters";
+import { dashboardOverviewSchema } from "../-mods/dashboard.schemas";
 
 describe("buildTrafficTrendConfig", () => {
 	it("空序列返回 null", () => {

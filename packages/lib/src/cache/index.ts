@@ -26,11 +26,9 @@ export interface CacheAdapter<T = unknown> {
 }
 
 /** 缓存选项 */
-export interface CacheOptions<_T> {
+export interface CacheOptions {
 	/** 默认过期时间（毫秒），0 表示永不过期 */
 	defaultTTL?: number;
-	/** 缓存名称，用于日志 */
-	name?: string;
 }
 
 /** 缓存条目 */
@@ -46,7 +44,7 @@ export class MemoryCache<T = unknown> implements CacheAdapter<T> {
 	private store = new Map<string, CacheEntry<T>>();
 	private defaultTTL: number;
 
-	constructor(options: CacheOptions<T> = {}) {
+	constructor(options: CacheOptions = {}) {
 		this.defaultTTL = options.defaultTTL ?? 0;
 	}
 

@@ -10,7 +10,7 @@ import type {
 import {
 	ANALYTICS_DIMENSION_CARDS,
 	ANALYTICS_SERIES_COLORS,
-} from "./analytics-shared";
+} from "./analytics.shared";
 
 interface AnalyticsDimensionPanelProps {
 	dimensions: Record<string, DimensionDistributionItem[]>;

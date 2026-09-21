@@ -16,6 +16,5 @@ export interface CachedClientUser {
 
 /** 客户端用户缓存实例 */
 export const clientUserCache = new MemoryCache<CachedClientUser>({
-	name: "client_user",
 	defaultTTL: 5 * 60 * 1000,
 });

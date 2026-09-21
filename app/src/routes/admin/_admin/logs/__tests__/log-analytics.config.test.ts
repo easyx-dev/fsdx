@@ -3,7 +3,7 @@
  */
 
 import { describe, expect, it } from "vitest";
-import { buildLogTrendConfig } from "../-mods/log-analytics-config";
+import { buildLogTrendConfig } from "../-mods/log-analytics.config";
 
 describe("buildLogTrendConfig", () => {
 	it("空数据返回 null", () => {

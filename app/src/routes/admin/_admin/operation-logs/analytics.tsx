@@ -24,7 +24,7 @@ import {
 import {
 	buildOperationDistributionConfig,
 	buildOperationTrendConfig,
-} from "./-mods/operation-log-analytics-config";
+} from "./-mods/operation-log-analytics.config";
 import { getOperationLogModulesSFn } from "./-mods/operation-logs.functions";
 import {
 	getOperationLogAnalyticsSFn,

@@ -45,12 +45,15 @@ const CHANNELS: {
 	},
 ];
 
-interface Props {
+interface NotifyChannelSettingsModalProps {
 	open: boolean;
 	onClose: () => void;
 }
 
-export function NotifyChannelSettingsModal({ open, onClose }: Props) {
+export function NotifyChannelSettingsModal({
+	open,
+	onClose,
+}: NotifyChannelSettingsModalProps) {
 	const [form] = Form.useForm<UserNotifyChannels>();
 	const [saving, setSaving] = useState(false);
 

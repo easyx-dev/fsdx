@@ -31,14 +31,17 @@ const TableHeightContext = createContext<number | string | undefined>(
 	undefined,
 );
 
+/** 表体高度提供器属性 */
+export interface TableHeightProviderProps {
+	value: number | string;
+	children: ReactNode;
+}
+
 /** 向下提供表体高度（由页面骨架包裹表格区域） */
 export function TableHeightProvider({
 	value,
 	children,
-}: {
-	value: number | string;
-	children: ReactNode;
-}) {
+}: TableHeightProviderProps) {
 	return (
 		<TableHeightContext.Provider value={value}>
 			{children}

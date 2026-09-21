@@ -1,6 +1,6 @@
 /**
  * 字典缓存实例：key = dictSlug，value = { itemValue: { label, color } }
- * 仅允许 src/services/dict/dict.server.ts 直接操作
+ * 仅允许 src/shared-services/dict/dict.server.ts 直接操作
  */
 import { MemoryCache } from "@fsdx/lib/cache";
 
@@ -11,6 +11,4 @@ export interface DictItemCache {
 }
 
 /** 字典缓存实例 */
-export const dictCache = new MemoryCache<Record<string, DictItemCache>>({
-	name: "dict",
-});
+export const dictCache = new MemoryCache<Record<string, DictItemCache>>({});

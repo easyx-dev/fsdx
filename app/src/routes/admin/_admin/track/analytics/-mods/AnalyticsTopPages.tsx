@@ -4,7 +4,7 @@
 import { Card, Empty, Table, Tabs, Tag } from "antd";
 import { AnalyticsChart } from "#/components/admin/analytics";
 import type { TopPageItem } from "#/services/track/track.types";
-import { ANALYTICS_SERIES_COLORS } from "./analytics-shared";
+import { ANALYTICS_SERIES_COLORS } from "./analytics.shared";
 
 interface AnalyticsTopPagesProps {
 	topPages: TopPageItem[];

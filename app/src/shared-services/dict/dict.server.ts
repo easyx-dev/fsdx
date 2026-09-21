@@ -31,6 +31,7 @@ function invalidateCache(): void {
 	cacheLoaded = false;
 }
 
+/** 重新加载字典与条目到缓存（按 slug 分片，条目按 sortOrder 升序） */
 export async function loadDictCache(): Promise<void> {
 	const [dicts, items] = await Promise.all([
 		db.select().from(dict).where(isNull(dict.deletedAt)),
@@ -83,6 +84,7 @@ export async function getAllDictOptions(): Promise<
 	return result;
 }
 
+/** 获取全部未删除字典（按创建时间升序，供管理端列表） */
 export async function getDictList() {
 	return db
 		.select()
@@ -91,6 +93,7 @@ export async function getDictList() {
 		.orderBy(asc(dict.createdAt));
 }
 
+/** 新建字典（slug 唯一），成功后刷新缓存 */
 export async function createDict(params: {
 	name: string;
 	slug: string;
@@ -101,6 +104,10 @@ export async function createDict(params: {
 	return record;
 }
 
+/**
+ * 按 id 软删除字典（连同其条目，事务内一并置 deletedAt）
+ * 预置字典（PRESET_DICTS）抛错拒绝；id 不存在返回 false
+ */
 export async function deleteDict(id: string) {
 	const [existing] = await db
 		.select()

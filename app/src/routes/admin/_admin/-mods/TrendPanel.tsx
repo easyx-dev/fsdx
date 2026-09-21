@@ -15,7 +15,7 @@ import {
 	buildTrafficTrendConfig,
 	type DashboardTrendMetric,
 	TREND_METRIC_OPTIONS,
-} from "./dashboard-charts";
+} from "./dashboard.charts";
 
 interface TrendPanelProps {
 	range: DashboardRange;

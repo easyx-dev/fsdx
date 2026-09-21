@@ -24,12 +24,14 @@ export interface SemaphoreConfig {
 	waitMs: number;
 }
 
+/** 排队满 / 等待超时共用的错误码：调用方据此识别「并发受限」而非业务失败 */
+const EXECUTION_BUSY_CODE = "EXECUTION_BUSY";
+
 /** 创建信号量实例 */
 export class Semaphore {
 	private active = 0;
 	private readonly waiters: Array<{
 		resolve: () => void;
-		reject: (err: unknown) => void;
 		timer: ReturnType<typeof setTimeout>;
 	}> = [];
 
@@ -53,7 +55,7 @@ export class Semaphore {
 		if (this.waiters.length >= this.config.queueLimit) {
 			throw new SemaphoreTimeoutError(
 				"并发排队已满，请稍后重试",
-				"EXECUTION_BUSY",
+				EXECUTION_BUSY_CODE,
 			);
 		}
 
@@ -66,7 +68,7 @@ export class Semaphore {
 				reject(
 					new SemaphoreTimeoutError(
 						"并发等待超时，请稍后重试",
-						"EXECUTION_BUSY",
+						EXECUTION_BUSY_CODE,
 					),
 				);
 			}, this.config.waitMs);
@@ -77,7 +79,6 @@ export class Semaphore {
 					this.active++;
 					resolve(releaseOnce);
 				},
-				reject,
 				timer,
 			});
 		});

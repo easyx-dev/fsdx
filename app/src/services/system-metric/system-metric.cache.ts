@@ -29,15 +29,9 @@ function getCaches(): SystemMetricCaches {
 		[CACHE_KEY]?: SystemMetricCaches;
 	};
 	global[CACHE_KEY] ??= {
-		storageUsage: new MemoryCache<StorageUsage>({
-			name: "system_metric_storage_usage",
-		}),
-		databaseSize: new MemoryCache<DatabaseSizes>({
-			name: "system_metric_database_size",
-		}),
-		latestSample: new MemoryCache<SystemMetricSample>({
-			name: "system_metric_latest_sample",
-		}),
+		storageUsage: new MemoryCache<StorageUsage>({}),
+		databaseSize: new MemoryCache<DatabaseSizes>({}),
+		latestSample: new MemoryCache<SystemMetricSample>({}),
 	};
 	return global[CACHE_KEY]!;
 }

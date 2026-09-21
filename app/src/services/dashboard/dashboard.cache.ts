@@ -22,27 +22,23 @@ const ERROR_SUMMARY_TTL_MS = 5 * 60_000;
 
 /** 访问流量摘要缓存 */
 export const dashboardTrafficCache = new MemoryCache<DashboardTraffic>({
-	name: "dashboard_traffic",
 	defaultTTL: DEFAULT_TTL_MS,
 });
 
 /** 系统资源历史趋势缓存 */
 export const dashboardResourceTrendCache = new MemoryCache<SystemMetricHistory>(
 	{
-		name: "dashboard_resource_trend",
 		defaultTTL: DEFAULT_TTL_MS,
 	},
 );
 
 /** 高风险操作摘要缓存 */
 export const dashboardRiskOpsCache = new MemoryCache<DashboardRiskOps>({
-	name: "dashboard_risk_ops",
 	defaultTTL: DEFAULT_TTL_MS,
 });
 
 /** 运行日志错误摘要缓存 */
 export const dashboardErrorSummaryCache =
 	new MemoryCache<DashboardErrorSummary>({
-		name: "dashboard_error_summary",
 		defaultTTL: ERROR_SUMMARY_TTL_MS,
 	});

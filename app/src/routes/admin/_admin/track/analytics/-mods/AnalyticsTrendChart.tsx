@@ -7,7 +7,7 @@ import type { TimeSeriesPoint } from "#/services/track/track.types";
 import {
 	buildTrendConfig,
 	type TrendChartFilter,
-} from "./analytics-trend-config";
+} from "./analytics.trend-config";
 
 interface AnalyticsTrendChartProps {
 	data: TimeSeriesPoint[];

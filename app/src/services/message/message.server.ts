@@ -186,13 +186,12 @@ export async function getMessages(
  * 获取用户未读消息数量
  */
 export async function getUnreadCount(user: UserRef): Promise<number> {
-	const result = await db.$count(
+	return db.$count(
 		db
 			.select()
 			.from(message)
 			.where(and(...userConditions(user), eq(message.status, "unread"))),
 	);
-	return result;
 }
 
 /**

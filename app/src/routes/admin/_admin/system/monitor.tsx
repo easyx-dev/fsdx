@@ -22,15 +22,15 @@ import { callSfn, sfnUnwrap } from "#/utils/sfn-error";
 import { DatabaseSizePanel } from "./-mods/DatabaseSizePanel";
 import { StorageUsagePanel } from "./-mods/StorageUsagePanel";
 import {
+	buildHistoryConfig,
+	HISTORY_METRIC_OPTIONS,
+} from "./-mods/system-monitor.config";
+import {
 	getDatabaseSizesSFn,
 	getStorageUsageSFn,
 	getSystemMetricHistorySFn,
 	getSystemOverviewSFn,
 } from "./-mods/system-monitor.functions";
-import {
-	buildHistoryConfig,
-	HISTORY_METRIC_OPTIONS,
-} from "./-mods/system-monitor-config";
 
 /** 实时快照轮询间隔（毫秒） */
 const OVERVIEW_POLL_INTERVAL = 5000;

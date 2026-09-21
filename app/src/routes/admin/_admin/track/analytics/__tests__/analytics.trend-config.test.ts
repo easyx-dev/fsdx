@@ -3,7 +3,7 @@
  */
 import { describe, expect, it } from "vitest";
 import type { TimeSeriesPoint } from "#/services/track/track.types";
-import { buildTrendConfig } from "../-mods/analytics-trend-config";
+import { buildTrendConfig } from "../-mods/analytics.trend-config";
 
 /** 构造当前窗口序列 */
 function curPoint(

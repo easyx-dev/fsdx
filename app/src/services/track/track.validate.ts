@@ -20,8 +20,11 @@ const LIMITS = {
 /** 禁止的对象键（防原型污染） */
 const FORBIDDEN_KEYS = new Set(["__proto__", "constructor", "prototype"]);
 
-/** 校验单个属性值是否符合声明的数据类型和长度限制 */
-function isValidPropertyValue(value: unknown, expectedType: string): boolean {
+/** 校验单个属性值是否符合声明的数据类型和长度限制（track.server 经此引用） */
+export function isValidPropertyValue(
+	value: unknown,
+	expectedType: string,
+): boolean {
 	if (value === null || value === undefined) return true;
 
 	switch (expectedType) {
@@ -111,14 +114,6 @@ function isValidPlainObject(value: unknown, depth: number): boolean {
 	return true;
 }
 
-/** 导出属性值校验函数供 trackEvent 使用 */
-export function isValidTrackPropertyValue(
-	value: unknown,
-	expectedType: string,
-): boolean {
-	return isValidPropertyValue(value, expectedType);
-}
-
 // ═══════════════════════════════════════════════════
 // 上报频控（公开接口 per-session 限流）
 // ═══════════════════════════════════════════════════
@@ -130,9 +125,7 @@ export const TRACK_RATE_LIMIT = {
 } as const;
 
 /** 会话上报计数缓存：key = sessionId，value = 窗口内计数，TTL 滑动过期 */
-const sessionRateCache = new MemoryCache<number>({
-	name: "track_rate_limit",
-});
+const sessionRateCache = new MemoryCache<number>();
 
 /** 判断会话是否超过频控阈值；未超限则累加计数 */
 export function isTrackSessionRateLimited(sessionId: string): boolean {

@@ -22,18 +22,18 @@ import type {
 	TrackPropertyMetaRecord,
 } from "#/services/track/track.types";
 import { callSfn } from "#/utils/sfn-error";
+import { AnalyticsDimensionPanel } from "./-mods/AnalyticsDimensionPanel";
+import { AnalyticsEventRanking } from "./-mods/AnalyticsEventRanking";
+import {
+	AnalyticsFilterBar,
+	type AnalyticsFilterState,
+} from "./-mods/AnalyticsFilterBar";
+import { AnalyticsTopPages } from "./-mods/AnalyticsTopPages";
+import { AnalyticsTrendChart } from "./-mods/AnalyticsTrendChart";
 import {
 	type AnalyticsQueryParams,
 	getTrackAnalyticsSFn,
 } from "./-mods/analytics.functions";
-import { AnalyticsDimensionPanel } from "./-mods/analytics-dimension-panel";
-import { AnalyticsEventRanking } from "./-mods/analytics-event-ranking";
-import {
-	AnalyticsFilterBar,
-	type AnalyticsFilterState,
-} from "./-mods/analytics-filter-bar";
-import { AnalyticsTopPages } from "./-mods/analytics-top-pages";
-import { AnalyticsTrendChart } from "./-mods/analytics-trend-chart";
 
 export const Route = createFileRoute("/admin/_admin/track/analytics/")({
 	component: TrackAnalyticsPage,

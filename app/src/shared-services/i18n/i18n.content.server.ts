@@ -102,7 +102,7 @@ export async function getContentTranslations(
 	| Record<string, Record<string, ContentTranslationResult>>
 > {
 	if (locale === DEFAULT_LOCALE) {
-		if (Array.isArray(entityIds)) return {};
+		// 默认语言即原文，无需查翻译表
 		return {};
 	}
 

@@ -27,11 +27,11 @@ export function toWebStream(
 }
 
 /**
- * 按 RFC 5987 对 filename* 值做百分号编码
+ * 按 RFC 5987 对 filename* 值做百分号编码（内部实现，行为经 createFileDownloadResponse 覆盖）
  * encodeURIComponent 已对非 ASCII 逐字节编码，但会保留 '()*，需额外转义（attr-char 不允许）
  * 孤立代理项（未配对的 \uD800-\uDFFF）会令 encodeURIComponent 抛 URIError，先替换为 U+FFFD 兜底
  */
-export function encodeRfc5987(value: string): string {
+function encodeRfc5987(value: string): string {
 	const wellFormed = value.replace(
 		/[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/g,
 		"\uFFFD",
@@ -43,10 +43,10 @@ export function encodeRfc5987(value: string): string {
 }
 
 /**
- * 生成 RFC 6266 的 filename 回退值（仅 ASCII）
+ * 生成 RFC 6266 的 filename 回退值（仅 ASCII，内部实现，行为经 createFileDownloadResponse 覆盖）
  * Headers 值必须为 ASCII，中文等非 ASCII 字符只能走 filename*，回退值保留可打印 ASCII
  */
-export function toFallbackFilename(filename: string): string {
+function toFallbackFilename(filename: string): string {
 	return filename
 		.replace(/[^\x20-\x7e]/g, "")
 		.replace(/["\\]/g, "_")
