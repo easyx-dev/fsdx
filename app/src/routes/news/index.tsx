@@ -10,7 +10,11 @@ import {
 	CardHeader,
 	CardTitle,
 } from "@fsdx/ui-ssr/ui";
-import { createFileRoute, Link } from "@tanstack/react-router";
+import {
+	createFileRoute,
+	Link,
+	stripSearchParams,
+} from "@tanstack/react-router";
 import dayjs from "dayjs";
 import { useTranslation } from "#/components/providers";
 import type { NewsRecord } from "#/services/news/news.server";
@@ -18,7 +22,16 @@ import { getPublishedNewsSFn } from "./-mods/news.functions";
 
 export const Route = createFileRoute("/news/")({
 	component: NewsListPage,
-	loader: async () => await getPublishedNewsSFn({ data: { page: 1 } }),
+	// 分页状态落在 URL 查询串（?page=N）：可深链分享、前进后退可达
+	// page=1 为默认值，由 stripSearchParams 从 URL 剔除，第 1 页保持 /news 的干净路径
+	validateSearch: (search: Record<string, unknown>) => {
+		const page = Number(search.page);
+		return { page: Number.isInteger(page) && page > 0 ? page : 1 };
+	},
+	search: { middlewares: [stripSearchParams({ page: 1 })] },
+	loaderDeps: ({ search }) => ({ page: search.page }),
+	loader: async ({ deps }) =>
+		await getPublishedNewsSFn({ data: { page: deps.page } }),
 	errorComponent: NewsListError,
 });
 
@@ -104,6 +117,7 @@ function NewsListPage() {
 						<Link
 							key={p}
 							to="/news"
+							search={{ page: p }}
 							className={`min-w-[2rem] rounded-md border px-2.5 py-1.5 text-center text-sm transition-colors sm:px-3 ${
 								p === page
 									? "border-primary bg-primary text-primary-foreground"

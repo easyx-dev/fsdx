@@ -78,7 +78,11 @@ function NewsDetailPage() {
 					{t("首页")}
 				</Link>
 				<ChevronRight className="h-3.5 w-3.5" />
-				<Link to="/news" className="hover:text-foreground transition-colors">
+				<Link
+					to="/news"
+					search={{ page: 1 }}
+					className="hover:text-foreground transition-colors"
+				>
 					{t("新闻资讯")}
 				</Link>
 				<ChevronRight className="h-3.5 w-3.5" />

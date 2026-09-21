@@ -122,7 +122,7 @@ function HomePage() {
 					)}
 				</p>
 				<div className="mt-6 flex flex-col items-center justify-center gap-3 sm:mt-8 sm:flex-row sm:gap-4">
-					<Link to="/news">
+					<Link to="/news" search={{ page: 1 }}>
 						<Button className="w-full sm:w-auto">
 							{t("浏览新闻")}
 							<ArrowRight />
@@ -156,6 +156,7 @@ function HomePage() {
 					</h2>
 					<Link
 						to="/news"
+						search={{ page: 1 }}
 						className="flex shrink-0 items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
 					>
 						{t("查看全部")}

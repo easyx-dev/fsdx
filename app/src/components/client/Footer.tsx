@@ -24,7 +24,11 @@ export function Footer() {
 						<Link to="/" className="hover:text-foreground">
 							{t("首页")}
 						</Link>
-						<Link to="/news" className="hover:text-foreground">
+						<Link
+							to="/news"
+							search={{ page: 1 }}
+							className="hover:text-foreground"
+						>
 							{t("新闻")}
 						</Link>
 						<Link to="/about" className="hover:text-foreground">
