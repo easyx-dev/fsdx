@@ -64,6 +64,20 @@ export async function isPathSafe(subPath: string): Promise<string> {
 }
 
 /**
+ * 校验叶子名称（上传文件名 / 新名称 / 新目录名）
+ * 拒绝空名称、`.` / `..` 与含路径分隔符的输入，避免拼接后逃逸出目标目录
+ * 反斜杠在 POSIX 下本属合法字符，一并拒绝是为了拦截 Windows 风格的 `..\..\x`
+ */
+function assertSafeLeafName(name: string, label: string): string {
+	if (!name || name === "." || name === ".." || /[\\/]/.test(name)) {
+		throw new Error(
+			`${label}不合法：不能为空，且不允许包含路径分隔符或上级目录引用`,
+		);
+	}
+	return name;
+}
+
+/**
  * 检查路径是否在写保护列表中
  * 匹配规则：路径前缀匹配受保护路径
  */
@@ -238,7 +252,8 @@ export async function createDirectory(
 ): Promise<void> {
 	const parentPath = await isPathSafe(subPath);
 
-	const safePath = await isPathSafe(join(subPath, dirName));
+	const safeName = assertSafeLeafName(dirName, "目录名");
+	const safePath = await isPathSafe(join(subPath, safeName));
 
 	const writeProtected = await isWriteProtected(parentPath);
 	if (writeProtected) {
@@ -283,12 +298,13 @@ export async function renameEntry(
 		throw new Error("该路径处于写保护状态，禁止重命名");
 	}
 
-	const parentDir = dirname(absolutePath);
-	const newPath = join(parentDir, newName);
+	const safeName = assertSafeLeafName(newName, "新名称");
+	// 拼到条目的真实父目录（absolutePath 已过 isPathSafe），保持「原地改名」语义且不跨目录
+	const newPath = join(dirname(absolutePath), safeName);
 
 	try {
 		await access(newPath);
-		throw new Error(`目标名称 "${newName}" 已存在`);
+		throw new Error(`目标名称 "${safeName}" 已存在`);
 	} catch (err) {
 		if ((err as NodeJS.ErrnoException).code !== "ENOENT") {
 			throw err;
@@ -298,7 +314,7 @@ export async function renameEntry(
 	const oldName = basename(absolutePath);
 	await rename(absolutePath, newPath);
 
-	return { oldName, newName };
+	return { oldName, newName: safeName };
 }
 
 /** 保存上传文件到指定目录 */
@@ -314,8 +330,9 @@ export async function saveUploadedFile(
 		throw new Error("当前目录处于写保护状态，禁止上传文件");
 	}
 
+	const safeName = assertSafeLeafName(fileName, "文件名");
 	const { writeFile } = await import("node:fs/promises");
-	const filePath = join(dirPath, fileName);
+	const filePath = await isPathSafe(join(subPath, safeName));
 	await writeFile(filePath, content);
 }
 

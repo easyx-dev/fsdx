@@ -362,6 +362,14 @@ describe("createDirectory", () => {
 			"禁止创建子目录",
 		);
 	});
+
+	it("目录名含路径分隔符时被拒绝", async () => {
+		mockGetConfig.mockResolvedValue("");
+
+		await expect(createDirectory("workspace", "a/b")).rejects.toThrow(
+			"目录名不合法",
+		);
+	});
 });
 
 describe("deleteEntry", () => {
@@ -445,6 +453,29 @@ describe("renameEntry", () => {
 			"禁止重命名",
 		);
 	});
+
+	it("新名称含路径分隔符时被拒绝且不移动文件", async () => {
+		mockGetConfig.mockResolvedValue("");
+
+		await expect(renameEntry("old.txt", "../escaped.txt")).rejects.toThrow(
+			"新名称不合法",
+		);
+
+		const { access } = await import("node:fs/promises");
+		await expect(access(join(testDir, "old.txt"))).resolves.toBeUndefined();
+	});
+
+	it("新名称为上级目录引用时被拒绝", async () => {
+		mockGetConfig.mockResolvedValue("");
+
+		await expect(renameEntry("old.txt", "..")).rejects.toThrow("新名称不合法");
+	});
+
+	it("新名称为空时被拒绝", async () => {
+		mockGetConfig.mockResolvedValue("");
+
+		await expect(renameEntry("old.txt", "")).rejects.toThrow("新名称不合法");
+	});
 });
 
 describe("saveUploadedFile", () => {
@@ -480,5 +511,27 @@ describe("saveUploadedFile", () => {
 		await expect(
 			saveUploadedFile("locked", "up.bin", Buffer.from("x")),
 		).rejects.toThrow("禁止上传文件");
+	});
+
+	it("文件名含逃逸路径时被拒绝且不落盘", async () => {
+		mockGetConfig.mockResolvedValue("");
+
+		await expect(
+			saveUploadedFile("workspace", "../../escaped.bin", Buffer.from("x")),
+		).rejects.toThrow("文件名不合法");
+
+		const { access } = await import("node:fs/promises");
+		// 拒绝语义：不做 basename 收敛，文件不应以任何形式落到存储目录内
+		await expect(
+			access(join(testDir, "workspace/escaped.bin")),
+		).rejects.toThrow("ENOENT");
+	});
+
+	it("文件名为上级目录引用时被拒绝", async () => {
+		mockGetConfig.mockResolvedValue("");
+
+		await expect(
+			saveUploadedFile("workspace", "..", Buffer.from("x")),
+		).rejects.toThrow("文件名不合法");
 	});
 });
