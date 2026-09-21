@@ -10,7 +10,18 @@ import { logger } from "#/shared-services/logger";
 export async function runMigrations() {
 	const migrationsFolder = resolve(process.cwd(), "drizzle");
 	if (!existsSync(migrationsFolder)) {
-		logger.warn({ migrationsFolder }, "迁移目录不存在，跳过数据库迁移");
+		// 生产环境迁移目录缺失 = 部署产物不完整，必须 fail-fast：
+		// 静默跳过会让应用在 schema 与代码不一致的状态下运行
+		if (process.env.NODE_ENV === "production") {
+			throw new Error(
+				`迁移目录不存在，无法执行数据库迁移：${migrationsFolder}`,
+			);
+		}
+		// 开发/测试下允许缺失（如仅跑单测、未生成迁移目录），显式告警以免掩盖问题
+		logger.warn(
+			{ migrationsFolder },
+			"迁移目录不存在，跳过数据库迁移（非生产环境）",
+		);
 		return;
 	}
 	const databaseUrl = process.env.DATABASE_URL;

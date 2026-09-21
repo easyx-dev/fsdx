@@ -28,7 +28,7 @@ export async function bootstrap() {
 	// 生产部署由 deploy.sh 通过健康检查捕获迁移结果）
 	await runMigrations();
 
-	// 预置数据：确保缓存就绪后再处理请求
+	// 预置数据：字典 / 业务字典 / 系统配置同步等待完成后再对外服务（请求链路依赖它们读配置与字典）
 	try {
 		await Promise.all([
 			ensurePresetDicts(),
@@ -38,6 +38,7 @@ export async function bootstrap() {
 	} catch (err) {
 		logger.error({ err }, "预置字典 / 业务字典播种 / 系统配置初始化失败");
 	}
+	// 预置翻译与埋点元数据不阻塞启动：失败仅落 error 日志，缓存待首次访问懒加载
 	void ensurePresetTranslations().catch((err) => {
 		logger.error({ err }, "预置翻译初始化失败");
 	});
@@ -52,22 +53,12 @@ export async function bootstrap() {
 	// 注册定时任务
 	registerAllTasks();
 
-	// 注册进程级异常处理器
-	process.on("uncaughtException", (err, origin) => {
-		logger.fatal({ err, origin }, "未捕获的异常，进程即将退出");
-		process.exit(1);
-	});
-	process.on("unhandledRejection", (reason) => {
-		logger.fatal({ err: reason }, "未处理的 Promise 拒绝，进程即将退出");
-		process.exit(1);
-	});
-
 	// 注册优雅关闭处理器（含超时保护）
 	let shuttingDown = false;
-	const gracefulShutdown = async () => {
+	const gracefulShutdown = async (exitCode: number) => {
 		if (shuttingDown) return;
 		shuttingDown = true;
-		logger.info("收到退出信号，开始优雅关闭...");
+		logger.info({ exitCode }, "开始优雅关闭，刷入缓冲...");
 		try {
 			await Promise.race([
 				Promise.all([flushTrackEvents(), flushOperationLogs()]),
@@ -78,14 +69,25 @@ export async function bootstrap() {
 					),
 				),
 			]);
-			process.exit(0);
+			process.exit(exitCode);
 		} catch (err) {
 			logger.error({ err }, "缓冲刷入失败");
 			process.exit(1);
 		}
 	};
 
-	process.on("SIGTERM", gracefulShutdown);
-	process.on("SIGINT", gracefulShutdown);
-	process.on("SIGQUIT", gracefulShutdown);
+	// 进程级异常同样走优雅关闭：直接 process.exit 会丢弃 BatchWriter 缓冲中的埋点与审计
+	process.on("uncaughtException", (err, origin) => {
+		logger.fatal({ err, origin }, "未捕获的异常，进程即将退出");
+		void gracefulShutdown(1);
+	});
+	process.on("unhandledRejection", (reason) => {
+		logger.fatal({ err: reason }, "未处理的 Promise 拒绝，进程即将退出");
+		void gracefulShutdown(1);
+	});
+
+	// 信号触发的退出视为正常退出（exitCode 0）
+	process.on("SIGTERM", () => void gracefulShutdown(0));
+	process.on("SIGINT", () => void gracefulShutdown(0));
+	process.on("SIGQUIT", () => void gracefulShutdown(0));
 }

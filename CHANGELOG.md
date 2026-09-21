@@ -185,6 +185,8 @@
 
 - **上游 `x-request-id` 未做字符校验（[infra]）**：上游透传值仅截断长度即回写响应头、写入日志与 `operation_log.request_id`，控制字符与非 ASCII 值可原样进入链路标识（构成响应头注入面并污染审计）。新增可见 ASCII 白名单（`0x21-0x7E`，不含空格），非法值整体回退为新生成 UUID——不做清洗后沿用，避免残留可疑字符被当作可信链路 ID；长度超限仍截断至列长度。解析逻辑抽为 `resolveRequestId` 并补单测；UUID 生成改用 Web Crypto 全局实现（`node:crypto` 会因本模块进入客户端模块图而被 Vite 外部化，见 Infrastructure 条）。已实测：非 ASCII / 含空格 / 空值请求头均回退 UUID 且请求正常返回。补充说明：计划中「CRLF 触发 `setResponseHeader` 抛错致该请求 500」实测**不可复现**——Node 的 HTTP 解析器会把 CRLF 拆成两个独立请求头，不会作为头值进入本中间件，故本条定位为防御性收紧而非已发生的故障修复。可被衍生项目吸收
 
+- **启动链路一致性（[infra]）**：① `runMigrations` 在迁移目录缺失时仅 `warn` 放行，部署产物不完整却以「schema 与代码不一致」的状态静默启动，改为生产环境 `throw` fail-fast、非生产保留跳过并在日志与注释中显式标注；② `uncaughtException` / `unhandledRejection` 原直接 `process.exit(1)`，绕过 `gracefulShutdown`——埋点与审计的 BatchWriter 缓冲未刷入即随进程消失，与 SIGTERM 路径不一致，改为复用同一优雅关闭逻辑（信号退出 `exitCode 0`、异常退出 `1`，保留刷入超时兜底）；③ 修正预置数据「确保缓存就绪后再处理请求」与实际 `void` 异步执行的注释不符（字典 / 业务字典 / 系统配置为同步等待，翻译与埋点元数据不阻塞启动）。可被衍生项目吸收
+
 - **用户记录内部列泄漏（[infra]）**：管理端与服务端用户接口把整行记录回传客户端，`passwordHash` 随之进入响应 JSON——列表查询此前显式 `select` 了该列，新建 / 更新 / 详情则用无参 `.returning()` / `.select()` 取回全部列，同仓客户端用户列表（`clientUserSafeCols`）已刻意排除该列，属遗漏。现收敛为单一「可出服务端字段投影」（管理端新增 `adminUserSafeCols`，客户端复用既有 `clientUserSafeCols`），列表 / 详情 / 新建 / 更新四条路径统一经投影取数，`AdminUserRecord` 与客户端侧对齐为 `Omit<…, "passwordHash" | "deletedAt">`；补七条投影回归用例（管理端 4、客户端 3；已验证：投影改回全列即失败）。可被衍生项目吸收
 
 - **文件管理器路径穿越（[infra]）**：`isPathSafe` 只校验传入的子路径，叶子名称（上传文件名 / 重命名新名称 / 新目录名）此前未校验即参与拼接——上传可传 `../../x` 把文件写到 `STORAGE_DIR` 之外，重命名可借 `../` 把条目移到其它目录。新增叶子名校验（拒绝空、`.` / `..` 与任何含路径分隔符的输入，显式拒绝而非静默收敛为 `basename`；反斜杠在 POSIX 下本属合法字符，一并拒绝以拦截 Windows 风格穿越，属有意为之的行为收紧），拼接后再过 `isPathSafe` 作二次校验；重命名的目标父目录仍取条目自身的真实父目录，保持「原地改名」语义。补六条穿越拒绝用例。可被衍生项目吸收
