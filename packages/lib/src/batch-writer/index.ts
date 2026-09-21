@@ -141,6 +141,8 @@ export class BatchWriter<T> {
 			clearInterval(this.timer);
 			this.timer = null;
 		}
+		// 复位定时器标记：shutdown 后若继续 push，需能重新启动定时刷新
+		this.timerStarted = false;
 		await this.flush();
 	}
 }

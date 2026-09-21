@@ -56,7 +56,11 @@ function splitQuadraticBezier(
 	x3: number,
 	y3: number,
 ): number[] {
-	if (position <= 0 || position >= 1) throw new RangeError();
+	if (position <= 0 || position >= 1) {
+		throw new RangeError(
+			`position 必须位于 (0, 1) 开区间内，收到：${position}`,
+		);
+	}
 	const ret: number[] = [];
 	const v1 = { x: x1, y: y1 };
 	const v2 = { x: x2, y: y2 };

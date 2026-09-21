@@ -96,7 +96,7 @@ describe("BatchWriter", () => {
 		expect(insertFn).toHaveBeenCalledTimes(3);
 	});
 
-	it("shutdown 清理定时器并强制刷新", async () => {
+	it("shutdown 清理定时器并强制刷新，之后 push 仍能重新启动定时刷新", async () => {
 		const insertFn = vi.fn().mockResolvedValue(undefined);
 		const writer = new BatchWriter<number>({
 			logLabel: "测试",
@@ -105,9 +105,12 @@ describe("BatchWriter", () => {
 		writer.push(42);
 		await writer.shutdown();
 		expect(insertFn).toHaveBeenCalledWith([42]);
-		// shutdown 后定时器已清理，再次 push 不触发定时刷新
+		// 关闭流程中仍可能有审计/埋点写入（如优雅关闭的后续步骤）：定时器必须能重新启动，
+		// 否则这些条目只能靠攒满 batchSize 才刷出、进程退出即静默丢失；定时器已 unref，不会拖住退出
 		writer.push(99);
-		await vi.advanceTimersByTimeAsync(6000);
-		expect(insertFn).toHaveBeenCalledTimes(1);
+		await vi.advanceTimersByTimeAsync(5000);
+		expect(insertFn).toHaveBeenCalledTimes(2);
+		expect(insertFn).toHaveBeenLastCalledWith([99]);
+		await writer.shutdown();
 	});
 });

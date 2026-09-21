@@ -81,6 +81,29 @@ describe("readSSEStream", () => {
 		).rejects.toThrow("请求失败(500)");
 	});
 
+	it("回调抛错时中断消费、取消底层流并向上抛出", async () => {
+		const encoder = new TextEncoder();
+		let cancelled = false;
+		const stream = new ReadableStream<Uint8Array>({
+			start(controller) {
+				controller.enqueue(encoder.encode('data: {"type":"a"}\n\n'));
+				controller.enqueue(encoder.encode('data: {"type":"b"}\n\n'));
+			},
+			cancel() {
+				cancelled = true;
+			},
+		});
+		const onEvent = vi.fn(() => {
+			throw new Error("回调失败");
+		});
+
+		await expect(readSSEStream(new Response(stream), onEvent)).rejects.toThrow(
+			"回调失败",
+		);
+		expect(onEvent).toHaveBeenCalledTimes(1);
+		expect(cancelled).toBe(true);
+	});
+
 	it("响应无 body 时抛错", async () => {
 		await expect(
 			readSSEStream(new Response(null, { status: 200 }), vi.fn()),

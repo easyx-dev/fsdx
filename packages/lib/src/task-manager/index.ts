@@ -64,6 +64,19 @@ export interface TaskManager<
 	broadcast(id: string, event: TEvent): void;
 }
 
+/** 任务记录快照：外层字段、业务状态、事件缓冲与订阅者集合均不与内部共享引用，
+ * 调用方改快照不会污染管理器内部状态（状态变更一律走 patchState / setStatus / broadcast） */
+function snapshotTask<TState extends object, TEvent extends TaskEvent>(
+	task: ManagedTask<TState, TEvent>,
+): ManagedTask<TState, TEvent> {
+	return {
+		...task,
+		state: { ...task.state },
+		events: [...task.events],
+		subscribers: new Set(task.subscribers),
+	};
+}
+
 /** 创建任务管理器实例（每业务模块一个实例，互不共享） */
 export function createTaskManager<
 	TState extends object,
@@ -71,6 +84,14 @@ export function createTaskManager<
 >(options: TaskManagerOptions = {}): TaskManager<TState, TEvent> {
 	const { ttlMs = 60 * 60 * 1000, eventBufferLimit = 500 } = options;
 	const tasks = new Map<string, ManagedTask<TState, TEvent>>();
+
+	/** 写入任务状态并刷新 updatedAt（setStatus / finish 共用，避免依赖 this 绑定） */
+	function applyStatus(id: string, status: TaskStatus): void {
+		const task = tasks.get(id);
+		if (!task) return;
+		task.status = status;
+		task.updatedAt = Date.now();
+	}
 
 	/** 清理过期任务（惰性：访问时触发） */
 	function cleanupExpiredTasks(): void {
@@ -86,13 +107,14 @@ export function createTaskManager<
 	return {
 		get(id) {
 			cleanupExpiredTasks();
-			return tasks.get(id) ?? null;
+			const task = tasks.get(id);
+			return task ? snapshotTask(task) : null;
 		},
 		list() {
 			cleanupExpiredTasks();
-			return Array.from(tasks.values()).sort(
-				(a, b) => b.createdAt - a.createdAt,
-			);
+			return Array.from(tasks.values())
+				.sort((a, b) => b.createdAt - a.createdAt)
+				.map((task) => snapshotTask(task));
 		},
 		create(id, state) {
 			cleanupExpiredTasks();
@@ -106,7 +128,7 @@ export function createTaskManager<
 				updatedAt: Date.now(),
 			};
 			tasks.set(id, task);
-			return task;
+			return snapshotTask(task);
 		},
 		patchState(id, patch) {
 			const task = tasks.get(id);
@@ -115,16 +137,10 @@ export function createTaskManager<
 			task.updatedAt = Date.now();
 		},
 		setStatus(id, status) {
-			const task = tasks.get(id);
-			if (!task) return;
-			task.status = status;
-			task.updatedAt = Date.now();
+			applyStatus(id, status);
 		},
 		finish(id, status) {
-			const task = tasks.get(id);
-			if (!task) return;
-			task.status = status;
-			task.updatedAt = Date.now();
+			applyStatus(id, status);
 		},
 		remove(id) {
 			const task = tasks.get(id);
@@ -140,7 +156,7 @@ export function createTaskManager<
 			};
 		},
 		replayEvents(id) {
-			return tasks.get(id)?.events ?? [];
+			return [...(tasks.get(id)?.events ?? [])];
 		},
 		broadcast(id, event) {
 			const task = tasks.get(id);

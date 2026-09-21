@@ -85,12 +85,14 @@ export async function sendCaptcha(
 			await sendSms(target, code);
 		} catch (err) {
 			const message = err instanceof Error ? err.message : "短信发送失败";
-			logger.warn({ target, error: message }, "短信发送失败");
+			// target 为邮箱/手机号（PII），只记类型
+			logger.warn({ type, error: message }, "短信发送失败");
 			return { success: false, message };
 		}
 	}
 
-	logger.info({ type, target }, "验证码发送成功");
+	// 每次发送必现，按「per-call 一律禁 info」记为 debug；target 为 PII，只记类型
+	logger.debug({ type }, "验证码发送成功");
 	return { success: true, message: "验证码已发送" };
 }
 

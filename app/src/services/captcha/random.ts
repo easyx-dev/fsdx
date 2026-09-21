@@ -3,9 +3,18 @@
  */
 import { options } from "./option-manager";
 
-/** 区间随机整数 */
+/** 区间随机整数（含两端）：Math.floor 保证首尾与中间值同概率 */
 export function int(min: number, max: number): number {
-	return Math.round(min + Math.random() * (max - min));
+	return Math.floor(min + Math.random() * (max - min + 1));
+}
+
+/** Fisher–Yates 原地洗牌：`sort(() => Math.random() - 0.5)` 的分布有明显偏置，不可用于随机顺序 */
+export function shuffle<T>(items: T[]): T[] {
+	for (let i = items.length - 1; i > 0; i--) {
+		const j = Math.floor(Math.random() * (i + 1));
+		[items[i], items[j]] = [items[j], items[i]];
+	}
+	return items;
 }
 
 /** 生成灰色调 */

@@ -28,6 +28,17 @@ vi.mock("node:path", () => ({
 	resolve: mockResolve,
 }));
 
+/** 日志清理失败路径会经 logger 记 warn：mock 掉避免拉起完整日志模块（pino 流依赖真实的 node:fs） */
+const { mockLoggerWarn } = vi.hoisted(() => ({ mockLoggerWarn: vi.fn() }));
+vi.mock("#/shared-services/logger", () => ({
+	logger: {
+		warn: mockLoggerWarn,
+		info: vi.fn(),
+		error: vi.fn(),
+		debug: vi.fn(),
+	},
+}));
+
 import { toDateString } from "@fsdx/lib/date-format";
 
 import { cleanExpiredLogs } from "#/services/logs/logs-cleanup.server";
@@ -76,7 +87,7 @@ describe("cleanExpiredLogs", () => {
 		expect(mockUnlinkSync).toHaveBeenCalledTimes(1);
 	});
 
-	it("单个文件删除失败不中断后续文件清理", () => {
+	it("单个文件删除失败不中断后续文件清理，并记 warn 日志", () => {
 		mockExistsSync.mockReturnValue(true);
 		mockReaddirSync.mockReturnValue(["2020-01-01.log", "2020-01-02.log"]);
 		mockUnlinkSync
@@ -87,6 +98,13 @@ describe("cleanExpiredLogs", () => {
 
 		expect(cleanExpiredLogs()).toBe(1);
 		expect(mockUnlinkSync).toHaveBeenCalledTimes(2);
+		expect(mockLoggerWarn).toHaveBeenCalledWith(
+			expect.objectContaining({
+				file: "2020-01-01.log",
+				error: "权限不足",
+			}),
+			"清理日志文件失败",
+		);
 	});
 
 	it("支持自定义保留天数", () => {

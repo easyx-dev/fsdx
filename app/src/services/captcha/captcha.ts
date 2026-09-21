@@ -6,7 +6,14 @@
 import type { ChToPathOptions } from "./ch-to-path";
 import chToPath from "./ch-to-path";
 import { options } from "./option-manager";
-import { captchaText, color, greyColor, int, mathExpr } from "./random";
+import {
+	captchaText,
+	color,
+	greyColor,
+	int,
+	mathExpr,
+	shuffle,
+} from "./random";
 
 // ---- 类型 ----
 
@@ -121,10 +128,11 @@ function createCaptcha(text?: string, userOptions?: CaptchaOptions): string {
 
 	const bgRect = bg ? `<rect width="100%" height="100%" fill="${bg}"/>` : "";
 
-	const paths = ([] as string[])
-		.concat(getLineNoise(opts.width, opts.height, opts))
-		.concat(getText(textToRender, opts.width, opts.height, opts))
-		.sort(() => Math.random() - 0.5);
+	const paths = shuffle(
+		([] as string[])
+			.concat(getLineNoise(opts.width, opts.height, opts))
+			.concat(getText(textToRender, opts.width, opts.height, opts)),
+	);
 
 	return `<svg xmlns="http://www.w3.org/2000/svg" width="${opts.width}" height="${opts.height}" viewBox="0,0,${opts.width},${opts.height}">${bgRect}${paths.join("")}</svg>`;
 }

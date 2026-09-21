@@ -7,8 +7,8 @@ import type { BatchTranslateSseEvent } from "#/shared-services/i18n/i18n.ai.type
 
 /**
  * 读取并消费一个流式 `Response`（来自 SFn 流式返回，TanStack Start 已置 x-tss-raw）。
- * 非 2xx 或无 body 时抛错；解析出每个合法 SSE 事件即回调。
- * @param onEvent 每收到一个合法 SSE 事件即回调（逐事件处理）
+ * 非 2xx 或无 body 时抛错；解析出每个合法 SSE 事件即回调，回调抛错或读流异常时中断并向服务端取消流。
+ * @param onEvent 每收到一个合法 SSE 事件即回调（逐事件处理，异常向上抛出中断消费）
  */
 export async function readSSEStream(
 	response: Response,
@@ -22,30 +22,41 @@ export async function readSSEStream(
 	const decoder = new TextDecoder();
 	let buffer = "";
 
-	const dispatch = (chunk: string) => {
+	/** 派发单个 SSE 事件块：无 data 行或非法 JSON 忽略；回调异常向上抛出 */
+	const dispatch = async (chunk: string): Promise<void> => {
 		const dataLine = chunk
 			.split("\n")
 			.find((line) => line.startsWith("data: "));
 		if (!dataLine) return;
 		try {
 			const event = JSON.parse(dataLine.slice(6)) as BatchTranslateSseEvent;
-			void onEvent(event);
-		} catch {
-			// 忽略非法事件
+			await onEvent(event);
+		} catch (err) {
+			// 非法事件忽略；回调自身抛错需中断消费（否则会被当作解析失败静默吞掉）
+			if (err instanceof SyntaxError) return;
+			throw err;
 		}
 	};
 
-	for (;;) {
-		const { done, value } = await reader.read();
-		if (done) break;
-		buffer += decoder.decode(value, { stream: true });
-		let idx = buffer.indexOf("\n\n");
-		while (idx >= 0) {
-			const chunk = buffer.slice(0, idx);
-			buffer = buffer.slice(idx + 2);
-			if (chunk.trim()) dispatch(chunk);
-			idx = buffer.indexOf("\n\n");
+	try {
+		for (;;) {
+			const { done, value } = await reader.read();
+			if (done) break;
+			buffer += decoder.decode(value, { stream: true });
+			let idx = buffer.indexOf("\n\n");
+			while (idx >= 0) {
+				const chunk = buffer.slice(0, idx);
+				buffer = buffer.slice(idx + 2);
+				if (chunk.trim()) await dispatch(chunk);
+				idx = buffer.indexOf("\n\n");
+			}
 		}
+		if (buffer.trim()) await dispatch(buffer);
+	} catch (err) {
+		// 提前中断（回调抛错 / 读流失败）：取消底层流，避免服务端继续产出
+		await reader.cancel().catch(() => {});
+		throw err;
+	} finally {
+		reader.releaseLock();
 	}
-	if (buffer.trim()) dispatch(buffer);
 }

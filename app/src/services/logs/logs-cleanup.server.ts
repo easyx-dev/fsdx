@@ -4,6 +4,7 @@
 import { existsSync, readdirSync, unlinkSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { toDateString } from "@fsdx/lib/date-format";
+import { logger } from "#/shared-services/logger";
 
 /** 日志文件名日期格式 */
 const LOG_DATE_RE = /^\d{4}-\d{2}-\d{2}\.log$/;
@@ -32,8 +33,11 @@ export function cleanExpiredLogs(retentionDays = 30): number {
 			try {
 				unlinkSync(join(logDir, f));
 				deleted++;
-			} catch {
-				console.warn(`清理日志文件 ${f} 失败`);
+			} catch (err) {
+				logger.warn(
+					{ file: f, error: (err as Error).message },
+					"清理日志文件失败",
+				);
 			}
 		}
 	}

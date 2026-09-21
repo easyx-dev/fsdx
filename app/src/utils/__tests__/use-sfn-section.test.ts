@@ -40,4 +40,26 @@ describe("useSfnSection", () => {
 
 		expect(fetcher).toHaveBeenCalledTimes(1);
 	});
+
+	it("fetcher 变更后在途的旧响应不覆盖新状态", async () => {
+		const resolvers: Array<(value: string) => void> = [];
+		const slowFetcher = () =>
+			new Promise<string>((resolve) => {
+				resolvers.push(resolve);
+			});
+		const fastFetcher = vi.fn().mockResolvedValue("new");
+
+		const { result, rerender } = renderHook(
+			({ fetcher }: { fetcher: () => Promise<string> }) =>
+				useSfnSection(fetcher),
+			{ initialProps: { fetcher: slowFetcher } },
+		);
+
+		// 首个请求仍在途时切换 fetcher：旧响应返回后必须被丢弃
+		rerender({ fetcher: fastFetcher });
+		await waitFor(() => expect(result.current.data).toBe("new"));
+
+		resolvers[0]("stale");
+		await waitFor(() => expect(result.current.data).toBe("new"));
+	});
 });
