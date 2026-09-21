@@ -17,12 +17,15 @@ export interface ImageCellProps {
 	size?: number;
 	/** 空值占位内容，默认「—」 */
 	placeholder?: ReactNode;
+	/** 无障碍替代文本，缺省取图片地址（无地址时为空） */
+	alt?: string;
 }
 
 export function ImageCell({
 	src,
 	size = IMAGE_CELL_SIZE,
 	placeholder = "—",
+	alt,
 }: ImageCellProps) {
 	if (!src) {
 		return <span className="text-foreground-tertiary">{placeholder}</span>;
@@ -30,6 +33,7 @@ export function ImageCell({
 	return (
 		<Image
 			src={src}
+			alt={alt ?? src}
 			width={size}
 			height={size}
 			className="bg-background-tertiary"

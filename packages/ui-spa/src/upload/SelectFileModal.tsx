@@ -114,14 +114,17 @@ export function SelectFileModal({
 		[mimePrefix, fetchFiles],
 	);
 
+	/** 最新加载函数镜像：打开弹窗时调用，避免把宿主回调的不稳定引用作为 effect 依赖 */
+	const loadFilesRef = useRef(loadFiles);
+	loadFilesRef.current = loadFiles;
+
 	useEffect(() => {
-		if (open) {
-			setPage(1);
-			setKeyword("");
-			setSelectedRowKeys([]);
-			loadFiles({ page: 1, keyword: "" });
-		}
-	}, [open, loadFiles]);
+		if (!open) return;
+		setPage(1);
+		setKeyword("");
+		setSelectedRowKeys([]);
+		void loadFilesRef.current({ page: 1, keyword: "" });
+	}, [open]);
 
 	const columns: ProColumnType<SelectableFile>[] = [
 		{

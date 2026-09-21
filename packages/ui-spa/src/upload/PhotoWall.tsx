@@ -171,10 +171,6 @@ export function PhotoWall({
 								opacity: hoveredCard === index ? 1 : 0,
 								transition: "opacity 0.15s",
 							}}
-							onClick={(e) => {
-								e.stopPropagation();
-								e.preventDefault();
-							}}
 						>
 							<Button
 								type="text"
@@ -227,7 +223,8 @@ export function PhotoWall({
 						transition: "border-color 0.15s, background 0.15s",
 					}}
 				>
-					<div
+					<button
+						type="button"
 						onClick={() => inputRef.current?.click()}
 						style={{
 							flex: 1,
@@ -237,6 +234,11 @@ export function PhotoWall({
 							justifyContent: "center",
 							cursor: "pointer",
 							color: "var(--s-text-tertiary)",
+							// 按钮元素重置默认外观，保持与卡片一致的直角风格
+							border: "none",
+							background: "transparent",
+							padding: 0,
+							font: "inherit",
 						}}
 						onMouseEnter={(e) => {
 							const el = e.currentTarget as HTMLElement;
@@ -253,15 +255,12 @@ export function PhotoWall({
 					>
 						<PlusOutlined style={{ fontSize: 20 }} />
 						<div style={{ fontSize: 12, marginTop: 4 }}>上传图片</div>
-					</div>
-					<div
-						onClick={(e) => {
-							e.stopPropagation();
-							onLibraryClick();
-						}}
+					</button>
+					<button
+						type="button"
+						onClick={onLibraryClick}
 						style={{
 							height: 28,
-							borderTop: "1px dashed var(--s-border)",
 							display: "flex",
 							alignItems: "center",
 							justifyContent: "center",
@@ -269,6 +268,11 @@ export function PhotoWall({
 							fontSize: 12,
 							color: "var(--s-text-tertiary)",
 							background: "var(--s-surface-tertiary)",
+							// 重置按钮默认边框后再补上分隔用的虚线顶边
+							border: "none",
+							borderTop: "1px dashed var(--s-border)",
+							padding: 0,
+							width: "100%",
 						}}
 						onMouseEnter={(e) => {
 							const el = e.currentTarget as HTMLElement;
@@ -285,7 +289,7 @@ export function PhotoWall({
 					>
 						<FolderOpenOutlined style={{ fontSize: 12, marginRight: 4 }} />
 						从文件库选择
-					</div>
+					</button>
 				</div>
 			)}
 		</div>

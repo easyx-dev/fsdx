@@ -292,8 +292,10 @@ export function FileUpload({
 								<span> ｜ </span>
 							</>
 						)}
-						<span
+						<button
+							type="button"
 							onClick={(e) => {
+								// 阻止冒泡：避免同时触发 Dragger 自身的文件选择
 								e.stopPropagation();
 								setSelectModalOpen(true);
 							}}
@@ -301,11 +303,15 @@ export function FileUpload({
 								cursor: "pointer",
 								color: "var(--s-primary)",
 								textDecoration: "underline",
+								border: "none",
+								background: "transparent",
+								padding: 0,
+								font: "inherit",
 							}}
 						>
 							<FolderOpenOutlined style={{ marginRight: 4 }} />
 							从文件库选择
-						</span>
+						</button>
 					</p>
 				</Upload.Dragger>
 			);

@@ -64,13 +64,21 @@ export function PermissionTags({
 
 	return (
 		<Popover
+			trigger={["hover", "click"]}
 			content={
 				<div className="flex flex-wrap gap-1 max-w-xs">
 					{sorted.map(renderTag)}
 				</div>
 			}
 		>
-			<div className="flex flex-wrap gap-1 cursor-pointer">{tagList}</div>
+			{/* 用 button 承载触发器：键盘可聚焦，配合 click 触发让键盘用户也能展开溢出项 */}
+			<button
+				type="button"
+				className="flex flex-wrap gap-1 cursor-pointer"
+				style={{ border: "none", background: "transparent", padding: 0 }}
+			>
+				{tagList}
+			</button>
 		</Popover>
 	);
 }

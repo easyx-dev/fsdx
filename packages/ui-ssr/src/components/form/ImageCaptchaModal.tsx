@@ -71,6 +71,16 @@ export function ImageCaptchaModal({
 	const imageInputRef = useRef<HTMLInputElement>(null);
 	// 关闭动画定时器：重新打开前须清理，避免旧定时器卸载新弹窗
 	const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+	// 开场动画帧：卸载或立刻关闭时须取消，避免闭包里的 setModalVisible 迟到执行
+	const openFrameRef = useRef<number | null>(null);
+
+	/** 取消尚未执行的开场动画帧 */
+	const cancelOpenFrame = useCallback(() => {
+		if (openFrameRef.current !== null) {
+			cancelAnimationFrame(openFrameRef.current);
+			openFrameRef.current = null;
+		}
+	}, []);
 
 	/**
 	 * 刷新图片验证码
@@ -97,11 +107,13 @@ export function ImageCaptchaModal({
 	const openModal = useCallback(() => {
 		setModalError("");
 		setModalMounted(true);
-		requestAnimationFrame(() => {
+		cancelOpenFrame();
+		openFrameRef.current = requestAnimationFrame(() => {
+			openFrameRef.current = null;
 			setModalVisible(true);
 		});
 		refresh();
-	}, [refresh]);
+	}, [refresh, cancelOpenFrame]);
 
 	// 以 ref 持有最新 openModal，open 副作用只依赖 open，避免父级重渲染触发重复刷新
 	const openModalRef = useRef(openModal);
@@ -109,6 +121,8 @@ export function ImageCaptchaModal({
 
 	/** 关闭模态框 */
 	const closeModal = useCallback(() => {
+		// 开场帧未执行就关闭：先取消，避免迟到把弹窗又设为可见
+		cancelOpenFrame();
 		setModalVisible(false);
 		if (closeTimerRef.current) {
 			clearTimeout(closeTimerRef.current);
@@ -118,7 +132,15 @@ export function ImageCaptchaModal({
 			closeTimerRef.current = null;
 		}, 200);
 		onClose();
-	}, [onClose]);
+	}, [onClose, cancelOpenFrame]);
+
+	// 卸载时清理未执行的动画帧与定时器
+	useEffect(() => {
+		return () => {
+			cancelOpenFrame();
+			if (closeTimerRef.current) clearTimeout(closeTimerRef.current);
+		};
+	}, [cancelOpenFrame]);
 
 	// 模态框打开时自动聚焦输入框
 	useEffect(() => {
@@ -205,20 +227,31 @@ export function ImageCaptchaModal({
 	return (
 		<>
 			{modalMounted && (
-				<div
-					className="fixed inset-0 z-50 flex items-center justify-center transition-colors duration-200"
-					style={{
-						backgroundColor: modalVisible ? "rgba(0,0,0,0.5)" : "rgba(0,0,0,0)",
-					}}
-					onClick={closeModal}
-				>
+				<div className="fixed inset-0 z-50 flex items-center justify-center">
+					{/* 遮罩用 button 承载：鼠标点击与键盘（Tab + Enter）均可关闭；作为兄弟节点避免与弹窗内容嵌套交互元素 */}
+					<button
+						type="button"
+						aria-label="关闭图片验证码"
+						className="absolute inset-0 transition-colors duration-200"
+						style={{
+							backgroundColor: modalVisible
+								? "rgba(0,0,0,0.5)"
+								: "rgba(0,0,0,0)",
+							border: "none",
+							padding: 0,
+							cursor: "default",
+						}}
+						onClick={closeModal}
+					/>
 					<div
+						role="dialog"
+						aria-modal="true"
+						aria-label="请输入图片验证码"
 						className="relative mx-4 w-full max-w-sm rounded-lg border bg-card p-6 shadow-lg transition-all duration-200"
 						style={{
 							opacity: modalVisible ? 1 : 0,
 							transform: modalVisible ? "scale(1)" : "scale(0.95)",
 						}}
-						onClick={(e) => e.stopPropagation()}
 					>
 						<h3 className="mb-4 text-center text-sm font-medium">
 							请输入图片验证码

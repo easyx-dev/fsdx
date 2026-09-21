@@ -20,8 +20,8 @@ export default function ThemeToggle({ preset }: ThemeToggleProps) {
 
 	const label =
 		mode === "auto"
-			? "Theme mode: auto (system). Click to switch to light mode."
-			: `Theme mode: ${mode}. Click to switch mode.`;
+			? "主题：跟随系统，点击切换"
+			: `主题：${mode === "dark" ? "暗色" : "亮色"}，点击切换`;
 
 	return (
 		<button
