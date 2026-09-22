@@ -144,6 +144,12 @@
   - **跨包依赖版本收敛到 pnpm catalog**：`react` / `react-dom` / `antd` / `dayjs` / `i18next` / `@ant-design/icons` / `@tanstack/react-router` / `monaco-editor` / `@easyx/editor` 的版本统一声明在 `pnpm-workspace.yaml` 的 `catalog`，各包（含 `peerDependencies`）改以 `"catalog:"` 引用，消除同一依赖多处声明后版本漂移的空间；版本值与解析结果均未变化，store 中仍只有单一副本（realpath 相同，构建期不产生重复实例）。**Biome 的框架检测解析不了 `catalog:` 版本号**，`react` 改由 catalog 声明后 React 规则域会静默关闭（表现为 React 规则不再触发、既有 `biome-ignore` 反报未使用），故在 `biome.json` 的 `linter.domains.react` 显式声明 `recommended` 把覆盖补回；规则写入 `AGENTS.md`「包边界约定」。可被衍生项目吸收
   - `biome.json` 的 `includes` 补 `**/server.ts` / `**/vitest.config.ts` / `**/drizzle.config.ts` / `**/playwright.config.ts`（此前这些文件不在 lint/format 范围），并修正由此暴露的问题：两个配置文件格式化、`FileImageEditor` 的「切换文件即重置」effect 补真实依赖（`[file]`，关闭态短路）、`useThemeMode` 的主题重放 effect 补豁免说明（快照值仅作触发源）。可被衍生项目吸收
 
+- **注释规范改为按位置分档：函数体从严、TS 类型从宽（[infra]）**：原规则「文件级注释必须存在」「类型和方法需要添加注释」是硬指标，可机械满足，实际执行中压过了同章节「显而易见的代码无需注释」的判断，注释退化为规定动作——540/545 个文件无条件挂文件头、把标识符名译成中文当成注释。改为按**注释所处位置**分档，而非一刀切：
+  - **函数体 / 逻辑注释从严**：只写代码无法表达的信息（为什么这么写、边界、副作用），**严禁复述代码本身**。
+  - **TS 类型（`interface` / `type` / Props）字段注释从宽**：逐字段写注释、与字段名同义、略显冗余都**可以接受**，不必纠结「算不算复述」——类型是 IDE 悬浮与新人阅读的第一落点，冗余好过缺失；要求仅是内容为业务口径而非错误含义。
+  - **文件级注释**概述职责、位于第一行、不复述文件名；职责与路径同名的文件可不加。**禁止 `// ═══ 分区标题 ═══` 类横幅**，分段靠空行与声明本身。
+  - `AGENTS.md`「语言规范」按分档重写，`.agents/commands/code-review.md` 的「⑩ 注释规范」与「一致性 · Style Guide · 注释与文档」同步更新：把「函数体复述代码」「空白横幅」列为明确违规，同时**显式声明 TS 类型字段注释与存量文件头注释不判违规**，避免审查时只按注释条数计分或反向过度清理。可被衍生项目吸收
+
 ### Refactor
 
 - **依赖包破坏性升级适配：AI 富文本工作台与图片处理套件（[infra]）**：`@easyx/ai-rich-editor` 0.1 → 2.0、`@easyx/image-toolkit` 0.1 → 1.0，两处接入面按新版 API 同步改造。
@@ -196,6 +202,11 @@
   - 裸 `interface Props` 与内联匿名 props 类型补具名类型（`NotifyChannelSettingsModalProps` / `TableHeightProviderProps`）。
   - 删除零引用死代码：`ALL_ADMIN_PERMISSIONS` / `ALL_CLIENT_PERMISSIONS`（`ADMIN_PERMISSION_META` / 分组表保留）、`isValidTrackPropertyValue` 纯别名（直接导出 `isValidPropertyValue`）、`download.server` 两个未对外使用的 `export`、`admin/_admin.tsx` 空 `head`、`AdminLayout` 无 `onClick` 的「修改资料」按钮、`i18n.content.server` 两个返回值相同的死分支、`news.server` 重复的 slug import、`message.server` 的中转变量。
   - 内存缓存移除从未被读取的 `name` 选项（注释称「用于日志」，与 lib 零日志耦合相悖）与 `CacheOptions` 的未使用泛型，8 处缓存实例化同步收敛；补 JSDoc（config / dict / i18n.seed 共 12 个导出）并修正缓存注释的自引用笔误与过期路径。可被衍生项目吸收
+
+- **注释精简：删除分区横幅 144 行与复述函数名的 JSDoc 95 处**：按新判据清理存量噪声，71 个代码文件、仅删注释与空行，零代码改动（`pnpm check` / `pnpm test` 全绿）；全仓注释 5919 → 5670 行，占非空行 9.50% → 9.14%。
+  - **分区横幅**：23 个文件删除 `// ═══ xxx ═══` / `// ─── xxx ───` / `// ===== xxx =====` 类横幅共 144 行，其中测试文件里与下方 `describe` 同名的横幅纯属重复；横幅下原本就有的 JSDoc 一律保留，分段改由空行承担。
+  - **复述函数名的 JSDoc**：删除 95 处（8 处为三行块）——组件名直译（`/** 管理端侧边栏导航组件 */ AdminNav`、`/** 编辑按钮 */ Edit`）、列定义常量（`/** 角色表格列 */ adminRoleColumns`）、CRUD 直译（`/** 创建角色 */ createAdminRole`、`/** 删除消息 */ handleDelete`）、驼峰拆词（`/** 判断是否为文本文件 */ isTextFile`）；凡描述**返回值语义**（`/** 更新字典类型并返回是否成功 */`）、**副作用**（`/** 关闭弹窗并清理表单 */`）、**约束**（`/** 删除角色（软删除） */`、`/** 删除元事件（预置事件不可删除） */`）、**单位 / 范围 / 降级行为**的注释一律保留。
+  - **两类注释已回退，不在清理范围**：① 中途一并删掉的 93 处**类型字段**注释（`/** 是否禁用 */ disabled`、`/** 页面浏览数 */ pageViews`）按「TS 类型从宽」判据全部恢复——类型字段是 IDE 悬浮与新人阅读的第一落点，冗余好过缺失；② `packages/lib/src/ms/index.ts` 声明「源码来自 vercel/ms (v3)」，其 `fmtShort` / `fmtLong` 的上游同名注释恢复，并在文件头注明「实现与注释保持与上游一致，便于后续按版本对齐」，避免后续清理误删。
 
 ### Fix
 
