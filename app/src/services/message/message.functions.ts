@@ -45,10 +45,6 @@ function normalizeChannels(
 	};
 }
 
-// ═══════════════════════════════════════════════════
-// 客户端用户自助（登录即可，操作自己的消息）
-// ═══════════════════════════════════════════════════
-
 /** 分页查询自己的消息 */
 export const getMyMessagesSFn = createServerFn({ method: "GET" })
 	.middleware([clientAuthGuard])
@@ -120,10 +116,6 @@ export const saveMyNotifyChannelsSFn = createServerFn({ method: "POST" })
 		return { success: true };
 	});
 
-// ═══════════════════════════════════════════════════
-// 管理端个人收件箱（登录即可，操作自己的消息）
-// ═══════════════════════════════════════════════════
-
 /** 分页查询自己的消息 */
 export const getAdminMessagesSFn = createServerFn({ method: "GET" })
 	.middleware([adminAuthGuard])
@@ -194,10 +186,6 @@ export const saveAdminNotifyChannelsSFn = createServerFn({ method: "POST" })
 		await saveNotifyChannels({ type: "admin", id: context.user.id }, data);
 		return { success: true };
 	});
-
-// ═══════════════════════════════════════════════════
-// 管理端消息管理（message:view / message:send / message:delete）
-// ═══════════════════════════════════════════════════
 
 /** 全量分页查询所有用户消息 */
 export const listAllMessagesSFn = createServerFn({ method: "GET" })

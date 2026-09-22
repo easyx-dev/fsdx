@@ -51,7 +51,6 @@ function toSerializable(entry: RawLogEntry): LogEntry {
 	};
 }
 
-/** 查询日志文件 */
 export async function searchLogs(
 	query: LogQuery = {},
 ): Promise<LogQueryResult> {

@@ -51,10 +51,6 @@ export interface OperationLogQueryResult {
 	pageSize: number;
 }
 
-// ═══════════════════════════════════════════════════
-// 内存缓冲
-// ═══════════════════════════════════════════════════
-
 /** 将 OperationLogInput 映射为数据库行 */
 function toRow(item: OperationLogInput) {
 	return {
@@ -155,10 +151,6 @@ export async function flushOperationLogs(): Promise<void> {
 		logger.error({ err }, "操作日志缓冲刷入失败（优雅关闭继续）");
 	}
 }
-
-// ═══════════════════════════════════════════════════
-// 查询
-// ═══════════════════════════════════════════════════
 
 /** 分页查询操作日志 */
 export async function searchOperationLogs(

@@ -27,10 +27,6 @@ import {
 	SUPPORTED_LOCALES,
 } from "./i18n.types";
 
-// ═══════════════════════════════════════════════════
-// 类型（复用 i18n.ai.types，客户端安全）
-// ═══════════════════════════════════════════════════
-
 export type {
 	AiBatchEntity,
 	AiBatchError,
@@ -46,10 +42,6 @@ export type {
 export type BatchTranslateEmit = (
 	event: Record<string, unknown>,
 ) => void | Promise<void>;
-
-// ═══════════════════════════════════════════════════
-// 工具函数
-// ═══════════════════════════════════════════════════
 
 /**
  * 从模型返回文本中提取 JSON 对象：
@@ -135,10 +127,6 @@ export function resolveTargetLocales(targetLocales?: Locale[]): Locale[] {
 	return valid.length > 0 ? valid : getDefaultTargetLocales();
 }
 
-// ═══════════════════════════════════════════════════
-// 单字段翻译（非流式）
-// ═══════════════════════════════════════════════════
-
 /**
  * 单字段 AI 翻译：读取 ai_translation_prompt，安全拼装后非流式生成。
  * 提示词未配置直接报错；AI 客户端未配置给出引导；其余失败记录日志后转友好提示。
@@ -174,10 +162,6 @@ export async function translateWithAi(opts: {
 		throw new Error("AI 翻译服务调用失败，请稍后重试");
 	}
 }
-
-// ═══════════════════════════════════════════════════
-// 批量翻译：组批 + 逐批流式
-// ═══════════════════════════════════════════════════
 
 /**
  * 按 mode 计算每个实体每个目标语言需要翻译的字段，并按 batchSize 打包成批次。
@@ -373,10 +357,6 @@ export async function runBatchTasks(
 	await options.emit({ type: "done", summary });
 	return summary;
 }
-
-// ═══════════════════════════════════════════════════
-// 流式响应构造（Server Function 返回 SSE Response）
-// ═══════════════════════════════════════════════════
 
 /**
  * 构建批量翻译的 SSE 流式 Response。

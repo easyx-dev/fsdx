@@ -134,8 +134,6 @@ export async function deleteDict(id: string) {
 	return true;
 }
 
-// ========== 预置字典 ==========
-
 /** 运行时校验并插入缺失的预置字典（幂等安全） */
 export async function ensurePresetDicts(): Promise<void> {
 	for (const preset of PRESET_DICTS) {
@@ -202,8 +200,6 @@ export async function ensureSeedDicts(): Promise<void> {
 		logger.info({ slug: seed.slug }, "业务字典已播种");
 	}
 }
-
-// ========== 字典条目管理 ==========
 
 /**
  * 获取某个字典的条目列表（服务端分页 + 排序，排序字段走白名单）
@@ -277,7 +273,6 @@ export async function updateDictRecord(
 	return !!updated;
 }
 
-/** 创建字典条目 */
 export async function createDictItemData(data: {
 	dictSlug: string;
 	label: string;
@@ -385,9 +380,6 @@ export async function deleteDictItemRecord(id: string): Promise<boolean> {
 	return true;
 }
 
-// ========== 导入导出 ==========
-
-/** 导出全部字典数据 */
 export async function exportAllDicts(): Promise<{
 	dicts: {
 		name: string;

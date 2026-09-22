@@ -135,7 +135,6 @@ export interface ListDirectoryResult {
 	currentPath: string;
 }
 
-/** 列出目录内容 */
 export async function listDirectory(
 	subPath: string,
 ): Promise<ListDirectoryResult> {
@@ -211,7 +210,6 @@ export async function getTextContent(subPath: string): Promise<string> {
 	return readFile(absolutePath, "utf-8");
 }
 
-/** 获取文件信息 */
 export async function getFileInfo(subPath: string): Promise<{
 	name: string;
 	size: number;
@@ -227,7 +225,6 @@ export async function getFileInfo(subPath: string): Promise<{
 	};
 }
 
-/** 创建文件读取流 */
 export async function createFileReadStream(subPath: string): Promise<{
 	stream: ReturnType<typeof createReadStream>;
 	name: string;
@@ -245,7 +242,6 @@ export async function createFileReadStream(subPath: string): Promise<{
 	};
 }
 
-/** 创建目录 */
 export async function createDirectory(
 	subPath: string,
 	dirName: string,
@@ -286,7 +282,6 @@ export async function deleteEntry(
 	return { deletedName: entryName, type: "file" };
 }
 
-/** 重命名文件或目录 */
 export async function renameEntry(
 	subPath: string,
 	newName: string,

@@ -59,7 +59,6 @@ export const TEXT_EXTENSIONS = new Set([
 	"sass",
 ]);
 
-/** 判断是否为文本文件 */
 export function isTextFile(name: string): boolean {
 	const ext = name.split(".").pop()?.toLowerCase() ?? "";
 	return TEXT_EXTENSIONS.has(ext);

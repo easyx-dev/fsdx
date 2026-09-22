@@ -25,7 +25,6 @@ interface ClientRoleColumnsOptions {
 const NO_EDIT_PERMISSION = "无「编辑客户端角色」权限";
 const NO_DELETE_PERMISSION = "无「删除客户端角色」权限";
 
-/** 客户端角色表格列 */
 export function clientRoleColumns(options: ClientRoleColumnsOptions) {
 	const { permissions } = options;
 	return [

@@ -17,8 +17,6 @@ describe("MemoryCache", () => {
 		vi.useRealTimers();
 	});
 
-	// ─── set / get ───
-
 	describe("set / get", () => {
 		it("写入后读取返回相同值", () => {
 			cache.set("key1", "value1");
@@ -35,8 +33,6 @@ describe("MemoryCache", () => {
 			expect(cache.get("key1")).toBe("new");
 		});
 	});
-
-	// ─── 过期逻辑 ───
 
 	describe("过期逻辑", () => {
 		it("未过期时 get 正常返回", () => {
@@ -65,8 +61,6 @@ describe("MemoryCache", () => {
 		});
 	});
 
-	// ─── delete ───
-
 	describe("delete", () => {
 		it("删除存在的键返回 true", () => {
 			cache.set("key1", "value1");
@@ -83,8 +77,6 @@ describe("MemoryCache", () => {
 			expect(cache.get("key1")).toBeUndefined();
 		});
 	});
-
-	// ─── has ───
 
 	describe("has", () => {
 		it("存在的键返回 true", () => {
@@ -104,8 +96,6 @@ describe("MemoryCache", () => {
 		});
 	});
 
-	// ─── clear ───
-
 	describe("clear", () => {
 		it("清空后 size 为 0", () => {
 			cache.set("a", "1");
@@ -120,8 +110,6 @@ describe("MemoryCache", () => {
 			expect(cache.keys()).toEqual([]);
 		});
 	});
-
-	// ─── size / keys ───
 
 	describe("size / keys", () => {
 		it("写入后 size 递增", () => {
@@ -144,8 +132,6 @@ describe("MemoryCache", () => {
 			expect(cache.size).toBe(0);
 		});
 	});
-
-	// ─── cleanup ───
 
 	describe("cleanup", () => {
 		it("仅清理已过期的条目", () => {
@@ -172,8 +158,6 @@ describe("MemoryCache", () => {
 			expect(cache.has("forever")).toBe(true);
 		});
 	});
-
-	// ─── defaultTTL ───
 
 	describe("defaultTTL 构造选项", () => {
 		it("未设置 defaultTTL 时默认永不过期", () => {

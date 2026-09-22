@@ -13,7 +13,6 @@ interface MkdirModalProps {
 	onCancel: () => void;
 }
 
-/** 新建目录弹窗 */
 export function MkdirModal({
 	open,
 	value,
@@ -55,7 +54,6 @@ interface RenameModalProps {
 	onCancel: () => void;
 }
 
-/** 重命名弹窗 */
 export function RenameModal({
 	open,
 	value,

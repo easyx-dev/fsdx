@@ -18,8 +18,6 @@ function definePermission<C extends string, N extends string, D extends string>(
 	return { code, name, desc, group } as const;
 }
 
-// ─── 权限码常量 ───
-
 export const CLIENT_PERMISSIONS = {
 	// 业务模块权限码预留位（例）：
 	// DEMO_VIEW: definePermission("demo:view", "示例查看", "允许查看示例数据"),

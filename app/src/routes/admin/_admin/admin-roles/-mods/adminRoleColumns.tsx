@@ -25,7 +25,6 @@ interface AdminRoleColumnsOptions {
 const NO_EDIT_PERMISSION = "无「编辑角色」权限";
 const NO_DELETE_PERMISSION = "无「删除角色」权限";
 
-/** 角色表格列 */
 export function adminRoleColumns(options: AdminRoleColumnsOptions) {
 	const { permissions } = options;
 	return [

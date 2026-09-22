@@ -57,8 +57,6 @@ export const saveContentTranslationSFn = createServerFn({ method: "POST" })
 		return result;
 	});
 
-// ══════════════════ AI 翻译 ══════════════════
-
 /** AI 翻译单个字段（使用 ai_translation_prompt 模板，非流式生成） */
 export const aiTranslateFieldSFn = createServerFn({ method: "POST" })
 	.middleware([adminPermGuard(ADMIN_PERMISSIONS.TRANSLATION_MANAGE)])

@@ -6,7 +6,6 @@ import { resolve } from "node:path";
 import { logger } from "#/shared-services/logger";
 import { iterateLogLines } from "./log-parse";
 
-/** 日志目录路径 */
 export function getLogDir(): string {
 	return resolve(process.env.STORAGE_DIR || ".tmp", "logs");
 }
@@ -94,9 +93,6 @@ function parseLogLine(line: string): LogEntry | null {
 	}
 }
 
-/**
- * 查询日志文件
- */
 export async function queryLogs(query: LogQuery = {}): Promise<LogQueryResult> {
 	const { startDate, endDate, keyword, level, page = 1, pageSize = 20 } = query;
 

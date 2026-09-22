@@ -104,7 +104,6 @@ async function getAdminRole(id: string) {
 	return record;
 }
 
-/** 创建角色 */
 export async function createAdminRole(input: CreateAdminRoleInput) {
 	const [record] = await db
 		.insert(adminRole)
@@ -118,7 +117,6 @@ export async function createAdminRole(input: CreateAdminRoleInput) {
 	return record;
 }
 
-/** 更新角色 */
 export async function updateAdminRole(id: string, input: UpdateAdminRoleInput) {
 	const [record] = await db
 		.update(adminRole)

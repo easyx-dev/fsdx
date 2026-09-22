@@ -47,7 +47,6 @@ const MANAGED_LOCALES = SUPPORTED_LOCALES.filter(
 /** 批量翻译模式 */
 type BatchMode = "fill" | "correct";
 
-/** 字段翻译抽屉组件 */
 export function FieldTranslationDrawer({
 	entityType,
 	entityId,

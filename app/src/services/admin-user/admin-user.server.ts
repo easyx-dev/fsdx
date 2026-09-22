@@ -160,7 +160,6 @@ export async function getAdminUser(id: string) {
 	return record;
 }
 
-/** 创建管理员 */
 export async function createAdminUser(input: CreateAdminUserInput) {
 	await assertAdminRolesExist(input.adminRoleIds);
 	const passwordHash = await bcrypt.hash(input.password, 12);
@@ -177,7 +176,6 @@ export async function createAdminUser(input: CreateAdminUserInput) {
 	return record;
 }
 
-/** 更新管理员信息 */
 export async function updateAdminUser(id: string, input: UpdateAdminUserInput) {
 	// 禁止将 root 管理员设为禁用状态
 	if (input.status === "disabled") {
@@ -231,7 +229,6 @@ export async function deleteAdminUser(
 	return true;
 }
 
-/** 重置管理员密码 */
 export async function resetAdminPassword(
 	id: string,
 	newPassword: string,

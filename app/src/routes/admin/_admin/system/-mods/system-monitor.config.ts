@@ -41,7 +41,6 @@ export const HISTORY_METRIC_META: Record<
 	},
 };
 
-/** 历史指标下拉选项 */
 export const HISTORY_METRIC_OPTIONS = (
 	Object.keys(HISTORY_METRIC_META) as SystemMetricHistoryMetric[]
 ).map((key) => ({ label: HISTORY_METRIC_META[key].label, value: key }));

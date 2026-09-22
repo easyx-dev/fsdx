@@ -25,8 +25,6 @@ export interface ChToPathOptions {
 	truncateCurvePositionMax?: number;
 }
 
-// ---- 路径扭曲 ----
-
 /** 对路径命令节点施加随机偏移，模拟手写抖动 */
 function rndPathCmd(cmd: PathCmd): void {
 	const r = Math.random() * 0.2 - 0.1;

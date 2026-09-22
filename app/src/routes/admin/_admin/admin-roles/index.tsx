@@ -78,13 +78,11 @@ function AdminRolesPage() {
 		list.applyFilters({ keyword: keyword.trim() || undefined });
 	};
 
-	/** 重置筛选条件 */
 	const handleReset = () => {
 		setKeyword("");
 		list.applyFilters({ keyword: undefined });
 	};
 
-	/** 打开新建弹窗 */
 	const handleCreate = () => {
 		setEditingRole(null);
 		form.resetFields();
@@ -92,7 +90,6 @@ function AdminRolesPage() {
 		setModalOpen(true);
 	};
 
-	/** 打开编辑弹窗 */
 	const handleEdit = (record: AdminRoleRecord) => {
 		setEditingRole(record);
 		form.setFieldsValue({
@@ -104,7 +101,6 @@ function AdminRolesPage() {
 		setModalOpen(true);
 	};
 
-	/** 提交表单 */
 	const handleSubmit = async () => {
 		try {
 			const values = await form.validateFields();

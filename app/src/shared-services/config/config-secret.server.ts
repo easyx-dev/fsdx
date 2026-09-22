@@ -26,7 +26,6 @@ function encryptionKey(): Buffer {
 	return key;
 }
 
-/** 判断配置值是否为密文 */
 export function isEncryptedConfigValue(value: string): boolean {
 	return value.startsWith(PREFIX);
 }

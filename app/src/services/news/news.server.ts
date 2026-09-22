@@ -149,7 +149,6 @@ export async function getNewsById(id: string): Promise<NewsRecord | null> {
 	return record ?? null;
 }
 
-/** 创建新闻 */
 export async function createNews(params: {
 	title: string;
 	slug?: string;
@@ -325,7 +324,6 @@ export async function importNewsItems(
 	return { created, skipped };
 }
 
-/** 导出全部新闻记录 */
 export async function exportAllNews(): Promise<NewsRecord[]> {
 	return db
 		.select()

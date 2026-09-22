@@ -20,7 +20,6 @@ export function notDeleted(deletedAtColumn: SQLWrapper): SQL {
 	return isNull(deletedAtColumn);
 }
 
-/** 计算分页偏移量 */
 export function paginationOffset(page: number, pageSize: number): number {
 	return (page - 1) * pageSize;
 }

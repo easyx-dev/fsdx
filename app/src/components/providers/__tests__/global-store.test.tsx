@@ -14,10 +14,6 @@ import type { Locale, Translations } from "#/shared-services/i18n/i18n.types";
 
 afterEach(cleanup);
 
-// ═══════════════════════════════════════════════════════════════════
-// 测试辅助组件
-// ═══════════════════════════════════════════════════════════════════
-
 /**
  * 渲染 GlobalStoreProvider 并显示 locale 和指定 key 的翻译
  */
@@ -49,10 +45,6 @@ function renderWithGlobalStore(
 	);
 }
 
-// ═══════════════════════════════════════════════════════════════════
-// GlobalStoreProvider
-// ═══════════════════════════════════════════════════════════════════
-
 describe("GlobalStoreProvider", () => {
 	it("渲染子组件，locale 透传正确", () => {
 		renderWithGlobalStore("zh", {});
@@ -81,10 +73,6 @@ describe("GlobalStoreProvider", () => {
 	});
 });
 
-// ═══════════════════════════════════════════════════════════════════
-// useGlobalStore
-// ═══════════════════════════════════════════════════════════════════
-
 describe("useGlobalStore", () => {
 	it("返回 locale 和 translations", () => {
 		const translations: Translations = { 首页: "Home", 新闻: "News" };
@@ -108,10 +96,6 @@ describe("useGlobalStore", () => {
 	});
 });
 
-// ═══════════════════════════════════════════════════════════════════
-// globalStoreContext 导出验证
-// ═══════════════════════════════════════════════════════════════════
-
 describe("globalStoreContext", () => {
 	it("是一个 React Context 对象", () => {
 		expect(globalStoreContext).toBeDefined();
@@ -119,10 +103,6 @@ describe("globalStoreContext", () => {
 		expect(globalStoreContext.Consumer).toBeDefined();
 	});
 });
-
-// ═══════════════════════════════════════════════════════════════════
-// systemConfig 字段
-// ═══════════════════════════════════════════════════════════════════
 
 describe("useGlobalStore systemConfig", () => {
 	it("透传 systemConfig 到子组件", () => {

@@ -21,7 +21,6 @@ export interface JsonImportButtonProps extends ButtonProps {
 	successMessage?: string;
 }
 
-/** JSON 导入按钮组件 */
 export function JsonImportButton({
 	title = "导入 JSON",
 	onImport,

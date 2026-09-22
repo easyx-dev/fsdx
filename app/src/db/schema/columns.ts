@@ -12,7 +12,6 @@ export const pk = () => ({
 	id: uuid("id").defaultRandom().primaryKey(),
 });
 
-/** 创建时间 */
 export const createdAt = () => ({
 	createdAt: timestamp("created_at", { withTimezone: true })
 		.defaultNow()

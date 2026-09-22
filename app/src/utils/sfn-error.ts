@@ -94,7 +94,6 @@ export function markErrorHandled(error: unknown): void {
 	else sfnErrorMeta.set(error, { handled: true });
 }
 
-/** 错误是否已被处理 */
 export function isErrorHandled(error: unknown): boolean {
 	return error instanceof Error && (sfnErrorMeta.get(error)?.handled ?? false);
 }

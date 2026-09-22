@@ -123,7 +123,6 @@ function FilePreview({ fileId }: { fileId: string }) {
 	);
 }
 
-/** 预览模式组件 */
 function PreviewContent({
 	type,
 	value,

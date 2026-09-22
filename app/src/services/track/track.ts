@@ -54,7 +54,6 @@ export function setUserId(userId: string | undefined): void {
 	state.userId = userId;
 }
 
-/** 获取当前会话 ID */
 export function getSessionId(): string {
 	return state.sessionId;
 }

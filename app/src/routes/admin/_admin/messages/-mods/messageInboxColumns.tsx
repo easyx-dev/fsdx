@@ -29,7 +29,6 @@ interface MessageInboxColumnsOptions {
 	onDelete: (record: MessageRecord) => Promise<void>;
 }
 
-/** 消息收件箱表格列 */
 export function messageInboxColumns(options: MessageInboxColumnsOptions) {
 	return [
 		{

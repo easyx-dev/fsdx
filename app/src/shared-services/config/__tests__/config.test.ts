@@ -110,10 +110,6 @@ describe("loadConfigCache", () => {
 	});
 });
 
-// ═══════════════════════════════════════════════════════════════════
-// ensurePresetConfigs
-// ═══════════════════════════════════════════════════════════════════
-
 describe("ensurePresetConfigs", () => {
 	it("预设配置不存在时创建", async () => {
 		vi.clearAllMocks();
@@ -450,10 +446,6 @@ describe("deleteConfig", () => {
 	});
 });
 
-// ═══════════════════════════════════════════════════════════════════
-// getVisibleConfigRows
-// ═══════════════════════════════════════════════════════════════════
-
 describe("getVisibleConfigRows", () => {
 	it("返回 clientVisible=true 的配置行", async () => {
 		mockConfigCache.set("all", [
@@ -473,10 +465,6 @@ describe("getVisibleConfigRows", () => {
 		expect(rows).toHaveLength(0);
 	});
 });
-
-// ═══════════════════════════════════════════════════════════════════
-// getConfigTranslations
-// ═══════════════════════════════════════════════════════════════════
 
 describe("getConfigTranslations", () => {
 	it("默认语言返回空对象", async () => {

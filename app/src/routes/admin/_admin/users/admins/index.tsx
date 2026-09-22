@@ -93,7 +93,6 @@ function AdminsPage() {
 		list.applyFilters({ keyword: keyword.trim() || undefined });
 	};
 
-	/** 重置筛选条件 */
 	const handleReset = () => {
 		setKeyword("");
 		list.applyFilters({ keyword: undefined });

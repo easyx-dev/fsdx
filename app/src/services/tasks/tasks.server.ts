@@ -14,7 +14,6 @@ import { registerTask } from "#/shared-services/scheduler";
 /** 系统监控采样保留天数 */
 const SYSTEM_METRIC_RETENTION_DAYS = 7;
 
-/** 注册所有定时任务 */
 export function registerAllTasks(): void {
 	// 每分钟采集一次系统运行指标（启动即采一条，保证监控页有初始数据）
 	registerTask({

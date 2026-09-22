@@ -65,7 +65,6 @@ interface DictItemFilters {
 const NO_CREATE_PERMISSION = "无「新建字典」权限";
 const NO_CREATE_ITEM_PERMISSION = "无「新建字典条目」权限";
 
-/** 字典管理页面组件 */
 function DictsPage() {
 	const router = useRouter();
 	const dictList = Route.useLoaderData();
@@ -114,7 +113,6 @@ function DictsPage() {
 	const selectedDictSlug = list.filters.dictSlug || null;
 	const selectedDict = dictList.find((d) => d.slug === selectedDictSlug);
 
-	/** 打开字典创建/编辑弹窗 */
 	const openDictModal = (dict?: DictRecord) => {
 		if (dict) {
 			setEditingDict(dict);
@@ -169,7 +167,6 @@ function DictsPage() {
 		}
 	};
 
-	/** 打开条目创建/编辑弹窗 */
 	const openItemModal = (item?: DictItemRecord) => {
 		if (item) {
 			setEditingItem(item);

@@ -13,7 +13,6 @@ interface EditorTypeSelectProps extends Omit<SelectProps, "options"> {
 	placeholder?: string;
 }
 
-/** 编辑器类型下拉选择器 */
 export function EditorTypeSelect({
 	placeholder = "选择编辑器类型",
 	...rest

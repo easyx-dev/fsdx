@@ -53,7 +53,6 @@ const NO_EDIT_PERMISSION = "无「编辑新闻」权限";
 const NO_PUBLISH_PERMISSION = "无「新闻上下架」权限";
 const NO_DELETE_PERMISSION = "无「删除新闻」权限";
 
-/** 新闻表格列 */
 export function newsColumns(options: NewsColumnsOptions) {
 	const { permissions } = options;
 	return [

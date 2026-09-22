@@ -1,6 +1,6 @@
 /**
  * 时间字符串与毫秒数互转工具
- * 源码来自 https://github.com/vercel/ms (v3)
+ * 源码来自 https://github.com/vercel/ms (v3)：实现与注释保持与上游一致，便于后续按版本对齐
  */
 const s = 1000;
 const m = s * 60;

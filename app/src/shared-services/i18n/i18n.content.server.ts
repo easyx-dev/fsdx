@@ -16,10 +16,6 @@ import {
 import type { PaginatedSortParams } from "#/types/query";
 import { DEFAULT_LOCALE, type Locale } from "./i18n.types";
 
-// ═══════════════════════════════════════════════════
-// 实体字段翻译查询
-// ═══════════════════════════════════════════════════
-
 /** 实体字段翻译查询结果 */
 export interface ContentTranslationResult {
 	fieldName: string;
@@ -208,10 +204,6 @@ export async function getFieldTranslations(
 	return result;
 }
 
-// ═══════════════════════════════════════════════════
-// 实体字段翻译维护
-// ═══════════════════════════════════════════════════
-
 /** 实体翻译列表查询参数 */
 export interface ListContentTranslationsParams extends PaginatedSortParams {
 	entityType?: string;
@@ -219,7 +211,6 @@ export interface ListContentTranslationsParams extends PaginatedSortParams {
 	keyword?: string;
 }
 
-/** 实体翻译列表 */
 export async function listContentTranslations(
 	params?: ListContentTranslationsParams,
 ) {
@@ -427,7 +418,6 @@ export async function upsertContentTranslations(
 	return { success: true };
 }
 
-/** 实体翻译删除 */
 export async function deleteContentTranslation(id: string): Promise<boolean> {
 	const [existing] = await db
 		.select()

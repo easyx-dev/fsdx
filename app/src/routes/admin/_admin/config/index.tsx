@@ -39,7 +39,6 @@ export const Route = createFileRoute("/admin/_admin/config/")({
 
 const NO_CREATE_PERMISSION = "无「创建配置」权限";
 
-/** 系统配置管理页面组件 */
 function ConfigPage() {
 	const router = useRouter();
 	const configs = Route.useLoaderData();
@@ -110,7 +109,6 @@ function ConfigPage() {
 		[groups, configs],
 	);
 
-	/** 打开新建/编辑弹窗 */
 	const openModal = (record?: ConfigRecord) => {
 		if (record) {
 			setEditing(record);
@@ -138,7 +136,6 @@ function ConfigPage() {
 		form.resetFields();
 	};
 
-	/** 提交表单 */
 	const handleSubmit = async () => {
 		try {
 			const values = await form.validateFields();
@@ -169,7 +166,6 @@ function ConfigPage() {
 		}
 	};
 
-	/** 删除配置 */
 	const handleDelete = async (record: ConfigRecord) => {
 		const [, err] = await sfnUnwrap(
 			deleteConfigSFn({ data: { id: record.id } }),

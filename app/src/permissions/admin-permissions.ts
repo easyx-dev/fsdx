@@ -18,8 +18,6 @@ function definePermission<C extends string, N extends string, D extends string>(
 	return { code, name, desc, group } as const;
 }
 
-// ─── 权限码常量 ───
-
 export const ADMIN_PERMISSIONS = {
 	// 新闻管理
 	NEWS_VIEW: definePermission(
@@ -345,10 +343,6 @@ export const ADMIN_PERMISSIONS = {
 		"允许访问管理端示例 / 测试页面",
 	),
 } as const;
-
-// ─── 对外类型 ───
-
-// ─── 权限匹配 ───
 
 /** 权限完整定义对象类型 */
 export type AdminPermissionDef =

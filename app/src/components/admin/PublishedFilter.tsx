@@ -39,7 +39,6 @@ function toOptions(labels?: PublishedLabels) {
 	);
 }
 
-/** 发布状态快筛组件 */
 export function PublishedFilter({
 	value,
 	onChange,

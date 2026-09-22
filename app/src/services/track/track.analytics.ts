@@ -19,8 +19,6 @@ import type {
 } from "./track.types";
 import { ANALYTICS_DIMENSION_KEYS } from "./track.types";
 
-// ─── 查询表达式 ───
-
 /** 指标聚合表达式：metric=users 按用户/会话去重 */
 function metricAggExpr(metric: "count" | "users"): SQL {
 	return metric === "users"
@@ -50,8 +48,6 @@ function eventNameFilter(names?: string[]): SQL {
 	if (!names?.length) return sql``;
 	return sql`AND ${inArray(trackEventTable.name, names)}`;
 }
-
-// ─── 时间桶辅助 ───
 
 /** 东八区时区偏移（毫秒） */
 const TZ_OFFSET_MS = 8 * 3600 * 1000;
@@ -115,8 +111,6 @@ function generateBuckets(
 	return buckets;
 }
 
-// ─── 比例 / 对比辅助 ───
-
 /** 计算占比（分母为 0 时返回 0） */
 function toRatio(count: number, total: number): number {
 	return total > 0 ? count / total : 0;
@@ -148,8 +142,6 @@ function buildCompareWindow(
 	}
 	return { start: shiftYears(start, -1), end: shiftYears(end, -1) };
 }
-
-// ─── 子查询 ───
 
 /** 概览指标：总事件数 + 独立用户数 */
 async function getAnalyticsKpis(
@@ -308,8 +300,6 @@ async function resolveBreakdown(key: string): Promise<string | undefined> {
 		.limit(1);
 	return rows.length > 0 ? key : undefined;
 }
-
-// ─── 主入口 ───
 
 /** 执行事件分析，返回趋势、事件排行、维度分布、Top 页面与 KPI */
 export async function getTrackAnalytics(

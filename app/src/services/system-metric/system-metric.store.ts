@@ -12,7 +12,6 @@ import type { SystemMetricSample } from "./system-metric.types";
 /** 采样文件名格式：YYYY-MM-DD.ndjson */
 const METRIC_FILE_RE = /^\d{4}-\d{2}-\d{2}\.ndjson$/;
 
-/** 采样数据目录路径 */
 export function getMetricDir(): string {
 	return resolve(process.env.STORAGE_DIR || ".tmp", "metrics");
 }

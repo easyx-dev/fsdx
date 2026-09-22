@@ -15,10 +15,6 @@ import type {
 	TrackPropertyMetaRecord,
 } from "./track.types";
 
-// ═══════════════════════════════════════════════════
-// 元数据缓存
-// ═══════════════════════════════════════════════════
-
 let trackMetaCacheLoaded = false;
 
 /** 懒加载元数据缓存 */
@@ -58,7 +54,6 @@ export function isTrackEventNameRegistered(name: string): boolean {
 	return trackEventMetaCache.has(name);
 }
 
-/** 元属性键是否已注册 */
 export function isTrackPropertyKeyRegistered(key: string): boolean {
 	return trackPropertyMetaCache.has(key);
 }
@@ -85,11 +80,6 @@ export async function loadTrackMetaCache(): Promise<void> {
 	await ensureTrackMetaCache();
 }
 
-// ═══════════════════════════════════════════════════
-// 元事件管理
-// ═══════════════════════════════════════════════════
-
-/** 获取元事件列表 */
 export async function getTrackEventMetaList(): Promise<TrackEventMetaRecord[]> {
 	return db
 		.select()
@@ -97,7 +87,6 @@ export async function getTrackEventMetaList(): Promise<TrackEventMetaRecord[]> {
 		.orderBy(trackEventMeta.category, trackEventMeta.name);
 }
 
-/** 获取单个元事件 */
 export async function getTrackEventMeta(
 	name: string,
 ): Promise<TrackEventMetaRecord | null> {
@@ -109,7 +98,6 @@ export async function getTrackEventMeta(
 	return rows[0] ?? null;
 }
 
-/** 创建元事件 */
 export async function createTrackEventMeta(
 	name: string,
 	input: TrackEventMetaInput,
@@ -127,7 +115,6 @@ export async function createTrackEventMeta(
 	return row;
 }
 
-/** 更新元事件 */
 export async function updateTrackEventMeta(
 	name: string,
 	input: Partial<TrackEventMetaInput>,
@@ -161,18 +148,12 @@ export async function deleteTrackEventMeta(name: string): Promise<boolean> {
 	return true;
 }
 
-// ═══════════════════════════════════════════════════
-// 元属性管理
-// ═══════════════════════════════════════════════════
-
-/** 获取元属性列表 */
 export async function getTrackPropertyMetaList(): Promise<
 	TrackPropertyMetaRecord[]
 > {
 	return db.select().from(trackPropertyMeta).orderBy(trackPropertyMeta.key);
 }
 
-/** 获取单个元属性 */
 export async function getTrackPropertyMeta(
 	key: string,
 ): Promise<TrackPropertyMetaRecord | null> {
@@ -184,7 +165,6 @@ export async function getTrackPropertyMeta(
 	return rows[0] ?? null;
 }
 
-/** 创建元属性 */
 export async function createTrackPropertyMeta(
 	key: string,
 	input: TrackPropertyMetaInput,
@@ -202,7 +182,6 @@ export async function createTrackPropertyMeta(
 	return row;
 }
 
-/** 更新元属性 */
 export async function updateTrackPropertyMeta(
 	key: string,
 	input: Partial<TrackPropertyMetaInput>,
@@ -235,10 +214,6 @@ export async function deleteTrackPropertyMeta(key: string): Promise<boolean> {
 	invalidateTrackMetaCache();
 	return true;
 }
-
-// ═══════════════════════════════════════════════════
-// 预置数据初始化
-// ═══════════════════════════════════════════════════
 
 /** 预置元事件定义 */
 const PRESET_EVENTS: {

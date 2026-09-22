@@ -40,7 +40,6 @@ interface ClientUserColumnsOptions {
 const NO_EDIT_PERMISSION = "无「编辑客户端用户」权限";
 const NO_DELETE_PERMISSION = "无「删除客户端用户」权限";
 
-/** 客户端用户表格列 */
 export function clientUserColumns(options: ClientUserColumnsOptions) {
 	const { permissions } = options;
 	return [

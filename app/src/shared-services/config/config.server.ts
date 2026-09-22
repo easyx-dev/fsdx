@@ -197,8 +197,6 @@ export async function deleteConfig(id: string) {
 	return true;
 }
 
-// ========== 预置系统配置 ==========
-
 /** 运行时校验预置系统配置（幂等安全，恢复软删除的预设项，同步 valueType 变更） */
 export async function ensurePresetConfigs(): Promise<void> {
 	for (const preset of PRESET_CONFIGS) {
@@ -264,8 +262,6 @@ export async function ensurePresetConfigs(): Promise<void> {
 	await loadConfigCache();
 }
 
-// ========== 客户端可见配置 ==========
-
 /** 客户端可见的配置行：先取缓存，缓存 miss 则查库并回填 */
 export async function getVisibleConfigRows(): Promise<
 	{
@@ -325,8 +321,6 @@ export async function refreshConfigTranslationCache(
 		logger.info("全部系统配置翻译缓存已清理");
 	}
 }
-
-// ========== 导入导出 ==========
 
 /** 配置导入数据结构（schema 单一来源，z.infer 派生） */
 export type ConfigImportData = z.infer<typeof configImportSchema>;

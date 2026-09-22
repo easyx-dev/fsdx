@@ -17,7 +17,6 @@ export function shuffle<T>(items: T[]): T[] {
 	return items;
 }
 
-/** 生成灰色调 */
 export function greyColor(min?: number, max?: number): string {
 	const mn = min ?? 1;
 	const mx = max ?? 9;
@@ -25,7 +24,6 @@ export function greyColor(min?: number, max?: number): string {
 	return `#${v}${v}${v}`;
 }
 
-/** 从字符串中移除指定字符 */
 function stripChars(str: string, chars: string): string {
 	return str
 		.split("")

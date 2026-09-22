@@ -21,10 +21,6 @@ import {
 	type TranslationImportResult,
 } from "./i18n.types";
 
-// ═══════════════════════════════════════════════════
-// UI 翻译查询
-// ═══════════════════════════════════════════════════
-
 /** 从数据库全量加载指定语言的所有 UI 翻译 */
 export async function loadUITranslations(
 	locale: Locale,
@@ -75,17 +71,12 @@ export async function refreshUITranslationCache(
 	}
 }
 
-// ═══════════════════════════════════════════════════
-// UI 翻译维护
-// ═══════════════════════════════════════════════════
-
 /** UI 翻译列表查询参数 */
 export interface ListUITranslationsParams extends PaginatedSortParams {
 	locale?: Locale;
 	keyword?: string;
 }
 
-/** UI 翻译列表 */
 export async function listUITranslations(params?: ListUITranslationsParams) {
 	const {
 		locale,
@@ -179,7 +170,6 @@ export async function upsertUITranslation(params: {
 	return { success: true };
 }
 
-/** UI 翻译删除 */
 export async function deleteUITranslation(id: string): Promise<boolean> {
 	const [existing] = await db
 		.select()
@@ -193,10 +183,6 @@ export async function deleteUITranslation(id: string): Promise<boolean> {
 
 	return true;
 }
-
-// ═══════════════════════════════════════════════════
-// UI 翻译导出 / 导入
-// ═══════════════════════════════════════════════════
 
 /** UI 翻译导出数据格式 */
 export interface UiTranslationExportData {

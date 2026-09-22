@@ -150,7 +150,6 @@ export async function getClientUser(id: string) {
 	return record;
 }
 
-/** 创建客户端用户 */
 export async function createClientUser(input: CreateClientUserInput) {
 	const roleIds = input.clientRoleIds ?? [];
 	await assertClientRolesExist(roleIds);
@@ -168,7 +167,6 @@ export async function createClientUser(input: CreateClientUserInput) {
 	return record;
 }
 
-/** 更新客户端用户信息 */
 export async function updateClientUser(
 	id: string,
 	input: UpdateClientUserInput,
@@ -217,7 +215,6 @@ export async function deleteClientUser(id: string): Promise<boolean> {
 	return true;
 }
 
-/** 重置客户端用户密码 */
 export async function resetClientPassword(
 	id: string,
 	newPassword: string,

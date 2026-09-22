@@ -119,7 +119,6 @@ function MessageManagePage() {
 		void fetchRecipients();
 	};
 
-	/** 提交发送消息 */
 	const handleSend = async () => {
 		const values = await sendForm.validateFields();
 		setSending(true);
@@ -137,7 +136,6 @@ function MessageManagePage() {
 		}
 	};
 
-	/** 删除任意消息 */
 	const handleDelete = async (record: MessageWithUser) => {
 		const [, err] = await sfnUnwrap(
 			deleteAnyMessageSFn({ data: { id: record.id } }),
@@ -148,7 +146,6 @@ function MessageManagePage() {
 		await list.reload();
 	};
 
-	/** 重置筛选条件 */
 	const handleReset = () => {
 		setKeyword("");
 		list.applyFilters({ userType: "", status: "", keyword: "" });

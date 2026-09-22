@@ -15,8 +15,6 @@ import {
 	shuffle,
 } from "./random";
 
-// ---- 类型 ----
-
 /** 验证码生成选项 */
 export interface CaptchaOptions {
 	size?: number;
@@ -50,8 +48,6 @@ export interface MathExprOptions extends CaptchaOptions {
 	mathMax?: number;
 	mathOperator?: "+" | "-" | "+-";
 }
-
-// ---- 内部工具 ----
 
 /** 生成贝塞尔曲线干扰路径 */
 function getLineNoise(
@@ -111,8 +107,6 @@ function getText(
 
 	return out;
 }
-
-// ---- 核心 API ----
 
 /**
  * 为指定文本生成验证码 SVG

@@ -85,9 +85,6 @@ export function registerTask(task: ScheduledTask): void {
 	}
 }
 
-/**
- * 停止指定任务
- */
 export function stopTask(name: string): void {
 	const job = tasks.get(name);
 	if (job) {
@@ -106,9 +103,6 @@ export function stopTask(name: string): void {
 	}
 }
 
-/**
- * 停止所有任务
- */
 export function stopAllTasks(): void {
 	for (const [name, job] of tasks) {
 		const result = job.stop();

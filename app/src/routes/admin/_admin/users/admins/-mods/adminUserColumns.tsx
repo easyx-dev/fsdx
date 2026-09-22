@@ -32,7 +32,6 @@ interface AdminUserColumnsOptions {
 const NO_EDIT_PERMISSION = "无「编辑管理员」权限";
 const NO_DELETE_PERMISSION = "无「删除管理员」权限";
 
-/** 管理员表格列 */
 export function adminUserColumns(options: AdminUserColumnsOptions) {
 	const { permissions } = options;
 	return [

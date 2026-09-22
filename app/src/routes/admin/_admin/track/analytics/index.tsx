@@ -127,7 +127,6 @@ function TrackAnalyticsPage() {
 		void fetchAnalytics(submitted);
 	}, [fetchAnalytics, submitted]);
 
-	/** 提交当前筛选条件触发查询 */
 	const handleQuery = () => {
 		setSubmitted(toQueryParams(filter));
 	};

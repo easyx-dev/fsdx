@@ -96,7 +96,6 @@ function useNavCollapse(groupCount: number) {
 	return { collapsedGroups, toggleGroup, expandGroup };
 }
 
-/** 管理端侧边栏导航组件 */
 export function AdminNav({ collapsed }: { collapsed: boolean }) {
 	const { pathname } = useLocation();
 	const { collapsedGroups, toggleGroup, expandGroup } = useNavCollapse(

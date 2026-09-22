@@ -73,7 +73,6 @@ interface TableOperateProps {
 	children: ReactNode;
 }
 
-/** 编辑按钮 */
 function Edit({ onClick, disabled, disabledReason }: EditProps) {
 	return withDisabledReason(
 		<Button

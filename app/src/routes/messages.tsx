@@ -101,7 +101,6 @@ function MessagesPage() {
 		await refreshUnread();
 	};
 
-	/** 全部标记已读 */
 	const handleMarkAllRead = async () => {
 		const [, err] = await sfnUnwrap(markAllMyMessagesAsReadSFn());
 		if (err) return;
@@ -110,7 +109,6 @@ function MessagesPage() {
 		toast.success(t("已全部标记为已读"));
 	};
 
-	/** 删除消息 */
 	const handleDelete = async (id: string) => {
 		const [result] = await sfnUnwrap(deleteMyMessageSFn({ data: { id } }));
 		if (!result) return;

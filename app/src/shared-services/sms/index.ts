@@ -127,8 +127,6 @@ async function sendAliyunSms(phone: string, code: string): Promise<void> {
 	}
 }
 
-// ========== 导出函数 ==========
-
 /**
  * 发送短信验证码
  * 根据系统配置 sms_provider 自动选择服务商

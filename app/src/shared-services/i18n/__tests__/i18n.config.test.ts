@@ -13,10 +13,6 @@ import {
 	SUPPORTED_LOCALES,
 } from "../i18n.types";
 
-// ═══════════════════════════════════════════════════════════════════
-// i18n.types — 常量
-// ═══════════════════════════════════════════════════════════════════
-
 describe("SUPPORTED_LOCALES", () => {
 	it("包含 zh 和 en", () => {
 		expect(SUPPORTED_LOCALES).toContain("zh");
@@ -36,10 +32,6 @@ describe("LOCALE_COOKIE", () => {
 		expect(LOCALE_COOKIE).toBe("lang");
 	});
 });
-
-// ═══════════════════════════════════════════════════════════════════
-// createI18nInstance
-// ═══════════════════════════════════════════════════════════════════
 
 describe("createI18nInstance", () => {
 	// 模拟生产环境：

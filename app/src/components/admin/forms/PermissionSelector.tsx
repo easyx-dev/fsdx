@@ -57,7 +57,6 @@ export function PermissionSelector({
 		}));
 	}, [value, groups]);
 
-	/** 切换分组全选 */
 	const handleGroupToggle = (group: string, checked: boolean) => {
 		const newValue = value.filter((v) => !v.startsWith(`${group}:`));
 		if (checked) {
@@ -66,7 +65,6 @@ export function PermissionSelector({
 		onChange?.(newValue);
 	};
 
-	/** 处理单个权限码勾选变化 */
 	const handleIndividualsChange = (group: string, checkedValues: string[]) => {
 		const allCodes = groups[group].map((p) => p.code);
 		// 移除当前分组的通配符和所有该组的权限码

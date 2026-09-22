@@ -20,10 +20,6 @@ import {
 	isValidPropertyValue,
 } from "./track.validate";
 
-// ═══════════════════════════════════════════════════
-// 内存缓冲
-// ═══════════════════════════════════════════════════
-
 interface TrackEventBufferItem {
 	time: Date;
 	userId: string | null;
@@ -185,10 +181,6 @@ export async function flushTrackEvents(): Promise<void> {
 		logger.error({ err }, "埋点事件缓冲刷入失败（优雅关闭继续）");
 	}
 }
-
-// ═══════════════════════════════════════════════════
-// 统一导出（barrel）
-// ═══════════════════════════════════════════════════
 
 export { getTrackAnalytics } from "./track.analytics";
 export { getTrackEventNames, searchTrackEvents } from "./track.events";

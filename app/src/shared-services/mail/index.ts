@@ -92,9 +92,6 @@ export async function sendMail(options: SendMailOptions): Promise<boolean> {
 	}
 }
 
-/**
- * 发送验证码邮件
- */
 export async function sendCaptchaMail(
 	to: string,
 	code: string,

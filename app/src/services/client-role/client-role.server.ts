@@ -104,7 +104,6 @@ async function getClientRole(id: string) {
 	return record;
 }
 
-/** 创建角色 */
 export async function createClientRole(input: CreateClientRoleInput) {
 	const [record] = await db
 		.insert(clientRole)
@@ -118,7 +117,6 @@ export async function createClientRole(input: CreateClientRoleInput) {
 	return record;
 }
 
-/** 更新角色 */
 export async function updateClientRole(
 	id: string,
 	input: UpdateClientRoleInput,

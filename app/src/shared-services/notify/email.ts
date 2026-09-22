@@ -23,7 +23,6 @@ function buildEmailHtml(title: string, content: string): string {
   </div>`;
 }
 
-/** 发送通知邮件 */
 export async function sendChannelEmail(
 	to: string,
 	payload: { title: string; content: string },

@@ -35,9 +35,6 @@ function generateCode(): string {
 	return String(Math.floor(100000 + Math.random() * 900000));
 }
 
-/**
- * 发送验证码
- */
 export async function sendCaptcha(
 	type: "email" | "sms",
 	target: string,
@@ -96,9 +93,6 @@ export async function sendCaptcha(
 	return { success: true, message: "验证码已发送" };
 }
 
-/**
- * 校验验证码
- */
 export async function verifyCaptcha(
 	type: "email" | "sms",
 	target: string,

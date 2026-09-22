@@ -117,7 +117,6 @@ function NewsListPage() {
 		await list.reload();
 	};
 
-	/** 导出新闻数据 */
 	const handleExport = async (format: "csv" | "json") => {
 		const ext = format === "csv" ? "csv" : "json";
 		const ok = await downloadExport(exportNewsSFn({ data: { format } }), {

@@ -4,10 +4,6 @@
  */
 import { MemoryCache } from "@fsdx/lib/cache";
 
-// ═══════════════════════════════════════════════════
-// 属性值类型与安全校验
-// ═══════════════════════════════════════════════════
-
 const LIMITS = {
 	STRING_MAX_LENGTH: 10000,
 	ARRAY_MAX_ITEMS: 100,
@@ -114,10 +110,6 @@ function isValidPlainObject(value: unknown, depth: number): boolean {
 	return true;
 }
 
-// ═══════════════════════════════════════════════════
-// 上报频控（公开接口 per-session 限流）
-// ═══════════════════════════════════════════════════
-
 /** 频控阈值：单会话每分钟最多上报条数 */
 export const TRACK_RATE_LIMIT = {
 	WINDOW_MS: 60_000,
@@ -139,10 +131,6 @@ export function isTrackSessionRateLimited(sessionId: string): boolean {
 export function clearTrackRateLimit(): void {
 	sessionRateCache.clear();
 }
-
-// ═══════════════════════════════════════════════════
-// 服务端时间钳制（防异常客户端时钟污染时序分析）
-// ═══════════════════════════════════════════════════
 
 /** 客户端事件时间允许偏差区间：过去 1 天 ~ 未来 5 分钟 */
 const TIME_CLAMP = {

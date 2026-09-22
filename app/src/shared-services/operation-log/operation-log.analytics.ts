@@ -80,8 +80,6 @@ export interface OperationLogAnalyticsResult {
 	};
 }
 
-// ─── 查询表达式 ───
-
 /** 从 db.execute 结果中提取行数组（drizzle v1 返回 { rows } 结构） */
 function extractRows<T>(result: unknown): T[] {
 	return (result as { rows?: T[] }).rows ?? [];
@@ -133,8 +131,6 @@ function withRatio(
 		ratio: total > 0 ? item.count / total : 0,
 	}));
 }
-
-// ─── 子查询 ───
 
 /** 概览指标：总量 / 活跃操作人 / 高风险操作数 / 覆盖模块数 */
 async function getKpis(
@@ -270,8 +266,6 @@ export async function getOperationActionCounts(
 		count: Number(row.count ?? 0),
 	}));
 }
-
-// ─── 主入口 ───
 
 /** 执行操作日志分析：KPI / 趋势 / 分布 / 操作人排行，可选环比 */
 export async function getOperationLogAnalytics(

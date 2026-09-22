@@ -12,8 +12,6 @@ import {
 	hasAnyAdminPermission,
 } from "#/permissions/admin-permissions";
 
-// ─── AdminPermissionDef 辅助工具 ───
-
 /** 根据权限码从 ADMIN_PERMISSIONS 常量中查找对应的 AdminPermissionDef */
 function findDef(code: string) {
 	for (const def of Object.values(ADMIN_PERMISSIONS)) {
@@ -21,10 +19,6 @@ function findDef(code: string) {
 	}
 	throw new Error(`未找到权限定义: ${code}`);
 }
-
-// ═══════════════════════════════════════════════════════════════════
-// hasAdminPermission — 检查单个权限
-// ═══════════════════════════════════════════════════════════════════
 
 describe("hasAdminPermission", () => {
 	it("** 通配符命中", () => {
@@ -59,10 +53,6 @@ describe("hasAdminPermission", () => {
 		);
 	});
 });
-
-// ═══════════════════════════════════════════════════════════════════
-// hasAnyAdminPermission — 检查任一权限
-// ═══════════════════════════════════════════════════════════════════
 
 describe("hasAnyAdminPermission", () => {
 	const newsDefs = [
@@ -102,10 +92,6 @@ describe("hasAnyAdminPermission", () => {
 		expect(hasAnyAdminPermission(["dict:*"], crossDefs)).toBe(false);
 	});
 });
-
-// ═══════════════════════════════════════════════════════════════════
-// hasAllAdminPermissions — 检查全部权限
-// ═══════════════════════════════════════════════════════════════════
 
 describe("hasAllAdminPermissions", () => {
 	const newsDefs = [findDef("news:view"), findDef("news:create")];
