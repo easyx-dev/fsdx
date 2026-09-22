@@ -11,13 +11,18 @@ import {
 	Form,
 	Input,
 	InputNumber,
-	Modal,
 	Row,
-	Space,
 } from "antd";
-import { EditorTypes } from "#/components/admin";
+import {
+	AdminFormModal,
+	EditorTypes,
+	FORM_MODAL_WIDTH,
+} from "#/components/admin";
 import type { EditorType } from "#/constants/editor-types";
 import type { DictItemRecord } from "#/shared-services/dict/dict.server";
+
+/** 表单 <form id>：弹窗底部按钮据此触发提交 */
+const FORM_ID = "dict-item-form";
 
 interface DictItemFormModalProps {
 	open: boolean;
@@ -47,15 +52,16 @@ export function DictItemFormModal({
 		| undefined;
 
 	return (
-		<Modal
-			title={editing ? "编辑条目" : "新建条目"}
+		<AdminFormModal
+			entityName="条目"
+			id={editing?.id}
 			open={open}
-			onCancel={onCancel}
-			footer={null}
-			width={isAdvancedExpanded ? 720 : 520}
-			destroyOnHidden
+			onClose={onCancel}
+			formId={FORM_ID}
+			width={isAdvancedExpanded ? FORM_MODAL_WIDTH.wide : FORM_MODAL_WIDTH.base}
 		>
 			<Form
+				id={FORM_ID}
 				form={form}
 				layout="vertical"
 				onFinish={onSubmit}
@@ -136,15 +142,7 @@ export function DictItemFormModal({
 						)}
 					</>
 				)}
-				<Form.Item className="mb-0 text-right">
-					<Space>
-						<Button onClick={onCancel}>取消</Button>
-						<Button type="primary" htmlType="submit">
-							{editing ? "保存" : "创建"}
-						</Button>
-					</Space>
-				</Form.Item>
 			</Form>
-		</Modal>
+		</AdminFormModal>
 	);
 }

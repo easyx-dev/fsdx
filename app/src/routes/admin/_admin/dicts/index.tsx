@@ -8,11 +8,11 @@ import { message } from "@fsdx/ui-spa/antd-static";
 import { JsonImportButton } from "@fsdx/ui-spa/json-import-button";
 import { ProTable, withDisabledReason } from "@fsdx/ui-spa/table";
 import { createFileRoute, useRouter } from "@tanstack/react-router";
-import { Button, Card, Flex, Form } from "antd";
+import { Button, Form } from "antd";
 import { useCallback, useState } from "react";
 import {
 	AdminListPage,
-	AdminTableToolbar,
+	AdminSplitPanel,
 	useAdminAuth,
 } from "#/components/admin";
 import { ADMIN_PERMISSIONS } from "#/permissions/admin-permissions";
@@ -28,7 +28,10 @@ import { DictFormModal } from "./-mods/DictFormModal";
 import { DictItemFormModal } from "./-mods/DictItemFormModal";
 import { DictListPanel } from "./-mods/DictListPanel";
 import { isPresetDict } from "./-mods/dict.utils";
-import { dictItemColumns } from "./-mods/dictColumns";
+import {
+	dictItemColumns,
+	renderDictItemDetailPanel,
+} from "./-mods/dictColumns";
 import {
 	createDictItemSFn,
 	createDictSFn,
@@ -343,96 +346,78 @@ function DictsPage() {
 	return (
 		<AdminListPage
 			title="字典管理"
-			description="维护系统字典类型与条目，排序与启用状态可在列表内直接修改"
-			extra={withDisabledReason(
-				<Button
-					type="primary"
-					icon={<PlusOutlined />}
-					disabled={!permissions.create}
-					onClick={() => openDictModal()}
-				>
-					新建字典
-				</Button>,
-				!permissions.create,
-				NO_CREATE_PERMISSION,
-			)}
-			toolbar={
-				<AdminTableToolbar extra={secondaryActions}>
-					<span className="text-sm text-muted-foreground">
-						{selectedDictSlug
-							? `当前字典：${selectedDict?.name ?? selectedDictSlug}`
-							: "选择左侧字典查看条目"}
-					</span>
-				</AdminTableToolbar>
+			description={
+				selectedDictSlug
+					? `维护系统字典类型与条目 · 当前 ${selectedDict?.name ?? "—"}（${list.data.total} 条）`
+					: "维护系统字典类型与条目，排序与启用状态可在列表内直接修改"
+			}
+			extra={
+				<>
+					{secondaryActions}
+					{withDisabledReason(
+						<Button
+							icon={<PlusOutlined />}
+							disabled={!selectedDictSlug || !permissions.createItem}
+							onClick={() => openItemModal()}
+						>
+							新建条目
+						</Button>,
+						!selectedDictSlug || !permissions.createItem,
+						selectedDictSlug ? NO_CREATE_ITEM_PERMISSION : "请先在左侧选择字典",
+					)}
+					{withDisabledReason(
+						<Button
+							type="primary"
+							icon={<PlusOutlined />}
+							disabled={!permissions.create}
+							onClick={() => openDictModal()}
+						>
+							新建字典
+						</Button>,
+						!permissions.create,
+						NO_CREATE_PERMISSION,
+					)}
+				</>
 			}
 		>
-			<Flex gap={20}>
-				<DictListPanel
-					dicts={dictList}
-					selectedSlug={selectedDictSlug}
-					onSelect={(slug) => {
-						if (slug !== selectedDictSlug)
-							list.applyFilters({ dictSlug: slug });
-					}}
-					onEdit={openDictModal}
-					onDelete={handleDeleteDict}
-					permissions={permissions}
-				/>
-				<Card
-					size="small"
-					classNames={{
-						root: "flex-1 min-w-0",
-					}}
-					title={
-						selectedDictSlug ? (
-							<span className="text-sm">
-								<span className="font-medium">{selectedDict?.name ?? "—"}</span>
-								<span className="text-muted-foreground ml-2">
-									· 条目 ({list.data.total})
-								</span>
-							</span>
-						) : (
-							"字典条目"
-						)
-					}
-					extra={
-						selectedDictSlug
-							? withDisabledReason(
-									<Button
-										type="primary"
-										size="small"
-										icon={<PlusOutlined />}
-										disabled={!permissions.createItem}
-										onClick={() => openItemModal()}
-									>
-										新建条目
-									</Button>,
-									!permissions.createItem,
-									NO_CREATE_ITEM_PERMISSION,
-								)
-							: undefined
-					}
-					styles={{ body: { padding: 0 } }}
-				>
-					{selectedDictSlug ? (
-						<ProTable
-							dataSource={list.data.records}
-							columns={itemColumns}
-							rowKey="id"
-							loading={list.loading}
-							scroll={{ x: 1420 }}
-							size="small"
-							locale={{ emptyText: "暂无条目" }}
-							onChange={list.onTableChange}
-							pagination={list.pagination}
-						/>
-					) : (
-						<div className="flex items-center justify-center py-16 text-sm text-muted-foreground">
-							请选择左侧字典查看条目
-						</div>
-					)}
-				</Card>
-			</Flex>
+			<AdminSplitPanel
+				sideTitle="字典类型"
+				side={
+					<DictListPanel
+						dicts={dictList}
+						selectedSlug={selectedDictSlug}
+						onSelect={(slug) => {
+							if (slug !== selectedDictSlug)
+								list.applyFilters({ dictSlug: slug });
+						}}
+						onEdit={openDictModal}
+						onDelete={handleDeleteDict}
+						permissions={permissions}
+					/>
+				}
+			>
+				{selectedDictSlug ? (
+					<ProTable
+						dataSource={list.data.records}
+						columns={itemColumns}
+						rowKey="id"
+						loading={list.loading}
+						scroll={{ x: 977 }}
+						locale={{ emptyText: "暂无条目" }}
+						onChange={list.onTableChange}
+						pagination={list.pagination}
+						// 扩展配置与时间收进展开面板，条目表只保留高频列
+						expandable={{
+							columnWidth: 50,
+							expandedRowRender: renderDictItemDetailPanel,
+						}}
+					/>
+				) : (
+					<div className="flex h-full items-center justify-center text-sm text-foreground-tertiary">
+						请选择左侧字典查看条目
+					</div>
+				)}
+			</AdminSplitPanel>
 
 			<DictFormModal
 				open={dictModalOpen}

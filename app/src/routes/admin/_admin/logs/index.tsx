@@ -2,14 +2,18 @@
  * 日志查询页面：按级别、关键词与日期范围检索日志文件内容
  * 筛选为「点查询才请求」模式，输入框仅维护草稿条件
  */
-import { DownloadOutlined, SearchOutlined } from "@ant-design/icons";
+import { DownloadOutlined } from "@ant-design/icons";
 import { ProTable, StatusTag, type StatusTagOption } from "@fsdx/ui-spa/table";
 import { createFileRoute } from "@tanstack/react-router";
-import { Button, DatePicker, Input, Select, Space, Tag, Tooltip } from "antd";
+import { DatePicker, Input, Select, Space, Tag, Tooltip } from "antd";
 import type { Dayjs } from "dayjs";
 import dayjs from "dayjs";
 import { useCallback, useState } from "react";
-import { AdminListPage, AdminTableToolbar } from "#/components/admin";
+import {
+	AdminFilterItem,
+	AdminFilters,
+	AdminListPage,
+} from "#/components/admin";
 import { LEVEL_OPTIONS } from "#/constants";
 import type { LogEntry } from "#/services/logs/logs.server";
 import { useListQuery } from "#/utils/use-list-query";
@@ -117,7 +121,7 @@ function LogsPage() {
 			title: "时间",
 			dataIndex: "time",
 			key: "time",
-			width: 180,
+			width: 165,
 			valueType: "dateTimeMinute" as const,
 		},
 		{
@@ -142,70 +146,62 @@ function LogsPage() {
 		<AdminListPage
 			title="日志查询"
 			description="搜索和查看系统操作日志文件"
-			toolbar={
-				<div className="flex flex-col gap-3">
-					<AdminTableToolbar
-						onReset={handleReset}
-						extra={
-							<Button
-								type="primary"
-								icon={<SearchOutlined />}
-								onClick={handleSearch}
-							>
-								查询
-							</Button>
-						}
-					>
-						<Input
-							placeholder="搜索日志关键词"
-							value={keyword}
-							onChange={(e) => setKeyword(e.target.value)}
-							onPressEnter={handleSearch}
-							allowClear
-							style={{ width: 200 }}
-						/>
-						<Select
-							value={level}
-							onChange={setLevel}
-							options={LEVEL_OPTIONS}
-							style={{ width: 110 }}
-						/>
-						<DatePicker.RangePicker
-							value={dateRange}
-							onChange={(value) => setDateRange(value as [Dayjs, Dayjs] | null)}
-							placeholder={["开始日期", "结束日期"]}
-							format="YYYY-MM-DD"
-							style={{ width: 260 }}
-						/>
-					</AdminTableToolbar>
-
-					{/* 可用日期快选：点击按当天查询，右侧图标下载该日日志文件 */}
-					{availableDates.length > 0 && (
-						<div className="flex flex-wrap items-center gap-1.5">
-							<span className="text-xs text-muted-foreground">日志日期：</span>
-							{availableDates.slice(0, 14).map((date) => (
-								<Space key={date} size={0}>
-									<Tag
-										color="default"
-										className="cursor-pointer"
-										style={{ margin: 0 }}
-										onClick={() => handleDateClick(date)}
-									>
-										{date}
-									</Tag>
-									<Tooltip title="下载该日日志文件">
-										<a
-											href={`/admin/logs/download/${date}`}
-											className="inline-flex items-center px-1"
-										>
-											<DownloadOutlined className="text-xs text-muted-foreground" />
-										</a>
-									</Tooltip>
-								</Space>
-							))}
-						</div>
-					)}
-				</div>
+			filters={
+				<AdminFilters
+					onQuery={handleSearch}
+					onReset={handleReset}
+					// 日期快选与「下载该日日志」共用一个入口，收进「筛选 ▾」避免页头出现第二行
+					more={
+						availableDates.length > 0 ? (
+							<AdminFilterItem label="日志日期（点日期按当天查询，右侧图标下载该日文件）">
+								<div className="flex flex-wrap items-center gap-1.5">
+									{availableDates.slice(0, 14).map((date) => (
+										<Space key={date} size={0}>
+											<Tag
+												color="default"
+												className="cursor-pointer"
+												style={{ margin: 0 }}
+												onClick={() => handleDateClick(date)}
+											>
+												{date}
+											</Tag>
+											<Tooltip title="下载该日日志文件">
+												<a
+													href={`/admin/logs/download/${date}`}
+													className="inline-flex items-center px-1"
+												>
+													<DownloadOutlined className="text-xs text-muted-foreground" />
+												</a>
+											</Tooltip>
+										</Space>
+									))}
+								</div>
+							</AdminFilterItem>
+						) : undefined
+					}
+				>
+					<Input
+						placeholder="搜索日志关键词"
+						value={keyword}
+						onChange={(e) => setKeyword(e.target.value)}
+						onPressEnter={handleSearch}
+						allowClear
+						style={{ width: 180 }}
+					/>
+					<Select
+						value={level}
+						onChange={setLevel}
+						options={LEVEL_OPTIONS}
+						style={{ width: 110 }}
+					/>
+					<DatePicker.RangePicker
+						value={dateRange}
+						onChange={(value) => setDateRange(value as [Dayjs, Dayjs] | null)}
+						placeholder={["开始日期", "结束日期"]}
+						format="YYYY-MM-DD"
+						style={{ width: 240 }}
+					/>
+				</AdminFilters>
 			}
 		>
 			<ProTable
@@ -216,10 +212,11 @@ function LogsPage() {
 				}
 				loading={list.loading}
 				locale={{ emptyText: "暂无日志" }}
-				scroll={{ x: 900 }}
+				scroll={{ x: 1199 }}
 				onChange={list.onTableChange}
 				pagination={list.pagination}
 				expandable={{
+					columnWidth: 50,
 					expandedRowRender: (record: LogEntry) => (
 						<pre
 							style={{

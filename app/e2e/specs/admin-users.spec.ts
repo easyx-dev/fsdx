@@ -37,7 +37,7 @@ test.describe
 				.click();
 			// 多选下拉选中后保持展开，按 Esc 关闭避免遮挡弹窗确定按钮
 			await adminPage.keyboard.press("Escape");
-			await modal.getByRole("button", { name: /确\s*定/ }).click();
+			await modal.getByRole("button", { name: /保\s*存/ }).click();
 
 			await expect(adminPage.getByText("管理员已创建")).toBeVisible();
 			const createdRow = adminPage.locator(".ant-table-tbody tr", {
@@ -49,10 +49,10 @@ test.describe
 
 		test("搜索关键字过滤列表", async ({ adminPage }) => {
 			await goto(adminPage, "/admin/users/admins");
-			await adminPage
-				.getByPlaceholder("搜索用户名或邮箱...")
-				.fill(createdUsername);
-			await adminPage.getByRole("button", { name: /搜\s*索/ }).click();
+			const keywordInput = adminPage.getByPlaceholder("搜索用户名或邮箱...");
+			await keywordInput.fill(createdUsername);
+			// 搜索框已统一为 Input.Search（内嵌查询图标，回车即查），不再有独立的「搜索」按钮
+			await keywordInput.press("Enter");
 			await expect(
 				adminPage.locator(".ant-table-tbody tr", { hasText: createdUsername }),
 			).toHaveCount(1);
@@ -73,7 +73,7 @@ test.describe
 			await row.getByRole("button", { name: "编辑" }).click();
 			const modal = adminPage.getByRole("dialog");
 			await modal.getByPlaceholder("admin@example.com").fill(createdEmail);
-			await modal.getByRole("button", { name: /确\s*定/ }).click();
+			await modal.getByRole("button", { name: /保\s*存/ }).click();
 
 			await expect(adminPage.getByText("管理员信息已更新")).toBeVisible();
 			await expect(
@@ -89,7 +89,7 @@ test.describe
 			await row.getByRole("button", { name: "重置密码" }).click();
 			const modal = adminPage.getByRole("dialog");
 			await modal.getByPlaceholder("至少 6 位").fill("NewPassw0rd!");
-			await modal.getByRole("button", { name: /确\s*定/ }).click();
+			await modal.getByRole("button", { name: /保\s*存/ }).click();
 			await expect(adminPage.getByText("密码已重置")).toBeVisible();
 		});
 

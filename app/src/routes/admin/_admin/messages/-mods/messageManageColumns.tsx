@@ -32,6 +32,8 @@ const STATUS_OPTIONS: Record<string, StatusTagOption> = {
 
 interface MessageManageColumnsOptions {
 	onDelete: (record: MessageWithUser) => Promise<void>;
+	/** 状态列头筛选值（空串表示全部），受控回填漏斗选中态 */
+	statusFilter: "" | "unread" | "read";
 	/** 权限开关：无权限的操作置灰并提示（服务端 guard 仍为唯一权威） */
 	permissions: {
 		delete: boolean;
@@ -54,6 +56,7 @@ export function messageManageColumns(options: MessageManageColumnsOptions) {
 					{name}
 				</span>
 			),
+			ellipsis: true,
 		},
 		{
 			title: "标题",
@@ -75,6 +78,13 @@ export function messageManageColumns(options: MessageManageColumnsOptions) {
 			dataIndex: "status",
 			key: "status",
 			width: 100,
+			// 未读 / 已读筛选收进列头漏斗（单选），不再占页头一行
+			filters: [
+				{ text: "未读", value: "unread" },
+				{ text: "已读", value: "read" },
+			],
+			filterMultiple: false,
+			filteredValue: options.statusFilter ? [options.statusFilter] : null,
 			render: (val: string) => (
 				<StatusTag value={val} options={STATUS_OPTIONS} />
 			),
@@ -83,15 +93,15 @@ export function messageManageColumns(options: MessageManageColumnsOptions) {
 			title: "时间",
 			dataIndex: "createdAt",
 			key: "createdAt",
-			width: 160,
+			width: 165,
 			valueType: "dateTimeMinute",
 		},
 		{
 			title: "操作",
 			key: "actions",
 			fixed: "right" as const,
-			// 操作列固定右侧必须显式声明宽度（1 项 → 80）
-			width: 80,
+			// 操作列固定右侧必须显式声明宽度（1 项 → 100）
+			width: 100,
 			render: (_: unknown, record: MessageWithUser) => (
 				<TableOperate>
 					<TableOperate.Delete

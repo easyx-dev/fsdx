@@ -16,11 +16,7 @@ import { useCallback, useState } from "react";
 import {
 	AdminFormDrawer,
 	AdminListPage,
-	AdminTableToolbar,
 	FORM_DRAWER_WIDTH,
-	PublishedFilter,
-	type PublishedFilterValue,
-	toIsPublished,
 	useAdminAuth,
 } from "#/components/admin";
 import { ADMIN_PERMISSIONS } from "#/permissions/admin-permissions";
@@ -43,9 +39,9 @@ import { newsColumns } from "./-mods/newsColumns";
 const FORM_ID = "news-form";
 const NO_CREATE_PERMISSION = "无「新建新闻」权限";
 
-/** 列表筛选条件 */
+/** 列表筛选条件：发布状态来自表格「状态」列的列头漏斗 */
 interface NewsFilters {
-	published: PublishedFilterValue;
+	published: "" | "published" | "unpublished";
 }
 
 export const Route = createFileRoute("/admin/_admin/news/")({
@@ -64,11 +60,19 @@ function NewsListPage() {
 		initial: initialData,
 		initialFilters: { published: "" },
 		errorMessage: "加载列表失败",
+		// 状态列头漏斗 → 业务条件（值未变化时 hook 视为无筛选变更，不会重置页码）
+		mapColumnFilters: (columnFilters) => ({
+			published:
+				(columnFilters.isPublished?.[0] as NewsFilters["published"]) ?? "",
+		}),
 		fetcher: useCallback(
 			({ page, pageSize, sortField, sortOrder, filters }) =>
 				getNewsListSFn({
 					data: {
-						isPublished: toIsPublished(filters.published),
+						isPublished:
+							filters.published === ""
+								? undefined
+								: filters.published === "published",
 						sortField,
 						sortOrder,
 						page,
@@ -135,6 +139,7 @@ function NewsListPage() {
 
 	const columns = newsColumns({
 		sortProps: list.sortProps,
+		publishedFilter: list.filters.published,
 		onEdit: (record) => {
 			setEditingId(record.id);
 			setDrawerOpen(true);
@@ -149,60 +154,50 @@ function NewsListPage() {
 		<AdminListPage
 			title="新闻管理"
 			description="发布状态与排序可在列表内直接修改"
-			extra={withDisabledReason(
-				<Button
-					type="primary"
-					icon={<PlusOutlined />}
-					disabled={!permissions.create}
-					onClick={openCreate}
-				>
-					新建新闻
-				</Button>,
-				!permissions.create,
-				NO_CREATE_PERMISSION,
-			)}
-			toolbar={
-				<AdminTableToolbar
-					extra={
-						<>
-							<JsonImportButton
-								onImport={async (jsonString) => {
-									const data = JSON.parse(jsonString);
-									const result = await callSfn(importNewsSFn({ data }));
-									const msg = `新增 ${result.created} 条`;
-									if (result.skipped > 0) {
-										message.success(
-											`${msg}，跳过 ${result.skipped} 条（标题重复）`,
-										);
-									} else {
-										message.success(msg);
-									}
-									await list.reload();
-								}}
-							>
-								导入 JSON
-							</JsonImportButton>
-							<Button
-								icon={<DownloadOutlined />}
-								onClick={() => void handleExport("csv")}
-							>
-								导出 CSV
-							</Button>
-							<Button
-								icon={<FileTextOutlined />}
-								onClick={() => void handleExport("json")}
-							>
-								导出 JSON
-							</Button>
-						</>
-					}
-				>
-					<PublishedFilter
-						value={list.filters.published}
-						labels={{ published: "已发布", unpublished: "未发布" }}
-						onChange={(published) => list.applyFilters({ published })}
-					/>
-				</AdminTableToolbar>
+			extra={
+				<>
+					<JsonImportButton
+						onImport={async (jsonString) => {
+							const data = JSON.parse(jsonString);
+							const result = await callSfn(importNewsSFn({ data }));
+							const msg = `新增 ${result.created} 条`;
+							if (result.skipped > 0) {
+								message.success(
+									`${msg}，跳过 ${result.skipped} 条（标题重复）`,
+								);
+							} else {
+								message.success(msg);
+							}
+							await list.reload();
+						}}
+					>
+						导入 JSON
+					</JsonImportButton>
+					<Button
+						icon={<DownloadOutlined />}
+						onClick={() => void handleExport("csv")}
+					>
+						导出 CSV
+					</Button>
+					<Button
+						icon={<FileTextOutlined />}
+						onClick={() => void handleExport("json")}
+					>
+						导出 JSON
+					</Button>
+					{withDisabledReason(
+						<Button
+							type="primary"
+							icon={<PlusOutlined />}
+							disabled={!permissions.create}
+							onClick={openCreate}
+						>
+							新建新闻
+						</Button>,
+						!permissions.create,
+						NO_CREATE_PERMISSION,
+					)}
+				</>
 			}
 		>
 			<ProTable
@@ -211,7 +206,7 @@ function NewsListPage() {
 				rowKey="id"
 				loading={list.loading}
 				locale={{ emptyText: "暂无新闻" }}
-				scroll={{ x: 1540 }}
+				scroll={{ x: 1199 }}
 				onChange={list.onTableChange}
 				pagination={list.pagination}
 			/>

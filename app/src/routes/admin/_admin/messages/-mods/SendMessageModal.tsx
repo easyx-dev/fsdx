@@ -3,7 +3,8 @@
  */
 
 import type { FormInstance } from "antd";
-import { Form, Input, Modal, Radio, Select } from "antd";
+import { Form, Input, Radio, Select } from "antd";
+import { AdminFormModal, FORM_MODAL_WIDTH } from "#/components/admin";
 import type { RecipientOption } from "#/services/message/message.server";
 
 interface SendMessageModalProps {
@@ -31,15 +32,14 @@ export function SendMessageModal({
 	onCancel,
 }: SendMessageModalProps) {
 	return (
-		<Modal
+		<AdminFormModal
 			title="发送消息"
 			open={open}
 			onOk={onOk}
-			onCancel={onCancel}
-			confirmLoading={sending}
+			onClose={onCancel}
+			submitting={sending}
 			okText="发送"
-			cancelText="取消"
-			width={520}
+			width={FORM_MODAL_WIDTH.base}
 		>
 			<Form
 				form={form}
@@ -101,6 +101,6 @@ export function SendMessageModal({
 					<Input placeholder="跳转链接（选填）" />
 				</Form.Item>
 			</Form>
-		</Modal>
+		</AdminFormModal>
 	);
 }

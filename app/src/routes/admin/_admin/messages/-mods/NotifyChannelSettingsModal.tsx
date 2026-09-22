@@ -2,8 +2,9 @@
  * 管理端个人「通知渠道设置」弹窗
  */
 import { message } from "@fsdx/ui-spa/antd-static";
-import { Alert, Form, Input, Modal, Switch } from "antd";
+import { Alert, Form, Input, Switch } from "antd";
 import { useEffect, useState } from "react";
+import { AdminFormModal, FORM_MODAL_WIDTH } from "#/components/admin";
 import type { UserNotifyChannels } from "#/db/schema";
 import {
 	getAdminNotifyChannelsSFn,
@@ -93,15 +94,14 @@ export function NotifyChannelSettingsModal({
 	};
 
 	return (
-		<Modal
+		<AdminFormModal
 			title="通知渠道设置"
 			open={open}
-			onCancel={onClose}
 			onOk={() => void handleSave()}
-			confirmLoading={saving}
+			onClose={onClose}
+			submitting={saving}
 			okText="保存"
-			cancelText="取消"
-			width={560}
+			width={FORM_MODAL_WIDTH.base}
 		>
 			<Alert
 				type="info"
@@ -156,6 +156,6 @@ export function NotifyChannelSettingsModal({
 					</Form.Item>
 				))}
 			</Form>
-		</Modal>
+		</AdminFormModal>
 	);
 }

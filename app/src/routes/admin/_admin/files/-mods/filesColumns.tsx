@@ -1,7 +1,8 @@
 /**
  * 文件管理表格列定义
- * 时间列走 ProTable valueType；标签列以 Tag 展示图片尺寸（首位）与多标签折叠；
- * 存储与内容元信息（MIME / 存储路径 / SHA256 / 过期时间）紧随其后便于排查
+ * 列表只保留高频列（「文件名」为主内容列，全表唯一吸收剩余宽度），
+ * MIME / 存储路径 / SHA256 / 过期时间 / 更新时间等详情信息收进行展开面板，
+ * 操作列把低频操作折进「更多」，使列宽合计控制在容器宽度内（不出现横向滚动）
  */
 import {
 	DownloadOutlined,
@@ -13,11 +14,13 @@ import {
 import { isProcessableMimeType } from "@easyx/image-toolkit";
 import { formatBytes } from "@fsdx/lib/format-bytes";
 import {
+	formatDateTimeValue,
 	StatusTag,
 	type StatusTagOption,
 	TableOperate,
+	type TableOperateMoreItem,
 } from "@fsdx/ui-spa/table";
-import { Button, Space, Tag, Tooltip } from "antd";
+import { Button, Descriptions, Space, Tag, Tooltip, Typography } from "antd";
 import type { FileRecord } from "#/services/file/file.server";
 
 /** 文件状态展示：值与语义色集中在此，避免各列自选颜色 */
@@ -83,10 +86,87 @@ function renderTags(record: FileRecord) {
 	);
 }
 
-export function createFilesColumns(handlers: FilesColumnsHandlers) {
+/**
+ * 行展开面板：列表放不下的内容元信息（MIME / 路径 / 哈希 / 时间）
+ * 时间值复用 ProTable 的格式化实现，避免此处再手写 dayjs
+ */
+export function renderFileDetailPanel(record: FileRecord) {
+	return (
+		<Descriptions
+			size="small"
+			column={2}
+			items={[
+				{ key: "mimeType", label: "MIME 类型", children: record.mimeType },
+				{
+					key: "path",
+					label: "存储路径",
+					children: <Typography.Text copyable>{record.path}</Typography.Text>,
+				},
+				{
+					key: "sha256",
+					label: "SHA256",
+					children: <Typography.Text copyable>{record.sha256}</Typography.Text>,
+				},
+				{
+					key: "expiredAt",
+					label: "过期时间",
+					children: formatDateTimeValue(record.expiredAt) ?? "—",
+				},
+				{
+					key: "updatedAt",
+					label: "更新时间",
+					children: formatDateTimeValue(record.updatedAt),
+				},
+			]}
+		/>
+	);
+}
+
+/** 操作列的「更多」项：低频操作（标签编辑与图片类专属操作） */
+function buildMoreItems(
+	record: FileRecord,
+	handlers: FilesColumnsHandlers,
+): TableOperateMoreItem[] {
+	const items: TableOperateMoreItem[] = [
+		{
+			key: "tags",
+			label: "标签",
+			icon: <TagsOutlined />,
+			onClick: () => handlers.onEditTags(record),
+		},
+	];
+	if (isImage(record.mimeType)) {
+		items.push({
+			key: "preview",
+			label: "预览",
+			icon: <EyeOutlined />,
+			onClick: () => handlers.onPreview(record),
+		});
+	}
+	if (isProcessableMimeType(record.mimeType)) {
+		items.push({
+			key: "editImage",
+			label: "编辑图片",
+			icon: <EditOutlined />,
+			onClick: () => handlers.onEdit(record),
+		});
+	}
+	return items;
+}
+
+/** 列渲染所需的筛选态（受控回填列头漏斗选中项） */
+export interface FilesColumnsOptions {
+	/** 状态列头筛选值（空串表示全部） */
+	statusFilter: "" | "temp" | "permanent";
+}
+
+export function createFilesColumns(
+	handlers: FilesColumnsHandlers,
+	options: FilesColumnsOptions,
+) {
 	return [
 		{
-			// 文件名不设固定宽度：与「标签」列共同分摊剩余空间
+			// 主内容列：唯一吸收剩余宽度的列，其余列一律定宽
 			title: "文件名",
 			dataIndex: "originalName",
 			key: "originalName",
@@ -97,28 +177,35 @@ export function createFilesColumns(handlers: FilesColumnsHandlers) {
 			title: "文件 ID",
 			dataIndex: "id",
 			key: "id",
-			width: 200,
+			width: 150,
 			copyable: true,
 		},
 		{
 			title: "大小",
 			dataIndex: "size",
 			key: "size",
-			width: 120,
+			width: 100,
 			sorter: true,
 			render: (_: unknown, record: FileRecord) => formatBytes(record.size),
 		},
 		{
-			// 标签列不设固定宽度：与「文件名」列共同分摊剩余空间
 			title: "标签",
 			key: "tags",
+			width: 170,
 			render: (_: unknown, record: FileRecord) => renderTags(record),
 		},
 		{
 			title: "状态",
 			dataIndex: "status",
 			key: "status",
-			width: 130,
+			width: 100,
+			// 三态状态筛选收进列头漏斗（单选），不再占用页头一行
+			filters: [
+				{ text: "永久", value: "permanent" },
+				{ text: "临时", value: "temp" },
+			],
+			filterMultiple: false,
+			filteredValue: options.statusFilter ? [options.statusFilter] : null,
 			render: (_: unknown, record: FileRecord) => (
 				<Space size={4}>
 					<StatusTag value={record.status} options={FILE_STATUS_OPTIONS} />
@@ -137,39 +224,6 @@ export function createFilesColumns(handlers: FilesColumnsHandlers) {
 			),
 		},
 		{
-			// MIME 以服务端魔数嗅探结果为准，非客户端声明
-			title: "MIME 类型",
-			dataIndex: "mimeType",
-			key: "mimeType",
-			width: 150,
-		},
-		{
-			// 存储相对路径（相对 STORAGE_DIR，已包含落盘文件名）
-			title: "存储路径",
-			dataIndex: "path",
-			key: "path",
-			width: 260,
-			ellipsis: true,
-		},
-		{
-			// 内容哈希：支持复制整串，省略号 Tooltip 展示完整值
-			title: "SHA256",
-			dataIndex: "sha256",
-			key: "sha256",
-			width: 200,
-			ellipsis: true,
-			copyable: true,
-		},
-		{
-			// 仅临时文件有值，永久文件以占位符表示「不过期」
-			title: "过期时间",
-			dataIndex: "expiredAt",
-			key: "expiredAt",
-			width: 165,
-			valueType: "dateTimeMinute",
-			emptyText: "—",
-		},
-		{
 			title: "上传时间",
 			dataIndex: "createdAt",
 			key: "createdAt",
@@ -178,64 +232,27 @@ export function createFilesColumns(handlers: FilesColumnsHandlers) {
 			valueType: "dateTimeMinute",
 		},
 		{
-			title: "更新时间",
-			dataIndex: "updatedAt",
-			key: "updatedAt",
-			width: 165,
-			valueType: "dateTimeMinute",
-		},
-		{
 			title: "操作",
 			key: "actions",
 			fixed: "right" as const,
-			// 5 项（预览 / 编辑图片 / 标签 / 下载 / 删除）需 400：固定列宽度不足会把按钮挤出列外
-			width: 400,
-			render: (_: unknown, record: FileRecord) => (
-				<TableOperate>
-					{isImage(record.mimeType) && (
+			// 3 项（下载 / 删除 / 更多）：低频的标签编辑与图片类操作收进「更多」，依估算取 240
+			width: 240,
+			render: (_: unknown, record: FileRecord) => {
+				const moreItems = buildMoreItems(record, handlers);
+				return (
+					<TableOperate>
 						<TableOperate.Custom>
-							<Button
-								type="link"
-								size="small"
-								icon={<EyeOutlined />}
-								onClick={() => handlers.onPreview(record)}
-							>
-								预览
-							</Button>
+							<a href={`/file/r/${record.id}`} target="_blank" rel="noreferrer">
+								<Button type="link" size="small" icon={<DownloadOutlined />}>
+									下载
+								</Button>
+							</a>
 						</TableOperate.Custom>
-					)}
-					{isProcessableMimeType(record.mimeType) && (
-						<TableOperate.Custom>
-							<Button
-								type="link"
-								size="small"
-								icon={<EditOutlined />}
-								onClick={() => handlers.onEdit(record)}
-							>
-								编辑图片
-							</Button>
-						</TableOperate.Custom>
-					)}
-					<TableOperate.Custom>
-						<Button
-							type="link"
-							size="small"
-							icon={<TagsOutlined />}
-							onClick={() => handlers.onEditTags(record)}
-						>
-							标签
-						</Button>
-					</TableOperate.Custom>
-					<TableOperate.Custom>
-						<a href={`/file/r/${record.id}`} target="_blank" rel="noreferrer">
-							<Button type="link" size="small" icon={<DownloadOutlined />}>
-								下载
-							</Button>
-						</a>
-					</TableOperate.Custom>
-					<TableOperate.Delete onConfirm={() => handlers.onDelete(record)} />
-				</TableOperate>
-			),
+						<TableOperate.Delete onConfirm={() => handlers.onDelete(record)} />
+						{moreItems.length > 0 && <TableOperate.More items={moreItems} />}
+					</TableOperate>
+				);
+			},
 		},
 	];
 }

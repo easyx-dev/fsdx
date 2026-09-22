@@ -3,6 +3,7 @@
  */
 import { ReloadOutlined } from "@ant-design/icons";
 import { formatBytes } from "@fsdx/lib/format-bytes";
+import { formatDateTimeValue } from "@fsdx/ui-spa/table";
 import type { TableProps } from "antd";
 import { Button, Card, Progress, Space, Table, Tooltip } from "antd";
 import type {
@@ -82,7 +83,7 @@ export function DatabaseSizePanel({
 				<Space size={8}>
 					{data && (
 						<span className="text-xs text-muted-foreground">
-							统计于 {new Date(data.capturedAt).toLocaleString("zh-CN")}
+							统计于 {formatDateTimeValue(data.capturedAt)}
 						</span>
 					)}
 					<Tooltip title="重新统计（绕过缓存）">

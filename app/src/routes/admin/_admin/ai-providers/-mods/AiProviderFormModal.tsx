@@ -13,12 +13,12 @@ import {
 	Form,
 	Input,
 	InputNumber,
-	Modal,
 	Row,
 	Select,
 	Switch,
 } from "antd";
 import { useEffect, useMemo, useState } from "react";
+import { AdminFormModal, FORM_MODAL_WIDTH } from "#/components/admin";
 import type { AiProviderView } from "#/shared-services/ai/ai.schemas";
 import { fetchProviderModelsSFn } from "#/shared-services/ai/ai-providers.functions";
 import { callSfn } from "#/utils/sfn-error";
@@ -150,13 +150,13 @@ function AiProviderFormContent({
 	};
 
 	return (
-		<Modal
-			title={editing ? "编辑 AI 厂商" : "新增 AI 厂商"}
+		<AdminFormModal
+			entityName="AI 厂商"
+			id={editing?.id}
 			open={open}
 			onOk={handleOk}
-			onCancel={onCancel}
-			width={760}
-			destroyOnHidden
+			onClose={onCancel}
+			width={FORM_MODAL_WIDTH.wide}
 		>
 			<Form form={form} layout="vertical" initialValues={initialValues}>
 				<AutofillBlocker />
@@ -395,6 +395,6 @@ function AiProviderFormContent({
 					)}
 				</Form.List>
 			</Form>
-		</Modal>
+		</AdminFormModal>
 	);
 }

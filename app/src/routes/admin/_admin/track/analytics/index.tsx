@@ -148,20 +148,18 @@ function TrackAnalyticsPage() {
 		<AdminListPage
 			title="事件分析"
 			description="查看埋点事件趋势、分布和 Top 页面排行"
+			filters={
+				<AnalyticsFilterBar
+					filter={filter}
+					onChange={(patch) => setFilter((f) => ({ ...f, ...patch }))}
+					onQuery={handleQuery}
+					onReset={handleReset}
+					eventMetas={eventMetas}
+					propertyMetas={propertyMetas}
+				/>
+			}
 		>
 			<Spin spinning={loading}>
-				{/* 筛选区 */}
-				<Card size="small" className="mb-4">
-					<AnalyticsFilterBar
-						filter={filter}
-						onChange={(patch) => setFilter((f) => ({ ...f, ...patch }))}
-						onQuery={handleQuery}
-						onReset={handleReset}
-						eventMetas={eventMetas}
-						propertyMetas={propertyMetas}
-					/>
-				</Card>
-
 				{data && (
 					<>
 						{/* 概览 KPI */}

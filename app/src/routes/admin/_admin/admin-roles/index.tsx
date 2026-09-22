@@ -2,16 +2,18 @@
  * 角色管理页面：CRUD + 权限分配
  * 列表骨架 / 查询状态 / 分页排序统一走 AdminListPage + useListQuery
  */
-import { PlusOutlined, SearchOutlined } from "@ant-design/icons";
+import { PlusOutlined } from "@ant-design/icons";
 import { message } from "@fsdx/ui-spa/antd-static";
 import { ProTable, withDisabledReason } from "@fsdx/ui-spa/table";
 import { createFileRoute } from "@tanstack/react-router";
-import { Button, Form, Input, Modal } from "antd";
+import { Button, Form, Input } from "antd";
 import type { ChangeEvent } from "react";
 import { useCallback, useState } from "react";
 import {
+	AdminFilters,
+	AdminFormModal,
 	AdminListPage,
-	AdminTableToolbar,
+	FORM_MODAL_WIDTH,
 	PermissionSelector,
 	useAdminAuth,
 } from "#/components/admin";
@@ -157,21 +159,19 @@ function AdminRolesPage() {
 				!permissions.create,
 				NO_CREATE_PERMISSION,
 			)}
-			toolbar={
-				<AdminTableToolbar onReset={handleReset}>
-					<Input
+			filters={
+				<AdminFilters onReset={handleReset}>
+					<Input.Search
 						placeholder="搜索角色名称或标识..."
 						value={keyword}
 						onChange={(e: ChangeEvent<HTMLInputElement>) =>
 							setKeyword(e.target.value)
 						}
-						onPressEnter={handleSearch}
+						onSearch={handleSearch}
 						allowClear
 						style={{ width: 260 }}
-						prefix={<SearchOutlined />}
 					/>
-					<Button onClick={handleSearch}>搜索</Button>
-				</AdminTableToolbar>
+				</AdminFilters>
 			}
 		>
 			<ProTable
@@ -180,22 +180,22 @@ function AdminRolesPage() {
 				rowKey="id"
 				loading={list.loading}
 				locale={{ emptyText: "暂无角色" }}
-				scroll={{ x: 1260 }}
+				scroll={{ x: 1199 }}
 				onChange={list.onTableChange}
 				pagination={list.pagination}
 			/>
 
 			{/* 创建/编辑弹窗 */}
-			<Modal
-				title={editingRole ? "编辑角色" : "新建角色"}
+			<AdminFormModal
+				entityName="角色"
+				id={editingRole?.id}
 				open={modalOpen}
-				onCancel={() => setModalOpen(false)}
+				onClose={() => setModalOpen(false)}
 				onOk={handleSubmit}
-				confirmLoading={saving}
-				width={600}
-				destroyOnHidden
+				submitting={saving}
+				width={FORM_MODAL_WIDTH.wide}
 			>
-				<Form form={form} layout="vertical" className="mt-4">
+				<Form form={form} layout="vertical">
 					<Form.Item
 						name="name"
 						label="角色名称"
@@ -217,7 +217,7 @@ function AdminRolesPage() {
 						<PermissionSelector />
 					</Form.Item>
 				</Form>
-			</Modal>
+			</AdminFormModal>
 		</AdminListPage>
 	);
 }

@@ -1,17 +1,13 @@
 /**
  * 管理端消息管理页面：全量消息列表 + 向用户发送消息
  */
-import { SearchOutlined, SendOutlined } from "@ant-design/icons";
+import { SendOutlined } from "@ant-design/icons";
 import { message } from "@fsdx/ui-spa/antd-static";
 import { ProTable, withDisabledReason } from "@fsdx/ui-spa/table";
 import { createFileRoute } from "@tanstack/react-router";
 import { Button, Form, Input, Select } from "antd";
 import { useCallback, useState } from "react";
-import {
-	AdminListPage,
-	AdminTableToolbar,
-	useAdminAuth,
-} from "#/components/admin";
+import { AdminFilters, AdminListPage, useAdminAuth } from "#/components/admin";
 import { ADMIN_PERMISSIONS } from "#/permissions/admin-permissions";
 import {
 	deleteAnyMessageSFn,
@@ -70,6 +66,11 @@ function MessageManagePage() {
 		initial: initialData,
 		initialFilters: { userType: "", status: "", keyword: "" },
 		errorMessage: "查询失败，请稍后重试",
+		// 状态列头漏斗 → 业务条件（值未变化时 hook 视为无筛选变更，不会重置页码）
+		mapColumnFilters: (columnFilters) => ({
+			status:
+				(columnFilters.status?.[0] as MessageManageFilters["status"]) ?? "",
+		}),
 		fetcher: useCallback(
 			({ page, pageSize, filters }) =>
 				listAllMessagesSFn({
@@ -152,6 +153,7 @@ function MessageManagePage() {
 	};
 
 	const columns = messageManageColumns({
+		statusFilter: list.filters.status,
 		onDelete: handleDelete,
 		permissions: { delete: canDelete },
 	});
@@ -172,8 +174,8 @@ function MessageManagePage() {
 				!canSend,
 				NO_SEND_PERMISSION,
 			)}
-			toolbar={
-				<AdminTableToolbar onReset={handleReset}>
+			filters={
+				<AdminFilters onReset={handleReset}>
 					<Select
 						value={list.filters.userType}
 						onChange={(value) => list.applyFilters({ userType: value })}
@@ -184,26 +186,15 @@ function MessageManagePage() {
 						]}
 						style={{ width: 130 }}
 					/>
-					<Select
-						value={list.filters.status}
-						onChange={(value) => list.applyFilters({ status: value })}
-						options={[
-							{ label: "全部状态", value: "" },
-							{ label: "未读", value: "unread" },
-							{ label: "已读", value: "read" },
-						]}
-						style={{ width: 120 }}
-					/>
 					<Input.Search
 						placeholder="搜索消息标题..."
 						allowClear
-						enterButton={<SearchOutlined />}
 						value={keyword}
 						onChange={(e) => setKeyword(e.target.value)}
 						onSearch={(value) => list.applyFilters({ keyword: value })}
 						style={{ width: 260 }}
 					/>
-				</AdminTableToolbar>
+				</AdminFilters>
 			}
 		>
 			<ProTable
@@ -212,7 +203,7 @@ function MessageManagePage() {
 				rowKey="id"
 				loading={list.loading}
 				locale={{ emptyText: "暂无消息" }}
-				scroll={{ x: 900 }}
+				scroll={{ x: 1199 }}
 				onChange={list.onTableChange}
 				pagination={list.pagination}
 			/>

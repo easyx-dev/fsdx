@@ -47,11 +47,19 @@ interface NewsColumnsOptions {
 		publish: boolean;
 		delete: boolean;
 	};
+	/** 发布状态列头筛选值（空串表示全部），受控回填漏斗选中态 */
+	publishedFilter: string;
 }
 
 const NO_EDIT_PERMISSION = "无「编辑新闻」权限";
 const NO_PUBLISH_PERMISSION = "无「新闻上下架」权限";
 const NO_DELETE_PERMISSION = "无「删除新闻」权限";
+
+/** 发布状态列头漏斗选项（单选，对应 isPublished） */
+const PUBLISHED_FILTER_OPTIONS = [
+	{ text: "已发布", value: "published" },
+	{ text: "未发布", value: "unpublished" },
+];
 
 export function newsColumns(options: NewsColumnsOptions) {
 	const { permissions } = options;
@@ -67,19 +75,23 @@ export function newsColumns(options: NewsColumnsOptions) {
 				/>
 			),
 		},
-		{ title: "标题", dataIndex: "title", key: "title", width: 200 },
 		{
-			title: "摘要",
-			dataIndex: "description",
-			key: "description",
+			// 主内容列：全表唯一吸收剩余宽度的列，其余列一律定宽（列宽可预测、不随内容漂移）
+			title: "标题",
+			dataIndex: "title",
+			key: "title",
 			ellipsis: true,
 		},
 		{
 			// 发布状态：单元格内开关直接切换（乐观更新 + 失败回滚）
+			// 三态筛选收进列头漏斗（单选），不再占用页头一行
 			title: "状态",
 			dataIndex: "isPublished",
 			key: "isPublished",
-			width: 130,
+			width: 100,
+			filters: PUBLISHED_FILTER_OPTIONS,
+			filterMultiple: false,
+			filteredValue: options.publishedFilter ? [options.publishedFilter] : null,
 			render: (_: unknown, record: NewsRecord) => (
 				<PublishSwitchCell
 					published={record.isPublished}
@@ -93,7 +105,7 @@ export function newsColumns(options: NewsColumnsOptions) {
 		{
 			title: "标记",
 			key: "flags",
-			width: 120,
+			width: 100,
 			render: (_: unknown, record: NewsRecord) =>
 				record.isPinned || record.isRecommended ? (
 					<Space size={4}>
@@ -109,7 +121,7 @@ export function newsColumns(options: NewsColumnsOptions) {
 			title: "排序",
 			dataIndex: "sortOrder",
 			key: "sortOrder",
-			width: 110,
+			width: 115,
 			...options.sortProps("sortOrder"),
 			render: (_: unknown, record: NewsRecord) => (
 				<SortOrderCell
@@ -135,26 +147,10 @@ export function newsColumns(options: NewsColumnsOptions) {
 			title: "发布时间",
 			dataIndex: "publishedAt",
 			key: "publishedAt",
-			width: 150,
+			width: 165,
 			...options.sortProps("publishedAt"),
 			valueType: "dateTimeMinute",
 			emptyText: "—",
-		},
-		{
-			title: "创建时间",
-			dataIndex: "createdAt",
-			key: "createdAt",
-			width: 150,
-			...options.sortProps("createdAt"),
-			valueType: "dateTimeMinute",
-		},
-		{
-			title: "更新时间",
-			dataIndex: "updatedAt",
-			key: "updatedAt",
-			width: 150,
-			...options.sortProps("updatedAt"),
-			valueType: "dateTimeMinute",
 		},
 		{
 			title: "操作",

@@ -3,8 +3,12 @@
  */
 
 import type { FormInstance } from "antd";
-import { Button, Form, Input, Modal, Space } from "antd";
+import { Form, Input } from "antd";
+import { AdminFormModal, FORM_MODAL_WIDTH } from "#/components/admin";
 import type { DictRecord } from "#/shared-services/dict/dict.server";
+
+/** 表单 <form id>：弹窗底部按钮据此触发提交 */
+const FORM_ID = "dict-form";
 
 interface DictFormModalProps {
 	open: boolean;
@@ -26,14 +30,15 @@ export function DictFormModal({
 	onSubmit,
 }: DictFormModalProps) {
 	return (
-		<Modal
-			title={editing ? "编辑字典" : "新建字典"}
+		<AdminFormModal
+			entityName="字典"
+			id={editing?.id}
 			open={open}
-			onCancel={onCancel}
-			footer={null}
-			destroyOnHidden
+			onClose={onCancel}
+			formId={FORM_ID}
+			width={FORM_MODAL_WIDTH.base}
 		>
-			<Form form={form} layout="vertical" onFinish={onSubmit}>
+			<Form id={FORM_ID} form={form} layout="vertical" onFinish={onSubmit}>
 				<Form.Item
 					name="name"
 					label="名称"
@@ -51,15 +56,7 @@ export function DictFormModal({
 				<Form.Item name="description" label="描述">
 					<Input.TextArea rows={2} placeholder="字典描述（可选）" />
 				</Form.Item>
-				<Form.Item className="mb-0 text-right">
-					<Space>
-						<Button onClick={onCancel}>取消</Button>
-						<Button type="primary" htmlType="submit">
-							{editing ? "保存" : "创建"}
-						</Button>
-					</Space>
-				</Form.Item>
 			</Form>
-		</Modal>
+		</AdminFormModal>
 	);
 }

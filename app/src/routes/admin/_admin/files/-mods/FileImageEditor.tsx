@@ -126,6 +126,7 @@ export function FileImageEditor({
 			title={file ? `编辑图片 · ${file.originalName}` : "编辑图片"}
 			width="min(1280px, 92vw)"
 			centered
+			destroyOnHidden
 			onCancel={onClose}
 			// 内容区与底部动作栏的默认间距（8px）过近，显式拉开
 			styles={{ footer: { marginTop: 20 } }}

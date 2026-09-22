@@ -21,10 +21,11 @@ interface FileExplorerColumnsOptions {
 export function fileExplorerColumns(options: FileExplorerColumnsOptions) {
 	return [
 		{
+			// 不定宽列：只给最小宽度，多余空间由它吸收（目录/文件名长度差异大）
 			title: "名称",
 			dataIndex: "name",
 			key: "name",
-			width: 320,
+			minWidth: 320,
 			render: (_: unknown, record: FsEntry) => (
 				<div
 					style={{
@@ -75,7 +76,7 @@ export function fileExplorerColumns(options: FileExplorerColumnsOptions) {
 			title: "大小",
 			dataIndex: "size",
 			key: "size",
-			width: 150,
+			minWidth: 150,
 			align: "right" as const,
 			sorter: (a: FsEntry, b: FsEntry) => a.size - b.size,
 			render: (_: unknown, record: FsEntry) => (
@@ -88,7 +89,7 @@ export function fileExplorerColumns(options: FileExplorerColumnsOptions) {
 			title: "修改时间",
 			dataIndex: "mtime",
 			key: "mtime",
-			width: 180,
+			minWidth: 180,
 			sorter: (a: FsEntry, b: FsEntry) =>
 				new Date(a.mtime).getTime() - new Date(b.mtime).getTime(),
 			valueType: "dateTimeMinute",
@@ -96,9 +97,8 @@ export function fileExplorerColumns(options: FileExplorerColumnsOptions) {
 		{
 			title: "操作",
 			key: "actions",
-			fixed: "right" as const,
-			// 操作列固定右侧必须显式声明宽度（最多 4 项操作取 320）
-			width: 320,
+			// 只给最小宽度：按钮由 minWidth 保底，多余空间按内容分摊（auto 布局下不再 fixed）
+			minWidth: 320,
 			render: (_: unknown, record: FsEntry) => {
 				const isWriteLocked = options.writeProtected;
 

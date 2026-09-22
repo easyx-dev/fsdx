@@ -1,6 +1,8 @@
 /**
  * 系统监控页：实时运行快照 + 资源趋势 + 存储占用 + 数据库表占用
  */
+
+import { formatDateTimeValue } from "@fsdx/ui-spa/table";
 import { createFileRoute } from "@tanstack/react-router";
 import { Alert, Card, Col, Empty, Row, Select, Space, Spin, Tag } from "antd";
 import { useCallback, useEffect, useState } from "react";
@@ -204,7 +206,7 @@ function SystemMonitorPage() {
 							</Tag>
 						</span>
 						<span className="text-xs text-muted-foreground">
-							最近采样：{new Date(lastSample.time).toLocaleString("zh-CN")}
+							最近采样：{formatDateTimeValue(lastSample.time)}
 						</span>
 					</Space>
 				) : (

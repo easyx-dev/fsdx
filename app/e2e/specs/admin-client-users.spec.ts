@@ -31,7 +31,7 @@ test.describe
 			await modal.getByPlaceholder("用户名").fill(createdUsername);
 			await modal.getByPlaceholder("user@example.com").fill(createdEmail);
 			await modal.getByPlaceholder("至少 6 位").fill("Passw0rd!");
-			await modal.getByRole("button", { name: /确\s*定/ }).click();
+			await modal.getByRole("button", { name: /保\s*存/ }).click();
 
 			await expect(adminPage.getByText("用户已创建")).toBeVisible();
 			await expect(
@@ -49,7 +49,7 @@ test.describe
 			await row.getByRole("button", { name: "编辑" }).click();
 			const modal = adminPage.getByRole("dialog");
 			await modal.getByPlaceholder("user@example.com").fill(createdEmail);
-			await modal.getByRole("button", { name: /确\s*定/ }).click();
+			await modal.getByRole("button", { name: /保\s*存/ }).click();
 
 			await expect(adminPage.getByText("用户信息已更新")).toBeVisible();
 			await expect(
@@ -65,7 +65,7 @@ test.describe
 			await row.getByRole("button", { name: "重置密码" }).click();
 			const modal = adminPage.getByRole("dialog");
 			await modal.getByPlaceholder("至少 6 位").fill("NewPassw0rd!");
-			await modal.getByRole("button", { name: /确\s*定/ }).click();
+			await modal.getByRole("button", { name: /保\s*存/ }).click();
 			await expect(adminPage.getByText("密码已重置")).toBeVisible();
 		});
 

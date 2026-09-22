@@ -5,9 +5,9 @@ import { CheckOutlined, SettingOutlined } from "@ant-design/icons";
 import { message } from "@fsdx/ui-spa/antd-static";
 import { ProTable } from "@fsdx/ui-spa/table";
 import { createFileRoute } from "@tanstack/react-router";
-import { Button, Tabs, Tag } from "antd";
+import { Button } from "antd";
 import { useCallback, useEffect, useState } from "react";
-import { AdminListPage, AdminTableToolbar } from "#/components/admin";
+import { AdminListPage } from "#/components/admin";
 import {
 	deleteAdminMessageSFn,
 	getAdminMessagesSFn,
@@ -43,6 +43,10 @@ function AdminInboxPage() {
 		initial: initialData,
 		initialFilters: { status: "" },
 		errorMessage: "加载消息失败",
+		// 状态列头漏斗 → 业务条件（值未变化时 hook 视为无筛选变更，不会重置页码）
+		mapColumnFilters: (columnFilters) => ({
+			status: (columnFilters.status?.[0] as InboxStatus) ?? "",
+		}),
 		fetcher: useCallback(
 			({ page, pageSize, filters }) =>
 				getAdminMessagesSFn({
@@ -95,65 +99,35 @@ function AdminInboxPage() {
 		void fetchUnreadCount();
 	};
 
-	const columns = messageInboxColumns({
-		onMarkRead: handleMarkRead,
-		onDelete: handleDelete,
-	});
-
-	const tabItems = [
-		{ key: "all", label: "全部" },
+	const columns = messageInboxColumns(
 		{
-			key: "unread",
-			label: (
-				<span className="inline-flex items-center gap-1">
-					未读
-					{unreadCount > 0 && (
-						<Tag color="red" className="rounded-full">
-							{unreadCount}
-						</Tag>
-					)}
-				</span>
-			),
+			onMarkRead: handleMarkRead,
+			onDelete: handleDelete,
 		},
-		{ key: "read", label: "已读" },
-	];
+		{ statusFilter: list.filters.status },
+	);
 
 	return (
 		<AdminListPage
 			title="我的消息"
 			description="查看系统推送给你的通知消息"
 			extra={
-				unreadCount > 0 ? (
+				<>
 					<Button
-						icon={<CheckOutlined />}
-						onClick={() => void handleMarkAllRead()}
+						icon={<SettingOutlined />}
+						onClick={() => setNotifyOpen(true)}
 					>
-						全部已读
+						通知设置
 					</Button>
-				) : undefined
-			}
-			toolbar={
-				<AdminTableToolbar
-					extra={
+					{unreadCount > 0 && (
 						<Button
-							icon={<SettingOutlined />}
-							onClick={() => setNotifyOpen(true)}
+							icon={<CheckOutlined />}
+							onClick={() => void handleMarkAllRead()}
 						>
-							通知设置
+							全部已读
 						</Button>
-					}
-				>
-					<Tabs
-						activeKey={list.filters.status || "all"}
-						onChange={(key) =>
-							list.applyFilters({
-								status: (key === "all" ? "" : key) as InboxStatus,
-							})
-						}
-						items={tabItems}
-						className="[&_.ant-tabs-nav]:mb-0"
-					/>
-				</AdminTableToolbar>
+					)}
+				</>
 			}
 		>
 			<ProTable
@@ -162,7 +136,7 @@ function AdminInboxPage() {
 				rowKey="id"
 				loading={list.loading}
 				locale={{ emptyText: "暂无消息" }}
-				scroll={{ x: 800 }}
+				scroll={{ x: 1199 }}
 				onChange={list.onTableChange}
 				pagination={list.pagination}
 			/>

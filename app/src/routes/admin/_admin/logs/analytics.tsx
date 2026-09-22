@@ -142,18 +142,16 @@ function LogAnalyticsPage() {
 		<AdminPageContent
 			title="运行日志分析"
 			description="查看日志级别分布、错误率趋势与高频错误聚类"
+			titleTrailing={
+				<LogAnalyticsFilter
+					filter={filter}
+					onChange={(patch) => setFilter((f) => ({ ...f, ...patch }))}
+					onQuery={handleQuery}
+					onReset={handleReset}
+				/>
+			}
 		>
 			<Spin spinning={loading}>
-				{/* 筛选区 */}
-				<Card size="small" className="mb-4">
-					<LogAnalyticsFilter
-						filter={filter}
-						onChange={(patch) => setFilter((f) => ({ ...f, ...patch }))}
-						onQuery={handleQuery}
-						onReset={handleReset}
-					/>
-				</Card>
-
 				{data?.truncated && (
 					<Alert
 						type="warning"

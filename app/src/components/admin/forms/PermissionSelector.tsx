@@ -128,6 +128,8 @@ export function PermissionSelector({
 			dataSource={groupData}
 			pagination={false}
 			size="small"
+			// 显式表体高度：容器在弹窗内，否则会继承页面骨架注入的表体高度
+			scroll={{ y: 320 }}
 		/>
 	);
 }

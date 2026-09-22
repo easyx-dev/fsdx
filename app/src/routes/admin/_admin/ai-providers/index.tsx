@@ -124,18 +124,32 @@ function AiProvidersPage() {
 	};
 
 	const columns = [
-		{ title: "厂商 ID", dataIndex: "id", key: "id", width: 140 },
-		{ title: "名称", dataIndex: "name", key: "name", width: 140 },
+		{
+			title: "厂商 ID",
+			dataIndex: "id",
+			key: "id",
+			width: 120,
+			ellipsis: true,
+		},
+		{
+			title: "名称",
+			dataIndex: "name",
+			key: "name",
+			width: 150,
+			ellipsis: true,
+		},
 		{
 			title: "API 基础地址",
 			dataIndex: "baseUrl",
 			key: "baseUrl",
 			render: (val: string) => <Text className="text-xs">{val}</Text>,
+			ellipsis: true,
 		},
 		{
 			title: "模型",
 			dataIndex: "models",
 			key: "models",
+			width: 200,
 			render: (models: AiProviderView["models"]) => (
 				<div className="flex flex-wrap gap-1">
 					{models.map((m) => (
@@ -146,12 +160,13 @@ function AiProvidersPage() {
 					))}
 				</div>
 			),
+			ellipsis: true,
 		},
 		{
 			title: "默认",
 			dataIndex: "default",
 			key: "default",
-			width: 90,
+			width: 80,
 			render: (val: boolean) => (
 				<StatusTag value={String(!!val)} options={DEFAULT_OPTIONS} />
 			),
@@ -160,8 +175,8 @@ function AiProvidersPage() {
 			title: "操作",
 			key: "actions",
 			fixed: "right" as const,
-			// 操作列固定右侧必须显式声明宽度（3 项 → 240）
-			width: 240,
+			// 操作列固定右侧必须显式声明宽度（含「设为默认」四字文案 → 270）
+			width: 270,
 			render: (_: unknown, record: AiProviderView) => (
 				<TableOperate>
 					<TableOperate.Edit
@@ -222,6 +237,7 @@ function AiProvidersPage() {
 				rowKey="id"
 				columns={columns}
 				dataSource={providers}
+				scroll={{ x: 1199 }}
 				pagination={false}
 				locale={{ emptyText: "尚未配置 AI 厂商，点击右上角「新增厂商」开始" }}
 			/>

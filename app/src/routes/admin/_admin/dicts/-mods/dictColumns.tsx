@@ -3,11 +3,12 @@
  * 排序权重 / 启用状态为通用态（单元格内联编辑）；时间列走 ProTable valueType；预置字典条目禁用删除
  */
 import {
+	formatDateTimeValue,
 	PublishSwitchCell,
 	SortOrderCell,
 	TableOperate,
 } from "@fsdx/ui-spa/table";
-import { Tag } from "antd";
+import { Descriptions, Tag } from "antd";
 import { EditorTypes, FieldTranslationDrawer } from "#/components/admin";
 import type { DictItemRecord } from "#/shared-services/dict/dict.server";
 import { isPresetDict } from "./dict.utils";
@@ -16,6 +17,46 @@ import { isPresetDict } from "./dict.utils";
 const DICT_ITEM_TRANSLATABLE_FIELDS = [
 	{ name: "label", label: "标签", valueType: "input" as const },
 ];
+
+/**
+ * 行展开面板：列表放不下的扩展配置与时间（额外类型 / 额外值 / 颜色 / 创建与更新时间）
+ * 时间值复用 ProTable 的格式化实现，避免此处再手写 dayjs
+ */
+export function renderDictItemDetailPanel(record: DictItemRecord) {
+	return (
+		<Descriptions
+			size="small"
+			column={2}
+			items={[
+				{
+					key: "extraType",
+					label: "额外类型",
+					children: <EditorTypes.Preview valueType={record.extraType} />,
+				},
+				{ key: "extra", label: "额外值", children: record.extra || "—" },
+				{
+					key: "color",
+					label: "颜色",
+					children: record.color ? (
+						<Tag color={record.color}>{record.color}</Tag>
+					) : (
+						"—"
+					),
+				},
+				{
+					key: "createdAt",
+					label: "创建时间",
+					children: formatDateTimeValue(record.createdAt),
+				},
+				{
+					key: "updatedAt",
+					label: "更新时间",
+					children: formatDateTimeValue(record.updatedAt),
+				},
+			]}
+		/>
+	);
+}
 
 interface DictItemColumnsHandlers {
 	/** 列排序属性生成器（来自 useListQuery.sortProps） */
@@ -45,19 +86,26 @@ const NO_DELETE_PERMISSION = "无「删除字典条目」权限";
 export function dictItemColumns(handlers: DictItemColumnsHandlers) {
 	const { permissions } = handlers;
 	return [
-		{ title: "标签", dataIndex: "label", key: "label", width: 120 },
+		{
+			// 定宽 300：标签是字典条目的标识，长度可控，不再吸收剩余宽度
+			title: "标签",
+			dataIndex: "label",
+			key: "label",
+			width: 300,
+			ellipsis: true,
+		},
 		{
 			title: "值",
 			dataIndex: "value",
 			key: "value",
-			width: 180,
 			render: (val: string) => <code className="text-xs">{val}</code>,
+			ellipsis: true,
 		},
 		{
 			title: "排序",
 			dataIndex: "sortOrder",
 			key: "sortOrder",
-			width: 130,
+			width: 115,
 			...handlers.sortProps("sortOrder"),
 			render: (_: unknown, record: DictItemRecord) => (
 				<SortOrderCell
@@ -72,7 +120,7 @@ export function dictItemColumns(handlers: DictItemColumnsHandlers) {
 			title: "状态",
 			dataIndex: "status",
 			key: "status",
-			width: 120,
+			width: 100,
 			render: (_: unknown, record: DictItemRecord) => (
 				<PublishSwitchCell
 					published={record.status === "active"}
@@ -82,45 +130,6 @@ export function dictItemColumns(handlers: DictItemColumnsHandlers) {
 					disabledReason={NO_EDIT_PERMISSION}
 				/>
 			),
-		},
-		{
-			title: "额外类型",
-			dataIndex: "extraType",
-			key: "extraType",
-			width: 110,
-			render: (val: string | null) => <EditorTypes.Preview valueType={val} />,
-		},
-		{
-			title: "额外值",
-			dataIndex: "extra",
-			key: "extra",
-			width: 120,
-			ellipsis: true,
-			render: (val: string | null) => val || "—",
-		},
-		{
-			title: "颜色",
-			dataIndex: "color",
-			key: "color",
-			width: 80,
-			render: (val: string | null) =>
-				val ? <Tag color={val}>{val}</Tag> : "—",
-		},
-		{
-			title: "创建时间",
-			dataIndex: "createdAt",
-			key: "createdAt",
-			width: 160,
-			...handlers.sortProps("createdAt"),
-			valueType: "dateTimeMinute",
-		},
-		{
-			title: "更新时间",
-			dataIndex: "updatedAt",
-			key: "updatedAt",
-			width: 160,
-			...handlers.sortProps("updatedAt"),
-			valueType: "dateTimeMinute",
 		},
 		{
 			title: "操作",

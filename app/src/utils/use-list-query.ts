@@ -10,12 +10,23 @@
  * - **服务端回填**：page / pageSize 以服务端返回值落库（页大小可能被钳制），
  *   保证受控分页展示与真实查询一致。
  * - **过期响应丢弃**：连点翻页时只接受最后一次请求的结果，避免旧响应覆盖新页面。
+ * - **列头筛选收口**：列头漏斗（状态 / 枚举等）经 `mapColumnFilters` 翻译成业务筛选条件，
+ *   与页头筛选共用同一条请求路径，不额外写 onChange。
  */
 
 import type { TablePaginationConfig, TableProps } from "antd";
+import type { Key } from "react";
 import { useRef, useState } from "react";
 import type { PaginatedResult, SortOrder } from "#/types/query";
 import { sfnUnwrap } from "#/utils/sfn-error";
+
+/**
+ * 列头筛选翻译器：键为列的 `key` / `dataIndex`，值为 antd 回传的选中项（未选为 null）
+ * 返回空对象表示本次表格变更不涉及筛选
+ */
+export type ColumnFilterMapper<TFilters> = (
+	columnFilters: Record<string, (Key | boolean)[] | null>,
+) => Partial<TFilters>;
 
 /** 列表查询参数（hook 内部状态） */
 interface ListQuery<TFilters> {
@@ -49,6 +60,8 @@ export interface UseListQueryOptions<TRecord, TFilters> {
 	defaultPageSize?: number;
 	/** 加载失败提示标题（具体错误文案由 SFn 错误出口归一化） */
 	errorMessage?: string;
+	/** 列头筛选翻译器（页面按需传，把列头漏斗接进同一条查询路径） */
+	mapColumnFilters?: ColumnFilterMapper<TFilters>;
 }
 
 /** 表格列排序属性：`sorter` 开启 + 回填当前方向（受控，重置后指示器同步清空） */
@@ -91,6 +104,7 @@ export function useListQuery<TRecord, TFilters>({
 	initialFilters,
 	defaultPageSize = 20,
 	errorMessage,
+	mapColumnFilters,
 }: UseListQueryOptions<TRecord, TFilters>): UseListQueryResult<
 	TRecord,
 	TFilters
@@ -145,7 +159,7 @@ export function useListQuery<TRecord, TFilters>({
 
 	const onTableChange: NonNullable<TableProps<TRecord>["onChange"]> = (
 		tablePagination,
-		_filters,
+		columnFilters,
 		sorter,
 	) => {
 		const current = queryRef.current;
@@ -162,14 +176,24 @@ export function useListQuery<TRecord, TFilters>({
 		const pageSize = tablePagination.pageSize ?? current.pageSize;
 		const sortChanged =
 			sortField !== current.sortField || sortOrder !== current.sortOrder;
+		// 列头筛选与页头筛选共用一条路径：翻译成业务条件后同样回到第 1 页
+		// 受控列筛选每次变更都会回传当前值，故只有「值真正变化」才算筛选变更（否则翻页会被重置回第 1 页）
+		const filterPatch = mapColumnFilters?.(columnFilters ?? {}) ?? {};
+		const filtersChanged = Object.entries(filterPatch).some(
+			([key, value]) =>
+				(current.filters as Record<string, unknown>)[key] !== value,
+		);
 		void run({
 			...current,
+			filters: filtersChanged
+				? { ...current.filters, ...filterPatch }
+				: current.filters,
 			sortField,
 			sortOrder,
 			pageSize,
-			// 排序或每页条数变化后原页码可能越界，回到第一页；纯翻页使用目标页
+			// 筛选、排序或每页条数变化后原页码可能越界，回到第一页；纯翻页使用目标页
 			page:
-				sortChanged || pageSize !== current.pageSize
+				filtersChanged || sortChanged || pageSize !== current.pageSize
 					? 1
 					: (tablePagination.current ?? current.page),
 		});

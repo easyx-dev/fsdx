@@ -1,10 +1,10 @@
 /**
- * 运行日志分析筛选区：时间范围（含快捷项）/ 级别 / 关键词 / 粒度
+ * 运行日志分析筛选区：时间范围（含快捷项）/ 级别 / 粒度 内联，关键词收进「筛选 ▾」
  */
 
-import { RedoOutlined, ReloadOutlined } from "@ant-design/icons";
-import { Button, DatePicker, Input, Segmented, Select, Space } from "antd";
+import { DatePicker, Input, Segmented, Select } from "antd";
 import dayjs, { type Dayjs } from "dayjs";
+import { AdminFilterItem, AdminFilters } from "#/components/admin";
 import { LEVEL_OPTIONS } from "#/constants";
 
 /** 未提交的筛选状态 */
@@ -29,7 +29,37 @@ export function LogAnalyticsFilter({
 	onReset,
 }: LogAnalyticsFilterProps) {
 	return (
-		<Space wrap size={[12, 12]} className="w-full">
+		<AdminFilters
+			onQuery={onQuery}
+			onReset={onReset}
+			moreCount={
+				(filter.keyword ? 1 : 0) + (filter.granularity === "day" ? 0 : 1)
+			}
+			more={
+				<>
+					<AdminFilterItem label="粒度">
+						<Segmented
+							block
+							value={filter.granularity}
+							onChange={(v) => onChange({ granularity: v as "hour" | "day" })}
+							options={[
+								{ label: "按小时", value: "hour" },
+								{ label: "按天", value: "day" },
+							]}
+						/>
+					</AdminFilterItem>
+					<AdminFilterItem label="关键词">
+						<Input
+							className="w-full"
+							value={filter.keyword}
+							onChange={(e) => onChange({ keyword: e.target.value })}
+							placeholder="日志内容 / 模块"
+							allowClear
+						/>
+					</AdminFilterItem>
+				</>
+			}
+		>
 			<DatePicker.RangePicker
 				value={filter.dateRange}
 				onChange={(v) => v && onChange({ dateRange: v as [Dayjs, Dayjs] })}
@@ -60,29 +90,6 @@ export function LogAnalyticsFilter({
 				options={LEVEL_OPTIONS}
 				style={{ width: 110 }}
 			/>
-			<Input
-				value={filter.keyword}
-				onChange={(e) => onChange({ keyword: e.target.value })}
-				placeholder="关键词"
-				allowClear
-				style={{ width: 180 }}
-			/>
-			<Segmented
-				value={filter.granularity}
-				onChange={(v) => onChange({ granularity: v as "hour" | "day" })}
-				options={[
-					{ label: "按小时", value: "hour" },
-					{ label: "按天", value: "day" },
-				]}
-			/>
-			<Space>
-				<Button type="primary" icon={<ReloadOutlined />} onClick={onQuery}>
-					查询
-				</Button>
-				<Button icon={<RedoOutlined />} onClick={onReset}>
-					重置
-				</Button>
-			</Space>
-		</Space>
+		</AdminFilters>
 	);
 }

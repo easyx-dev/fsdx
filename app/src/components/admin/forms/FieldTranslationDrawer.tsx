@@ -21,6 +21,7 @@ import {
 } from "#/shared-services/i18n/i18n.types";
 import { callSfn, sfnUnwrap } from "#/utils/sfn-error";
 import { readSSEStream } from "#/utils/sse-client";
+import { FORM_DRAWER_WIDTH } from "../AdminFormDrawer";
 import { EditorTypes } from "./editor-type";
 
 /** 可翻译字段定义 */
@@ -313,7 +314,8 @@ export function FieldTranslationDrawer({
 				title={`字段翻译 — ${entityType}`}
 				open={open}
 				onClose={() => setOpen(false)}
-				size={680}
+				// 表单型抽屉：宽度取档位（wide 760）
+				width={FORM_DRAWER_WIDTH.wide}
 				extra={
 					<Button
 						type="primary"

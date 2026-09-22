@@ -2,9 +2,9 @@
  * 事件分析筛选区：时间范围（含快捷项）/ 事件多选 / 指标 / 维度拆解 / 周期对比 / 粒度
  */
 
-import { RedoOutlined, ReloadOutlined } from "@ant-design/icons";
-import { Button, DatePicker, Segmented, Select, Space } from "antd";
+import { DatePicker, Segmented, Select } from "antd";
 import dayjs, { type Dayjs } from "dayjs";
+import { AdminFilterItem, AdminFilters } from "#/components/admin";
 import type {
 	TrackEventMetaRecord,
 	TrackPropertyMetaRecord,
@@ -79,7 +79,57 @@ export function AnalyticsFilterBar({
 	];
 
 	return (
-		<Space wrap size={[12, 12]} className="w-full">
+		<AdminFilters
+			onQuery={onQuery}
+			onReset={onReset}
+			moreCount={
+				(filter.breakdown ? 1 : 0) +
+				(filter.compare === "none" ? 0 : 1) +
+				(filter.granularity === "day" ? 0 : 1)
+			}
+			more={
+				<>
+					<AdminFilterItem label="维度拆解">
+						<Select
+							className="w-full"
+							placeholder="不拆解"
+							value={filter.breakdown}
+							onChange={(v?: string) => onChange({ breakdown: v })}
+							options={[{ label: "不拆解", value: "" }, ...breakdownOptions]}
+							allowClear
+						/>
+					</AdminFilterItem>
+					<AdminFilterItem label="周期对比">
+						<Select
+							className="w-full"
+							value={filter.compare}
+							onChange={(v) =>
+								onChange({ compare: v as typeof filter.compare })
+							}
+							options={[
+								{ label: "不对比", value: "none" },
+								{ label: "环比", value: "previous" },
+								{ label: "同比", value: "year" },
+							]}
+						/>
+					</AdminFilterItem>
+					<AdminFilterItem label="粒度">
+						<Segmented
+							block
+							value={filter.granularity}
+							onChange={(v) =>
+								onChange({ granularity: v as "hour" | "day" | "week" })
+							}
+							options={[
+								{ label: "按小时", value: "hour" },
+								{ label: "按天", value: "day" },
+								{ label: "按周", value: "week" },
+							]}
+						/>
+					</AdminFilterItem>
+				</>
+			}
+		>
 			<RangePicker
 				value={filter.dateRange}
 				onChange={(v) => v && onChange({ dateRange: v as [Dayjs, Dayjs] })}
@@ -103,43 +153,6 @@ export function AnalyticsFilterBar({
 					{ label: "用户数", value: "users" },
 				]}
 			/>
-			<Select
-				placeholder="维度拆解"
-				value={filter.breakdown}
-				onChange={(v?: string) => onChange({ breakdown: v })}
-				options={[{ label: "不拆解", value: "" }, ...breakdownOptions]}
-				allowClear
-				style={{ minWidth: 140 }}
-			/>
-			<Select
-				value={filter.compare}
-				onChange={(v) => onChange({ compare: v as typeof filter.compare })}
-				options={[
-					{ label: "不对比", value: "none" },
-					{ label: "环比", value: "previous" },
-					{ label: "同比", value: "year" },
-				]}
-				style={{ width: 110 }}
-			/>
-			<Segmented
-				value={filter.granularity}
-				onChange={(v) =>
-					onChange({ granularity: v as "hour" | "day" | "week" })
-				}
-				options={[
-					{ label: "按小时", value: "hour" },
-					{ label: "按天", value: "day" },
-					{ label: "按周", value: "week" },
-				]}
-			/>
-			<Space>
-				<Button type="primary" icon={<ReloadOutlined />} onClick={onQuery}>
-					查询
-				</Button>
-				<Button icon={<RedoOutlined />} onClick={onReset}>
-					重置
-				</Button>
-			</Space>
-		</Space>
+		</AdminFilters>
 	);
 }

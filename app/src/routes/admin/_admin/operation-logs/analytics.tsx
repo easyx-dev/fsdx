@@ -148,19 +148,17 @@ function OperationLogAnalyticsPage() {
 		<AdminPageContent
 			title="操作日志分析"
 			description="查看操作量趋势、动作/模块分布与活跃操作人"
+			titleTrailing={
+				<OperationLogAnalyticsFilter
+					filter={filter}
+					onChange={(patch) => setFilter((f) => ({ ...f, ...patch }))}
+					onQuery={handleQuery}
+					onReset={handleReset}
+					modules={modules}
+				/>
+			}
 		>
 			<Spin spinning={loading}>
-				{/* 筛选区 */}
-				<Card size="small" className="mb-4">
-					<OperationLogAnalyticsFilter
-						filter={filter}
-						onChange={(patch) => setFilter((f) => ({ ...f, ...patch }))}
-						onQuery={handleQuery}
-						onReset={handleReset}
-						modules={modules}
-					/>
-				</Card>
-
 				{data && (
 					<>
 						{/* 概览 KPI */}

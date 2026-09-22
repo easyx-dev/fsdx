@@ -1,6 +1,8 @@
 /**
  * 仪表盘健康条：依赖可用性、进程运行时长与最近采样时间
  */
+
+import { formatDateTimeValue } from "@fsdx/ui-spa/table";
 import { Card, Space, Tag } from "antd";
 import type { SystemOverview } from "#/services/system-metric/system-metric.types";
 import { formatUptime } from "./dashboard.formatters";
@@ -55,7 +57,7 @@ export function DashboardHealthStrip({ system }: DashboardHealthStripProps) {
 				</span>
 				{sample && (
 					<span className="text-xs text-muted-foreground">
-						最近采样 {new Date(sample.time).toLocaleString("zh-CN")}
+						最近采样 {formatDateTimeValue(sample.time)}
 					</span>
 				)}
 			</Space>

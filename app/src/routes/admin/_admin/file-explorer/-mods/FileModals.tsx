@@ -3,6 +3,7 @@
  */
 import { Input, Modal } from "antd";
 import type { ChangeEvent } from "react";
+import { FORM_MODAL_WIDTH } from "#/components/admin";
 
 interface MkdirModalProps {
 	open: boolean;
@@ -25,6 +26,7 @@ export function MkdirModal({
 		<Modal
 			open={open}
 			title="新建目录"
+			width={FORM_MODAL_WIDTH.base}
 			okText="创建"
 			cancelText="取消"
 			confirmLoading={loading}
@@ -66,6 +68,7 @@ export function RenameModal({
 		<Modal
 			open={open}
 			title="重命名"
+			width={FORM_MODAL_WIDTH.base}
 			okText="确认"
 			cancelText="取消"
 			confirmLoading={loading}

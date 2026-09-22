@@ -12,13 +12,15 @@ import {
 	withDisabledReason,
 } from "@fsdx/ui-spa/table";
 import { createFileRoute } from "@tanstack/react-router";
-import { Button, Form, Input, Modal, Select } from "antd";
+import { Button, Form, Input, Select } from "antd";
 import type { ChangeEvent } from "react";
 import { useCallback, useState } from "react";
 import {
+	AdminFilters,
+	AdminFormModal,
 	AdminListPage,
-	AdminTableToolbar,
 	EditorTypes,
+	FORM_MODAL_WIDTH,
 	useAdminAuth,
 } from "#/components/admin";
 import type { contentTranslation } from "#/db/schema";
@@ -214,29 +216,20 @@ function ContentTranslationPage() {
 			dataIndex: "value",
 			key: "value",
 			ellipsis: true,
-			width: 450,
 		},
 		{
 			title: "创建时间",
 			dataIndex: "createdAt",
 			key: "createdAt",
-			width: 150,
+			width: 165,
 			valueType: "dateTimeMinute",
-		},
-		{
-			title: "更新时间",
-			dataIndex: "updatedAt",
-			key: "updatedAt",
-			width: 150,
-			valueType: "dateTimeMinute",
-			...list.sortProps("updatedAt"),
 		},
 		{
 			title: "操作",
 			key: "actions",
 			fixed: "right" as const,
 			// 操作列固定右侧必须显式声明宽度（2 项操作取 160）
-			width: 160,
+			width: 170,
 			render: (_: unknown, record: ContentTranslationRow) =>
 				record.locale === DEFAULT_LOCALE ? (
 					// 默认语言为源语言，值存主表原字段，禁止编辑/删除
@@ -263,51 +256,48 @@ function ContentTranslationPage() {
 		<AdminListPage
 			title="实体翻译管理"
 			description="维护业务实体字段的多语言翻译，中文为源语言不可编辑"
-			extra={withDisabledReason(
-				<Button
-					type="primary"
-					icon={<PlusOutlined />}
-					disabled={!canManage}
-					onClick={openCreate}
-				>
-					新增翻译
-				</Button>,
-				!canManage,
-				NO_MANAGE_PERMISSION,
-			)}
-			toolbar={
-				<AdminTableToolbar
-					onReset={resetFilters}
-					extra={
-						<>
-							<Button
-								icon={<DownloadOutlined />}
-								disabled={!hasPermission(ADMIN_PERMISSIONS.TRANSLATION_EXPORT)}
-								onClick={() => void handleExport()}
-							>
-								导出 JSON
-							</Button>
-
-							<JsonImportButton
-								disabled={!hasPermission(ADMIN_PERMISSIONS.TRANSLATION_IMPORT)}
-								onImport={async (jsonString) => {
-									const data = JSON.parse(jsonString);
-									const result = await callSfn(
-										importContentTranslationsSFn({
-											data: { data },
-										}),
-									);
-									message.success(
-										`导入完成：新增 ${result.created} / 更新 ${result.updated}`,
-									);
-									await list.reload();
-								}}
-							>
-								导入 JSON
-							</JsonImportButton>
-						</>
-					}
-				>
+			extra={
+				<>
+					<Button
+						icon={<DownloadOutlined />}
+						disabled={!hasPermission(ADMIN_PERMISSIONS.TRANSLATION_EXPORT)}
+						onClick={() => void handleExport()}
+					>
+						导出 JSON
+					</Button>
+					<JsonImportButton
+						disabled={!hasPermission(ADMIN_PERMISSIONS.TRANSLATION_IMPORT)}
+						onImport={async (jsonString) => {
+							const data = JSON.parse(jsonString);
+							const result = await callSfn(
+								importContentTranslationsSFn({
+									data: { data },
+								}),
+							);
+							message.success(
+								`导入完成：新增 ${result.created} / 更新 ${result.updated}`,
+							);
+							await list.reload();
+						}}
+					>
+						导入 JSON
+					</JsonImportButton>
+					{withDisabledReason(
+						<Button
+							type="primary"
+							icon={<PlusOutlined />}
+							disabled={!canManage}
+							onClick={openCreate}
+						>
+							新增翻译
+						</Button>,
+						!canManage,
+						NO_MANAGE_PERMISSION,
+					)}
+				</>
+			}
+			filters={
+				<AdminFilters onReset={resetFilters}>
 					<Input.Search
 						placeholder="搜索字段名或翻译值"
 						allowClear
@@ -339,7 +329,7 @@ function ContentTranslationPage() {
 							value: l,
 						}))}
 					/>
-				</AdminTableToolbar>
+				</AdminFilters>
 			}
 		>
 			<ProTable
@@ -348,20 +338,21 @@ function ContentTranslationPage() {
 				rowKey="id"
 				loading={list.loading}
 				locale={{ emptyText: "暂无翻译" }}
-				scroll={{ x: 1340 }}
+				scroll={{ x: 1199 }}
 				onChange={list.onTableChange}
 				pagination={list.pagination}
 			/>
 
-			<Modal
+			<AdminFormModal
 				title={editing ? "编辑翻译" : "新增翻译"}
 				open={modalOpen}
-				onCancel={() => {
+				onClose={() => {
 					setModalOpen(false);
 					setEditing(null);
 					form.resetFields();
 				}}
 				onOk={() => form.submit()}
+				width={FORM_MODAL_WIDTH.base}
 			>
 				<Form form={form} layout="vertical" onFinish={handleSubmit}>
 					<Form.Item
@@ -400,7 +391,7 @@ function ContentTranslationPage() {
 						<EditorTypes.Select />
 					</Form.Item>
 				</Form>
-			</Modal>
+			</AdminFormModal>
 		</AdminListPage>
 	);
 }

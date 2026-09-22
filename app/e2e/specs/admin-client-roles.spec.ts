@@ -32,7 +32,7 @@ test.describe
 			await modal
 				.getByPlaceholder("角色描述（可选）")
 				.fill("e2e 测试客户端角色");
-			await modal.getByRole("button", { name: /确\s*定/ }).click();
+			await modal.getByRole("button", { name: /保\s*存/ }).click();
 
 			await expect(adminPage.getByText("角色已创建")).toBeVisible();
 			const createdRow = adminPage.locator(".ant-table-tbody tr", {
@@ -50,7 +50,7 @@ test.describe
 			await row.getByRole("button", { name: "编辑" }).click();
 			const modal = adminPage.getByRole("dialog");
 			await modal.getByPlaceholder("如：会员").fill(`${createdName}改`);
-			await modal.getByRole("button", { name: /确\s*定/ }).click();
+			await modal.getByRole("button", { name: /保\s*存/ }).click();
 
 			await expect(adminPage.getByText("角色已更新")).toBeVisible();
 			await expect(

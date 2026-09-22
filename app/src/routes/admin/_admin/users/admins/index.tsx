@@ -2,18 +2,20 @@
  * 管理员管理页面：CRUD + 角色分配 + 密码重置
  * 列表骨架 / 查询状态 / 分页排序统一走 AdminListPage + useListQuery
  */
-import { PlusOutlined, SearchOutlined } from "@ant-design/icons";
+import { PlusOutlined } from "@ant-design/icons";
 import { message } from "@fsdx/ui-spa/antd-static";
 import { ProTable, withDisabledReason } from "@fsdx/ui-spa/table";
 import { AutofillBlocker } from "@fsdx/ui-ssr/form";
 import { createFileRoute } from "@tanstack/react-router";
-import { Button, Form, Input, Modal, Select } from "antd";
+import { Button, Form, Input, Select } from "antd";
 import type { ChangeEvent } from "react";
 import { useCallback, useState } from "react";
 import {
+	AdminFilters,
+	AdminFormModal,
 	AdminListPage,
-	AdminTableToolbar,
 	DictSelect,
+	FORM_MODAL_WIDTH,
 	useAdminAuth,
 } from "#/components/admin";
 import { ADMIN_PERMISSIONS } from "#/permissions/admin-permissions";
@@ -194,21 +196,19 @@ function AdminsPage() {
 				!permissions.create,
 				NO_CREATE_PERMISSION,
 			)}
-			toolbar={
-				<AdminTableToolbar onReset={handleReset}>
-					<Input
+			filters={
+				<AdminFilters onReset={handleReset}>
+					<Input.Search
 						placeholder="搜索用户名或邮箱..."
 						value={keyword}
 						onChange={(e: ChangeEvent<HTMLInputElement>) =>
 							setKeyword(e.target.value)
 						}
-						onPressEnter={handleSearch}
+						onSearch={handleSearch}
 						allowClear
 						style={{ width: 260 }}
-						prefix={<SearchOutlined />}
 					/>
-					<Button onClick={handleSearch}>搜索</Button>
-				</AdminTableToolbar>
+				</AdminFilters>
 			}
 		>
 			<ProTable
@@ -217,22 +217,22 @@ function AdminsPage() {
 				rowKey="id"
 				loading={list.loading}
 				locale={{ emptyText: "暂无管理员" }}
-				scroll={{ x: 1380 }}
+				scroll={{ x: 1199 }}
 				onChange={list.onTableChange}
 				pagination={list.pagination}
 			/>
 
 			{/* 创建/编辑弹窗 */}
-			<Modal
-				title={editingUser ? "编辑管理员" : "新建管理员"}
+			<AdminFormModal
+				entityName="管理员"
+				id={editingUser?.id}
 				open={modalOpen}
-				onCancel={() => setModalOpen(false)}
+				onClose={() => setModalOpen(false)}
 				onOk={handleSubmit}
-				confirmLoading={saving}
-				width={520}
-				destroyOnHidden
+				submitting={saving}
+				width={FORM_MODAL_WIDTH.base}
 			>
-				<Form form={form} layout="vertical" className="mt-4">
+				<Form form={form} layout="vertical">
 					<AutofillBlocker />
 					<Form.Item
 						name="username"
@@ -283,18 +283,17 @@ function AdminsPage() {
 						</Form.Item>
 					)}
 				</Form>
-			</Modal>
+			</AdminFormModal>
 
 			{/* 重置密码弹窗 */}
-			<Modal
+			<AdminFormModal
 				title={`重置密码 — ${editingUser?.username}`}
 				open={pwdModalOpen}
-				onCancel={() => setPwdModalOpen(false)}
+				onClose={() => setPwdModalOpen(false)}
 				onOk={handlePwdSubmit}
-				width={400}
-				destroyOnHidden
+				width={FORM_MODAL_WIDTH.sm}
 			>
-				<Form form={pwdForm} layout="vertical" className="mt-4">
+				<Form form={pwdForm} layout="vertical">
 					<AutofillBlocker />
 					<Form.Item
 						name="password"
@@ -307,7 +306,7 @@ function AdminsPage() {
 						<Input.Password placeholder="至少 6 位" />
 					</Form.Item>
 				</Form>
-			</Modal>
+			</AdminFormModal>
 		</AdminListPage>
 	);
 }

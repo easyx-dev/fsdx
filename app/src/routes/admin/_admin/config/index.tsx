@@ -7,12 +7,14 @@ import { message } from "@fsdx/ui-spa/antd-static";
 import { JsonImportButton } from "@fsdx/ui-spa/json-import-button";
 import { ProTable, withDisabledReason } from "@fsdx/ui-spa/table";
 import { createFileRoute, useRouter } from "@tanstack/react-router";
-import { Button, Card, Flex, Form, Input } from "antd";
+import { Button, Form, Input } from "antd";
 import type { ChangeEvent } from "react";
 import { useMemo, useState } from "react";
 import {
+	AdminFilters,
 	AdminListPage,
-	AdminTableToolbar,
+	AdminSplitPanel,
+	SPLIT_PANEL_WIDTH,
 	useAdminAuth,
 } from "#/components/admin";
 import { ADMIN_PERMISSIONS } from "#/permissions/admin-permissions";
@@ -189,64 +191,61 @@ function ConfigPage() {
 		permissions,
 	});
 
-	const activeGroupName =
-		!selectedGroup || selectedGroup === "全部"
-			? "全部"
-			: selectedGroup === UNGROUPED_KEY
-				? "未分组"
-				: selectedGroup;
-
 	return (
 		<AdminListPage
 			title="系统配置"
-			description="维护系统键值配置，敏感项值不回显"
-			extra={withDisabledReason(
-				<Button
-					type="primary"
-					icon={<PlusOutlined />}
-					disabled={!permissions.create}
-					onClick={() => openModal()}
-				>
-					新建配置
-				</Button>,
-				!permissions.create,
-				NO_CREATE_PERMISSION,
-			)}
-			toolbar={
-				<AdminTableToolbar
-					extra={
-						<>
-							{withDisabledReason(
-								<Button
-									icon={<DownloadOutlined />}
-									disabled={!permissions.export}
-									onClick={() => void handleExportConfigs()}
-								>
-									导出 JSON
-								</Button>,
-								!permissions.export,
-								"无「导出配置」权限",
-							)}
-							{withDisabledReason(
-								<JsonImportButton
-									disabled={!permissions.import}
-									successMessage="导入完成"
-									onImport={async (jsonString) => {
-										const data = JSON.parse(jsonString);
-										const result = await callSfn(importConfigsSFn({ data }));
-										message.success(
-											`导入完成：新增 ${result.created} / 更新 ${result.updated}`,
-										);
-										router.invalidate();
-									}}
-								>
-									导入 JSON
-								</JsonImportButton>,
-								!permissions.import,
-								"无「导入配置」权限",
-							)}
-						</>
-					}
+			description={`维护系统键值配置，敏感项值不回显 · 当前 ${filteredConfigs.length} 项`}
+			extra={
+				<>
+					{withDisabledReason(
+						<Button
+							icon={<DownloadOutlined />}
+							disabled={!permissions.export}
+							onClick={() => void handleExportConfigs()}
+						>
+							导出 JSON
+						</Button>,
+						!permissions.export,
+						"无「导出配置」权限",
+					)}
+					{withDisabledReason(
+						<JsonImportButton
+							disabled={!permissions.import}
+							successMessage="导入完成"
+							onImport={async (jsonString) => {
+								const data = JSON.parse(jsonString);
+								const result = await callSfn(importConfigsSFn({ data }));
+								message.success(
+									`导入完成：新增 ${result.created} / 更新 ${result.updated}`,
+								);
+								router.invalidate();
+							}}
+						>
+							导入 JSON
+						</JsonImportButton>,
+						!permissions.import,
+						"无「导入配置」权限",
+					)}
+					{withDisabledReason(
+						<Button
+							type="primary"
+							icon={<PlusOutlined />}
+							disabled={!permissions.create}
+							onClick={() => openModal()}
+						>
+							新建配置
+						</Button>,
+						!permissions.create,
+						NO_CREATE_PERMISSION,
+					)}
+				</>
+			}
+			filters={
+				<AdminFilters
+					onReset={() => {
+						setSearchText("");
+						setSelectedGroup(null);
+					}}
 				>
 					<Input.Search
 						placeholder="搜索配置键或值"
@@ -257,91 +256,33 @@ function ConfigPage() {
 							setSearchText(e.target.value)
 						}
 					/>
-				</AdminTableToolbar>
+				</AdminFilters>
 			}
 		>
-			<Flex gap={20}>
-				<Card
-					size="small"
-					title="配置分组"
-					classNames={{
-						root: "flex-[0_0_150px]",
-					}}
-					styles={{ body: { padding: 0 } }}
-				>
-					{groupDataSource.length === 0 ? (
-						<div className="p-4 text-center text-muted-foreground text-sm">
-							暂无分组
-						</div>
-					) : (
-						<div className="divide-y divide-border">
-							{groupDataSource.map((record) => {
-								const activeKey = selectedGroup ?? "全部";
-								const isActive = activeKey === record.key;
-								return (
-									<div
-										key={record.key}
-										className={`flex items-center px-3 py-2.5 cursor-pointer transition-colors hover:bg-accent ${
-											isActive ? "bg-primary-bg" : ""
-										}`}
-										onClick={() =>
-											setSelectedGroup(
-												record.key === "全部" ? null : record.key,
-											)
-										}
-									>
-										<div className="flex items-center gap-2 min-w-0">
-											{isActive && (
-												<span className="w-1 h-6 rounded-full bg-primary flex-shrink-0" />
-											)}
-											<div className="min-w-0">
-												<div
-													className={
-														isActive
-															? "font-semibold text-primary truncate"
-															: "truncate"
-													}
-												>
-													{record.name}
-												</div>
-												<div className="text-xs text-muted-foreground">
-													{record.count} 项
-												</div>
-											</div>
-										</div>
-									</div>
-								);
-							})}
-						</div>
-					)}
-				</Card>
-
-				<Card
-					size="small"
-					title={
-						<span className="text-sm">
-							<span className="font-medium">{activeGroupName}</span>
-							<span className="text-muted-foreground ml-2">
-								· 配置项 ({filteredConfigs.length})
-							</span>
-						</span>
-					}
-					classNames={{
-						root: "flex-1 min-w-0",
-					}}
-					styles={{ body: { padding: 0 } }}
-				>
-					<ProTable
-						dataSource={filteredConfigs}
-						columns={configColumnsDef}
-						scroll={{ x: 1510 }}
-						rowKey="id"
-						size="small"
-						pagination={false}
-						locale={{ emptyText: "暂无配置" }}
+			<AdminSplitPanel
+				sideTitle="配置分组"
+				sideWidth={SPLIT_PANEL_WIDTH.narrow}
+				side={groupDataSource.map((group) => (
+					<AdminSplitPanel.Item
+						key={group.key}
+						primary={group.name}
+						extra={group.count}
+						active={(selectedGroup ?? "全部") === group.key}
+						onSelect={() =>
+							setSelectedGroup(group.key === "全部" ? null : group.key)
+						}
 					/>
-				</Card>
-			</Flex>
+				))}
+			>
+				<ProTable
+					dataSource={filteredConfigs}
+					columns={configColumnsDef}
+					scroll={{ x: 997 }}
+					rowKey="id"
+					pagination={false}
+					locale={{ emptyText: "暂无配置" }}
+				/>
+			</AdminSplitPanel>
 
 			<ConfigFormModal
 				open={modalOpen}

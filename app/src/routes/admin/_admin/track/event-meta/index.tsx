@@ -10,9 +10,13 @@ import {
 	TableOperate,
 } from "@fsdx/ui-spa/table";
 import { createFileRoute } from "@tanstack/react-router";
-import { Button, Form, Input, Modal, Tag } from "antd";
+import { Button, Form, Input, Tag } from "antd";
 import { useState } from "react";
-import { AdminListPage } from "#/components/admin";
+import {
+	AdminFormModal,
+	AdminListPage,
+	FORM_MODAL_WIDTH,
+} from "#/components/admin";
 import { getTrackEventMetaSFn } from "#/services/track/track.functions";
 import type { TrackEventMetaRecord as PresetEventRecord } from "#/services/track/track.types";
 import { callSfn, sfnUnwrap } from "#/utils/sfn-error";
@@ -149,14 +153,14 @@ function PresetEventsPage() {
 			title: "创建时间",
 			dataIndex: "createdAt",
 			key: "createdAt",
-			width: 160,
+			width: 165,
 			valueType: "dateTimeMinute" as const,
 		},
 		{
 			title: "更新时间",
 			dataIndex: "updatedAt",
 			key: "updatedAt",
-			width: 160,
+			width: 165,
 			valueType: "dateTimeMinute" as const,
 		},
 		{
@@ -193,20 +197,19 @@ function PresetEventsPage() {
 				columns={columns}
 				dataSource={events}
 				rowKey="name"
-				scroll={{ x: 1100 }}
+				scroll={{ x: 1199 }}
 				locale={{ emptyText: "暂无元事件" }}
 			/>
 
-			<Modal
+			<AdminFormModal
 				title={editingEvent ? "编辑元事件" : "新建元事件"}
 				open={modalOpen}
-				onCancel={() => setModalOpen(false)}
+				onClose={() => setModalOpen(false)}
 				onOk={handleSubmit}
-				confirmLoading={saving}
-				width={500}
-				destroyOnHidden
+				submitting={saving}
+				width={FORM_MODAL_WIDTH.base}
 			>
-				<Form form={form} layout="vertical" className="mt-4">
+				<Form form={form} layout="vertical">
 					<Form.Item
 						name="name"
 						label="事件标识"
@@ -232,7 +235,7 @@ function PresetEventsPage() {
 						<Input.TextArea rows={2} placeholder="事件描述（可选）" />
 					</Form.Item>
 				</Form>
-			</Modal>
+			</AdminFormModal>
 		</AdminListPage>
 	);
 }

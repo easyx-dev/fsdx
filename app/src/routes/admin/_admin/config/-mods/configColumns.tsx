@@ -46,19 +46,21 @@ export function configColumns(options: ConfigColumnsOptions) {
 	const { permissions } = options;
 	return [
 		{
+			// 定宽 300：配置键是标识类内容，长度可控，不再吸收剩余宽度（超长键单行省略，悬停看全串）
 			title: "配置键",
 			dataIndex: "key",
 			key: "key",
-			width: 240,
+			width: 300,
+			ellipsis: true,
 			render: (key: string) => (
 				<code className="text-xs text-primary">{key}</code>
 			),
 		},
 		{
+			// 吸收剩余宽度：配置值长度不可控（密钥 / JSON / 长串），定宽只会让内容频繁省略
 			title: "配置值",
 			dataIndex: "value",
 			key: "value",
-			width: 180,
 			ellipsis: true,
 			render: (val: string, record: ConfigRecord) => {
 				// 敏感配置不回显值，仅展示是否已配置
@@ -83,7 +85,7 @@ export function configColumns(options: ConfigColumnsOptions) {
 			title: "值类型",
 			dataIndex: "valueType",
 			key: "valueType",
-			width: 130,
+			width: 150,
 			render: (val: string | null) => (
 				<EditorTypes.Preview valueType={val} fallback="Text" />
 			),
@@ -92,39 +94,18 @@ export function configColumns(options: ConfigColumnsOptions) {
 			title: "分组",
 			dataIndex: "groupName",
 			key: "groupName",
-			width: 120,
+			width: 100,
 			render: (val: string | null) => val || "未分组",
+			ellipsis: true,
 		},
 		{
 			title: "客户端可见",
 			dataIndex: "clientVisible",
 			key: "clientVisible",
-			width: 100,
+			width: 110,
 			render: (val: boolean) => (
 				<StatusTag value={String(val)} options={BOOL_OPTIONS} />
 			),
-		},
-		{
-			title: "描述",
-			dataIndex: "description",
-			key: "description",
-			ellipsis: true,
-			width: 180,
-			render: (desc: string | null) => desc || "—",
-		},
-		{
-			title: "创建时间",
-			dataIndex: "createdAt",
-			key: "createdAt",
-			width: 160,
-			valueType: "dateTimeMinute",
-		},
-		{
-			title: "更新时间",
-			dataIndex: "updatedAt",
-			key: "updatedAt",
-			width: 160,
-			valueType: "dateTimeMinute",
 		},
 		{
 			title: "操作",

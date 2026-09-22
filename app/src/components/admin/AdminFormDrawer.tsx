@@ -12,11 +12,12 @@
 import { Button, Drawer } from "antd";
 import type { ReactNode } from "react";
 
-/** 抽屉宽度档位：基础表单 / 含富文本、图片墙 / 强编辑场景 */
+/** 抽屉宽度档位：基础表单 640 / 含图片墙等中等表单 760 / 强编辑场景（富文本）按视口比例 */
 export const FORM_DRAWER_WIDTH = {
 	base: 640,
 	wide: 760,
-	full: "40%",
+	/** 强编辑场景（富文本 + 图片墙）：1440 视口下约 864px，此前取 40% 反而窄于 base */
+	full: "60%",
 } as const;
 
 interface AdminFormDrawerProps {

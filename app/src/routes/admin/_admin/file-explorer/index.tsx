@@ -15,7 +15,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import type { UploadProps } from "antd";
 import { Button, Input, Space, Tag, Tooltip, Upload } from "antd";
 import { useCallback, useState } from "react";
-import { AdminListPage, AdminTableToolbar } from "#/components/admin";
+import { AdminFilters, AdminListPage } from "#/components/admin";
 import {
 	createDirectorySFn,
 	deleteEntrySFn,
@@ -277,38 +277,14 @@ function FileExplorerPage() {
 			title="资源管理器"
 			description="浏览与管理服务器本地存储目录"
 			extra={actions}
-			toolbar={
-				<AdminTableToolbar
-					extra={
-						<Space size={12}>
-							{data.writeProtected && <Tag color="warning">写保护</Tag>}
-							<span
-								style={{
-									color: "var(--ant-color-text-tertiary)",
-									fontSize: 13,
-								}}
-							>
-								{data.entries.length > 0 && (
-									<>
-										{dirCount > 0 && `${dirCount} 个目录`}
-										{dirCount > 0 && fileCount > 0 && "，"}
-										{fileCount > 0 && `${fileCount} 个文件`}
-									</>
-								)}
-							</span>
-						</Space>
-					}
-				>
+			filters={
+				<AdminFilters>
 					<Input
 						value={pathDraft}
 						onChange={(e) => setPathDraft(e.target.value)}
 						onPressEnter={handlePathSubmit}
 						allowClear
-						prefix={
-							<FolderOpenOutlined
-								style={{ color: "var(--ant-color-text-tertiary)" }}
-							/>
-						}
+						prefix={<FolderOpenOutlined className="text-foreground-tertiary" />}
 						placeholder="输入路径后回车跳转"
 						style={{ flex: 1, minWidth: 200 }}
 					/>
@@ -319,7 +295,14 @@ function FileExplorerPage() {
 					>
 						前往
 					</Button>
-				</AdminTableToolbar>
+					{data.writeProtected && <Tag color="warning">写保护</Tag>}
+					{/* 当前目录的内容概览：与路径输入同段，属于该目录的上下文而非页面操作 */}
+					<span className="shrink-0 text-xs text-foreground-tertiary">
+						{dirCount > 0 && `${dirCount} 个目录`}
+						{dirCount > 0 && fileCount > 0 && "，"}
+						{fileCount > 0 && `${fileCount} 个文件`}
+					</span>
+				</AdminFilters>
 			}
 		>
 			<ProTable
@@ -343,6 +326,8 @@ function FileExplorerPage() {
 						</div>
 					),
 				}}
+				// 列宽用 minWidth 表达（需 tableLayout=auto 才生效）：列按内容分配、不低于最小宽度
+				tableLayout="auto"
 				scroll={{ x: 970 }}
 				pagination={false}
 				bordered

@@ -1,10 +1,11 @@
 /**
- * 操作日志分析筛选区：时间范围（含快捷项）/ 模块 / 动作 / 操作人 / 分组维度 / 粒度 / 周期对比
+ * 操作日志分析筛选区：时间范围（含快捷项）/ 模块 / 分组维度 / 粒度 内联，
+ * 动作 / 操作人 / 周期对比收进「筛选 ▾」
  */
 
-import { RedoOutlined, ReloadOutlined } from "@ant-design/icons";
-import { Button, DatePicker, Input, Segmented, Select, Space } from "antd";
+import { DatePicker, Input, Segmented, Select } from "antd";
 import dayjs, { type Dayjs } from "dayjs";
+import { AdminFilterItem, AdminFilters } from "#/components/admin";
 import { ACTION_LABELS, MODULE_LABELS } from "#/constants/operation-log-meta";
 
 /** 未提交的筛选状态 */
@@ -46,7 +47,79 @@ export function OperationLogAnalyticsFilter({
 	];
 
 	return (
-		<Space wrap size={[12, 12]} className="w-full">
+		<AdminFilters
+			onQuery={onQuery}
+			onReset={onReset}
+			moreCount={
+				(filter.action ? 1 : 0) +
+				(filter.operatorName ? 1 : 0) +
+				(filter.compare === "none" ? 0 : 1) +
+				(filter.breakdown === "action" ? 0 : 1) +
+				(filter.granularity === "day" ? 0 : 1)
+			}
+			more={
+				<>
+					<AdminFilterItem label="动作">
+						<Select
+							className="w-full"
+							value={filter.action}
+							onChange={(v: string) => onChange({ action: v })}
+							options={actionOptions}
+						/>
+					</AdminFilterItem>
+					<AdminFilterItem label="操作人">
+						<Input
+							className="w-full"
+							value={filter.operatorName}
+							onChange={(e) => onChange({ operatorName: e.target.value })}
+							placeholder="操作人姓名"
+							allowClear
+						/>
+					</AdminFilterItem>
+					<AdminFilterItem label="分组维度">
+						<Segmented
+							block
+							value={filter.breakdown}
+							onChange={(v) =>
+								onChange({ breakdown: v as "action" | "module" })
+							}
+							options={[
+								{ label: "按动作", value: "action" },
+								{ label: "按模块", value: "module" },
+							]}
+						/>
+					</AdminFilterItem>
+					<AdminFilterItem label="粒度">
+						<Segmented
+							block
+							value={filter.granularity}
+							onChange={(v) =>
+								onChange({
+									granularity:
+										v as OperationLogAnalyticsFilterState["granularity"],
+								})
+							}
+							options={[
+								{ label: "按小时", value: "hour" },
+								{ label: "按天", value: "day" },
+								{ label: "按周", value: "week" },
+							]}
+						/>
+					</AdminFilterItem>
+					<AdminFilterItem label="周期对比">
+						<Segmented
+							block
+							value={filter.compare}
+							onChange={(v) => onChange({ compare: v as "none" | "previous" })}
+							options={[
+								{ label: "不对比", value: "none" },
+								{ label: "环比", value: "previous" },
+							]}
+						/>
+					</AdminFilterItem>
+				</>
+			}
+		>
 			<DatePicker.RangePicker
 				value={filter.dateRange}
 				onChange={(v) => v && onChange({ dateRange: v as [Dayjs, Dayjs] })}
@@ -77,56 +150,6 @@ export function OperationLogAnalyticsFilter({
 				options={moduleOptions}
 				style={{ minWidth: 130 }}
 			/>
-			<Select
-				value={filter.action}
-				onChange={(v: string) => onChange({ action: v })}
-				options={actionOptions}
-				style={{ minWidth: 130 }}
-			/>
-			<Input
-				value={filter.operatorName}
-				onChange={(e) => onChange({ operatorName: e.target.value })}
-				placeholder="操作人"
-				allowClear
-				style={{ width: 140 }}
-			/>
-			<Segmented
-				value={filter.breakdown}
-				onChange={(v) => onChange({ breakdown: v as "action" | "module" })}
-				options={[
-					{ label: "按动作", value: "action" },
-					{ label: "按模块", value: "module" },
-				]}
-			/>
-			<Segmented
-				value={filter.granularity}
-				onChange={(v) =>
-					onChange({
-						granularity: v as OperationLogAnalyticsFilterState["granularity"],
-					})
-				}
-				options={[
-					{ label: "按小时", value: "hour" },
-					{ label: "按天", value: "day" },
-					{ label: "按周", value: "week" },
-				]}
-			/>
-			<Segmented
-				value={filter.compare}
-				onChange={(v) => onChange({ compare: v as "none" | "previous" })}
-				options={[
-					{ label: "不对比", value: "none" },
-					{ label: "环比", value: "previous" },
-				]}
-			/>
-			<Space>
-				<Button type="primary" icon={<ReloadOutlined />} onClick={onQuery}>
-					查询
-				</Button>
-				<Button icon={<RedoOutlined />} onClick={onReset}>
-					重置
-				</Button>
-			</Space>
-		</Space>
+		</AdminFilters>
 	);
 }

@@ -32,14 +32,13 @@ export function clientRoleColumns(options: ClientRoleColumnsOptions) {
 			title: "角色名称",
 			dataIndex: "name",
 			key: "name",
-			width: 160,
 			...options.sortProps("name"),
 		},
 		{
 			title: "标识",
 			dataIndex: "slug",
 			key: "slug",
-			width: 160,
+			width: 180,
 			...options.sortProps("slug"),
 			render: (v: string) => <code className="text-xs">{v}</code>,
 		},
@@ -47,7 +46,7 @@ export function clientRoleColumns(options: ClientRoleColumnsOptions) {
 			title: "权限",
 			dataIndex: "permissions",
 			key: "permissions",
-			width: 280,
+			width: 240,
 			render: (perms: string[]) => (
 				<PermissionTags permissions={perms} meta={CLIENT_PERMISSION_META} />
 			),
@@ -63,16 +62,8 @@ export function clientRoleColumns(options: ClientRoleColumnsOptions) {
 			title: "创建时间",
 			dataIndex: "createdAt",
 			key: "createdAt",
-			width: 150,
+			width: 165,
 			...options.sortProps("createdAt"),
-			valueType: "dateTimeMinute",
-		},
-		{
-			title: "更新时间",
-			dataIndex: "updatedAt",
-			key: "updatedAt",
-			width: 150,
-			...options.sortProps("updatedAt"),
 			valueType: "dateTimeMinute",
 		},
 		{
@@ -80,7 +71,7 @@ export function clientRoleColumns(options: ClientRoleColumnsOptions) {
 			key: "actions",
 			fixed: "right" as const,
 			// 操作列固定右侧必须显式声明宽度（2 项操作 160）
-			width: 160,
+			width: 170,
 			render: (_: unknown, record: ClientRoleRecord) => (
 				<TableOperate>
 					<TableOperate.Edit

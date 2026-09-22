@@ -31,7 +31,7 @@ test.describe
 			await modal.getByPlaceholder("角色描述（可选）").fill("e2e 测试角色");
 			// 勾选 news 分组通配符
 			await modal.getByRole("checkbox", { name: "news", exact: true }).check();
-			await modal.getByRole("button", { name: /确\s*定/ }).click();
+			await modal.getByRole("button", { name: /保\s*存/ }).click();
 
 			await expect(adminPage.getByText("角色已创建")).toBeVisible();
 			const createdRow = adminPage.locator(".ant-table-tbody tr", {
@@ -53,7 +53,7 @@ test.describe
 				modal.getByPlaceholder("如：editor").isDisabled(),
 			).resolves.toBe(true);
 			await modal.getByPlaceholder("如：编辑人员").fill(`${createdName}改`);
-			await modal.getByRole("button", { name: /确\s*定/ }).click();
+			await modal.getByRole("button", { name: /保\s*存/ }).click();
 
 			await expect(adminPage.getByText("角色已更新")).toBeVisible();
 			await expect(

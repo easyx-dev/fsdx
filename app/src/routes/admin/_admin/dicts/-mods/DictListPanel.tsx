@@ -1,11 +1,11 @@
 /**
- * 字典类型侧边列表：选择、编辑、删除
- * 新建入口统一放页面标题栏，避免与列表页主操作重复
+ * 字典类型侧栏列表：选择、编辑、删除
+ * 新建入口统一放页面标题栏，避免与列表页主操作重复；容器由 AdminSplitPanel 提供
  */
 import { DeleteOutlined, EditOutlined } from "@ant-design/icons";
 import { withDisabledReason } from "@fsdx/ui-spa/table";
-import { Button, Card, Popconfirm, Space } from "antd";
-import type { MouseEvent } from "react";
+import { Button, Popconfirm } from "antd";
+import { AdminSplitPanel } from "#/components/admin";
 import type { DictRecord } from "#/shared-services/dict/dict.server";
 import { isPresetDict } from "./dict.utils";
 
@@ -25,7 +25,7 @@ interface DictListPanelProps {
 const NO_EDIT_PERMISSION = "无「编辑字典」权限";
 const NO_DELETE_PERMISSION = "无「删除字典」权限";
 
-/** 字典类型侧边栏：点击选择，行内编辑/删除预置保护 */
+/** 字典类型侧栏列表：点击选择，行内编辑 / 删除（预置字典不可删） */
 export function DictListPanel({
 	dicts,
 	selectedSlug,
@@ -34,99 +34,63 @@ export function DictListPanel({
 	onDelete,
 	permissions,
 }: DictListPanelProps) {
+	if (dicts.length === 0) {
+		return (
+			<div className="p-4 text-center text-sm text-foreground-tertiary">
+				暂无字典
+			</div>
+		);
+	}
+
 	return (
-		<Card
-			size="small"
-			classNames={{
-				root: "flex-[0_0_200px]",
-			}}
-			title="字典类型"
-			styles={{ body: { padding: 0 } }}
-		>
-			{dicts.length === 0 ? (
-				<div className="p-4 text-center text-muted-foreground text-sm">
-					暂无字典
-				</div>
-			) : (
-				<div className="divide-y divide-border">
-					{dicts.map((record) => {
-						const isActive = selectedSlug === record.slug;
-						const canDelete = permissions.delete && !isPresetDict(record.slug);
-						return (
-							<div
-								key={record.id}
-								className={`flex items-center justify-between px-3 py-2.5 cursor-pointer transition-colors hover:bg-accent ${
-									isActive ? "bg-primary-bg" : ""
-								}`}
-								onClick={() => onSelect(record.slug)}
-							>
-								<div className="flex items-center gap-2 min-w-0">
-									{isActive && (
-										<span className="w-1 h-6 rounded-full bg-primary flex-shrink-0" />
-									)}
-									<div className="min-w-0">
-										<div
-											className={
-												isActive
-													? "font-semibold text-primary truncate"
-													: "truncate"
-											}
+		<>
+			{dicts.map((record) => {
+				const canDelete = permissions.delete && !isPresetDict(record.slug);
+				return (
+					<AdminSplitPanel.Item
+						key={record.id}
+						primary={record.name}
+						secondary={record.slug}
+						active={selectedSlug === record.slug}
+						onSelect={() => onSelect(record.slug)}
+						actions={
+							<>
+								{withDisabledReason(
+									<Button
+										type="text"
+										size="small"
+										icon={<EditOutlined />}
+										// 静默态：默认弱化，行内 hover / 键盘聚焦时才提亮（antd 层级在 tailwind 之前，用 enabled 变体避免覆盖禁用色）
+										className="enabled:text-foreground-tertiary enabled:hover:text-primary"
+										disabled={!permissions.edit}
+										onClick={() => onEdit(record)}
+									/>,
+									!permissions.edit,
+									NO_EDIT_PERMISSION,
+								)}
+								{!isPresetDict(record.slug) &&
+									withDisabledReason(
+										<Popconfirm
+											title="确定删除该字典及所有条目？"
+											disabled={!canDelete}
+											onConfirm={() => onDelete(record)}
 										>
-											{record.name}
-										</div>
-										<div className="text-xs text-muted-foreground truncate">
-											{record.slug}
-										</div>
-									</div>
-								</div>
-								<Space size={4} className="flex-shrink-0 ml-2">
-									{withDisabledReason(
-										<Button
-											type="link"
-											size="small"
-											icon={<EditOutlined />}
-											disabled={!permissions.edit}
-											onClick={(e: MouseEvent<HTMLElement>) => {
-												e.stopPropagation();
-												onEdit(record);
-											}}
-										/>,
-										!permissions.edit,
-										NO_EDIT_PERMISSION,
-									)}
-									{!isPresetDict(record.slug) &&
-										withDisabledReason(
-											<Popconfirm
-												title="确定删除该字典及所有条目？"
+											<Button
+												type="text"
+												size="small"
+												icon={<DeleteOutlined />}
+												className="enabled:text-foreground-tertiary enabled:hover:text-danger"
 												disabled={!canDelete}
-												onConfirm={(e?: MouseEvent<HTMLElement>) => {
-													e?.stopPropagation();
-													onDelete(record);
-												}}
-												onCancel={(e?: MouseEvent<HTMLElement>) =>
-													e?.stopPropagation()
-												}
-											>
-												<Button
-													type="link"
-													size="small"
-													danger
-													icon={<DeleteOutlined />}
-													disabled={!canDelete}
-													onClick={(e: MouseEvent<HTMLElement>) =>
-														e.stopPropagation()
-													}
-												/>
-											</Popconfirm>,
-											!canDelete,
-											NO_DELETE_PERMISSION,
-										)}
-								</Space>
-							</div>
-						);
-					})}
-				</div>
-			)}
-		</Card>
+											/>
+										</Popconfirm>,
+										!canDelete,
+										NO_DELETE_PERMISSION,
+									)}
+							</>
+						}
+					/>
+				);
+			})}
+		</>
 	);
 }

@@ -48,14 +48,14 @@ export function adminUserColumns(options: AdminUserColumnsOptions) {
 			title: "用户名",
 			dataIndex: "username",
 			key: "username",
-			width: 140,
 			...options.sortProps("username"),
+			ellipsis: true,
 		},
 		{
 			title: "邮箱",
 			dataIndex: "email",
 			key: "email",
-			width: 200,
+			width: 180,
 			ellipsis: true,
 			...options.sortProps("email"),
 		},
@@ -63,7 +63,7 @@ export function adminUserColumns(options: AdminUserColumnsOptions) {
 			title: "角色",
 			dataIndex: "roleNames",
 			key: "roleNames",
-			width: 180,
+			width: 160,
 			render: (_: unknown, record: AdminUserListItem) =>
 				record.isRoot ? (
 					<Tag color="red">超级管理员</Tag>
@@ -85,7 +85,7 @@ export function adminUserColumns(options: AdminUserColumnsOptions) {
 			title: "状态",
 			dataIndex: "status",
 			key: "status",
-			width: 90,
+			width: 100,
 			render: (value: string) => (
 				<DictTag dictSlug="user_status" value={value} />
 			),
@@ -94,33 +94,17 @@ export function adminUserColumns(options: AdminUserColumnsOptions) {
 			title: "最后登录",
 			dataIndex: "lastLoginAt",
 			key: "lastLoginAt",
-			width: 150,
+			width: 165,
 			...options.sortProps("lastLoginAt"),
 			valueType: "dateTimeMinute",
 			emptyText: "—",
 		},
 		{
-			title: "创建时间",
-			dataIndex: "createdAt",
-			key: "createdAt",
-			width: 150,
-			...options.sortProps("createdAt"),
-			valueType: "dateTimeMinute",
-		},
-		{
-			title: "更新时间",
-			dataIndex: "updatedAt",
-			key: "updatedAt",
-			width: 150,
-			...options.sortProps("updatedAt"),
-			valueType: "dateTimeMinute",
-		},
-		{
 			title: "操作",
 			key: "actions",
 			fixed: "right" as const,
-			// 操作列固定右侧必须显式声明宽度（3 项操作 240）
-			width: 240,
+			// 操作列固定右侧必须显式声明宽度（含「重置密码」四字文案 → 270）
+			width: 270,
 			render: (_: unknown, record: AdminUserListItem) => (
 				<TableOperate>
 					<TableOperate.Edit

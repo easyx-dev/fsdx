@@ -15,7 +15,11 @@ import { Button, DatePicker, Input, Select, Tag, Tooltip } from "antd";
 import dayjs from "dayjs";
 import type { ChangeEvent } from "react";
 import { useCallback, useMemo, useState } from "react";
-import { AdminListPage, AdminTableToolbar } from "#/components/admin";
+import {
+	AdminFilterItem,
+	AdminFilters,
+	AdminListPage,
+} from "#/components/admin";
 import {
 	getTrackEventMetaSFn,
 	getTrackPropertyMetaSFn,
@@ -187,7 +191,8 @@ function EventListPage() {
 			title: "事件名称",
 			dataIndex: "name",
 			key: "name",
-			width: 140,
+			// 170：显示名称 + 事件标识 Tag 需要的最小宽度，过窄会把名称折成两行抬高行高
+			width: 170,
 			render: (value: string) => {
 				const label = eventLabelMap[value];
 				return (
@@ -219,10 +224,10 @@ function EventListPage() {
 			ellipsis: true,
 		},
 		{
+			// 不定宽列：吸收剩余宽度（属性是 JSON 长串，最需要宽度）
 			title: "属性",
 			dataIndex: "properties",
 			key: "properties",
-			width: 200,
 			ellipsis: true,
 			render: (value: Record<string, unknown>) => JSON.stringify(value),
 		},
@@ -230,7 +235,7 @@ function EventListPage() {
 			title: "触发时间",
 			dataIndex: "time",
 			key: "time",
-			width: 180,
+			width: 165,
 			valueType: "dateTimeMinute" as const,
 			// 服务层排序白名单仅支持 time
 			...list.sortProps("time"),
@@ -239,7 +244,7 @@ function EventListPage() {
 			title: "接收时间",
 			dataIndex: "createdAt",
 			key: "createdAt",
-			width: 180,
+			width: 165,
 			valueType: "dateTimeMinute" as const,
 		},
 	];
@@ -248,32 +253,23 @@ function EventListPage() {
 		<AdminListPage
 			title="埋点事件查询"
 			description="查询和分析客户端上报的埋点事件数据"
-			toolbar={
-				<AdminTableToolbar
+			filters={
+				<AdminFilters
+					onQuery={handleSearch}
 					onReset={handleReset}
-					extra={
-						<>
-							<Button
-								type="primary"
-								icon={<SearchOutlined />}
-								onClick={handleSearch}
-							>
-								查询
-							</Button>
-							<Button
-								icon={<DownloadOutlined />}
-								onClick={handleExport}
-								disabled={list.data.records.length === 0}
-							>
-								导出 CSV
-							</Button>
-							<Button
-								icon={<ReloadOutlined />}
-								onClick={() => void list.reload()}
-							>
-								刷新
-							</Button>
-						</>
+					moreCount={dateRange ? 1 : 0}
+					more={
+						<AdminFilterItem label="触发时间">
+							<RangePicker
+								className="w-full"
+								value={dateRange}
+								onChange={(value) =>
+									setDateRange(value as [dayjs.Dayjs, dayjs.Dayjs] | null)
+								}
+								showTime={false}
+								placeholder={["开始日期", "结束日期"]}
+							/>
+						</AdminFilterItem>
 					}
 				>
 					<Select
@@ -298,15 +294,21 @@ function EventListPage() {
 						style={{ width: 240 }}
 						prefix={<SearchOutlined />}
 					/>
-					<RangePicker
-						value={dateRange}
-						onChange={(value) =>
-							setDateRange(value as [dayjs.Dayjs, dayjs.Dayjs] | null)
-						}
-						showTime={false}
-						placeholder={["开始日期", "结束日期"]}
-					/>
-				</AdminTableToolbar>
+				</AdminFilters>
+			}
+			extra={
+				<>
+					<Button
+						icon={<DownloadOutlined />}
+						onClick={handleExport}
+						disabled={list.data.records.length === 0}
+					>
+						导出 CSV
+					</Button>
+					<Button icon={<ReloadOutlined />} onClick={() => void list.reload()}>
+						刷新
+					</Button>
+				</>
 			}
 		>
 			<ProTable
@@ -314,11 +316,12 @@ function EventListPage() {
 				dataSource={list.data.records}
 				rowKey="id"
 				loading={list.loading}
-				scroll={{ x: 1100 }}
+				scroll={{ x: 1199 }}
 				onChange={list.onTableChange}
 				pagination={list.pagination}
 				locale={{ emptyText: "暂无事件数据" }}
 				expandable={{
+					columnWidth: 50,
 					rowExpandable: (record: TrackEventRecord) =>
 						Object.keys(record.properties).length > 0,
 					expandedRowRender: (record: TrackEventRecord) => {

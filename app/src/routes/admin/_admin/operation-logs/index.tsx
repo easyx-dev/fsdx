@@ -2,13 +2,16 @@
  * 操作日志查询页面：按模块、动作、关键词与日期范围检索管理员操作审计记录
  * 筛选为「点查询才请求」模式，输入项仅维护草稿条件
  */
-import { SearchOutlined } from "@ant-design/icons";
 import { ProTable } from "@fsdx/ui-spa/table";
 import { createFileRoute } from "@tanstack/react-router";
-import { Button, DatePicker, Input, Select, Tag } from "antd";
+import { DatePicker, Input, Select, Tag } from "antd";
 import type { Dayjs } from "dayjs";
 import { useCallback, useState } from "react";
-import { AdminListPage, AdminTableToolbar } from "#/components/admin";
+import {
+	AdminFilterItem,
+	AdminFilters,
+	AdminListPage,
+} from "#/components/admin";
 import {
 	ACTION_COLORS,
 	ACTION_LABELS,
@@ -140,7 +143,7 @@ function OperationLogsPage() {
 			title: "时间",
 			dataIndex: "createdAt",
 			key: "createdAt",
-			width: 180,
+			width: 165,
 			valueType: "dateTimeMinute" as const,
 			// 服务层排序白名单仅支持 createdAt
 			...list.sortProps("createdAt"),
@@ -150,6 +153,7 @@ function OperationLogsPage() {
 			dataIndex: "operatorName",
 			key: "operatorName",
 			width: 130,
+			ellipsis: true,
 		},
 		{
 			title: "模块",
@@ -186,29 +190,26 @@ function OperationLogsPage() {
 		<AdminListPage
 			title="操作日志"
 			description="查看管理员的所有数据变更操作记录"
-			toolbar={
-				<AdminTableToolbar
+			filters={
+				<AdminFilters
+					onQuery={handleSearch}
 					onReset={handleReset}
-					extra={
-						<Button
-							type="primary"
-							icon={<SearchOutlined />}
-							onClick={handleSearch}
-						>
-							查询
-						</Button>
+					moreCount={action ? 1 : 0}
+					more={
+						<AdminFilterItem label="动作">
+							<Select
+								className="w-full"
+								value={action}
+								onChange={setAction}
+								options={actionOptions}
+							/>
+						</AdminFilterItem>
 					}
 				>
 					<Select
 						value={module}
 						onChange={setModule}
 						options={moduleOptions}
-						style={{ width: 130 }}
-					/>
-					<Select
-						value={action}
-						onChange={setAction}
-						options={actionOptions}
 						style={{ width: 130 }}
 					/>
 					<Input
@@ -226,7 +227,7 @@ function OperationLogsPage() {
 						format="YYYY-MM-DD"
 						style={{ width: 260 }}
 					/>
-				</AdminTableToolbar>
+				</AdminFilters>
 			}
 		>
 			<ProTable
@@ -235,10 +236,11 @@ function OperationLogsPage() {
 				rowKey="id"
 				loading={list.loading}
 				locale={{ emptyText: "暂无操作日志" }}
-				scroll={{ x: 900 }}
+				scroll={{ x: 1199 }}
 				onChange={list.onTableChange}
 				pagination={list.pagination}
 				expandable={{
+					columnWidth: 50,
 					expandedRowRender: (record: OperationLogEntry) => (
 						<pre
 							style={{

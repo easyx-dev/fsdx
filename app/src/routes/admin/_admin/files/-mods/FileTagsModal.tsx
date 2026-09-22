@@ -5,6 +5,7 @@
  */
 import { Form, Modal, Select, Typography } from "antd";
 import { useEffect, useState } from "react";
+import { FORM_MODAL_WIDTH } from "#/components/admin";
 import {
 	FILE_TAG_MAX_COUNT,
 	FILE_TAG_MAX_LENGTH,
@@ -51,6 +52,7 @@ export function FileTagsModal({ file, onClose, onSaved }: FileTagsModalProps) {
 		<Modal
 			open={file !== null}
 			title="编辑标签"
+			width={FORM_MODAL_WIDTH.base}
 			okText="保存"
 			confirmLoading={submitting}
 			onOk={() => void handleOk()}

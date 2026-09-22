@@ -3,10 +3,17 @@
  */
 
 import type { FormInstance } from "antd";
-import { Button, Form, Input, Modal, Space, Switch } from "antd";
-import { EditorTypes } from "#/components/admin";
+import { Form, Input, Switch } from "antd";
+import {
+	AdminFormModal,
+	EditorTypes,
+	FORM_MODAL_WIDTH,
+} from "#/components/admin";
 import type { EditorType } from "#/constants/editor-types";
 import type { ConfigRecord } from "#/shared-services/config/config.server";
+
+/** 表单 <form id>：弹窗底部按钮据此触发提交 */
+const FORM_ID = "config-form";
 
 interface ConfigFormModalProps {
 	open: boolean;
@@ -34,14 +41,15 @@ export function ConfigFormModal({
 		: [{ required: true, message: "请输入配置值" }];
 
 	return (
-		<Modal
-			title={editing ? "编辑配置" : "新建配置"}
+		<AdminFormModal
+			entityName="配置"
+			id={editing?.id}
 			open={open}
-			onCancel={onCancel}
-			footer={null}
-			destroyOnHidden
+			onClose={onCancel}
+			formId={FORM_ID}
+			width={FORM_MODAL_WIDTH.base}
 		>
-			<Form form={form} layout="vertical" onFinish={onSubmit} className="mt-4">
+			<Form id={FORM_ID} form={form} layout="vertical" onFinish={onSubmit}>
 				<Form.Item
 					name="key"
 					label="配置键"
@@ -95,15 +103,7 @@ export function ConfigFormModal({
 				<Form.Item name="description" label="描述">
 					<Input.TextArea rows={2} placeholder="描述（可选）" />
 				</Form.Item>
-				<Form.Item className="mb-0 text-right">
-					<Space>
-						<Button onClick={onCancel}>取消</Button>
-						<Button type="primary" htmlType="submit">
-							{editing ? "保存" : "创建"}
-						</Button>
-					</Space>
-				</Form.Item>
 			</Form>
-		</Modal>
+		</AdminFormModal>
 	);
 }

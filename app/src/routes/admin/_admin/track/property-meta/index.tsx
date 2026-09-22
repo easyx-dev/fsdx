@@ -10,9 +10,13 @@ import {
 	TableOperate,
 } from "@fsdx/ui-spa/table";
 import { createFileRoute } from "@tanstack/react-router";
-import { Button, Form, Input, Modal, Select, Tag } from "antd";
+import { Button, Form, Input, Select, Tag } from "antd";
 import { useState } from "react";
-import { AdminListPage } from "#/components/admin";
+import {
+	AdminFormModal,
+	AdminListPage,
+	FORM_MODAL_WIDTH,
+} from "#/components/admin";
 import { getTrackPropertyMetaSFn } from "#/services/track/track.functions";
 import type { TrackPropertyMetaRecord as PresetPropertyRecord } from "#/services/track/track.types";
 import { callSfn, sfnUnwrap } from "#/utils/sfn-error";
@@ -154,14 +158,14 @@ function PresetPropertiesPage() {
 			title: "创建时间",
 			dataIndex: "createdAt",
 			key: "createdAt",
-			width: 160,
+			width: 165,
 			valueType: "dateTimeMinute" as const,
 		},
 		{
 			title: "更新时间",
 			dataIndex: "updatedAt",
 			key: "updatedAt",
-			width: 160,
+			width: 165,
 			valueType: "dateTimeMinute" as const,
 		},
 		{
@@ -198,20 +202,19 @@ function PresetPropertiesPage() {
 				columns={columns}
 				dataSource={properties}
 				rowKey="key"
-				scroll={{ x: 1100 }}
+				scroll={{ x: 1199 }}
 				locale={{ emptyText: "暂无元属性" }}
 			/>
 
-			<Modal
+			<AdminFormModal
 				title={editingProp ? "编辑元属性" : "新建元属性"}
 				open={modalOpen}
-				onCancel={() => setModalOpen(false)}
+				onClose={() => setModalOpen(false)}
 				onOk={handleSubmit}
-				confirmLoading={saving}
-				width={500}
-				destroyOnHidden
+				submitting={saving}
+				width={FORM_MODAL_WIDTH.base}
 			>
-				<Form form={form} layout="vertical" className="mt-4">
+				<Form form={form} layout="vertical">
 					<Form.Item
 						name="key"
 						label="属性键"
@@ -238,7 +241,7 @@ function PresetPropertiesPage() {
 						<Input.TextArea rows={2} placeholder="属性描述（可选）" />
 					</Form.Item>
 				</Form>
-			</Modal>
+			</AdminFormModal>
 		</AdminListPage>
 	);
 }

@@ -11,9 +11,13 @@ import { message } from "@fsdx/ui-spa/antd-static";
 import { ProTable } from "@fsdx/ui-spa/table";
 import { createFileRoute, useRouter } from "@tanstack/react-router";
 import type { UploadProps } from "antd";
-import { Button, Col, Input, Modal, Row, Segmented, Upload } from "antd";
+import { Button, Col, Input, Modal, Row, Upload } from "antd";
 import { useCallback, useRef, useState } from "react";
-import { AdminListPage, AdminTableToolbar } from "#/components/admin";
+import {
+	AdminFilterItem,
+	AdminFilters,
+	AdminListPage,
+} from "#/components/admin";
 import { getFileListSFn, uploadFileSFn } from "#/services/file/file.functions";
 import type { FileRecord } from "#/services/file/file.server";
 import { callSfn, sfnUnwrap } from "#/utils/sfn-error";
@@ -21,7 +25,10 @@ import { useListQuery } from "#/utils/use-list-query";
 import { FileImageEditor } from "./-mods/FileImageEditor";
 import { FileTagsModal } from "./-mods/FileTagsModal";
 import { deleteFileSFn, makePermanentSFn } from "./-mods/files.functions";
-import { createFilesColumns } from "./-mods/filesColumns";
+import {
+	createFilesColumns,
+	renderFileDetailPanel,
+} from "./-mods/filesColumns";
 
 /** 列表筛选条件 */
 interface FileFilters {
@@ -54,6 +61,10 @@ function FilesPage() {
 		initial: initialData,
 		initialFilters: { status: "", keyword: "", tag: "" },
 		errorMessage: "加载文件列表失败",
+		// 状态列头漏斗 → 业务条件（值未变化时 hook 视为无筛选变更，不会重置页码）
+		mapColumnFilters: (columnFilters) => ({
+			status: (columnFilters.status?.[0] as FileFilters["status"]) ?? "",
+		}),
 		fetcher: useCallback(
 			({ page, pageSize, sortField, sortOrder, filters }) =>
 				getFileListSFn({
@@ -146,13 +157,16 @@ function FilesPage() {
 		list.applyFilters({ status: "", keyword: "", tag: "" });
 	};
 
-	const columns = createFilesColumns({
-		onPreview: setPreviewFile,
-		onEdit: setEditingFile,
-		onEditTags: setTaggingFile,
-		onMakePermanent: handleMakePermanent,
-		onDelete: handleDelete,
-	});
+	const columns = createFilesColumns(
+		{
+			onPreview: setPreviewFile,
+			onEdit: setEditingFile,
+			onEditTags: setTaggingFile,
+			onMakePermanent: handleMakePermanent,
+			onDelete: handleDelete,
+		},
+		{ statusFilter: list.filters.status },
+	);
 
 	return (
 		<AdminListPage
@@ -191,21 +205,23 @@ function FilesPage() {
 					</Col>
 				</Row>
 			}
-			toolbar={
-				<AdminTableToolbar onReset={handleReset}>
-					<Segmented
-						options={[
-							{ label: "全部", value: "" },
-							{ label: "临时", value: "temp" },
-							{ label: "永久", value: "permanent" },
-						]}
-						value={list.filters.status}
-						onChange={(value) =>
-							list.applyFilters({
-								status: value as FileFilters["status"],
-							})
-						}
-					/>
+			filters={
+				<AdminFilters
+					onReset={handleReset}
+					moreCount={tagInput ? 1 : 0}
+					more={
+						<AdminFilterItem label="按标签搜索">
+							<Input.Search
+								className="w-full"
+								placeholder="标签名（支持片段匹配）"
+								allowClear
+								value={tagInput}
+								onChange={(event) => setTagInput(event.target.value)}
+								onSearch={(value) => list.applyFilters({ tag: value })}
+							/>
+						</AdminFilterItem>
+					}
+				>
 					<Input.Search
 						placeholder="搜索文件名 / 文件 ID"
 						allowClear
@@ -214,15 +230,7 @@ function FilesPage() {
 						onSearch={(value) => list.applyFilters({ keyword: value })}
 						style={{ width: 240 }}
 					/>
-					<Input.Search
-						placeholder="按标签搜索"
-						allowClear
-						value={tagInput}
-						onChange={(event) => setTagInput(event.target.value)}
-						onSearch={(value) => list.applyFilters({ tag: value })}
-						style={{ width: 200 }}
-					/>
-				</AdminTableToolbar>
+				</AdminFilters>
 			}
 		>
 			<ProTable
@@ -231,9 +239,14 @@ function FilesPage() {
 				rowKey="id"
 				loading={list.loading}
 				locale={{ emptyText: "暂无文件" }}
-				scroll={{ x: 2500 }}
+				scroll={{ x: 1199 }}
 				onChange={list.onTableChange}
 				pagination={list.pagination}
+				// 列表放不下的内容元信息（MIME / 路径 / 哈希 / 过期与更新时间）收进展开面板
+				expandable={{
+					columnWidth: 50,
+					expandedRowRender: renderFileDetailPanel,
+				}}
 			/>
 
 			{/* 标签编辑弹窗（单字段快速修改） */}

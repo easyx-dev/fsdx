@@ -29,7 +29,16 @@ interface MessageInboxColumnsOptions {
 	onDelete: (record: MessageRecord) => Promise<void>;
 }
 
-export function messageInboxColumns(options: MessageInboxColumnsOptions) {
+/** 列渲染所需的筛选态（受控回填列头漏斗选中项） */
+export interface MessageInboxColumnsFilterOptions {
+	/** 状态列头筛选值（空串表示全部） */
+	statusFilter: "" | "unread" | "read";
+}
+
+export function messageInboxColumns(
+	options: MessageInboxColumnsOptions,
+	filterOptions: MessageInboxColumnsFilterOptions,
+) {
 	return [
 		{
 			title: "类型",
@@ -49,6 +58,15 @@ export function messageInboxColumns(options: MessageInboxColumnsOptions) {
 			dataIndex: "status",
 			key: "status",
 			width: 100,
+			// 未读 / 已读筛选收进列头漏斗（单选），替代此前的顶部 Tabs
+			filters: [
+				{ text: "未读", value: "unread" },
+				{ text: "已读", value: "read" },
+			],
+			filterMultiple: false,
+			filteredValue: filterOptions.statusFilter
+				? [filterOptions.statusFilter]
+				: null,
 			render: (val: string) => (
 				<StatusTag value={val} options={STATUS_OPTIONS} />
 			),
@@ -57,7 +75,7 @@ export function messageInboxColumns(options: MessageInboxColumnsOptions) {
 			title: "时间",
 			dataIndex: "createdAt",
 			key: "createdAt",
-			width: 160,
+			width: 165,
 			valueType: "dateTimeMinute",
 		},
 		{
@@ -65,7 +83,7 @@ export function messageInboxColumns(options: MessageInboxColumnsOptions) {
 			key: "actions",
 			fixed: "right" as const,
 			// 操作列固定右侧必须显式声明宽度（2 项 → 160）
-			width: 160,
+			width: 170,
 			render: (_: unknown, record: MessageRecord) => (
 				<TableOperate>
 					{record.status === "unread" && (

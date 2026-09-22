@@ -10,7 +10,7 @@ import {
 	TableOperate,
 	withDisabledReason,
 } from "@fsdx/ui-spa/table";
-import { Button, Tag } from "antd";
+import { Button } from "antd";
 import { DictTag } from "#/components/admin";
 import type { ClientUserListItem } from "#/services/client-user/client-user.server";
 import type { SortProps } from "#/utils/use-list-query";
@@ -56,14 +56,14 @@ export function clientUserColumns(options: ClientUserColumnsOptions) {
 			title: "用户名",
 			dataIndex: "username",
 			key: "username",
-			width: 140,
 			...options.sortProps("username"),
+			ellipsis: true,
 		},
 		{
 			title: "邮箱",
 			dataIndex: "email",
 			key: "email",
-			width: 220,
+			width: 180,
 			ellipsis: true,
 			...options.sortProps("email"),
 		},
@@ -71,34 +71,16 @@ export function clientUserColumns(options: ClientUserColumnsOptions) {
 			title: "邮箱验证",
 			dataIndex: "emailVerified",
 			key: "emailVerified",
-			width: 100,
+			width: 90,
 			render: (value: boolean) => (
 				<StatusTag value={value} options={EMAIL_VERIFIED_OPTIONS} />
 			),
 		},
 		{
-			title: "角色",
-			dataIndex: "roleNames",
-			key: "roleNames",
-			width: 160,
-			render: (_: unknown, record: ClientUserListItem) =>
-				record.roleNames.length > 0 ? (
-					<div className="flex flex-wrap gap-1">
-						{record.roleNames.map((name) => (
-							<Tag key={name} color="blue">
-								{name}
-							</Tag>
-						))}
-					</div>
-				) : (
-					<span>—</span>
-				),
-		},
-		{
 			title: "状态",
 			dataIndex: "status",
 			key: "status",
-			width: 90,
+			width: 100,
 			render: (value: string) => (
 				<DictTag dictSlug="user_status" value={value} />
 			),
@@ -107,32 +89,16 @@ export function clientUserColumns(options: ClientUserColumnsOptions) {
 			title: "最后登录",
 			dataIndex: "lastLoginAt",
 			key: "lastLoginAt",
-			width: 150,
+			width: 165,
 			valueType: "dateTimeMinute",
 			emptyText: "—",
-		},
-		{
-			title: "创建时间",
-			dataIndex: "createdAt",
-			key: "createdAt",
-			width: 150,
-			...options.sortProps("createdAt"),
-			valueType: "dateTimeMinute",
-		},
-		{
-			title: "更新时间",
-			dataIndex: "updatedAt",
-			key: "updatedAt",
-			width: 150,
-			...options.sortProps("updatedAt"),
-			valueType: "dateTimeMinute",
 		},
 		{
 			title: "操作",
 			key: "actions",
 			fixed: "right" as const,
-			// 操作列固定右侧必须显式声明宽度（3 项操作 240）
-			width: 240,
+			// 操作列固定右侧必须显式声明宽度（含「重置密码」四字文案 → 270）
+			width: 270,
 			render: (_: unknown, record: ClientUserListItem) => (
 				<TableOperate>
 					<TableOperate.Edit
