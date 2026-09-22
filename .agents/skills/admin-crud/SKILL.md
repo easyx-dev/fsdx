@@ -819,12 +819,10 @@ import { createFileRoute } from "@tanstack/react-router";
 import { Button } from "antd";
 import { useCallback, useState } from "react";
 import {
+  AdminFilterItem,
+  AdminFilters,
   AdminFormDrawer,
   AdminListPage,
-  AdminTableToolbar,
-  PublishedFilter,
-  type PublishedFilterValue,
-  toIsPublished,
   useAdminAuth,
 } from "#/components/admin";
 import { ADMIN_PERMISSIONS } from "#/permissions/admin-permissions";
@@ -844,9 +842,9 @@ import { productColumns } from "./-mods/productColumns";
 const FORM_ID = "product-form";
 const NO_CREATE_PERMISSION = "无「新建产品」权限";
 
-/** 列表筛选条件 */
+/** 列表筛选条件：发布状态来自表格「状态」列的列头漏斗 */
 interface ProductFilters {
-  published: PublishedFilterValue;
+  published: "" | "published" | "unpublished";
 }
 
 export const Route = createFileRoute("/admin/_admin/product/")({
@@ -866,11 +864,18 @@ function ProductListPage() {
     initial: initialData,
     initialFilters: { published: "" },
     errorMessage: "加载列表失败",
+    // 列头筛选 → 业务条件（值未变化时 hook 视为无筛选变更，不会重置页码）
+    mapColumnFilters: (columnFilters) => ({
+      published: (columnFilters.isPublished?.[0] as ProductFilters["published"]) ?? "",
+    }),
     fetcher: useCallback(
       ({ page, pageSize, sortField, sortOrder, filters }) =>
         getProductListSFn({
           data: {
-            isPublished: toIsPublished(filters.published),
+            isPublished:
+              filters.published === ""
+                ? undefined
+                : filters.published === "published",
             sortField,
             sortOrder,
             page,
@@ -933,29 +938,15 @@ function ProductListPage() {
     <AdminListPage
       title="产品管理"
       description="上架状态与排序可在列表内直接修改"
+      // 页头三段式：筛选进 filters（本模块的状态筛选已收进「状态」列头漏斗，无需页头筛选）
+      // 若还有关键词搜索等，写成：filters={<AdminFilters onReset={handleReset}><Input.Search ... /></AdminFilters>}
       extra={withDisabledReason(
-        <Button
-          type="primary"
-          icon={<PlusOutlined />}
-          disabled={!permissions.create}
-          onClick={() => {
-            setEditingId(null);
-            setDrawerOpen(true);
-          }}
-        >
+        <Button type="primary" icon={<PlusOutlined />} disabled={!permissions.create} onClick={openCreate}>
           新建产品
         </Button>,
         !permissions.create,
         NO_CREATE_PERMISSION,
       )}
-      toolbar={
-        <AdminTableToolbar>
-          <PublishedFilter
-            value={list.filters.published}
-            onChange={(published) => list.applyFilters({ published })}
-          />
-        </AdminTableToolbar>
-      }
     >
       <ProTable
         dataSource={list.data.records}
@@ -999,9 +990,9 @@ function ProductListPage() {
 - 首屏数据由路由 `loader` 提供，交给 `useListQuery` 作初始值；**不写 `useEffect` 自动拉取**
 - `ProTable` 只接 `loading` / `onChange={list.onTableChange}` / `pagination={list.pagination}`，**不接 `pagination.onChange`**（两处并存会双请求、翻页失效）
 - 筛选变更走 `list.applyFilters(...)`（自动回第 1 页）；增删改 / 内联更新后走 `list.reload()`
-- 主操作放 `AdminListPage` 的 `extra`，筛选控件放 `AdminTableToolbar`，页面无手写 `AdminPageContent` 间距结构
+- 主操作放 `AdminListPage` 的 `extra`，筛选控件放 `filters`（页头三段式，无独立筛选行），页面无手写 `AdminPageContent` 间距结构
 - 操作列用 `TableOperate` 容器组件（`Edit` / `Delete` / `Link` / `Custom`），无权限传 `disabled` + `disabledReason`
-- `scroll.x` 不小于各列宽度之和（含操作列），列宽调整后需同步回看
+- 列宽合计 ≤ 1199 且无横向滚动；主内容列吸收剩余宽度，其余列显式 `width`，长文本列必须 `ellipsis`
 
 ### 新建 / 编辑：列表页内抽屉
 
@@ -1065,7 +1056,7 @@ const [submitting, setSubmitting] = useState(false);
 
 **抽屉要点**：
 - 抽屉固定 `destroyOnHidden`：隐藏即卸载，避免富文本等组件在 `display:none` 容器中挂载拿到 0 尺寸，也避免残留校验态
-- 宽度档位 `FORM_DRAWER_WIDTH`：`base 640` / `wide 760` / `full "40%"`
+- 宽度档位 `FORM_DRAWER_WIDTH`：`base 640` / `wide 760` / `full "60%"`（强编辑场景按视口比例）
 - **单字段快速修改（如文件标签）用 Modal 或单元格内联编辑**，不必为此开抽屉
 - 只读列表（日志、埋点、操作日志）没有新建 / 编辑承载，只做骨架 + 查询状态 + 列规范
 
@@ -1080,19 +1071,19 @@ const [submitting, setSubmitting] = useState(false);
 | 表格 | `ProTable` | 列渲染增强、表体高度继承 |
 | 通用态 | `SortOrderCell` / `PublishSwitchCell` / `StatusTag` | 单元格内联编辑（排序 / 状态）+ 失败回滚 + 状态语义色 |
 
-**硬规则**（逐条对照 [admin-list-page 清单](../../checklists/admin-list-page.md)）：
+**硬规则**（逐条对照 [admin-design 清单](../../checklists/admin-design.md)）：
 
-1. 页面用 `AdminListPage`，主操作放 `extra`、筛选放 `AdminTableToolbar`，不手写 `AdminPageContent` 结构
+1. 页面用 `AdminListPage`，主操作放 `extra`、筛选放 `filters`（页头三段式），不手写 `AdminPageContent` 结构
 2. 列表 schema 以 `listSchema` 为基座 `.extend({...})` 命名 `<模块>ListSchema`；`pageSize` 必须透传到服务层，禁止硬编码
 3. 分页与排序统一由 `Table.onChange`（`list.onTableChange`）驱动，**禁止再配 `pagination.onChange`**；不写 `useEffect` 自动拉取列表，首屏交给路由 `loader`
-4. 操作列用 `TableOperate` 并**显式声明 `width`**（2 项 160 / 3 项 240 / 4 项 320），`scroll.x` ≥ 各列宽度之和（含操作列）
+4. 操作列用 `TableOperate`（低频项进 `More`）并**显式声明 `width`**；列宽合计 ≤ 1199、无横向滚动
 5. 无权限的操作传 `disabled` + `disabledReason`，不隐藏按钮；服务端 `adminPermGuard` 仍是唯一权威
 6. 错误出口唯一：SFn 调用交 `callSfn` / `sfnUnwrap`，操作列与表单内不自行 `message.error` 捕获
 7. 通用态用 `SortOrderCell` / `PublishSwitchCell` / `StatusTag`（多值枚举可就地切换用 `Select variant="borderless"`），改进走**单字段 SFn** + `logCrud`；图片列用 `ImageCell` 放表格最前；时间列用 `valueType: "dateTimeMinute"`（或 `"dateTime"`），不手写 `dayjs().format`
 
-> 机制与设计取舍详见 [docs/admin-list-page.md](../../../docs/admin-list-page.md)；验收逐项自查见 [.agents/checklists/admin-list-page.md](../../checklists/admin-list-page.md)。
+> 完整 UI 规范见 [admin-design skill](../admin-design/SKILL.md)，机制与依据见 [docs/admin-design.md](../../../docs/admin-design.md)，验收逐项自查见 [.agents/checklists/admin-design.md](../../checklists/admin-design.md)。
 >
-> 富化实现可直接 `read` 参考：`app/src/utils/use-list-query.ts`、`app/src/components/admin/{AdminListPage,AdminTableToolbar,AdminFormDrawer,PublishedFilter}.tsx`。
+> 可 `read` 参考的实现：`app/src/utils/use-list-query.ts`、`app/src/components/admin/{AdminListPage,AdminFilters,AdminFormModal,AdminFormDrawer}.tsx`。
 
 ## Step 9：可选 —— 添加实体翻译
 
@@ -1129,7 +1120,7 @@ const [submitting, setSubmitting] = useState(false);
 □ pnpm db:generate + pnpm db:migrate   # 生成并执行 Schema 迁移
 □ pnpm check                # TypeScript 类型检查 + Biome lint
 □ pnpm test -- --run        # 全部测试通过
-□ 对照 .agents/checklists/admin-list-page.md 逐项自查（骨架 / 查询状态 / 服务端契约 / 列规范 / 操作列 / 弹层）
+□ 对照 .agents/checklists/admin-design.md 逐项自查（页头 / 筛选落点 / 列宽预算 / 操作列 / 弹窗抽屉 / 表单）
 □ 确认无残留 create.tsx / $id/edit.tsx，routeTree.gen.ts 已重新生成
 □ 手动测试：列表页加载
 □ 手动测试：分页 / 每页条数 / 排序
