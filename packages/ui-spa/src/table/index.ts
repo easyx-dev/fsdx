@@ -1,7 +1,7 @@
 /**
  * 表格域桶导出
- * - ProTable：增强表格（valueType / ellipsis / copyable / 表体高度继承）
- * - TableOperate：操作列容器（Edit / Delete / Link / Custom + 禁用原因提示）
+ * - ProTable：增强表格（valueType / ellipsis / copyable / emptyText / 表体高度继承）
+ * - TableOperate：操作列容器（Edit / Delete / Link / More / Custom + 禁用原因提示）
  * - 内联编辑单元格：SortOrderCell / PublishSwitchCell（通用态就地修改）
  * - 状态列：StatusTag（值 → 文案 + 语义色）
  * - ImageCell：图片 / 封面列（固定正方形 + contain，放表格最前）
@@ -14,7 +14,12 @@ export {
 	SortOrderCell,
 	type SortOrderCellProps,
 } from "./inline-cells";
-export { type ProColumnType, ProTable, type ProTableProps } from "./pro-table";
+export {
+	formatDateTimeValue,
+	type ProColumnType,
+	ProTable,
+	type ProTableProps,
+} from "./pro-table";
 export {
 	StatusTag,
 	type StatusTagOption,
@@ -29,4 +34,8 @@ export {
 	useTableBodyHeight,
 	useTableHeight,
 } from "./table-height";
-export { TableOperate, withDisabledReason } from "./table-operate";
+export {
+	TableOperate,
+	type TableOperateMoreItem,
+	withDisabledReason,
+} from "./table-operate";

@@ -79,6 +79,17 @@ function renderByValueType(
 }
 
 /**
+ * 时间值的统一格式化（与列 `valueType` 同一实现）
+ * 供行展开面板、详情弹层等非表格场景复用，避免各页再手写 `dayjs().format`
+ */
+export function formatDateTimeValue(
+	value: unknown,
+	type: "dateTime" | "dateTimeMinute" = "dateTimeMinute",
+): string | null {
+	return renderByValueType(type, value);
+}
+
+/**
  * 将 ProColumn 的处理属性转为原生 antd 列
  * 行记录类型不收窄：字段假设由调用方的列定义与泛型负责，组件内部只做透传
  */

@@ -1,7 +1,7 @@
 /**
  * 状态列通用展示：值 → 文案 + 语义色，避免各页自选 Tag 颜色
  *
- * 状态列的三种形态（见 docs/admin-list-page.md「状态列」）：
+ * 状态列的三种形态（见 docs/admin-design.md「状态列」）：
  * - 布尔状态（上架 / 启用）：用 `PublishSwitchCell` 在单元格内直接切换
  * - 枚举状态（多值，只读）：用 `StatusTag` 统一文案与语义色
  * - 枚举状态需要内联切换：用 antd `Select`（`variant="borderless"`）或 `Switch`，

@@ -103,6 +103,7 @@ export interface PublishSwitchCellProps {
  * 状态文案经 antd Switch 的 `checkedChildren` / `unCheckedChildren` 嵌在轨道内，
  * 不再额外渲染并排文本：轨道宽度取两段文案的较大值，`loading` 期间 antd 会自动
  * 置为禁用并隐藏文案（宽度不跳动），因此无需自己叠加 disabled。
+ * 用 `size="small"`：与 SortOrderCell 的小号输入框一致，且能把状态列压在 100px 内不溢出。
  */
 export function PublishSwitchCell({
 	published,
@@ -136,6 +137,7 @@ export function PublishSwitchCell({
 
 	const cell = (
 		<Switch
+			size="small"
 			checked={checked}
 			loading={submitting}
 			disabled={disabled}
