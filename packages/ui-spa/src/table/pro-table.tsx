@@ -3,14 +3,23 @@
  * 默认开启 bordered，支持 valueType 自动渲染、renderText 自定义文本、
  * renderCopyableText 自定义复制、ellipsis Tooltip、copyable 复制
  * 表体高度可继承就近页面骨架注入的剩余空间（见 table-height）
+ * 列宽按「每列定宽 + 恰好一列弹性」的规范自动推导 scroll.x（见 table-budget）
  */
 import { CopyOutlined } from "@ant-design/icons";
 import type { TableProps, TooltipProps } from "antd";
 import { Button, Table, Tooltip } from "antd";
 import type { ColumnsType, ColumnType } from "antd/es/table";
 import dayjs from "dayjs";
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import { copyText } from "../clipboard";
+import {
+	applyColumnBudget,
+	type ElasticColumnMarker,
+	EXPAND_COLUMN_WIDTH_DEFAULT,
+	SELECTION_COLUMN_WIDTH_DEFAULT,
+	useTableBudget,
+	warnColumnBudget,
+} from "./table-budget";
 import { useTableHeight } from "./table-height";
 
 /** 扩展的 ellipsis 类型：支持 boolean 和自定义 Tooltip */
@@ -18,7 +27,8 @@ type ProEllipsis = boolean | { showTitle?: boolean; tooltip?: TooltipProps };
 
 /** 扩展的列类型 */
 export interface ProColumnType<T = unknown>
-	extends Omit<ColumnType<T>, "ellipsis"> {
+	extends Omit<ColumnType<T>, "ellipsis">,
+		ElasticColumnMarker {
 	/** 超出省略，可传入 Tooltip 属性自定义提示 */
 	ellipsis?: ProEllipsis;
 	/** 是否显示复制按钮，复制 dataIndex 对应的原始值 */
@@ -42,6 +52,11 @@ export interface ProColumnType<T = unknown>
 export interface ProTableProps<T = unknown>
 	extends Omit<TableProps<T>, "columns"> {
 	columns: ColumnsType<T>;
+	/**
+	 * 该表在参考视口下的可用宽度：列宽合计超出即开发期告警
+	 * 缺省取就近骨架注入的值（见 table-budget）；传 null 显式关闭校验
+	 */
+	budget?: number | null;
 }
 
 /**
@@ -265,30 +280,66 @@ function processColumns<T>(columns: ColumnsType<T>): ColumnsType<T> {
  * - copyable 支持列值复制
  * - emptyText 为空值提供占位内容（可选）
  * - 表体高度缺省继承页面骨架注入的剩余空间（显式 scroll.y 优先）
+ * - 列宽：`scroll.x` 缺省按各列宽度之和自动推导，页面不手写（见 table-budget）
  *
- * 调用方约定：`fixed` 列必须显式声明 `width`（无宽度会被挤压到剩余空间，
- * 宽度不足时内容溢出到相邻列），且 `scroll.x` 不小于各列宽度之和。
+ * 调用方约定：每列显式声明 `width`，并**恰好标记一列** `elastic`（默认操作列）；
+ * 列宽合计不超过该表预算，超出时按「详情文本行进展开 → 次要时间列删 → 操作项进更多」裁剪。
  */
 export function ProTable<T>({
 	bordered = true,
 	columns,
 	scroll,
+	budget,
+	expandable,
+	rowSelection,
 	...restProps
 }: ProTableProps<T>) {
-	const processedColumns = useMemo(() => processColumns<T>(columns), [columns]);
+	// 页面骨架按布局注入参考可用宽度；双栏页取右栏实宽（见 AdminSplitPanel）
+	const contextBudget = useTableBudget();
+	const {
+		columns: budgetColumns,
+		scrollX,
+		warnings,
+	} = useMemo(
+		() =>
+			applyColumnBudget<T>(columns, {
+				expandWidth: expandable
+					? Number(expandable.columnWidth ?? EXPAND_COLUMN_WIDTH_DEFAULT)
+					: undefined,
+				selectionWidth: rowSelection
+					? Number(rowSelection.columnWidth ?? SELECTION_COLUMN_WIDTH_DEFAULT)
+					: undefined,
+				budget: budget !== undefined ? budget : contextBudget,
+			}),
+		[columns, expandable, rowSelection, budget, contextBudget],
+	);
+
+	useEffect(() => {
+		warnColumnBudget(warnings);
+	}, [warnings]);
+
+	const processedColumns = useMemo(
+		() => processColumns<T>(budgetColumns),
+		[budgetColumns],
+	);
 	// 页面骨架（AdminListPage）测量出剩余高度后经 context 下发，表格无需逐页传 scroll.y
 	const autoHeight = useTableHeight();
 	const mergedScroll = useMemo(() => {
+		const x = scroll?.x ?? scrollX;
 		const y = scroll?.y ?? autoHeight;
-		if (y === undefined) return scroll;
-		return { ...scroll, y };
-	}, [scroll, autoHeight]);
+		if (x === undefined && y === undefined) return scroll;
+		return { ...scroll, x, y };
+	}, [scroll, autoHeight, scrollX]);
 
 	return (
 		<Table<T>
 			bordered={bordered}
 			columns={processedColumns}
 			scroll={mergedScroll}
+			// 列宽由声明值决定（大屏余宽归弹性列），显式 auto 会让列宽随内容漂移
+			tableLayout="fixed"
+			expandable={expandable}
+			rowSelection={rowSelection}
 			{...restProps}
 		/>
 	);

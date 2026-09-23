@@ -7,7 +7,12 @@ import { formatBytes } from "@fsdx/lib/format-bytes";
 import { Button, Image, Input, Modal, Space, Tag } from "antd";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { message } from "../antd-static";
-import { type ProColumnType, ProTable, TableOperate } from "../table";
+import {
+	COLUMN_WIDTH,
+	type ProColumnType,
+	ProTable,
+	TableOperate,
+} from "../table";
 
 /** 可选择的文件条目（宿主查询结果的扁平结构，与业务 db 类型解耦） */
 export interface SelectableFile {
@@ -131,6 +136,9 @@ export function SelectFileModal({
 			title: "文件名",
 			dataIndex: "originalName",
 			key: "originalName",
+			// 弹性列：文件名长度不可控，宽度为出现横向滚动时的最小可读宽
+			width: COLUMN_WIDTH.text,
+			elastic: true,
 			ellipsis: true,
 		},
 		{
@@ -156,7 +164,7 @@ export function SelectFileModal({
 			title: "上传时间",
 			dataIndex: "createdAt",
 			key: "createdAt",
-			width: 180,
+			width: COLUMN_WIDTH.timeSecond,
 			valueType: "dateTime",
 			emptyText: "-",
 		},

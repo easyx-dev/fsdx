@@ -1,39 +1,40 @@
 {
-  "name": "@fsdx/ui-spa",
-  "version": "0.0.1",
-  "private": true,
-  "type": "module",
-  "exports": {
-    "./antd-static": "./src/antd-static/index.tsx",
-    "./clipboard": "./src/clipboard.ts",
-    "./table": "./src/table/index.ts",
-    "./upload": "./src/upload/index.ts",
-    "./editor": "./src/editor/index.ts",
-    "./permission-tags": "./src/permission-tags.tsx",
-    "./json-import-button": "./src/json-import-button.tsx",
-    "./ms-input": "./src/ms-input.tsx"
-  },
-  "scripts": {
-    "check": "tsc --noEmit && biome check",
-    "format": "biome format",
-    "lint": "biome lint",
-    "lint:fix": "biome check --write"
-  },
-  "dependencies": {
-    "@fsdx/lib": "workspace:*",
-    "@monaco-editor/react": "^4.7.0"
-  },
-  "peerDependencies": {
-    "@ant-design/icons": "catalog:",
-    "@easyx/editor": "catalog:",
-    "@tanstack/react-router": "catalog:",
-    "antd": "catalog:",
-    "dayjs": "catalog:",
-    "monaco-editor": "catalog:",
-    "react": "catalog:",
-    "react-dom": "catalog:"
-  },
-  "devDependencies": {
-    "@easyx/editor": "catalog:"
-  }
+	"name": "@fsdx/ui-spa",
+	"version": "0.0.1",
+	"private": true,
+	"type": "module",
+	"exports": {
+		"./antd-static": "./src/antd-static/index.tsx",
+		"./clipboard": "./src/clipboard.ts",
+		"./table": "./src/table/index.ts",
+		"./upload": "./src/upload/index.ts",
+		"./editor": "./src/editor/index.ts",
+		"./permission-tags": "./src/permission-tags.tsx",
+		"./json-import-button": "./src/json-import-button.tsx",
+		"./ms-input": "./src/ms-input.tsx"
+	},
+	"scripts": {
+		"check": "tsc --noEmit && biome check",
+		"format": "biome format",
+		"lint": "biome lint",
+		"lint:fix": "biome check --write",
+		"test": "vitest run"
+	},
+	"dependencies": {
+		"@fsdx/lib": "workspace:*",
+		"@monaco-editor/react": "^4.7.0"
+	},
+	"peerDependencies": {
+		"@ant-design/icons": "catalog:",
+		"@easyx/editor": "catalog:",
+		"@tanstack/react-router": "catalog:",
+		"antd": "catalog:",
+		"dayjs": "catalog:",
+		"monaco-editor": "catalog:",
+		"react": "catalog:",
+		"react-dom": "catalog:"
+	},
+	"devDependencies": {
+		"@easyx/editor": "catalog:"
+	}
 }
