@@ -155,11 +155,12 @@ const list = useListQuery<NewsRecord, NewsFilters>({
 - 排序权重：`SortOrderCell`（失焦 / 回车提交，值未变不发请求）
 - 状态变更落库走**单字段 SFn** + `logCrud` 审计；禁止复用整表更新
 - 内联编辑列禁止 `ellipsis` / `copyable`（ProTable 会用 `overflow: hidden` 的 span 包住控件）
+- **不定长标签集**（文件标签、多值枚举 + 附加元信息 Tag）：单元格内**单行横向滚动**——滚动容器 `overflow-x-auto` + 内层内容行 `flex w-max items-center gap-1`（`w-max` 让内容按标签实际宽度铺开，滚动与测量都靠它）、全站 `.scrollbar-thin` 细窄滚动条，Tag 加 `shrink-0` 并归零 `marginInlineEnd`；**不换行、不折叠为 `+N`**（换行会让行高不齐，`+N` 会把标签藏进 Tooltip）。**内容被裁掉时再挂 `Popover`**（hover / 聚焦，`mouseEnterDelay` 0.3）平铺列出全部标签，不必拖动即可看全；是否溢出用 `ResizeObserver` 同时观测滚动容器（列宽变化）与内容行（标签增删），内容本就完整时不挂弹层（无谓打扰）。列宽按「固定前缀 Tag + 一个短标签」估（文件管理页 180 = 尺寸 Tag 91 + 双字标签 52 + 间距 4 + 内边距 32）
 
 ### 3.4 操作列
 
 - 一律用 `TableOperate` 容器；可用子组件 `Edit` / `Delete` / `Link` / **`More`** / `Custom`
-- **项数 ≤ 4**；高频动作外置（下载 / 删除），元数据类编辑（标签 / 编辑图片 / 翻译）收进 `TableOperate.More`
+- **项数 ≤ 4**；高频动作外置（下载 / 删除），元数据类编辑（标签 / 编辑图片 / 翻译）收进 `TableOperate.More`。**确需 5 项全平铺**（如文件管理页：下载 / 标签 / 预览 / 编辑图片 / 删除）时，代价是操作列按 5 项文案实算宽（420），须**先裁掉低价值列腾出宽度**（该页裁「文件 ID」列并把 ID 移入行展开面板的 `DetailGrid`），不得压缩其它列凑数
 - **宽度用 `actionsWidth("编辑", "删除")` 按文案实算**（每项 `16 图标 + 4 间距 + 文案 + 16 内边距`，项间 8，单元格 32，向上取到 10 的整数倍）：1 项 100 / 2 项短文案 170 / 3 项短文案 240 / 3 项含四字文案 270 / 4 项 320。写死数值会与文案脱节——历史上 160 / 260 都差 8px 导致按钮溢出
 - **默认 `elastic: true`**：操作列是余宽的去处（见 3.1），它声明的宽度即「出现横向滚动时的按钮所需宽」；若页面把弹性让给了长文本主列，操作列则照常声明该宽度并保持 `fixed: "right"`（固定列无宽度会被压扁、把按钮挤出列外）
 - `TableOperate.Delete` 内置 `Popconfirm`（文案 `确定删除{recordName}？`），**不自行吞错**：`onConfirm` 交调用方 `sfnUnwrap` / `callSfn`

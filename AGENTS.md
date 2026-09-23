@@ -193,7 +193,7 @@ packages/
 ### 表格操作列
 
 - 所有管理端表格的操作列**必须**使用 `TableOperate` 容器包装（`@fsdx/ui-spa/table`），子组件 `Edit` / `Delete` / `Link` / `More` / `Custom`；按钮统一「图标 + 文字」风格
-- **项数 ≤ 4**：低频动作（元数据编辑、图片编辑等）收进 `TableOperate.More`；操作列**必须**显式声明 `width`，用 `actionsWidth("编辑", "删除")` 按文案实算（不要写死数字），并默认标记 `elastic: true` 作余宽去处（档位与公式见 admin-design skill §3.4）
+- **项数 ≤ 4**：低频动作（元数据编辑、图片编辑等）收进 `TableOperate.More`；操作列**必须**显式声明 `width`，用 `actionsWidth("编辑", "删除")` 按文案实算（不要写死数字），并默认标记 `elastic: true` 作余宽去处（档位与公式见 admin-design skill §3.4）。确需 5 项全平铺时（如文件管理页）**先裁掉低价值列把宽度让给操作项**，不得压缩其它列凑数
 - `TableOperate.Delete` 内置 `Popconfirm`（文案 `"确定删除{recordName}？"`），**不自行吞错**：`onConfirm` 交调用方 `sfnUnwrap` / `callSfn`
 - **无权限时置灰并说明原因**：传 `disabled` + `disabledReason`（如「无『编辑角色』权限」），不要隐藏按钮；服务端 `adminPermGuard` 仍是唯一权威
 - **通用态不进操作列**：上架状态用 `PublishSwitchCell`、排序权重用 `SortOrderCell`，在单元格内直接修改（单字段 SFn + 审计）

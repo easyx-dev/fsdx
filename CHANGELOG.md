@@ -176,6 +176,10 @@
 
 ### Refactor
 
+- **文件管理页操作列全平铺，裁「文件 ID」列腾宽（[infra]）**：操作列不再把低频动作折进 `TableOperate.More`，下载 / 标签 / 预览 / 编辑图片 / 删除 5 项直接平铺（预览仅图片类文件、编辑图片仅可处理格式出现），列宽按**最大项数**实算（`actionsWidth(...)` → 420，列宽必须覆盖图片类文件，否则按钮会溢出到相邻列）。
+  - **代价与补偿**：5 项超出「操作项 ≤4」的默认约定，宽度取自裁掉的「文件 ID」列——检索能力不受影响（`keyword` 仍同时匹配文件名与文件 ID），ID 移入行展开面板的 `DetailGrid` 并保留一键复制。列宽合计 1305 + 展开列 50 = 1355 ≤ 预算 1359，参考视口下无横向滚动。
+  - **规范同步**：`AGENTS.md`「表格操作列」与 [admin-design skill](.agents/skills/admin-design/SKILL.md) §3.4 补「确需 5 项全平铺时**先裁掉低价值列**腾宽，不得压缩其它列凑数」，验收清单对应项一并更新。可被衍生项目吸收
+
 - **依赖包破坏性升级适配：AI 富文本工作台与图片处理套件（[infra]）**：`@easyx/ai-rich-editor` 0.1 → 2.0、`@easyx/image-toolkit` 0.1 → 1.0，两处接入面按新版 API 同步改造。
   - **`/api/ai-chat` 由 AG-UI 协议改为 OpenAI 兼容端点**：新版编辑器把宿主接入面收敛为「已鉴权的 OpenAI Chat Completions 端点 URL 或自定义适配器函数」，旧版 `endpointUrl` + `requestMeta`（TanStack AI `useChat` / AG-UI SSE）不再适用。端点改为 `{ messages, stream }` 入参、原样透传厂商 SSE（逐块 `data:` + `data: [DONE]` 终止哨兵），推理内容 / `finish_reason` / `usage` 保持厂商原始形态；厂商选择经 `?providerId=` 查询串透传（OpenAI 协议体不携带该信息）。新增 `shared-services/ai/ai.proxy.server.ts`（请求体 zod 校验 + SSE 编码 + 错误体归一化），`ai.provider.ts` 抽出 `buildOpenAiClient` 并将原始 client 纳入 provider 缓存，新增 `getAiRawClient` 复用同一份缓存；鉴权（`AI_CHAT` 权限）与操作审计链路不变。
   - **演示页接入面替换**：`endpointUrl`/`requestMeta` → `chat`（厂商经查询串拼入 URL），`config.notify` → 顶层 `onNotify` 并补 `onError` 诊断回调；`ClientOnly` + 动态 `import()` 隔离约定不变。
@@ -233,6 +237,8 @@
   - **两类注释已回退，不在清理范围**：① 中途一并删掉的 93 处**类型字段**注释（`/** 是否禁用 */ disabled`、`/** 页面浏览数 */ pageViews`）按「TS 类型从宽」判据全部恢复——类型字段是 IDE 悬浮与新人阅读的第一落点，冗余好过缺失；② `packages/lib/src/ms/index.ts` 声明「源码来自 vercel/ms (v3)」，其 `fmtShort` / `fmtLong` 的上游同名注释恢复，并在文件头注明「实现与注释保持与上游一致，便于后续按版本对齐」，避免后续清理误删。
 
 ### Fix
+
+- **文件管理页标签列不再换行，改为单元格内单行横向滚动 + 溢出 Popover（[infra]）**：标签数量与文案长度都不可控（尺寸 Tag ≈ 91px，用户标签任意长），此前用 `Space wrap` 渲染，超出列宽即折成两行、且第 3 个标签起被折叠为 `+N`（Tooltip 才能看全），行高不齐还看不到全部标签。改为单行容器 + `overflow-x-auto` + 全站统一的 `.scrollbar-thin` 细窄滚动条（Tag 加 `shrink-0` 保持不压缩），标签一个不丢、不再换行；内容被裁掉时另挂 `Popover`（hover / 聚焦，0.3s 延迟）把全部标签平铺换行列出，不必横向拖动也能一眼看全——是否溢出由 `ResizeObserver` 同时观测滚动容器与内容行（`w-max`）判定，内容本就完整时不挂弹层。列宽由档位 150（2~4 字标签）调至 180（尺寸 Tag 91 + 一个双字标签 52 + 间距 4 + 内边距 32），列宽合计 1355 ≤ 预算 1359。可被衍生项目吸收
 
 - **管理端 9 个列表页表格横向溢出（[infra]）**：`Σ列宽 > 容器宽` 时，固定右侧的操作列会盖住中间列，用户既看不到被盖住的列又要横向滚动。按列宽预算逐页重排后实测归零：文件管理 +1301、系统配置 +483、新闻管理 +341、客户端用户 +281、管理员 +191、实体翻译 +141、UI 翻译 +111、角色 +61、AI 厂商 +10（1440×900 实测 `.ant-table-content` 的 `scrollWidth === clientWidth`）。可被衍生项目吸收
 
