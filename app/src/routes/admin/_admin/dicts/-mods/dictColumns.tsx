@@ -5,12 +5,13 @@
 import {
 	actionsWidth,
 	COLUMN_WIDTH,
+	DetailGrid,
 	formatDateTimeValue,
 	PublishSwitchCell,
 	SortOrderCell,
 	TableOperate,
 } from "@fsdx/ui-spa/table";
-import { Descriptions, Tag } from "antd";
+import { Tag } from "antd";
 import { EditorTypes, FieldTranslationDrawer } from "#/components/admin";
 import type { DictItemRecord } from "#/shared-services/dict/dict.server";
 import { isPresetDict } from "./dict.utils";
@@ -26,34 +27,39 @@ const DICT_ITEM_TRANSLATABLE_FIELDS = [
  */
 export function renderDictItemDetailPanel(record: DictItemRecord) {
 	return (
-		<Descriptions
-			size="small"
-			column={2}
+		<DetailGrid
 			items={[
 				{
 					key: "extraType",
 					label: "额外类型",
-					children: <EditorTypes.Preview valueType={record.extraType} />,
+					fieldKey: "extraType",
+					value: <EditorTypes.Preview valueType={record.extraType} />,
 				},
-				{ key: "extra", label: "额外值", children: record.extra || "—" },
+				{
+					key: "extra",
+					label: "额外值",
+					fieldKey: "extra",
+					value: record.extra || null,
+				},
 				{
 					key: "color",
 					label: "颜色",
-					children: record.color ? (
+					fieldKey: "color",
+					value: record.color ? (
 						<Tag color={record.color}>{record.color}</Tag>
-					) : (
-						"—"
-					),
+					) : null,
 				},
 				{
 					key: "createdAt",
 					label: "创建时间",
-					children: formatDateTimeValue(record.createdAt),
+					fieldKey: "createdAt",
+					value: formatDateTimeValue(record.createdAt),
 				},
 				{
 					key: "updatedAt",
 					label: "更新时间",
-					children: formatDateTimeValue(record.updatedAt),
+					fieldKey: "updatedAt",
+					value: formatDateTimeValue(record.updatedAt),
 				},
 			]}
 		/>

@@ -9,9 +9,14 @@ import {
 } from "@ant-design/icons";
 import { downloadFile } from "@fsdx/lib/export";
 import { message } from "@fsdx/ui-spa/antd-static";
-import { COLUMN_WIDTH, ProTable } from "@fsdx/ui-spa/table";
+import {
+	COLUMN_WIDTH,
+	DetailGrid,
+	formatDetailValue,
+	ProTable,
+} from "@fsdx/ui-spa/table";
 import { createFileRoute } from "@tanstack/react-router";
-import { Button, DatePicker, Input, Select, Tag, Tooltip } from "antd";
+import { Button, DatePicker, Input, Select, Tag } from "antd";
 import dayjs from "dayjs";
 import type { ChangeEvent } from "react";
 import { useCallback, useMemo, useState } from "react";
@@ -179,13 +184,6 @@ function EventListPage() {
 		message.success("导出成功");
 	};
 
-	/** 属性值的展示文本：对象转 JSON，空值显示占位符 */
-	const formatValue = (value: unknown): string => {
-		if (value === null || value === undefined) return "-";
-		if (typeof value === "object") return JSON.stringify(value, null, 2);
-		return String(value);
-	};
-
 	const columns = [
 		{
 			title: "事件名称",
@@ -326,43 +324,20 @@ function EventListPage() {
 					columnWidth: 50,
 					rowExpandable: (record: TrackEventRecord) =>
 						Object.keys(record.properties).length > 0,
-					expandedRowRender: (record: TrackEventRecord) => {
-						const entries = Object.entries(record.properties);
-						return (
-							<div className="grid grid-cols-1 gap-2 py-2 pl-12 pr-4 sm:grid-cols-2 xl:grid-cols-3">
-								{entries.map(([key, value]) => {
-									const meta = propertyLabelMap[key];
-									const displayLabel = meta?.label ?? key;
-									const valueStr = formatValue(value);
-									return (
-										<div
-											key={key}
-											className="rounded-lg border border-border bg-background-secondary px-3 py-2"
-										>
-											<div className="mb-1 flex items-center gap-1.5">
-												<span className="text-sm font-medium text-foreground">
-													{displayLabel}
-												</span>
-												{meta && (
-													<Tag
-														className="m-0 text-xs leading-none"
-														color="default"
-													>
-														{key}
-													</Tag>
-												)}
-											</div>
-											<Tooltip title={valueStr} mouseEnterDelay={0.5}>
-												<div className="max-h-16 overflow-hidden text-xs text-muted-foreground break-all font-mono">
-													{valueStr}
-												</div>
-											</Tooltip>
-										</div>
-									);
-								})}
-							</div>
-						);
-					},
+					expandedRowRender: (record: TrackEventRecord) => (
+						<DetailGrid
+							items={Object.entries(record.properties).map(([key, value]) => {
+								const meta = propertyLabelMap[key];
+								return {
+									key,
+									label: meta?.label ?? key,
+									// 无预置元信息时标签即原始键，不再重复展示标识
+									fieldKey: meta ? key : undefined,
+									value: formatDetailValue(value),
+								};
+							})}
+						/>
+					),
 				}}
 			/>
 		</AdminListPage>

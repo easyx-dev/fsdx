@@ -16,13 +16,14 @@ import { formatBytes } from "@fsdx/lib/format-bytes";
 import {
 	actionsWidth,
 	COLUMN_WIDTH,
+	DetailGrid,
 	formatDateTimeValue,
 	StatusTag,
 	type StatusTagOption,
 	TableOperate,
 	type TableOperateMoreItem,
 } from "@fsdx/ui-spa/table";
-import { Button, Descriptions, Space, Tag, Tooltip, Typography } from "antd";
+import { Button, Space, Tag, Tooltip } from "antd";
 import type { FileRecord } from "#/services/file/file.server";
 
 /** 文件状态展示：值与语义色集中在此，避免各列自选颜色 */
@@ -94,30 +95,37 @@ function renderTags(record: FileRecord) {
  */
 export function renderFileDetailPanel(record: FileRecord) {
 	return (
-		<Descriptions
-			size="small"
-			column={2}
+		<DetailGrid
 			items={[
-				{ key: "mimeType", label: "MIME 类型", children: record.mimeType },
+				{
+					key: "mimeType",
+					label: "MIME 类型",
+					fieldKey: "mimeType",
+					value: record.mimeType,
+				},
 				{
 					key: "path",
 					label: "存储路径",
-					children: <Typography.Text copyable>{record.path}</Typography.Text>,
+					fieldKey: "path",
+					value: record.path,
 				},
 				{
 					key: "sha256",
 					label: "SHA256",
-					children: <Typography.Text copyable>{record.sha256}</Typography.Text>,
+					fieldKey: "sha256",
+					value: record.sha256,
 				},
 				{
 					key: "expiredAt",
 					label: "过期时间",
-					children: formatDateTimeValue(record.expiredAt) ?? "—",
+					fieldKey: "expiredAt",
+					value: formatDateTimeValue(record.expiredAt),
 				},
 				{
 					key: "updatedAt",
 					label: "更新时间",
-					children: formatDateTimeValue(record.updatedAt),
+					fieldKey: "updatedAt",
+					value: formatDateTimeValue(record.updatedAt),
 				},
 			]}
 		/>
