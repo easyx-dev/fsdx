@@ -3,7 +3,7 @@
  */
 import { FileOutlined, FolderOutlined } from "@ant-design/icons";
 import { formatBytes } from "@fsdx/lib/format-bytes";
-import { TableOperate } from "@fsdx/ui-spa/table";
+import { actionsWidth, COLUMN_WIDTH, TableOperate } from "@fsdx/ui-spa/table";
 import { Button, Typography } from "antd";
 import type { FsEntry } from "#/services/file-explorer/file-explorer.server";
 import { entryPath, isTextFile } from "./file-explorer.utils";
@@ -21,11 +21,11 @@ interface FileExplorerColumnsOptions {
 export function fileExplorerColumns(options: FileExplorerColumnsOptions) {
 	return [
 		{
-			// 不定宽列：只给最小宽度，多余空间由它吸收（目录/文件名长度差异大）
 			title: "名称",
 			dataIndex: "name",
 			key: "name",
-			minWidth: 320,
+			// 目录 / 文件名长度差异大：取长文本档位（超长省略 + Tooltip）；余宽归操作列
+			width: COLUMN_WIDTH.text,
 			render: (_: unknown, record: FsEntry) => (
 				<div
 					style={{
@@ -76,7 +76,8 @@ export function fileExplorerColumns(options: FileExplorerColumnsOptions) {
 			title: "大小",
 			dataIndex: "size",
 			key: "size",
-			minWidth: 150,
+			// 按内容实算（`1.2 MB` 一类短文本 + 右对齐）
+			width: 110,
 			align: "right" as const,
 			sorter: (a: FsEntry, b: FsEntry) => a.size - b.size,
 			render: (_: unknown, record: FsEntry) => (
@@ -89,7 +90,7 @@ export function fileExplorerColumns(options: FileExplorerColumnsOptions) {
 			title: "修改时间",
 			dataIndex: "mtime",
 			key: "mtime",
-			minWidth: 180,
+			width: COLUMN_WIDTH.time,
 			sorter: (a: FsEntry, b: FsEntry) =>
 				new Date(a.mtime).getTime() - new Date(b.mtime).getTime(),
 			valueType: "dateTimeMinute",
@@ -97,8 +98,11 @@ export function fileExplorerColumns(options: FileExplorerColumnsOptions) {
 		{
 			title: "操作",
 			key: "actions",
-			// 只给最小宽度：按钮由 minWidth 保底，多余空间按内容分摊（auto 布局下不再 fixed）
-			minWidth: 320,
+			fixed: "right" as const,
+			// 4 项（预览 / 下载 / 重命名 / 删除）
+			// 弹性列：余宽归它，宽度为出现横向滚动时的按钮所需宽
+			width: actionsWidth("预览", "下载", "重命名", "删除"),
+			elastic: true,
 			render: (_: unknown, record: FsEntry) => {
 				const isWriteLocked = options.writeProtected;
 

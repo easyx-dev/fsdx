@@ -277,7 +277,6 @@ function ConfigPage() {
 				<ProTable
 					dataSource={filteredConfigs}
 					columns={configColumnsDef}
-					scroll={{ x: 997 }}
 					rowKey="id"
 					pagination={false}
 					locale={{ emptyText: "暂无配置" }}

@@ -5,6 +5,8 @@ import { DownloadOutlined, PlusOutlined } from "@ant-design/icons";
 import { message } from "@fsdx/ui-spa/antd-static";
 import { JsonImportButton } from "@fsdx/ui-spa/json-import-button";
 import {
+	actionsWidth,
+	COLUMN_WIDTH,
 	ProTable,
 	StatusTag,
 	type StatusTagOption,
@@ -215,21 +217,24 @@ function ContentTranslationPage() {
 			title: "翻译值",
 			dataIndex: "value",
 			key: "value",
+			// 弹性列：译文长度不可控，宽度为出现横向滚动时的最小可读宽
+			width: COLUMN_WIDTH.text,
+			elastic: true,
 			ellipsis: true,
 		},
 		{
 			title: "创建时间",
 			dataIndex: "createdAt",
 			key: "createdAt",
-			width: 165,
+			width: COLUMN_WIDTH.time,
 			valueType: "dateTimeMinute",
 		},
 		{
 			title: "操作",
 			key: "actions",
 			fixed: "right" as const,
-			// 操作列固定右侧必须显式声明宽度（2 项操作取 160）
-			width: 170,
+			// 固定右侧列声明宽度：宽度为出现横向滚动时的按钮所需宽
+			width: actionsWidth("编辑", "删除"),
 			render: (_: unknown, record: ContentTranslationRow) =>
 				record.locale === DEFAULT_LOCALE ? (
 					// 默认语言为源语言，值存主表原字段，禁止编辑/删除
@@ -338,7 +343,6 @@ function ContentTranslationPage() {
 				rowKey="id"
 				loading={list.loading}
 				locale={{ emptyText: "暂无翻译" }}
-				scroll={{ x: 1199 }}
 				onChange={list.onTableChange}
 				pagination={list.pagination}
 			/>

@@ -203,7 +203,6 @@ function MessageManagePage() {
 				rowKey="id"
 				loading={list.loading}
 				locale={{ emptyText: "暂无消息" }}
-				scroll={{ x: 1199 }}
 				onChange={list.onTableChange}
 				pagination={list.pagination}
 			/>

@@ -15,6 +15,13 @@ export default defineConfig({
 		env: {
 			DATABASE_URL: "postgres://test:test@localhost:5432/testdb",
 		},
+		// 列工厂等测试经组件桶间接引入编辑器依赖（内部含 CSS 子路径导入），
+		// 需交由 Vite 转换，不能按 Node 外部依赖直载
+		server: {
+			deps: {
+				inline: [/@easyx\//],
+			},
+		},
 		// 路径别名通过 vite.config.ts 的 resolve.tsconfigPaths 继承
 	},
 });

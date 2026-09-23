@@ -6,8 +6,10 @@
  * - 筛选段（titleTrailing）：左起紧贴标题，占满中段，承载搜索 / 状态筛选 / 日期范围等
  * - 操作段（extra）：右对齐，主操作在前、次要操作在后（`ml-auto` 在无筛选段时同样贴右）
  */
+import { TableBudgetProvider } from "@fsdx/ui-spa/table";
 import { Tooltip } from "antd";
 import type { ReactNode } from "react";
+import { TABLE_BUDGET } from "./table-budget";
 
 /** 标题段最大宽度：保证筛选段与操作段在 1440 视口下都有可用空间 */
 const TITLE_MAX_WIDTH = 300;
@@ -76,7 +78,10 @@ export function AdminPageContent({
 				className="scrollbar-thin overflow-auto p-5"
 				style={{ height: "calc(100vh - var(--admin-header-height))" }}
 			>
-				{children}
+				{/* 列宽预算默认按全宽页下发，双栏页由 AdminSplitPanel 覆盖为右栏实宽 */}
+				<TableBudgetProvider value={TABLE_BUDGET.full}>
+					{children}
+				</TableBudgetProvider>
 			</div>
 		</div>
 	);

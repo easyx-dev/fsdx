@@ -3,10 +3,9 @@
  * 选择分组时自动写入 group:* 通配符，选择单个权限时写入具体权限码
  */
 
-import { ProTable } from "@fsdx/ui-spa/table";
+import { type ProColumnType, ProTable } from "@fsdx/ui-spa/table";
 import { Checkbox } from "antd";
 import type { CheckboxChangeEvent } from "antd/es/checkbox";
-import type { ColumnsType } from "antd/es/table";
 import { useMemo } from "react";
 import { ADMIN_PERMISSIONS_BY_GROUP } from "#/permissions/admin-permissions";
 
@@ -78,7 +77,7 @@ export function PermissionSelector({
 		onChange?.(newValue);
 	};
 
-	const columns: ColumnsType<GroupRow> = [
+	const columns: ProColumnType<GroupRow>[] = [
 		{
 			title: "分组",
 			dataIndex: "group",
@@ -100,6 +99,9 @@ export function PermissionSelector({
 		{
 			title: "权限码",
 			dataIndex: "permissions",
+			// 弹性列：权限标签随弹窗宽度换行，宽度为出现横向滚动时的最小可读宽
+			width: 400,
+			elastic: true,
 			render: (perms: readonly PermissionOption[], record) => {
 				const allCodes = perms.map((p) => p.code);
 				const checkedValues = record.isGroupSelected

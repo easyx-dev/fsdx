@@ -4,6 +4,8 @@
  */
 import { CheckOutlined } from "@ant-design/icons";
 import {
+	actionsWidth,
+	COLUMN_WIDTH,
 	StatusTag,
 	type StatusTagOption,
 	TableOperate,
@@ -51,6 +53,9 @@ export function messageInboxColumns(
 			title: "标题",
 			dataIndex: "title",
 			key: "title",
+			// 弹性列：宽度为出现横向滚动时的最小可读宽，大屏余宽归它
+			width: COLUMN_WIDTH.text,
+			elastic: true,
 			ellipsis: true,
 		},
 		{
@@ -75,15 +80,15 @@ export function messageInboxColumns(
 			title: "时间",
 			dataIndex: "createdAt",
 			key: "createdAt",
-			width: 165,
+			width: COLUMN_WIDTH.time,
 			valueType: "dateTimeMinute",
 		},
 		{
 			title: "操作",
 			key: "actions",
 			fixed: "right" as const,
-			// 操作列固定右侧必须显式声明宽度（2 项 → 160）
-			width: 170,
+			// 固定右侧列声明宽度：宽度为出现横向滚动时的按钮所需宽
+			width: actionsWidth("已读", "删除"),
 			render: (_: unknown, record: MessageRecord) => (
 				<TableOperate>
 					{record.status === "unread" && (

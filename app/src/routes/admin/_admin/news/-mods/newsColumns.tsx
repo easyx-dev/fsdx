@@ -3,6 +3,8 @@
  * 封面列放最前；发布状态与排序权重为通用态（单元格内联编辑）；时间列走 ProTable valueType
  */
 import {
+	actionsWidth,
+	COLUMN_WIDTH,
 	ImageCell,
 	PublishSwitchCell,
 	SortOrderCell,
@@ -80,6 +82,9 @@ export function newsColumns(options: NewsColumnsOptions) {
 			title: "标题",
 			dataIndex: "title",
 			key: "title",
+			// 弹性列：标题长度不可控，宽度为出现横向滚动时的最小可读宽
+			width: COLUMN_WIDTH.text,
+			elastic: true,
 			ellipsis: true,
 		},
 		{
@@ -156,8 +161,8 @@ export function newsColumns(options: NewsColumnsOptions) {
 			title: "操作",
 			key: "actions",
 			fixed: "right" as const,
-			// 操作列固定右侧必须显式声明宽度（宽度不足会被挤压导致按钮溢出）
-			width: 240,
+			// 固定右侧列声明宽度：宽度为出现横向滚动时的按钮所需宽
+			width: actionsWidth("编辑", "删除", "翻译"),
 			render: (_: unknown, record: NewsRecord) => (
 				<TableOperate>
 					<TableOperate.Edit

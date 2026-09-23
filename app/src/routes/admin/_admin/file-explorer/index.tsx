@@ -326,9 +326,6 @@ function FileExplorerPage() {
 						</div>
 					),
 				}}
-				// 列宽用 minWidth 表达（需 tableLayout=auto 才生效）：列按内容分配、不低于最小宽度
-				tableLayout="auto"
-				scroll={{ x: 970 }}
 				pagination={false}
 				bordered
 			/>

@@ -402,7 +402,6 @@ function DictsPage() {
 						columns={itemColumns}
 						rowKey="id"
 						loading={list.loading}
-						scroll={{ x: 977 }}
 						locale={{ emptyText: "暂无条目" }}
 						onChange={list.onTableChange}
 						pagination={list.pagination}

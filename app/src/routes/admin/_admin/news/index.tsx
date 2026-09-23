@@ -206,7 +206,6 @@ function NewsListPage() {
 				rowKey="id"
 				loading={list.loading}
 				locale={{ emptyText: "暂无新闻" }}
-				scroll={{ x: 1199 }}
 				onChange={list.onTableChange}
 				pagination={list.pagination}
 			/>

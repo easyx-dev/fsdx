@@ -4,12 +4,15 @@
  */
 import { KeyOutlined } from "@ant-design/icons";
 import {
+	actionsWidth,
+	COLUMN_WIDTH,
 	ImageCell,
 	StatusTag,
 	type StatusTagOption,
 	TableOperate,
 	withDisabledReason,
 } from "@fsdx/ui-spa/table";
+
 import { Button } from "antd";
 import { DictTag } from "#/components/admin";
 import type { ClientUserListItem } from "#/services/client-user/client-user.server";
@@ -47,7 +50,7 @@ export function clientUserColumns(options: ClientUserColumnsOptions) {
 			// 头像列放最前（无序号 / ID / 展开 / 选择列），固定正方形等比缩放
 			title: "头像",
 			key: "avatar",
-			width: 80,
+			width: COLUMN_WIDTH.avatar,
 			render: (_: unknown, record: ClientUserListItem) => (
 				<ImageCell src={record.avatar ?? null} />
 			),
@@ -56,6 +59,7 @@ export function clientUserColumns(options: ClientUserColumnsOptions) {
 			title: "用户名",
 			dataIndex: "username",
 			key: "username",
+			width: COLUMN_WIDTH.shortText,
 			...options.sortProps("username"),
 			ellipsis: true,
 		},
@@ -63,7 +67,7 @@ export function clientUserColumns(options: ClientUserColumnsOptions) {
 			title: "邮箱",
 			dataIndex: "email",
 			key: "email",
-			width: 180,
+			width: COLUMN_WIDTH.shortText,
 			ellipsis: true,
 			...options.sortProps("email"),
 		},
@@ -71,7 +75,7 @@ export function clientUserColumns(options: ClientUserColumnsOptions) {
 			title: "邮箱验证",
 			dataIndex: "emailVerified",
 			key: "emailVerified",
-			width: 90,
+			width: COLUMN_WIDTH.status,
 			render: (value: boolean) => (
 				<StatusTag value={value} options={EMAIL_VERIFIED_OPTIONS} />
 			),
@@ -80,7 +84,7 @@ export function clientUserColumns(options: ClientUserColumnsOptions) {
 			title: "状态",
 			dataIndex: "status",
 			key: "status",
-			width: 100,
+			width: COLUMN_WIDTH.status,
 			render: (value: string) => (
 				<DictTag dictSlug="user_status" value={value} />
 			),
@@ -89,7 +93,7 @@ export function clientUserColumns(options: ClientUserColumnsOptions) {
 			title: "最后登录",
 			dataIndex: "lastLoginAt",
 			key: "lastLoginAt",
-			width: 165,
+			width: COLUMN_WIDTH.time,
 			valueType: "dateTimeMinute",
 			emptyText: "—",
 		},
@@ -97,8 +101,9 @@ export function clientUserColumns(options: ClientUserColumnsOptions) {
 			title: "操作",
 			key: "actions",
 			fixed: "right" as const,
-			// 操作列固定右侧必须显式声明宽度（含「重置密码」四字文案 → 270）
-			width: 270,
+			// 弹性列：宽度为出现横向滚动时的按钮所需宽，大屏余宽归它
+			width: actionsWidth("编辑", "重置密码", "删除"),
+			elastic: true,
 			render: (_: unknown, record: ClientUserListItem) => (
 				<TableOperate>
 					<TableOperate.Edit

@@ -3,6 +3,8 @@
  * 用户类型 / 类型 / 状态统一走 StatusTag，时间列走 ProTable valueType，删除权限置灰
  */
 import {
+	actionsWidth,
+	COLUMN_WIDTH,
 	StatusTag,
 	type StatusTagOption,
 	TableOperate,
@@ -62,6 +64,9 @@ export function messageManageColumns(options: MessageManageColumnsOptions) {
 			title: "标题",
 			dataIndex: "title",
 			key: "title",
+			// 弹性列：宽度为出现横向滚动时的最小可读宽，大屏余宽归它
+			width: COLUMN_WIDTH.text,
+			elastic: true,
 			ellipsis: true,
 		},
 		{
@@ -93,15 +98,15 @@ export function messageManageColumns(options: MessageManageColumnsOptions) {
 			title: "时间",
 			dataIndex: "createdAt",
 			key: "createdAt",
-			width: 165,
+			width: COLUMN_WIDTH.time,
 			valueType: "dateTimeMinute",
 		},
 		{
 			title: "操作",
 			key: "actions",
 			fixed: "right" as const,
-			// 操作列固定右侧必须显式声明宽度（1 项 → 100）
-			width: 100,
+			// 固定右侧列声明宽度：宽度为出现横向滚动时的按钮所需宽
+			width: actionsWidth("删除"),
 			render: (_: unknown, record: MessageWithUser) => (
 				<TableOperate>
 					<TableOperate.Delete

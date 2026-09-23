@@ -5,6 +5,8 @@
 import { CheckCircleOutlined, PlusOutlined } from "@ant-design/icons";
 import { message } from "@fsdx/ui-spa/antd-static";
 import {
+	actionsWidth,
+	COLUMN_WIDTH,
 	ProTable,
 	StatusTag,
 	type StatusTagOption,
@@ -128,20 +130,22 @@ function AiProvidersPage() {
 			title: "厂商 ID",
 			dataIndex: "id",
 			key: "id",
-			width: 120,
+			width: COLUMN_WIDTH.id,
 			ellipsis: true,
 		},
 		{
 			title: "名称",
 			dataIndex: "name",
 			key: "name",
-			width: 150,
+			width: COLUMN_WIDTH.shortText,
 			ellipsis: true,
 		},
 		{
 			title: "API 基础地址",
 			dataIndex: "baseUrl",
 			key: "baseUrl",
+			// 地址长度不可控，按内容取宽并省略 + Tooltip
+			width: 220,
 			render: (val: string) => <Text className="text-xs">{val}</Text>,
 			ellipsis: true,
 		},
@@ -166,7 +170,7 @@ function AiProvidersPage() {
 			title: "默认",
 			dataIndex: "default",
 			key: "default",
-			width: 80,
+			width: COLUMN_WIDTH.status,
 			render: (val: boolean) => (
 				<StatusTag value={String(!!val)} options={DEFAULT_OPTIONS} />
 			),
@@ -175,8 +179,9 @@ function AiProvidersPage() {
 			title: "操作",
 			key: "actions",
 			fixed: "right" as const,
-			// 操作列固定右侧必须显式声明宽度（含「设为默认」四字文案 → 270）
-			width: 270,
+			// 弹性列：宽度为出现横向滚动时的按钮所需宽，大屏余宽归它
+			width: actionsWidth("编辑", "设为默认", "删除"),
+			elastic: true,
 			render: (_: unknown, record: AiProviderView) => (
 				<TableOperate>
 					<TableOperate.Edit
@@ -237,7 +242,6 @@ function AiProvidersPage() {
 				rowKey="id"
 				columns={columns}
 				dataSource={providers}
-				scroll={{ x: 1199 }}
 				pagination={false}
 				locale={{ emptyText: "尚未配置 AI 厂商，点击右上角「新增厂商」开始" }}
 			/>

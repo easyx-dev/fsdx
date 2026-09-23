@@ -14,6 +14,8 @@ import {
 import { isProcessableMimeType } from "@easyx/image-toolkit";
 import { formatBytes } from "@fsdx/lib/format-bytes";
 import {
+	actionsWidth,
+	COLUMN_WIDTH,
 	formatDateTimeValue,
 	StatusTag,
 	type StatusTagOption,
@@ -166,10 +168,11 @@ export function createFilesColumns(
 ) {
 	return [
 		{
-			// 主内容列：唯一吸收剩余宽度的列，其余列一律定宽
 			title: "文件名",
 			dataIndex: "originalName",
 			key: "originalName",
+			// 文件名长度不可控：取长文本档位，超长省略 + Tooltip；余宽归操作列
+			width: COLUMN_WIDTH.text,
 			ellipsis: true,
 		},
 		{
@@ -191,7 +194,7 @@ export function createFilesColumns(
 		{
 			title: "标签",
 			key: "tags",
-			width: 170,
+			width: COLUMN_WIDTH.tag,
 			render: (_: unknown, record: FileRecord) => renderTags(record),
 		},
 		{
@@ -227,7 +230,7 @@ export function createFilesColumns(
 			title: "上传时间",
 			dataIndex: "createdAt",
 			key: "createdAt",
-			width: 165,
+			width: COLUMN_WIDTH.time,
 			sorter: true,
 			valueType: "dateTimeMinute",
 		},
@@ -235,8 +238,10 @@ export function createFilesColumns(
 			title: "操作",
 			key: "actions",
 			fixed: "right" as const,
-			// 3 项（下载 / 删除 / 更多）：低频的标签编辑与图片类操作收进「更多」，依估算取 240
-			width: 240,
+			// 3 项（下载 / 删除 / 更多）：低频的标签编辑与图片类操作收进「更多」
+			// 弹性列：余宽归它，宽度为出现横向滚动时的按钮所需宽
+			width: actionsWidth("下载", "删除", "更多"),
+			elastic: true,
 			render: (_: unknown, record: FileRecord) => {
 				const moreItems = buildMoreItems(record, handlers);
 				return (

@@ -5,9 +5,11 @@
  * 分组概览**；单纯分类筛选用页头 Select。左栏与右侧表格采用同一套视觉逻辑——
  * 灰底标题行（与表头同色）+ 白底内容 + 同色边框，两者读作一对。
  * 左栏固定高度并吸顶，列表自身滚动：右栏内容（如不分页的长表）滚动时左栏不跟着滚走。
- * 列宽预算按右栏实宽算：1199 − 左栏宽 − 间距 20。
+ * 右栏列宽预算按实宽下发（全宽 − 左栏宽 − 栏间距），见 table-budget。
  */
+import { TableBudgetProvider } from "@fsdx/ui-spa/table";
 import type { ReactNode } from "react";
+import { splitPanelBudget } from "./table-budget";
 
 /** 左栏宽度档位：分组概览 180 / 实体列表 200 */
 export const SPLIT_PANEL_WIDTH = {
@@ -116,7 +118,12 @@ export function AdminSplitPanel({
 				{/* 列表超出固定高度时自身滚动，不推动右栏 */}
 				<div className="min-h-0 flex-1 overflow-auto">{side}</div>
 			</div>
-			<div className="min-w-0 flex-1">{children}</div>
+			{/* 右栏宽度随左栏档位变化，列宽预算按实宽下发（见 table-budget） */}
+			<div className="min-w-0 flex-1">
+				<TableBudgetProvider value={splitPanelBudget(sideWidth)}>
+					{children}
+				</TableBudgetProvider>
+			</div>
 		</div>
 	);
 }

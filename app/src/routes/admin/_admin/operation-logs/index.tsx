@@ -2,7 +2,7 @@
  * 操作日志查询页面：按模块、动作、关键词与日期范围检索管理员操作审计记录
  * 筛选为「点查询才请求」模式，输入项仅维护草稿条件
  */
-import { ProTable } from "@fsdx/ui-spa/table";
+import { COLUMN_WIDTH, ProTable } from "@fsdx/ui-spa/table";
 import { createFileRoute } from "@tanstack/react-router";
 import { DatePicker, Input, Select, Tag } from "antd";
 import type { Dayjs } from "dayjs";
@@ -143,7 +143,7 @@ function OperationLogsPage() {
 			title: "时间",
 			dataIndex: "createdAt",
 			key: "createdAt",
-			width: 165,
+			width: COLUMN_WIDTH.time,
 			valueType: "dateTimeMinute" as const,
 			// 服务层排序白名单仅支持 createdAt
 			...list.sortProps("createdAt"),
@@ -181,6 +181,9 @@ function OperationLogsPage() {
 			title: "目标",
 			dataIndex: "targetName",
 			key: "targetName",
+			// 弹性列：目标名长度不可控，宽度为出现横向滚动时的最小可读宽
+			width: COLUMN_WIDTH.text,
+			elastic: true,
 			ellipsis: true,
 			render: (value: string | null) => value ?? "—",
 		},
@@ -236,7 +239,6 @@ function OperationLogsPage() {
 				rowKey="id"
 				loading={list.loading}
 				locale={{ emptyText: "暂无操作日志" }}
-				scroll={{ x: 1199 }}
 				onChange={list.onTableChange}
 				pagination={list.pagination}
 				expandable={{

@@ -3,7 +3,12 @@
  * 筛选为「点查询才请求」模式，输入框仅维护草稿条件
  */
 import { DownloadOutlined } from "@ant-design/icons";
-import { ProTable, StatusTag, type StatusTagOption } from "@fsdx/ui-spa/table";
+import {
+	COLUMN_WIDTH,
+	ProTable,
+	StatusTag,
+	type StatusTagOption,
+} from "@fsdx/ui-spa/table";
 import { createFileRoute } from "@tanstack/react-router";
 import { DatePicker, Input, Select, Space, Tag, Tooltip } from "antd";
 import type { Dayjs } from "dayjs";
@@ -121,14 +126,14 @@ function LogsPage() {
 			title: "时间",
 			dataIndex: "time",
 			key: "time",
-			width: 165,
+			width: COLUMN_WIDTH.time,
 			valueType: "dateTimeMinute" as const,
 		},
 		{
 			title: "级别",
 			dataIndex: "level",
 			key: "level",
-			width: 90,
+			width: COLUMN_WIDTH.status,
 			render: (value: string) => (
 				<StatusTag value={value} options={LEVEL_TAG_OPTIONS} />
 			),
@@ -137,6 +142,9 @@ function LogsPage() {
 			title: "消息内容",
 			dataIndex: "msg",
 			key: "msg",
+			// 弹性列：宽度为出现横向滚动时的最小可读宽，大屏余宽归它
+			width: COLUMN_WIDTH.text,
+			elastic: true,
 			ellipsis: true,
 			render: (msg: string | undefined) => msg ?? "",
 		},
@@ -212,7 +220,6 @@ function LogsPage() {
 				}
 				loading={list.loading}
 				locale={{ emptyText: "暂无日志" }}
-				scroll={{ x: 1199 }}
 				onChange={list.onTableChange}
 				pagination={list.pagination}
 				expandable={{

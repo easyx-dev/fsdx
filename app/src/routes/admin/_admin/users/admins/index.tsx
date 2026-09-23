@@ -217,7 +217,6 @@ function AdminsPage() {
 				rowKey="id"
 				loading={list.loading}
 				locale={{ emptyText: "暂无管理员" }}
-				scroll={{ x: 1199 }}
 				onChange={list.onTableChange}
 				pagination={list.pagination}
 			/>

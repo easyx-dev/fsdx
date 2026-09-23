@@ -3,6 +3,7 @@
  */
 import { StyleProvider } from "@ant-design/cssinjs";
 import { AntdStaticBridge, message } from "@fsdx/ui-spa/antd-static";
+import { enableColumnBudgetWarning } from "@fsdx/ui-spa/table";
 import { useThemeMode } from "@fsdx/ui-ssr/theme";
 import { useLocation } from "@tanstack/react-router";
 import { App, theme as antdTheme, ConfigProvider } from "antd";
@@ -14,6 +15,11 @@ import { registerSfnNotifier } from "#/utils/sfn-error";
 import { AdminAuthProvider } from "./AdminAuthProvider";
 import { AdminLayout } from "./AdminLayout";
 import { AdminThemeContext } from "./admin-theme";
+
+// 开发期开启列宽预算校验：列宽合计超预算 / 弹性列不唯一 / 非弹性列缺 width 时在控制台提示
+if (import.meta.env.DEV) {
+	enableColumnBudgetWarning();
+}
 
 export function AdminProvider({ children }: { children: React.ReactNode }) {
 	const location = useLocation();

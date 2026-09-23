@@ -4,6 +4,8 @@
 import { PlusOutlined } from "@ant-design/icons";
 import { message } from "@fsdx/ui-spa/antd-static";
 import {
+	actionsWidth,
+	COLUMN_WIDTH,
 	ProTable,
 	StatusTag,
 	type StatusTagOption,
@@ -118,33 +120,37 @@ function PresetEventsPage() {
 			title: "事件标识",
 			dataIndex: "name",
 			key: "name",
-			width: 150,
+			width: COLUMN_WIDTH.id,
 			render: (v: string) => <code className="text-xs">{v}</code>,
 		},
 		{
 			title: "显示名称",
 			dataIndex: "label",
 			key: "label",
-			width: 150,
+			// 按内容实算（2~4 字名称）
+			width: 120,
 		},
 		{
 			title: "分类",
 			dataIndex: "category",
 			key: "category",
-			width: 120,
+			// 按内容实算（2~5 字标签）
+			width: 110,
 			render: (v: string) => <Tag>{v}</Tag>,
 		},
 		{
 			title: "描述",
 			dataIndex: "description",
 			key: "description",
+			// 次要长文本：受预算限制取 200，靠 ellipsis + Tooltip 兜住全文
+			width: 200,
 			ellipsis: true,
 		},
 		{
 			title: "类型",
 			dataIndex: "isPreset",
 			key: "isPreset",
-			width: 100,
+			width: COLUMN_WIDTH.status,
 			render: (v: boolean) => (
 				<StatusTag value={v} options={META_SOURCE_OPTIONS} />
 			),
@@ -153,22 +159,23 @@ function PresetEventsPage() {
 			title: "创建时间",
 			dataIndex: "createdAt",
 			key: "createdAt",
-			width: 165,
+			width: COLUMN_WIDTH.time,
 			valueType: "dateTimeMinute" as const,
 		},
 		{
 			title: "更新时间",
 			dataIndex: "updatedAt",
 			key: "updatedAt",
-			width: 165,
+			width: COLUMN_WIDTH.time,
 			valueType: "dateTimeMinute" as const,
 		},
 		{
 			title: "操作",
 			key: "actions",
 			fixed: "right" as const,
-			// 固定右侧列必须显式声明宽度
-			width: 160,
+			// 弹性列：宽度为出现横向滚动时的按钮所需宽，大屏余宽归它
+			width: actionsWidth("编辑", "删除"),
+			elastic: true,
 			render: (_: unknown, record: PresetEventRecord) => (
 				<TableOperate>
 					<TableOperate.Edit onClick={() => handleEdit(record)} />
@@ -197,7 +204,6 @@ function PresetEventsPage() {
 				columns={columns}
 				dataSource={events}
 				rowKey="name"
-				scroll={{ x: 1199 }}
 				locale={{ emptyText: "暂无元事件" }}
 			/>
 

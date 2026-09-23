@@ -3,6 +3,8 @@
  * 排序权重 / 启用状态为通用态（单元格内联编辑）；时间列走 ProTable valueType；预置字典条目禁用删除
  */
 import {
+	actionsWidth,
+	COLUMN_WIDTH,
 	formatDateTimeValue,
 	PublishSwitchCell,
 	SortOrderCell,
@@ -87,17 +89,19 @@ export function dictItemColumns(handlers: DictItemColumnsHandlers) {
 	const { permissions } = handlers;
 	return [
 		{
-			// 定宽 300：标签是字典条目的标识，长度可控，不再吸收剩余宽度
+			// 标识类主列：标签长度可控，定宽（超长标签单行省略，悬停看全串）
 			title: "标签",
 			dataIndex: "label",
 			key: "label",
-			width: 300,
+			width: 240,
 			ellipsis: true,
 		},
 		{
 			title: "值",
 			dataIndex: "value",
 			key: "value",
+			// 值长度不可控：取长文本档位，超长省略 + Tooltip；余宽归操作列
+			width: COLUMN_WIDTH.text,
 			render: (val: string) => <code className="text-xs">{val}</code>,
 			ellipsis: true,
 		},
@@ -135,8 +139,9 @@ export function dictItemColumns(handlers: DictItemColumnsHandlers) {
 			title: "操作",
 			key: "actions",
 			fixed: "right" as const,
-			// 操作列固定右侧必须显式声明宽度（3 项 → 240）
-			width: 240,
+			// 弹性列：余宽归它，宽度为出现横向滚动时的按钮所需宽
+			width: actionsWidth("编辑", "删除", "翻译"),
+			elastic: true,
 			render: (_: unknown, record: DictItemRecord) => (
 				<TableOperate>
 					<TableOperate.Edit

@@ -158,6 +158,8 @@ function ProTableDemoPage() {
 				dataSource={MOCK_DATA}
 				rowKey="id"
 				pagination={false}
+				// 演示页：8 列合计超出列表页预算，且不追求弹性列，显式关闭列宽校验
+				budget={null}
 			/>
 		</AdminPageContent>
 	);

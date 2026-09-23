@@ -9,7 +9,7 @@ import {
 } from "@ant-design/icons";
 import { downloadFile } from "@fsdx/lib/export";
 import { message } from "@fsdx/ui-spa/antd-static";
-import { ProTable } from "@fsdx/ui-spa/table";
+import { COLUMN_WIDTH, ProTable } from "@fsdx/ui-spa/table";
 import { createFileRoute } from "@tanstack/react-router";
 import { Button, DatePicker, Input, Select, Tag, Tooltip } from "antd";
 import dayjs from "dayjs";
@@ -228,6 +228,9 @@ function EventListPage() {
 			title: "属性",
 			dataIndex: "properties",
 			key: "properties",
+			// 弹性列：属性串长度不可控，宽度为出现横向滚动时的最小可读宽
+			width: COLUMN_WIDTH.text,
+			elastic: true,
 			ellipsis: true,
 			render: (value: Record<string, unknown>) => JSON.stringify(value),
 		},
@@ -235,7 +238,7 @@ function EventListPage() {
 			title: "触发时间",
 			dataIndex: "time",
 			key: "time",
-			width: 165,
+			width: COLUMN_WIDTH.time,
 			valueType: "dateTimeMinute" as const,
 			// 服务层排序白名单仅支持 time
 			...list.sortProps("time"),
@@ -244,7 +247,7 @@ function EventListPage() {
 			title: "接收时间",
 			dataIndex: "createdAt",
 			key: "createdAt",
-			width: 165,
+			width: COLUMN_WIDTH.time,
 			valueType: "dateTimeMinute" as const,
 		},
 	];
@@ -316,7 +319,6 @@ function EventListPage() {
 				dataSource={list.data.records}
 				rowKey="id"
 				loading={list.loading}
-				scroll={{ x: 1199 }}
 				onChange={list.onTableChange}
 				pagination={list.pagination}
 				locale={{ emptyText: "暂无事件数据" }}

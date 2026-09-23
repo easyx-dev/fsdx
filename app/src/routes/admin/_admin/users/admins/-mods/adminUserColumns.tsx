@@ -1,9 +1,12 @@
 /**
  * 管理员表格列定义
  * 头像列放最前（ImageCell）；状态列跟随字典（DictTag）；时间列统一到分钟
+ * 宽度：各列取档位；用户名 / 邮箱 属内容可控的短文本，操作列作弹性列吸收大屏余宽
  */
 import { KeyOutlined } from "@ant-design/icons";
 import {
+	actionsWidth,
+	COLUMN_WIDTH,
 	ImageCell,
 	TableOperate,
 	withDisabledReason,
@@ -39,7 +42,7 @@ export function adminUserColumns(options: AdminUserColumnsOptions) {
 			// 头像列放最前（无序号 / ID / 展开 / 选择列），固定正方形等比缩放
 			title: "头像",
 			key: "avatar",
-			width: 80,
+			width: COLUMN_WIDTH.avatar,
 			render: (_: unknown, record: AdminUserListItem) => (
 				<ImageCell src={record.avatar ?? null} />
 			),
@@ -48,6 +51,7 @@ export function adminUserColumns(options: AdminUserColumnsOptions) {
 			title: "用户名",
 			dataIndex: "username",
 			key: "username",
+			width: COLUMN_WIDTH.shortText,
 			...options.sortProps("username"),
 			ellipsis: true,
 		},
@@ -55,7 +59,7 @@ export function adminUserColumns(options: AdminUserColumnsOptions) {
 			title: "邮箱",
 			dataIndex: "email",
 			key: "email",
-			width: 180,
+			width: COLUMN_WIDTH.shortText,
 			ellipsis: true,
 			...options.sortProps("email"),
 		},
@@ -63,7 +67,7 @@ export function adminUserColumns(options: AdminUserColumnsOptions) {
 			title: "角色",
 			dataIndex: "roleNames",
 			key: "roleNames",
-			width: 160,
+			width: COLUMN_WIDTH.tag,
 			render: (_: unknown, record: AdminUserListItem) =>
 				record.isRoot ? (
 					<Tag color="red">超级管理员</Tag>
@@ -85,7 +89,7 @@ export function adminUserColumns(options: AdminUserColumnsOptions) {
 			title: "状态",
 			dataIndex: "status",
 			key: "status",
-			width: 100,
+			width: COLUMN_WIDTH.status,
 			render: (value: string) => (
 				<DictTag dictSlug="user_status" value={value} />
 			),
@@ -94,7 +98,7 @@ export function adminUserColumns(options: AdminUserColumnsOptions) {
 			title: "最后登录",
 			dataIndex: "lastLoginAt",
 			key: "lastLoginAt",
-			width: 165,
+			width: COLUMN_WIDTH.time,
 			...options.sortProps("lastLoginAt"),
 			valueType: "dateTimeMinute",
 			emptyText: "—",
@@ -103,8 +107,9 @@ export function adminUserColumns(options: AdminUserColumnsOptions) {
 			title: "操作",
 			key: "actions",
 			fixed: "right" as const,
-			// 操作列固定右侧必须显式声明宽度（含「重置密码」四字文案 → 270）
-			width: 270,
+			// 弹性列：宽度为出现横向滚动时的按钮所需宽，大屏余宽归它
+			width: actionsWidth("编辑", "重置密码", "删除"),
+			elastic: true,
 			render: (_: unknown, record: AdminUserListItem) => (
 				<TableOperate>
 					<TableOperate.Edit

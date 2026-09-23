@@ -3,7 +3,8 @@
  * 权限标签只读展示；时间列走 ProTable valueType（列表统一到分钟）
  */
 import { PermissionTags } from "@fsdx/ui-spa/permission-tags";
-import { TableOperate } from "@fsdx/ui-spa/table";
+import { actionsWidth, COLUMN_WIDTH, TableOperate } from "@fsdx/ui-spa/table";
+
 import { ADMIN_PERMISSION_META } from "#/permissions/admin-permissions";
 import type { AdminRoleRecord } from "#/services/admin-role/admin-role.server";
 import type { SortProps } from "#/utils/use-list-query";
@@ -32,13 +33,14 @@ export function adminRoleColumns(options: AdminRoleColumnsOptions) {
 			title: "角色名称",
 			dataIndex: "name",
 			key: "name",
+			width: COLUMN_WIDTH.shortText,
 			...options.sortProps("name"),
 		},
 		{
 			title: "标识",
 			dataIndex: "slug",
 			key: "slug",
-			width: 180,
+			width: COLUMN_WIDTH.shortText,
 			...options.sortProps("slug"),
 			render: (v: string) => <code className="text-xs">{v}</code>,
 		},
@@ -70,8 +72,9 @@ export function adminRoleColumns(options: AdminRoleColumnsOptions) {
 			title: "操作",
 			key: "actions",
 			fixed: "right" as const,
-			// 操作列固定右侧必须显式声明宽度（2 项操作 160）
-			width: 170,
+			// 弹性列：宽度为出现横向滚动时的按钮所需宽，大屏余宽归它
+			width: actionsWidth("编辑", "删除"),
+			elastic: true,
 			render: (_: unknown, record: AdminRoleRecord) => (
 				<TableOperate>
 					<TableOperate.Edit

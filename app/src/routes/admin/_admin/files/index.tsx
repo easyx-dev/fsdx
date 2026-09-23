@@ -239,7 +239,6 @@ function FilesPage() {
 				rowKey="id"
 				loading={list.loading}
 				locale={{ emptyText: "暂无文件" }}
-				scroll={{ x: 1199 }}
 				onChange={list.onTableChange}
 				pagination={list.pagination}
 				// 列表放不下的内容元信息（MIME / 路径 / 哈希 / 过期与更新时间）收进展开面板

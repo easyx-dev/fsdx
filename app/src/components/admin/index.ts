@@ -25,3 +25,4 @@ export * from "./analytics";
 export * from "./forms";
 export { NAV_GROUPS } from "./nav-config";
 export * from "./stores";
+export { splitPanelBudget, TABLE_BUDGET } from "./table-budget";
