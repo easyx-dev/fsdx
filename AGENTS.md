@@ -193,14 +193,16 @@ packages/
 ### 表格操作列
 
 - 所有管理端表格的操作列**必须**使用 `TableOperate` 容器包装（`@fsdx/ui-spa/table`），子组件 `Edit` / `Delete` / `Link` / `More` / `Custom`；按钮统一「图标 + 文字」风格
-- **项数 ≤ 4**：低频动作（元数据编辑、图片编辑等）收进 `TableOperate.More`；操作列**必须**显式声明 `width`，按实际文案估算（档位见 admin-design skill）
+- **项数 ≤ 4**：低频动作（元数据编辑、图片编辑等）收进 `TableOperate.More`；操作列**必须**显式声明 `width`，用 `actionsWidth("编辑", "删除")` 按文案实算（不要写死数字），并默认标记 `elastic: true` 作余宽去处（档位与公式见 admin-design skill §3.4）
 - `TableOperate.Delete` 内置 `Popconfirm`（文案 `"确定删除{recordName}？"`），**不自行吞错**：`onConfirm` 交调用方 `sfnUnwrap` / `callSfn`
 - **无权限时置灰并说明原因**：传 `disabled` + `disabledReason`（如「无『编辑角色』权限」），不要隐藏按钮；服务端 `adminPermGuard` 仍是唯一权威
 - **通用态不进操作列**：上架状态用 `PublishSwitchCell`、排序权重用 `SortOrderCell`，在单元格内直接修改（单字段 SFn + 审计）
 
 ### 表格列规范
 
-- **列宽预算（硬规则）**：`Σ列宽 ≤ 1199`（1440 视口），**页面不得出现横向滚动**；唯一的**主内容列**吸收剩余宽度，其余列一律显式 `width`；超出预算按「详情性长文本 → 行展开、次要时间列 → 删、操作列项数 → 更多」裁剪
+- **列宽模型（硬规则）**：每列显式 `width` + **恰好一列 `elastic: true`**（默认操作列，确有长文本主列时才让位给它）；`scroll.x` 由 ProTable 自动推导为各列宽度之和，**页面不写 `scroll.x`**、不写 `tableLayout="auto"`、不用 `minWidth`。大屏余宽归弹性列、小屏（容器窄于 `scroll.x`）表格内滚动且各列等于声明宽
+- **列宽预算（硬规则）**：`Σ列宽 ≤ 该表预算`（参考视口 1600：全宽 1359 / 双栏 1157、1137）；**长文本列（标题 / 值 / 文件名 / 路径）宽 ≥ 340**（可读下限，优先于「1440 下不滚动」）；超出按「详情性长文本 → 行展开、次要时间列 → 删、操作列项数 → 更多、低价值列 → 删」裁剪，**不许压档位凑数**
+- **档位与校验**：档位列引 `@fsdx/ui-spa/table` 的 `COLUMN_WIDTH.*`（时间 165 / 状态 100 / 排序 115 / 展开 50 …），其余按「最长文案宽 + 32」并注明依据；开发期 ProTable 会对超预算 / 弹性列不唯一 / 缺 width 告警，列工厂另由 `app/src/routes/admin/_admin/__tests__/column-budget.test.ts` 守门
 - 所有可长文本列**必须 `ellipsis`**：无省略的长文本会顶出列宽、产生横向滚动条
 - **图片 / 封面 / 缩略图列放表格最前**（序号、ID、展开、选择列除外），统一用 `ImageCell`；固定正方形（默认 48×48）+ `objectFit: contain`，列宽取 `size + 32`（默认 80），空值渲染 `—`
 - **时间列**用 ProTable 的 `valueType: "dateTime"` / `"dateTimeMinute"`，禁止各页手写 `dayjs().format`；**可空列传 `emptyText: "—"`**

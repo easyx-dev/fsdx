@@ -669,7 +669,9 @@ export function ProductForm({
 
 ### 列工厂（`-mods/<moduleName>Columns.tsx`）
 
-创建 `src/routes/admin/_admin/<module-name>/-mods/<moduleName>Columns.tsx`。列定义独立成工厂：通用态（排序权重 / 上架状态）在单元格内联编辑，操作列用 `TableOperate` 且**显式声明 `width`**。
+创建 `src/routes/admin/_admin/<module-name>/-mods/<moduleName>Columns.tsx`。列定义独立成工厂：通用态（排序权重 / 上架状态）在单元格内联编辑，操作列用 `TableOperate`。
+
+**列宽规则**（详见 [admin-design skill §3](../admin-design/SKILL.md)）：每列显式 `width` + **恰好一列 `elastic: true`**（默认操作列）+ `Σ列宽 ≤ 预算`（参考视口 1600：全宽 1359）。档位列引 `COLUMN_WIDTH.*`，操作列用 `actionsWidth(...)` 按文案实算，其余按「最长文案宽 + 32」并注释依据；`scroll.x` 由 ProTable 推导，**页面不写**。列工厂建好后登记进 `app/src/routes/admin/_admin/__tests__/column-budget.test.ts` 的 CASES，即纳入 CI 守门。
 
 ```tsx
 /**
@@ -677,6 +679,8 @@ export function ProductForm({
  * 通用态（排序权重 / 上架状态）在单元格内联编辑；时间列走 ProTable valueType
  */
 import {
+  actionsWidth,
+  COLUMN_WIDTH,
   PublishSwitchCell,
   SortOrderCell,
   StatusTag,
@@ -721,7 +725,7 @@ const NO_DELETE_PERMISSION = "无「删除产品」权限";
 export function productColumns(options: ProductColumnsOptions) {
   const { permissions } = options;
   return [
-    { title: "名称", dataIndex: "name", key: "name", width: 200 },
+    { title: "名称", dataIndex: "name", key: "name", width: COLUMN_WIDTH.shortText },
     {
       title: "描述",
       dataIndex: "description",
@@ -732,7 +736,7 @@ export function productColumns(options: ProductColumnsOptions) {
     {
       title: "状态",
       key: "status",
-      width: 110,
+      width: COLUMN_WIDTH.status,
       render: (_: unknown, record: ProductRecord) => (
         <StatusTag value={record.status} options={PRODUCT_STATUS_OPTIONS} />
       ),
@@ -742,7 +746,7 @@ export function productColumns(options: ProductColumnsOptions) {
       title: "上架",
       dataIndex: "isPublished",
       key: "isPublished",
-      width: 120,
+      width: COLUMN_WIDTH.toggle,
       render: (_: unknown, record: ProductRecord) => (
         <PublishSwitchCell
           published={record.isPublished}
@@ -758,7 +762,7 @@ export function productColumns(options: ProductColumnsOptions) {
       title: "排序",
       dataIndex: "sortOrder",
       key: "sortOrder",
-      width: 110,
+      width: COLUMN_WIDTH.sortOrder,
       ...options.sortProps("sortOrder"),
       render: (_: unknown, record: ProductRecord) => (
         <SortOrderCell
@@ -773,7 +777,7 @@ export function productColumns(options: ProductColumnsOptions) {
       title: "创建时间",
       dataIndex: "createdAt",
       key: "createdAt",
-      width: 150,
+      width: COLUMN_WIDTH.time,
       ...options.sortProps("createdAt"),
       valueType: "dateTimeMinute",
     },
@@ -781,8 +785,9 @@ export function productColumns(options: ProductColumnsOptions) {
       title: "操作",
       key: "actions",
       fixed: "right" as const,
-      // 操作列固定右侧必须显式声明宽度（宽度不足会被挤压导致按钮溢出）
-      width: 160,
+      // 弹性列（默认余宽去处）：宽度为出现横向滚动时的按钮所需宽
+      width: actionsWidth("编辑", "删除"),
+      elastic: true,
       render: (_: unknown, record: ProductRecord) => (
         <TableOperate>
           <TableOperate.Edit
@@ -992,7 +997,7 @@ function ProductListPage() {
 - 筛选变更走 `list.applyFilters(...)`（自动回第 1 页）；增删改 / 内联更新后走 `list.reload()`
 - 主操作放 `AdminListPage` 的 `extra`，筛选控件放 `filters`（页头三段式，无独立筛选行），页面无手写 `AdminPageContent` 间距结构
 - 操作列用 `TableOperate` 容器组件（`Edit` / `Delete` / `Link` / `Custom`），无权限传 `disabled` + `disabledReason`
-- 列宽合计 ≤ 1199 且无横向滚动；主内容列吸收剩余宽度，其余列显式 `width`，长文本列必须 `ellipsis`
+- 列宽合计 ≤ 预算（1359）且 1600 视口下无横向滚动；长文本列宽 ≥ 340 且必须 `ellipsis`，余宽归弹性列
 
 ### 新建 / 编辑：列表页内抽屉
 
@@ -1076,7 +1081,7 @@ const [submitting, setSubmitting] = useState(false);
 1. 页面用 `AdminListPage`，主操作放 `extra`、筛选放 `filters`（页头三段式），不手写 `AdminPageContent` 结构
 2. 列表 schema 以 `listSchema` 为基座 `.extend({...})` 命名 `<模块>ListSchema`；`pageSize` 必须透传到服务层，禁止硬编码
 3. 分页与排序统一由 `Table.onChange`（`list.onTableChange`）驱动，**禁止再配 `pagination.onChange`**；不写 `useEffect` 自动拉取列表，首屏交给路由 `loader`
-4. 操作列用 `TableOperate`（低频项进 `More`）并**显式声明 `width`**；列宽合计 ≤ 1199、无横向滚动
+4. 操作列用 `TableOperate`（低频项进 `More`）且宽度取 `actionsWidth(...)`、标 `elastic: true`；每列定宽、合计 ≤ 预算、无横向滚动（开发期控制台无「列宽预算」告警）
 5. 无权限的操作传 `disabled` + `disabledReason`，不隐藏按钮；服务端 `adminPermGuard` 仍是唯一权威
 6. 错误出口唯一：SFn 调用交 `callSfn` / `sfnUnwrap`，操作列与表单内不自行 `message.error` 捕获
 7. 通用态用 `SortOrderCell` / `PublishSwitchCell` / `StatusTag`（多值枚举可就地切换用 `Select variant="borderless"`），改进走**单字段 SFn** + `logCrud`；图片列用 `ImageCell` 放表格最前；时间列用 `valueType: "dateTimeMinute"`（或 `"dateTime"`），不手写 `dayjs().format`
@@ -1195,6 +1200,6 @@ import { FieldTranslationDrawer } from "#/components/admin";
 </TableOperate>
 ```
 
-> 操作数上限 4：原 2 项 + 字段翻译 = 3 项，操作列 `width` 取 `240`。
+> 操作数上限 4：原 2 项 + 字段翻译 = 3 项，操作列 `width: actionsWidth("编辑", "删除", "翻译")`（240）；若该列已是弹性列则宽度不变、仍作滚动时的宽度。
 
 `FieldTranslationDrawer` 固定使用图标触发模式（`TranslationOutlined`，蓝紫渐变，Tooltip "国际化"），无需传递 `trigger` 参数。

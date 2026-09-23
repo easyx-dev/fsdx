@@ -26,10 +26,12 @@
 
 ## 表格列
 
-- [ ] **`Σ列宽 ≤ 1199`，页面无横向滚动**（实测 `.ant-table-content` 的 `scrollWidth === clientWidth`）
-- [ ] 列宽只用三种表达之一：`width` / `minWidth` + `tableLayout="auto"` / 不定宽；**至少一列不定宽**
-- [ ] 已声明 `scroll.x`，且等于参考视口下该表可用宽度（全宽 1199 / 双栏页 997、977）
-- [ ] 用 `tableLayout="auto"` 的表内容都短（长文本表改用 `width` + `ellipsis`），且没有 `fixed` 列
+- [ ] **`Σ列宽 ≤ 该表预算`**（参考视口 1600：全宽 1359 / 双栏 1157、1137）：1600 视口下 `.ant-table-content` 的 `scrollWidth === clientWidth`
+- [ ] **每列都显式 `width`**（档位列引 `COLUMN_WIDTH.*`，其余按「最长文案宽 + 32」并注释依据），页面**未手写 `scroll.x`**（由 ProTable 推导）
+- [ ] **恰好一列 `elastic: true`**，且按优先级取（操作列 → 长文本主列 → 首个可伸缩文本列 → 不设）；弹性列自身也声明了 `width`
+- [ ] 页面未写 `tableLayout="auto"`（ProTable 固定 `fixed`），无 `minWidth`
+- [ ] 开发期控制台无「列宽预算」告警；列定义在 `-mods/xxxColumns.ts` 的表已登记进 `column-budget.test.ts` 的 CASES
+- [ ] 按 `docs/admin-design.md` §5.4 的脚本复测：内容溢出（扫**全部行**）与横向溢出均为 0
 - [ ] 所有可长文本列都带 `ellipsis`（避免单元格外溢顶出横向滚动条）
 - [ ] 图片 / 封面列在表最前且用 `ImageCell`（宽 80）
 - [ ] 时间列用 `valueType: "dateTimeMinute"`（或 `"dateTime"`），宽 165 / 180，可空列带 `emptyText: "—"`；无手写 `dayjs().format`
@@ -45,8 +47,9 @@
 ## 操作列
 
 - [ ] 用 `TableOperate` 包裹，按钮统一「图标 + 文字」，项数 ≤4，低频项进 `TableOperate.More`
-- [ ] 操作列显式声明 `width`（2 项 160 / 3 项 240 / 含四字文案 260 / 4 项 320）且与实测内容相符
-- [ ] `fixed: "right"` 仅在无横向滚动时使用
+- [ ] 操作列宽度用 `actionsWidth("编辑", "删除")` 按文案实算（1 项 100 / 2 项 170 / 3 项 240 / 含四字 270 / 4 项 320），未写死数字
+- [ ] 默认 `elastic: true`（余宽归操作列）；若弹性让给了长文本主列，操作列保持 `fixed: "right"` + 实测宽
+- [ ] `fixed: "right"` 仅在无横向滚动（`Σ ≤ 预算`）时使用
 - [ ] `TableOperate.Delete` 的 `onConfirm` 交调用方 `sfnUnwrap`，无本地 `message.error` 吞错
 - [ ] 无权限操作用 `disabled` + `disabledReason`（未隐藏按钮）
 - [ ] 上下架 / 排序等通用态未重复出现在操作列
