@@ -58,6 +58,11 @@
 
 ### Infrastructure
 
+- **管理端行展开面板抽为 `DetailGrid`，样式与网格自适应统一（[infra]）**：此前埋点事件查询页手写卡片网格、文件管理与字典条目各写一套 antd `Descriptions`、运行日志与操作日志直接倾倒 JSON，展开面板无统一形态。
+  - **新增 `@fsdx/ui-spa/table` 的 `DetailGrid`**：`items` 声明字段（`label` 中文标签 / `fieldKey` 英文原始键 / `value` / `copyable` + `copyText` / `extra` 单元格级操作），空值统一渲染「—」（修掉埋点页原用 `-` 的口径不一致），复制按钮位于卡片头部右侧、**hover / focus 时显现**（键盘与触屏仍可达），原始属性值经 `formatDetailValue()` 归一（对象转缩进 JSON）。
+  - **网格改真自适应**：列数由容器宽度与 `minItemWidth`（默认 320）共同决定（`repeat(auto-fill, minmax(...))`），替换原来写死的 `sm:grid-cols-2 xl:grid-cols-3` 断点；面板左边缘与首个数据列对齐（展开列 50px − 展开行 td 自带 16px 内边距 = 34px），不再是 48px 的固定缩进；卡片改为描边直角容器（`border border-border bg-background`），头部为中文标签 + 英文键中性 Tag，值区等宽字号单行截断 + Tooltip 全文。
+  - 已迁移埋点事件查询、文件管理、字典条目三处；纯逻辑（空值判据 / 值归一 / 复制内容推导）拆至 `detail-grid.utils.ts` 并在无 DOM 环境单测，样式约定写入 [.agents/skills/admin-design](.agents/skills/admin-design/SKILL.md) §3.7。可被衍生项目吸收
+
 - **管理端列表页统一规范：查询状态 / 骨架 / 通用态收敛为固定流水线（[infra]）**：二十余个各写一套的列表页收敛为「骨架负责布局与高度、查询 hook 负责状态与请求、表格负责渲染、单元格负责通用态」，页面只声明差异（列、筛选控件、行操作）。
   - **查询状态**：新增 `#/utils/use-list-query` 的 `useListQuery`——条件 / 页码 / 每页条数 / 排序的单一事实来源，**全部显式触发**（筛选变更与增删改后刷新，不用 effect 自动拉取），服务端实际生效的 `page` / `pageSize` 回填状态，过期响应按请求序号丢弃；分页与排序统一由 `Table.onChange` 驱动，并提供 `sortProps(field)` 生成受控排序属性。
   - **页面骨架与工具条**：新增 `AdminListPage`（标题 + 看板 + 表格区域，经 context 注入表体高度）；`AdminPageContent` 的内容区标记 `data-admin-scroll-container` 作为高度测量参考系。当时的独立筛选行工具条 `AdminTableToolbar` 已在本版本内被页头三段式的 `AdminFilters` 取代（见下条）。
