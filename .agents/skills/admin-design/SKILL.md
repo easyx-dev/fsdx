@@ -215,6 +215,13 @@ const list = useListQuery<NewsRecord, NewsFilters>({
 - 依赖选中项的信息（当前字典名、条目数）写进页头 `description`（悬停标题可见），不再在右栏另起一行标题
 - 未选中时的空态放右栏中央（`请选择左侧字典查看条目`），不要留空白表格
 
+### 3.7 行展开面板（`DetailGrid`）
+
+- 详情性字段收进 `expandable.expandedRowRender` 后，一律用 `DetailGrid` 渲染，**不再各页手写卡片网格或另用 `Descriptions`**（列表页汇总、时间列、扩展配置等场景同理）
+- `items: DetailGridItem[]` 声明字段：`key` / `label`（中文业务标签）/ `fieldKey`（英文原始键，渲染为标签旁中性 Tag）/ `value`（空值 `null` / `undefined` / 空串统一渲染「—」）/ `copyable` + `copyText`（默认按字符串值提供复制，位于卡片头部右侧，hover / focus 时显现）/ `extra`（单元格级操作，如「查链路」）
+- 原始属性值经 `formatDetailValue()` 归一（对象转缩进 JSON），避免各页重复实现
+- **自适应网格**：列数由容器宽度与 `minItemWidth`（默认 320）共同决定（`repeat(auto-fill, minmax(...))`），不写 `sm:` / `xl:` 之类断点；**面板左边缘与首个数据列对齐**（展开列 50px − 表格单元格自带 16px 内边距 = 34px），不再额外缩进；卡片为描边直角容器（`border border-border bg-background`），值区等宽字号 + 单行截断 + Tooltip 全文
+
 ## 4. 容器：Modal 还是 Drawer
 
 ### 4.1 决策表
